@@ -1,0 +1,390 @@
+import { useState, useMemo, memo, useRef, useEffect } from "react";
+import {
+    Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
+    Chip,
+    Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
+    Popover, PopoverTrigger, PopoverContent, Calendar
+} from "@heroui/react";
+import { parseDate } from "@internationalized/date";
+import { Search, Filter, ChevronDown, ChevronLeft, ChevronRight, CalendarDays, Check, X, Clock, UserCheck, UserX, Users, Layers, AlertCircle } from "lucide-react";
+import { useApp } from "../../context/AppContext";
+
+const StudentAttendance = memo(function StudentAttendance() {
+    const { students } = useApp();
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [classFilter, setClassFilter] = useState("all");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [selectedKeys, setSelectedKeys] = useState(new Set([]));
+    const [attendance, setAttendance] = useState({});
+    const initializedRef = useRef(false);
+
+    // Initialize attendance only once
+    useEffect(() => {
+        if (!initializedRef.current && students.length > 0) {
+            const initial = {};
+            students.forEach(s => {
+                const rand = Math.random();
+                initial[s.id] = {
+                    status: rand > 0.2 ? "present" : rand > 0.5 ? "absent" : "leave",
+                    inTime: "08:30",
+                    outTime: "03:30"
+                };
+            });
+            setAttendance(initial);
+            initializedRef.current = true;
+        }
+    }, [students]);
+
+    const uniqueClasses = useMemo(() => [...new Set(students.map(s => s.class))].sort(), [students]);
+
+    const filteredStudents = useMemo(() => {
+        let filtered = students;
+
+        if (searchQuery) {
+            const search = searchQuery.toLowerCase();
+            filtered = filtered.filter(s =>
+                s.name.toLowerCase().includes(search) ||
+                s.rollNo.toString().includes(search)
+            );
+        }
+
+        if (classFilter !== "all") {
+            filtered = filtered.filter(s => s.class === classFilter);
+        }
+
+        if (statusFilter !== "all") {
+            filtered = filtered.filter(s => attendance[s.id]?.status === statusFilter);
+        }
+
+        return filtered;
+    }, [students, searchQuery, classFilter, statusFilter, attendance]);
+
+    const stats = useMemo(() => {
+        const total = students.length;
+        let present = 0, absent = 0, leave = 0, halfday = 0;
+        
+        // Only count students that have attendance records
+        for (const studentId in attendance) {
+            const status = attendance[studentId]?.status;
+            if (status === "present") present++;
+            else if (status === "absent") absent++;
+            else if (status === "leave") leave++;
+            else if (status === "halfday") halfday++;
+        }
+        
+        return { total, present, absent, leave, halfday };
+    }, [students.length, attendance]);
+
+    const handleStatusChange = (studentId, newStatus) => {
+        setAttendance(prev => ({
+            ...prev,
+            [studentId]: { ...prev[studentId], status: newStatus }
+        }));
+    };
+
+    const handleBulkAction = (status) => {
+        if (selectedKeys === "all") {
+            // Mark all filtered students
+            const updates = {};
+            filteredStudents.forEach(s => {
+                updates[s.id] = { ...attendance[s.id], status };
+            });
+            setAttendance(prev => ({ ...prev, ...updates }));
+        } else if (selectedKeys.size > 0) {
+            const updates = {};
+            selectedKeys.forEach(id => {
+                updates[id] = { ...attendance[id], status };
+            });
+            setAttendance(prev => ({ ...prev, ...updates }));
+        }
+        setSelectedKeys(new Set([]));
+    };
+
+    const getStatusStyle = (status) => {
+        switch (status) {
+            case "present": return "bg-success-50 border-success-200 text-success-700";
+            case "absent": return "bg-danger-50 border-danger-200 text-danger-700";
+            case "leave": return "bg-warning-50 border-warning-200 text-warning-700";
+            case "halfday": return "bg-secondary-50 border-secondary-200 text-secondary-700";
+            default: return "bg-default-100 border-default-200 text-default-600";
+        }
+    };
+
+    const getStatusIcon = (status) => {
+        switch (status) {
+            case "present": return <Check size={14} className="text-success-600" />;
+            case "absent": return <X size={14} className="text-danger-600" />;
+            case "leave": return <Clock size={14} className="text-warning-600" />;
+            case "halfday": return <AlertCircle size={14} className="text-secondary-600" />;
+            default: return <Clock size={14} className="text-default-500" />;
+        }
+    };
+
+    return (
+        <div className="w-full flex flex-col">
+            {/* KPI Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 -mx-6 -mt-6 px-6 pt-6">
+                <div className="p-4 bg-default-50 rounded-lg border border-default-200">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Users size={18} className="text-default-500" />
+                        <span className="text-xs text-default-500 uppercase tracking-wider">Total Students</span>
+                    </div>
+                    <p className="text-2xl font-semibold text-default-900">{stats.total}</p>
+                </div>
+                <div className="p-4 bg-success-50 rounded-lg border border-success-200">
+                    <div className="flex items-center gap-2 mb-2">
+                        <UserCheck size={18} className="text-success-600" />
+                        <span className="text-xs text-success-700 uppercase tracking-wider">Present</span>
+                    </div>
+                    <p className="text-2xl font-semibold text-success-700">{stats.present}</p>
+                </div>
+                <div className="p-4 bg-danger-50 rounded-lg border border-danger-200">
+                    <div className="flex items-center gap-2 mb-2">
+                        <UserX size={18} className="text-danger-600" />
+                        <span className="text-xs text-danger-700 uppercase tracking-wider">Absent</span>
+                    </div>
+                    <p className="text-2xl font-semibold text-danger-700">{stats.absent}</p>
+                </div>
+                <div className="p-4 bg-warning-50 rounded-lg border border-warning-200">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Clock size={18} className="text-warning-600" />
+                        <span className="text-xs text-warning-700 uppercase tracking-wider">On Leave</span>
+                    </div>
+                    <p className="text-2xl font-semibold text-warning-700">{stats.leave}</p>
+                </div>
+            </div>
+
+            {/* Toolbar */}
+            <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-background border-b border-default-200 py-4 -mx-6 px-6">
+                {/* Left Side - Date Picker */}
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <Popover placement="bottom-start">
+                        <PopoverTrigger>
+                            <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const date = new Date(selectedDate);
+                                        date.setDate(date.getDate() - 1);
+                                        setSelectedDate(date.toISOString().split('T')[0]);
+                                    }}
+                                    className="p-0.5 hover:bg-default-100 rounded cursor-pointer"
+                                >
+                                    <ChevronLeft size={14} className="text-default-400" />
+                                </button>
+                                <CalendarDays size={16} className="text-default-400 flex-shrink-0" />
+                                <span>{new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const date = new Date(selectedDate);
+                                        date.setDate(date.getDate() + 1);
+                                        setSelectedDate(date.toISOString().split('T')[0]);
+                                    }}
+                                    disabled={selectedDate >= new Date().toISOString().split('T')[0]}
+                                    className="p-0.5 hover:bg-default-100 rounded cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                >
+                                    <ChevronRight size={14} className="text-default-400" />
+                                </button>
+                            </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="p-0">
+                            <Calendar
+                                value={parseDate(selectedDate)}
+                                onChange={(date) => setSelectedDate(date.toString())}
+                                aria-label="Select date"
+                            />
+                        </PopoverContent>
+                    </Popover>
+                    <button
+                        onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+                        disabled={selectedDate === new Date().toISOString().split('T')[0]}
+                        className="px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                        Today
+                    </button>
+                </div>
+
+                {/* Right Side - Filters */}
+                <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+                    <div className="flex items-center gap-2 w-full sm:max-w-[200px] px-3 py-2 bg-default-100 rounded-lg border border-default-200 hover:border-primary hover:bg-default-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
+                        <Search size={16} className="text-default-400" />
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            className="flex-1 bg-transparent outline-none text-sm"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+
+                    <Dropdown>
+                        <DropdownTrigger>
+                            <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
+                                <Filter size={16} className="text-default-400" />
+                                <span>{classFilter === "all" ? "Class" : classFilter}</span>
+                                <ChevronDown size={14} className="text-default-400" />
+                            </button>
+                        </DropdownTrigger>
+                        <DropdownMenu
+                            aria-label="Filter by class"
+                            disallowEmptySelection
+                            selectionMode="single"
+                            selectedKeys={new Set([classFilter])}
+                            onSelectionChange={(keys) => setClassFilter(Array.from(keys)[0])}
+                        >
+                            <DropdownItem key="all">All Classes</DropdownItem>
+                            {uniqueClasses.map((cls) => (
+                                <DropdownItem key={cls}>{cls}</DropdownItem>
+                            ))}
+                        </DropdownMenu>
+                    </Dropdown>
+
+                    <Dropdown>
+                        <DropdownTrigger>
+                            <button className="p-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 cursor-pointer">
+                                <Filter size={16} className="text-default-400" />
+                            </button>
+                        </DropdownTrigger>
+                        <DropdownMenu
+                            aria-label="Filter by status"
+                            disallowEmptySelection
+                            selectionMode="single"
+                            selectedKeys={new Set([statusFilter])}
+                            onSelectionChange={(keys) => setStatusFilter(Array.from(keys)[0])}
+                        >
+                            <DropdownItem key="all">All Status</DropdownItem>
+                            <DropdownItem key="present">Present</DropdownItem>
+                            <DropdownItem key="absent">Absent</DropdownItem>
+                            <DropdownItem key="leave">On Leave</DropdownItem>
+                            <DropdownItem key="halfday">Half Day</DropdownItem>
+                        </DropdownMenu>
+                    </Dropdown>
+
+                    {/* Bulk Actions */}
+                    <Dropdown>
+                        <DropdownTrigger>
+                            <button 
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm cursor-pointer whitespace-nowrap ${
+                                    selectedKeys === "all" || selectedKeys.size > 0
+                                        ? "bg-primary text-white border-primary"
+                                        : "bg-transparent border-default-300 hover:border-primary"
+                                }`}
+                            >
+                                <Layers size={16} className={selectedKeys === "all" || selectedKeys.size > 0 ? "text-white" : "text-default-400"} />
+                                <span>Bulk Actions</span>
+                                {(selectedKeys === "all" || selectedKeys.size > 0) && (
+                                    <span className="bg-white/20 px-1.5 py-0.5 rounded text-xs">
+                                        {selectedKeys === "all" ? filteredStudents.length : selectedKeys.size}
+                                    </span>
+                                )}
+                                <ChevronDown size={14} className={selectedKeys === "all" || selectedKeys.size > 0 ? "text-white" : "text-default-400"} />
+                            </button>
+                        </DropdownTrigger>
+                        <DropdownMenu
+                            aria-label="Bulk Actions"
+                            onAction={handleBulkAction}
+                            disabledKeys={selectedKeys !== "all" && selectedKeys.size === 0 ? ["present", "absent", "leave", "halfday"] : []}
+                        >
+                            <DropdownItem key="present" startContent={<Check size={14} className="text-success" />} className="text-success">
+                                Mark Selected Present
+                            </DropdownItem>
+                            <DropdownItem key="halfday" startContent={<AlertCircle size={14} className="text-secondary" />} className="text-secondary">
+                                Mark Selected Half Day
+                            </DropdownItem>
+                            <DropdownItem key="absent" startContent={<X size={14} className="text-danger" />} className="text-danger">
+                                Mark Selected Absent
+                            </DropdownItem>
+                            <DropdownItem key="leave" startContent={<Clock size={14} className="text-warning" />} className="text-warning">
+                                Mark Selected On Leave
+                            </DropdownItem>
+                        </DropdownMenu>
+                    </Dropdown>
+                </div>
+            </div>
+
+            {/* Table */}
+            <Table
+                aria-label="Student attendance table"
+                selectionMode="multiple"
+                selectedKeys={selectedKeys}
+                onSelectionChange={setSelectedKeys}
+                removeWrapper
+                radius="none"
+                classNames={{
+                    base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0",
+                    thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12",
+                    th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6 first:hover:bg-transparent first:cursor-default",
+                    td: "py-5 border-b border-default-200 group-data-[last=true]:border-none last:pr-6",
+                    tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-5",
+                }}
+            >
+                <TableHeader>
+                    <TableColumn style={{ width: 250 }}>STUDENT</TableColumn>
+                    <TableColumn style={{ width: 100 }}>CLASS</TableColumn>
+                    <TableColumn style={{ width: 100 }}>ROLL NO</TableColumn>
+                    <TableColumn style={{ width: 140 }}>STATUS</TableColumn>
+                    <TableColumn style={{ width: 100 }}>IN TIME</TableColumn>
+                    <TableColumn style={{ width: 100 }}>OUT TIME</TableColumn>
+                </TableHeader>
+                <TableBody items={filteredStudents} emptyContent="No students found">
+                    {(student) => {
+                        const att = attendance[student.id] || { status: "unmarked", inTime: "-", outTime: "-" };
+                        return (
+                            <TableRow key={student.id}>
+                                <TableCell>
+                                    <div className="flex items-center gap-3">
+                                        <img
+                                            src={`https://i.pravatar.cc/150?u=student${student.id}`}
+                                            alt={student.name}
+                                            className="w-10 h-10 rounded-full"
+                                        />
+                                        <div className="flex flex-col">
+                                            <span className="text-default-900 font-medium text-base">{student.name}</span>
+                                            <span className="text-default-500 text-xs">{student.email || "No email"}</span>
+                                        </div>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <Chip size="sm" variant="flat" color="primary">{student.class}</Chip>
+                                </TableCell>
+                                <TableCell>
+                                    <span className="text-default-600 text-sm font-mono">#{student.rollNo?.toString().padStart(3, '0')}</span>
+                                </TableCell>
+                                <TableCell>
+                                    <Dropdown>
+                                        <DropdownTrigger>
+                                            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer border transition-all text-xs font-medium ${getStatusStyle(att.status)}`}>
+                                                {getStatusIcon(att.status)}
+                                                <span className="capitalize">{att.status}</span>
+                                                <ChevronDown size={12} className="opacity-50" />
+                                            </div>
+                                        </DropdownTrigger>
+                                        <DropdownMenu
+                                            aria-label="Change Status"
+                                            onAction={(key) => handleStatusChange(student.id, key)}
+                                        >
+                                            <DropdownItem key="present" startContent={<Check size={14} className="text-success" />}>Present</DropdownItem>
+                                            <DropdownItem key="halfday" startContent={<AlertCircle size={14} className="text-secondary" />}>Half Day</DropdownItem>
+                                            <DropdownItem key="absent" startContent={<X size={14} className="text-danger" />}>Absent</DropdownItem>
+                                            <DropdownItem key="leave" startContent={<Clock size={14} className="text-warning" />}>On Leave</DropdownItem>
+                                        </DropdownMenu>
+                                    </Dropdown>
+                                </TableCell>
+                                <TableCell>
+                                    <span className="text-default-600 text-sm font-mono">{att.inTime || "-"}</span>
+                                </TableCell>
+                                <TableCell>
+                                    <span className="text-default-600 text-sm font-mono">{att.outTime || "-"}</span>
+                                </TableCell>
+                            </TableRow>
+                        );
+                    }}
+                </TableBody>
+            </Table>
+        </div>
+    );
+});
+
+export default StudentAttendance;
