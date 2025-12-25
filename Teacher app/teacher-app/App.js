@@ -15,6 +15,16 @@ import ClassesScreen from './src/screens/ClassesScreen';
 import ClassWorkspace from './src/screens/ClassWorkspace';
 import WorkScreen from './src/screens/WorkScreen';
 import MeScreen from './src/screens/MeScreen';
+import LeaveApplicationScreen from './src/screens/LeaveApplicationScreen';
+import RegularizationRequestScreen from './src/screens/RegularizationRequestScreen';
+import ProfileEditScreen from './src/screens/ProfileEditScreen';
+import PersonalLessonPlanningScreen from './src/screens/PersonalLessonPlanningScreen';
+
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+} from '@expo-google-fonts/inter';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -22,7 +32,7 @@ const Stack = createNativeStackNavigator();
 const screenOptions = {
   headerStyle: { backgroundColor: COLORS.white },
   headerTintColor: COLORS.dark,
-  headerTitleStyle: { fontWeight: '700', fontSize: 18 },
+  headerTitleStyle: { fontFamily: 'Inter_500Medium', fontSize: 18 }, // Removed bold
   headerBackTitleVisible: false,
 };
 
@@ -32,6 +42,26 @@ function ClassesStack() {
       <Stack.Screen name="ClassesList" component={ClassesScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ClassWorkspace" component={ClassWorkspace}
         options={({ route }) => ({ title: route.params?.className || 'Class', headerShadowVisible: false })} />
+    </Stack.Navigator>
+  );
+}
+
+function MeStack() {
+  return (
+    <Stack.Navigator screenOptions={screenOptions}>
+      <Stack.Screen name="MeMain" component={MeScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="LeaveApplication" component={LeaveApplicationScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="RegularizationRequest" component={RegularizationRequestScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} options={{ headerShown: false }} />
+    </Stack.Navigator>
+  );
+}
+
+function WorkStack() {
+  return (
+    <Stack.Navigator screenOptions={screenOptions}>
+      <Stack.Screen name="WorkMain" component={WorkScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="PersonalLessonPlanning" component={PersonalLessonPlanningScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }
@@ -71,8 +101,8 @@ function MainTabs() {
     >
       <Tab.Screen name="Today" component={TodayScreen} />
       <Tab.Screen name="Classes" component={ClassesStack} />
-      <Tab.Screen name="Work" component={WorkScreen} />
-      <Tab.Screen name="Me" component={MeScreen} />
+      <Tab.Screen name="Work" component={WorkStack} />
+      <Tab.Screen name="Me" component={MeStack} />
     </Tab.Navigator>
   );
 }
@@ -104,6 +134,19 @@ function AppContent() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
   return (
     <AuthProvider>
       <AppContent />
