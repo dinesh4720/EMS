@@ -112,7 +112,11 @@ export default function CommunicationSettings() {
                   <TableCell className="font-medium text-default-700">{t.name}</TableCell>
                   <TableCell><Chip size="sm" variant="flat" color={t.type === "SMS" ? "primary" : "secondary"}>{t.type}</Chip></TableCell>
                   <TableCell className="text-xs text-default-500 font-mono bg-default-50 px-2 py-1 rounded inline-block">{t.variables}</TableCell>
-                  <TableCell><Button isIconOnly size="sm" variant="light" color="default"><Edit size={16} /></Button></TableCell>
+                  <TableCell>
+                    <Tooltip content="Edit Template">
+                      <Button isIconOnly size="sm" variant="light" color="default"><Edit size={16} /></Button>
+                    </Tooltip>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

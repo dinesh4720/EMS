@@ -172,11 +172,15 @@ export default function CalendarPage() {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <Button isIconOnly size="sm" variant="light" onPress={() => navigate(-1)}><ChevronLeft size={18} /></Button>
+            <Tooltip content="Previous">
+              <Button isIconOnly size="sm" variant="light" onPress={() => navigate(-1)}><ChevronLeft size={18} /></Button>
+            </Tooltip>
             <h2 className="text-xl font-semibold min-w-64 text-center">
               {getHeaderTitle()}
             </h2>
-            <Button isIconOnly size="sm" variant="light" onPress={() => navigate(1)}><ChevronRight size={18} /></Button>
+            <Tooltip content="Next">
+              <Button isIconOnly size="sm" variant="light" onPress={() => navigate(1)}><ChevronRight size={18} /></Button>
+            </Tooltip>
           </div>
           <div className="flex items-center gap-3">
             <ButtonGroup size="sm" variant="flat">

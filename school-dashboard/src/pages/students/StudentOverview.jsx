@@ -275,7 +275,9 @@ export default function StudentOverview() {
             <div className="relative p-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-5">
-                  <Button isIconOnly size="sm" variant="flat" onPress={() => navigate("/students")} radius="lg" className="bg-white/80 backdrop-blur"><ArrowLeft size={18} /></Button>
+                  <Tooltip content="Back to Students">
+                    <Button isIconOnly size="sm" variant="flat" onPress={() => navigate("/students")} radius="lg" className="bg-white/80 backdrop-blur"><ArrowLeft size={18} /></Button>
+                  </Tooltip>
                   <div className="relative">
                     <Avatar src={`https://i.pravatar.cc/150?u=student${student.id}`} className="w-20 h-20 text-2xl ring-4 ring-white shadow-xl" isBordered color="primary" />
                     <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center ${student.feeStatus === "paid" ? "bg-success" : student.feeStatus === "pending" ? "bg-warning" : "bg-danger"}`}>

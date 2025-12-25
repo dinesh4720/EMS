@@ -90,9 +90,15 @@ export default function Chat() {
               </div>
             </div>
             <div className="flex gap-1">
-              <Button isIconOnly size="sm" variant="light"><Phone size={16} /></Button>
-              <Button isIconOnly size="sm" variant="light"><Video size={16} /></Button>
-              <Button isIconOnly size="sm" variant="light"><MoreVertical size={16} /></Button>
+              <Tooltip content="Voice Call">
+                <Button isIconOnly size="sm" variant="light"><Phone size={16} /></Button>
+              </Tooltip>
+              <Tooltip content="Video Call">
+                <Button isIconOnly size="sm" variant="light"><Video size={16} /></Button>
+              </Tooltip>
+              <Tooltip content="More Options">
+                <Button isIconOnly size="sm" variant="light"><MoreVertical size={16} /></Button>
+              </Tooltip>
             </div>
           </div>
 
@@ -119,9 +125,11 @@ export default function Chat() {
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 classNames={{ inputWrapper: "bg-default-100" }}
               />
-              <Button color="primary" size="sm" isIconOnly onPress={handleSend}>
-                <Send size={16} />
-              </Button>
+              <Tooltip content="Send Message">
+                <Button color="primary" size="sm" isIconOnly onPress={handleSend}>
+                  <Send size={16} />
+                </Button>
+              </Tooltip>
             </div>
           </div>
         </CardBody>

@@ -325,7 +325,11 @@ export default function StudentsList() {
                                 <TableCell>
                                     <div className="flex justify-end">
                                         <Dropdown>
-                                            <DropdownTrigger><Button isIconOnly size="sm" variant="light" className="text-default-400"><MoreVertical size={18} /></Button></DropdownTrigger>
+                                            <DropdownTrigger>
+                                                <Tooltip content="More Actions">
+                                                    <Button isIconOnly size="sm" variant="light" className="text-default-400"><MoreVertical size={18} /></Button>
+                                                </Tooltip>
+                                            </DropdownTrigger>
                                             <DropdownMenu aria-label="Student actions">
                                                 <DropdownItem key="view" startContent={<Eye size={14} />} onPress={() => navigate(`/students/${student.id}`)}>View Profile</DropdownItem>
                                                 <DropdownItem key="edit" startContent={<Edit size={14} />} onPress={() => navigate(`/students/${student.id}`)}>Edit Details</DropdownItem>

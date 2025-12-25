@@ -71,9 +71,11 @@ function SalaryComponents() {
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">{item.name}</TableCell>
                                         <TableCell>
-                                            <Button isIconOnly size="sm" color="danger" variant="light" onPress={() => handleRemove("earnings", item.id)}>
-                                                <Trash2 size={16} />
-                                            </Button>
+                                            <Tooltip content="Remove Component">
+                                                <Button isIconOnly size="sm" color="danger" variant="light" onPress={() => handleRemove("earnings", item.id)}>
+                                                    <Trash2 size={16} />
+                                                </Button>
+                                            </Tooltip>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -123,9 +125,11 @@ function SalaryComponents() {
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">{item.name}</TableCell>
                                         <TableCell>
-                                            <Button isIconOnly size="sm" color="danger" variant="light" onPress={() => handleRemove("deductions", item.id)}>
-                                                <Trash2 size={16} />
-                                            </Button>
+                                            <Tooltip content="Remove Component">
+                                                <Button isIconOnly size="sm" color="danger" variant="light" onPress={() => handleRemove("deductions", item.id)}>
+                                                    <Trash2 size={16} />
+                                                </Button>
+                                            </Tooltip>
                                         </TableCell>
                                     </TableRow>
                                 ))}

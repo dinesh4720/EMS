@@ -151,9 +151,11 @@ export default function StudentsPage() {
                       <p className="text-xs text-default-500">Fill in the student details below</p>
                     </div>
                   </div>
-                  <Button isIconOnly size="sm" variant="light" onPress={handleCloseAddStudent}>
-                    <X size={20} className="text-default-500" />
-                  </Button>
+                  <Tooltip content="Close">
+                    <Button isIconOnly size="sm" variant="light" onPress={handleCloseAddStudent}>
+                      <X size={20} className="text-default-500" />
+                    </Button>
+                  </Tooltip>
                 </DrawerHeader>
                 <DrawerBody className="p-0 overflow-y-auto">
                   <AddStudent 

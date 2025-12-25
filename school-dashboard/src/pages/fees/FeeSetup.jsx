@@ -48,8 +48,12 @@ export default function FeeSetup() {
                     <TableCell className="text-xs capitalize">{head.frequency}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button isIconOnly size="sm" variant="light"><Edit size={14} /></Button>
-                        <Button isIconOnly size="sm" variant="light" color="danger"><Trash2 size={14} /></Button>
+                        <Tooltip content="Edit Fee Head">
+                          <Button isIconOnly size="sm" variant="light"><Edit size={14} /></Button>
+                        </Tooltip>
+                        <Tooltip content="Delete Fee Head">
+                          <Button isIconOnly size="sm" variant="light" color="danger"><Trash2 size={14} /></Button>
+                        </Tooltip>
                       </div>
                     </TableCell>
                   </TableRow>

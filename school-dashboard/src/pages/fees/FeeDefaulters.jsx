@@ -166,7 +166,9 @@ export default function FeeDefaulters() {
                     <TableCell>
                       <div className="flex gap-2">
                         <Button size="sm" color="primary" variant="solid" className="font-medium shadow-sm">Collect</Button>
-                        <Button size="sm" variant="flat" color="warning" isIconOnly><Bell size={16} /></Button>
+                        <Tooltip content="Send Reminder">
+                          <Button size="sm" variant="flat" color="warning" isIconOnly><Bell size={16} /></Button>
+                        </Tooltip>
                       </div>
                     </TableCell>
                   </TableRow>
