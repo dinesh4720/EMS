@@ -7,6 +7,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { Eye, MessageSquare, Search, Filter, ArrowUpDown, X, MoreVertical } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { Link } from "react-router-dom";
 
 const ITEMS_PER_LOAD = 10;
 
@@ -183,12 +184,12 @@ export default function ClassesList() {
                       <span className="text-primary font-semibold text-sm">{cls.name}{cls.section}</span>
                     </div>
                     <div className="flex flex-col">
-                      <span
+                      <Link
+                        to={`/classes/${cls.id}`}
                         className="text-default-900 font-medium text-base hover:text-primary transition-colors cursor-pointer"
-                        onClick={() => navigate(`/classes/${cls.id}`)}
                       >
                         Class {cls.name}
-                      </span>
+                      </Link>
                       <span className="text-default-500 text-xs">Section {cls.section}</span>
                     </div>
                   </div>
@@ -202,12 +203,12 @@ export default function ClassesList() {
                     />
                     <div className="flex flex-col">
                       {cls.classTeacherId ? (
-                        <span
+                        <Link
+                          to={`/staffs/${cls.classTeacherId}`}
                           className="text-default-900 font-medium text-sm hover:text-primary transition-colors cursor-pointer"
-                          onClick={() => navigate(`/staffs/${cls.classTeacherId}`)}
                         >
                           {cls.teacher || "Unassigned"}
-                        </span>
+                        </Link>
                       ) : (
                         <span className="text-default-500 text-sm">Unassigned</span>
                       )}

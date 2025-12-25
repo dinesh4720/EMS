@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   pageSubtitle: { ...TYPOGRAPHY.body, color: COLORS.gray, marginTop: 4 },
 
   section: { marginBottom: SPACING.xl },
-  sectionTitle: { ...TYPOGRAPHY.subtitle, fontSize: 13, color: COLORS.gray, textTransform: 'uppercase', marginBottom: SPACING.m, letterSpacing: 1, fontWeight: '700' },
+  sectionTitle: { ...TYPOGRAPHY.subtitle, fontSize: 13, color: COLORS.gray, textTransform: 'uppercase', marginBottom: SPACING.m, letterSpacing: 1, fontFamily: 'Inter_500Medium' },
 
   card: { padding: 0, borderRadius: 20, borderWidth: 1, borderColor: '#F3F4F6' },
   highlightedCard: { borderColor: COLORS.primaryLight, borderWidth: 1 },
@@ -121,11 +121,11 @@ const styles = StyleSheet.create({
   subject: { ...TYPOGRAPHY.body, color: COLORS.gray, fontSize: 14 },
 
   timeBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: '#F3F4F6' },
-  timeText: { fontSize: 12, fontWeight: '600', color: COLORS.gray },
+  timeText: { fontSize: 12, fontFamily: 'Inter_500Medium', color: COLORS.gray },
 
   cardFooter: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#F3F4F6' },
   footerAction: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14 },
-  footerActionText: { fontSize: 14, fontWeight: '600', color: COLORS.dark, marginLeft: 8 },
+  footerActionText: { fontSize: 14, fontFamily: 'Inter_500Medium', color: COLORS.dark, marginLeft: 8 },
   footerDivider: { width: 1, backgroundColor: '#F3F4F6' },
 
   actionIconBubble: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },

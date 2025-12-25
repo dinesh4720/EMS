@@ -11,7 +11,7 @@ import {
     Phone, Check, Download, Upload, UserX, FileOutput, 
     ArrowUpCircle, Users, Calendar
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 
 const ITEMS_PER_LOAD = 15;
@@ -299,7 +299,7 @@ export default function StudentsList() {
                                     <div className="flex items-center gap-3">
                                         <img src={`https://i.pravatar.cc/150?u=student${student.id}`} alt={student.name} className="w-9 h-9 rounded-full" />
                                         <div className="flex flex-col">
-                                            <span className="text-default-900 font-medium text-sm hover:text-primary transition-colors cursor-pointer" onClick={() => navigate(`/students/${student.id}`)}>{student.name}</span>
+                                            <Link to={`/students/${student.id}`} className="text-default-900 font-medium text-sm hover:text-primary transition-colors cursor-pointer">{student.name}</Link>
                                             <span className="text-default-500 text-xs">{student.email || "No email"}</span>
                                         </div>
                                     </div>
@@ -326,9 +326,7 @@ export default function StudentsList() {
                                     <div className="flex justify-end">
                                         <Dropdown>
                                             <DropdownTrigger>
-                                                <Tooltip content="More Actions">
-                                                    <Button isIconOnly size="sm" variant="light" className="text-default-400"><MoreVertical size={18} /></Button>
-                                                </Tooltip>
+                                                <Button isIconOnly size="sm" variant="light" className="text-default-400"><MoreVertical size={18} /></Button>
                                             </DropdownTrigger>
                                             <DropdownMenu aria-label="Student actions">
                                                 <DropdownItem key="view" startContent={<Eye size={14} />} onPress={() => navigate(`/students/${student.id}`)}>View Profile</DropdownItem>

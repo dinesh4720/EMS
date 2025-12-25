@@ -48,10 +48,11 @@ export const SHADOWS = {
 };
 
 export const TYPOGRAPHY = {
-    header: { fontSize: 32, fontWeight: '800', fontFamily: 'System', color: '#222222' },
-    title: { fontSize: 24, fontWeight: '700', fontFamily: 'System', color: '#222222' },
-    subtitle: { fontSize: 18, fontWeight: '600', fontFamily: 'System', color: '#222222' },
-    body: { fontSize: 16, fontWeight: '400', fontFamily: 'System', color: '#222222' },
-    caption: { fontSize: 14, fontWeight: '400', fontFamily: 'System', color: '#717171' },
-    tiny: { fontSize: 12, fontWeight: '500', fontFamily: 'System', color: '#717171' },
+    // Using Inter_500Medium for 'bold' items to respect "never use bold" rule
+    header: { fontSize: 32, fontFamily: 'Inter_500Medium', color: '#111827' },
+    title: { fontSize: 24, fontFamily: 'Inter_500Medium', color: '#1F2937' },
+    subtitle: { fontSize: 18, fontFamily: 'Inter_500Medium', color: '#374151' },
+    body: { fontSize: 16, fontFamily: 'Inter_400Regular', color: '#4B5563' },
+    caption: { fontSize: 14, fontFamily: 'Inter_400Regular', color: '#6B7280' },
+    tiny: { fontSize: 12, fontFamily: 'Inter_500Medium', color: '#9CA3AF' },
 };

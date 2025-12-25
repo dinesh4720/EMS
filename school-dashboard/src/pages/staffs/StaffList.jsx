@@ -6,6 +6,7 @@ import {
 } from "@heroui/react";
 import { Search, Filter, ArrowUpDown, MoreVertical, Eye, Edit, Trash2, X, ChevronDown, Check } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { Link } from "react-router-dom";
 
 const ITEMS_PER_LOAD = 10;
 
@@ -310,12 +311,12 @@ export default function StaffList({ onStaffClick }) {
                                         className="w-10 h-10 rounded-full"
                                     />
                                     <div className="flex flex-col">
-                                        <span 
+                                        <Link 
+                                            to={`/staffs/${s.id}`}
                                             className="text-default-900 font-medium text-base hover:text-primary transition-colors cursor-pointer"
-                                            onClick={() => onStaffClick(s.id)}
                                         >
                                             {s.name}
-                                        </span>
+                                        </Link>
                                         <span className="text-default-500 text-xs">{s.email}</span>
                                     </div>
                                 </div>

@@ -137,12 +137,12 @@ const styles = StyleSheet.create({
     },
     tabText: {
         fontSize: 13,
-        fontWeight: '500',
+        fontFamily: 'Inter_500Medium',
         color: COLORS.gray,
     },
     tabTextActive: {
         color: COLORS.black,
-        fontWeight: '700',
+        fontFamily: 'Inter_500Medium',
     },
     activePill: {
         position: 'absolute',

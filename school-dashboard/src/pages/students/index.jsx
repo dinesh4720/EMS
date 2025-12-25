@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { Tabs, Tab, Button, Drawer, DrawerContent, DrawerHeader, DrawerBody, Card } from "@heroui/react";
+import { Tabs, Tab, Button, Drawer, DrawerContent, DrawerHeader, DrawerBody, Card, Tooltip } from "@heroui/react";
 import { GraduationCap, Plus, X } from "lucide-react";
 import StudentsList from "./StudentsList";
 import StudentOverview from "./StudentOverview";
@@ -13,7 +13,6 @@ export default function StudentsPage() {
   const location = useLocation();
   const { classesWithTeachers, addStudent } = useApp();
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
-  const [shouldRenderAddStudent, setShouldRenderAddStudent] = useState(false);
 
   const getActiveTab = () => {
     if (location.pathname === "/students/attendance") return "attendance";
@@ -21,15 +20,11 @@ export default function StudentsPage() {
   };
 
   const handleOpenAddStudent = () => {
-    setShouldRenderAddStudent(true);
-    requestAnimationFrame(() => {
-      setIsAddStudentOpen(true);
-    });
+    setIsAddStudentOpen(true);
   };
 
   const handleCloseAddStudent = () => {
     setIsAddStudentOpen(false);
-    setTimeout(() => setShouldRenderAddStudent(false), 300);
   };
 
   const handleSaveStudent = async (studentData) => {
@@ -110,8 +105,8 @@ export default function StudentsPage() {
               className="flex items-center gap-2 px-3 py-2 bg-primary text-white rounded-lg border border-primary hover:bg-primary-600 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap relative z-10"
               onClick={handleOpenAddStudent}
             >
-              <GraduationCap size={16} />
-              <span>New Admission</span>
+              <Plus size={16} />
+              <span>New Student</span>
             </button>
           )}
         </div>
@@ -125,51 +120,43 @@ export default function StudentsPage() {
       </Card>
 
       {/* Add Student Drawer */}
-      {shouldRenderAddStudent && (
-        <Drawer
-          isOpen={isAddStudentOpen}
-          onOpenChange={(open) => {
-            if (!open) handleCloseAddStudent();
-          }}
-          placement="right"
-          classNames={{
-            wrapper: "justify-end",
-            base: "w-[720px] max-w-[95vw]",
-            backdrop: "bg-black/30"
-          }}
-        >
-          <DrawerContent>
-            {(onClose) => (
-              <>
-                <DrawerHeader className="border-b border-default-200 px-6 py-3 flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-xl">
-                      <GraduationCap size={20} className="text-primary" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-900">New Student Admission</h2>
-                      <p className="text-xs text-default-500">Fill in the student details below</p>
-                    </div>
+      <Drawer
+        isOpen={isAddStudentOpen}
+        onOpenChange={(open) => {
+          if (!open) handleCloseAddStudent();
+        }}
+        placement="right"
+        size="lg"
+      >
+        <DrawerContent>
+          {(onClose) => (
+            <>
+              <DrawerHeader className="border-b border-default-200 px-6 py-4 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-xl">
+                    <GraduationCap size={20} className="text-primary" />
                   </div>
-                  <Tooltip content="Close">
-                    <Button isIconOnly size="sm" variant="light" onPress={handleCloseAddStudent}>
-                      <X size={20} className="text-default-500" />
-                    </Button>
-                  </Tooltip>
-                </DrawerHeader>
-                <DrawerBody className="p-0 overflow-y-auto">
-                  <AddStudent 
-                    onClose={handleCloseAddStudent} 
-                    onSave={handleSaveStudent}
-                    classOptions={classOptions}
-                    classesWithTeachers={classesWithTeachers}
-                  />
-                </DrawerBody>
-              </>
-            )}
-          </DrawerContent>
-        </Drawer>
-      )}
+                  <div>
+                    <h2 className="text-lg font-semibold text-default-900">New Student Admission</h2>
+                    <p className="text-xs text-default-500">Fill in the student details below</p>
+                  </div>
+                </div>
+                <Button isIconOnly size="sm" variant="light" onPress={handleCloseAddStudent}>
+                  <X size={20} className="text-default-500" />
+                </Button>
+              </DrawerHeader>
+              <DrawerBody className="p-6 overflow-y-auto">
+                <AddStudent 
+                  onClose={handleCloseAddStudent} 
+                  onSave={handleSaveStudent}
+                  classOptions={classOptions}
+                  classesWithTeachers={classesWithTeachers}
+                />
+              </DrawerBody>
+            </>
+          )}
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

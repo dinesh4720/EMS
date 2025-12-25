@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import Dashboard from "./pages/Dashboard";
+import Analytics from "./pages/Analytics";
 import StaffsPage from "./pages/staffs";
 import StudentsPage from "./pages/students";
 import ClassesPage from "./pages/classes";
@@ -61,6 +62,7 @@ function AuthenticatedApp() {
             <div className="max-w-[1600px] mx-auto space-y-6">
               <Routes>
                 <Route path="/" element={<Dashboard />} />
+                <Route path="/analytics" element={<Analytics />} />
                 <Route path="/staffs/*" element={<StaffsPage />} />
                 <Route path="/students/*" element={<StudentsPage />} />
                 <Route path="/classes/*" element={<ClassesPage />} />

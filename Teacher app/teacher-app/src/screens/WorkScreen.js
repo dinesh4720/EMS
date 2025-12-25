@@ -10,7 +10,7 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import AnimatedPage from '../components/ui/AnimatedPage';
 
-export default function WorkScreen() {
+export default function WorkScreen({ navigation }) {
   const { tasks, notes, addTask, toggleTask, deleteTask, addNote, updateNote, deleteNote } = useApp();
   const [activeSection, setActiveSection] = useState('tasks'); // 'tasks', 'planning', 'notes'
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -207,7 +207,7 @@ export default function WorkScreen() {
                     <Text style={styles.planningStatLabel}>Pending</Text>
                   </View>
                 </View>
-                <Button title="Start Planning" variant="secondary" onPress={() => Alert.alert('Coming Soon', 'Personal lesson planning feature coming soon!')} />
+                <Button title="Start Planning" variant="secondary" onPress={() => navigation.navigate('PersonalLessonPlanning')} />
               </Card>
             </View>
           )}
@@ -259,27 +259,27 @@ const styles = StyleSheet.create({
   container: { padding: SPACING.l, paddingBottom: 100 },
 
   header: { marginBottom: SPACING.l },
-  pageTitle: { fontSize: 32, fontWeight: '800', color: COLORS.dark },
-  pageSubtitle: { fontSize: 14, color: COLORS.gray, marginTop: 4 },
+  pageTitle: { fontSize: 32, fontFamily: 'Inter_500Medium', color: COLORS.dark },
+  pageSubtitle: { fontSize: 14, color: COLORS.gray, marginTop: 4, fontFamily: 'Inter_400Regular' },
 
   // Section Tabs
   sectionTabs: { flexDirection: 'row', backgroundColor: COLORS.white, borderRadius: 12, padding: 4, marginBottom: SPACING.l, ...SHADOWS.small },
   sectionTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 10 },
   sectionTabActive: { backgroundColor: COLORS.primaryLight },
-  sectionTabText: { fontSize: 13, fontWeight: '600', color: COLORS.gray, marginLeft: 6 },
+  sectionTabText: { fontSize: 13, fontFamily: 'Inter_500Medium', color: COLORS.gray, marginLeft: 6 },
   sectionTabTextActive: { color: COLORS.primary },
 
   section: { marginBottom: SPACING.xl },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: COLORS.gray, textTransform: 'uppercase', marginBottom: SPACING.m, letterSpacing: 0.5 },
+  sectionTitle: { fontSize: 13, fontFamily: 'Inter_500Medium', color: COLORS.gray, textTransform: 'uppercase', marginBottom: SPACING.m, letterSpacing: 0.5 },
 
   // Add Button
   addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: COLORS.primary, borderStyle: 'dashed', borderRadius: 12, padding: SPACING.l, backgroundColor: COLORS.primaryLight + '40', marginBottom: SPACING.l },
-  addBtnText: { fontSize: 15, fontWeight: '600', color: COLORS.primary, marginLeft: SPACING.s },
+  addBtnText: { fontSize: 15, fontFamily: 'Inter_500Medium', color: COLORS.primary, marginLeft: SPACING.s },
 
   // Form
   formHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: SPACING.m },
-  formTitle: { fontSize: 16, fontWeight: '700', color: COLORS.dark },
-  input: { borderWidth: 1, borderColor: COLORS.lightGray, borderRadius: 10, padding: SPACING.m, fontSize: 15, marginBottom: SPACING.m, backgroundColor: '#FAFAFA' },
+  formTitle: { fontSize: 16, fontFamily: 'Inter_500Medium', color: COLORS.dark },
+  input: { borderWidth: 1, borderColor: COLORS.lightGray, borderRadius: 10, padding: SPACING.m, fontSize: 15, marginBottom: SPACING.m, backgroundColor: '#FAFAFA', fontFamily: 'Inter_400Regular' },
   textarea: { minHeight: 80, textAlignVertical: 'top' },
 
   // Task Card
@@ -289,35 +289,35 @@ const styles = StyleSheet.create({
   checkbox: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: COLORS.gray, marginRight: SPACING.m, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
   checkboxDone: { backgroundColor: COLORS.success, borderColor: COLORS.success },
   taskContent: { flex: 1 },
-  taskTitle: { fontSize: 15, fontWeight: '600', color: COLORS.dark },
+  taskTitle: { fontSize: 15, fontFamily: 'Inter_500Medium', color: COLORS.dark },
   taskTitleDone: { textDecorationLine: 'line-through', color: COLORS.gray },
-  taskNotes: { fontSize: 13, color: COLORS.gray, marginTop: 4 },
-  taskDue: { fontSize: 12, color: COLORS.primary, marginTop: 4, fontWeight: '500' },
+  taskNotes: { fontSize: 13, color: COLORS.gray, marginTop: 4, fontFamily: 'Inter_400Regular' },
+  taskDue: { fontSize: 12, color: COLORS.primary, marginTop: 4, fontFamily: 'Inter_500Medium' },
   deleteBtn: { padding: SPACING.s },
 
   // Empty State
   emptyState: { alignItems: 'center', padding: SPACING.xl },
-  emptyText: { marginTop: SPACING.m, color: COLORS.gray, fontWeight: '500' },
+  emptyText: { marginTop: SPACING.m, color: COLORS.gray, fontFamily: 'Inter_400Regular' },
 
   // Planning Card
   planningCard: { padding: SPACING.l },
   planningHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.m },
-  planningTitle: { fontSize: 18, fontWeight: '700', color: COLORS.dark, marginLeft: SPACING.m },
-  planningDesc: { fontSize: 14, color: COLORS.gray, lineHeight: 20, marginBottom: SPACING.l },
+  planningTitle: { fontSize: 18, fontFamily: 'Inter_500Medium', color: COLORS.dark, marginLeft: SPACING.m },
+  planningDesc: { fontSize: 14, color: COLORS.gray, lineHeight: 20, marginBottom: SPACING.l, fontFamily: 'Inter_400Regular' },
   planningStats: { flexDirection: 'row', marginBottom: SPACING.l },
   planningStat: { flex: 1, alignItems: 'center' },
-  planningStatValue: { fontSize: 24, fontWeight: '800', color: COLORS.dark },
-  planningStatLabel: { fontSize: 12, color: COLORS.gray, marginTop: 2 },
+  planningStatValue: { fontSize: 24, fontFamily: 'Inter_500Medium', color: COLORS.dark },
+  planningStatLabel: { fontSize: 12, color: COLORS.gray, marginTop: 2, fontFamily: 'Inter_400Regular' },
 
   // Quick Note
   quickNoteCard: { flexDirection: 'row', alignItems: 'flex-end', padding: SPACING.m, marginBottom: SPACING.l },
-  quickNoteInput: { flex: 1, fontSize: 15, minHeight: 60, textAlignVertical: 'top', marginRight: SPACING.m },
+  quickNoteInput: { flex: 1, fontSize: 15, minHeight: 60, textAlignVertical: 'top', marginRight: SPACING.m, fontFamily: 'Inter_400Regular' },
   quickNoteBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
   quickNoteBtnDisabled: { backgroundColor: COLORS.lightGray },
 
   // Note Card
   noteCard: { marginBottom: SPACING.s },
-  noteContent: { fontSize: 14, color: COLORS.dark, lineHeight: 20 },
+  noteContent: { fontSize: 14, color: COLORS.dark, lineHeight: 20, fontFamily: 'Inter_400Regular' },
   noteFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: SPACING.m, paddingTop: SPACING.s, borderTopWidth: 1, borderTopColor: COLORS.lightGray },
-  noteDate: { fontSize: 12, color: COLORS.gray },
+  noteDate: { fontSize: 12, color: COLORS.gray, fontFamily: 'Inter_400Regular' },
 });

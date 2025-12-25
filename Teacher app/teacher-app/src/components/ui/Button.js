@@ -83,8 +83,7 @@ const styles = StyleSheet.create({
     },
     text: {
         fontSize: 16,
-        fontWeight: '600',
-        fontFamily: 'System',
+        fontFamily: 'Inter_500Medium',
     },
     small: {
         paddingVertical: 8,

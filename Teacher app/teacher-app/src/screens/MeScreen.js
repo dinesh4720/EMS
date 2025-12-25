@@ -11,10 +11,10 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import AnimatedPage from '../components/ui/AnimatedPage';
 
-export default function MeScreen() {
+export default function MeScreen({ navigation }) {
   const { checkin, doCheckin, doCheckout, leaveBalance, salarySlips, notifications, markNotificationRead, getUnreadNotificationCount } = useApp();
   const { user, logout } = useAuth();
-  const [activeModal, setActiveModal] = useState(null); // 'leave', 'salary', 'notifications', 'profile'
+  const [activeModal, setActiveModal] = useState(null); // 'salary', 'notifications'
 
   const unreadCount = getUnreadNotificationCount();
 
@@ -101,7 +101,7 @@ export default function MeScreen() {
               icon="calendar"
               title="Leave & Regularization"
               subtitle={`${leaveBalance.casual + leaveBalance.sick + leaveBalance.earned} days available`}
-              onPress={() => setActiveModal('leave')}
+              onPress={() => navigation.navigate('LeaveApplication')}
             />
             <MenuItem
               icon="credit-card"
@@ -120,7 +120,7 @@ export default function MeScreen() {
               icon="user"
               title="Profile"
               subtitle="Edit your profile"
-              onPress={() => setActiveModal('profile')}
+              onPress={() => navigation.navigate('ProfileEdit')}
             />
           </View>
 
@@ -136,39 +136,7 @@ export default function MeScreen() {
           </View>
         </ScrollView>
 
-        {/* Leave Modal */}
-        <Modal visible={activeModal === 'leave'} animationType="slide">
-          <SafeAreaView style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setActiveModal(null)}>
-                <Feather name="x" size={24} color={COLORS.dark} />
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>Leave & Regularization</Text>
-              <View style={{ width: 24 }} />
-            </View>
-            <ScrollView contentContainerStyle={styles.modalContent}>
-              <Card style={styles.leaveBalanceCard}>
-                <Text style={styles.leaveBalanceTitle}>Leave Balance</Text>
-                <View style={styles.leaveBalanceRow}>
-                  <View style={styles.leaveBalanceItem}>
-                    <Text style={styles.leaveBalanceValue}>{leaveBalance.casual}</Text>
-                    <Text style={styles.leaveBalanceLabel}>Casual</Text>
-                  </View>
-                  <View style={styles.leaveBalanceItem}>
-                    <Text style={styles.leaveBalanceValue}>{leaveBalance.sick}</Text>
-                    <Text style={styles.leaveBalanceLabel}>Sick</Text>
-                  </View>
-                  <View style={styles.leaveBalanceItem}>
-                    <Text style={styles.leaveBalanceValue}>{leaveBalance.earned}</Text>
-                    <Text style={styles.leaveBalanceLabel}>Earned</Text>
-                  </View>
-                </View>
-              </Card>
-              <Button title="Apply for Leave" onPress={() => Alert.alert('Coming Soon', 'Leave application feature coming soon!')} style={{ marginBottom: SPACING.m }} />
-              <Button title="Request Regularization" variant="secondary" onPress={() => Alert.alert('Coming Soon', 'Regularization feature coming soon!')} />
-            </ScrollView>
-          </SafeAreaView>
-        </Modal>
+
 
         {/* Salary Modal */}
         <Modal visible={activeModal === 'salary'} animationType="slide">
@@ -254,34 +222,7 @@ export default function MeScreen() {
           </SafeAreaView>
         </Modal>
 
-        {/* Profile Modal */}
-        <Modal visible={activeModal === 'profile'} animationType="slide">
-          <SafeAreaView style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setActiveModal(null)}>
-                <Feather name="x" size={24} color={COLORS.dark} />
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>Profile</Text>
-              <View style={{ width: 24 }} />
-            </View>
-            <ScrollView contentContainerStyle={styles.modalContent}>
-              <View style={styles.profileSection}>
-                <View style={styles.profileAvatarLarge}>
-                  <Text style={styles.profileAvatarText}>{user?.name?.[0] || 'T'}</Text>
-                </View>
-                <Text style={styles.profileName}>{user?.name || 'Teacher'}</Text>
-                <Text style={styles.profileDesignation}>{user?.designation || 'Teacher'}</Text>
-              </View>
-              <Card>
-                <ProfileRow icon="phone" label="Phone" value={user?.phone || 'Not set'} />
-                <ProfileRow icon="mail" label="Email" value={user?.email || 'Not set'} />
-                <ProfileRow icon="briefcase" label="Employee ID" value={user?.employeeId || 'Not set'} />
-                <ProfileRow icon="calendar" label="Joining Date" value={user?.joiningDate || 'Not set'} last />
-              </Card>
-              <Button title="Edit Profile" variant="secondary" onPress={() => Alert.alert('Coming Soon', 'Profile editing coming soon!')} style={{ marginTop: SPACING.m }} />
-            </ScrollView>
-          </SafeAreaView>
-        </Modal>
+
       </SafeAreaView>
     </AnimatedPage>
   );
@@ -325,90 +266,90 @@ const styles = StyleSheet.create({
   // Profile Header
   profileHeader: { alignItems: 'center', marginBottom: SPACING.xl },
   avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', marginBottom: SPACING.m },
-  avatarText: { fontSize: 32, fontWeight: '700', color: COLORS.white },
-  userName: { fontSize: 22, fontWeight: '700', color: COLORS.dark },
-  userRole: { fontSize: 14, color: COLORS.gray, marginTop: 4 },
+  avatarText: { fontSize: 32, fontFamily: 'Inter_500Medium', color: COLORS.white },
+  userName: { fontSize: 22, fontFamily: 'Inter_500Medium', color: COLORS.dark },
+  userRole: { fontSize: 14, color: COLORS.gray, marginTop: 4, fontFamily: 'Inter_400Regular' },
 
   // Check-in Card
   checkinCard: { marginBottom: SPACING.l },
   checkinHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.m },
-  checkinLabel: { fontSize: 16, fontWeight: '700', color: COLORS.dark },
-  checkinDate: { fontSize: 13, color: COLORS.gray, marginTop: 2 },
+  checkinLabel: { fontSize: 16, fontFamily: 'Inter_500Medium', color: COLORS.dark },
+  checkinDate: { fontSize: 13, color: COLORS.gray, marginTop: 2, fontFamily: 'Inter_400Regular' },
   statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, backgroundColor: COLORS.lightGray },
   statusBadgeActive: { backgroundColor: '#D1FAE5' },
   statusBadgeInactive: { backgroundColor: '#FEE2E2' },
   statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.danger, marginRight: 6 },
   statusDotActive: { backgroundColor: COLORS.success },
-  statusText: { fontSize: 12, fontWeight: '600', color: COLORS.danger },
+  statusText: { fontSize: 12, fontFamily: 'Inter_500Medium', color: COLORS.danger },
   statusTextActive: { color: COLORS.success },
   checkinTimes: { flexDirection: 'row', backgroundColor: '#F9FAFB', borderRadius: 12, padding: SPACING.m, marginBottom: SPACING.m },
   checkinTimeItem: { flex: 1, alignItems: 'center' },
-  checkinTimeLabel: { fontSize: 12, color: COLORS.gray, marginTop: 4 },
-  checkinTimeValue: { fontSize: 18, fontWeight: '700', color: COLORS.dark, marginTop: 2 },
+  checkinTimeLabel: { fontSize: 12, color: COLORS.gray, marginTop: 4, fontFamily: 'Inter_400Regular' },
+  checkinTimeValue: { fontSize: 18, fontFamily: 'Inter_500Medium', color: COLORS.dark, marginTop: 2 },
   checkinDivider: { width: 1, backgroundColor: COLORS.lightGray },
   checkinBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.success, paddingVertical: 14, borderRadius: 12 },
   checkoutBtn: { backgroundColor: COLORS.danger },
-  checkinBtnText: { color: COLORS.white, fontSize: 16, fontWeight: '700', marginLeft: SPACING.s },
+  checkinBtnText: { color: COLORS.white, fontSize: 16, fontFamily: 'Inter_500Medium', marginLeft: SPACING.s },
 
   // Stats Row
   statsRow: { flexDirection: 'row', gap: SPACING.m, marginBottom: SPACING.xl },
   statCard: { flex: 1, backgroundColor: COLORS.white, borderRadius: 12, padding: SPACING.m, alignItems: 'center', ...SHADOWS.small },
-  statValue: { fontSize: 24, fontWeight: '800', color: COLORS.dark },
-  statLabel: { fontSize: 11, color: COLORS.gray, marginTop: 2 },
+  statValue: { fontSize: 24, fontFamily: 'Inter_500Medium', color: COLORS.dark },
+  statLabel: { fontSize: 11, color: COLORS.gray, marginTop: 2, fontFamily: 'Inter_400Regular' },
 
   // Section
   section: { marginBottom: SPACING.xl },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: COLORS.gray, textTransform: 'uppercase', marginBottom: SPACING.m, letterSpacing: 0.5 },
+  sectionTitle: { fontSize: 13, fontFamily: 'Inter_500Medium', color: COLORS.gray, textTransform: 'uppercase', marginBottom: SPACING.m, letterSpacing: 0.5 },
 
   // Menu Item
   menuItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white, padding: SPACING.m, borderRadius: 12, marginBottom: SPACING.s, ...SHADOWS.small },
   menuIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.primaryLight, alignItems: 'center', justifyContent: 'center' },
   menuInfo: { flex: 1, marginLeft: SPACING.m },
-  menuTitle: { fontSize: 15, fontWeight: '600', color: COLORS.dark },
-  menuSubtitle: { fontSize: 13, color: COLORS.gray, marginTop: 2 },
+  menuTitle: { fontSize: 15, fontFamily: 'Inter_500Medium', color: COLORS.dark },
+  menuSubtitle: { fontSize: 13, color: COLORS.gray, marginTop: 2, fontFamily: 'Inter_400Regular' },
   menuBadge: { backgroundColor: COLORS.danger, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, marginRight: SPACING.s },
-  menuBadgeText: { color: COLORS.white, fontSize: 12, fontWeight: '700' },
+  menuBadgeText: { color: COLORS.white, fontSize: 12, fontFamily: 'Inter_500Medium' },
 
   // Logout
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FEE2E2', padding: SPACING.m, borderRadius: 12, marginBottom: SPACING.l },
-  logoutText: { color: COLORS.danger, fontSize: 16, fontWeight: '600', marginLeft: SPACING.s },
+  logoutText: { color: COLORS.danger, fontSize: 16, fontFamily: 'Inter_500Medium', marginLeft: SPACING.s },
 
   // App Info
   appInfo: { alignItems: 'center', paddingVertical: SPACING.l },
-  appName: { fontSize: 14, fontWeight: '600', color: COLORS.gray },
-  appVersion: { fontSize: 12, color: COLORS.lightGray, marginTop: 4 },
+  appName: { fontSize: 14, fontFamily: 'Inter_500Medium', color: COLORS.gray },
+  appVersion: { fontSize: 12, color: COLORS.lightGray, marginTop: 4, fontFamily: 'Inter_400Regular' },
 
   // Modal
   modalContainer: { flex: 1, backgroundColor: '#FAFAFA' },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: SPACING.m, backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.lightGray },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: COLORS.dark },
+  modalTitle: { fontSize: 18, fontFamily: 'Inter_500Medium', color: COLORS.dark },
   modalContent: { padding: SPACING.l },
 
   // Leave Balance
   leaveBalanceCard: { marginBottom: SPACING.l },
-  leaveBalanceTitle: { fontSize: 14, fontWeight: '600', color: COLORS.gray, marginBottom: SPACING.m },
+  leaveBalanceTitle: { fontSize: 14, fontFamily: 'Inter_500Medium', color: COLORS.gray, marginBottom: SPACING.m },
   leaveBalanceRow: { flexDirection: 'row' },
   leaveBalanceItem: { flex: 1, alignItems: 'center' },
-  leaveBalanceValue: { fontSize: 28, fontWeight: '800', color: COLORS.primary },
-  leaveBalanceLabel: { fontSize: 12, color: COLORS.gray, marginTop: 4 },
+  leaveBalanceValue: { fontSize: 28, fontFamily: 'Inter_500Medium', color: COLORS.primary },
+  leaveBalanceLabel: { fontSize: 12, color: COLORS.gray, marginTop: 4, fontFamily: 'Inter_400Regular' },
 
   // Salary Card
   salaryCard: { marginBottom: SPACING.m },
   salaryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.m },
-  salaryMonth: { fontSize: 16, fontWeight: '700', color: COLORS.dark },
+  salaryMonth: { fontSize: 16, fontFamily: 'Inter_500Medium', color: COLORS.dark },
   salaryStatus: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, backgroundColor: COLORS.lightGray },
   salaryStatusPaid: { backgroundColor: '#D1FAE5' },
-  salaryStatusText: { fontSize: 11, fontWeight: '600', color: COLORS.gray, textTransform: 'uppercase' },
+  salaryStatusText: { fontSize: 11, fontFamily: 'Inter_500Medium', color: COLORS.gray, textTransform: 'uppercase' },
   salaryStatusTextPaid: { color: COLORS.success },
   salaryDetails: { backgroundColor: '#F9FAFB', borderRadius: 10, padding: SPACING.m, marginBottom: SPACING.m },
   salaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: SPACING.s },
   salaryRowNet: { borderTopWidth: 1, borderTopColor: COLORS.lightGray, paddingTop: SPACING.s, marginTop: SPACING.s, marginBottom: 0 },
-  salaryLabel: { fontSize: 14, color: COLORS.gray },
-  salaryValue: { fontSize: 14, fontWeight: '600', color: COLORS.dark },
-  salaryLabelNet: { fontSize: 15, fontWeight: '600', color: COLORS.dark },
-  salaryValueNet: { fontSize: 18, fontWeight: '700', color: COLORS.success },
+  salaryLabel: { fontSize: 14, color: COLORS.gray, fontFamily: 'Inter_400Regular' },
+  salaryValue: { fontSize: 14, fontFamily: 'Inter_500Medium', color: COLORS.dark },
+  salaryLabelNet: { fontSize: 15, fontFamily: 'Inter_500Medium', color: COLORS.dark },
+  salaryValueNet: { fontSize: 18, fontFamily: 'Inter_500Medium', color: COLORS.success },
   downloadBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  downloadText: { fontSize: 14, fontWeight: '600', color: COLORS.primary, marginLeft: 6 },
+  downloadText: { fontSize: 14, fontFamily: 'Inter_500Medium', color: COLORS.primary, marginLeft: 6 },
 
   // Notifications
   notifCard: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: COLORS.white, padding: SPACING.m, borderRadius: 12, marginBottom: SPACING.s },
@@ -416,24 +357,24 @@ const styles = StyleSheet.create({
   notifIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.lightGray, alignItems: 'center', justifyContent: 'center' },
   notifIconUnread: { backgroundColor: COLORS.primaryLight },
   notifContent: { flex: 1, marginLeft: SPACING.m },
-  notifTitle: { fontSize: 14, fontWeight: '600', color: COLORS.dark },
-  notifTitleUnread: { fontWeight: '700' },
-  notifMessage: { fontSize: 13, color: COLORS.gray, marginTop: 2 },
-  notifTime: { fontSize: 11, color: COLORS.gray, marginTop: 4 },
+  notifTitle: { fontSize: 14, fontFamily: 'Inter_500Medium', color: COLORS.dark },
+  notifTitleUnread: { fontFamily: 'Inter_500Medium', color: COLORS.dark },
+  notifMessage: { fontSize: 13, color: COLORS.gray, marginTop: 2, fontFamily: 'Inter_400Regular' },
+  notifTime: { fontSize: 11, color: COLORS.gray, marginTop: 4, fontFamily: 'Inter_400Regular' },
   notifDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.primary },
 
   // Profile
   profileSection: { alignItems: 'center', marginBottom: SPACING.xl },
   profileAvatarLarge: { width: 100, height: 100, borderRadius: 50, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', marginBottom: SPACING.m },
-  profileAvatarText: { fontSize: 40, fontWeight: '700', color: COLORS.white },
-  profileName: { fontSize: 24, fontWeight: '700', color: COLORS.dark },
-  profileDesignation: { fontSize: 14, color: COLORS.gray, marginTop: 4 },
+  profileAvatarText: { fontSize: 40, fontFamily: 'Inter_500Medium', color: COLORS.white },
+  profileName: { fontSize: 24, fontFamily: 'Inter_500Medium', color: COLORS.dark },
+  profileDesignation: { fontSize: 14, color: COLORS.gray, marginTop: 4, fontFamily: 'Inter_400Regular' },
   profileRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: SPACING.m },
   profileRowBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.lightGray },
-  profileRowLabel: { flex: 1, fontSize: 14, color: COLORS.gray, marginLeft: SPACING.m },
-  profileRowValue: { fontSize: 14, fontWeight: '500', color: COLORS.dark },
+  profileRowLabel: { flex: 1, fontSize: 14, color: COLORS.gray, marginLeft: SPACING.m, fontFamily: 'Inter_400Regular' },
+  profileRowValue: { fontSize: 14, fontFamily: 'Inter_500Medium', color: COLORS.dark },
 
   // Empty State
   emptyState: { alignItems: 'center', padding: SPACING.xl },
-  emptyText: { marginTop: SPACING.m, color: COLORS.gray },
+  emptyText: { marginTop: SPACING.m, color: COLORS.gray, fontFamily: 'Inter_400Regular' },
 });

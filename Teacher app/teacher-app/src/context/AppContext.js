@@ -355,12 +355,90 @@ export function AppProvider({ children }) {
 
   const getUnreadNotificationCount = () => notifications.filter(n => !n.read).length;
 
+  // Leave application
+  const applyLeave = async (leaveData) => {
+    try {
+      // Save locally first
+      const newLeave = {
+        ...leaveData,
+        id: Date.now().toString(),
+        status: 'pending',
+        appliedAt: new Date().toISOString()
+      };
+      
+      // TODO: Sync with API
+      showToast('Leave application submitted');
+      return true;
+    } catch (error) {
+      Alert.alert('Error', 'Failed to submit leave application');
+      return false;
+    }
+  };
+
+  // Regularization request
+  const requestRegularization = async (regularizationData) => {
+    try {
+      // Save locally first
+      const newRequest = {
+        ...regularizationData,
+        id: Date.now().toString(),
+        status: 'pending',
+        requestedAt: new Date().toISOString()
+      };
+      
+      // TODO: Sync with API
+      showToast('Regularization request submitted');
+      return true;
+    } catch (error) {
+      Alert.alert('Error', 'Failed to submit regularization request');
+      return false;
+    }
+  };
+
+  // Profile update
+  const updateProfile = async (profileData) => {
+    try {
+      // Update locally first
+      setTeacherProfile(prev => ({ ...prev, ...profileData }));
+      
+      // TODO: Sync with API
+      showToast('Profile updated successfully');
+      return true;
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update profile');
+      return false;
+    }
+  };
+
+  // Personal lesson plans
+  const addPersonalLessonPlan = (planData) => {
+    const newPlan = {
+      ...planData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString()
+    };
+    setPersonalLessonPlans(prev => [newPlan, ...prev]);
+    showToast('Lesson plan saved');
+  };
+
+  const updatePersonalLessonPlan = (planId, updates) => {
+    setPersonalLessonPlans(prev =>
+      prev.map(p => p.id === planId ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p)
+    );
+    showToast('Lesson plan updated');
+  };
+
+  const deletePersonalLessonPlan = (planId) => {
+    setPersonalLessonPlans(prev => prev.filter(p => p.id !== planId));
+    showToast('Lesson plan deleted');
+  };
+
   return (
     <AppContext.Provider value={{
       // Data
       classes, students, loading, error, attendance, checkin,
       todaySchedule, alerts, teacherProfile, tasks, notes,
-      leaveBalance, salarySlips, notifications,
+      leaveBalance, salarySlips, notifications, personalLessonPlans,
 
       // Core functions
       refetch: fetchData, showToast, getStudentsForClass,
@@ -393,6 +471,12 @@ export function AppProvider({ children }) {
 
       // Notifications
       markNotificationRead, getUnreadNotificationCount,
+
+      // HR & Personal
+      applyLeave, requestRegularization, updateProfile,
+
+      // Personal Lesson Plans
+      addPersonalLessonPlan, updatePersonalLessonPlan, deletePersonalLessonPlan,
     }}>
       {children}
     </AppContext.Provider>

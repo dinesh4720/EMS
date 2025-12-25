@@ -14,11 +14,11 @@ export default function LoginScreen() {
       Alert.alert('Error', 'Please enter phone number and password');
       return;
     }
-    
+
     setLoading(true);
     const result = await login(phone.trim(), password);
     setLoading(false);
-    
+
     if (!result.success) {
       Alert.alert('Login Failed', result.error || 'Invalid credentials');
     }
@@ -48,8 +48,8 @@ export default function LoginScreen() {
           onChangeText={setPassword}
           secureTextEntry
         />
-        <TouchableOpacity 
-          style={[styles.button, loading && styles.buttonDisabled]} 
+        <TouchableOpacity
+          style={[styles.button, loading && styles.buttonDisabled]}
           onPress={handleLogin}
           disabled={loading}
         >
@@ -70,13 +70,13 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5', justifyContent: 'center', padding: 24 },
   header: { alignItems: 'center', marginBottom: 40 },
-  title: { fontSize: 28, fontWeight: '700', color: COLORS.dark },
-  subtitle: { fontSize: 16, color: COLORS.gray, marginTop: 8 },
+  title: { fontSize: 28, fontFamily: 'Inter_500Medium', color: COLORS.dark },
+  subtitle: { fontSize: 16, color: COLORS.gray, marginTop: 8, fontFamily: 'Inter_400Regular' },
   form: { backgroundColor: '#fff', borderRadius: 16, padding: 24, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, elevation: 3 },
-  input: { backgroundColor: '#f5f5f5', borderRadius: 12, padding: 16, fontSize: 16, marginBottom: 16 },
+  input: { backgroundColor: '#f5f5f5', borderRadius: 12, padding: 16, fontSize: 16, marginBottom: 16, fontFamily: 'Inter_400Regular' },
   button: { backgroundColor: COLORS.primary, borderRadius: 12, padding: 16, alignItems: 'center' },
   buttonDisabled: { opacity: 0.7 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  hint: { textAlign: 'center', color: COLORS.gray, marginTop: 24, fontSize: 12 },
-  demoHint: { textAlign: 'center', color: COLORS.primary, marginTop: 8, fontSize: 13, fontWeight: '600' },
+  buttonText: { color: '#fff', fontSize: 16, fontFamily: 'Inter_500Medium' },
+  hint: { textAlign: 'center', color: COLORS.gray, marginTop: 24, fontSize: 12, fontFamily: 'Inter_400Regular' },
+  demoHint: { textAlign: 'center', color: COLORS.primary, marginTop: 8, fontSize: 13, fontFamily: 'Inter_500Medium' },
 });
