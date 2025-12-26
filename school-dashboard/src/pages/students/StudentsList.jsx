@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import {
     Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-    Button, Chip, Spinner, Tooltip, Progress,
+    Button, Chip, Spinner, Progress,
     Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection,
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
     Select, SelectItem
@@ -272,8 +272,8 @@ export default function StudentsList() {
                     </div>
                     <div className="flex items-center gap-2">
                         <input ref={csvInputRef} type="file" accept=".csv" className="hidden" onChange={handleCSVUpload} />
-                        <Tooltip content="Upload CSV to bulk add students"><Button size="sm" variant="flat" startContent={csvProcessing ? <Spinner size="sm" /> : <Upload size={14} />} onPress={() => csvInputRef.current?.click()} isDisabled={csvProcessing}>{csvProcessing ? "Processing..." : "Bulk Upload"}</Button></Tooltip>
-                        <Tooltip content="Download student list as CSV"><Button size="sm" variant="flat" startContent={<Download size={14} />} onPress={downloadStudentList}>Download List</Button></Tooltip>
+                        <Button size="sm" variant="flat" startContent={csvProcessing ? <Spinner size="sm" /> : <Upload size={14} />} onPress={() => csvInputRef.current?.click()} isDisabled={csvProcessing} title="Upload CSV to bulk add students">{csvProcessing ? "Processing..." : "Bulk Upload"}</Button>
+                        <Button size="sm" variant="flat" startContent={<Download size={14} />} onPress={downloadStudentList} title="Download student list as CSV">Download List</Button>
                     </div>
                 </div>
             </div>

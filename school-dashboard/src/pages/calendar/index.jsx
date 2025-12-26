@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select, SelectItem, useDisclosure, ButtonGroup, Tooltip } from "@heroui/react";
+import { Button, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select, SelectItem, useDisclosure, ButtonGroup } from "@heroui/react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 
@@ -172,15 +172,15 @@ export default function CalendarPage() {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <Tooltip content="Previous">
-              <Button isIconOnly size="sm" variant="light" onPress={() => navigate(-1)}><ChevronLeft size={18} /></Button>
-            </Tooltip>
+            <Button isIconOnly size="sm" variant="light" onPress={() => navigate(-1)} title="Previous">
+              <ChevronLeft size={18} />
+            </Button>
             <h2 className="text-xl font-semibold min-w-64 text-center">
               {getHeaderTitle()}
             </h2>
-            <Tooltip content="Next">
-              <Button isIconOnly size="sm" variant="light" onPress={() => navigate(1)}><ChevronRight size={18} /></Button>
-            </Tooltip>
+            <Button isIconOnly size="sm" variant="light" onPress={() => navigate(1)} title="Next">
+              <ChevronRight size={18} />
+            </Button>
           </div>
           <div className="flex items-center gap-3">
             <ButtonGroup size="sm" variant="flat">

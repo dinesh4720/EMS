@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, CardBody, Button, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Tooltip } from "@heroui/react";
+import { Card, CardBody, Button, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip } from "@heroui/react";
 import { motion } from "framer-motion";
 import { Settings, Plus, Trash2, Save, X, Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";

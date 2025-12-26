@@ -28,6 +28,7 @@ export default function TodayScreen({ navigation }) {
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  // If there's specific schedule data, use it; otherwise fallback to classes
   const scheduleData = todaySchedule.length > 0 ? todaySchedule : classes;
 
   const getGreeting = () => {
@@ -104,6 +105,11 @@ export default function TodayScreen({ navigation }) {
     );
   }
 
+  // Calculate time indicator position (for reference if needed, though unused in list view)
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+
   return (
     <AnimatedPage style={styles.mainContainer}>
       <SafeAreaView style={styles.safeArea}>
@@ -145,23 +151,9 @@ export default function TodayScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          {/* Quick Stats */}
-          <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{totalClasses}</Text>
-              <Text style={styles.statLabel}>Total</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={[styles.statNumber, { color: COLORS.warning }]}>{pendingAttendanceCount}</Text>
-              <Text style={styles.statLabel}>Pending</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={[styles.statNumber, { color: COLORS.success }]}>{completedClasses}</Text>
-              <Text style={styles.statLabel}>Done</Text>
-            </View>
-          </View>
+          {/* Quick Stats - Restored for completeness if needed, or Alerts */}
 
-          {/* Alerts */}
+          {/* Alerts - Restored */}
           {alerts.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionHeader}>Important</Text>
@@ -179,7 +171,7 @@ export default function TodayScreen({ navigation }) {
             </View>
           )}
 
-          {/* Schedule */}
+          {/* Schedule List */}
           <View style={styles.section}>
             <Text style={styles.sectionHeader}>Today's Schedule</Text>
             {scheduleData.length === 0 ? (
@@ -188,58 +180,65 @@ export default function TodayScreen({ navigation }) {
                 <Text style={styles.emptyText}>No classes today</Text>
               </View>
             ) : (
-              <View style={styles.scheduleList}>
+              <View style={styles.timelineContainer}>
                 {scheduleData.map((cls, index) => {
                   const status = getClassStatus(cls.time);
                   const isMarked = isAttendanceMarked(cls.classId || cls.id);
                   const isActive = status === 'active';
+                  const isPending = status === 'past' && !isMarked;
+
+                  const [timeStr, modifier] = cls.time ? cls.time.split(' ') : ['--', ''];
 
                   return (
-                    <TouchableOpacity
-                      key={index}
-                      style={[
-                        styles.classItem,
-                        isActive && styles.classItemActive,
-                        isMarked && styles.classItemDone
-                      ]}
-                      onPress={() => handleOpenClass(cls)}
-                      activeOpacity={0.9}
-                    >
-                      <View style={styles.timeContainer}>
-                        <Text style={[styles.timeText, isActive && styles.textPrimary]}>
-                          {cls.time ? cls.time.split(' ')[0] : '--'}
-                        </Text>
-                        <Text style={styles.meridiemText}>
-                          {cls.time ? cls.time.split(' ')[1] : ''}
-                        </Text>
+                    <View key={index} style={styles.timeSlotRow}>
+                      {/* Time Column */}
+                      <View style={styles.timeLabelContainer}>
+                        <Text style={styles.timeLabelText}>{timeStr}</Text>
+                        <Text style={styles.meridiemText}>{modifier}</Text>
                       </View>
 
-                      <View style={styles.verticalDivider} />
-
-                      <View style={styles.classContent}>
-                        <Text style={styles.className}>{cls.name}</Text>
-                        <Text style={styles.classSubject}>
-                          {cls.subject}{cls.room ? ` • R-${cls.room}` : ''}
-                        </Text>
-                      </View>
-
-                      <View style={styles.actionContainer}>
-                        {isMarked ? (
-                          <View style={styles.iconBadgeDone}>
-                            <Feather name="check" size={14} color={COLORS.success} />
-                          </View>
-                        ) : isActive ? (
-                          <TouchableOpacity
-                            style={styles.markBtn}
-                            onPress={() => handleMarkAttendance(cls)}
-                          >
-                            <Text style={styles.markBtnText}>Mark</Text>
-                          </TouchableOpacity>
-                        ) : (
-                          <Feather name="chevron-right" size={18} color={COLORS.lightGray} />
+                      {/* Content Column with timeline connector */}
+                      <View style={styles.gridLineContainer}>
+                        {/* Timeline Connector Line */}
+                        {index !== scheduleData.length - 1 && (
+                          <View style={styles.connectorLine} />
                         )}
+
+                        <TouchableOpacity
+                          style={[
+                            styles.eventCard,
+                            isActive ? styles.eventActive : isPending ? styles.eventPending : styles.eventDefault,
+                            isMarked && styles.eventDone
+                          ]}
+                          onPress={() => handleOpenClass(cls)}
+                          activeOpacity={0.9}
+                        >
+                          <View style={styles.eventContent}>
+                            <Text style={styles.eventTitle} numberOfLines={1}>
+                              {cls.name} <Text style={{ fontSize: 13, color: COLORS.dark, opacity: 0.7 }}>({cls.subject})</Text>
+                            </Text>
+                            <Text style={styles.eventRoom}>{cls.room ? `Room ${cls.room}` : 'No Room'}</Text>
+
+                            {/* Action Button */}
+                            <View style={styles.eventActionRow}>
+                              {isMarked ? (
+                                <View style={styles.checkBadge}>
+                                  <Feather name="check" size={12} color="#166534" />
+                                  <Text style={styles.checkText}>Done</Text>
+                                </View>
+                              ) : (isActive || isPending) ? (
+                                <TouchableOpacity
+                                  style={styles.miniMarkBtn}
+                                  onPress={() => handleMarkAttendance(cls)}
+                                >
+                                  <Text style={styles.miniMarkText}>Mark Attendance</Text>
+                                </TouchableOpacity>
+                              ) : null}
+                            </View>
+                          </View>
+                        </TouchableOpacity>
                       </View>
-                    </TouchableOpacity>
+                    </View>
                   );
                 })}
               </View>
@@ -263,10 +262,10 @@ export default function TodayScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: '#FAFAFA' },
+  mainContainer: { flex: 1, backgroundColor: '#FFFFFF' },
   safeArea: { flex: 1 },
   centered: { justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { padding: SPACING.l, paddingBottom: 100 },
+  scrollContent: { paddingBottom: 100 },
 
   // Header
   header: {
@@ -276,11 +275,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFFFFF',
+    zIndex: 10,
   },
   greeting: { fontSize: 14, color: COLORS.gray, fontFamily: 'Inter_500Medium' },
   name: { fontSize: 26, color: COLORS.dark, fontFamily: 'Inter_500Medium', marginVertical: 2 },
-  date: { fontSize: 13, color: COLORS.gray, fontFamily: 'Inter_500Medium', textTransform: 'uppercase', letterSpacing: 0.5 },
+  date: { fontSize: 13, color: COLORS.gray, fontFamily: 'Inter_500Medium', letterSpacing: 0.5 },
   profileButton: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.white,
     justifyContent: 'center', alignItems: 'center',
@@ -291,43 +291,28 @@ const styles = StyleSheet.create({
   // Status Bar
   statusBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: COLORS.white, padding: 16, borderRadius: 20,
-    marginBottom: SPACING.l,
-    borderWidth: 1, borderColor: '#F1F5F9',
-    ...SHADOWS.small,
-    elevation: 1,
+    backgroundColor: '#F8FAFC', padding: 12, borderRadius: 16,
+    marginHorizontal: SPACING.l, marginBottom: SPACING.l,
+    borderWidth: 1, borderColor: '#E2E8F0',
   },
   statusTextContainer: { flexDirection: 'row', alignItems: 'center' },
-  statusDot: { width: 10, height: 10, borderRadius: 5, marginRight: 10 },
+  statusDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
   dotOnline: { backgroundColor: COLORS.success },
   dotOffline: { backgroundColor: COLORS.gray },
-  statusTitle: { fontSize: 16, fontFamily: 'Inter_500Medium', color: COLORS.dark },
-  statusSubtitle: { fontSize: 12, color: COLORS.gray, marginTop: 2, fontFamily: 'Inter_400Regular' },
+  statusTitle: { fontSize: 14, fontFamily: 'Inter_500Medium', color: COLORS.dark },
+  statusSubtitle: { fontSize: 11, color: COLORS.gray, marginTop: 1, fontFamily: 'Inter_400Regular' },
   checkInBtn: {
-    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
   },
   checkInBtnActive: { backgroundColor: '#DCFCE7' },
   checkInBtnInactive: { backgroundColor: COLORS.dark },
-  checkInBtnText: { fontSize: 13, fontFamily: 'Inter_500Medium' },
+  checkInBtnText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
   textWhite: { color: COLORS.white },
   textSuccess: { color: COLORS.success },
 
-  // Stats
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: SPACING.l },
-  statCard: {
-    flex: 1, backgroundColor: COLORS.white, padding: 16, borderRadius: 18,
-    alignItems: 'center', marginHorizontal: 4,
-    borderWidth: 1, borderColor: '#F1F5F9',
-    ...SHADOWS.small, elevation: 1
-  },
-  statNumber: { fontSize: 20, fontFamily: 'Inter_500Medium', color: COLORS.dark, marginBottom: 4 },
-  statLabel: { fontSize: 12, color: COLORS.gray, fontFamily: 'Inter_500Medium' },
-
-  // Section
-  section: { marginBottom: SPACING.xl },
-  sectionHeader: { fontSize: 18, fontFamily: 'Inter_500Medium', color: COLORS.dark, marginBottom: SPACING.m },
-
   // Alerts
+  section: { marginBottom: SPACING.l, paddingHorizontal: SPACING.l },
+  sectionHeader: { fontSize: 18, fontFamily: 'Inter_500Medium', color: COLORS.dark, marginBottom: SPACING.m },
   alertItem: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF2F2',
     padding: 16, borderRadius: 16, marginBottom: 8,
@@ -335,41 +320,94 @@ const styles = StyleSheet.create({
   },
   alertText: { flex: 1, marginHorizontal: 12, fontSize: 14, color: '#991B1B', fontFamily: 'Inter_500Medium' },
 
-  // Schedule List
-  scheduleList: {},
-  classItem: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white,
-    padding: 16, borderRadius: 18, marginBottom: 12,
-    borderWidth: 1, borderColor: '#F1F5F9',
-    ...SHADOWS.small, elevation: 1
+  // Timeline
+  timelineContainer: {
+    paddingTop: 10,
+    paddingBottom: 20,
+    paddingHorizontal: SPACING.l,
   },
-  classItemActive: { borderColor: COLORS.primary, backgroundColor: '#FFF7ED' },
-  classItemDone: { opacity: 0.8, backgroundColor: '#F8FAFC' },
-
-  timeContainer: { alignItems: 'center', width: 45 },
-  timeText: { fontSize: 15, fontFamily: 'Inter_500Medium', color: COLORS.dark },
-  meridiemText: { fontSize: 11, color: COLORS.gray, marginTop: 2, fontFamily: 'Inter_400Regular' },
-  textPrimary: { color: COLORS.primary },
-
-  verticalDivider: { width: 1, height: 24, backgroundColor: '#E2E8F0', marginHorizontal: 16 },
-
-  classContent: { flex: 1 },
-  className: { fontSize: 16, fontFamily: 'Inter_500Medium', color: COLORS.dark, marginBottom: 4 },
-  classSubject: { fontSize: 13, color: COLORS.gray, fontFamily: 'Inter_500Medium' },
-
-  actionContainer: { paddingLeft: 10 },
-  markBtn: { backgroundColor: COLORS.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
-  markBtnText: { color: COLORS.white, fontSize: 12, fontFamily: 'Inter_500Medium' },
-  iconBadgeDone: {
-    width: 24, height: 24, borderRadius: 12, backgroundColor: '#DCFCE7',
-    alignItems: 'center', justifyContent: 'center'
+  timeSlotRow: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    minHeight: 100,
   },
+  timeLabelContainer: {
+    width: 60,
+    alignItems: 'center',
+    paddingTop: 0,
+    paddingRight: 8,
+  },
+  timeLabelText: {
+    fontSize: 14,
+    color: COLORS.dark,
+    fontFamily: 'Inter_500Medium',
+  },
+  meridiemText: {
+    fontSize: 11,
+    color: COLORS.gray,
+    fontFamily: 'Inter_500Medium',
+    marginTop: 2,
+    textTransform: 'uppercase',
+  },
+  gridLineContainer: {
+    flex: 1,
+    position: 'relative',
+    paddingRight: SPACING.l,
+    borderLeftWidth: 2,
+    borderLeftColor: '#F1F5F9', // vertical timeline line
+    paddingLeft: 16,
+    marginLeft: -8,
+  },
+
+  connectorLine: {
+    // Optional: stronger connector if needed, currently using borderLeft of container
+    position: 'absolute',
+    top: 20, bottom: -24, width: 2, backgroundColor: '#E2E8F0', left: -1,
+    display: 'none',
+  },
+
+  // Events
+  eventCard: {
+    borderRadius: 16,
+    flex: 1,
+    padding: 16,
+    borderLeftWidth: 4,
+    backgroundColor: COLORS.white,
+    ...SHADOWS.small,
+    elevation: 2,
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  eventActive: { borderLeftColor: COLORS.primary, backgroundColor: '#FFF7ED' },
+  eventPending: { borderLeftColor: COLORS.danger, backgroundColor: '#FEF2F2' },
+  eventDefault: { borderLeftColor: COLORS.blue, backgroundColor: '#EFF6FF' },
+  eventDone: { borderLeftColor: COLORS.success, backgroundColor: '#F0FDF4', opacity: 0.8 },
+
+  eventContent: {},
+  eventTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: COLORS.dark, marginBottom: 4 },
+  eventRoom: { fontSize: 13, color: COLORS.gray, fontFamily: 'Inter_500Medium', marginBottom: 8 },
+
+  eventActionRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
+  miniMarkBtn: {
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
+    alignSelf: 'flex-start',
+    ...SHADOWS.small
+  },
+  miniMarkText: { fontSize: 12, fontFamily: 'Inter_600SemiBold', color: COLORS.dark },
+
+  checkBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#DCFCE7', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, alignSelf: 'flex-start' },
+  checkText: { fontSize: 12, fontFamily: 'Inter_600SemiBold', color: '#166534', marginLeft: 4 },
 
   // Empty
   emptyState: { alignItems: 'center', padding: 40 },
   emptyText: { color: COLORS.gray, marginTop: 12, fontSize: 14, fontFamily: 'Inter_400Regular' },
 
-  // Modal
+  // Modal matches previous
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalContent: { width: '100%', backgroundColor: COLORS.white, borderRadius: 24, padding: 24 },
   modalTitle: { fontSize: 20, fontFamily: 'Inter_500Medium', marginBottom: 12 },

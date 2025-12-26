@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { HeroUIProvider } from '@heroui/react'
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { BrowserRouter } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
 import App from './App'
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';
@@ -16,6 +17,30 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <NextThemesProvider attribute="class" defaultTheme="system">
         <BrowserRouter>
           <App />
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              duration: 3000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+              },
+              success: {
+                duration: 3000,
+                iconTheme: {
+                  primary: '#10b981',
+                  secondary: '#fff',
+                },
+              },
+              error: {
+                duration: 4000,
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#fff',
+                },
+              },
+            }}
+          />
         </BrowserRouter>
       </NextThemesProvider>
     </HeroUIProvider>

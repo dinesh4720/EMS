@@ -1,12 +1,16 @@
 import { createContext, useContext, useState, useMemo, useEffect, useCallback } from "react";
-import { staffApi, studentsApi, classesApi } from "../services/api";
+import { staffApi, studentsApi, classesApi, settingsApi } from "../services/api";
+import toast from "react-hot-toast";
 
 const initialEvents = [
-  { id: 1, title: "Winter Break Starts", date: "2025-12-25", type: "holiday", startTime: "", endTime: "", allDay: true },
+  { id: 1, title: "Winter Break Starts", date: "2025-12-25", type: "holiday", startTime: "", endTime: "", allDay: true, holidayType: "National" },
   { id: 2, title: "Parent-Teacher Meeting", date: "2025-12-20", type: "meeting", startTime: "10:00", endTime: "13:00", allDay: false },
   { id: 3, title: "Final Exams Begin", date: "2025-12-18", type: "exam", startTime: "09:00", endTime: "12:00", allDay: false },
   { id: 4, title: "Annual Day", date: "2025-12-28", type: "event", startTime: "16:00", endTime: "20:00", allDay: false },
-  { id: 5, title: "New Year Holiday", date: "2026-01-01", type: "holiday", startTime: "", endTime: "", allDay: true },
+  { id: 5, title: "New Year Holiday", date: "2026-01-01", type: "holiday", startTime: "", endTime: "", allDay: true, holidayType: "National" },
+  { id: 6, title: "Republic Day", date: "2026-01-26", type: "holiday", startTime: "", endTime: "", allDay: true, holidayType: "National" },
+  { id: 7, title: "Independence Day", date: "2025-08-15", type: "holiday", startTime: "", endTime: "", allDay: true, holidayType: "National" },
+  { id: 8, title: "Gandhi Jayanti", date: "2025-10-02", type: "holiday", startTime: "", endTime: "", allDay: true, holidayType: "National" },
 ];
 
 const initialFeePayments = [
@@ -26,9 +30,19 @@ const initialSchoolSettings = {
   address: "123 Education Lane, Springfield",
   phone: "1234567890",
   email: "info@springfieldhigh.edu",
+  udiseNo: "12345678901",
+  affiliationNo: "AFF/2024/001",
+  logo: null,
+  boardOfEducation: "CBSE",
+  principalSignature: null,
+  correspondentSignature: null,
   academicYear: "2024-25",
+  academicYearStart: "2024-04-01",
+  academicYearEnd: "2025-03-31",
   schoolStartTime: "08:00",
   schoolEndTime: "14:30",
+  periodDuration: 45,
+  periodsPerDay: 8,
   workingDays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
   subjects: [
     { id: 1, name: "Mathematics", code: "MATH" },
@@ -58,6 +72,7 @@ export function AppProvider({ children }) {
   const [schoolSettings, setSchoolSettings] = useState(initialSchoolSettings);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [settingsLoading, setSettingsLoading] = useState(false);
 
   // Fetch data from API on mount
   const fetchData = useCallback(async () => {
@@ -81,14 +96,69 @@ export function AppProvider({ children }) {
     } catch (err) {
       console.error('Failed to fetch data:', err);
       setError(err.message);
+      toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // Fetch all settings from API
+  const fetchSettings = useCallback(async () => {
+    try {
+      setSettingsLoading(true);
+      const [schoolData, holidaysData, leaveTypesData, feeHeadsData, subjectsData] = await Promise.all([
+        settingsApi.getSchoolSettings().catch(() => null),
+        settingsApi.getHolidays().catch(() => []),
+        settingsApi.getLeaveTypes().catch(() => []),
+        settingsApi.getFeeHeads().catch(() => []),
+        settingsApi.getSubjects().catch(() => []),
+      ]);
+
+      if (schoolData) {
+        setSchoolSettings(prev => ({ ...prev, ...schoolData }));
+      }
+      
+      if (holidaysData.length > 0) {
+        // Merge holidays into events
+        const holidayEvents = holidaysData.map(h => ({
+          id: h.id,
+          title: h.name,
+          date: h.date,
+          type: 'holiday',
+          startTime: '',
+          endTime: '',
+          allDay: true,
+          holidayType: h.type || 'National',
+        }));
+        setEvents(prev => {
+          const nonHolidays = prev.filter(e => e.type !== 'holiday');
+          return [...nonHolidays, ...holidayEvents];
+        });
+      }
+
+      if (leaveTypesData.length > 0) {
+        setLeaveTypes(leaveTypesData);
+      }
+
+      if (feeHeadsData.length > 0) {
+        setFeeHeads(feeHeadsData);
+      }
+
+      if (subjectsData.length > 0) {
+        setSchoolSettings(prev => ({ ...prev, subjects: subjectsData }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch settings:', err);
+      toast.error('Failed to load settings');
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    fetchSettings();
+  }, [fetchData, fetchSettings]);
 
   // Salary State
   const [salarySettings, setSalarySettings] = useState({
@@ -104,6 +174,24 @@ export function AppProvider({ children }) {
       { id: "tds", name: "TDS" }
     ]
   });
+
+  // Leave Types State
+  const [leaveTypes, setLeaveTypes] = useState([
+    { id: 1, name: "Sick Leave", applicableTo: "both", quota: 12, requiresApproval: true, approver: "reporter" },
+    { id: 2, name: "Casual Leave", applicableTo: "staff", quota: 10, requiresApproval: true, approver: "reporter" },
+    { id: 3, name: "Earned Leave", applicableTo: "staff", quota: 15, requiresApproval: true, approver: "principal" },
+    { id: 4, name: "Medical Leave", applicableTo: "students", quota: 20, requiresApproval: false, approver: "none" },
+  ]);
+
+  // Fee Heads State
+  const [feeHeads, setFeeHeads] = useState([
+    { id: 1, name: "Tuition Fee", category: "Academic", mandatory: true, amount: 15000 },
+    { id: 2, name: "Transport Fee", category: "Transport", mandatory: false, amount: 3000 },
+    { id: 3, name: "Library Fee", category: "Academic", mandatory: true, amount: 500 },
+    { id: 4, name: "Lab Fee", category: "Academic", mandatory: true, amount: 2000 },
+    { id: 5, name: "Sports Fee", category: "Extra-curricular", mandatory: false, amount: 1000 },
+    { id: 6, name: "Exam Fee", category: "Academic", mandatory: true, amount: 1500 },
+  ]);
 
   const [staffSalaries, setStaffSalaries] = useState({
     1: { basic: 35000, hra: 14000, transport: 5000, special: 2000, pf: 1800, pt: 200, tds: 1500 },
@@ -266,16 +354,91 @@ export function AppProvider({ children }) {
 
   const getClassById = (id) => classes.find(c => c.id === id);
 
-  // Event functions
-  const addEvent = (newEvent) => {
-    const eventWithId = { ...newEvent, id: nextEventId };
-    setEvents(prev => [...prev, eventWithId]);
-    setNextEventId(prev => prev + 1);
-    return eventWithId;
+  // Event functions - with API integration for holidays
+  const addEvent = async (newEvent) => {
+    // If it's a holiday, use API
+    if (newEvent.type === 'holiday') {
+      try {
+        const holidayData = {
+          name: newEvent.title,
+          date: newEvent.date,
+          type: newEvent.holidayType || 'National',
+        };
+        const created = await settingsApi.createHoliday(holidayData);
+        const eventWithId = {
+          id: created.id,
+          title: created.name,
+          date: created.date,
+          type: 'holiday',
+          startTime: '',
+          endTime: '',
+          allDay: true,
+          holidayType: created.type,
+        };
+        setEvents(prev => [...prev, eventWithId]);
+        toast.success('Holiday added successfully');
+        return eventWithId;
+      } catch (err) {
+        console.error('Failed to add holiday:', err);
+        toast.error('Failed to add holiday');
+        // Fallback to local state
+        const eventWithId = { ...newEvent, id: nextEventId };
+        setEvents(prev => [...prev, eventWithId]);
+        setNextEventId(prev => prev + 1);
+        return eventWithId;
+      }
+    } else {
+      // For non-holiday events, use local state
+      const eventWithId = { ...newEvent, id: nextEventId };
+      setEvents(prev => [...prev, eventWithId]);
+      setNextEventId(prev => prev + 1);
+      toast.success('Event added successfully');
+      return eventWithId;
+    }
   };
 
-  const updateEvent = (id, updates) => setEvents(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
-  const deleteEvent = (id) => setEvents(prev => prev.filter(e => e.id !== id));
+  const updateEvent = async (id, updates) => {
+    const event = events.find(e => e.id === id);
+    if (event && event.type === 'holiday') {
+      try {
+        const holidayData = {
+          name: updates.title || event.title,
+          date: updates.date || event.date,
+          type: updates.holidayType || event.holidayType,
+        };
+        await settingsApi.updateHoliday(id, holidayData);
+        setEvents(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+        toast.success('Holiday updated successfully');
+      } catch (err) {
+        console.error('Failed to update holiday:', err);
+        toast.error('Failed to update holiday');
+        // Fallback to local state
+        setEvents(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+      }
+    } else {
+      setEvents(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+      toast.success('Event updated successfully');
+    }
+  };
+
+  const deleteEvent = async (id) => {
+    const event = events.find(e => e.id === id);
+    if (event && event.type === 'holiday') {
+      try {
+        await settingsApi.deleteHoliday(id);
+        setEvents(prev => prev.filter(e => e.id !== id));
+        toast.success('Holiday deleted successfully');
+      } catch (err) {
+        console.error('Failed to delete holiday:', err);
+        toast.error('Failed to delete holiday');
+        throw err;
+      }
+    } else {
+      setEvents(prev => prev.filter(e => e.id !== id));
+      toast.success('Event deleted successfully');
+    }
+  };
+
   const getEventsForDate = (date) => events.filter(e => e.date === date);
 
   // Fee functions
@@ -296,28 +459,70 @@ export function AppProvider({ children }) {
     return announcementWithId;
   };
 
-  // School Settings functions
-  const updateSchoolSettings = (updates) => setSchoolSettings(prev => ({ ...prev, ...updates }));
-
-  const addSubject = (subject) => {
-    const subjectWithId = { ...subject, id: nextSubjectId };
-    setSchoolSettings(prev => ({ ...prev, subjects: [...prev.subjects, subjectWithId] }));
-    setNextSubjectId(prev => prev + 1);
-    return subjectWithId;
+  // School Settings functions - with API integration
+  const updateSchoolSettings = async (updates) => {
+    try {
+      const updated = await settingsApi.updateSchoolSettings(updates);
+      setSchoolSettings(prev => ({ ...prev, ...updated }));
+      toast.success('School settings updated successfully');
+      return updated;
+    } catch (err) {
+      console.error('Failed to update school settings:', err);
+      toast.error('Failed to update school settings');
+      throw err;
+    }
   };
 
-  const updateSubject = (id, updates) => {
-    setSchoolSettings(prev => ({
-      ...prev,
-      subjects: prev.subjects.map(s => s.id === id ? { ...s, ...updates } : s)
-    }));
+  const addSubject = async (subject) => {
+    try {
+      const created = await settingsApi.createSubject(subject);
+      setSchoolSettings(prev => ({ ...prev, subjects: [...prev.subjects, created] }));
+      toast.success('Subject added successfully');
+      return created;
+    } catch (err) {
+      console.error('Failed to add subject:', err);
+      toast.error('Failed to add subject');
+      // Fallback to local state
+      const subjectWithId = { ...subject, id: nextSubjectId };
+      setSchoolSettings(prev => ({ ...prev, subjects: [...prev.subjects, subjectWithId] }));
+      setNextSubjectId(prev => prev + 1);
+      return subjectWithId;
+    }
   };
 
-  const deleteSubject = (id) => {
-    setSchoolSettings(prev => ({
-      ...prev,
-      subjects: prev.subjects.filter(s => s.id !== id)
-    }));
+  const updateSubject = async (id, updates) => {
+    try {
+      const updated = await settingsApi.updateSubject(id, updates);
+      setSchoolSettings(prev => ({
+        ...prev,
+        subjects: prev.subjects.map(s => s.id === id ? updated : s)
+      }));
+      toast.success('Subject updated successfully');
+      return updated;
+    } catch (err) {
+      console.error('Failed to update subject:', err);
+      toast.error('Failed to update subject');
+      // Fallback to local state
+      setSchoolSettings(prev => ({
+        ...prev,
+        subjects: prev.subjects.map(s => s.id === id ? { ...s, ...updates } : s)
+      }));
+    }
+  };
+
+  const deleteSubject = async (id) => {
+    try {
+      await settingsApi.deleteSubject(id);
+      setSchoolSettings(prev => ({
+        ...prev,
+        subjects: prev.subjects.filter(s => s.id !== id)
+      }));
+      toast.success('Subject deleted successfully');
+    } catch (err) {
+      console.error('Failed to delete subject:', err);
+      toast.error('Failed to delete subject');
+      throw err;
+    }
   };
 
   // Salary Logic
@@ -351,6 +556,92 @@ export function AppProvider({ children }) {
   };
 
   const getPayrollForMonth = (month) => payrollHistory.find(p => p.month === month);
+
+  // Leave Types functions - with API integration
+  const addLeaveType = async (leaveType) => {
+    try {
+      const created = await settingsApi.createLeaveType(leaveType);
+      setLeaveTypes(prev => [...prev, created]);
+      toast.success('Leave type added successfully');
+      return created;
+    } catch (err) {
+      console.error('Failed to add leave type:', err);
+      toast.error('Failed to add leave type');
+      // Fallback to local state
+      const leaveTypeWithId = { ...leaveType, id: Date.now() };
+      setLeaveTypes(prev => [...prev, leaveTypeWithId]);
+      return leaveTypeWithId;
+    }
+  };
+
+  const updateLeaveType = async (id, updates) => {
+    try {
+      const updated = await settingsApi.updateLeaveType(id, updates);
+      setLeaveTypes(prev => prev.map(lt => lt.id === id ? updated : lt));
+      toast.success('Leave type updated successfully');
+      return updated;
+    } catch (err) {
+      console.error('Failed to update leave type:', err);
+      toast.error('Failed to update leave type');
+      // Fallback to local state
+      setLeaveTypes(prev => prev.map(lt => lt.id === id ? { ...lt, ...updates } : lt));
+    }
+  };
+
+  const deleteLeaveType = async (id) => {
+    try {
+      await settingsApi.deleteLeaveType(id);
+      setLeaveTypes(prev => prev.filter(lt => lt.id !== id));
+      toast.success('Leave type deleted successfully');
+    } catch (err) {
+      console.error('Failed to delete leave type:', err);
+      toast.error('Failed to delete leave type');
+      throw err;
+    }
+  };
+
+  // Fee Heads functions - with API integration
+  const addFeeHead = async (feeHead) => {
+    try {
+      const created = await settingsApi.createFeeHead(feeHead);
+      setFeeHeads(prev => [...prev, created]);
+      toast.success('Fee head added successfully');
+      return created;
+    } catch (err) {
+      console.error('Failed to add fee head:', err);
+      toast.error('Failed to add fee head');
+      // Fallback to local state
+      const feeHeadWithId = { ...feeHead, id: Date.now() };
+      setFeeHeads(prev => [...prev, feeHeadWithId]);
+      return feeHeadWithId;
+    }
+  };
+
+  const updateFeeHead = async (id, updates) => {
+    try {
+      const updated = await settingsApi.updateFeeHead(id, updates);
+      setFeeHeads(prev => prev.map(fh => fh.id === id ? updated : fh));
+      toast.success('Fee head updated successfully');
+      return updated;
+    } catch (err) {
+      console.error('Failed to update fee head:', err);
+      toast.error('Failed to update fee head');
+      // Fallback to local state
+      setFeeHeads(prev => prev.map(fh => fh.id === id ? { ...fh, ...updates } : fh));
+    }
+  };
+
+  const deleteFeeHead = async (id) => {
+    try {
+      await settingsApi.deleteFeeHead(id);
+      setFeeHeads(prev => prev.filter(fh => fh.id !== id));
+      toast.success('Fee head deleted successfully');
+    } catch (err) {
+      console.error('Failed to delete fee head:', err);
+      toast.error('Failed to delete fee head');
+      throw err;
+    }
+  };
 
   const isBeforeSchoolHours = useMemo(() => {
     const now = new Date();
@@ -435,7 +726,8 @@ export function AppProvider({ children }) {
     // Data
     staff, students, classes, events, feePayments, announcements,
     staffAttendance, studentAttendance, schoolSettings,
-    loading, error, refetch: fetchData,
+    leaveTypes, feeHeads,
+    loading, error, settingsLoading, refetch: fetchData, refetchSettings: fetchSettings,
     // Computed
     teachers, classesWithTeachers, feeDefaulters, dashboardStats, isBeforeSchoolHours,
     // Staff actions
@@ -455,6 +747,10 @@ export function AppProvider({ children }) {
     markAllStaffAttendance, getMonthlyAttendance,
     // School Settings actions
     updateSchoolSettings, addSubject, updateSubject, deleteSubject,
+    // Leave Types actions
+    addLeaveType, updateLeaveType, deleteLeaveType,
+    // Fee Heads actions
+    addFeeHead, updateFeeHead, deleteFeeHead,
     // Salary functions
     salarySettings, staffSalaries, payrollHistory,
     updateSalarySettings, updateStaffSalary, processPayroll, getPayrollForMonth,

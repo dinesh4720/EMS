@@ -1,180 +1,511 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardBody, CardHeader, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerFooter, Input, Checkbox, CheckboxGroup, Divider, User, Tooltip } from "@heroui/react";
-import { Plus, Edit, Shield } from "lucide-react";
-import { roles } from "../../data/mockData";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+  Chip,
+  Button,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
+  Input,
+  Checkbox,
+  Tabs,
+  Tab,
+  Select,
+  SelectItem,
+  Spinner,
+} from "@heroui/react";
+import { Plus, Edit, Shield, Lock, Unlock, Copy, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import toast from "react-hot-toast";
 
-const allPermissions = [
-  { key: "staff", label: "Staff Management" },
-  { key: "classes", label: "Classes Management" },
-  { key: "attendance", label: "Attendance" },
-  { key: "fees", label: "Fee Management" },
-  { key: "communication", label: "Communication" },
-  { key: "reports", label: "Reports" },
-  { key: "settings", label: "Settings" },
+// Define all modules and their actions
+const MODULES = [
+  { key: "dashboard", label: "Dashboard", actions: ["view"] },
+  { key: "staff", label: "Staff Management", actions: ["view", "create", "edit", "delete"] },
+  { key: "students", label: "Students Management", actions: ["view", "create", "edit", "delete"] },
+  { key: "classes", label: "Classes Management", actions: ["view", "create", "edit", "delete"] },
+  { key: "attendance", label: "Attendance", actions: ["view", "create", "edit", "delete"] },
+  { key: "timetable", label: "Timetable", actions: ["view", "create", "edit", "delete"] },
+  { key: "fees", label: "Fee Management", actions: ["view", "create", "edit", "delete"] },
+  { key: "payroll", label: "Payroll", actions: ["view", "create", "edit", "delete"] },
+  { key: "communication", label: "Communication", actions: ["view", "create", "edit", "delete"] },
+  { key: "reports", label: "Reports", actions: ["view", "create", "edit", "delete"] },
+  { key: "settings", label: "Settings", actions: ["view", "create", "edit", "delete"] },
 ];
+
+const ACTION_LABELS = {
+  view: "View",
+  create: "Create",
+  edit: "Edit",
+  delete: "Delete",
+};
+
+// Default permission templates
+const PERMISSION_TEMPLATES = {
+  admin: {
+    name: "Administrator",
+    description: "Full access to all modules",
+    permissions: MODULES.reduce((acc, module) => {
+      acc[module.key] = module.actions.reduce((a, action) => ({ ...a, [action]: true }), {});
+      return acc;
+    }, {}),
+  },
+  teacher: {
+    name: "Teacher",
+    description: "Access to classes, attendance, and students",
+    permissions: {
+      dashboard: { view: true },
+      staff: { view: true },
+      students: { view: true, edit: true },
+      classes: { view: true },
+      attendance: { view: true, create: true, edit: true },
+      timetable: { view: true },
+      fees: { view: true },
+      communication: { view: true, create: true },
+      reports: { view: true },
+    },
+  },
+  accountant: {
+    name: "Accountant",
+    description: "Access to fees and payroll",
+    permissions: {
+      dashboard: { view: true },
+      staff: { view: true },
+      students: { view: true },
+      fees: { view: true, create: true, edit: true, delete: true },
+      payroll: { view: true, create: true, edit: true },
+      reports: { view: true },
+    },
+  },
+  receptionist: {
+    name: "Receptionist",
+    description: "Basic access for front desk operations",
+    permissions: {
+      dashboard: { view: true },
+      staff: { view: true },
+      students: { view: true, create: true, edit: true },
+      classes: { view: true },
+      communication: { view: true, create: true },
+    },
+  },
+};
 
 export default function RolesAccess() {
   const navigate = useNavigate();
   const { staff } = useApp();
-  const [isOpen, setIsOpen] = useState(false);
-  const [formData, setFormData] = useState({ name: "", permissions: [] });
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [activeTab, setActiveTab] = useState("roles");
+  const [editingRole, setEditingRole] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  // Get first 3 staff members as assigned users
-  const assignedUsers = staff.slice(0, 3).map(s => ({
-    id: s.id,
-    name: s.name,
-    email: s.email,
-    role: s.role,
-    status: s.status
-  }));
+  // Mock roles data - in production, this would come from API
+  const [roles, setRoles] = useState([
+    {
+      id: 1,
+      name: "Administrator",
+      permissions: PERMISSION_TEMPLATES.admin.permissions,
+      locked: { settings: { delete: true } }, // Some permissions are locked
+      userCount: 2,
+    },
+    {
+      id: 2,
+      name: "Teacher",
+      permissions: PERMISSION_TEMPLATES.teacher.permissions,
+      locked: {},
+      userCount: 15,
+    },
+    {
+      id: 3,
+      name: "Accountant",
+      permissions: PERMISSION_TEMPLATES.accountant.permissions,
+      locked: {},
+      userCount: 3,
+    },
+  ]);
+
+  const [formData, setFormData] = useState({
+    name: "",
+    permissions: {},
+    locked: {},
+  });
+
+  const handleOpenModal = (role = null) => {
+    if (role) {
+      setEditingRole(role);
+      setFormData({
+        name: role.name,
+        permissions: JSON.parse(JSON.stringify(role.permissions)),
+        locked: JSON.parse(JSON.stringify(role.locked || {})),
+      });
+    } else {
+      setEditingRole(null);
+      setFormData({
+        name: "",
+        permissions: {},
+        locked: {},
+      });
+    }
+    onOpen();
+  };
+
+  const handlePermissionChange = (moduleKey, action, value) => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: {
+        ...prev.permissions,
+        [moduleKey]: {
+          ...prev.permissions[moduleKey],
+          [action]: value,
+        },
+      },
+    }));
+  };
+
+  const handleLockToggle = (moduleKey, action) => {
+    setFormData(prev => {
+      const newLocked = { ...prev.locked };
+      if (!newLocked[moduleKey]) newLocked[moduleKey] = {};
+      newLocked[moduleKey][action] = !newLocked[moduleKey]?.[action];
+      return { ...prev, locked: newLocked };
+    });
+  };
+
+  const handleApplyTemplate = (templateKey) => {
+    const template = PERMISSION_TEMPLATES[templateKey];
+    if (template) {
+      setFormData(prev => ({
+        ...prev,
+        permissions: JSON.parse(JSON.stringify(template.permissions)),
+      }));
+      toast.success(`Applied ${template.name} template`);
+    }
+  };
+
+  const handleCopyFromRole = (roleId) => {
+    const role = roles.find(r => r.id === roleId);
+    if (role) {
+      setFormData(prev => ({
+        ...prev,
+        permissions: JSON.parse(JSON.stringify(role.permissions)),
+        locked: JSON.parse(JSON.stringify(role.locked || {})),
+      }));
+      toast.success(`Copied permissions from ${role.name}`);
+    }
+  };
+
+  const handleSubmit = () => {
+    if (!formData.name.trim()) {
+      toast.error("Role name is required");
+      return;
+    }
+
+    setLoading(true);
+    setTimeout(() => {
+      if (editingRole) {
+        setRoles(prev => prev.map(r => r.id === editingRole.id ? { ...r, ...formData } : r));
+        toast.success("Role updated successfully");
+      } else {
+        const newRole = {
+          id: Date.now(),
+          ...formData,
+          userCount: 0,
+        };
+        setRoles(prev => [...prev, newRole]);
+        toast.success("Role created successfully");
+      }
+      setLoading(false);
+      onClose();
+    }, 500);
+  };
+
+  const handleDelete = (roleId) => {
+    if (!confirm("Are you sure you want to delete this role?")) return;
+    setRoles(prev => prev.filter(r => r.id !== roleId));
+    toast.success("Role deleted successfully");
+  };
+
+  const countPermissions = (permissions) => {
+    let count = 0;
+    Object.values(permissions).forEach(actions => {
+      count += Object.values(actions).filter(Boolean).length;
+    });
+    return count;
+  };
+
+  const isPermissionLocked = (moduleKey, action) => {
+    return formData.locked?.[moduleKey]?.[action] || false;
+  };
 
   return (
-    <div className="flex flex-col gap-3 w-full">
-      <div className="flex justify-end mb-3">
-        <Button color="primary" size="sm" startContent={<Plus size={14} />} onPress={() => setIsOpen(true)}>Add Role</Button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Roles & Permissions</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            Manage user roles and granular permissions
+          </p>
+        </div>
+        <Button
+          color="primary"
+          startContent={<Plus size={16} />}
+          onPress={() => handleOpenModal()}
+          className="transition-all duration-200"
+        >
+          Add Role
+        </Button>
       </div>
 
-      <div className="flex flex-col gap-3">
-        <Card className="shadow-sm border border-default-200 rounded-2xl">
-          <CardBody className="p-4">
-            <Table
-              aria-label="Roles"
-              radius="none"
-              isStriped={false}
-              removeWrapper
-              classNames={{
-                table: "w-full",
-                th: "bg-transparent text-default-500 font-semibold text-xs uppercase tracking-wider h-12 border-b border-default-200",
-                td: "py-4 border-b border-default-100",
-                tr: "transition-opacity hover:bg-default-50/30",
-                wrapper: "p-0"
-              }}
+      {/* Roles Table */}
+      <Card className="rounded-lg">
+        <CardBody className="p-0">
+          <Table
+            aria-label="Roles table"
+            removeWrapper
+            classNames={{
+              th: "bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold",
+              td: "py-4",
+            }}
+          >
+            <TableHeader>
+              <TableColumn>ROLE NAME</TableColumn>
+              <TableColumn>PERMISSIONS</TableColumn>
+              <TableColumn>LOCKED PERMISSIONS</TableColumn>
+              <TableColumn>USERS</TableColumn>
+              <TableColumn>ACTIONS</TableColumn>
+            </TableHeader>
+            <TableBody
+              items={roles}
+              emptyContent="No roles found"
+              loadingContent={<Spinner />}
             >
-              <TableHeader>
-                <TableColumn>ROLE NAME</TableColumn>
-                <TableColumn>PERMISSIONS</TableColumn>
-                <TableColumn>USERS</TableColumn>
-                <TableColumn>ACTIONS</TableColumn>
-              </TableHeader>
-              <TableBody>
-                {roles.map((role) => (
-                  <TableRow key={role.id} className="hover:bg-default-50 transition-colors">
-                    <TableCell className="font-medium text-default-700">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-primary-50 text-primary rounded-lg">
-                          <Shield size={16} />
-                        </div>
-                        {role.name}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {role.permissions.slice(0, 3).map((p, i) => (
-                          <Chip key={i} size="sm" variant="dot" color="primary" classNames={{ base: "border-1 border-default-200 pl-2" }}>{p}</Chip>
-                        ))}
-                        {role.permissions.length > 3 && <Chip size="sm" variant="flat" className="text-default-500">+{role.permissions.length - 3}</Chip>}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-default-500">3 users</TableCell>
-                    <TableCell>
-                      <Tooltip content="Edit Role">
-                        <Button isIconOnly size="sm" variant="light" color="default"><Edit size={16} /></Button>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardBody>
-        </Card>
+              {(role) => {
+                const permCount = countPermissions(role.permissions);
+                const lockedCount = countPermissions(role.locked || {});
 
-        <Card className="shadow-sm border border-default-200 rounded-2xl">
-          <CardHeader className="py-3 px-4 bg-default-50/50 border-b border-default-100">
-            <h3 className="text-sm font-semibold text-default-700">Assigned Users</h3>
-          </CardHeader>
-          <CardBody className="p-4">
-            <Table
-              aria-label="Users"
-              radius="none"
-              isStriped={false}
-              removeWrapper
-              classNames={{
-                table: "w-full",
-                th: "bg-transparent text-default-500 font-semibold text-xs uppercase tracking-wider h-12 border-b border-default-200",
-                td: "py-4 border-b border-default-100",
-                tr: "transition-opacity hover:bg-default-50/30",
-                wrapper: "p-0"
-              }}
-            >
-              <TableHeader>
-                <TableColumn>USER DETAILS</TableColumn>
-                <TableColumn>ROLE</TableColumn>
-                <TableColumn>STATUS</TableColumn>
-              </TableHeader>
-              <TableBody>
-                {assignedUsers.map((user) => (
-                  <TableRow key={user.id} className="hover:bg-default-50 transition-colors">
+                return (
+                  <TableRow key={role.id}>
                     <TableCell>
-                      <User
-                        avatarProps={{ radius: "lg", size: "sm", name: user.name }}
-                        description={user.email}
-                        name={
-                          <span
-                            className="text-primary hover:underline cursor-pointer"
-                            onClick={() => navigate(`/staffs/${user.id}`)}
-                          >
-                            {user.name}
-                          </span>
-                        }
-                      >
-                        {user.name}
-                      </User>
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+                          <Shield size={16} className="text-primary-600 dark:text-primary-400" />
+                        </div>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {role.name}
+                        </span>
+                      </div>
                     </TableCell>
-                    <TableCell><Chip size="sm" variant="flat" color="primary" className="capitalize">{user.role}</Chip></TableCell>
                     <TableCell>
-                      <Chip
-                        size="sm"
-                        variant="dot"
-                        color={user.status === "active" ? "success" : "danger"}
-                        classNames={{ base: "border-1 border-default-200 pl-2" }}
-                      >
-                        {user.status}
+                      <Chip size="sm" variant="flat" color="primary">
+                        {permCount} permissions
                       </Chip>
                     </TableCell>
+                    <TableCell>
+                      {lockedCount > 0 ? (
+                        <div className="flex items-center gap-2">
+                          <Lock size={14} className="text-warning-600" />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            {lockedCount} locked
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-sm">None</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-gray-700 dark:text-gray-300">
+                        {role.userCount} users
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onPress={() => handleOpenModal(role)}
+                          className="transition-all duration-200"
+                        >
+                          <Edit size={16} />
+                        </Button>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="danger"
+                          onPress={() => handleDelete(role.id)}
+                          className="transition-all duration-200"
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardBody>
-        </Card>
-      </div>
+                );
+              }}
+            </TableBody>
+          </Table>
+        </CardBody>
+      </Card>
 
-      <Drawer isOpen={isOpen} onOpenChange={setIsOpen} placement="right" size="md" radius="none" classNames={{ wrapper: "justify-end" }}>
-        <DrawerContent>
-          {(onClose) => (
-            <>
-              <DrawerHeader>Add Role</DrawerHeader>
-              <DrawerBody className="py-4">
-                <Input size="sm" label="Role Name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="mb-3" />
-                <p className="text-xs font-medium mb-2">Permissions</p>
-                <CheckboxGroup value={formData.permissions} onChange={(v) => setFormData({ ...formData, permissions: v })}>
-                  <div className="grid grid-cols-2 gap-2">
-                    {allPermissions.map((p) => (
-                      <Checkbox key={p.key} value={p.key} size="sm">{p.label}</Checkbox>
+      {/* Add/Edit Role Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} size="5xl" scrollBehavior="inside">
+        <ModalContent>
+          <ModalHeader>
+            {editingRole ? "Edit Role" : "Add New Role"}
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-6">
+              {/* Role Name */}
+              <Input
+                label="Role Name"
+                placeholder="e.g., Teacher, Accountant"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                variant="bordered"
+                isRequired
+              />
+
+              {/* Quick Actions */}
+              <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Quick Actions:
+                </span>
+                <div className="flex gap-2">
+                  <Select
+                    placeholder="Apply template"
+                    size="sm"
+                    variant="bordered"
+                    className="w-48"
+                    onChange={(e) => handleApplyTemplate(e.target.value)}
+                  >
+                    {Object.entries(PERMISSION_TEMPLATES).map(([key, template]) => (
+                      <SelectItem key={key} value={key}>
+                        {template.name}
+                      </SelectItem>
                     ))}
-                  </div>
-                </CheckboxGroup>
-              </DrawerBody>
-              <DrawerFooter>
-                <Button variant="light" onPress={onClose}>Cancel</Button>
-                <Button color="primary" onPress={onClose}>Save</Button>
-              </DrawerFooter>
-            </>
-          )}
-        </DrawerContent>
-      </Drawer>
+                  </Select>
+                  <Select
+                    placeholder="Copy from role"
+                    size="sm"
+                    variant="bordered"
+                    className="w-48"
+                    onChange={(e) => handleCopyFromRole(parseInt(e.target.value))}
+                  >
+                    {roles.map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                </div>
+              </div>
+
+              {/* Permission Matrix */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+                  Permission Matrix
+                </h3>
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                  <Table
+                    removeWrapper
+                    aria-label="Permission matrix"
+                    classNames={{
+                      th: "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-xs",
+                      td: "py-3 border-b border-gray-100 dark:border-gray-800",
+                    }}
+                  >
+                    <TableHeader>
+                      <TableColumn>MODULE</TableColumn>
+                      <TableColumn align="center">VIEW</TableColumn>
+                      <TableColumn align="center">CREATE</TableColumn>
+                      <TableColumn align="center">EDIT</TableColumn>
+                      <TableColumn align="center">DELETE</TableColumn>
+                    </TableHeader>
+                    <TableBody>
+                      {MODULES.map((module) => (
+                        <TableRow key={module.key}>
+                          <TableCell>
+                            <span className="font-medium text-gray-900 dark:text-white">
+                              {module.label}
+                            </span>
+                          </TableCell>
+                          {["view", "create", "edit", "delete"].map((action) => {
+                            const hasAction = module.actions.includes(action);
+                            const isChecked = formData.permissions[module.key]?.[action] || false;
+                            const isLocked = isPermissionLocked(module.key, action);
+
+                            return (
+                              <TableCell key={action} className="text-center">
+                                {hasAction ? (
+                                  <div className="flex items-center justify-center gap-2">
+                                    <Checkbox
+                                      isSelected={isChecked}
+                                      onValueChange={(value) =>
+                                        handlePermissionChange(module.key, action, value)
+                                      }
+                                      size="sm"
+                                      isDisabled={isLocked}
+                                    />
+                                    <Button
+                                      isIconOnly
+                                      size="sm"
+                                      variant="light"
+                                      onPress={() => handleLockToggle(module.key, action)}
+                                      className="min-w-6 w-6 h-6"
+                                    >
+                                      {isLocked ? (
+                                        <Lock size={12} className="text-warning-600" />
+                                      ) : (
+                                        <Unlock size={12} className="text-gray-400" />
+                                      )}
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-300">-</span>
+                                )}
+                              </TableCell>
+                            );
+                          })}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  <Lock size={12} className="inline mr-1" />
+                  Locked permissions cannot be changed by users with this role
+                </p>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onPress={handleSubmit}
+              isLoading={loading}
+              className="transition-all duration-200"
+            >
+              {editingRole ? "Update" : "Create"} Role
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

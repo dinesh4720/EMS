@@ -57,4 +57,35 @@ export const timetableApi = {
   delete: (classId, academicYear) => request(`/timetable/${classId}${academicYear ? `?academicYear=${academicYear}` : ''}`, { method: 'DELETE' }),
 };
 
-export default { staffApi, studentsApi, classesApi, attendanceApi, timetableApi };
+// Settings API
+export const settingsApi = {
+  // School Settings
+  getSchoolSettings: () => request('/settings/school'),
+  updateSchoolSettings: (data) => request('/settings/school', { method: 'PUT', body: JSON.stringify(data) }),
+  
+  // Holidays
+  getHolidays: () => request('/settings/holidays'),
+  createHoliday: (data) => request('/settings/holidays', { method: 'POST', body: JSON.stringify(data) }),
+  updateHoliday: (id, data) => request(`/settings/holidays/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteHoliday: (id) => request(`/settings/holidays/${id}`, { method: 'DELETE' }),
+  
+  // Leave Types
+  getLeaveTypes: () => request('/settings/leave-types'),
+  createLeaveType: (data) => request('/settings/leave-types', { method: 'POST', body: JSON.stringify(data) }),
+  updateLeaveType: (id, data) => request(`/settings/leave-types/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteLeaveType: (id) => request(`/settings/leave-types/${id}`, { method: 'DELETE' }),
+  
+  // Fee Heads
+  getFeeHeads: () => request('/settings/fee-heads'),
+  createFeeHead: (data) => request('/settings/fee-heads', { method: 'POST', body: JSON.stringify(data) }),
+  updateFeeHead: (id, data) => request(`/settings/fee-heads/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteFeeHead: (id) => request(`/settings/fee-heads/${id}`, { method: 'DELETE' }),
+  
+  // Subjects
+  getSubjects: () => request('/settings/subjects'),
+  createSubject: (data) => request('/settings/subjects', { method: 'POST', body: JSON.stringify(data) }),
+  updateSubject: (id, data) => request(`/settings/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteSubject: (id) => request(`/settings/subjects/${id}`, { method: 'DELETE' }),
+};
+
+export default { staffApi, studentsApi, classesApi, attendanceApi, timetableApi, settingsApi };

@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import {
   Card, CardBody, CardHeader, Chip, Progress, Button, Divider,
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-  Avatar, Tabs, Tab, Input, Tooltip, User
+  Avatar, Tabs, Tab, Input, User
 } from "@heroui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -341,30 +341,28 @@ export default function ClassOverview() {
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-center gap-1">
-                          <Tooltip content="Send Message">
-                            <Button
-                              isIconOnly
-                              size="sm"
-                              variant="light"
-                              className="h-7 w-7 min-w-7"
-                              onPress={(e) => e.stopPropagation()}
-                            >
-                              <MessageSquare size={14} className="text-default-500" />
-                            </Button>
-                          </Tooltip>
-                          <Tooltip content="Call Parent">
-                            <Button
-                              isIconOnly
-                              size="sm"
-                              variant="light"
-                              className="h-7 w-7 min-w-7"
-                              as="a"
-                              href={`tel:${student.parentPhone}`}
-                              onPress={(e) => e.stopPropagation()}
-                            >
-                              <Phone size={14} className="text-default-500" />
-                            </Button>
-                          </Tooltip>
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            className="h-7 w-7 min-w-7"
+                            onPress={(e) => e.stopPropagation()}
+                            title="Send Message"
+                          >
+                            <MessageSquare size={14} className="text-default-500" />
+                          </Button>
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            className="h-7 w-7 min-w-7"
+                            as="a"
+                            href={`tel:${student.parentPhone}`}
+                            onPress={(e) => e.stopPropagation()}
+                            title="Call Parent"
+                          >
+                            <Phone size={14} className="text-default-500" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>

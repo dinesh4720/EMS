@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import {
   Card, CardBody, CardHeader, Chip, Progress, Button, Divider, Avatar,
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-  Tabs, Tab, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Tooltip,
+  Tabs, Tab, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
   Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerFooter, Input, Select, SelectItem, Textarea,
   RadioGroup, Radio, Checkbox, cn
 } from "@heroui/react";
@@ -275,9 +275,7 @@ export default function StudentOverview() {
             <div className="relative p-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-5">
-                  <Tooltip content="Back to Students">
-                    <Button isIconOnly size="sm" variant="flat" onPress={() => navigate("/students")} radius="lg" className="bg-white/80 backdrop-blur"><ArrowLeft size={18} /></Button>
-                  </Tooltip>
+                  <Button isIconOnly size="sm" variant="flat" onPress={() => navigate("/students")} radius="lg" className="bg-white/80 backdrop-blur" title="Back to Students"><ArrowLeft size={18} /></Button>
                   <div className="relative">
                     <Avatar src={`https://i.pravatar.cc/150?u=student${student.id}`} className="w-20 h-20 text-2xl ring-4 ring-white shadow-xl" isBordered color="primary" />
                     <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center ${student.feeStatus === "paid" ? "bg-success" : student.feeStatus === "pending" ? "bg-warning" : "bg-danger"}`}>
@@ -357,7 +355,7 @@ export default function StudentOverview() {
                       <p className="text-[10px] text-default-400 uppercase tracking-wider font-semibold">Phone</p>
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium font-mono">{student.parentPhone}</p>
-                        <Tooltip content="Call"><Button isIconOnly size="sm" variant="flat" color="success" radius="full" as="a" href={`tel:${student.parentPhone}`}><Phone size={12} /></Button></Tooltip>
+                        <Button isIconOnly size="sm" variant="flat" color="success" radius="full" as="a" href={`tel:${student.parentPhone}`} title="Call"><Phone size={12} /></Button>
                       </div>
                     </div>
                     <div className="space-y-1"><p className="text-[10px] text-default-400 uppercase tracking-wider font-semibold">Email</p><p className="text-sm font-medium">{student.parentEmail || "Not provided"}</p></div>
@@ -453,9 +451,9 @@ export default function StudentOverview() {
                         <TableCell><span className="font-semibold text-primary">#{report.rank}</span></TableCell>
                         <TableCell>
                           <div className="flex gap-1">
-                            <Tooltip content="View Report"><Button isIconOnly size="sm" variant="light"><Eye size={14} /></Button></Tooltip>
-                            <Tooltip content="Download"><Button isIconOnly size="sm" variant="light"><Download size={14} /></Button></Tooltip>
-                            <Tooltip content="Print"><Button isIconOnly size="sm" variant="light"><Printer size={14} /></Button></Tooltip>
+                            <Button isIconOnly size="sm" variant="light" title="View Report"><Eye size={14} /></Button>
+                            <Button isIconOnly size="sm" variant="light" title="Download"><Download size={14} /></Button>
+                            <Button isIconOnly size="sm" variant="light" title="Print"><Printer size={14} /></Button>
                           </div>
                         </TableCell>
                       </TableRow>

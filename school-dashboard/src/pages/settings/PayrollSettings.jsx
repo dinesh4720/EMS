@@ -71,11 +71,9 @@ function SalaryComponents() {
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">{item.name}</TableCell>
                                         <TableCell>
-                                            <Tooltip content="Remove Component">
-                                                <Button isIconOnly size="sm" color="danger" variant="light" onPress={() => handleRemove("earnings", item.id)}>
-                                                    <Trash2 size={16} />
-                                                </Button>
-                                            </Tooltip>
+                                            <Button isIconOnly size="sm" color="danger" variant="light" onPress={() => handleRemove("earnings", item.id)} title="Remove Component">
+                                                <Trash2 size={16} />
+                                            </Button>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -125,11 +123,9 @@ function SalaryComponents() {
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">{item.name}</TableCell>
                                         <TableCell>
-                                            <Tooltip content="Remove Component">
-                                                <Button isIconOnly size="sm" color="danger" variant="light" onPress={() => handleRemove("deductions", item.id)}>
-                                                    <Trash2 size={16} />
-                                                </Button>
-                                            </Tooltip>
+                                            <Button isIconOnly size="sm" color="danger" variant="light" onPress={() => handleRemove("deductions", item.id)} title="Remove Component">
+                                                <Trash2 size={16} />
+                                            </Button>
                                         </TableCell>
                                     </TableRow>
                                 ))}

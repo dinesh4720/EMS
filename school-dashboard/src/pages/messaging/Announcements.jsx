@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardBody, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerFooter, Input, Textarea, Select, SelectItem, Switch, Tooltip } from "@heroui/react";
+import { Card, CardBody, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerFooter, Input, Textarea, Select, SelectItem, Switch } from "@heroui/react";
 import { Send, Clock, Eye } from "lucide-react";
 import { announcements } from "../../data/mockData";
 
@@ -55,9 +55,7 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
                     </Chip>
                   </TableCell>
                   <TableCell>
-                    <Tooltip content="View Details">
-                      <Button isIconOnly size="sm" variant="light"><Eye size={16} className="text-default-500" /></Button>
-                    </Tooltip>
+                    <Button isIconOnly size="sm" variant="light" title="View Details"><Eye size={16} className="text-default-500" /></Button>
                   </TableCell>
                 </TableRow>
               ))}

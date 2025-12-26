@@ -146,11 +146,9 @@ export default function ClassesPage() {
                     <p className="text-xs text-default-500">Fill in the class details below</p>
                   </div>
                 </div>
-                <Tooltip content="Close">
-                  <Button isIconOnly size="sm" variant="light" onPress={onClose}>
-                    <X size={20} className="text-default-500" />
-                  </Button>
-                </Tooltip>
+                <Button isIconOnly size="sm" variant="light" onPress={onClose} title="Close">
+                  <X size={20} className="text-default-500" />
+                </Button>
               </DrawerHeader>
               <DrawerBody className="py-6 px-6">
                 <div className="space-y-4">

@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { Tabs, Tab, Button, Drawer, DrawerContent, DrawerHeader, DrawerBody, Card, Tooltip } from "@heroui/react";
+import { Tabs, Tab, Button, Drawer, DrawerContent, DrawerHeader, DrawerBody, Card } from "@heroui/react";
 import { GraduationCap, Plus, X } from "lucide-react";
 import StudentsList from "./StudentsList";
 import StudentOverview from "./StudentOverview";

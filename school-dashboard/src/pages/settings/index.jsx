@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
-import { Tabs, Tab } from "@heroui/react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Building, Shield, Calendar, IndianRupee, MessageSquare, User } from "lucide-react";
+import { Building, Shield, Calendar, IndianRupee, MessageSquare, User, Palmtree, UserCheck, BookOpen, GraduationCap, Network, FileText, CreditCard, HardDrive, ChevronRight } from "lucide-react";
+
 import InstitutionSettings from "./InstitutionSettings";
 import RolesAccess from "./RolesAccess";
 import AttendanceRules from "./AttendanceRules";
@@ -9,60 +9,134 @@ import FeeRules from "./FeeRules";
 import CommunicationSettings from "./CommunicationSettings";
 import PayrollSettings from "./PayrollSettings";
 import UserManagement from "./UserManagement";
-import PageHeader from "../../components/PageHeader";
+import HolidaySettings from "./HolidaySettings";
+import LeaveSettings from "./LeaveSettings";
+import FeeHeadsSettings from "./FeeHeadsSettings";
+import ClassSectionsSettings from "./ClassSectionsSettings";
+import HierarchySettings from "./HierarchySettings";
+import IntakeFormsSettings from "./IntakeFormsSettings";
+import SubscriptionSettings from "./SubscriptionSettings";
+import BackupSettings from "./BackupSettings";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const getActiveTab = () => {
-    if (location.pathname.includes("/roles")) return "roles";
-    if (location.pathname.includes("/users")) return "users";
-    if (location.pathname.includes("/attendance-rules")) return "attendance";
-    if (location.pathname.includes("/fee-rules")) return "fees";
-    if (location.pathname.includes("/communication")) return "communication";
-    if (location.pathname.includes("/payroll")) return "payroll";
-    return "institution";
+  const menuCategories = [
+    {
+      title: "General",
+      items: [
+        { key: "institution", label: "Institution Profile", icon: Building, path: "/settings" },
+        { key: "sections", label: "Class Sections", icon: GraduationCap, path: "/settings/sections" },
+        { key: "intakeforms", label: "Intake Forms", icon: FileText, path: "/settings/intake-forms" },
+      ]
+    },
+    {
+      title: "Access Control",
+      items: [
+        { key: "hierarchy", label: "Organizational Hierarchy", icon: Network, path: "/settings/hierarchy" },
+        { key: "roles", label: "Roles & Permissions", icon: Shield, path: "/settings/roles" },
+        { key: "users", label: "User Management", icon: User, path: "/settings/users" },
+      ]
+    },
+    {
+      title: "Academic",
+      items: [
+        { key: "attendance", label: "Attendance Rules", icon: Calendar, path: "/settings/attendance-rules" },
+        { key: "holidays", label: "Holiday Calendar", icon: Palmtree, path: "/settings/holidays" },
+        { key: "leaves", label: "Leave Types", icon: UserCheck, path: "/settings/leaves" },
+      ]
+    },
+    {
+      title: "Financial",
+      items: [
+        { key: "feeheads", label: "Fee Heads", icon: BookOpen, path: "/settings/fee-heads" },
+        { key: "fees", label: "Fee Rules", icon: IndianRupee, path: "/settings/fee-rules" },
+        { key: "payroll", label: "Payroll Settings", icon: IndianRupee, path: "/settings/payroll" },
+      ]
+    },
+    {
+      title: "Communication",
+      items: [
+        { key: "communication", label: "Communication Settings", icon: MessageSquare, path: "/settings/communication" },
+      ]
+    },
+    {
+      title: "System",
+      items: [
+        { key: "subscription", label: "Subscription & Billing", icon: CreditCard, path: "/settings/subscription" },
+        { key: "backup", label: "Backup & Recovery", icon: HardDrive, path: "/settings/backup" },
+      ]
+    }
+  ];
+
+  const isActive = (path) => {
+    if (path === "/settings") {
+      return location.pathname === "/settings";
+    }
+    return location.pathname.includes(path);
   };
 
   return (
-    <div className="space-y-3">
-      <PageHeader title="System Configuration" />
+    <div className="flex gap-4">
+      {/* Left Sidebar */}
+      <div className="w-64 flex-shrink-0">
+        <div className="sticky top-4 p-3">
+          <div className="space-y-4">
+            {menuCategories.map((category) => (
+              <div key={category.title}>
+                <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-2">
+                  {category.title}
+                </h3>
+                <div className="space-y-1">
+                  {category.items.map((item) => {
+                    const Icon = item.icon;
+                    const active = isActive(item.path);
+                    return (
+                      <button
+                        key={item.key}
+                        onClick={() => navigate(item.path)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                          active
+                            ? "bg-primary text-white font-medium"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Icon size={16} className={active ? "text-white" : "text-gray-500 dark:text-gray-400"} />
+                          <span className="truncate">{item.label}</span>
+                        </div>
+                        {active && <ChevronRight size={14} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-      <Tabs
-        selectedKey={getActiveTab()}
-        onSelectionChange={(key) => {
-          if (key === "institution") navigate("/settings");
-          else if (key === "roles") navigate("/settings/roles");
-          else if (key === "users") navigate("/settings/users");
-          else if (key === "attendance") navigate("/settings/attendance-rules");
-          else if (key === "fees") navigate("/settings/fee-rules");
-          else if (key === "communication") navigate("/settings/communication");
-          else if (key === "payroll") navigate("/settings/payroll");
-        }}
-        size="sm"
-        variant="solid"
-        radius="sm"
-        classNames={{ tabList: "bg-default-100/50" }}
-      >
-        <Tab key="institution" title={<div className="flex items-center gap-1"><Building size={14} /><span>Institution</span></div>} />
-        <Tab key="roles" title={<div className="flex items-center gap-1"><Shield size={14} /><span>Roles & Access</span></div>} />
-        <Tab key="users" title={<div className="flex items-center gap-1"><User size={14} /><span>Staff Logins</span></div>} />
-        <Tab key="attendance" title={<div className="flex items-center gap-1"><Calendar size={14} /><span>Attendance Rules</span></div>} />
-        <Tab key="fees" title={<div className="flex items-center gap-1"><IndianRupee size={14} /><span>Fee Rules</span></div>} />
-        <Tab key="communication" title={<div className="flex items-center gap-1"><MessageSquare size={14} /><span>Communication</span></div>} />
-        <Tab key="payroll" title={<div className="flex items-center gap-1"><IndianRupee size={14} /><span>Payroll</span></div>} />
-      </Tabs>
-
-      <Routes>
-        <Route index element={<InstitutionSettings />} />
-        <Route path="roles" element={<RolesAccess />} />
-        <Route path="users" element={<UserManagement />} />
-        <Route path="attendance-rules" element={<AttendanceRules />} />
-        <Route path="fee-rules" element={<FeeRules />} />
-        <Route path="communication" element={<CommunicationSettings />} />
-        <Route path="payroll" element={<PayrollSettings />} />
-      </Routes>
+      {/* Main Content Area */}
+      <div className="flex-1 min-w-0">
+        <Routes>
+          <Route index element={<InstitutionSettings />} />
+          <Route path="sections" element={<ClassSectionsSettings />} />
+          <Route path="hierarchy" element={<HierarchySettings />} />
+          <Route path="roles" element={<RolesAccess />} />
+          <Route path="users" element={<UserManagement />} />
+          <Route path="intake-forms" element={<IntakeFormsSettings />} />
+          <Route path="attendance-rules" element={<AttendanceRules />} />
+          <Route path="fee-heads" element={<FeeHeadsSettings />} />
+          <Route path="fee-rules" element={<FeeRules />} />
+          <Route path="holidays" element={<HolidaySettings />} />
+          <Route path="leaves" element={<LeaveSettings />} />
+          <Route path="communication" element={<CommunicationSettings />} />
+          <Route path="payroll" element={<PayrollSettings />} />
+          <Route path="subscription" element={<SubscriptionSettings />} />
+          <Route path="backup" element={<BackupSettings />} />
+        </Routes>
+      </div>
     </div>
   );
 }

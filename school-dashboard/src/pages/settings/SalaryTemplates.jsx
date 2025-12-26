@@ -135,16 +135,12 @@ export default function SalaryTemplates() {
                   <h3 className="text-lg font-medium">{template.name}</h3>
                 </div>
                 <div className="flex gap-1">
-                  <Tooltip content="Edit Template">
-                    <Button size="sm" isIconOnly variant="light" onPress={() => handleEdit(template)}>
-                      <Edit size={16} />
-                    </Button>
-                  </Tooltip>
-                  <Tooltip content="Delete Template">
-                    <Button size="sm" isIconOnly variant="light" color="danger" onPress={() => handleDelete(template.id)}>
-                      <Trash2 size={16} />
-                    </Button>
-                  </Tooltip>
+                  <Button size="sm" isIconOnly variant="light" onPress={() => handleEdit(template)} title="Edit Template">
+                    <Edit size={16} />
+                  </Button>
+                  <Button size="sm" isIconOnly variant="light" color="danger" onPress={() => handleDelete(template.id)} title="Delete Template">
+                    <Trash2 size={16} />
+                  </Button>
                 </div>
               </CardHeader>
               <Divider />

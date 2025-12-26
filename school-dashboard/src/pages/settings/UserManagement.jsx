@@ -114,7 +114,7 @@ export default function UserManagement() {
                             value={searchTerm}
                             onValueChange={setSearchTerm}
                             isClearable
-                            variant="faded"
+                            variant="bordered"
                         />
                     </div>
                 </CardBody>
