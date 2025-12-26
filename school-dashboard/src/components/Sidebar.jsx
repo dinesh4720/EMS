@@ -2,7 +2,7 @@ import { Avatar, Button, ScrollShadow, Chip } from "@heroui/react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, BookOpen, MessageSquare, IndianRupee, Settings,
-  ChevronsLeft, GraduationCap, Calendar, BarChart3
+  ChevronsLeft, GraduationCap, Calendar, BarChart3, FileText, Send, CheckSquare
 } from "lucide-react";
 import AiAssistant from "./AiAssistant";
 
@@ -15,8 +15,14 @@ const mainNavItems = [
   { icon: <Calendar size={18} />, label: "Calendar", href: "/calendar" },
   { icon: <MessageSquare size={18} />, label: "Messaging", href: "/messaging", badge: "4" },
   { icon: <IndianRupee size={18} />, label: "Fees", href: "/fees" },
-  { icon: <Settings size={18} />, label: "Settings", href: "/settings" },
 ];
+
+const intakeFormsItems = [
+  { icon: <FileText size={18} />, label: "Forms", href: "/settings/intake-forms" },
+  { icon: <CheckSquare size={18} />, label: "Submissions", href: "/intake-forms/submissions", badge: "3" },
+];
+
+const settingsItem = { icon: <Settings size={18} />, label: "Settings", href: "/settings" };
 
 export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
   const location = useLocation();
@@ -78,6 +84,90 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                 </li>
               );
             })}
+          </ul>
+        </div>
+
+        {/* Intake Forms Section */}
+        <div>
+          {isSidebarOpen && <p className="px-2 text-[10px] font-medium text-default-400 uppercase tracking-widest mb-2">Intake Forms</p>}
+          <ul className="space-y-1">
+            {intakeFormsItems.map((item, index) => {
+              const isActive = location.pathname === item.href ||
+                (item.href !== "/" && location.pathname.startsWith(item.href));
+
+              return (
+                <li key={index} className="overflow-visible">
+                  <NavLink to={item.href}>
+                    {({ isActive }) => (
+                      <div className={`
+                        flex items-center ${isSidebarOpen ? 'justify-between px-3' : 'justify-center px-2'} py-2 rounded transition-all duration-200 group relative overflow-visible
+                        ${isActive
+                          ? "bg-primary/10 text-primary font-medium shadow-sm"
+                          : "text-default-500 hover:bg-default-100/50 hover:text-default-900"}
+                      `}>
+                        <div className={`flex items-center ${isSidebarOpen ? 'gap-3' : 'justify-center w-full'}`}>
+                          <span className={`${isActive ? "text-primary" : "text-default-400 group-hover:text-default-600"} transition-all group-hover:scale-110`}>
+                            {item.icon}
+                          </span>
+                          {isSidebarOpen && <span className="text-sm whitespace-nowrap">{item.label}</span>}
+                        </div>
+                        {item.badge && isSidebarOpen && (
+                          <Chip size="sm" variant="shadow" color="warning" className="h-5 min-w-5 px-0 flex items-center justify-center text-[10px] font-medium">
+                            {item.badge}
+                          </Chip>
+                        )}
+                        {/* Tooltip for collapsed state */}
+                        {!isSidebarOpen && (
+                          <div className="absolute left-full ml-3 px-3 py-1.5 bg-default-900 dark:bg-default-800 text-white text-xs rounded-md shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity duration-200" style={{ zIndex: 9999 }}>
+                            {item.label}
+                            {item.badge && (
+                              <Chip size="sm" variant="shadow" color="warning" className="ml-2 h-4 min-w-4 px-1 text-[9px]">
+                                {item.badge}
+                              </Chip>
+                            )}
+                            {/* Arrow */}
+                            <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-default-900 dark:border-r-default-800"></div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </NavLink>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        {/* Settings */}
+        <div>
+          <ul className="space-y-1">
+            <li className="overflow-visible">
+              <NavLink to={settingsItem.href}>
+                {({ isActive }) => (
+                  <div className={`
+                    flex items-center ${isSidebarOpen ? 'justify-between px-3' : 'justify-center px-2'} py-2 rounded transition-all duration-200 group relative overflow-visible
+                    ${isActive
+                      ? "bg-primary/10 text-primary font-medium shadow-sm"
+                      : "text-default-500 hover:bg-default-100/50 hover:text-default-900"}
+                  `}>
+                    <div className={`flex items-center ${isSidebarOpen ? 'gap-3' : 'justify-center w-full'}`}>
+                      <span className={`${isActive ? "text-primary" : "text-default-400 group-hover:text-default-600"} transition-all group-hover:scale-110`}>
+                        {settingsItem.icon}
+                      </span>
+                      {isSidebarOpen && <span className="text-sm whitespace-nowrap">{settingsItem.label}</span>}
+                    </div>
+                    {/* Tooltip for collapsed state */}
+                    {!isSidebarOpen && (
+                      <div className="absolute left-full ml-3 px-3 py-1.5 bg-default-900 dark:bg-default-800 text-white text-xs rounded-md shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity duration-200" style={{ zIndex: 9999 }}>
+                        {settingsItem.label}
+                        {/* Arrow */}
+                        <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-default-900 dark:border-r-default-800"></div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </NavLink>
+            </li>
           </ul>
         </div>
       </ScrollShadow>

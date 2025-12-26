@@ -18,15 +18,20 @@ import {
     ModalBody,
     ModalFooter,
     useDisclosure,
-    Spinner
+    Spinner,
+    Tabs,
+    Tab
 } from "@heroui/react";
-import { Shield, Key, Search, Phone, Eye, EyeOff, Copy, Check } from "lucide-react";
+import { Shield, Key, Search, Phone, Eye, EyeOff, Copy, Check, Users as UsersIcon, Network } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { staffApi } from "../../services/api";
+import RolesAccess from "./RolesAccess";
+import HierarchySettings from "./HierarchySettings";
 
 export default function UserManagement() {
     const { staff, loading, refetch } = useApp();
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedTab, setSelectedTab] = useState("users");
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
     const [selectedUser, setSelectedUser] = useState(null);
     const [newPassword, setNewPassword] = useState("");
@@ -101,109 +106,170 @@ export default function UserManagement() {
 
     return (
         <div className="space-y-6">
-            <Card className="border-none shadow-sm">
-                <CardBody className="flex flex-col md:flex-row justify-between gap-4 items-center p-4">
-                    <div>
-                        <h2 className="text-xl font-bold">Staff Login Management</h2>
-                        <p className="text-default-500 text-sm">View and manage login credentials for all staff members.</p>
-                    </div>
-                    <div className="w-full md:w-72">
-                        <Input
-                            placeholder="Search staff..."
-                            startContent={<Search size={18} className="text-default-400" />}
-                            value={searchTerm}
-                            onValueChange={setSearchTerm}
-                            isClearable
-                            variant="bordered"
-                        />
-                    </div>
-                </CardBody>
-            </Card>
+            {/* Header */}
+            <div>
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">User Management</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    Manage users, roles, permissions, and organizational hierarchy
+                </p>
+            </div>
 
-            <Card className="border-none shadow-sm">
-                <Table aria-label="Staff Login Credentials">
-                    <TableHeader>
-                        <TableColumn>STAFF</TableColumn>
-                        <TableColumn>ROLE</TableColumn>
-                        <TableColumn>LOGIN ID (PHONE)</TableColumn>
-                        <TableColumn>PASSWORD</TableColumn>
-                        <TableColumn>STATUS</TableColumn>
-                        <TableColumn align="end">ACTIONS</TableColumn>
-                    </TableHeader>
-                    <TableBody emptyContent="No staff members found">
-                        {filteredStaff.map((item) => (
-                            <TableRow key={item.id}>
-                                <TableCell>
-                                    <User
-                                        name={item.name}
-                                        description={item.code || item.email}
-                                        avatarProps={{
-                                            src: `https://i.pravatar.cc/150?u=${item.id}`,
-                                            isBordered: true,
-                                            size: "sm",
-                                            color: item.role === "Admin" ? "warning" : "primary"
-                                        }}
+            {/* Tabs */}
+            <Tabs 
+                selectedKey={selectedTab} 
+                onSelectionChange={setSelectedTab}
+                variant="underlined"
+                classNames={{
+                    tabList: "gap-6 w-full relative rounded-none p-0 border-b border-divider",
+                    cursor: "w-full bg-primary",
+                    tab: "max-w-fit px-0 h-12",
+                    tabContent: "group-data-[selected=true]:text-primary"
+                }}
+            >
+                <Tab
+                    key="users"
+                    title={
+                        <div className="flex items-center gap-2">
+                            <UsersIcon size={18} />
+                            <span>Users</span>
+                        </div>
+                    }
+                >
+                    <div className="py-6 space-y-6">
+                        <Card className="border-none shadow-sm">
+                            <CardBody className="flex flex-col md:flex-row justify-between gap-4 items-center p-4">
+                                <div>
+                                    <h3 className="text-lg font-semibold">Staff Login Management</h3>
+                                    <p className="text-default-500 text-sm">View and manage login credentials for all staff members.</p>
+                                </div>
+                                <div className="w-full md:w-72">
+                                    <Input
+                                        placeholder="Search staff..."
+                                        startContent={<Search size={18} className="text-default-400" />}
+                                        value={searchTerm}
+                                        onValueChange={setSearchTerm}
+                                        isClearable
+                                        variant="bordered"
                                     />
-                                </TableCell>
-                                <TableCell>
-                                    <span className="text-small font-medium capitalize">{item.role}</span>
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex items-center gap-2 text-default-600">
-                                        <Phone size={14} />
-                                        <span className="font-mono text-sm">{item.phone || "N/A"}</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-mono text-sm min-w-[80px]">
-                                            {visiblePasswords[item.id] ? item.password : "••••••••"}
-                                        </span>
-                                        <Button
-                                            isIconOnly
-                                            size="sm"
-                                            variant="light"
-                                            onPress={() => togglePasswordVisibility(item.id)}
-                                        >
-                                            {visiblePasswords[item.id] ? <EyeOff size={16} /> : <Eye size={16} />}
-                                        </Button>
-                                        <Button
-                                            isIconOnly
-                                            size="sm"
-                                            variant="light"
-                                            onPress={() => copyToClipboard(item.password, item.id)}
-                                        >
-                                            {copiedId === item.id ? <Check size={16} className="text-success" /> : <Copy size={16} />}
-                                        </Button>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <Chip
-                                        size="sm"
-                                        variant="flat"
-                                        color={item.status === "active" ? "success" : "default"}
-                                        startContent={<span className={`w-1.5 h-1.5 rounded-full ml-1 ${item.status === "active" ? 'bg-success-500' : 'bg-default-500'}`}></span>}
-                                    >
-                                        {item.status || "Active"}
-                                    </Chip>
-                                </TableCell>
-                                <TableCell>
-                                    <Button
-                                        size="sm"
-                                        variant="flat"
-                                        color="primary"
-                                        startContent={<Key size={14} />}
-                                        onPress={() => handleEditPassword(item)}
-                                        className="font-medium"
-                                    >
-                                        Change Password
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </Card>
+                                </div>
+                            </CardBody>
+                        </Card>
+
+                        <Card className="border-none shadow-sm rounded-lg">
+                            <Table aria-label="Staff Login Credentials" removeWrapper>
+                                <TableHeader>
+                                    <TableColumn>STAFF</TableColumn>
+                                    <TableColumn>ROLE</TableColumn>
+                                    <TableColumn>LOGIN ID (PHONE)</TableColumn>
+                                    <TableColumn>PASSWORD</TableColumn>
+                                    <TableColumn>STATUS</TableColumn>
+                                    <TableColumn align="end">ACTIONS</TableColumn>
+                                </TableHeader>
+                                <TableBody emptyContent="No staff members found">
+                                    {filteredStaff.map((item) => (
+                                        <TableRow key={item.id}>
+                                            <TableCell>
+                                                <User
+                                                    name={item.name}
+                                                    description={item.code || item.email}
+                                                    avatarProps={{
+                                                        src: `https://i.pravatar.cc/150?u=${item.id}`,
+                                                        isBordered: true,
+                                                        size: "sm",
+                                                        color: item.role === "Admin" ? "warning" : "primary"
+                                                    }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className="text-small font-medium capitalize">{item.role}</span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2 text-default-600">
+                                                    <Phone size={14} />
+                                                    <span className="font-mono text-sm">{item.phone || "N/A"}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-mono text-sm min-w-[80px]">
+                                                        {visiblePasswords[item.id] ? item.password : "••••••••"}
+                                                    </span>
+                                                    <Button
+                                                        isIconOnly
+                                                        size="sm"
+                                                        variant="light"
+                                                        onPress={() => togglePasswordVisibility(item.id)}
+                                                    >
+                                                        {visiblePasswords[item.id] ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                    </Button>
+                                                    <Button
+                                                        isIconOnly
+                                                        size="sm"
+                                                        variant="light"
+                                                        onPress={() => copyToClipboard(item.password, item.id)}
+                                                    >
+                                                        {copiedId === item.id ? <Check size={16} className="text-success" /> : <Copy size={16} />}
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    size="sm"
+                                                    variant="flat"
+                                                    color={item.status === "active" ? "success" : "default"}
+                                                    startContent={<span className={`w-1.5 h-1.5 rounded-full ml-1 ${item.status === "active" ? 'bg-success-500' : 'bg-default-500'}`}></span>}
+                                                >
+                                                    {item.status || "Active"}
+                                                </Chip>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Button
+                                                    size="sm"
+                                                    variant="flat"
+                                                    color="primary"
+                                                    startContent={<Key size={14} />}
+                                                    onPress={() => handleEditPassword(item)}
+                                                    className="font-medium"
+                                                >
+                                                    Change Password
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </Card>
+                    </div>
+                </Tab>
+
+                <Tab
+                    key="roles"
+                    title={
+                        <div className="flex items-center gap-2">
+                            <Shield size={18} />
+                            <span>Roles & Permissions</span>
+                        </div>
+                    }
+                >
+                    <div className="py-6">
+                        <RolesAccess />
+                    </div>
+                </Tab>
+
+                <Tab
+                    key="hierarchy"
+                    title={
+                        <div className="flex items-center gap-2">
+                            <Network size={18} />
+                            <span>Org Hierarchy</span>
+                        </div>
+                    }
+                >
+                    <div className="py-6">
+                        <HierarchySettings />
+                    </div>
+                </Tab>
+            </Tabs>
 
             <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
                 <ModalContent>

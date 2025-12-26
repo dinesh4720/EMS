@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem, Switch, Spinner } from "@heroui/react";
 import { Plus, Edit, Trash2, IndianRupee, BookOpen } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import toast from "react-hot-toast";
 
 export default function FeeHeadsSettings() {
   const { feeHeads, addFeeHead, updateFeeHead, deleteFeeHead, loading } = useApp();
@@ -78,12 +79,15 @@ export default function FeeHeadsSettings() {
     try {
       if (editingFeeHead) {
         await updateFeeHead(editingFeeHead.id, formData);
+        toast.success('Fee head updated successfully');
       } else {
         await addFeeHead(formData);
+        toast.success('Fee head added successfully');
       }
       onClose();
     } catch (error) {
       console.error('Failed to save fee head:', error);
+      toast.error('Failed to save fee head');
     } finally {
       setSaving(false);
     }
@@ -93,8 +97,10 @@ export default function FeeHeadsSettings() {
     if (confirm("Are you sure you want to delete this fee head?")) {
       try {
         await deleteFeeHead(id);
+        toast.success('Fee head deleted successfully');
       } catch (error) {
         console.error('Failed to delete fee head:', error);
+        toast.error('Failed to delete fee head');
       }
     }
   };

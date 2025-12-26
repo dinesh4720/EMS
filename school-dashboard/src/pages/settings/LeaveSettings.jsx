@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem, Switch, Spinner } from "@heroui/react";
 import { Plus, Edit, Trash2, UserCheck, Users } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import toast from "react-hot-toast";
 
 export default function LeaveSettings() {
   const { leaveTypes, addLeaveType, updateLeaveType, deleteLeaveType, loading } = useApp();
@@ -80,12 +81,15 @@ export default function LeaveSettings() {
     try {
       if (editingLeave) {
         await updateLeaveType(editingLeave.id, formData);
+        toast.success('Leave type updated successfully');
       } else {
         await addLeaveType(formData);
+        toast.success('Leave type added successfully');
       }
       onClose();
     } catch (error) {
       console.error('Failed to save leave type:', error);
+      toast.error('Failed to save leave type');
     } finally {
       setSaving(false);
     }
@@ -95,8 +99,10 @@ export default function LeaveSettings() {
     if (confirm("Are you sure you want to delete this leave type?")) {
       try {
         await deleteLeaveType(id);
+        toast.success('Leave type deleted successfully');
       } catch (error) {
         console.error('Failed to delete leave type:', error);
+        toast.error('Failed to delete leave type');
       }
     }
   };

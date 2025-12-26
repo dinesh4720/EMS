@@ -1,9 +1,8 @@
 import { Routes, Route } from "react-router-dom";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Building, Shield, Calendar, IndianRupee, MessageSquare, User, Palmtree, UserCheck, BookOpen, GraduationCap, Network, FileText, CreditCard, HardDrive, ChevronRight } from "lucide-react";
+import { Building, Calendar, IndianRupee, MessageSquare, User, Palmtree, UserCheck, BookOpen, GraduationCap, FileText, CreditCard, ChevronRight } from "lucide-react";
 
 import InstitutionSettings from "./InstitutionSettings";
-import RolesAccess from "./RolesAccess";
 import AttendanceRules from "./AttendanceRules";
 import FeeRules from "./FeeRules";
 import CommunicationSettings from "./CommunicationSettings";
@@ -13,10 +12,8 @@ import HolidaySettings from "./HolidaySettings";
 import LeaveSettings from "./LeaveSettings";
 import FeeHeadsSettings from "./FeeHeadsSettings";
 import ClassSectionsSettings from "./ClassSectionsSettings";
-import HierarchySettings from "./HierarchySettings";
 import IntakeFormsSettings from "./IntakeFormsSettings";
 import SubscriptionSettings from "./SubscriptionSettings";
-import BackupSettings from "./BackupSettings";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -32,10 +29,8 @@ export default function SettingsPage() {
       ]
     },
     {
-      title: "Access Control",
+      title: "User Management",
       items: [
-        { key: "hierarchy", label: "Organizational Hierarchy", icon: Network, path: "/settings/hierarchy" },
-        { key: "roles", label: "Roles & Permissions", icon: Shield, path: "/settings/roles" },
         { key: "users", label: "User Management", icon: User, path: "/settings/users" },
       ]
     },
@@ -65,7 +60,6 @@ export default function SettingsPage() {
       title: "System",
       items: [
         { key: "subscription", label: "Subscription & Billing", icon: CreditCard, path: "/settings/subscription" },
-        { key: "backup", label: "Backup & Recovery", icon: HardDrive, path: "/settings/backup" },
       ]
     }
   ];
@@ -122,8 +116,6 @@ export default function SettingsPage() {
         <Routes>
           <Route index element={<InstitutionSettings />} />
           <Route path="sections" element={<ClassSectionsSettings />} />
-          <Route path="hierarchy" element={<HierarchySettings />} />
-          <Route path="roles" element={<RolesAccess />} />
           <Route path="users" element={<UserManagement />} />
           <Route path="intake-forms" element={<IntakeFormsSettings />} />
           <Route path="attendance-rules" element={<AttendanceRules />} />
@@ -134,7 +126,6 @@ export default function SettingsPage() {
           <Route path="communication" element={<CommunicationSettings />} />
           <Route path="payroll" element={<PayrollSettings />} />
           <Route path="subscription" element={<SubscriptionSettings />} />
-          <Route path="backup" element={<BackupSettings />} />
         </Routes>
       </div>
     </div>

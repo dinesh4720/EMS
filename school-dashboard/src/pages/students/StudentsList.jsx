@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
+import toast from "react-hot-toast";
 
 const ITEMS_PER_LOAD = 15;
 const academicYears = ["2024-25", "2025-26", "2023-24"];
@@ -122,22 +123,34 @@ export default function StudentsList() {
 
     const executeBulkAction = async () => {
         const selectedIds = selectedKeys === "all" ? filteredItems.map(s => s.id) : Array.from(selectedKeys).map(id => parseInt(id));
-        for (const id of selectedIds) {
-            if (bulkAction === "deactivate") await updateStudent(id, { status: "inactive" });
-            else if (bulkAction === "transfer") await updateStudent(id, { status: "transferred" });
-            else if (bulkAction === "tc") await updateStudent(id, { status: "transferred", tcIssued: true });
+        const count = selectedIds.length;
+        try {
+            for (const id of selectedIds) {
+                if (bulkAction === "deactivate") await updateStudent(id, { status: "inactive" });
+                else if (bulkAction === "transfer") await updateStudent(id, { status: "transferred" });
+                else if (bulkAction === "tc") await updateStudent(id, { status: "transferred", tcIssued: true });
+            }
+            toast.success(`${count} student${count > 1 ? 's' : ''} updated successfully`);
+            setSelectedKeys(new Set([]));
+            onBulkActionClose();
+        } catch (error) {
+            toast.error('Failed to update students');
         }
-        setSelectedKeys(new Set([]));
-        onBulkActionClose();
     };
 
     const executePromotion = async () => {
         if (!promoteToClass) return;
         const selectedIds = selectedKeys === "all" ? filteredItems.map(s => s.id) : Array.from(selectedKeys).map(id => parseInt(id));
-        for (const id of selectedIds) await updateStudent(id, { class: promoteToClass });
-        setSelectedKeys(new Set([]));
-        setPromoteToClass("");
-        onPromoteClose();
+        const count = selectedIds.length;
+        try {
+            for (const id of selectedIds) await updateStudent(id, { class: promoteToClass });
+            toast.success(`${count} student${count > 1 ? 's' : ''} promoted to ${promoteToClass}`);
+            setSelectedKeys(new Set([]));
+            setPromoteToClass("");
+            onPromoteClose();
+        } catch (error) {
+            toast.error('Failed to promote students');
+        }
     };
 
     const handleCSVUpload = async (e) => {
@@ -147,9 +160,9 @@ export default function StudentsList() {
         try {
             const text = await file.text();
             const lines = text.split('\n');
-            alert(`CSV processed! ${lines.length - 1} students found.`);
-        } catch (err) {
-            alert('Error processing CSV file');
+            toast.success(`CSV processed! ${lines.length - 1} students imported`);
+        } catch (error) {
+            toast.error('Failed to process CSV file');
         } finally {
             setCsvProcessing(false);
             e.target.value = '';
@@ -331,7 +344,22 @@ export default function StudentsList() {
                                             <DropdownMenu aria-label="Student actions">
                                                 <DropdownItem key="view" startContent={<Eye size={14} />} onPress={() => navigate(`/students/${student.id}`)}>View Profile</DropdownItem>
                                                 <DropdownItem key="edit" startContent={<Edit size={14} />} onPress={() => navigate(`/students/${student.id}`)}>Edit Details</DropdownItem>
-                                                <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 size={14} />} onPress={() => deleteStudent(student.id)}>Delete Student</DropdownItem>
+                                                <DropdownItem 
+                                                    key="delete" 
+                                                    className="text-danger" 
+                                                    color="danger" 
+                                                    startContent={<Trash2 size={14} />} 
+                                                    onPress={async () => {
+                                                        try {
+                                                            await deleteStudent(student.id);
+                                                            toast.success(`${student.name} deleted successfully`);
+                                                        } catch (error) {
+                                                            toast.error('Failed to delete student');
+                                                        }
+                                                    }}
+                                                >
+                                                    Delete Student
+                                                </DropdownItem>
                                             </DropdownMenu>
                                         </Dropdown>
                                     </div>

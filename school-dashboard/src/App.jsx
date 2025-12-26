@@ -10,6 +10,9 @@ import CalendarPage from "./pages/calendar";
 import MessagingPage from "./pages/messaging";
 import FeesPage from "./pages/fees";
 import SettingsPage from "./pages/settings";
+import FormAssignments from "./pages/intake-forms/FormAssignments";
+import FormSubmissions from "./pages/intake-forms/FormSubmissions";
+import StyleGuide from "./pages/StyleGuide";
 import Login from "./pages/Login";
 import { AppProvider, useApp } from "./context/AppContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -70,6 +73,9 @@ function AuthenticatedApp() {
                 <Route path="/messaging/*" element={<MessagingPage />} />
                 <Route path="/fees/*" element={<FeesPage />} />
                 <Route path="/settings/*" element={<SettingsPage />} />
+                <Route path="/intake-forms/assignments" element={<FormAssignments />} />
+                <Route path="/intake-forms/submissions" element={<FormSubmissions />} />
+                <Route path="/style-guide" element={<StyleGuide />} />
               </Routes>
             </div>
           </main>

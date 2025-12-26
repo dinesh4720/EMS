@@ -88,4 +88,42 @@ export const settingsApi = {
   deleteSubject: (id) => request(`/settings/subjects/${id}`, { method: 'DELETE' }),
 };
 
-export default { staffApi, studentsApi, classesApi, attendanceApi, timetableApi, settingsApi };
+// Intake Forms API
+export const intakeFormsApi = {
+  // Forms CRUD
+  getAll: (type, status) => request(`/intake-forms${type || status ? `?${type ? `type=${type}` : ''}${status ? `&status=${status}` : ''}` : ''}`),
+  getById: (id) => request(`/intake-forms/${id}`),
+  create: (data) => request('/intake-forms', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/intake-forms/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/intake-forms/${id}`, { method: 'DELETE' }),
+  duplicate: (id, createdBy) => request(`/intake-forms/${id}/duplicate`, { method: 'POST', body: JSON.stringify({ createdBy }) }),
+  
+  // Form Assignment
+  assign: (id, data) => request(`/intake-forms/${id}/assign`, { method: 'POST', body: JSON.stringify(data) }),
+  getAssignments: (formId, status) => request(`/form-assignments${formId || status ? `?${formId ? `formId=${formId}` : ''}${status ? `&status=${status}` : ''}` : ''}`),
+  getAssignment: (id) => request(`/form-assignments/${id}`),
+  resendAssignment: (id) => request(`/form-assignments/${id}/resend`, { method: 'PUT' }),
+  deleteAssignment: (id) => request(`/form-assignments/${id}`, { method: 'DELETE' }),
+  
+  // Form Submissions
+  getSubmissions: (formId, reviewStatus) => request(`/form-submissions${formId || reviewStatus ? `?${formId ? `formId=${formId}` : ''}${reviewStatus ? `&reviewStatus=${reviewStatus}` : ''}` : ''}`),
+  getSubmission: (id) => request(`/form-submissions/${id}`),
+  reviewSubmission: (id, data) => request(`/form-submissions/${id}/review`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteSubmission: (id) => request(`/form-submissions/${id}`, { method: 'DELETE' }),
+};
+
+// Public API (for Teacher App - no auth required)
+export const publicApi = {
+  getFormByToken: (token) => request(`/public/form-assignment/${token}`),
+  submitForm: (token, data) => request(`/public/form-submission/${token}`, { method: 'POST', body: JSON.stringify(data) }),
+  getSubmissionStatus: (token) => request(`/public/form-submission/${token}/status`),
+};
+
+// Notifications API
+export const notificationsApi = {
+  getAll: (email, phone) => request(`/notifications${email || phone ? `?${email ? `email=${email}` : ''}${phone ? `&phone=${phone}` : ''}` : ''}`),
+  markAsRead: (id) => request(`/notifications/${id}/read`, { method: 'PUT' }),
+  markAllAsRead: (email, phone) => request('/notifications/read-all', { method: 'PUT', body: JSON.stringify({ email, phone }) }),
+};
+
+export default { staffApi, studentsApi, classesApi, attendanceApi, timetableApi, settingsApi, intakeFormsApi, publicApi, notificationsApi };

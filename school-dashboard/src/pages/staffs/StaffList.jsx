@@ -7,6 +7,7 @@ import {
 import { Search, Filter, ArrowUpDown, MoreVertical, Eye, Edit, Trash2, X, ChevronDown, Check } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const ITEMS_PER_LOAD = 10;
 
@@ -146,7 +147,10 @@ export default function StaffList({ onStaffClick }) {
                         </DropdownTrigger>
                         <DropdownMenu
                             aria-label="Filter by status"
-                            onAction={(key) => setStatusFilter(key)}
+                            onAction={(key) => {
+                                setStatusFilter(key);
+                                toast.info(`Filter applied: ${key === 'all' ? 'All status' : key}`);
+                            }}
                         >
                             <DropdownItem 
                                 key="all" 
@@ -224,7 +228,11 @@ export default function StaffList({ onStaffClick }) {
                             disallowEmptySelection
                             selectionMode="single"
                             selectedKeys={new Set([roleFilter])}
-                            onSelectionChange={(keys) => setRoleFilter(Array.from(keys)[0])}
+                            onSelectionChange={(keys) => {
+                                const role = Array.from(keys)[0];
+                                setRoleFilter(role);
+                                toast.info(`Filter applied: ${role === 'all' ? 'All roles' : role}`);
+                            }}
                         >
                             <DropdownItem key="all">All Roles</DropdownItem>
                             {roles.map((role) => (
@@ -246,7 +254,11 @@ export default function StaffList({ onStaffClick }) {
                             disallowEmptySelection
                             selectionMode="single"
                             selectedKeys={new Set([deptFilter])}
-                            onSelectionChange={(keys) => setDeptFilter(Array.from(keys)[0])}
+                            onSelectionChange={(keys) => {
+                                const dept = Array.from(keys)[0];
+                                setDeptFilter(dept);
+                                toast.info(`Filter applied: ${dept === 'all' ? 'All departments' : dept}`);
+                            }}
                         >
                             <DropdownItem key="all">All Departments</DropdownItem>
                             {departments.map((dept) => (
@@ -368,8 +380,10 @@ export default function StaffList({ onStaffClick }) {
                                                 onPress={async () => {
                                                     try {
                                                         await deleteStaff(s.id);
+                                                        toast.success(`${s.name} deleted successfully`);
                                                     } catch (err) {
                                                         console.error('Failed to delete staff:', err);
+                                                        toast.error('Failed to delete staff member');
                                                     }
                                                 }}
                                             >

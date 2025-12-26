@@ -16,6 +16,10 @@
     letter-spacing: -0.01em;
     @apply antialiased;
   }
+
+  button {
+    cursor: pointer;
+  }
 }
 
 .custom-scrollbar::-webkit-scrollbar {

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem, Spinner } from "@heroui/react";
 import { Plus, Edit, Trash2, Calendar } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import toast from "react-hot-toast";
 
 export default function HolidaySettings() {
   const { events, addEvent, updateEvent, deleteEvent, loading } = useApp();
@@ -92,12 +93,15 @@ export default function HolidaySettings() {
 
       if (editingHoliday) {
         await updateEvent(editingHoliday.id, holidayData);
+        toast.success('Holiday updated successfully');
       } else {
         await addEvent(holidayData);
+        toast.success('Holiday added successfully');
       }
       onClose();
     } catch (error) {
       console.error('Failed to save holiday:', error);
+      toast.error('Failed to save holiday');
     } finally {
       setSaving(false);
     }
@@ -107,8 +111,10 @@ export default function HolidaySettings() {
     if (confirm("Are you sure you want to delete this holiday?")) {
       try {
         await deleteEvent(id);
+        toast.success('Holiday deleted successfully');
       } catch (error) {
         console.error('Failed to delete holiday:', error);
+        toast.error('Failed to delete holiday');
       }
     }
   };

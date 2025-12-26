@@ -13,9 +13,8 @@ import {
   TableBody,
   TableRow,
   TableCell,
-  Checkbox,
 } from "@heroui/react";
-import { Network, Save, Users, ArrowRight } from "lucide-react";
+import { Network, Save, Users } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 
@@ -88,9 +87,17 @@ export default function HierarchySettings() {
     setLoading(true);
     try {
       const staffMember = activeStaff.find(s => s.id === staffId);
-      await updateStaff(staffId, { ...staffMember, reporterId: reporterId || null });
+      if (!staffMember) {
+        toast.error("Staff member not found");
+        return;
+      }
+      
+      // Only send the reporterId field to update
+      await updateStaff(staffId, { reporterId: reporterId || null });
+      toast.success(`Reporter updated for ${staffMember.name}`);
     } catch (error) {
       console.error("Failed to update reporter:", error);
+      toast.error(error.message || "Failed to update reporter");
     } finally {
       setLoading(false);
     }
@@ -113,16 +120,14 @@ export default function HierarchySettings() {
     setLoading(true);
     try {
       await Promise.all(
-        selectedStaff.map(staffId => {
-          const staffMember = activeStaff.find(s => s.id === staffId);
-          return updateStaff(staffId, { ...staffMember, reporterId: bulkReporter });
-        })
+        selectedStaff.map(staffId => updateStaff(staffId, { reporterId: bulkReporter }))
       );
       setSelectedStaff([]);
       setBulkReporter("");
       toast.success(`Updated ${selectedStaff.length} staff members`);
     } catch (error) {
       console.error("Failed to bulk assign:", error);
+      toast.error(error.message || "Failed to bulk assign reporters");
     } finally {
       setLoading(false);
     }
@@ -159,8 +164,11 @@ export default function HierarchySettings() {
               <Select
                 label="Assign Reporter"
                 placeholder="Select reporter"
-                selectedKeys={bulkReporter ? [bulkReporter] : []}
-                onChange={(e) => setBulkReporter(e.target.value)}
+                selectedKeys={bulkReporter ? [String(bulkReporter)] : []}
+                onSelectionChange={(keys) => {
+                  const selectedKey = Array.from(keys)[0];
+                  setBulkReporter(selectedKey || "");
+                }}
                 variant="bordered"
                 className="max-w-xs"
                 size="sm"
@@ -168,7 +176,7 @@ export default function HierarchySettings() {
                 {activeStaff
                   .filter(s => !selectedStaff.includes(s.id))
                   .map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
+                    <SelectItem key={String(s.id)} value={String(s.id)}>
                       {s.name} ({s.role})
                     </SelectItem>
                   ))}
@@ -217,7 +225,6 @@ export default function HierarchySettings() {
               <TableColumn>STAFF MEMBER</TableColumn>
               <TableColumn>ROLE</TableColumn>
               <TableColumn>CURRENT REPORTER</TableColumn>
-              <TableColumn>REPORTING CHAIN</TableColumn>
               <TableColumn>DIRECT REPORTEES</TableColumn>
               <TableColumn>ASSIGN REPORTER</TableColumn>
             </TableHeader>
@@ -227,7 +234,6 @@ export default function HierarchySettings() {
               loadingContent={<Spinner />}
             >
               {(staffMember) => {
-                const reportingChain = getReportingChain(staffMember.id);
                 const directReportees = getDirectReportees(staffMember.id);
 
                 return (
@@ -238,7 +244,7 @@ export default function HierarchySettings() {
                           {staffMember.name}
                         </div>
                         <div className="text-xs text-gray-500">
-                          ID: {staffMember.employeeId}
+                          {staffMember.code}
                         </div>
                       </div>
                     </TableCell>
@@ -260,27 +266,6 @@ export default function HierarchySettings() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {reportingChain.length > 0 ? (
-                        <div className="flex items-center gap-1 flex-wrap">
-                          {reportingChain.slice(0, 3).map((reporter, idx) => (
-                            <div key={reporter.id} className="flex items-center gap-1">
-                              {idx > 0 && <ArrowRight size={12} className="text-gray-400" />}
-                              <Chip size="sm" variant="flat" color="default">
-                                {reporter.name}
-                              </Chip>
-                            </div>
-                          ))}
-                          {reportingChain.length > 3 && (
-                            <Chip size="sm" variant="flat" color="default">
-                              +{reportingChain.length - 3} more
-                            </Chip>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400 text-sm">Top level</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
                       <div className="flex items-center gap-2">
                         {directReportees.length > 0 ? (
                           <>
@@ -298,20 +283,23 @@ export default function HierarchySettings() {
                     <TableCell>
                       <Select
                         placeholder="Select reporter"
-                        selectedKeys={staffMember.reporterId ? [staffMember.reporterId] : []}
-                        onChange={(e) => handleUpdateReporter(staffMember.id, e.target.value)}
+                        selectedKeys={staffMember.reporterId ? [String(staffMember.reporterId)] : []}
+                        onSelectionChange={(keys) => {
+                          const selectedKey = Array.from(keys)[0];
+                          handleUpdateReporter(staffMember.id, selectedKey || null);
+                        }}
                         variant="bordered"
                         size="sm"
                         className="min-w-[200px]"
                         isDisabled={loading}
                       >
-                        <SelectItem key="" value="">
+                        <SelectItem key="none" value="">
                           No reporter
                         </SelectItem>
                         {activeStaff
                           .filter(s => s.id !== staffMember.id)
                           .map((s) => (
-                            <SelectItem key={s.id} value={s.id}>
+                            <SelectItem key={String(s.id)} value={String(s.id)}>
                               {s.name} ({s.role})
                             </SelectItem>
                           ))}
@@ -367,14 +355,14 @@ export default function HierarchySettings() {
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-warning-100 dark:bg-warning-900/30 rounded-lg">
-                <ArrowRight size={20} className="text-warning-600 dark:text-warning-400" />
+                <Users size={20} className="text-warning-600 dark:text-warning-400" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {Math.max(...activeStaff.map(s => getReportingChain(s.id).length), 0)}
+                  {activeStaff.length}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Max Hierarchy Depth
+                  Total Active Staff
                 </div>
               </div>
             </div>
