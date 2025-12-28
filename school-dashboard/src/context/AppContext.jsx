@@ -158,7 +158,8 @@ export function AppProvider({ children }) {
   useEffect(() => {
     fetchData();
     fetchSettings();
-  }, [fetchData, fetchSettings]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array - only run once on mount
 
   // Salary State
   const [salarySettings, setSalarySettings] = useState({
