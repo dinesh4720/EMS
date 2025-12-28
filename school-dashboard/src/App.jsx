@@ -3,6 +3,7 @@ import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
+import FrontDeskPage from "./pages/front-desk";
 import StaffsPage from "./pages/staffs";
 import StudentsPage from "./pages/students";
 import ClassesPage from "./pages/classes";
@@ -66,6 +67,7 @@ function AuthenticatedApp() {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/analytics" element={<Analytics />} />
+                <Route path="/front-desk/*" element={<FrontDeskPage />} />
                 <Route path="/staffs/*" element={<StaffsPage />} />
                 <Route path="/students/*" element={<StudentsPage />} />
                 <Route path="/classes/*" element={<ClassesPage />} />

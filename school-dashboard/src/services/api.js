@@ -126,4 +126,43 @@ export const notificationsApi = {
   markAllAsRead: (email, phone) => request('/notifications/read-all', { method: 'PUT', body: JSON.stringify({ email, phone }) }),
 };
 
-export default { staffApi, studentsApi, classesApi, attendanceApi, timetableApi, settingsApi, intakeFormsApi, publicApi, notificationsApi };
+// Fees API
+export const feesApi = {
+  // Payments
+  getPayments: (filters) => {
+    const params = new URLSearchParams(filters).toString();
+    return request(`/fees/payments${params ? `?${params}` : ''}`);
+  },
+  getPaymentById: (id) => request(`/fees/payments/${id}`),
+  createPayment: (data) => request('/fees/payments', { method: 'POST', body: JSON.stringify(data) }),
+  updatePayment: (id, data) => request(`/fees/payments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deletePayment: (id) => request(`/fees/payments/${id}`, { method: 'DELETE' }),
+  
+  // Defaulters
+  getDefaulters: (filters) => {
+    const params = new URLSearchParams(filters).toString();
+    return request(`/fees/defaulters${params ? `?${params}` : ''}`);
+  },
+  
+  // Student Summary
+  getStudentSummary: (studentId, academicYear) => request(`/fees/students/${studentId}/summary${academicYear ? `?academicYear=${academicYear}` : ''}`),
+  
+  // Refunds
+  getRefunds: (filters) => {
+    const params = new URLSearchParams(filters).toString();
+    return request(`/fees/refunds${params ? `?${params}` : ''}`);
+  },
+  getRefundById: (id) => request(`/fees/refunds/${id}`),
+  createRefund: (data) => request('/fees/refunds', { method: 'POST', body: JSON.stringify(data) }),
+  approveRefund: (id, data) => request(`/fees/refunds/${id}/approve`, { method: 'PUT', body: JSON.stringify(data) }),
+  processRefund: (id, data) => request(`/fees/refunds/${id}/process`, { method: 'PUT', body: JSON.stringify(data) }),
+  rejectRefund: (id, data) => request(`/fees/refunds/${id}/reject`, { method: 'PUT', body: JSON.stringify(data) }),
+  updateRefund: (id, data) => request(`/fees/refunds/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteRefund: (id) => request(`/fees/refunds/${id}`, { method: 'DELETE' }),
+  
+  // Fee Structure
+  getFeeStructure: (classId, academicYear) => request(`/fees/structure/${classId}${academicYear ? `?academicYear=${academicYear}` : ''}`),
+  saveFeeStructure: (data) => request('/fees/structure', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+export default { staffApi, studentsApi, classesApi, attendanceApi, timetableApi, settingsApi, intakeFormsApi, publicApi, notificationsApi, feesApi };

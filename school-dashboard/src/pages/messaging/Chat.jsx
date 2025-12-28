@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Card, CardBody, Input, Button, Avatar, ScrollShadow } from "@heroui/react";
-import { Send, Search, Phone, Video, MoreVertical } from "lucide-react";
+import { Avatar, ScrollShadow } from "@heroui/react";
+import { Send, Search, Phone, Video, MoreVertical, X } from "lucide-react";
 
 const contacts = [
   { id: 1, name: "Rajesh Kumar", role: "Math Teacher", avatar: "https://i.pravatar.cc/150?u=1", online: true, lastMessage: "Sure, I'll send the report", time: "2m" },
@@ -36,96 +36,151 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex gap-3 max-h-[calc(100vh-16rem)] w-full">
+    <div className="flex gap-0 h-full w-full">
       {/* Contacts List */}
-      <Card className="w-80 shrink-0 shadow-sm border border-default-200">
-        <CardBody className="p-0 flex flex-col h-full overflow-hidden">
-          <div className="p-3 border-b border-default-100 shrink-0">
-            <Input
-              size="sm"
+      <div className="w-80 shrink-0 border-r border-default-200 bg-background h-full flex flex-col overflow-hidden">
+        <div className="p-4 border-b border-default-200 shrink-0">
+          {/* Search Input */}
+          <div className="flex items-center gap-2 w-full px-4 py-2.5 bg-default-100 rounded-lg border border-default-200 hover:border-primary hover:bg-default-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
+            <Search size={18} className="text-default-400" />
+            <input
+              type="text"
               placeholder="Search conversations..."
-              startContent={<Search size={16} className="text-default-400" />}
+              className="flex-1 bg-transparent outline-none text-base text-default-900 placeholder:text-default-400"
               value={searchQuery}
-              onValueChange={setSearchQuery}
-              classNames={{ inputWrapper: "bg-default-100" }}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </div>
-          <ScrollShadow className="flex-1 min-h-0">
-            {filteredContacts.map(contact => (
-              <div
-                key={contact.id}
-                onClick={() => setSelectedContact(contact)}
-                className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-default-100 transition-colors ${selectedContact?.id === contact.id ? "bg-primary/5 border-l-2 border-primary" : ""}`}
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="p-0.5 hover:bg-default-200 rounded cursor-pointer"
               >
-                <div className="relative">
-                  <Avatar src={contact.avatar} size="sm" />
-                  {contact.online && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-success rounded-full border-2 border-white" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium truncate">{contact.name}</span>
-                    <span className="text-[10px] text-default-400">{contact.time}</span>
-                  </div>
-                  <p className="text-xs text-default-400 truncate">{contact.lastMessage}</p>
-                </div>
+                <X size={16} className="text-default-400" />
+              </button>
+            )}
+          </div>
+        </div>
+        <ScrollShadow className="flex-1 min-h-0">
+          {filteredContacts.map((contact) => (
+            <div
+              key={contact.id}
+              onClick={() => setSelectedContact(contact)}
+              className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-default-100 transition-colors border-l-2 ${
+                selectedContact?.id === contact.id
+                  ? "bg-primary-50 border-primary"
+                  : "border-transparent"
+              }`}
+            >
+              <div className="relative">
+                <Avatar src={contact.avatar} size="md" />
+                {contact.online && (
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-white" />
+                )}
               </div>
-            ))}
-          </ScrollShadow>
-        </CardBody>
-      </Card>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-base font-medium text-default-900 truncate">
+                    {contact.name}
+                  </span>
+                  <span className="text-xs text-default-400">{contact.time}</span>
+                </div>
+                <p className="text-sm text-default-500 truncate">{contact.lastMessage}</p>
+              </div>
+            </div>
+          ))}
+        </ScrollShadow>
+      </div>
 
       {/* Chat Area */}
-      <Card className="flex-1 shadow-sm border border-default-200">
-        <CardBody className="p-0 flex flex-col h-full overflow-hidden">
-          {/* Chat Header */}
-          <div className="flex items-center justify-between p-3 border-b border-default-100 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <Avatar src={selectedContact?.avatar} size="sm" />
-                {selectedContact?.online && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-success rounded-full border-2 border-white" />}
-              </div>
-              <div>
-                <p className="text-sm font-medium">{selectedContact?.name}</p>
-                <p className="text-xs text-default-400">{selectedContact?.online ? "Online" : "Offline"}</p>
-              </div>
+      <div className="flex-1 bg-background h-full flex flex-col overflow-hidden">
+        {/* Chat Header */}
+        <div className="flex items-center justify-between p-5 border-b border-default-200 shrink-0 bg-default-50/50">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Avatar src={selectedContact?.avatar} size="md" />
+              {selectedContact?.online && (
+                <span className="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-white" />
+              )}
             </div>
-            <div className="flex gap-1">
-              <Button isIconOnly size="sm" variant="light" title="Voice Call"><Phone size={16} /></Button>
-              <Button isIconOnly size="sm" variant="light" title="Video Call"><Video size={16} /></Button>
-              <Button isIconOnly size="sm" variant="light" title="More Options"><MoreVertical size={16} /></Button>
+            <div>
+              <p className="text-base font-medium text-default-900">{selectedContact?.name}</p>
+              <p className="text-sm text-default-500">
+                {selectedContact?.online ? "Online" : "Offline"}
+              </p>
             </div>
           </div>
+          <div className="flex gap-2">
+            <button
+              className="p-2.5 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-primary-50 transition-all duration-200 cursor-pointer text-default-400 hover:text-primary"
+              title="Voice Call"
+            >
+              <Phone size={18} />
+            </button>
+            <button
+              className="p-2.5 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-primary-50 transition-all duration-200 cursor-pointer text-default-400 hover:text-primary"
+              title="Video Call"
+            >
+              <Video size={18} />
+            </button>
+            <button
+              className="p-2.5 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-primary-50 transition-all duration-200 cursor-pointer text-default-400 hover:text-primary"
+              title="More Options"
+            >
+              <MoreVertical size={18} />
+            </button>
+          </div>
+        </div>
 
-          {/* Messages */}
-          <ScrollShadow className="flex-1 min-h-0 p-4 space-y-3">
-            {messages.map(msg => (
-              <div key={msg.id} className={`flex ${msg.sender === "me" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[70%] px-3 py-2 rounded-2xl ${msg.sender === "me" ? "bg-primary text-white rounded-br-sm" : "bg-default-100 rounded-bl-sm"}`}>
-                  <p className="text-sm">{msg.text}</p>
-                  <p className={`text-[10px] mt-1 ${msg.sender === "me" ? "text-white/70" : "text-default-400"}`}>{msg.time}</p>
-                </div>
+        {/* Messages */}
+        <ScrollShadow className="flex-1 min-h-0 p-6 space-y-4 overflow-y-auto">
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex ${msg.sender === "me" ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`max-w-[70%] px-4 py-3 rounded-2xl ${
+                  msg.sender === "me"
+                    ? "bg-primary text-white rounded-br-sm"
+                    : "bg-default-100 text-default-900 rounded-bl-sm"
+                }`}
+              >
+                <p className="text-base leading-relaxed">{msg.text}</p>
+                <p
+                  className={`text-xs mt-1.5 ${
+                    msg.sender === "me" ? "text-white/70" : "text-default-400"
+                  }`}
+                >
+                  {msg.time}
+                </p>
               </div>
-            ))}
-          </ScrollShadow>
+            </div>
+          ))}
+        </ScrollShadow>
 
-          {/* Input */}
-          <div className="p-3 border-t border-default-100 shrink-0">
-            <div className="flex gap-2">
-              <Input
-                size="sm"
+        {/* Input - Always at bottom */}
+        <div className="p-5 border-t border-default-200 shrink-0 bg-default-50/30">
+          <div className="flex gap-3">
+            <div className="flex items-center gap-2 flex-1 px-4 py-3 bg-white rounded-lg border border-default-200 hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
+              <input
+                type="text"
                 placeholder="Type a message..."
+                className="flex-1 bg-transparent outline-none text-base text-default-900 placeholder:text-default-400"
                 value={newMessage}
-                onValueChange={setNewMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                classNames={{ inputWrapper: "bg-default-100" }}
               />
-              <Button color="primary" size="sm" isIconOnly onPress={handleSend} title="Send Message">
-                <Send size={16} />
-              </Button>
             </div>
+            <button
+              onClick={handleSend}
+              className="flex items-center justify-center w-12 h-12 bg-primary text-white rounded-lg border border-primary hover:bg-primary-600 transition-all duration-200 cursor-pointer"
+              title="Send Message"
+            >
+              <Send size={18} />
+            </button>
           </div>
-        </CardBody>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

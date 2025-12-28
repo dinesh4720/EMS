@@ -1,0 +1,248 @@
+import { useState, useEffect } from 'react';
+import {
+  Card, CardBody, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select, SelectItem,
+  Checkbox, useDisclosure
+} from '@heroui/react';
+import { Plus, Trash2, DoorOpen } from 'lucide-react';
+import api from '../../services/api';
+import toast from 'react-hot-toast';
+
+export default function GatePassLog() {
+  const [gatePasses, setGatePasses] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [staff, setStaff] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [formData, setFormData] = useState({
+    personType: 'student',
+    personId: '',
+    personName: '',
+    leavingWith: '',
+    permittedBy: '',
+    outTime: new Date().toTimeString().slice(0, 5),
+    date: new Date().toISOString().split('T')[0],
+    notifyParent: false,
+  });
+
+  useEffect(() => {
+    loadGatePasses();
+    loadStudents();
+    loadStaff();
+  }, []);
+
+  const loadGatePasses = async () => {
+    try {
+      const response = await api.get('/front-desk/gate-passes/today');
+      setGatePasses(response.data);
+    } catch (error) {
+      toast.error('Failed to load gate passes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadStudents = async () => {
+    try {
+      const response = await api.get('/students');
+      setStudents(response.data);
+    } catch (error) {
+      console.error('Failed to load students');
+    }
+  };
+
+  const loadStaff = async () => {
+    try {
+      const response = await api.get('/staff');
+      setStaff(response.data);
+    } catch (error) {
+      console.error('Failed to load staff');
+    }
+  };
+
+  const handleSubmit = async () => {
+    try {
+      await api.post('/front-desk/gate-passes', formData);
+      toast.success('Gate pass issued successfully');
+      onClose();
+      resetForm();
+      loadGatePasses();
+    } catch (error) {
+      toast.error('Failed to issue gate pass');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm('Are you sure you want to delete this gate pass?')) return;
+    try {
+      await api.delete(`/front-desk/gate-passes/${id}`);
+      toast.success('Gate pass deleted');
+      loadGatePasses();
+    } catch (error) {
+      toast.error('Failed to delete gate pass');
+    }
+  };
+
+  const handlePersonSelect = (personId) => {
+    const person = formData.personType === 'student'
+      ? students.find(s => s.id === personId)
+      : staff.find(s => s.id === personId);
+    
+    if (person) {
+      setFormData({
+        ...formData,
+        personId,
+        personName: person.name,
+      });
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      personType: 'student',
+      personId: '',
+      personName: '',
+      leavingWith: '',
+      permittedBy: '',
+      outTime: new Date().toTimeString().slice(0, 5),
+      date: new Date().toISOString().split('T')[0],
+      notifyParent: false,
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <DoorOpen size={24} />
+            Gate Pass Log
+          </h1>
+          <p className="text-sm text-default-500 mt-1">Issue gate passes for students and staff</p>
+        </div>
+        <Button color="primary" startContent={<Plus size={18} />} onPress={onOpen}>
+          Issue Gate Pass
+        </Button>
+      </div>
+
+      <Card>
+        <CardBody>
+          <Table aria-label="Gate pass log table">
+            <TableHeader>
+              <TableColumn>PERSON TYPE</TableColumn>
+              <TableColumn>NAME</TableColumn>
+              <TableColumn>LEAVING WITH</TableColumn>
+              <TableColumn>PERMITTED BY</TableColumn>
+              <TableColumn>OUT TIME</TableColumn>
+              <TableColumn>DATE</TableColumn>
+              <TableColumn>ACTIONS</TableColumn>
+            </TableHeader>
+            <TableBody
+              items={gatePasses}
+              isLoading={loading}
+              emptyContent="No gate passes issued today"
+            >
+              {(gatePass) => (
+                <TableRow key={gatePass._id}>
+                  <TableCell className="capitalize">{gatePass.personType}</TableCell>
+                  <TableCell>{gatePass.personName}</TableCell>
+                  <TableCell>{gatePass.leavingWith || '-'}</TableCell>
+                  <TableCell>{gatePass.permittedBy || '-'}</TableCell>
+                  <TableCell>{gatePass.outTime}</TableCell>
+                  <TableCell>{gatePass.date}</TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      color="danger"
+                      variant="light"
+                      isIconOnly
+                      onPress={() => handleDelete(gatePass._id)}
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardBody>
+      </Card>
+
+      <Modal isOpen={isOpen} onClose={onClose} size="2xl">
+        <ModalContent>
+          <ModalHeader>Issue Gate Pass</ModalHeader>
+          <ModalBody>
+            <div className="grid grid-cols-2 gap-4">
+              <Select
+                label="Person Type"
+                placeholder="Select type"
+                selectedKeys={[formData.personType]}
+                onChange={(e) => setFormData({ ...formData, personType: e.target.value, personId: '', personName: '' })}
+                isRequired
+              >
+                <SelectItem key="student" value="student">Student</SelectItem>
+                <SelectItem key="staff" value="staff">Staff</SelectItem>
+              </Select>
+              <Select
+                label="Select Person"
+                placeholder={`Select ${formData.personType}`}
+                selectedKeys={formData.personId ? [formData.personId] : []}
+                onChange={(e) => handlePersonSelect(e.target.value)}
+                isRequired
+              >
+                {(formData.personType === 'student' ? students : staff).map((person) => (
+                  <SelectItem key={person.id} value={person.id}>
+                    {person.name} {person.admissionId ? `(${person.admissionId})` : person.code ? `(${person.code})` : ''}
+                  </SelectItem>
+                ))}
+              </Select>
+              <Input
+                label="Leaving With"
+                placeholder="Enter person name"
+                value={formData.leavingWith}
+                onChange={(e) => setFormData({ ...formData, leavingWith: e.target.value })}
+              />
+              <Input
+                label="Permitted By"
+                placeholder="Enter authority name"
+                value={formData.permittedBy}
+                onChange={(e) => setFormData({ ...formData, permittedBy: e.target.value })}
+              />
+              <Input
+                label="Out Time"
+                type="time"
+                value={formData.outTime}
+                onChange={(e) => setFormData({ ...formData, outTime: e.target.value })}
+                isRequired
+              />
+              <Input
+                label="Date"
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                isRequired
+              />
+              {formData.personType === 'student' && (
+                <Checkbox
+                  isSelected={formData.notifyParent}
+                  onValueChange={(value) => setFormData({ ...formData, notifyParent: value })}
+                  className="col-span-2"
+                >
+                  Notify Parent
+                </Checkbox>
+              )}
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
+            <Button color="primary" onPress={handleSubmit}>
+              Issue Gate Pass
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </div>
+  );
+}

@@ -1,53 +1,124 @@
 import { Routes, Route } from "react-router-dom";
-import { Tabs, Tab } from "@heroui/react";
+import { Card, Breadcrumbs, BreadcrumbItem, Tabs, Tab } from "@heroui/react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Settings, IndianRupee, AlertTriangle, FileText } from "lucide-react";
-import FeeSetup from "./FeeSetup";
-import CollectFees from "./CollectFees";
-import FeeDefaulters from "./FeeDefaulters";
-import FeeReports from "./FeeReports";
-import PageHeader from "../../components/PageHeader";
+import { IndianRupee, RotateCcw, Home, Download, AlertTriangle, Settings } from "lucide-react";
+import Payments from "./Payments";
+import Refunds from "./Refunds";
 
 export default function FeesPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const getActiveTab = () => {
-    if (location.pathname.includes("/collect")) return "collect";
-    if (location.pathname.includes("/defaulters")) return "defaulters";
-    if (location.pathname.includes("/reports")) return "reports";
-    return "setup";
+    if (location.pathname.includes("/refunds")) return "refunds";
+    return "payments";
   };
 
+  const activeTab = getActiveTab();
+
   return (
-    <div className="space-y-3">
-      <PageHeader title="Financial Overview" />
+    <div className="animate-fade-in">
+      <Card className="shadow-sm border border-default-200 bg-background rounded-md">
+        {/* Breadcrumbs Section */}
+        <div className="px-6 py-3 border-b border-default-200 flex items-center justify-between">
+          <Breadcrumbs size="sm">
+            <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate("/")}>
+              Home
+            </BreadcrumbItem>
+            <BreadcrumbItem>Fees</BreadcrumbItem>
+            {activeTab === "refunds" && <BreadcrumbItem>Refunds</BreadcrumbItem>}
+          </Breadcrumbs>
+        </div>
 
-      <Tabs
-        selectedKey={getActiveTab()}
-        onSelectionChange={(key) => {
-          if (key === "setup") navigate("/fees");
-          else if (key === "collect") navigate("/fees/collect");
-          else if (key === "defaulters") navigate("/fees/defaulters");
-          else if (key === "reports") navigate("/fees/reports");
-        }}
-        size="sm"
-        variant="solid"
-        radius="sm"
-        classNames={{ tabList: "bg-default-100/50" }}
-      >
-        <Tab key="setup" title={<div className="flex items-center gap-1"><Settings size={14} /><span>Fee Setup</span></div>} />
-        <Tab key="collect" title={<div className="flex items-center gap-1"><IndianRupee size={14} /><span>Collect Fees</span></div>} />
-        <Tab key="defaulters" title={<div className="flex items-center gap-1"><AlertTriangle size={14} /><span>Defaulters</span></div>} />
-        <Tab key="reports" title={<div className="flex items-center gap-1"><FileText size={14} /><span>Reports</span></div>} />
-      </Tabs>
+        {/* Tabs Section */}
+        <div className="px-6 py-3 border-b border-default-200">
+          <Tabs
+            selectedKey={activeTab}
+            onSelectionChange={(key) => {
+              if (key === "payments") navigate("/fees");
+              else if (key === "refunds") navigate("/fees/refunds");
+            }}
+            size="md"
+            color="default"
+            variant="light"
+            classNames={{
+              tabList: "gap-0 p-1.5 bg-gradient-to-r from-default-100 via-default-200/50 to-default-100 rounded-xl",
+              cursor: "bg-white dark:bg-default-50 rounded-lg shadow-lg ring-1 ring-black/5",
+              tab: "px-6 h-10 cursor-pointer",
+              tabContent: "group-data-[selected=true]:text-default-900 group-data-[selected=true]:font-semibold text-default-500 font-medium"
+            }}
+          >
+            <Tab
+              key="payments"
+              title={
+                <div className="flex items-center gap-2">
+                  <IndianRupee size={16} />
+                  <span>Payments</span>
+                </div>
+              }
+            />
+            <Tab
+              key="refunds"
+              title={
+                <div className="flex items-center gap-2">
+                  <RotateCcw size={16} />
+                  <span>Refunds</span>
+                </div>
+              }
+            />
+          </Tabs>
+        </div>
 
-      <Routes>
-        <Route index element={<FeeSetup />} />
-        <Route path="collect" element={<CollectFees />} />
-        <Route path="defaulters" element={<FeeDefaulters />} />
-        <Route path="reports" element={<FeeReports />} />
-      </Routes>
+        {/* Header Section with Gradient and Actions */}
+        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-6 border-b border-default-200 overflow-hidden">
+          {/* Gradient background */}
+          <div className="absolute right-0 top-0 w-1/2 h-full bg-gradient-to-l from-purple-200/80 to-transparent blur-3xl pointer-events-none" />
+
+          <div className="pl-2 relative z-10">
+            <h1 className="text-2xl font-medium text-default-900">
+              {activeTab === "payments" ? "Fee Payments" : "Fee Refunds"}
+            </h1>
+            <p className="text-sm text-default-500 mt-1">
+              {activeTab === "payments"
+                ? "Collect fees, track payments, and manage defaulters"
+                : "Process refunds and track refund history"}
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 relative z-10 flex-wrap">
+            <button
+              onClick={() => navigate("/fees/defaulters")}
+              className="flex items-center gap-2 px-3 py-2 bg-transparent text-default-600 rounded-lg border border-default-300 hover:border-danger hover:bg-danger-50 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap"
+            >
+              <AlertTriangle size={16} />
+              <span>Defaulters</span>
+            </button>
+            <button
+              onClick={() => navigate("/fees/reports")}
+              className="flex items-center gap-2 px-3 py-2 bg-transparent text-default-600 rounded-lg border border-default-300 hover:border-primary hover:bg-primary-50 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap"
+            >
+              <Download size={16} />
+              <span>Reports</span>
+            </button>
+            <button
+              onClick={() => navigate("/settings/fee-heads")}
+              className="flex items-center gap-2 px-3 py-2 bg-transparent text-default-600 rounded-lg border border-default-300 hover:border-primary hover:bg-primary-50 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap"
+            >
+              <Settings size={16} />
+              <span>Fee Setup</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="min-h-[500px] px-6 py-6">
+          <Routes>
+            <Route index element={<Payments />} />
+            <Route path="refunds" element={<Refunds />} />
+          </Routes>
+        </div>
+      </Card>
     </div>
   );
 }

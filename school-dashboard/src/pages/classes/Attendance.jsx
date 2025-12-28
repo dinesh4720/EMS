@@ -1,10 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardBody, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Select, SelectItem, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Textarea, Pagination } from "@heroui/react";
+import { Card, CardBody, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Select, SelectItem, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Textarea, Spinner } from "@heroui/react";
 import { Download, Check, X, Lock, Bell, AlertTriangle } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 
-const ROWS_PER_PAGE = 10;
+const ITEMS_PER_LOAD = 10;
 
 export default function Attendance() {
   const navigate = useNavigate();
@@ -15,7 +15,11 @@ export default function Attendance() {
   const [isLocked, setIsLocked] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editReason, setEditReason] = useState("");
-  const [page, setPage] = useState(1);
+  
+  // Lazy loading state
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const loaderRef = useRef(null);
 
   // Filter students by selected class
   const classStudents = useMemo(() => {
@@ -35,11 +39,39 @@ export default function Attendance() {
     }
   }, [classStudents]);
 
-  const totalPages = Math.ceil(classStudents.length / ROWS_PER_PAGE);
-  const paginatedStudents = useMemo(() => {
-    const start = (page - 1) * ROWS_PER_PAGE;
-    return classStudents.slice(start, start + ROWS_PER_PAGE);
-  }, [classStudents, page]);
+  const totalPages = Math.ceil(classStudents.length / ITEMS_PER_LOAD);
+  const visibleStudents = useMemo(() => {
+    return classStudents.slice(0, visibleCount);
+  }, [classStudents, visibleCount]);
+
+  const hasMore = visibleCount < classStudents.length;
+
+  // Reset visible count when class changes
+  useEffect(() => {
+    setVisibleCount(ITEMS_PER_LOAD);
+  }, [selectedClass]);
+
+  // Lazy loading intersection observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          setIsLoadingMore(true);
+          setTimeout(() => {
+            setVisibleCount(prev => prev + ITEMS_PER_LOAD);
+            setIsLoadingMore(false);
+          }, 300);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, isLoadingMore]);
 
   const markAttendance = (studentId, status) => {
     if (!isLocked) setAttendance(prev => ({ ...prev, [studentId]: status }));
@@ -63,7 +95,7 @@ export default function Attendance() {
       <Card className="shadow-sm border border-default-200 rounded-2xl">
         <CardBody className="p-4">
           <div className="flex gap-2 mb-3 flex-wrap shrink-0">
-            <Select size="sm" selectedKeys={[selectedClass]} onChange={(e) => { setSelectedClass(e.target.value); setPage(1); }} className="max-w-[150px]" label="Class" aria-label="Class">
+            <Select size="sm" selectedKeys={[selectedClass]} onChange={(e) => { setSelectedClass(e.target.value); }} className="max-w-[150px]" label="Class" aria-label="Class">
               {classesWithTeachers.map(c => <SelectItem key={`${c.name}-${c.section}`} textValue={`Class ${c.name} - ${c.section}`}>Class {c.name} - {c.section}</SelectItem>)}
             </Select>
             <Input type="date" size="sm" value={date} onChange={(e) => setDate(e.target.value)} className="max-w-[180px]" />
@@ -99,7 +131,7 @@ export default function Attendance() {
               <TableColumn>ACTIONS</TableColumn>
             </TableHeader>
             <TableBody>
-              {paginatedStudents.map((student) => (
+              {visibleStudents.map((student) => (
                 <TableRow key={student.id}>
                   <TableCell className="text-xs">{student.rollNo}</TableCell>
                   <TableCell>
@@ -124,19 +156,13 @@ export default function Attendance() {
             </TableBody>
           </Table>
 
-          {totalPages > 1 && (
-            <div className="flex w-full justify-center pt-4 border-t border-default-100 mt-4">
-              <Pagination
-                isCompact
-                showControls
-                showShadow
-                color="primary"
-                page={page}
-                total={totalPages}
-                onChange={setPage}
-              />
-            </div>
-          )}
+          {/* Lazy loading indicator */}
+          <div ref={loaderRef} className="flex justify-center py-4">
+            {isLoadingMore && <Spinner size="sm" color="primary" />}
+            {!hasMore && classStudents.length > ITEMS_PER_LOAD && (
+              <span className="text-default-400 text-sm">All {classStudents.length} students loaded</span>
+            )}
+          </div>
 
           <div className="flex justify-between items-center mt-3 pt-3 border-t">
             <div className="flex gap-4 text-xs">

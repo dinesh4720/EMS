@@ -2,13 +2,14 @@ import { Avatar, Button, ScrollShadow, Chip } from "@heroui/react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, BookOpen, MessageSquare, IndianRupee, Settings,
-  ChevronsLeft, GraduationCap, Calendar, BarChart3, FileText, Send, CheckSquare
+  ChevronsLeft, GraduationCap, Calendar, BarChart3, FileText, Send, CheckSquare, DoorOpen
 } from "lucide-react";
 import AiAssistant from "./AiAssistant";
 
 const mainNavItems = [
   { icon: <LayoutDashboard size={18} />, label: "Dashboard", href: "/" },
   { icon: <BarChart3 size={18} />, label: "Analytics", href: "/analytics" },
+  { icon: <DoorOpen size={18} />, label: "Front Desk", href: "/front-desk" },
   { icon: <Users size={18} />, label: "Staffs", href: "/staffs" },
   { icon: <GraduationCap size={18} />, label: "Students", href: "/students" },
   { icon: <BookOpen size={18} />, label: "Classes", href: "/classes" },
