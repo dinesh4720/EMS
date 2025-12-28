@@ -38,7 +38,7 @@ export default function Topbar() {
     };
 
     return (
-        <div className="h-14 px-4 border-b border-default-300 dark:border-default-200 bg-background/50 backdrop-blur-xl sticky top-0 z-40 flex items-center justify-between w-full">
+        <div className="h-12 px-4 border-b border-default-300 dark:border-default-200 bg-background/50 backdrop-blur-xl sticky top-0 z-40 flex items-center justify-between w-full">
             <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
 
             {/* Left Title */}

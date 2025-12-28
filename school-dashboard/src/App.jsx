@@ -13,6 +13,7 @@ import FeesPage from "./pages/fees";
 import SettingsPage from "./pages/settings";
 import FormAssignments from "./pages/intake-forms/FormAssignments";
 import FormSubmissions from "./pages/intake-forms/FormSubmissions";
+import AiAssistantPage from "./pages/AiAssistantPage";
 import StyleGuide from "./pages/StyleGuide";
 import Login from "./pages/Login";
 import { AppProvider, useApp } from "./context/AppContext";
@@ -27,7 +28,7 @@ function BeforeSchoolAlert() {
   if (!isBeforeSchoolHours || dismissed) return null;
 
   return (
-    <div className="bg-warning-50 border-b border-warning-200 px-4 py-2 flex items-center justify-between sticky top-14 z-20">
+    <div className="bg-warning-50 border-b border-warning-200 px-4 py-2 flex items-center justify-between sticky top-12 z-20">
       <div className="flex items-center gap-2">
         <AlertCircle size={16} className="text-warning-600" />
         <span className="text-sm text-warning-700">
@@ -59,7 +60,7 @@ function AuthenticatedApp() {
         </div>
 
         <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
-        <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-60' : 'ml-16'} relative z-10 bg-default-100/80 dark:bg-default-100/20`}>
+        <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-56' : 'ml-16'} relative z-10 bg-default-100/80 dark:bg-default-100/20`}>
           <Topbar />
           <BeforeSchoolAlert />
           <main className="flex-1 p-2 md:p-3">
@@ -77,6 +78,7 @@ function AuthenticatedApp() {
                 <Route path="/settings/*" element={<SettingsPage />} />
                 <Route path="/intake-forms/assignments" element={<FormAssignments />} />
                 <Route path="/intake-forms/submissions" element={<FormSubmissions />} />
+                <Route path="/ai-assistant" element={<AiAssistantPage />} />
                 <Route path="/style-guide" element={<StyleGuide />} />
               </Routes>
             </div>

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
-  Card, CardBody, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
+  Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select, SelectItem,
-  Checkbox, useDisclosure
+  Checkbox, useDisclosure, Button
 } from '@heroui/react';
-import { Plus, Trash2, DoorOpen } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -111,23 +111,8 @@ export default function GatePassLog() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <DoorOpen size={24} />
-            Gate Pass Log
-          </h1>
-          <p className="text-sm text-default-500 mt-1">Issue gate passes for students and staff</p>
-        </div>
-        <Button color="primary" startContent={<Plus size={18} />} onPress={onOpen}>
-          Issue Gate Pass
-        </Button>
-      </div>
-
-      <Card>
-        <CardBody>
-          <Table aria-label="Gate pass log table">
+    <>
+      <Table aria-label="Gate pass log table" removeWrapper>
             <TableHeader>
               <TableColumn>PERSON TYPE</TableColumn>
               <TableColumn>NAME</TableColumn>
@@ -164,9 +149,7 @@ export default function GatePassLog() {
                 </TableRow>
               )}
             </TableBody>
-          </Table>
-        </CardBody>
-      </Card>
+      </Table>
 
       <Modal isOpen={isOpen} onClose={onClose} size="2xl">
         <ModalContent>
@@ -243,6 +226,6 @@ export default function GatePassLog() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </div>
+    </>
   );
 }

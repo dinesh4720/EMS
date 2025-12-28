@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
-  Card, CardBody, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, useDisclosure
+  Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, useDisclosure, Button
 } from '@heroui/react';
-import { Plus, Edit, Trash2, Phone, Eye } from 'lucide-react';
+import { Edit, Trash2, Eye } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -103,23 +103,8 @@ export default function CallLogsList() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Phone size={24} />
-            Call Logs
-          </h1>
-          <p className="text-sm text-default-500 mt-1">Track and manage call records</p>
-        </div>
-        <Button color="primary" startContent={<Plus size={18} />} onPress={onOpen}>
-          Log Call
-        </Button>
-      </div>
-
-      <Card>
-        <CardBody>
-          <Table aria-label="Call logs table">
+    <>
+      <Table aria-label="Call logs table" removeWrapper>
             <TableHeader>
               <TableColumn>TITLE</TableColumn>
               <TableColumn>CALLER NAME</TableColumn>
@@ -176,9 +161,7 @@ export default function CallLogsList() {
                 </TableRow>
               )}
             </TableBody>
-          </Table>
-        </CardBody>
-      </Card>
+      </Table>
 
       {/* Add/Edit Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
@@ -307,6 +290,6 @@ export default function CallLogsList() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </div>
+    </>
   );
 }

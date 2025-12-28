@@ -20,7 +20,14 @@ const academicYears = ["2024-25", "2025-26", "2023-24"];
 
 export default function StudentsList() {
     const navigate = useNavigate();
-    const { students, deleteStudent, updateStudent } = useApp();
+    const { students, deleteStudent, updateStudent, loading: contextLoading } = useApp();
+    
+    console.log('👥 StudentsList render:', { 
+        contextLoading, 
+        studentsCount: students.length,
+        studentsData: students.slice(0, 3).map(s => ({ id: s.id, name: s.name }))
+    });
+    
     const [searchQuery, setSearchQuery] = useState("");
     const [classFilter, setClassFilter] = useState("all");
     const [feeStatusFilter, setFeeStatusFilter] = useState("all");
@@ -79,20 +86,52 @@ export default function StudentsList() {
     const hasMore = visibleCount < filteredItems.length;
     const selectedCount = selectedKeys === "all" ? filteredItems.length : selectedKeys.size;
 
-    useEffect(() => { setVisibleCount(ITEMS_PER_LOAD); }, [searchQuery, classFilter, feeStatusFilter, statusFilter, sortDescriptor]);
+    console.log('📊 Infinite scroll state:', { visibleCount, filteredLength: filteredItems.length, hasMore, isLoading });
+
+    useEffect(() => { 
+        setVisibleCount(ITEMS_PER_LOAD); 
+        setIsLoading(false); // Reset loading when filters change
+    }, [searchQuery, classFilter, feeStatusFilter, statusFilter, sortDescriptor]);
 
     useEffect(() => {
+        // Force loading to false if no more items
+        if (!hasMore) {
+            console.log('🛑 No more items, clearing loading state');
+            setIsLoading(false);
+            return;
+        }
+        
         let timeoutId;
         const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && hasMore && !isLoading) {
+            console.log('👁️ Intersection observer triggered:', { 
+                isIntersecting: entries[0].isIntersecting, 
+                hasMore
+            });
+            
+            if (entries[0].isIntersecting && hasMore) {
+                console.log('⏳ Loading more items...');
                 setIsLoading(true);
-                timeoutId = setTimeout(() => { setVisibleCount(prev => prev + ITEMS_PER_LOAD); setIsLoading(false); }, 300);
+                timeoutId = setTimeout(() => { 
+                    setVisibleCount(prev => {
+                        const newCount = prev + ITEMS_PER_LOAD;
+                        console.log('✅ Loaded more items:', { prev, newCount });
+                        return newCount;
+                    }); 
+                    setIsLoading(false); 
+                }, 300);
             }
         }, { threshold: 0.1 });
+        
         const currentLoader = loaderRef.current;
-        if (currentLoader) observer.observe(currentLoader);
-        return () => { if (timeoutId) clearTimeout(timeoutId); observer.disconnect(); };
-    }, [hasMore, isLoading]);
+        if (currentLoader) {
+            observer.observe(currentLoader);
+        }
+        
+        return () => { 
+            if (timeoutId) clearTimeout(timeoutId); 
+            observer.disconnect(); 
+        };
+    }, [hasMore]);
 
     const getFeeStatusStyle = (status) => {
         switch (status) {
@@ -183,6 +222,18 @@ export default function StudentsList() {
         a.click();
         URL.revokeObjectURL(url);
     };
+
+    // Show loading spinner while context is loading data
+    if (contextLoading) {
+        return (
+            <div className="w-full h-[60vh] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <Spinner size="lg" color="primary" />
+                    <p className="text-default-500">Loading students...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="w-full flex flex-col">

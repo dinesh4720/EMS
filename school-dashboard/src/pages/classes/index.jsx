@@ -4,9 +4,9 @@ import { Tabs, Tab, Button, Input, Select, SelectItem, Drawer, DrawerContent, Dr
 import { useNavigate, useLocation } from "react-router-dom";
 import { BookOpen, Plus, X } from "lucide-react";
 import ClassesList from "./ClassesList";
-import ClassOverview from "./ClassOverview";
 import Attendance from "./Attendance";
 import Timetable from "./Timetable";
+import Substitution from "./Substitution";
 import { useApp } from "../../context/AppContext";
 
 const classNames = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
@@ -23,7 +23,7 @@ export default function ClassesPage() {
   const getActiveTab = () => {
     if (location.pathname.includes("/attendance")) return "attendance";
     if (location.pathname.includes("/timetable")) return "timetable";
-    if (location.pathname.match(/\/classes\/\d+/)) return "overview";
+    if (location.pathname.includes("/substitution")) return "substitution";
     return "list";
   };
 
@@ -67,9 +67,9 @@ export default function ClassesPage() {
       title: "Class Timetable",
       description: "View and manage class schedules and periods"
     },
-    overview: {
-      title: "Class Overview",
-      description: "View detailed class information and statistics"
+    substitution: {
+      title: "Teacher Substitution",
+      description: "Manage teacher substitutions for absent teachers"
     }
   };
 
@@ -83,6 +83,7 @@ export default function ClassesPage() {
               if (key === "list") navigate("/classes");
               else if (key === "attendance") navigate("/classes/attendance");
               else if (key === "timetable") navigate("/classes/timetable");
+              else if (key === "substitution") navigate("/classes/substitution");
             }}
             size="md"
             color="default"
@@ -97,7 +98,7 @@ export default function ClassesPage() {
             <Tab key="list" title="All Classes" />
             <Tab key="attendance" title="Attendance" />
             <Tab key="timetable" title="Timetable" />
-            <Tab key="overview" title="Class Overview" isDisabled={!location.pathname.match(/\/classes\/\d+/)} />
+            <Tab key="substitution" title="Substitution" />
           </Tabs>
         </div>
 
@@ -127,7 +128,7 @@ export default function ClassesPage() {
             <Route index element={<ClassesList />} />
             <Route path="attendance" element={<Attendance />} />
             <Route path="timetable" element={<Timetable />} />
-            <Route path=":id" element={<ClassOverview />} />
+            <Route path="substitution" element={<Substitution />} />
           </Routes>
         </div>
       </Card>

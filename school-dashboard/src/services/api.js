@@ -1,15 +1,41 @@
 const API_URL = import.meta.env.VITE_API_URL || 'https://ems-backend-poms.onrender.com/api';
 
+console.log('🌐 API URL configured:', API_URL);
+
 async function request(endpoint, options = {}) {
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    ...options,
-  });
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(error.error || 'Request failed');
+  const url = `${API_URL}${endpoint}`;
+  console.log(`📡 API Request: ${options.method || 'GET'} ${url}`);
+  
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    
+    const response = await fetch(url, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', ...options.headers },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    console.log(`✅ API Response: ${response.status} ${url}`);
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Request failed' }));
+      throw new Error(error.error || `Request failed with status ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log(`📦 API Data received from ${endpoint}:`, Array.isArray(data) ? `${data.length} items` : 'object');
+    return data;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      console.error(`⏱️ API Timeout: ${url}`);
+      throw new Error('Request timeout - please check if backend is running');
+    }
+    console.error(`❌ API Error: ${url}`, error);
+    throw error;
   }
-  return response.json();
 }
 
 // Staff API

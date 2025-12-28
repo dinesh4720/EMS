@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
-  Card, CardBody, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
+  Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select, SelectItem,
-  Chip, useDisclosure, Textarea, Checkbox, Tabs, Tab
+  Chip, useDisclosure, Textarea, Checkbox, Tabs, Tab, Button
 } from '@heroui/react';
-import { Plus, Edit, Trash2, UserPlus, Eye } from 'lucide-react';
+import { Edit, Trash2, Eye } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -158,23 +158,8 @@ export default function AdmissionsList() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <UserPlus size={24} />
-            Admissions
-          </h1>
-          <p className="text-sm text-default-500 mt-1">Manage admission inquiries and applications</p>
-        </div>
-        <Button color="primary" startContent={<Plus size={18} />} onPress={onOpen}>
-          New Admission Inquiry
-        </Button>
-      </div>
-
-      <Card>
-        <CardBody>
-          <Table aria-label="Admissions table">
+    <>
+      <Table aria-label="Admissions table" removeWrapper>
             <TableHeader>
               <TableColumn>STUDENT NAME</TableColumn>
               <TableColumn>PARENT NAME</TableColumn>
@@ -241,9 +226,7 @@ export default function AdmissionsList() {
                 </TableRow>
               )}
             </TableBody>
-          </Table>
-        </CardBody>
-      </Card>
+      </Table>
 
       {/* Add/Edit Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside">
@@ -496,6 +479,6 @@ export default function AdmissionsList() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </div>
+    </>
   );
 }

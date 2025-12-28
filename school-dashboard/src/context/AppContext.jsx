@@ -77,12 +77,22 @@ export function AppProvider({ children }) {
   // Fetch data from API on mount
   const fetchData = useCallback(async () => {
     try {
+      console.log('🔄 Starting to fetch data...');
       setLoading(true);
+      
+      console.log('📡 Fetching from API...');
       const [staffData, studentsData, classesData] = await Promise.all([
         staffApi.getAll(),
         studentsApi.getAll(),
         classesApi.getAll(),
       ]);
+      
+      console.log('✅ Data fetched successfully:', {
+        staff: staffData.length,
+        students: studentsData.length,
+        classes: classesData.length
+      });
+      
       setStaff(staffData);
       setStudents(studentsData);
       setClasses(classesData.map(c => ({
@@ -94,10 +104,12 @@ export function AppProvider({ children }) {
       })));
       setError(null);
     } catch (err) {
-      console.error('Failed to fetch data:', err);
+      console.error('❌ Failed to fetch data:', err);
+      console.error('Error details:', err.message);
       setError(err.message);
-      toast.error('Failed to load data');
+      toast.error('Failed to load data: ' + err.message);
     } finally {
+      console.log('✅ Setting loading to false');
       setLoading(false);
     }
   }, []);

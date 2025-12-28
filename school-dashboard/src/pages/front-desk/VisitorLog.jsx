@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
-  Card, CardBody, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Chip, useDisclosure
+  Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Chip, useDisclosure, Button
 } from '@heroui/react';
-import { Plus, LogOut, Trash2, Users } from 'lucide-react';
+import { LogOut, Trash2 } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -82,23 +82,8 @@ export default function VisitorLog() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Users size={24} />
-            Visitor Log
-          </h1>
-          <p className="text-sm text-default-500 mt-1">Track visitors for today</p>
-        </div>
-        <Button color="primary" startContent={<Plus size={18} />} onPress={onOpen}>
-          New Visitor
-        </Button>
-      </div>
-
-      <Card>
-        <CardBody>
-          <Table aria-label="Visitor log table">
+    <>
+      <Table aria-label="Visitor log table" removeWrapper>
             <TableHeader>
               <TableColumn>VISITOR NAME</TableColumn>
               <TableColumn>PHONE</TableColumn>
@@ -158,9 +143,7 @@ export default function VisitorLog() {
                 </TableRow>
               )}
             </TableBody>
-          </Table>
-        </CardBody>
-      </Card>
+      </Table>
 
       <Modal isOpen={isOpen} onClose={onClose} size="2xl">
         <ModalContent>
@@ -220,6 +203,6 @@ export default function VisitorLog() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </div>
+    </>
   );
 }

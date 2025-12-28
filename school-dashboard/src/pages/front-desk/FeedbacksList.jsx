@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
-  Card, CardBody, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
+  Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, Chip, useDisclosure,
-  Select, SelectItem, Checkbox
+  Select, SelectItem, Checkbox, Button
 } from '@heroui/react';
-import { Plus, Edit, Trash2, MessageSquare } from 'lucide-react';
+import { Edit, Trash2 } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -105,23 +105,8 @@ export default function FeedbacksList() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <MessageSquare size={24} />
-            Feedbacks
-          </h1>
-          <p className="text-sm text-default-500 mt-1">Collect and manage feedback</p>
-        </div>
-        <Button color="primary" startContent={<Plus size={18} />} onPress={onOpen}>
-          New Feedback
-        </Button>
-      </div>
-
-      <Card>
-        <CardBody>
-          <Table aria-label="Feedbacks table">
+    <>
+      <Table aria-label="Feedbacks table" removeWrapper>
             <TableHeader>
               <TableColumn>NAME</TableColumn>
               <TableColumn>PHONE</TableColumn>
@@ -177,9 +162,7 @@ export default function FeedbacksList() {
                 </TableRow>
               )}
             </TableBody>
-          </Table>
-        </CardBody>
-      </Card>
+      </Table>
 
       <Modal isOpen={isOpen} onClose={onClose} size="2xl">
         <ModalContent>
@@ -252,6 +235,6 @@ export default function FeedbacksList() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </div>
+    </>
   );
 }
