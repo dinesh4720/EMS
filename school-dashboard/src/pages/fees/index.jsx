@@ -16,6 +16,11 @@ export default function FeesPage() {
 
   const activeTab = getActiveTab();
 
+  const handleDownloadReport = () => {
+    // TODO: Implement comprehensive fee report generation
+    alert('Generating fee report... This will include payments, defaulters, and refunds.');
+  };
+
   return (
     <div className="animate-fade-in">
       <Card className="shadow-sm border border-default-200 bg-background rounded-md">
@@ -95,7 +100,7 @@ export default function FeesPage() {
               <span>Defaulters</span>
             </button>
             <button
-              onClick={() => navigate("/fees/reports")}
+              onClick={handleDownloadReport}
               className="flex items-center gap-2 px-3 py-2 bg-transparent text-default-600 rounded-lg border border-default-300 hover:border-primary hover:bg-primary-50 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap"
             >
               <Download size={16} />

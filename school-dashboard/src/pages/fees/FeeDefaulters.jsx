@@ -95,6 +95,52 @@ export default function FeeDefaulters() {
 
   const totalPending = filteredDefaulters.reduce((sum, d) => sum + d.pending, 0);
 
+  const handleSendReminders = () => {
+    // TODO: Implement bulk SMS/Email reminder functionality
+    const count = filteredDefaulters.length;
+    alert(`Sending reminders to ${count} defaulters...`);
+  };
+
+  const handleExportDefaulters = () => {
+    // Create CSV content
+    const headers = ['Student', 'Class', 'Roll No', 'Pending Amount', 'Due Date', 'Days Overdue', 'Phone'];
+    const rows = filteredDefaulters.map(d => [
+      d.student,
+      d.class,
+      d.rollNo,
+      d.pending,
+      d.dueDate,
+      d.days,
+      d.phone || 'N/A'
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+    
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fee-defaulters-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleSendReminder = (defaulter) => {
+    // TODO: Implement individual SMS/Email reminder
+    alert(`Reminder will be sent to ${defaulter.student} at ${defaulter.phone || 'N/A'}`);
+  };
+
+  const handleCollectFee = (defaulter) => {
+    // Navigate to payments page with student pre-selected
+    navigate('/fees', { state: { selectedStudentId: defaulter.id } });
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -225,12 +271,16 @@ export default function FeeDefaulters() {
             </span>
           </div>
 
-          <button className="flex items-center gap-2 px-3 py-2 bg-transparent text-default-600 rounded-lg border border-default-300 hover:border-warning hover:bg-warning-50 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
+          <button 
+            onClick={handleSendReminders}
+            className="flex items-center gap-2 px-3 py-2 bg-transparent text-default-600 rounded-lg border border-default-300 hover:border-warning hover:bg-warning-50 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
             <Bell size={16} />
             <span>Send Reminders</span>
           </button>
 
-          <button className="flex items-center gap-2 px-3 py-2 bg-transparent text-default-600 rounded-lg border border-default-300 hover:border-primary hover:bg-primary-50 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
+          <button 
+            onClick={handleExportDefaulters}
+            className="flex items-center gap-2 px-3 py-2 bg-transparent text-default-600 rounded-lg border border-default-300 hover:border-primary hover:bg-primary-50 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
             <Download size={16} />
             <span>Export</span>
           </button>
@@ -310,10 +360,14 @@ export default function FeeDefaulters() {
               </TableCell>
               <TableCell>
                 <div className="flex justify-end gap-2">
-                  <button className="px-3 py-1.5 bg-primary text-white rounded-lg border border-primary hover:bg-primary-600 transition-all duration-200 text-xs font-medium cursor-pointer">
+                  <button 
+                    onClick={() => handleCollectFee(item)}
+                    className="px-3 py-1.5 bg-primary text-white rounded-lg border border-primary hover:bg-primary-600 transition-all duration-200 text-xs font-medium cursor-pointer">
                     Collect
                   </button>
-                  <button className="p-1.5 bg-transparent rounded-lg border border-transparent hover:border-warning hover:bg-warning-50 transition-all duration-200 cursor-pointer text-default-400 hover:text-warning">
+                  <button 
+                    onClick={() => handleSendReminder(item)}
+                    className="p-1.5 bg-transparent rounded-lg border border-transparent hover:border-warning hover:bg-warning-50 transition-all duration-200 cursor-pointer text-default-400 hover:text-warning">
                     <Bell size={16} />
                   </button>
                 </div>

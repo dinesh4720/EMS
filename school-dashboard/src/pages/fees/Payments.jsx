@@ -174,6 +174,10 @@ export default function Payments() {
         // Update local state
         setPayments([newPayment, ...payments]);
         
+        // Refresh students data to get updated fee status
+        const updatedStudents = await studentsApi.getAll();
+        setStudents(updatedStudents);
+        
         // Set receipt data
         setReceiptData({
           receiptNumber: newPayment.receiptNumber,
@@ -193,6 +197,46 @@ export default function Payments() {
         alert('Failed to process payment. Please try again.');
       }
     }
+  };
+
+  const handleSendReminder = (payment) => {
+    // TODO: Implement SMS/Email reminder functionality
+    alert(`Reminder will be sent to ${payment.student} at ${payment.phone || 'N/A'}`);
+  };
+
+  const handleDownloadReceipt = (payment) => {
+    // TODO: Implement receipt download functionality
+    alert(`Downloading receipt for ${payment.student}`);
+  };
+
+  const handleExportData = () => {
+    // Create CSV content
+    const headers = ['Student', 'Class', 'Roll No', 'Paid', 'Pending', 'Status', 'Last Payment'];
+    const rows = filteredPayments.map(p => [
+      p.student,
+      p.class,
+      p.rollNo,
+      p.paid,
+      p.pending,
+      p.status,
+      p.lastPayment || 'N/A'
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+    
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fee-payments-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   };
 
   const totalPending = filteredPayments
@@ -294,7 +338,9 @@ export default function Payments() {
             <SelectItem key="pending">Pending</SelectItem>
           </Select>
 
-          <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
+          <button 
+            onClick={handleExportData}
+            className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
             <Download size={16} className="text-default-400" />
             <span>Export</span>
           </button>
@@ -385,13 +431,19 @@ export default function Payments() {
                       >
                         Collect
                       </button>
-                      <button className="p-1.5 bg-transparent rounded-lg border border-transparent hover:border-warning hover:bg-warning-50 transition-all duration-200 cursor-pointer text-default-400 hover:text-warning">
+                      <button 
+                        onClick={() => handleSendReminder(payment)}
+                        className="p-1.5 bg-transparent rounded-lg border border-transparent hover:border-warning hover:bg-warning-50 transition-all duration-200 cursor-pointer text-default-400 hover:text-warning"
+                      >
                         <Bell size={16} />
                       </button>
                     </>
                   )}
                   {payment.status === "paid" && (
-                    <button className="p-1.5 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-primary-50 transition-all duration-200 cursor-pointer text-default-400 hover:text-primary">
+                    <button 
+                      onClick={() => handleDownloadReceipt(payment)}
+                      className="p-1.5 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-primary-50 transition-all duration-200 cursor-pointer text-default-400 hover:text-primary"
+                    >
                       <Download size={16} />
                     </button>
                   )}
