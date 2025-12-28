@@ -22,6 +22,11 @@
 - **After**: Downloads CSV files with current data
 - **Fix**: Added CSV export functionality
 
+### 5. Fee Heads Don't Match Pending Amount
+- **Before**: Modal showed ₹12,000 in fees but student owed ₹45,000
+- **After**: Fee heads dynamically calculated to match exact pending amount
+- **Fix**: Created dynamic fee calculation based on monthly breakdown
+
 ---
 
 ## How to Test
@@ -53,10 +58,11 @@
 1. **SMS/Email Integration**: Reminders currently show alerts
 2. **PDF Receipts**: Receipt download shows alert
 3. **Advanced Reports**: Need charts, analytics, multiple formats
-4. **Fee Structure**: Currently hardcoded ₹60,000 annual fee
+4. **Fee Structure Database**: Currently hardcoded ₹5,000 tuition + ₹2,000 transport per month
 
 ---
 
 ## Detailed Documentation
 
-See `FEE_MODULE_FIXES.md` for complete technical details.
+- `FEE_MODULE_FIXES.md` - Complete technical details
+- `FEE_HEADS_FIX.md` - Fee heads calculation explanation

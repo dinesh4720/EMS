@@ -136,11 +136,90 @@ export default function Payments() {
     return () => observer.disconnect();
   }, [hasMore, isLoadingMore]);
 
-  const studentFees = [
-    { id: 1, head: "Tuition Fee", month: "December 2024", amount: 5000, status: "pending" },
-    { id: 2, head: "Transport Fee", month: "December 2024", amount: 2000, status: "pending" },
-    { id: 3, head: "Tuition Fee", month: "November 2024", amount: 5000, status: "overdue" },
-  ];
+  // Calculate fee heads dynamically based on selected student's pending amount
+  const getStudentFees = (student) => {
+    if (!student) return [];
+    
+    const pending = student.pending;
+    if (pending <= 0) return [];
+    
+    const monthlyTuition = 5000; // Tuition fee per month
+    const monthlyTransport = 2000; // Transport fee per month
+    const totalMonthlyFee = monthlyTuition + monthlyTransport;
+    
+    // Calculate how many complete months are pending
+    const completeMonths = Math.floor(pending / totalMonthlyFee);
+    const remainingAmount = pending % totalMonthlyFee;
+    
+    const fees = [];
+    const currentDate = new Date();
+    
+    // Generate fee heads for complete pending months (most recent first)
+    for (let i = 0; i < completeMonths; i++) {
+      const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const monthName = monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      
+      // Add tuition fee
+      fees.push({
+        id: `tuition-${i}`,
+        head: "Tuition Fee",
+        month: monthName,
+        amount: monthlyTuition,
+        status: i === 0 ? "pending" : "overdue"
+      });
+      
+      // Add transport fee
+      fees.push({
+        id: `transport-${i}`,
+        head: "Transport Fee",
+        month: monthName,
+        amount: monthlyTransport,
+        status: i === 0 ? "pending" : "overdue"
+      });
+    }
+    
+    // Add remaining amount as partial fees for the next month
+    if (remainingAmount > 0) {
+      const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - completeMonths, 1);
+      const monthName = monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      
+      if (remainingAmount >= monthlyTuition) {
+        // Add full tuition
+        fees.push({
+          id: `tuition-${completeMonths}`,
+          head: "Tuition Fee",
+          month: monthName,
+          amount: monthlyTuition,
+          status: "overdue"
+        });
+        
+        // Add partial transport
+        const partialTransport = remainingAmount - monthlyTuition;
+        if (partialTransport > 0) {
+          fees.push({
+            id: `transport-${completeMonths}`,
+            head: "Transport Fee",
+            month: monthName,
+            amount: partialTransport,
+            status: "overdue"
+          });
+        }
+      } else {
+        // Add partial tuition only
+        fees.push({
+          id: `tuition-${completeMonths}`,
+          head: "Tuition Fee (Partial)",
+          month: monthName,
+          amount: remainingAmount,
+          status: "overdue"
+        });
+      }
+    }
+    
+    return fees;
+  };
+
+  const studentFees = getStudentFees(selectedStudent);
 
   const totalSelected = studentFees
     .filter((f) => selectedFees.includes(f.id.toString()))
