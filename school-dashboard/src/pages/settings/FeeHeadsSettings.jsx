@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem, Switch, Spinner } from "@heroui/react";
+import { Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem, Switch, Spinner, Divider } from "@heroui/react";
 import { Plus, Edit, Trash2, IndianRupee, BookOpen } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
@@ -22,7 +22,7 @@ export default function FeeHeadsSettings() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const loaderRef = useRef(null);
 
-  const visibleFeeHeads = useMemo(() => 
+  const visibleFeeHeads = useMemo(() =>
     feeHeads.slice(0, visibleCount),
     [feeHeads, visibleCount]
   );
@@ -126,256 +126,273 @@ export default function FeeHeadsSettings() {
   }
 
   return (
-    <div className="w-full flex flex-col">
-      <div className="flex justify-between items-center mb-6">
+    <div className="max-w-4xl mx-auto pb-10 space-y-8">
+      {/* Unified Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-default-200 pb-6">
         <div>
-          <h2 className="text-lg font-semibold text-default-800">Fee Heads Management</h2>
-          <p className="text-sm text-default-500">Configure fee categories and amounts</p>
+          <h2 className="text-2xl font-bold text-default-900">Fee Management</h2>
+          <p className="text-sm text-default-500 mt-1">Configure fee heads, amounts and categories.</p>
         </div>
-        <Button 
-          color="primary" 
-          size="sm" 
-          startContent={<Plus size={16} />} 
-          onPress={() => handleOpen()}
-          className="transition-all duration-200"
-        >
-          Add Fee Head
-        </Button>
+        <Button color="primary" radius="full" className="shadow-md font-medium px-6" startContent={<Plus size={18} />} onPress={() => handleOpen()}>Add Fee Head</Button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div className="p-4 bg-primary-50 rounded-lg border border-primary-200">
-          <div className="flex items-center gap-2 mb-2">
-            <BookOpen size={18} className="text-primary-600" />
-            <span className="text-xs text-primary-700 uppercase tracking-wider">Total Heads</span>
+      <div className="space-y-12">
+
+        {/* Overview KPIs */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="p-4 bg-primary-50 rounded-xl border border-primary-100 flex flex-col justify-center items-center text-center">
+            <span className="text-xs text-primary-600 uppercase tracking-wider font-semibold mb-1">Total Heads</span>
+            <p className="text-3xl font-bold text-primary-700">{feeHeads.length}</p>
           </div>
-          <p className="text-2xl font-semibold text-primary-700">{feeHeads.length}</p>
+
+          <div className="p-4 bg-success-50 rounded-xl border border-success-100 flex flex-col justify-center items-center text-center">
+            <span className="text-xs text-success-600 uppercase tracking-wider font-semibold mb-1">Mandatory</span>
+            <p className="text-3xl font-bold text-success-700">{feeHeads.filter(fh => fh.mandatory).length}</p>
+          </div>
+
+          <div className="p-4 bg-warning-50 rounded-xl border border-warning-100 flex flex-col justify-center items-center text-center">
+            <span className="text-xs text-warning-600 uppercase tracking-wider font-semibold mb-1">Optional</span>
+            <p className="text-3xl font-bold text-warning-700">{feeHeads.filter(fh => !fh.mandatory).length}</p>
+          </div>
+
+          <div className="p-4 bg-secondary-50 rounded-xl border border-secondary-100 flex flex-col justify-center items-center text-center">
+            <span className="text-xs text-secondary-600 uppercase tracking-wider font-semibold mb-1">Total Amount</span>
+            <p className="text-3xl font-bold text-secondary-700">₹{totalFees.toLocaleString()}</p>
+          </div>
         </div>
 
-        <div className="p-4 bg-success-50 rounded-lg border border-success-200">
-          <div className="flex items-center gap-2 mb-2">
-            <IndianRupee size={18} className="text-success-600" />
-            <span className="text-xs text-success-700 uppercase tracking-wider">Mandatory</span>
+        <Divider />
+
+        {/* Fee Heads List */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                <IndianRupee size={24} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-default-900">Fee Heads Directory</h3>
+                <p className="text-xs text-default-500">List of all configured fee heads</p>
+              </div>
+            </div>
           </div>
-          <p className="text-2xl font-semibold text-success-700">
-            {feeHeads.filter(fh => fh.mandatory).length}
-          </p>
-        </div>
 
-        <div className="p-4 bg-warning-50 rounded-lg border border-warning-200">
-          <div className="flex items-center gap-2 mb-2">
-            <IndianRupee size={18} className="text-warning-600" />
-            <span className="text-xs text-warning-700 uppercase tracking-wider">Optional</span>
-          </div>
-          <p className="text-2xl font-semibold text-warning-700">
-            {feeHeads.filter(fh => !fh.mandatory).length}
-          </p>
-        </div>
-
-        <div className="p-4 bg-secondary-50 rounded-lg border border-secondary-200">
-          <div className="flex items-center gap-2 mb-2">
-            <IndianRupee size={18} className="text-secondary-600" />
-            <span className="text-xs text-secondary-700 uppercase tracking-wider">Total Amount</span>
-          </div>
-          <p className="text-2xl font-semibold text-secondary-700">₹{totalFees.toLocaleString()}</p>
-        </div>
-      </div>
-
-      <Card className="shadow-sm border border-default-200 rounded-lg mb-4">
-        <CardBody className="p-0">
-          <Table
-            aria-label="Fee Heads"
-            removeWrapper
-            classNames={{
-              base: "overflow-visible",
-              th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200",
-              td: "py-5 border-b border-default-100",
-              tbody: "[&>tr:last-child>td]:border-none"
-            }}
-          >
-            <TableHeader>
-              <TableColumn>FEE HEAD</TableColumn>
-              <TableColumn>CATEGORY</TableColumn>
-              <TableColumn>AMOUNT</TableColumn>
-              <TableColumn>TYPE</TableColumn>
-              <TableColumn align="end">ACTIONS</TableColumn>
-            </TableHeader>
-            <TableBody emptyContent="No fee heads configured">
-              {visibleFeeHeads.map((feeHead) => (
-                <TableRow key={feeHead.id}>
-                  <TableCell className="font-medium text-default-700">{feeHead.name}</TableCell>
-                  <TableCell>
-                    <Chip 
-                      size="sm" 
-                      variant="flat" 
-                      color={categoryColors[feeHead.category]}
-                    >
-                      {feeHead.category}
-                    </Chip>
-                  </TableCell>
-                  <TableCell className="text-sm font-semibold text-default-800">
-                    ₹{feeHead.amount.toLocaleString()}
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      size="sm" 
-                      variant="dot"
-                      color={feeHead.mandatory ? "success" : "warning"}
-                      classNames={{ base: "border-1 border-default-200 pl-2" }}
-                    >
-                      {feeHead.mandatory ? "Mandatory" : "Optional"}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2 justify-end">
-                      <Button 
-                        isIconOnly 
-                        size="sm" 
-                        variant="light" 
-                        color="primary" 
-                        onPress={() => handleOpen(feeHead)}
-                        className="transition-all duration-200"
-                      >
-                        <Edit size={16} />
-                      </Button>
-                      <Button 
-                        isIconOnly 
-                        size="sm" 
-                        variant="light" 
-                        color="danger" 
-                        onPress={() => handleDelete(feeHead.id)}
-                        className="transition-all duration-200"
-                      >
-                        <Trash2 size={16} />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          {/* Lazy loading indicator */}
-          <div ref={loaderRef} className="flex justify-center py-4">
-            {isLoadingMore && <Spinner size="sm" color="primary" />}
-            {!hasMore && feeHeads.length > ITEMS_PER_LOAD && (
-              <span className="text-default-400 text-sm">All {feeHeads.length} fee heads loaded</span>
-            )}
-          </div>
-        </CardBody>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="shadow-sm border border-default-200 rounded-lg">
-          <CardHeader className="py-4 px-4 bg-default-50/50 border-b border-default-100">
-            <h3 className="text-sm font-semibold text-default-700">Fee Structure Summary</h3>
-          </CardHeader>
-          <CardBody className="p-4 space-y-3">
-            {categories.map(category => {
-              const categoryFees = feeHeads.filter(fh => fh.category === category);
-              const categoryTotal = categoryFees.reduce((sum, fh) => sum + fh.amount, 0);
-              if (categoryFees.length === 0) return null;
-              return (
-                <div key={category} className="flex items-center justify-between p-3 bg-default-50 rounded-lg border border-default-200">
-                  <div>
-                    <p className="text-sm font-medium text-default-800">{category}</p>
-                    <p className="text-xs text-default-500">{categoryFees.length} fee head(s)</p>
-                  </div>
-                  <p className="text-lg font-bold text-default-800">₹{categoryTotal.toLocaleString()}</p>
+          <div className="bg-white border border-default-200 rounded-xl overflow-hidden shadow-sm">
+            <Table
+              aria-label="Fee Heads"
+              removeWrapper
+              radius="none"
+              classNames={{
+                base: "overflow-visible",
+                th: "bg-default-50 text-default-500 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200",
+                td: "py-4 border-b border-default-100",
+                tbody: "[&>tr:last-child>td]:border-none"
+              }}
+            >
+              <TableHeader>
+                <TableColumn>FEE HEAD</TableColumn>
+                <TableColumn>CATEGORY</TableColumn>
+                <TableColumn>AMOUNT</TableColumn>
+                <TableColumn>TYPE</TableColumn>
+                <TableColumn align="end">ACTIONS</TableColumn>
+              </TableHeader>
+              <TableBody emptyContent={
+                <div className="text-center py-12">
+                  <p className="text-default-400 text-sm">No fee heads configured</p>
                 </div>
-              );
-            })}
-          </CardBody>
-        </Card>
+              }>
+                {visibleFeeHeads.map((feeHead) => (
+                  <TableRow key={feeHead.id}>
+                    <TableCell>
+                      <span className="font-semibold text-default-700">{feeHead.name}</span>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                        color={categoryColors[feeHead.category]}
+                        classNames={{ content: "font-medium" }}
+                      >
+                        {feeHead.category}
+                      </Chip>
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-mono text-default-900">₹{feeHead.amount.toLocaleString()}</span>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        size="sm"
+                        variant="dot"
+                        color={feeHead.mandatory ? "success" : "warning"}
+                        classNames={{ base: "border-1 border-default-200 pl-2", content: "font-medium" }}
+                      >
+                        {feeHead.mandatory ? "Mandatory" : "Optional"}
+                      </Chip>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="primary"
+                          onPress={() => handleOpen(feeHead)}
+                          className="text-default-400 hover:text-primary"
+                        >
+                          <Edit size={16} />
+                        </Button>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="danger"
+                          onPress={() => handleDelete(feeHead.id)}
+                          className="text-default-400 hover:text-danger"
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
 
-        <Card className="shadow-sm border border-default-200 rounded-lg">
-          <CardHeader className="py-4 px-4 bg-default-50/50 border-b border-default-100">
-            <h3 className="text-sm font-semibold text-default-700">Fee Breakdown</h3>
-          </CardHeader>
-          <CardBody className="p-4 space-y-3">
-            <div className="flex items-center justify-between p-3 bg-success-50 rounded-lg border border-success-200">
-              <div>
-                <p className="text-sm font-medium text-success-800">Mandatory Fees</p>
-                <p className="text-xs text-success-600">{feeHeads.filter(fh => fh.mandatory).length} items</p>
-              </div>
-              <p className="text-lg font-bold text-success-800">
-                ₹{feeHeads.filter(fh => fh.mandatory).reduce((sum, fh) => sum + fh.amount, 0).toLocaleString()}
-              </p>
+            {/* Lazy loading indicator */}
+            <div ref={loaderRef} className="flex justify-center py-4 bg-default-50/50">
+              {isLoadingMore && <Spinner size="sm" color="primary" />}
+              {!hasMore && feeHeads.length > ITEMS_PER_LOAD && (
+                <span className="text-default-400 text-xs">All fee heads loaded</span>
+              )}
             </div>
-            <div className="flex items-center justify-between p-3 bg-warning-50 rounded-lg border border-warning-200">
-              <div>
-                <p className="text-sm font-medium text-warning-800">Optional Fees</p>
-                <p className="text-xs text-warning-600">{feeHeads.filter(fh => !fh.mandatory).length} items</p>
-              </div>
-              <p className="text-lg font-bold text-warning-800">
-                ₹{feeHeads.filter(fh => !fh.mandatory).reduce((sum, fh) => sum + fh.amount, 0).toLocaleString()}
-              </p>
+          </div>
+        </section>
+
+        <Divider />
+
+        {/* Summary Sections */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <h4 className="flex items-center gap-2 font-bold text-default-900 mb-4">
+              <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+              Category Breakdown
+            </h4>
+            <div className="bg-white border border-default-200 rounded-xl p-5 space-y-4 shadow-sm">
+              {categories.map(category => {
+                const categoryFees = feeHeads.filter(fh => fh.category === category);
+                const categoryTotal = categoryFees.reduce((sum, fh) => sum + fh.amount, 0);
+                if (categoryFees.length === 0) return null;
+                return (
+                  <div key={category} className="flex items-center justify-between pb-3 border-b border-dashed border-default-200 last:border-0 last:pb-0">
+                    <div>
+                      <p className="text-sm font-semibold text-default-700">{category}</p>
+                      <p className="text-xs text-default-400">{categoryFees.length} fee head(s)</p>
+                    </div>
+                    <p className="text-sm font-bold text-default-900">₹{categoryTotal.toLocaleString()}</p>
+                  </div>
+                );
+              })}
             </div>
-            <div className="flex items-center justify-between p-3 bg-primary-50 rounded-lg border border-primary-200">
-              <div>
-                <p className="text-sm font-medium text-primary-800">Total Fees</p>
-                <p className="text-xs text-primary-600">All fee heads combined</p>
+          </div>
+
+          <div>
+            <h4 className="flex items-center gap-2 font-bold text-default-900 mb-4">
+              <span className="w-1.5 h-1.5 bg-success rounded-full"></span>
+              Consolidated Structure
+            </h4>
+            <div className="bg-white border border-default-200 rounded-xl p-5 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between pb-3 border-b border-dashed border-default-200">
+                <div>
+                  <p className="text-sm font-semibold text-success-800">Mandatory Fees</p>
+                  <p className="text-xs text-default-400">{feeHeads.filter(fh => fh.mandatory).length} items</p>
+                </div>
+                <p className="text-sm font-bold text-default-900">
+                  ₹{feeHeads.filter(fh => fh.mandatory).reduce((sum, fh) => sum + fh.amount, 0).toLocaleString()}
+                </p>
               </div>
-              <p className="text-lg font-bold text-primary-800">
-                ₹{feeHeads.reduce((sum, fh) => sum + fh.amount, 0).toLocaleString()}
-              </p>
+
+              <div className="flex items-center justify-between pb-3 border-b border-dashed border-default-200">
+                <div>
+                  <p className="text-sm font-semibold text-warning-700">Optional Fees</p>
+                  <p className="text-xs text-default-400">{feeHeads.filter(fh => !fh.mandatory).length} items</p>
+                </div>
+                <p className="text-sm font-bold text-default-900">
+                  ₹{feeHeads.filter(fh => !fh.mandatory).reduce((sum, fh) => sum + fh.amount, 0).toLocaleString()}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <div>
+                  <p className="text-base font-bold text-default-900">Total Fees</p>
+                  <p className="text-xs text-default-400">All categories combined</p>
+                </div>
+                <p className="text-xl font-black text-primary">
+                  ₹{feeHeads.reduce((sum, fh) => sum + fh.amount, 0).toLocaleString()}
+                </p>
+              </div>
             </div>
-          </CardBody>
-        </Card>
+          </div>
+        </section>
+
       </div>
 
       <Modal isOpen={isOpen} onClose={onClose} size="md">
         <ModalContent>
-          <ModalHeader>{editingFeeHead ? "Edit Fee Head" : "Add New Fee Head"}</ModalHeader>
-          <ModalBody className="gap-4">
+          <ModalHeader className="pb-2 text-lg font-bold">{editingFeeHead ? "Edit Fee Head" : "Add New Fee Head"}</ModalHeader>
+          <ModalBody className="gap-5 py-4">
             <Input
-              size="sm"
               label="Fee Head Name"
               placeholder="e.g., Tuition Fee"
               value={formData.name}
               onValueChange={(v) => setFormData({ ...formData, name: v })}
               variant="bordered"
+              labelPlacement="outside"
+              classNames={{ inputWrapper: "bg-white border-default-200" }}
             />
             <Select
-              size="sm"
               label="Category"
               variant="bordered"
+              placeholder="Select category"
               selectedKeys={[formData.category]}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              labelPlacement="outside"
+              classNames={{ trigger: "bg-white border-default-200" }}
             >
               {categories.map(cat => (
                 <SelectItem key={cat} value={cat}>{cat}</SelectItem>
               ))}
             </Select>
             <Input
-              size="sm"
               type="number"
               label="Amount"
-              placeholder="15000"
-              startContent="₹"
+              placeholder="0.00"
+              startContent={<span className="text-default-400">₹</span>}
               value={formData.amount}
               onValueChange={(v) => setFormData({ ...formData, amount: parseInt(v) || 0 })}
               variant="bordered"
+              labelPlacement="outside"
+              classNames={{ inputWrapper: "bg-white border-default-200" }}
             />
-            <div className="flex items-center justify-between p-3 bg-default-50 rounded-lg border border-default-200">
+            <div className="flex items-center justify-between p-4 bg-default-50 rounded-xl border border-default-200 cursor-pointer" onClick={() => setFormData({ ...formData, mandatory: !formData.mandatory })}>
               <div>
-                <p className="text-sm font-medium text-default-700">Mandatory Fee</p>
-                <p className="text-xs text-default-500">Required for all students</p>
+                <p className="text-sm font-bold text-default-700">Mandatory Fee</p>
+                <p className="text-xs text-default-500">Is this fee required for all students?</p>
               </div>
-              <Switch 
-                size="sm" 
+              <Switch
+                size="sm"
                 isSelected={formData.mandatory}
                 onValueChange={(v) => setFormData({ ...formData, mandatory: v })}
               />
             </div>
           </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onClose}>Cancel</Button>
-            <Button 
-              color="primary" 
+          <ModalFooter className="pt-2">
+            <Button variant="light" onPress={onClose} className="font-medium">Cancel</Button>
+            <Button
+              color="primary"
               onPress={handleSave}
               isDisabled={!formData.name.trim()}
               isLoading={saving}
+              className="font-medium shadow-md"
             >
               {editingFeeHead ? "Update" : "Add"} Fee Head
             </Button>

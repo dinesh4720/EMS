@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  SafeAreaView, Platform, Modal, ActivityIndicator, RefreshControl
+  SafeAreaView, Platform, Modal, ActivityIndicator, RefreshControl, Image, Pressable
 } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { COLORS, SPACING, SHADOWS } from '../theme';
+import { COLORS, SPACING, SHADOWS, GRADIENTS, TYPOGRAPHY } from '../theme';
 import { Feather } from '@expo/vector-icons';
 import Button from '../components/ui/Button';
 import AnimatedPage from '../components/ui/AnimatedPage';
+import ModernHeader from '../components/ui/ModernHeader';
+import ActionCard from '../components/ui/ActionCard';
+import SectionHeader from '../components/ui/SectionHeader';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function TodayScreen({ navigation }) {
   const { user } = useAuth();
@@ -25,28 +29,15 @@ export default function TodayScreen({ navigation }) {
   } = useApp();
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedAlert, setSelectedAlert] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // If there's specific schedule data, use it; otherwise fallback to classes
+  // Data Logic
   const scheduleData = todaySchedule.length > 0 ? todaySchedule : classes;
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
-  };
-
   const teacherName = teacherProfile?.name || user?.name || 'Teacher';
   const firstName = teacherName.split(' ')[0];
   const todaysDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-  // Calculate stats
-  const pendingAttendanceCount = scheduleData.filter(c => !isAttendanceMarked?.(c.classId || c.id)).length;
-  const totalClasses = scheduleData.length;
-  const completedClasses = scheduleData.filter(c => isAttendanceMarked?.(c.classId || c.id)).length;
-
+  // Helper: Get Status
   const getClassStatus = (timeStr) => {
     if (!timeStr) return 'upcoming';
     const now = new Date();
@@ -58,36 +49,23 @@ export default function TodayScreen({ navigation }) {
     if (modifier === 'AM' && hours === 12) hours = 0;
 
     const classMinutes = hours * 60 + (minutes || 0);
-    // Assume 45 min class for status logic
-    const classEndMinutes = classMinutes + 45;
+    const classEndMinutes = classMinutes + 45; // Assume 45 min
 
     if (currentMinutes >= classMinutes && currentMinutes < classEndMinutes) return 'active';
     if (currentMinutes < classMinutes) return 'upcoming';
     return 'past';
   };
 
-  const handleAlertPress = (alert) => {
-    if (alert.action) {
-      navigation.navigate('Classes', { screen: alert.action, params: alert.params });
-    } else {
-      setSelectedAlert(alert);
-      setModalVisible(true);
-    }
-  };
+  // Logic: Find Hero Class (First Active or Next Upcoming)
+  const heroClass = scheduleData.find(c => {
+    const status = getClassStatus(c.time);
+    return status === 'active' || status === 'upcoming';
+  }) || scheduleData[0]; // Fallback to first if all past
 
   const handleOpenClass = (cls) => {
-    const classId = cls.classId || cls.id;
     navigation.navigate('Classes', {
       screen: 'ClassWorkspace',
-      params: { classId, className: cls.name }
-    });
-  };
-
-  const handleMarkAttendance = (cls) => {
-    const classId = cls.classId || cls.id;
-    navigation.navigate('Classes', {
-      screen: 'ClassWorkspace',
-      params: { classId, className: cls.name, initialTab: 0 }
+      params: { classId: cls?.classId || cls?.id, className: cls?.name }
     });
   };
 
@@ -105,311 +83,248 @@ export default function TodayScreen({ navigation }) {
     );
   }
 
-  // Calculate time indicator position (for reference if needed, though unused in list view)
-  const now = new Date();
-  const currentHour = now.getHours();
-  const currentMinute = now.getMinutes();
-
   return (
     <AnimatedPage style={styles.mainContainer}>
       <SafeAreaView style={styles.safeArea}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>{getGreeting()},</Text>
-            <Text style={styles.name}>{firstName}</Text>
-            <Text style={styles.date}>{todaysDate}</Text>
-          </View>
-          <TouchableOpacity style={styles.profileButton}>
-            <Text style={styles.profileInitials}>{firstName.substring(0, 2).toUpperCase()}</Text>
-          </TouchableOpacity>
-        </View>
+
+        <ModernHeader
+          title={`Hello, ${firstName}`}
+          subtitle={todaysDate}
+          userInitials={firstName[0]}
+        />
 
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         >
-          {/* Status Bar */}
-          <View style={styles.statusBar}>
-            <View style={styles.statusTextContainer}>
-              <View style={[styles.statusDot, checkin.checkedIn ? styles.dotOnline : styles.dotOffline]} />
-              <View>
-                <Text style={styles.statusTitle}>{checkin.checkedIn ? 'On Duty' : 'Off Duty'}</Text>
-                {checkin.checkedIn && <Text style={styles.statusSubtitle}>Since {checkin.time}</Text>}
-              </View>
-            </View>
-            <TouchableOpacity
-              style={[styles.checkInBtn, checkin.checkedIn ? styles.checkInBtnActive : styles.checkInBtnInactive]}
-              onPress={checkin.checkedIn ? null : doCheckin}
-              activeOpacity={0.8}
-              disabled={checkin.checkedIn}
-            >
-              <Text style={[styles.checkInBtnText, checkin.checkedIn ? styles.textSuccess : styles.textWhite]}>
-                {checkin.checkedIn ? "Checked In" : "Check In"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Quick Stats - Restored for completeness if needed, or Alerts */}
-
-          {/* Alerts - Restored */}
-          {alerts.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionHeader}>Important</Text>
-              {alerts.slice(0, 2).map((alert, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.alertItem}
-                  onPress={() => handleAlertPress(alert)}
-                >
-                  <Feather name="alert-circle" size={18} color={COLORS.danger} />
-                  <Text style={styles.alertText} numberOfLines={1}>{alert.message}</Text>
-                  <Feather name="chevron-right" size={16} color={COLORS.gray} />
-                </TouchableOpacity>
-              ))}
-            </View>
+          {/* 1. Hero Section */}
+          {heroClass ? (
+            <ActionCard
+              title={heroClass.name}
+              subtitle={heroClass.subject || "No Subject"}
+              time={heroClass.time || "Today"}
+              location={`Room ${heroClass.room || "N/A"}`}
+              onPress={() => handleOpenClass(heroClass)}
+              colors={getClassStatus(heroClass.time) === 'active' ? GRADIENTS.primary : GRADIENTS.cool}
+              actionLabel={getClassStatus(heroClass.time) === 'active' ? "Resume Class" : "Prepare Class"}
+            />
+          ) : (
+            <ActionCard
+              title="All Done!"
+              subtitle="No more classes scheduled for today."
+              time="Freedom"
+              location="Relax"
+              onPress={() => { }}
+              colors={GRADIENTS.success}
+              actionLabel="View Calendar"
+            />
           )}
 
-          {/* Schedule List */}
-          <View style={styles.section}>
-            <Text style={styles.sectionHeader}>Today's Schedule</Text>
+          {/* 2. Quick Actions Grid */}
+          <SectionHeader title="Quick Actions" />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActionsContainer}>
+            <QuickActionItem
+              icon="check-circle"
+              label={checkin.checkedIn ? "Check Out" : "Check In"}
+              color={checkin.checkedIn ? COLORS.success : COLORS.warning}
+              bg={checkin.checkedIn ? '#DCFCE7' : '#FEF3C7'}
+              onPress={checkin.checkedIn ? undefined : doCheckin}
+            />
+            <QuickActionItem
+              icon="calendar"
+              label="Apply Leave"
+              color={COLORS.primary}
+              bg={COLORS.primaryLight}
+              onPress={() => navigation.navigate('Home', { screen: 'LeaveApplication' })}
+            />
+            <QuickActionItem
+              icon="clock"
+              label="Regularize"
+              color={COLORS.secondary}
+              bg={COLORS.secondaryLight}
+              onPress={() => navigation.navigate('Home', { screen: 'RegularizationRequest' })}
+            />
+            <QuickActionItem
+              icon="bell"
+              label="Notices"
+              color={COLORS.info}
+              bg="#DBEAFE"
+              onPress={() => setModalVisible(true)}
+            />
+          </ScrollView>
+
+          {/* 3. Schedule List */}
+          <SectionHeader title="Today's Schedule" action="View All" onAction={() => navigation.navigate('Classes')} />
+          <View style={styles.scheduleList}>
             {scheduleData.length === 0 ? (
               <View style={styles.emptyState}>
-                <Feather name="calendar" size={40} color={COLORS.lightGray} />
-                <Text style={styles.emptyText}>No classes today</Text>
+                <Feather name="coffee" size={48} color={COLORS.gray} />
+                <Text style={styles.emptyText}>No classes scheduled</Text>
               </View>
             ) : (
-              <View style={styles.timelineContainer}>
-                {scheduleData.map((cls, index) => {
-                  const status = getClassStatus(cls.time);
-                  const isMarked = isAttendanceMarked(cls.classId || cls.id);
-                  const isActive = status === 'active';
-                  const isPending = status === 'past' && !isMarked;
+              scheduleData.map((cls, index) => {
+                const status = getClassStatus(cls.time);
+                const isHero = cls === heroClass;
+                if (isHero) return null; // Don't duplicate hero in list
 
-                  const [timeStr, modifier] = cls.time ? cls.time.split(' ') : ['--', ''];
+                return (
+                  <Pressable
+                    key={index}
+                    style={({ pressed }) => [styles.scheduleItem, pressed && styles.pressedState]}
+                    onPress={() => handleOpenClass(cls)}
+                    android_ripple={{ color: COLORS.primaryLight }}
+                  >
+                    <View style={styles.timeContainer}>
+                      <Text style={styles.timeText}>{cls.time ? cls.time.split(' ')[0] : '--'}</Text>
+                      <Text style={styles.ampmText}>{cls.time ? cls.time.split(' ')[1] : ''}</Text>
+                    </View>
 
-                  return (
-                    <View key={index} style={styles.timeSlotRow}>
-                      {/* Time Column */}
-                      <View style={styles.timeLabelContainer}>
-                        <Text style={styles.timeLabelText}>{timeStr}</Text>
-                        <Text style={styles.meridiemText}>{modifier}</Text>
+                    <View style={styles.scheduleCard}>
+                      <View style={[styles.statusStrip, { backgroundColor: status === 'past' ? COLORS.lightGray : COLORS.primary }]} />
+                      <View style={styles.scheduleContent}>
+                        <Text style={[styles.scheduleTitle, status === 'past' && styles.dimText]}>{cls.name}</Text>
+                        <Text style={styles.scheduleSubject}>{cls.subject}</Text>
                       </View>
 
-                      {/* Content Column with timeline connector */}
-                      <View style={styles.gridLineContainer}>
-                        {/* Timeline Connector Line */}
-                        {index !== scheduleData.length - 1 && (
-                          <View style={styles.connectorLine} />
+                      <View style={styles.scheduleMeta}>
+                        {isAttendanceMarked(cls.classId || cls.id) ? (
+                          <Feather name="check-circle" size={20} color={COLORS.success} />
+                        ) : (
+                          <Feather name="chevron-right" size={20} color={COLORS.lightGray} />
                         )}
-
-                        <TouchableOpacity
-                          style={[
-                            styles.eventCard,
-                            isActive ? styles.eventActive : isPending ? styles.eventPending : styles.eventDefault,
-                            isMarked && styles.eventDone
-                          ]}
-                          onPress={() => handleOpenClass(cls)}
-                          activeOpacity={0.9}
-                        >
-                          <View style={styles.eventContent}>
-                            <Text style={styles.eventTitle} numberOfLines={1}>
-                              {cls.name} <Text style={{ fontSize: 13, color: COLORS.dark, opacity: 0.7 }}>({cls.subject})</Text>
-                            </Text>
-                            <Text style={styles.eventRoom}>{cls.room ? `Room ${cls.room}` : 'No Room'}</Text>
-
-                            {/* Action Button */}
-                            <View style={styles.eventActionRow}>
-                              {isMarked ? (
-                                <View style={styles.checkBadge}>
-                                  <Feather name="check" size={12} color="#166534" />
-                                  <Text style={styles.checkText}>Done</Text>
-                                </View>
-                              ) : (isActive || isPending) ? (
-                                <TouchableOpacity
-                                  style={styles.miniMarkBtn}
-                                  onPress={() => handleMarkAttendance(cls)}
-                                >
-                                  <Text style={styles.miniMarkText}>Mark Attendance</Text>
-                                </TouchableOpacity>
-                              ) : null}
-                            </View>
-                          </View>
-                        </TouchableOpacity>
                       </View>
                     </View>
-                  );
-                })}
-              </View>
+                  </Pressable>
+                );
+              })
             )}
           </View>
-        </ScrollView>
 
-        {/* Modal */}
-        <Modal visible={modalVisible} transparent animationType="fade">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Notice</Text>
-              <Text style={styles.modalBody}>{selectedAlert?.note || selectedAlert?.message}</Text>
-              <Button title="Close" onPress={() => setModalVisible(false)} />
-            </View>
-          </View>
-        </Modal>
+        </ScrollView>
       </SafeAreaView>
     </AnimatedPage>
   );
 }
 
+// Sub-component for Quick Actions with Material Ripple
+function QuickActionItem({ icon, label, color, bg, onPress }) {
+  return (
+    <View style={[styles.quickActionWrapper, { backgroundColor: bg }]}>
+      <Pressable
+        style={({ pressed }) => [styles.quickAction, pressed && { opacity: 0.7 }]}
+        android_ripple={{ color: 'rgba(0,0,0,0.1)', borderless: true }}
+        onPress={onPress}
+      >
+        <Feather name={icon} size={28} color={color} />
+        <Text style={[styles.quickActionLabel, { color: COLORS.dark }]}>{label}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: '#FFFFFF' },
+  mainContainer: { flex: 1, backgroundColor: COLORS.fade }, // Slate 50
   safeArea: { flex: 1 },
   centered: { justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { paddingBottom: 100 },
+  scrollContent: { paddingBottom: 120 },
 
-  // Header
-  header: {
+  // Quick Actions (M3 Secondary Container Style)
+  quickActionsContainer: {
     paddingHorizontal: SPACING.l,
-    paddingTop: Platform.OS === 'android' ? 40 : 10,
-    paddingBottom: SPACING.m,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    backgroundColor: '#FFFFFF',
-    zIndex: 10,
+    gap: SPACING.m,
   },
-  greeting: { fontSize: 14, color: COLORS.gray, fontFamily: 'Inter_500Medium' },
-  name: { fontSize: 26, color: COLORS.dark, fontFamily: 'Inter_500Medium', marginVertical: 2 },
-  date: { fontSize: 13, color: COLORS.gray, fontFamily: 'Inter_500Medium', letterSpacing: 0.5 },
-  profileButton: {
-    width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.white,
-    justifyContent: 'center', alignItems: 'center',
-    ...SHADOWS.small, borderWidth: 1, borderColor: '#F3F4F6'
+  quickActionWrapper: {
+    width: 100,
+    height: 100,
+    borderRadius: 16, // M3 Large Corner
+    overflow: 'hidden',
+    marginRight: SPACING.s,
+    ...SHADOWS.small,
   },
-  profileInitials: { fontSize: 16, fontFamily: 'Inter_500Medium', color: COLORS.primary },
+  quickAction: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.s,
+  },
+  quickActionLabel: {
+    ...TYPOGRAPHY.label,
+    fontSize: 13,
+    marginTop: 10,
+    textAlign: 'center',
+    fontWeight: '600'
+  },
 
-  // Status Bar
-  statusBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: '#F8FAFC', padding: 12, borderRadius: 16,
-    marginHorizontal: SPACING.l, marginBottom: SPACING.l,
-    borderWidth: 1, borderColor: '#E2E8F0',
-  },
-  statusTextContainer: { flexDirection: 'row', alignItems: 'center' },
-  statusDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
-  dotOnline: { backgroundColor: COLORS.success },
-  dotOffline: { backgroundColor: COLORS.gray },
-  statusTitle: { fontSize: 14, fontFamily: 'Inter_500Medium', color: COLORS.dark },
-  statusSubtitle: { fontSize: 11, color: COLORS.gray, marginTop: 1, fontFamily: 'Inter_400Regular' },
-  checkInBtn: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
-  },
-  checkInBtnActive: { backgroundColor: '#DCFCE7' },
-  checkInBtnInactive: { backgroundColor: COLORS.dark },
-  checkInBtnText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
-  textWhite: { color: COLORS.white },
-  textSuccess: { color: COLORS.success },
-
-  // Alerts
-  section: { marginBottom: SPACING.l, paddingHorizontal: SPACING.l },
-  sectionHeader: { fontSize: 18, fontFamily: 'Inter_500Medium', color: COLORS.dark, marginBottom: SPACING.m },
-  alertItem: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF2F2',
-    padding: 16, borderRadius: 16, marginBottom: 8,
-    borderWidth: 1, borderColor: '#FECACA'
-  },
-  alertText: { flex: 1, marginHorizontal: 12, fontSize: 14, color: '#991B1B', fontFamily: 'Inter_500Medium' },
-
-  // Timeline
-  timelineContainer: {
-    paddingTop: 10,
-    paddingBottom: 20,
+  // Schedule
+  scheduleList: {
     paddingHorizontal: SPACING.l,
   },
-  timeSlotRow: {
+  scheduleItem: {
     flexDirection: 'row',
-    marginBottom: 20,
-    minHeight: 100,
+    marginBottom: SPACING.m,
+    alignItems: 'center',
   },
-  timeLabelContainer: {
+  pressedState: {
+    opacity: 0.9,
+    transform: [{ scale: 0.99 }]
+  },
+  timeContainer: {
     width: 60,
     alignItems: 'center',
-    paddingTop: 0,
-    paddingRight: 8,
   },
-  timeLabelText: {
-    fontSize: 14,
+  timeText: {
+    ...TYPOGRAPHY.h3,
+    fontSize: 16,
     color: COLORS.dark,
-    fontFamily: 'Inter_500Medium',
   },
-  meridiemText: {
-    fontSize: 11,
-    color: COLORS.gray,
-    fontFamily: 'Inter_500Medium',
-    marginTop: 2,
-    textTransform: 'uppercase',
+  ampmText: {
+    ...TYPOGRAPHY.caption,
+    fontSize: 12,
   },
-  gridLineContainer: {
+  scheduleCard: {
     flex: 1,
-    position: 'relative',
-    paddingRight: SPACING.l,
-    borderLeftWidth: 2,
-    borderLeftColor: '#F1F5F9', // vertical timeline line
-    paddingLeft: 16,
-    marginLeft: -8,
-  },
-
-  connectorLine: {
-    // Optional: stronger connector if needed, currently using borderLeft of container
-    position: 'absolute',
-    top: 20, bottom: -24, width: 2, backgroundColor: '#E2E8F0', left: -1,
-    display: 'none',
-  },
-
-  // Events
-  eventCard: {
-    borderRadius: 16,
-    flex: 1,
-    padding: 16,
-    borderLeftWidth: 4,
-    backgroundColor: COLORS.white,
+    flexDirection: 'row',
+    backgroundColor: COLORS.surface,
+    borderRadius: 16, // M3 standard
+    height: 72,
+    alignItems: 'center',
+    overflow: 'hidden',
     ...SHADOWS.small,
-    elevation: 2,
+  },
+  statusStrip: {
+    width: 6,
+    height: '100%',
+  },
+  scheduleContent: {
+    flex: 1,
+    paddingHorizontal: SPACING.m,
     justifyContent: 'center',
-    marginBottom: 4,
   },
-  eventActive: { borderLeftColor: COLORS.primary, backgroundColor: '#FFF7ED' },
-  eventPending: { borderLeftColor: COLORS.danger, backgroundColor: '#FEF2F2' },
-  eventDefault: { borderLeftColor: COLORS.blue, backgroundColor: '#EFF6FF' },
-  eventDone: { borderLeftColor: COLORS.success, backgroundColor: '#F0FDF4', opacity: 0.8 },
-
-  eventContent: {},
-  eventTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: COLORS.dark, marginBottom: 4 },
-  eventRoom: { fontSize: 13, color: COLORS.gray, fontFamily: 'Inter_500Medium', marginBottom: 8 },
-
-  eventActionRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
-  miniMarkBtn: {
-    backgroundColor: COLORS.white,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.08)',
-    alignSelf: 'flex-start',
-    ...SHADOWS.small
+  scheduleTitle: {
+    ...TYPOGRAPHY.label,
+    fontSize: 16,
+    color: COLORS.dark,
+    fontWeight: '600'
   },
-  miniMarkText: { fontSize: 12, fontFamily: 'Inter_600SemiBold', color: COLORS.dark },
-
-  checkBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#DCFCE7', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, alignSelf: 'flex-start' },
-  checkText: { fontSize: 12, fontFamily: 'Inter_600SemiBold', color: '#166534', marginLeft: 4 },
-
-  // Empty
-  emptyState: { alignItems: 'center', padding: 40 },
-  emptyText: { color: COLORS.gray, marginTop: 12, fontSize: 14, fontFamily: 'Inter_400Regular' },
-
-  // Modal matches previous
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  modalContent: { width: '100%', backgroundColor: COLORS.white, borderRadius: 24, padding: 24 },
-  modalTitle: { fontSize: 20, fontFamily: 'Inter_500Medium', marginBottom: 12 },
-  modalBody: { fontSize: 15, color: COLORS.gray, lineHeight: 22, marginBottom: 24, fontFamily: 'Inter_400Regular' },
+  scheduleSubject: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.gray,
+  },
+  dimText: {
+    color: COLORS.gray,
+    textDecorationLine: 'line-through',
+  },
+  scheduleMeta: {
+    paddingRight: SPACING.m,
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: 40,
+    opacity: 0.5
+  },
+  emptyText: {
+    ...TYPOGRAPHY.body,
+    marginTop: 12
+  },
 });

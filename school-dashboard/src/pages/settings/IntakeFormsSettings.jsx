@@ -523,139 +523,129 @@ export default function IntakeFormsSettings() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="max-w-4xl mx-auto pb-10 space-y-8">
+      {/* Unified Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-default-200 pb-6">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-            Intake Forms
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Create and manage custom intake forms for admissions and applications
-          </p>
+          <h2 className="text-2xl font-bold text-default-900">Intake Forms</h2>
+          <p className="text-sm text-default-500 mt-1">Create and manage custom intake forms for admissions and applications.</p>
         </div>
-        <Button
-          color="primary"
-          startContent={<Plus size={16} />}
-          onPress={handleOpenTemplateModal}
-          className="transition-all duration-200"
-        >
-          Create Form
-        </Button>
+        <Button color="primary" radius="full" className="shadow-md font-medium px-6" startContent={<Plus size={18} />} onPress={handleOpenTemplateModal}>Create Form</Button>
       </div>
 
       {/* Forms Table */}
-      <Card className="rounded-lg">
-        <CardBody className="p-0">
-          <Table
-            aria-label="Intake forms table"
-            removeWrapper
-            classNames={{
-              th: "bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold",
-              td: "py-4",
-            }}
+      <div className="bg-white border border-default-200 rounded-xl overflow-hidden shadow-sm">
+        <Table
+          aria-label="Intake forms table"
+          removeWrapper
+          radius="none"
+          classNames={{
+            base: "overflow-visible",
+            th: "bg-default-50 text-default-500 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200",
+            td: "py-4 border-b border-default-100",
+            tbody: "[&>tr:last-child>td]:border-none"
+          }}
+        >
+          <TableHeader>
+            <TableColumn>FORM NAME</TableColumn>
+            <TableColumn>TYPE</TableColumn>
+            <TableColumn>STATUS</TableColumn>
+            <TableColumn>FIELDS</TableColumn>
+            <TableColumn>SUBMISSIONS</TableColumn>
+            <TableColumn>VERSION</TableColumn>
+            <TableColumn>ACTIONS</TableColumn>
+          </TableHeader>
+          <TableBody
+            items={forms}
+            emptyContent="No forms found"
+            loadingContent={<Spinner />}
           >
-            <TableHeader>
-              <TableColumn>FORM NAME</TableColumn>
-              <TableColumn>TYPE</TableColumn>
-              <TableColumn>STATUS</TableColumn>
-              <TableColumn>FIELDS</TableColumn>
-              <TableColumn>SUBMISSIONS</TableColumn>
-              <TableColumn>VERSION</TableColumn>
-              <TableColumn>ACTIONS</TableColumn>
-            </TableHeader>
-            <TableBody
-              items={forms}
-              emptyContent="No forms found"
-              loadingContent={<Spinner />}
-            >
-              {(form) => (
-                <TableRow key={form.id}>
-                  <TableCell>
-                    <div className="font-medium text-gray-900 dark:text-white">
-                      {form.name}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip size="sm" variant="flat" color="primary">
-                      {form.type}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
+            {(form) => (
+              <TableRow key={form.id}>
+                <TableCell>
+                  <div className="font-medium text-gray-900 dark:text-white">
+                    {form.name}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Chip size="sm" variant="flat" color="primary">
+                    {form.type}
+                  </Chip>
+                </TableCell>
+                <TableCell>
+                  <Chip
+                    size="sm"
+                    variant="dot"
+                    color={form.status === "active" ? "success" : "warning"}
+                  >
+                    {form.status}
+                  </Chip>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    {form.fields} fields
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    {form.submissions}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <Chip size="sm" variant="flat">
+                    v{form.version}
+                  </Chip>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      isIconOnly
                       size="sm"
-                      variant="dot"
-                      color={form.status === "active" ? "success" : "warning"}
+                      variant="light"
+                      onPress={() => handlePreview(form)}
+                      title="Preview"
+                      className="transition-all duration-200"
                     >
-                      {form.status}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
-                      {form.fields} fields
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
-                      {form.submissions}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Chip size="sm" variant="flat">
-                      v{form.version}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        onPress={() => handlePreview(form)}
-                        title="Preview"
-                        className="transition-all duration-200"
-                      >
-                        <Eye size={16} />
-                      </Button>
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        onPress={() => handleOpenBuilder(form)}
-                        title="Edit"
-                        className="transition-all duration-200"
-                      >
-                        <Edit2 size={16} />
-                      </Button>
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        onPress={() => handleDuplicate(form)}
-                        title="Duplicate"
-                        className="transition-all duration-200"
-                      >
-                        <Copy size={16} />
-                      </Button>
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        color="danger"
-                        onPress={() => handleDelete(form.id)}
-                        title="Delete"
-                        className="transition-all duration-200"
-                      >
-                        <Trash2 size={16} />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardBody>
-      </Card>
+                      <Eye size={16} />
+                    </Button>
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      onPress={() => handleOpenBuilder(form)}
+                      title="Edit"
+                      className="transition-all duration-200"
+                    >
+                      <Edit2 size={16} />
+                    </Button>
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      onPress={() => handleDuplicate(form)}
+                      title="Duplicate"
+                      className="transition-all duration-200"
+                    >
+                      <Copy size={16} />
+                    </Button>
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      color="danger"
+                      onPress={() => handleDelete(form.id)}
+                      title="Delete"
+                      className="transition-all duration-200"
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       {/* Form Builder Modal */}
       <Modal
@@ -1143,6 +1133,6 @@ export default function IntakeFormsSettings() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </div>
+    </div >
   );
 }

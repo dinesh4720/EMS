@@ -8,6 +8,7 @@ import { COLORS, SPACING, SHADOWS } from '../theme';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { useApp } from '../context/AppContext';
+import ModernHeader from '../components/ui/ModernHeader';
 
 export default function LeaveApplicationScreen({ navigation }) {
   const { leaveBalance, applyLeave } = useApp();
@@ -18,9 +19,9 @@ export default function LeaveApplicationScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
 
   const leaveTypes = [
-    { id: 'casual', name: 'Casual Leave', available: leaveBalance.casual, color: COLORS.primary },
-    { id: 'sick', name: 'Sick Leave', available: leaveBalance.sick, color: COLORS.warning },
-    { id: 'earned', name: 'Earned Leave', available: leaveBalance.earned, color: COLORS.success },
+    { id: 'casual', name: 'Casual', available: leaveBalance.casual, color: COLORS.primary },
+    { id: 'sick', name: 'Sick', available: leaveBalance.sick, color: COLORS.warning },
+    { id: 'earned', name: 'Earned', available: leaveBalance.earned, color: COLORS.success },
   ];
 
   const calculateDays = () => {
@@ -29,7 +30,7 @@ export default function LeaveApplicationScreen({ navigation }) {
     const to = new Date(toDate);
     const diffTime = Math.abs(to - from);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
+    return isNaN(diffDays) ? 0 : diffDays;
   };
 
   const handleSubmit = async () => {
@@ -48,14 +49,7 @@ export default function LeaveApplicationScreen({ navigation }) {
 
     setLoading(true);
     try {
-      const success = await applyLeave({
-        leaveType,
-        fromDate,
-        toDate,
-        reason,
-        days,
-      });
-
+      const success = await applyLeave({ leaveType, fromDate, toDate, reason, days });
       if (success) {
         Alert.alert('Success', 'Leave application submitted successfully', [
           { text: 'OK', onPress: () => navigation.goBack() }
@@ -72,178 +66,90 @@ export default function LeaveApplicationScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Feather name="arrow-left" size={24} color={COLORS.dark} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Apply for Leave</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <ModernHeader title="Apply Leave" subtitle="Request time off" backAction={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Leave Balance Card */}
-        <Card style={styles.balanceCard}>
-          <Text style={styles.balanceTitle}>Available Leave Balance</Text>
-          <View style={styles.balanceRow}>
-            {leaveTypes.map(type => (
-              <View key={type.id} style={styles.balanceItem}>
-                <Text style={[styles.balanceValue, { color: type.color }]}>
-                  {type.available}
-                </Text>
-                <Text style={styles.balanceLabel}>{type.name}</Text>
-              </View>
-            ))}
-          </View>
-        </Card>
-
-        {/* Leave Type Selection */}
-        <Text style={styles.sectionLabel}>Leave Type *</Text>
-        <View style={styles.leaveTypeRow}>
+        {/* Balance Cards */}
+        <View style={styles.balanceRow}>
           {leaveTypes.map(type => (
-            <TouchableOpacity
-              key={type.id}
-              style={[
-                styles.leaveTypeBtn,
-                leaveType === type.id && styles.leaveTypeBtnActive,
-                { borderColor: type.color }
-              ]}
-              onPress={() => setLeaveType(type.id)}
-            >
-              <Text style={[
-                styles.leaveTypeText,
-                leaveType === type.id && { color: type.color, fontFamily: 'Inter_500Medium' }
-              ]}>
-                {type.name}
-              </Text>
-              <Text style={styles.leaveTypeAvailable}>{type.available} days</Text>
-            </TouchableOpacity>
+            <View key={type.id} style={styles.balanceCard}>
+              <Text style={[styles.balanceVal, { color: type.color }]}>{type.available}</Text>
+              <Text style={styles.balanceLabel}>{type.name}</Text>
+            </View>
           ))}
         </View>
 
-        {/* Date Selection */}
-        <Text style={styles.sectionLabel}>From Date *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="YYYY-MM-DD"
-          value={fromDate}
-          onChangeText={setFromDate}
-        />
+        <Card style={styles.formCard}>
+          <Text style={styles.sectionTitle}>Leave Details</Text>
 
-        <Text style={styles.sectionLabel}>To Date *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="YYYY-MM-DD"
-          value={toDate}
-          onChangeText={setToDate}
-        />
-
-        {days > 0 && (
-          <View style={styles.daysInfo}>
-            <Feather name="calendar" size={16} color={COLORS.primary} />
-            <Text style={styles.daysText}>
-              Total: {days} day{days > 1 ? 's' : ''}
-            </Text>
+          <Text style={styles.label}>Leave Type</Text>
+          <View style={styles.typeRow}>
+            {leaveTypes.map(type => (
+              <TouchableOpacity
+                key={type.id}
+                style={[styles.typeBtn, leaveType === type.id && { backgroundColor: type.color, borderColor: type.color }]}
+                onPress={() => setLeaveType(type.id)}
+              >
+                <Text style={[styles.typeText, leaveType === type.id && { color: '#FFF' }]}>{type.name}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
-        )}
 
-        {/* Reason */}
-        <Text style={styles.sectionLabel}>Reason *</Text>
-        <TextInput
-          style={[styles.input, styles.textarea]}
-          placeholder="Enter reason for leave..."
-          value={reason}
-          onChangeText={setReason}
-          multiline
-          numberOfLines={4}
-        />
+          <View style={styles.rowInput}>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <Text style={styles.label}>From Date</Text>
+              <TextInput style={styles.input} placeholder="YYYY-MM-DD" value={fromDate} onChangeText={setFromDate} placeholderTextColor={COLORS.gray} />
+            </View>
+            <View style={{ flex: 1, marginLeft: 8 }}>
+              <Text style={styles.label}>To Date</Text>
+              <TextInput style={styles.input} placeholder="YYYY-MM-DD" value={toDate} onChangeText={setToDate} placeholderTextColor={COLORS.gray} />
+            </View>
+          </View>
 
-        {/* Submit Button */}
-        <Button
-          title={loading ? "Submitting..." : "Submit Application"}
-          onPress={handleSubmit}
-          disabled={loading}
-          style={{ marginTop: SPACING.l }}
-        />
+          {days > 0 && (
+            <View style={styles.infoRow}>
+              <Feather name="clock" size={14} color={COLORS.primary} />
+              <Text style={styles.infoText}>Duration: {days} Day{days > 1 ? 's' : ''}</Text>
+            </View>
+          )}
 
-        {/* Info */}
-        <View style={styles.infoBox}>
-          <Feather name="info" size={16} color={COLORS.blue} />
-          <Text style={styles.infoText}>
-            Your leave application will be sent to the admin for approval.
-          </Text>
-        </View>
+          <Text style={styles.label}>Reason</Text>
+          <TextInput
+            style={[styles.input, styles.textarea]}
+            placeholder="Why are you taking leave?"
+            value={reason} onChangeText={setReason} multiline
+            placeholderTextColor={COLORS.gray}
+          />
+
+          <Button title={loading ? "Submitting..." : "Submit Application"} onPress={handleSubmit} disabled={loading} style={{ marginTop: 16 }} />
+        </Card>
+
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FAFAFA', paddingTop: Platform.OS === 'android' ? 40 : 0 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: SPACING.m,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.lightGray,
-  },
-  backBtn: { padding: 4 },
-  headerTitle: { fontSize: 18, fontFamily: 'Inter_500Medium', color: COLORS.dark },
+  safeArea: { flex: 1, backgroundColor: COLORS.fade, paddingTop: Platform.OS === 'android' ? 30 : 0 },
   container: { padding: SPACING.l, paddingBottom: 100 },
 
-  balanceCard: { marginBottom: SPACING.l, backgroundColor: COLORS.primaryLight },
-  balanceTitle: { fontSize: 14, fontFamily: 'Inter_500Medium', color: COLORS.primary, marginBottom: SPACING.m },
-  balanceRow: { flexDirection: 'row', justifyContent: 'space-around' },
-  balanceItem: { alignItems: 'center' },
-  balanceValue: { fontSize: 24, fontFamily: 'Inter_500Medium' },
-  balanceLabel: { fontSize: 11, color: COLORS.gray, marginTop: 4, fontFamily: 'Inter_400Regular' },
+  balanceRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
+  balanceCard: { flex: 1, backgroundColor: '#FFF', padding: 16, borderRadius: 16, alignItems: 'center', justifyContent: 'center', ...SHADOWS.small },
+  balanceVal: { fontSize: 20, fontWeight: '700', marginBottom: 4 },
+  balanceLabel: { fontSize: 12, color: COLORS.gray, textTransform: 'uppercase', letterSpacing: 0.5 },
 
-  sectionLabel: { fontSize: 14, fontFamily: 'Inter_500Medium', color: COLORS.dark, marginBottom: SPACING.s },
+  formCard: { padding: 20, borderRadius: 24, ...SHADOWS.medium },
+  sectionTitle: { fontSize: 18, fontFamily: 'Inter_600SemiBold', color: COLORS.dark, marginBottom: 20 },
 
-  leaveTypeRow: { flexDirection: 'row', gap: SPACING.s, marginBottom: SPACING.l },
-  leaveTypeBtn: {
-    flex: 1,
-    padding: SPACING.m,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: COLORS.lightGray,
-    backgroundColor: COLORS.white,
-    alignItems: 'center',
-  },
-  leaveTypeBtnActive: { backgroundColor: COLORS.white },
-  leaveTypeText: { fontSize: 13, fontFamily: 'Inter_500Medium', color: COLORS.gray, textAlign: 'center' },
-  leaveTypeAvailable: { fontSize: 11, color: COLORS.gray, marginTop: 4, fontFamily: 'Inter_400Regular' },
+  label: { fontSize: 13, fontFamily: 'Inter_500Medium', color: COLORS.dark, marginBottom: 8, marginTop: 4 },
+  typeRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
+  typeBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: COLORS.lightGray, alignItems: 'center' },
+  typeText: { fontSize: 13, fontFamily: 'Inter_500Medium', color: COLORS.gray },
 
-  input: {
-    borderWidth: 1,
-    borderColor: COLORS.lightGray,
-    borderRadius: 12,
-    padding: SPACING.m,
-    fontSize: 15,
-    marginBottom: SPACING.m,
-    backgroundColor: COLORS.white,
-    fontFamily: 'Inter_400Regular',
-  },
-  textarea: { height: 100, textAlignVertical: 'top' },
+  input: { backgroundColor: COLORS.fade, borderRadius: 12, padding: 14, fontSize: 15, fontFamily: 'Inter_400Regular', color: COLORS.dark },
+  textarea: { minHeight: 100, textAlignVertical: 'top' },
+  rowInput: { flexDirection: 'row', marginBottom: 16 },
 
-  daysInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.primaryLight,
-    padding: SPACING.m,
-    borderRadius: 10,
-    marginBottom: SPACING.m,
-  },
-  daysText: { fontSize: 14, fontFamily: 'Inter_500Medium', color: COLORS.primary, marginLeft: 8 },
-
-  infoBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#EFF6FF',
-    padding: SPACING.m,
-    borderRadius: 10,
-    marginTop: SPACING.l,
-  },
-  infoText: { flex: 1, fontSize: 13, color: COLORS.blue, marginLeft: 8, lineHeight: 18, fontFamily: 'Inter_400Regular' },
+  infoRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primaryLight + '40', padding: 12, borderRadius: 10, marginBottom: 16 },
+  infoText: { marginLeft: 8, color: COLORS.primary, fontSize: 13, fontWeight: '600' }
 });

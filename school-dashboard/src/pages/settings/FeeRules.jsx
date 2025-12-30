@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardBody, CardHeader, Button, Input, Switch, Divider, Select, SelectItem, Checkbox, CheckboxGroup } from "@heroui/react";
+import { Card, CardBody, CardHeader, Button, Input, Switch, Divider, Select, SelectItem, Checkbox, CheckboxGroup, RadioGroup, Radio } from "@heroui/react";
 import { Save } from "lucide-react";
 
 export default function FeeRules() {
@@ -32,9 +32,9 @@ export default function FeeRules() {
   return (
     <div className="w-full flex flex-col">
       <div className="flex justify-end mb-6">
-        <Button 
-          color="primary" 
-          size="sm" 
+        <Button
+          color="primary"
+          size="sm"
           startContent={<Save size={16} />}
           onPress={handleSave}
           isLoading={saving}
@@ -94,10 +94,10 @@ export default function FeeRules() {
                   </div>
                   <Switch size="sm" isSelected={rules.discountApproval} onValueChange={(v) => setRules({ ...rules, discountApproval: v })} />
                 </div>
-                <Select 
-                  size="sm" 
-                  label="Max Discount %" 
-                  variant="bordered" 
+                <Select
+                  size="sm"
+                  label="Max Discount %"
+                  variant="bordered"
                   selectedKeys={[rules.maxDiscount]}
                   onChange={(e) => setRules({ ...rules, maxDiscount: e.target.value })}
                 >
@@ -130,6 +130,25 @@ export default function FeeRules() {
 
         <Card className="shadow-sm border border-default-200 rounded-lg">
           <CardHeader className="py-4 px-4 bg-default-50/50 border-b border-default-100">
+            <h3 className="text-sm font-semibold text-default-700">Payment Collection Method</h3>
+          </CardHeader>
+          <CardBody className="p-4">
+            <RadioGroup
+              value={rules.collectionMethod || "term"}
+              onValueChange={(v) => setRules({ ...rules, collectionMethod: v })}
+            >
+              <div className="space-y-3">
+                <Radio value="term" description="Collect fees per academic term (e.g., Term 1, Term 2)" classNames={{ label: "text-sm font-medium", description: "text-xs text-default-400" }}>Term-wise</Radio>
+                <Radio value="year" description="Collect the entire fee amount at once" classNames={{ label: "text-sm font-medium", description: "text-xs text-default-400" }}>Yearly</Radio>
+                <Radio value="monthly" description="Collect fees on a monthly basis" classNames={{ label: "text-sm font-medium", description: "text-xs text-default-400" }}>Monthly</Radio>
+                <Radio value="custom" description="Define custom collection durations" classNames={{ label: "text-sm font-medium", description: "text-xs text-default-400" }}>Custom Duration</Radio>
+              </div>
+            </RadioGroup>
+          </CardBody>
+        </Card>
+
+        <Card className="shadow-sm border border-default-200 rounded-lg">
+          <CardHeader className="py-4 px-4 bg-default-50/50 border-b border-default-100">
             <h3 className="text-sm font-semibold text-default-700">Late Fee Settings</h3>
           </CardHeader>
           <CardBody className="p-4 space-y-4">
@@ -138,28 +157,28 @@ export default function FeeRules() {
                 <p className="text-sm font-medium text-default-700">Enable Late Fee</p>
                 <p className="text-xs text-default-500">Charge late fee after due date</p>
               </div>
-              <Switch 
-                size="sm" 
+              <Switch
+                size="sm"
                 isSelected={rules.enableLateFee}
                 onValueChange={(v) => setRules({ ...rules, enableLateFee: v })}
               />
             </div>
             {rules.enableLateFee && (
               <>
-                <Input 
-                  size="sm" 
-                  type="number" 
-                  label="Late Fee Amount" 
-                  variant="bordered" 
-                  startContent="₹" 
+                <Input
+                  size="sm"
+                  type="number"
+                  label="Late Fee Amount"
+                  variant="bordered"
+                  startContent="₹"
                   value={rules.lateFeeAmount}
                   onChange={(e) => setRules({ ...rules, lateFeeAmount: parseInt(e.target.value) || 0 })}
                 />
-                <Input 
-                  size="sm" 
-                  type="number" 
-                  label="Grace Period (days)" 
-                  variant="bordered" 
+                <Input
+                  size="sm"
+                  type="number"
+                  label="Grace Period (days)"
+                  variant="bordered"
                   value={rules.gracePeriod}
                   onChange={(e) => setRules({ ...rules, gracePeriod: parseInt(e.target.value) || 0 })}
                 />

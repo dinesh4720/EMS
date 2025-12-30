@@ -16,7 +16,7 @@ export default function Button({
 
     const getBackgroundColor = () => {
         if (variant === 'primary') return COLORS.primary;
-        if (variant === 'secondary') return COLORS.white;
+        if (variant === 'secondary') return COLORS.secondary; // Tonal button (Light Blue)
         if (variant === 'outline') return 'transparent';
         if (variant === 'danger') return COLORS.danger;
         return COLORS.primary;
@@ -24,8 +24,8 @@ export default function Button({
 
     const getTextColor = () => {
         if (variant === 'primary' || variant === 'danger') return COLORS.white;
-        if (variant === 'secondary') return COLORS.dark;
-        if (variant === 'outline') return COLORS.dark;
+        if (variant === 'secondary') return COLORS.onSecondary; // Dark blue text
+        if (variant === 'outline') return COLORS.primary;
         return COLORS.white;
     };
 
@@ -35,8 +35,7 @@ export default function Button({
                 style={[
                     styles.container,
                     { backgroundColor: getBackgroundColor() },
-                    variant === 'secondary' && styles.border,
-                    variant === 'outline' && styles.border,
+                    variant === 'outline' && styles.border, // Only outline has border, secondary is now filled
                     size === 'small' && styles.small,
                     size === 'large' && styles.large,
                     style,
@@ -73,17 +72,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: 8,
-        paddingVertical: 14,
+        borderRadius: 100, // Pill shape
+        paddingVertical: 12,
         paddingHorizontal: 24,
     },
     border: {
         borderWidth: 1,
-        borderColor: COLORS.black,
+        borderColor: '#747775', // Google outline color
     },
     text: {
-        fontSize: 16,
+        fontSize: 14,
         fontFamily: 'Inter_500Medium',
+        letterSpacing: 0.1,
     },
     small: {
         paddingVertical: 8,
@@ -94,9 +94,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 32,
     },
     smallText: {
-        fontSize: 14,
+        fontSize: 13,
     },
     largeText: {
-        fontSize: 18,
+        fontSize: 16,
     }
 });

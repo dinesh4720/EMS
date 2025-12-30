@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import Dashboard from "./pages/Dashboard";
@@ -47,7 +47,12 @@ function BeforeSchoolAlert() {
 }
 
 function AuthenticatedApp() {
+  const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const isSettingsPage = location.pathname.startsWith("/settings");
+  // Force collapsed state on settings page, otherwise use user preference
+  const effectiveSidebarOpen = isSettingsPage ? false : isSidebarOpen;
 
   return (
     <AppProvider>
@@ -59,12 +64,12 @@ function AuthenticatedApp() {
           <div className="absolute top-[40%] left-[40%] w-[30%] h-[30%] bg-purple-500/5 rounded-full blur-[100px] animate-float mix-blend-multiply dark:mix-blend-normal dark:bg-purple-500/10"></div>
         </div>
 
-        <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
-        <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-56' : 'ml-16'} relative z-10 bg-default-100/80 dark:bg-default-100/20`}>
+        <Sidebar isSidebarOpen={effectiveSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+        <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${effectiveSidebarOpen ? 'ml-56' : 'ml-16'} relative z-10 bg-default-100/80 dark:bg-default-100/20`}>
           <Topbar />
           <BeforeSchoolAlert />
-          <main className="flex-1 p-2 md:p-3">
-            <div className="max-w-[1600px] mx-auto space-y-6">
+          <main className={`flex-1 ${isSettingsPage ? 'p-0' : 'p-2 md:p-3'}`}>
+            <div className={`${isSettingsPage ? 'w-full' : 'max-w-[1600px] mx-auto space-y-6'}`}>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/analytics" element={<Analytics />} />

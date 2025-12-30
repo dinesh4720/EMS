@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { COLORS } from '../theme';
+import { COLORS, SHADOWS } from '../theme';
+import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -25,58 +27,81 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <View style={styles.topSection}>
+        <View style={styles.logoBubble}>
+          <Feather name="layers" size={40} color={COLORS.primary} />
+        </View>
         <Text style={styles.title}>Teacher App</Text>
-        <Text style={styles.subtitle}>Sign in to continue</Text>
+        <Text style={styles.subtitle}>Welcome back, Educator.</Text>
       </View>
 
-      <View style={styles.form}>
-        <TextInput
-          style={styles.input}
-          placeholder="Phone Number"
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+      <View style={styles.formContainer}>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Phone Number</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your phone"
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="phone-pad"
+            autoCapitalize="none"
+            placeholderTextColor={COLORS.gray}
+          />
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            placeholderTextColor={COLORS.gray}
+          />
+        </View>
+
         <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
           onPress={handleLogin}
           disabled={loading}
+          activeOpacity={0.8}
+          style={styles.buttonWrapper}
         >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Sign In</Text>
-          )}
+          <View style={styles.button}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign In</Text>}
+          </View>
         </TouchableOpacity>
-      </View>
 
-      <Text style={styles.hint}>Use your registered phone number and password</Text>
-      <Text style={styles.demoHint}>Demo: 1234567890 / demo</Text>
-    </View>
+        <View style={styles.footer}>
+          <Text style={styles.hint}>Demo: 1234567890 / demo</Text>
+        </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5', justifyContent: 'center', padding: 24 },
-  header: { alignItems: 'center', marginBottom: 40 },
-  title: { fontSize: 28, fontFamily: 'Inter_500Medium', color: COLORS.dark },
+  container: { flex: 1, backgroundColor: COLORS.fade, justifyContent: 'center', padding: 24 },
+
+  topSection: { alignItems: 'center', marginBottom: 40 },
+  logoBubble: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', marginBottom: 20, ...SHADOWS.medium },
+  title: { fontSize: 28, fontFamily: 'Inter_700Bold', color: COLORS.dark },
   subtitle: { fontSize: 16, color: COLORS.gray, marginTop: 8, fontFamily: 'Inter_400Regular' },
-  form: { backgroundColor: '#fff', borderRadius: 16, padding: 24, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, elevation: 3 },
-  input: { backgroundColor: '#f5f5f5', borderRadius: 12, padding: 16, fontSize: 16, marginBottom: 16, fontFamily: 'Inter_400Regular' },
-  button: { backgroundColor: COLORS.primary, borderRadius: 12, padding: 16, alignItems: 'center' },
-  buttonDisabled: { opacity: 0.7 },
-  buttonText: { color: '#fff', fontSize: 16, fontFamily: 'Inter_500Medium' },
-  hint: { textAlign: 'center', color: COLORS.gray, marginTop: 24, fontSize: 12, fontFamily: 'Inter_400Regular' },
-  demoHint: { textAlign: 'center', color: COLORS.primary, marginTop: 8, fontSize: 13, fontFamily: 'Inter_500Medium' },
+
+  formContainer: { backgroundColor: '#FFF', borderRadius: 24, padding: 32, ...SHADOWS.large },
+
+  inputGroup: { marginBottom: 20 },
+  label: { fontSize: 14, color: COLORS.dark, fontFamily: 'Inter_500Medium', marginBottom: 8 },
+  input: { backgroundColor: COLORS.fade, borderRadius: 12, padding: 16, fontSize: 16, fontFamily: 'Inter_400Regular', color: COLORS.dark },
+
+  buttonWrapper: { marginTop: 8 },
+  button: { backgroundColor: COLORS.primary, borderRadius: 100, paddingVertical: 16, alignItems: 'center' },
+  buttonText: { color: '#fff', fontSize: 16, fontFamily: 'Inter_600SemiBold' },
+
+  footer: { marginTop: 24, alignItems: 'center' },
+  hint: { color: COLORS.gray, fontSize: 12, fontFamily: 'Inter_400Regular' },
 });

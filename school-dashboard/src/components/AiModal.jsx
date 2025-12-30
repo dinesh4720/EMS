@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Sparkles, MessageSquare, ChevronRight, Loader2, Copy, RefreshCw, CheckCircle, AlertCircle, Mic, MicOff } from 'lucide-react';
+import { X, Send, Sparkles, MessageSquare, ChevronRight, Loader2, Copy, RefreshCw, CheckCircle, AlertCircle, Mic, MicOff, ChevronDown } from 'lucide-react';
 import { aiService } from '../services/aiService';
 import AiOrb from './AiOrb';
 import toast from 'react-hot-toast';
@@ -15,6 +15,8 @@ export default function AiModal({ isOpen, onClose }) {
     const [activePrompt, setActivePrompt] = useState(null);
     const [isRecording, setIsRecording] = useState(false);
     const [isTranscribing, setIsTranscribing] = useState(false);
+    const [selectedModel, setSelectedModel] = useState('groq');
+    const [showModelSelector, setShowModelSelector] = useState(false);
 
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
@@ -22,6 +24,7 @@ export default function AiModal({ isOpen, onClose }) {
     const audioChunksRef = useRef([]);
 
     const prebuiltPrompts = aiService.getPrebuiltPrompts();
+    const availableModels = aiService.getAvailableModels();
 
     useEffect(() => {
         scrollToBottom();
@@ -52,7 +55,7 @@ export default function AiModal({ isOpen, onClose }) {
                     content: `🔄 Executing: ${functionName}...`,
                     isFunction: true 
                 }]);
-            });
+            }, selectedModel);
 
             // Remove the function loading message
             setMessages(prev => prev.filter(m => !m.isFunction));
@@ -170,17 +173,48 @@ export default function AiModal({ isOpen, onClose }) {
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-black/5 dark:border-white/10 bg-white/50 dark:bg-white/5">
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 flex-1">
                                 <div className="w-12 h-12 -ml-2 rounded-full overflow-hidden relative flex items-center justify-center flex-shrink-0">
                                     <AiOrb size="md" />
                                 </div>
-                                <div>
+                                <div className="flex-1">
                                     <h2 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
                                         AI Companion
                                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
                                             Online
                                         </span>
                                     </h2>
+                                    {/* Model Selector */}
+                                    <div className="relative mt-1">
+                                        <button
+                                            onClick={() => setShowModelSelector(!showModelSelector)}
+                                            className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                                        >
+                                            <span>{availableModels.find(m => m.id === selectedModel)?.name || 'Select Model'}</span>
+                                            <ChevronDown size={12} className={`transition-transform ${showModelSelector ? 'rotate-180' : ''}`} />
+                                        </button>
+                                        {showModelSelector && (
+                                            <div className="absolute top-full left-0 mt-1 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-lg z-50 min-w-[200px]">
+                                                {availableModels.map(model => (
+                                                    <button
+                                                        key={model.id}
+                                                        onClick={() => {
+                                                            setSelectedModel(model.id);
+                                                            setShowModelSelector(false);
+                                                            toast.success(`Switched to ${model.name}`);
+                                                        }}
+                                                        disabled={!model.available}
+                                                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors first:rounded-t-lg last:rounded-b-lg ${
+                                                            selectedModel === model.id ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' : 'text-gray-700 dark:text-gray-300'
+                                                        } ${!model.available ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    >
+                                                        <div className="font-medium">{model.name}</div>
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400">{model.provider} • {model.description}</div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             <button
@@ -292,7 +326,7 @@ export default function AiModal({ isOpen, onClose }) {
                             </div>
                             <div className="text-center mt-2">
                                 <p className="text-[10px] text-gray-400">
-                                    {isRecording ? '🎤 Recording...' : isTranscribing ? '⏳ Transcribing...' : 'Powered by LLaMA 3 & Whisper via Groq'}
+                                    {isRecording ? '🎤 Recording...' : isTranscribing ? '⏳ Transcribing...' : `Powered by ${availableModels.find(m => m.id === selectedModel)?.name || 'AI'}`}
                                 </p>
                             </div>
                         </div>

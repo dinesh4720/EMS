@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Platform, Pressable } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { COLORS, SPACING, SHADOWS, TYPOGRAPHY } from '../theme';
 import { Feather } from '@expo/vector-icons';
-import Card from '../components/ui/Card';
 import AnimatedPage from '../components/ui/AnimatedPage';
+import ModernHeader from '../components/ui/ModernHeader';
+import SectionHeader from '../components/ui/SectionHeader';
 
 export default function ClassesScreen({ navigation }) {
   const { classes } = useApp();
@@ -13,82 +14,66 @@ export default function ClassesScreen({ navigation }) {
   const subjectTeacherClasses = classes.filter(c => c.role === 'subject_teacher');
 
   const ClassCard = ({ cls, highlighted }) => (
-    <TouchableOpacity
-      activeOpacity={0.9}
-      onPress={() => navigation.navigate('ClassWorkspace', { classId: cls.id, className: cls.name })}
-      style={{ marginBottom: SPACING.m }}
-    >
-      <Card style={[styles.card, highlighted && styles.highlightedCard]}>
-        {/* Header */}
-        <View style={styles.cardHeader}>
-          <View style={[styles.iconBox, highlighted ? styles.highIconBox : styles.regIconBox]}>
-            <Feather name={highlighted ? "star" : "book"} size={24} color={highlighted ? COLORS.primary : COLORS.gray} />
+    <View style={styles.cardContainer}>
+      <Pressable
+        android_ripple={{ color: highlighted ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.05)' }}
+        onPress={() => navigation.navigate('ClassWorkspace', { classId: cls.id, className: cls.name })}
+        style={[
+          styles.card,
+          highlighted ? styles.cardFilled : styles.cardOutlined
+        ]}
+      >
+        <View style={styles.cardContent}>
+          <View style={styles.cardTop}>
+            <View>
+              <Text style={[styles.className, highlighted && styles.textHighlighted]}>{cls.name}</Text>
+              <Text style={[styles.subject, highlighted && styles.textHighlighted]}>{cls.subject}</Text>
+            </View>
+            <View style={[styles.iconBox, highlighted ? styles.highIconBox : styles.regIconBox]}>
+              <Feather name={highlighted ? "star" : "book"} size={20} color={highlighted ? COLORS.primary : COLORS.gray} />
+            </View>
           </View>
-          <View style={{ flex: 1, marginLeft: SPACING.m }}>
-            <Text style={styles.className}>{cls.name}</Text>
-            <Text style={styles.subject}>{cls.subject}</Text>
+
+          <View style={styles.cardFooter}>
+            <View style={styles.metaItem}>
+              <Feather name="users" size={14} color={highlighted ? COLORS.primary : COLORS.gray} />
+              <Text style={[styles.metaText, highlighted && styles.textHighlighted]}>{cls.studentCount || 42} Students</Text>
+            </View>
+            <View style={[styles.metaDivider, highlighted && { backgroundColor: COLORS.primary + '40' }]} />
+            <View style={styles.metaItem}>
+              <Feather name="clock" size={14} color={highlighted ? COLORS.primary : COLORS.gray} />
+              <Text style={[styles.metaText, highlighted && styles.textHighlighted]}>{cls.time || '09:00 AM'}</Text>
+            </View>
           </View>
-          {cls.time ? (
-            <View style={styles.timeBadge}>
-              <Feather name="clock" size={12} color={COLORS.gray} style={{ marginRight: 4 }} />
-              <Text style={styles.timeText}>{cls.time}</Text>
-            </View>
-          ) : cls.studentCount ? (
-            <View style={styles.timeBadge}>
-              <Feather name="users" size={12} color={COLORS.gray} style={{ marginRight: 4 }} />
-              <Text style={styles.timeText}>{cls.studentCount} students</Text>
-            </View>
-          ) : null}
         </View>
-
-        {/* Quick Actions Footer */}
-        <View style={styles.cardFooter}>
-          <TouchableOpacity
-            style={styles.footerAction}
-            onPress={() => navigation.navigate('ClassWorkspace', { classId: cls.id, className: cls.name, initialTab: 1 })}
-          >
-            <View style={styles.actionIconBubble}>
-              <Feather name="users" size={14} color={COLORS.dark} />
-            </View>
-            <Text style={styles.footerActionText}>Students</Text>
-          </TouchableOpacity>
-
-          <View style={styles.footerDivider} />
-
-          <TouchableOpacity
-            style={styles.footerAction}
-            onPress={() => navigation.navigate('ClassWorkspace', { classId: cls.id, className: cls.name, initialTab: 0 })}
-          >
-            <View style={styles.actionIconBubble}>
-              <Feather name="check-circle" size={14} color={COLORS.dark} />
-            </View>
-            <Text style={styles.footerActionText}>Attendance</Text>
-          </TouchableOpacity>
-        </View>
-      </Card>
-    </TouchableOpacity>
+      </Pressable>
+    </View>
   );
 
   return (
     <AnimatedPage style={{ flex: 1 }}>
       <SafeAreaView style={styles.safeArea}>
+        <ModernHeader title="My Classes" subtitle="Manage your teaching schedule" hideProfile={true} />
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-          <View style={styles.header}>
-            <Text style={styles.pageTitle}>My Classes</Text>
-            <Text style={styles.pageSubtitle}>Manage your teaching schedule</Text>
-          </View>
 
           {classTeacherClasses.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Class Teacher</Text>
+              <SectionHeader title="Class Teacher For" />
               {classTeacherClasses.map(cls => <ClassCard key={cls.id} cls={cls} highlighted />)}
             </View>
           )}
 
           {subjectTeacherClasses.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Subject Teacher</Text>
+              <SectionHeader title="Subject Classes" />
               {subjectTeacherClasses.map(cls => <ClassCard key={cls.id} cls={cls} />)}
+            </View>
+          )}
+
+          {classTeacherClasses.length === 0 && subjectTeacherClasses.length === 0 && (
+            <View style={styles.emptyState}>
+              <Feather name="book-open" size={48} color={COLORS.lightGray} />
+              <Text style={styles.emptyText}>No classes assigned yet.</Text>
             </View>
           )}
         </ScrollView>
@@ -98,35 +83,35 @@ export default function ClassesScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FAFAFA', paddingTop: Platform.OS === 'android' ? 40 : 0 },
+  safeArea: { flex: 1, backgroundColor: COLORS.fade, paddingTop: Platform.OS === 'android' ? 30 : 0 },
   container: { padding: SPACING.l, paddingBottom: 100 },
 
-  header: { marginBottom: SPACING.xl },
-  pageTitle: { ...TYPOGRAPHY.header, fontSize: 32, color: COLORS.dark },
-  pageSubtitle: { ...TYPOGRAPHY.body, color: COLORS.gray, marginTop: 4 },
-
   section: { marginBottom: SPACING.xl },
-  sectionTitle: { ...TYPOGRAPHY.subtitle, fontSize: 13, color: COLORS.gray, textTransform: 'uppercase', marginBottom: SPACING.m, letterSpacing: 1, fontFamily: 'Inter_500Medium' },
 
-  card: { padding: 0, borderRadius: 20, borderWidth: 1, borderColor: '#F3F4F6' },
-  highlightedCard: { borderColor: COLORS.primaryLight, borderWidth: 1 },
+  cardContainer: { marginBottom: SPACING.m, borderRadius: 16, overflow: 'hidden' }, // Container for clean rounded corners
 
-  cardHeader: { flexDirection: 'row', alignItems: 'center', padding: SPACING.m },
+  // MD3 Card Styles
+  card: { padding: SPACING.m, borderRadius: 16, minHeight: 120 },
+  cardFilled: { backgroundColor: COLORS.primaryLight }, // Primary Container
+  cardOutlined: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.lightGray }, // Outlined Card
 
-  iconBox: { width: 52, height: 52, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  highIconBox: { backgroundColor: COLORS.primaryLight },
-  regIconBox: { backgroundColor: '#F3F4F6' },
+  cardContent: { flex: 1 },
 
-  className: { ...TYPOGRAPHY.title, fontSize: 18 },
-  subject: { ...TYPOGRAPHY.body, color: COLORS.gray, fontSize: 14 },
+  cardTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: SPACING.m },
+  className: { fontSize: 20, fontFamily: 'Inter_600SemiBold', color: COLORS.dark },
+  subject: { fontSize: 14, fontFamily: 'Inter_400Regular', color: COLORS.gray, marginTop: 2 },
 
-  timeBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: '#F3F4F6' },
-  timeText: { fontSize: 12, fontFamily: 'Inter_500Medium', color: COLORS.gray },
+  textHighlighted: { color: COLORS.primaryDark }, // OnPrimaryContainer
 
-  cardFooter: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#F3F4F6' },
-  footerAction: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14 },
-  footerActionText: { fontSize: 14, fontFamily: 'Inter_500Medium', color: COLORS.dark, marginLeft: 8 },
-  footerDivider: { width: 1, backgroundColor: '#F3F4F6' },
+  iconBox: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  highIconBox: { backgroundColor: '#FFFFFF' },
+  regIconBox: { backgroundColor: COLORS.surfaceVariant },
 
-  actionIconBubble: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
+  cardFooter: { flexDirection: 'row', alignItems: 'center' },
+  metaItem: { flexDirection: 'row', alignItems: 'center' },
+  metaText: { marginLeft: 6, fontSize: 13, color: COLORS.gray, fontFamily: 'Inter_500Medium' },
+  metaDivider: { width: 1, height: 12, backgroundColor: COLORS.lightGray, marginHorizontal: 12 },
+
+  emptyState: { alignItems: 'center', justifyContent: 'center', marginTop: 80 },
+  emptyText: { marginTop: 16, color: COLORS.gray, fontFamily: 'Inter_400Regular' }
 });

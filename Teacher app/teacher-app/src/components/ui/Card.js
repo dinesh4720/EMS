@@ -17,8 +17,8 @@ export default function Card({ children, style, variant = 'elevated' }) {
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: COLORS.white,
-        borderRadius: 12,
+        backgroundColor: COLORS.surface,
+        borderRadius: 16,
         padding: SPACING.m,
         marginBottom: SPACING.m,
     },

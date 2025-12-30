@@ -1,8 +1,27 @@
-import { Routes, Route } from "react-router-dom";
-import { useNavigate, useLocation } from "react-router-dom";
-import { Building, Calendar, IndianRupee, MessageSquare, User, Palmtree, UserCheck, BookOpen, GraduationCap, FileText, CreditCard, ChevronRight } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import {
+  Building,
+  Calendar,
+  IndianRupee,
+  MessageSquare,
+  User,
+  Palmtree,
+  UserCheck,
+  BookOpen,
+  GraduationCap,
+  FileText,
+  CreditCard,
+  Search,
+  Shield,
+  Puzzle,
+  Smartphone,
+  Mail
+} from "lucide-react";
+import { Input, Kbd, Chip } from "@heroui/react";
 
 import InstitutionSettings from "./InstitutionSettings";
+import AcademicSettings from "./AcademicSettings";
 import AttendanceRules from "./AttendanceRules";
 import FeeRules from "./FeeRules";
 import CommunicationSettings from "./CommunicationSettings";
@@ -11,25 +30,26 @@ import UserManagement from "./UserManagement";
 import HolidaySettings from "./HolidaySettings";
 import LeaveSettings from "./LeaveSettings";
 import FeeHeadsSettings from "./FeeHeadsSettings";
-import ClassSectionsSettings from "./ClassSectionsSettings";
 import IntakeFormsSettings from "./IntakeFormsSettings";
 import SubscriptionSettings from "./SubscriptionSettings";
+import RolesAccess from "./RolesAccess";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchQuery, setSearchQuery] = useState("");
 
   const menuCategories = [
     {
       title: "General",
       items: [
-        { key: "institution", label: "Institution Profile", icon: Building, path: "/settings" },
-        { key: "sections", label: "Class Sections", icon: GraduationCap, path: "/settings/sections" },
+        { key: "institution", label: "General settings", icon: Building, path: "/settings" },
+        { key: "academics", label: "Academics", icon: GraduationCap, path: "/settings/academics", isNew: true },
         { key: "intakeforms", label: "Intake Forms", icon: FileText, path: "/settings/intake-forms" },
       ]
     },
     {
-      title: "User Management",
+      title: "User Data",
       items: [
         { key: "users", label: "User Management", icon: User, path: "/settings/users" },
       ]
@@ -54,79 +74,141 @@ export default function SettingsPage() {
       title: "Communication",
       items: [
         { key: "communication", label: "Communication Settings", icon: MessageSquare, path: "/settings/communication" },
+        { key: "email", label: "Email Integration", icon: Mail, path: "/settings/email", isNew: true },
+      ]
+    },
+    {
+      title: "Installation",
+      items: [
+        { key: "mobile", label: "Mobile App", icon: Smartphone, path: "/settings/mobile" },
       ]
     },
     {
       title: "System",
       items: [
-        { key: "subscription", label: "Subscription & Billing", icon: CreditCard, path: "/settings/subscription" },
+        { key: "subscription", label: "Subscription", icon: CreditCard, path: "/settings/subscription" },
+        { key: "integrations", label: "Apps & Integrations", icon: Puzzle, path: "/settings/integrations" },
       ]
     }
   ];
 
   const isActive = (path) => {
-    if (path === "/settings") {
-      return location.pathname === "/settings";
-    }
-    return location.pathname.includes(path);
+    if (path === "/settings") return location.pathname === "/settings";
+    return location.pathname.startsWith(path) && path !== "/settings";
   };
 
+  // Filter menu items based on search query
+  const filteredCategories = useMemo(() => {
+    if (!searchQuery.trim()) return menuCategories;
+
+    const query = searchQuery.toLowerCase();
+    return menuCategories
+      .map(category => ({
+        ...category,
+        items: category.items.filter(item =>
+          item.label.toLowerCase().includes(query) ||
+          category.title.toLowerCase().includes(query)
+        )
+      }))
+      .filter(category => category.items.length > 0);
+  }, [searchQuery, menuCategories]);
+
   return (
-    <div className="flex gap-4">
-      {/* Left Sidebar */}
-      <div className="w-64 flex-shrink-0">
-        <div className="sticky top-4 p-3">
-          <div className="space-y-4">
-            {menuCategories.map((category) => (
-              <div key={category.title}>
-                <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-2">
+    <div className="flex h-[calc(100vh-3rem)] overflow-hidden bg-background">
+      {/* Settings Sidebar */}
+      <div className="w-[280px] flex-shrink-0 border-r border-default-200 bg-default-50/50 flex flex-col">
+        {/* Header & Search */}
+        <div className="p-5 space-y-4 sticky top-0 bg-default-50/50 z-10 backdrop-blur-md">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold text-default-900">Settings</h1>
+          </div>
+
+          <Input
+            classNames={{
+              base: "h-9",
+              mainWrapper: "h-9",
+              input: "text-small",
+              inputWrapper: "h-9 bg-default-100 hover:bg-default-200/70 dark:bg-default-200/50 shadow-none",
+            }}
+            placeholder="Search settings..."
+            size="sm"
+            startContent={<Search size={14} className="text-default-500" />}
+            endContent={<Kbd keys={["command"]} className="hidden lg:inline-block shadow-none border-none bg-transparent font-sans text-tiny opacity-50">K</Kbd>}
+            type="search"
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+            isClearable
+            onClear={() => setSearchQuery("")}
+          />
+        </div>
+
+        {/* Scrollable Menu */}
+        <div className="flex-1 overflow-y-auto px-3 pb-8 scrollbar-hide">
+          <div className="space-y-6">
+            {filteredCategories.length === 0 ? (
+              <div className="text-center py-8 px-3">
+                <p className="text-sm text-default-400">No settings found for "{searchQuery}"</p>
+              </div>
+            ) : (
+              filteredCategories.map((category) => (
+              <div key={category.title} className="space-y-1">
+                <h3 className="text-[11px] font-bold text-default-400 uppercase tracking-wider px-3 mb-2">
                   {category.title}
                 </h3>
-                <div className="space-y-1">
+                <ul className="space-y-0.5">
                   {category.items.map((item) => {
-                    const Icon = item.icon;
                     const active = isActive(item.path);
                     return (
-                      <button
-                        key={item.key}
-                        onClick={() => navigate(item.path)}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                          active
-                            ? "bg-primary text-white font-medium"
-                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <Icon size={16} className={active ? "text-white" : "text-gray-500 dark:text-gray-400"} />
+                      <li key={item.key}>
+                        <button
+                          onClick={() => navigate(item.path)}
+                          className={`
+                            w-full flex items-center justify-between px-3 py-1.5 rounded-md text-sm transition-colors duration-200
+                            ${active
+                              ? "bg-default-200/60 font-medium text-default-900"
+                              : "text-default-600 hover:bg-default-100 placeholder-opacity-0 hover:text-default-900"}
+                          `}
+                        >
                           <span className="truncate">{item.label}</span>
-                        </div>
-                        {active && <ChevronRight size={14} />}
-                      </button>
+                          {item.isNew && (
+                            <Chip size="sm" color="primary" variant="solid" className="h-5 text-[10px] px-1 min-w-10">New</Chip>
+                          )}
+                        </button>
+                      </li>
                     );
                   })}
-                </div>
+                </ul>
               </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 min-w-0">
-        <Routes>
-          <Route index element={<InstitutionSettings />} />
-          <Route path="sections" element={<ClassSectionsSettings />} />
-          <Route path="users" element={<UserManagement />} />
-          <Route path="intake-forms" element={<IntakeFormsSettings />} />
-          <Route path="attendance-rules" element={<AttendanceRules />} />
-          <Route path="fee-heads" element={<FeeHeadsSettings />} />
-          <Route path="fee-rules" element={<FeeRules />} />
-          <Route path="holidays" element={<HolidaySettings />} />
-          <Route path="leaves" element={<LeaveSettings />} />
-          <Route path="communication" element={<CommunicationSettings />} />
-          <Route path="payroll" element={<PayrollSettings />} />
-          <Route path="subscription" element={<SubscriptionSettings />} />
-        </Routes>
+      <div className="flex-1 overflow-y-auto bg-background p-8 lg:p-12">
+        <div className="max-w-[1000px] mx-auto animate-fade-in">
+          <Routes>
+            <Route index element={<InstitutionSettings />} />
+            <Route path="academics" element={<AcademicSettings />} />
+            <Route path="users" element={<UserManagement />} />
+            <Route path="roles" element={<RolesAccess />} />
+            <Route path="intake-forms" element={<IntakeFormsSettings />} />
+            <Route path="attendance-rules" element={<AttendanceRules />} />
+            <Route path="fee-heads" element={<FeeHeadsSettings />} />
+            <Route path="fee-rules" element={<FeeRules />} />
+            <Route path="holidays" element={<HolidaySettings />} />
+            <Route path="leaves" element={<LeaveSettings />} />
+            <Route path="communication" element={<CommunicationSettings />} />
+            <Route path="payroll" element={<PayrollSettings />} />
+            <Route path="subscription" element={<SubscriptionSettings />} />
+            <Route path="*" element={<div className="flex flex-col items-center justify-center h-[50vh] text-default-400">
+              <Puzzle size={48} className="mb-4 opacity-50" />
+              <h3 className="text-lg font-semibold">Setting module under development</h3>
+              <p className="text-sm">This section will be available in the next update.</p>
+            </div>} />
+          </Routes>
+        </div>
       </div>
     </div>
   );

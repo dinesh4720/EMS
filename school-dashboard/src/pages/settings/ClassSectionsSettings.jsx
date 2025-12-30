@@ -135,148 +135,135 @@ export default function ClassSectionsSettings() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Class Sections</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Manage class sections, strength limits, and room assignments
-          </p>
-        </div>
-        <Button
-          color="primary"
-          startContent={<Plus size={16} />}
-          onPress={() => handleOpenModal()}
-          className="transition-all duration-200"
-        >
-          Add Section
-        </Button>
+    <div className="pb-10 space-y-6">
+      <div className="flex justify-end">
+        <Button color="primary" radius="full" className="shadow-md font-medium px-6" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>Add Section</Button>
       </div>
 
       {/* Sections Table */}
-      <Card className="rounded-lg">
-        <CardBody className="p-0">
-          <Table
-            aria-label="Class sections table"
-            removeWrapper
-            classNames={{
-              th: "bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold",
-              td: "py-4",
-            }}
+      <div className="bg-white border border-default-200 rounded-xl overflow-hidden shadow-sm">
+        <Table
+          aria-label="Class sections table"
+          removeWrapper
+          radius="none"
+          classNames={{
+            base: "overflow-visible",
+            th: "bg-default-50 text-default-500 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200",
+            td: "py-4 border-b border-default-100",
+            tbody: "[&>tr:last-child>td]:border-none"
+          }}
+        >
+          <TableHeader>
+            <TableColumn>CLASS</TableColumn>
+            <TableColumn>SECTION</TableColumn>
+            <TableColumn>CLASS TEACHER</TableColumn>
+            <TableColumn>STUDENTS</TableColumn>
+            <TableColumn>ROOM</TableColumn>
+            <TableColumn>HOD</TableColumn>
+            <TableColumn>GROUP</TableColumn>
+            <TableColumn>ACTIONS</TableColumn>
+          </TableHeader>
+          <TableBody
+            items={classes}
+            emptyContent="No sections found"
+            loadingContent={<Spinner />}
           >
-            <TableHeader>
-              <TableColumn>CLASS</TableColumn>
-              <TableColumn>SECTION</TableColumn>
-              <TableColumn>CLASS TEACHER</TableColumn>
-              <TableColumn>STUDENTS</TableColumn>
-              <TableColumn>ROOM</TableColumn>
-              <TableColumn>HOD</TableColumn>
-              <TableColumn>GROUP</TableColumn>
-              <TableColumn>ACTIONS</TableColumn>
-            </TableHeader>
-            <TableBody
-              items={classes}
-              emptyContent="No sections found"
-              loadingContent={<Spinner />}
-            >
-              {(section) => {
-                const studentCount = getStudentCount(section.id);
-                const nearLimit = isNearLimit(section.id, section.strengthLimit);
+            {(section) => {
+              const studentCount = getStudentCount(section.id);
+              const nearLimit = isNearLimit(section.id, section.strengthLimit);
 
-                return (
-                  <TableRow key={section.id}>
-                    <TableCell>
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {section.name.split('-')[0]}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Chip size="sm" variant="flat" color="primary">
-                        {section.section || section.name.split('-')[1] || 'A'}
-                      </Chip>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-gray-700 dark:text-gray-300">
-                        {getTeacherName(section.classTeacherId)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Users size={14} className="text-gray-500" />
-                        <span className={nearLimit ? "text-orange-600 font-medium" : ""}>
-                          {studentCount}
-                          {section.strengthLimit && ` / ${section.strengthLimit}`}
-                        </span>
-                        {nearLimit && (
-                          <Chip size="sm" color="warning" variant="flat">
-                            Near Limit
-                          </Chip>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        {section.roomNo ? (
-                          <>
-                            <DoorOpen size={14} />
-                            <span>{section.roomNo}</span>
-                            {section.blockNo && (
-                              <>
-                                <Building2 size={14} className="ml-2" />
-                                <span>{section.blockNo}</span>
-                              </>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-gray-400">Not assigned</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-gray-700 dark:text-gray-300">
-                        {section.hodId ? getTeacherName(section.hodId) : "-"}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {section.group ? (
-                        <Chip size="sm" variant="flat" color="secondary">
-                          {section.group}
+              return (
+                <TableRow key={section.id}>
+                  <TableCell>
+                    <div className="font-medium text-gray-900 dark:text-white">
+                      {section.name.split('-')[0]}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Chip size="sm" variant="flat" color="primary">
+                      {section.section || section.name.split('-')[1] || 'A'}
+                    </Chip>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                      {getTeacherName(section.classTeacherId)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Users size={14} className="text-gray-500" />
+                      <span className={nearLimit ? "text-orange-600 font-medium" : ""}>
+                        {studentCount}
+                        {section.strengthLimit && ` / ${section.strengthLimit}`}
+                      </span>
+                      {nearLimit && (
+                        <Chip size="sm" color="warning" variant="flat">
+                          Near Limit
                         </Chip>
-                      ) : (
-                        <span className="text-gray-400">-</span>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          onPress={() => handleOpenModal(section)}
-                          className="transition-all duration-200"
-                        >
-                          <Edit2 size={16} />
-                        </Button>
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          color="danger"
-                          onPress={() => handleDelete(section.id)}
-                          className="transition-all duration-200"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              }}
-            </TableBody>
-          </Table>
-        </CardBody>
-      </Card>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      {section.roomNo ? (
+                        <>
+                          <DoorOpen size={14} />
+                          <span>{section.roomNo}</span>
+                          {section.blockNo && (
+                            <>
+                              <Building2 size={14} className="ml-2" />
+                              <span>{section.blockNo}</span>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-gray-400">Not assigned</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                      {section.hodId ? getTeacherName(section.hodId) : "-"}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {section.group ? (
+                      <Chip size="sm" variant="flat" color="secondary">
+                        {section.group}
+                      </Chip>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        onPress={() => handleOpenModal(section)}
+                        className="transition-all duration-200"
+                      >
+                        <Edit2 size={16} />
+                      </Button>
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        color="danger"
+                        onPress={() => handleDelete(section.id)}
+                        className="transition-all duration-200"
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            }}
+          </TableBody>
+        </Table>
+      </div>
 
       {/* Add/Edit Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="2xl">

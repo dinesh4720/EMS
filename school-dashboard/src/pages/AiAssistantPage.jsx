@@ -16,6 +16,8 @@ export default function AiAssistantPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [isTranscribing, setIsTranscribing] = useState(false);
+    const [selectedModel, setSelectedModel] = useState('groq');
+    const [showModelSelector, setShowModelSelector] = useState(false);
 
     // For the initial empty state view
     const [hasInteracted, setHasInteracted] = useState(false);
@@ -26,6 +28,7 @@ export default function AiAssistantPage() {
     const audioChunksRef = useRef([]);
 
     const prebuiltPrompts = aiService.getPrebuiltPrompts();
+    const availableModels = aiService.getAvailableModels();
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -113,7 +116,7 @@ export default function AiAssistantPage() {
 
         try {
             const conversationHistory = messages.filter(m => m.content);
-            const result = await aiService.sendMessage([...conversationHistory, userMessage]);
+            const result = await aiService.sendMessage([...conversationHistory, userMessage], null, selectedModel);
             // Extract just the content string from the result object
             const responseContent = typeof result === 'string' ? result : result.content;
             setMessages(prev => [...prev, { role: 'assistant', content: responseContent }]);
@@ -144,7 +147,7 @@ export default function AiAssistantPage() {
     };
 
     return (
-        <div className="flex h-screen bg-white dark:bg-zinc-950 text-gray-800 dark:text-gray-100 font-sans transition-colors duration-300 rounded-[2rem] overflow-hidden border border-gray-200 dark:border-zinc-800 shadow-xl">
+        <div className="flex h-[calc(100vh-6rem)] bg-white dark:bg-zinc-950 text-gray-800 dark:text-gray-100 font-sans transition-colors duration-300 rounded-3xl overflow-hidden border border-gray-200 dark:border-zinc-800 shadow-xl">
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col items-center relative overflow-hidden">
@@ -170,20 +173,59 @@ export default function AiAssistantPage() {
 
                     {!hasInteracted ? (
                         /* Initial State (Centered Greeting) */
-                        <div className="flex flex-col items-center justify-center h-full w-full max-w-4xl px-4 animate-fade-in pb-12 pt-20">
+                        <div className="flex flex-col items-center justify-center h-full w-full max-w-4xl px-4 animate-fade-in py-2 relative">
+                            {/* Model Selector (Initial) */}
+                            <div className="absolute top-4 right-4 z-30">
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setShowModelSelector(!showModelSelector)}
+                                        className="flex items-center gap-2 text-xs font-medium bg-white dark:bg-zinc-800 px-3 py-1.5 rounded-full border border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 shadow-sm text-gray-600 dark:text-gray-300 transition-colors"
+                                    >
+                                        <span>{availableModels.find(m => m.id === selectedModel)?.name || 'Select Model'}</span>
+                                        <ChevronDown size={14} className={`transition-transform ${showModelSelector ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    {showModelSelector && (
+                                        <div className="absolute top-full right-0 mt-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl shadow-xl z-[60] min-w-[200px] overflow-hidden py-1">
+                                            {availableModels.map(model => (
+                                                <button
+                                                    key={model.id}
+                                                    onClick={() => {
+                                                        setSelectedModel(model.id);
+                                                        setShowModelSelector(false);
+                                                        toast.success(`Switched to ${model.name}`);
+                                                    }}
+                                                    disabled={!model.available}
+                                                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors flex flex-col gap-0.5 ${selectedModel === model.id
+                                                            ? 'bg-purple-50 dark:bg-purple-900/10 text-purple-600 dark:text-purple-400'
+                                                            : 'text-gray-700 dark:text-gray-200'
+                                                        } ${!model.available ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                >
+                                                    <div className="font-medium flex items-center justify-between">
+                                                        {model.name}
+                                                        {selectedModel === model.id && <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />}
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-500 dark:text-gray-500 line-clamp-1">{model.description}</div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
                             {/* Purple Orb */}
-                            <div className="mb-8 relative">
+                            <div className="mb-2 relative scale-90">
                                 <AiOrb size="xl" color="purple" />
                             </div>
 
                             {/* Greeting */}
-                            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-2">Good Afternoon, Admin</h1>
-                            <h2 className="text-3xl font-semibold text-gray-400 mb-10">
+                            <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 dark:text-white mb-1 text-center">Good Afternoon, Admin</h1>
+                            <h2 className="text-2xl md:text-3xl font-semibold text-gray-400 mb-6 text-center">
                                 What's on <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-500">your mind?</span>
                             </h2>
 
                             {/* Center Input Box (Initial Position) */}
-                            <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-[2rem] shadow-xl p-4 relative group focus-within:border-purple-500/30 focus-within:ring-4 focus-within:ring-purple-500/10 transition-all duration-300 z-20">
+                            <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-[2rem] shadow-xl p-3 md:p-4 relative group focus-within:border-purple-500/30 focus-within:ring-4 focus-within:ring-purple-500/10 transition-all duration-300 z-20">
                                 <textarea
                                     ref={inputRef}
                                     value={input}
@@ -193,20 +235,20 @@ export default function AiAssistantPage() {
                                         e.target.style.height = e.target.scrollHeight + 'px'; // Set new height
                                     }}
                                     onKeyDown={handleKeyDown}
-                                    placeholder={isTranscribing ? "Transcribing..." : isRecording ? "Listening..." : "Ask AI a question or make a request..."}
+                                    placeholder={isTranscribing ? "Transcribing..." : isRecording ? "Listening..." : "Ask AI a question..."}
                                     disabled={isRecording || isTranscribing}
-                                    className="w-full bg-transparent border-none outline-none focus:ring-0 text-lg placeholder-gray-400 dark:placeholder-gray-500 dark:text-gray-100 resize-none max-h-48 py-2 px-2 custom-scrollbar"
+                                    className="w-full bg-transparent border-none outline-none focus:ring-0 text-base md:text-lg placeholder-gray-400 dark:placeholder-gray-500 dark:text-gray-100 resize-none max-h-32 py-2 px-2 custom-scrollbar"
                                     rows={1}
-                                    style={{ minHeight: '56px' }}
+                                    style={{ minHeight: '48px' }}
                                 />
 
-                                <div className="flex justify-between items-center mt-2 px-1">
+                                <div className="flex justify-between items-center mt-1 px-1">
                                     <div className="flex items-center gap-2">
                                         <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition flex items-center gap-2 px-3">
                                             <Paperclip size={18} /> <span className="text-xs font-medium">Attach</span>
                                         </button>
                                     </div>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2">
                                         {/* Microphone Button */}
                                         <button
                                             onClick={toggleRecording}
@@ -225,7 +267,7 @@ export default function AiAssistantPage() {
                                             disabled={!input.trim() || isRecording || isTranscribing}
                                             className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${input.trim()
                                                 ? 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 scale-100'
-                                                : 'bg-gray-200 dark:bg-zinc-700 text-gray-400 dark:text-gray-500 cursor-not-allowed scale-90'
+                                                : 'bg-gray-100 dark:bg-zinc-700 text-gray-400 dark:text-gray-500 cursor-not-allowed scale-90'
                                                 }`}
                                         >
                                             <MoveUp size={16} />
@@ -235,18 +277,18 @@ export default function AiAssistantPage() {
                             </div>
 
                             {/* Suggested Actions Grid - Only show on empty state */}
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-4xl mt-12 opacity-0 animate-[fade-in_0.5s_ease-out_0.5s_forwards] z-20">
+                            <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-3 w-full max-w-4xl mt-6 opacity-0 animate-[fade-in_0.5s_ease-out_0.5s_forwards] z-20">
                                 {prebuiltPrompts.map((item, idx) => (
                                     <button
                                         key={idx}
                                         onClick={() => handlePromptClick(item.prompt)}
-                                        className="text-left p-4 rounded-2xl border border-gray-100 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/60 hover:bg-white dark:hover:bg-zinc-800 hover:border-purple-200/50 hover:shadow-md transition-all group h-28 flex flex-col justify-between backdrop-blur-sm"
+                                        className="text-left p-3 rounded-2xl border border-gray-100 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/60 hover:bg-white dark:hover:bg-zinc-800 hover:border-purple-200/50 hover:shadow-md transition-all group h-20 flex flex-col justify-between backdrop-blur-sm"
                                     >
                                         <div className="text-sm">
                                             <div className="font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors line-clamp-1">{item.label}</div>
-                                            <div className="text-gray-400 dark:text-gray-500 text-xs mt-1 line-clamp-2">{item.prompt}</div>
+                                            <div className="text-gray-400 dark:text-gray-500 text-xs mt-0.5 line-clamp-1">{item.prompt}</div>
                                         </div>
-                                        <div className="self-end opacity-50 text-2xl group-hover:opacity-100 group-hover:scale-110 transition-all">
+                                        <div className="self-end opacity-50 text-xl group-hover:opacity-100 group-hover:scale-110 transition-all">
                                             {item.icon}
                                         </div>
                                     </button>
@@ -257,13 +299,50 @@ export default function AiAssistantPage() {
                         /* Active Chat State */
                         <div className="w-full max-w-4xl flex-1 px-4 py-6 space-y-6 relative">
                             {/* Back Button Overlay */}
-                            <div className="sticky top-0 z-50 flex justify-start pb-4 bg-gradient-to-b from-white dark:from-zinc-950 via-white/80 dark:via-zinc-950/80 to-transparent">
+                            <div className="sticky top-0 z-50 flex justify-between items-center pb-4 bg-gradient-to-b from-white dark:from-zinc-950 via-white/80 dark:via-zinc-950/80 to-transparent pointer-events-none">
                                 <button
                                     onClick={handleBack}
-                                    className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 shadow-sm"
+                                    className="pointer-events-auto flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 shadow-sm"
                                 >
-                                    <ArrowLeft size={16} /> Back to Search
+                                    <ArrowLeft size={16} /> Back
                                 </button>
+
+                                {/* Model Selector */}
+                                <div className="relative pointer-events-auto">
+                                    <button
+                                        onClick={() => setShowModelSelector(!showModelSelector)}
+                                        className="flex items-center gap-2 text-xs font-medium bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 shadow-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+                                    >
+                                        <span>{availableModels.find(m => m.id === selectedModel)?.name || 'Select Model'}</span>
+                                        <ChevronDown size={14} className={`transition-transform ${showModelSelector ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    {showModelSelector && (
+                                        <div className="absolute top-full right-0 mt-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl shadow-xl z-[60] min-w-[200px] overflow-hidden py-1">
+                                            {availableModels.map(model => (
+                                                <button
+                                                    key={model.id}
+                                                    onClick={() => {
+                                                        setSelectedModel(model.id);
+                                                        setShowModelSelector(false);
+                                                        toast.success(`Switched to ${model.name}`);
+                                                    }}
+                                                    disabled={!model.available}
+                                                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors flex flex-col gap-0.5 ${selectedModel === model.id
+                                                        ? 'bg-purple-50 dark:bg-purple-900/10 text-purple-600 dark:text-purple-400'
+                                                        : 'text-gray-700 dark:text-gray-200'
+                                                        } ${!model.available ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                >
+                                                    <div className="font-medium flex items-center justify-between">
+                                                        {model.name}
+                                                        {selectedModel === model.id && <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />}
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-500 dark:text-gray-500 line-clamp-1">{model.description}</div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             {messages.map((msg, idx) => (

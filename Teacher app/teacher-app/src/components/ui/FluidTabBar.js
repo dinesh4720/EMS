@@ -1,161 +1,107 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions } from 'react-native';
 import { COLORS, SPACING, SHADOWS } from '../../theme';
-import GlassView from '../ui/GlassView';
+import { Feather } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 /**
- * FluidTabBar
- * - Renders a horizontal list of tabs.
- * - Uses a sliding "pill" background for the active tab.
- * - Provides a morphing/fluid feel.
+ * FluidTabBar (Google Material 3 Navigation Bar)
+ * - Full width at the bottom.
+ * - Active state has a pill-shaped indicator around the icon.
+ * - Labels always visible (or selected only, but we do always for M3 default).
  */
 export default function FluidTabBar({ tabs, activeTab, onTabPress }) {
-    const [measures, setMeasures] = useState([]);
-    const containerRef = useRef();
-    const slideAnim = useRef(new Animated.Value(0)).current;
-    const widthAnim = useRef(new Animated.Value(0)).current;
-
-    // Initialize animation when activeTab changes
-    useEffect(() => {
-        if (measures && measures[activeTab]) {
-            const { x, width } = measures[activeTab];
-
-            Animated.parallel([
-                Animated.spring(slideAnim, {
-                    toValue: x,
-                    useNativeDriver: false,
-                    friction: 9,
-                    tension: 60,
-                }),
-                Animated.spring(widthAnim, {
-                    toValue: width,
-                    useNativeDriver: false,
-                    friction: 9,
-                    tension: 60,
-                }),
-            ]).start();
+    // We map tab names to icons here for simplicity since we pass strings in App.js
+    const getIcon = (tabName) => {
+        switch (tabName) {
+            case 'Home': return 'home'; // Updated from Today
+            case 'Today': return 'sun'; // Fallback
+            case 'Classes': return 'book-open'; // Better than users
+            case 'Work': return 'check-square';
+            case 'Me': return 'user';
+            default: return 'circle';
         }
-    }, [activeTab, measures]);
-
-    // Measure tab layout
-    const handleLayout = (event, index) => {
-        const { x, width } = event.nativeEvent.layout;
-
-        // Calculate centered pill dimensions
-        // We want the pill to be slightly smaller than the tab area
-        const padding = SPACING.s;
-        const pillWidth = width - (padding * 2);
-        const pillX = x + padding;
-
-        setMeasures(prev => {
-            const m = [...prev];
-            // Only update if changed to avoid loops
-            if (!m[index] || m[index].x !== pillX || m[index].width !== pillWidth) {
-                m[index] = { x: pillX, width: pillWidth };
-            }
-            return m;
-        });
     };
 
     return (
         <View style={styles.container}>
-            <GlassView intensity={50} style={styles.glassContainer}>
-                {/* Animated Pill Background */}
-                {measures.length > 0 && measures[activeTab] && (
-                    <Animated.View
-                        style={[
-                            styles.activePill,
-                            {
-                                transform: [{ translateX: slideAnim }],
-                                width: widthAnim,
-                            },
-                        ]}
-                    />
-                )}
-
-                {/* Tab Items */}
-                <View style={styles.tabsRow}>
-                    {tabs.map((tab, index) => {
-                        const isActive = activeTab === index;
-                        return (
-                            <TouchableOpacity
-                                key={tab}
-                                activeOpacity={0.7}
-                                onPress={() => onTabPress(index)}
-                                style={styles.tabItem}
-                                onLayout={(e) => handleLayout(e, index)}
-                            >
-                                <Text style={[
-                                    styles.tabText,
-                                    isActive && styles.tabTextActive
-                                ]}>
-                                    {tab}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
-            </GlassView>
+            <View style={styles.tabsRow}>
+                {tabs.map((tab, index) => {
+                    const isActive = activeTab === index;
+                    return (
+                        <TouchableOpacity
+                            key={tab}
+                            activeOpacity={0.8}
+                            onPress={() => onTabPress(index)}
+                            style={styles.tabItem}
+                        >
+                            {/* Active Indicator Pill */}
+                            <View style={[styles.iconContainer, isActive && styles.activeIndicator]}>
+                                <Feather
+                                    name={getIcon(tab)}
+                                    size={24}
+                                    color={isActive ? COLORS.primary : COLORS.gray}
+                                />
+                            </View>
+                            <Text style={[
+                                styles.tabText,
+                                isActive && styles.tabTextActive
+                            ]}>
+                                {tab}
+                            </Text>
+                        </TouchableOpacity>
+                    );
+                })}
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        paddingHorizontal: SPACING.m,
-        marginVertical: SPACING.s,
-    },
-    glassContainer: {
-        borderRadius: 30,
-        backgroundColor: 'rgba(235, 235, 235, 0.45)', // Slightly lighter glass for container
-        padding: SPACING.xs, // Padding for the floating effect
-        overflow: 'hidden',
-        height: 52, // Fixed height for consistency
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.3)',
+        backgroundColor: COLORS.surface || '#FFFFFF', // M3 Surface
+        borderTopWidth: 0, // No border, maybe elevation
+        elevation: 8, // Shadow for elevation
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        paddingBottom: SPACING.s, // Bottom safe area padding
+        paddingTop: 12, // Top padding inside bar
+        height: 80, // Standard M3 Nav Bar height
+        width: '100%',
     },
     tabsRow: {
         flexDirection: 'row',
+        justifyContent: 'space-around',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        height: '100%',
-        position: 'absolute',
-        left: SPACING.xs,
-        right: SPACING.xs,
+        width: '100%',
     },
     tabItem: {
-        flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100%',
-        zIndex: 2,
-        paddingHorizontal: 4, // Prevent touch overlap
+        flex: 1, // Distribute evenly
+    },
+    iconContainer: {
+        width: 64, // M3 Active Indicator width
+        height: 32, // M3 Active Indicator height
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 16, // Pill shape
+        marginBottom: 4,
+    },
+    activeIndicator: {
+        backgroundColor: COLORS.primaryLight, // M3 Active Indicator color
     },
     tabText: {
-        fontSize: 13,
+        fontSize: 12,
         fontFamily: 'Inter_500Medium',
         color: COLORS.gray,
+        marginTop: 4,
     },
     tabTextActive: {
-        color: COLORS.black,
-        fontFamily: 'Inter_500Medium',
+        color: COLORS.dark, // Active label color
+        fontFamily: 'Inter_600SemiBold', // Make it bold when active
     },
-    activePill: {
-        position: 'absolute',
-        backgroundColor: COLORS.white,
-        borderRadius: 25,
-        zIndex: 1,
-        top: 4,
-        left: 4,
-        bottom: 4,
-        height: 44, // 52 (container) - 8 (padding)
-        ...SHADOWS.small,
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowOffset: { width: 0, height: 2 },
-    }
 });

@@ -24,6 +24,8 @@ import {
   useFonts,
   Inter_400Regular,
   Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
 } from '@expo-google-fonts/inter';
 
 const Tab = createBottomTabNavigator();
@@ -32,7 +34,7 @@ const Stack = createNativeStackNavigator();
 const screenOptions = {
   headerStyle: { backgroundColor: COLORS.white },
   headerTintColor: COLORS.dark,
-  headerTitleStyle: { fontFamily: 'Inter_500Medium', fontSize: 18 }, // Removed bold
+  headerTitleStyle: { fontFamily: 'Inter_500Medium', fontSize: 18 },
   headerBackTitleVisible: false,
 };
 
@@ -46,10 +48,11 @@ function ClassesStack() {
   );
 }
 
-function MeStack() {
+function HomeStack() {
   return (
     <Stack.Navigator screenOptions={screenOptions}>
-      <Stack.Screen name="MeMain" component={MeScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="TodayMain" component={TodayScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Profile" component={MeScreen} options={{ headerShown: false }} />
       <Stack.Screen name="LeaveApplication" component={LeaveApplicationScreen} options={{ headerShown: false }} />
       <Stack.Screen name="RegularizationRequest" component={RegularizationRequestScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} options={{ headerShown: false }} />
@@ -66,43 +69,39 @@ function WorkStack() {
   );
 }
 
-import FluidTabBar from './src/components/ui/FluidTabBar';
+import FluidTabBar from './src/components/ui/FluidTabBar'; // Kept for reference but unused
+import MaterialTabBar from './src/components/ui/MaterialTabBar';
 
 function MainTabs() {
   return (
     <Tab.Navigator
       tabBar={({ state, descriptors, navigation }) => (
-        <View style={{ position: 'absolute', bottom: 20, left: 20, right: 20 }}>
-          <FluidTabBar
-            tabs={state.routes.map(r => r.name)}
-            activeTab={state.index}
-            onTabPress={(index) => {
-              const route = state.routes[index];
-              const isFocused = state.index === index;
+        <MaterialTabBar
+          tabs={state.routes.map(r => r.name)}
+          activeTab={state.index}
+          onTabPress={(index) => {
+            const route = state.routes[index];
+            const isFocused = state.index === index;
 
-              const event = navigation.emit({
-                type: 'tabPress',
-                target: route.key,
-                canPreventDefault: true,
-              });
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
 
-              if (!isFocused && !event.defaultPrevented) {
-                navigation.navigate(route.name);
-              }
-            }}
-          />
-        </View>
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          }}
+        />
       )}
-      sceneContainerStyle={{ backgroundColor: '#F8FAFC' }}
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { position: 'absolute' }, // hidden usually if custom tabBar
       }}
     >
-      <Tab.Screen name="Today" component={TodayScreen} />
+      <Tab.Screen name="Home" component={HomeStack} />
       <Tab.Screen name="Classes" component={ClassesStack} />
       <Tab.Screen name="Work" component={WorkStack} />
-      <Tab.Screen name="Me" component={MeStack} />
     </Tab.Navigator>
   );
 }
@@ -137,6 +136,8 @@ export default function App() {
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
   });
 
   if (!fontsLoaded) {

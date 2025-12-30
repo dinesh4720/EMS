@@ -16,7 +16,7 @@ import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 
 const ITEMS_PER_LOAD = 15;
-const academicYears = ["2024-25", "2025-26", "2023-24"];
+const academicYears = ["2024-25", "2025-26", "2023-24"];    
 
 export default function StudentsList() {
     const navigate = useNavigate();

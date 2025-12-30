@@ -9,11 +9,13 @@ import { COLORS, SPACING, SHADOWS } from '../theme';
 import { Feather } from '@expo/vector-icons';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
+import ModernHeader from '../components/ui/ModernHeader';
+import SectionHeader from '../components/ui/SectionHeader';
 
 export default function ProfileEditScreen({ navigation }) {
   const { user } = useAuth();
   const { updateProfile } = useApp();
-  
+
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.phone || '');
@@ -22,31 +24,13 @@ export default function ProfileEditScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
-    // Validation
-    if (!name.trim()) {
-      Alert.alert('Error', 'Name is required');
-      return;
-    }
-    if (!phone.trim()) {
-      Alert.alert('Error', 'Phone number is required');
-      return;
-    }
+    if (!name.trim()) return Alert.alert('Error', 'Name is required');
+    if (!phone.trim()) return Alert.alert('Error', 'Phone number is required');
 
     setLoading(true);
     try {
-      await updateProfile({
-        name,
-        email,
-        phone,
-        address,
-        emergencyContact
-      });
-
-      Alert.alert(
-        'Success',
-        'Profile updated successfully',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
+      await updateProfile({ name, email, phone, address, emergencyContact });
+      Alert.alert('Success', 'Profile updated successfully', [{ text: 'OK', onPress: () => navigation.goBack() }]);
     } catch (error) {
       Alert.alert('Error', 'Failed to update profile. Please try again.');
     } finally {
@@ -54,115 +38,76 @@ export default function ProfileEditScreen({ navigation }) {
     }
   };
 
+  const InputField = ({ label, value, onChange, placeholder, keyboardType, multiline }) => (
+    <View style={styles.inputGroup}>
+      <Text style={styles.label}>{label}</Text>
+      <TextInput
+        style={[styles.input, multiline && styles.textarea]}
+        placeholder={placeholder}
+        value={value}
+        onChangeText={onChange}
+        keyboardType={keyboardType}
+        multiline={multiline}
+        placeholderTextColor={COLORS.gray}
+      />
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Feather name="arrow-left" size={24} color={COLORS.dark} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <ModernHeader title="Edit Profile" subtitle="Update your personal details" backAction={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.container}>
         {/* Avatar Section */}
-        <View style={styles.avatarSection}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{name?.[0] || 'T'}</Text>
+        <View style={styles.avatarContainer}>
+          <View style={styles.avatarRing}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{name?.[0] || 'T'}</Text>
+            </View>
           </View>
-          <TouchableOpacity style={styles.changePhotoBtn}>
-            <Feather name="camera" size={16} color={COLORS.primary} />
-            <Text style={styles.changePhotoText}>Change Photo</Text>
+          <TouchableOpacity style={styles.camBtn}>
+            <Feather name="camera" size={16} color="#FFF" />
           </TouchableOpacity>
         </View>
 
         {/* Basic Information */}
-        <Card>
-          <Text style={styles.sectionTitle}>Basic Information</Text>
-          
-          <Text style={styles.label}>Full Name *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your full name"
-            value={name}
-            onChangeText={setName}
-            placeholderTextColor={COLORS.gray}
-          />
-
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="your.email@example.com"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            placeholderTextColor={COLORS.gray}
-          />
-
-          <Text style={styles.label}>Phone Number *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="+91 XXXXX XXXXX"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-            placeholderTextColor={COLORS.gray}
-          />
+        <SectionHeader title="Basic Info" />
+        <Card style={styles.formCard}>
+          <InputField label="Full Name *" value={name} onChange={setName} placeholder="Enter your full name" />
+          <InputField label="Email Address" value={email} onChange={setEmail} placeholder="email@example.com" keyboardType="email-address" />
+          <InputField label="Phone Number *" value={phone} onChange={setPhone} placeholder="+91 XXXXX XXXXX" keyboardType="phone-pad" />
         </Card>
 
         {/* Additional Information */}
-        <Card>
-          <Text style={styles.sectionTitle}>Additional Information</Text>
-          
-          <Text style={styles.label}>Address</Text>
-          <TextInput
-            style={[styles.input, styles.textarea]}
-            placeholder="Enter your address"
-            value={address}
-            onChangeText={setAddress}
-            multiline
-            numberOfLines={3}
-            textAlignVertical="top"
-            placeholderTextColor={COLORS.gray}
-          />
-
-          <Text style={styles.label}>Emergency Contact</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="+91 XXXXX XXXXX"
-            value={emergencyContact}
-            onChangeText={setEmergencyContact}
-            keyboardType="phone-pad"
-            placeholderTextColor={COLORS.gray}
-          />
+        <SectionHeader title="Personal Details" />
+        <Card style={styles.formCard}>
+          <InputField label="Address" value={address} onChange={setAddress} placeholder="Residential address" multiline />
+          <InputField label="Emergency Contact" value={emergencyContact} onChange={setEmergencyContact} placeholder="Relative number" keyboardType="phone-pad" />
         </Card>
 
-        {/* Read-only Information */}
-        <Card style={styles.readOnlyCard}>
-          <Text style={styles.sectionTitle}>Employment Details</Text>
+        {/* Read-only Employment Info */}
+        <View style={styles.readOnlySection}>
+          <Text style={styles.readOnlyTitle}>Employment Details (Read-Only)</Text>
           <View style={styles.readOnlyRow}>
-            <Text style={styles.readOnlyLabel}>Employee ID</Text>
-            <Text style={styles.readOnlyValue}>{user?.employeeId || 'N/A'}</Text>
+            <Text style={styles.roLabel}>Employee ID</Text>
+            <Text style={styles.roValue}>{user?.employeeId || 'EMP-001'}</Text>
           </View>
           <View style={styles.readOnlyRow}>
-            <Text style={styles.readOnlyLabel}>Designation</Text>
-            <Text style={styles.readOnlyValue}>{user?.designation || 'N/A'}</Text>
+            <Text style={styles.roLabel}>Designation</Text>
+            <Text style={styles.roValue}>{user?.designation || 'Teacher'}</Text>
           </View>
-          <View style={[styles.readOnlyRow, { borderBottomWidth: 0 }]}>
-            <Text style={styles.readOnlyLabel}>Joining Date</Text>
-            <Text style={styles.readOnlyValue}>{user?.joiningDate || 'N/A'}</Text>
+          <View style={styles.readOnlyRowLast}>
+            <Text style={styles.roLabel}>Joined On</Text>
+            <Text style={styles.roValue}>{user?.joiningDate || '01 Jan 2023'}</Text>
           </View>
-          <Text style={styles.readOnlyNote}>
-            Contact HR to update employment details
-          </Text>
-        </Card>
+        </View>
 
         <Button
           title={loading ? "Saving..." : "Save Changes"}
           onPress={handleSave}
           disabled={loading}
           size="large"
+          style={{ marginBottom: 20 }}
         />
       </ScrollView>
     </SafeAreaView>
@@ -170,114 +115,25 @@ export default function ProfileEditScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#FAFAFA',
-    paddingTop: Platform.OS === 'android' ? 40 : 0
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: SPACING.m,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.lightGray
-  },
-  backBtn: {
-    padding: SPACING.s
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter_500Medium',
-    color: COLORS.dark
-  },
-  container: {
-    padding: SPACING.l,
-    paddingBottom: 100
-  },
-  avatarSection: {
-    alignItems: 'center',
-    marginBottom: SPACING.xl
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: SPACING.m
-  },
-  avatarText: {
-    fontSize: 40,
-    fontFamily: 'Inter_500Medium',
-    color: COLORS.white
-  },
-  changePhotoBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.m,
-    paddingVertical: SPACING.s
-  },
-  changePhotoText: {
-    fontSize: 14,
-    fontFamily: 'Inter_500Medium',
-    color: COLORS.primary,
-    marginLeft: 6
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter_500Medium',
-    color: COLORS.dark,
-    marginBottom: SPACING.m
-  },
-  label: {
-    fontSize: 14,
-    fontFamily: 'Inter_500Medium',
-    color: COLORS.dark,
-    marginBottom: SPACING.s
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: COLORS.lightGray,
-    borderRadius: 10,
-    padding: SPACING.m,
-    fontSize: 15,
-    marginBottom: SPACING.m,
-    backgroundColor: COLORS.white,
-    fontFamily: 'Inter_400Regular',
-    color: COLORS.dark
-  },
-  textarea: {
-    height: 80,
-    textAlignVertical: 'top'
-  },
-  readOnlyCard: {
-    backgroundColor: '#F9FAFB'
-  },
-  readOnlyRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: SPACING.m,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.lightGray
-  },
-  readOnlyLabel: {
-    fontSize: 14,
-    color: COLORS.gray,
-    fontFamily: 'Inter_400Regular'
-  },
-  readOnlyValue: {
-    fontSize: 14,
-    fontFamily: 'Inter_500Medium',
-    color: COLORS.dark
-  },
-  readOnlyNote: {
-    fontSize: 12,
-    color: COLORS.gray,
-    fontFamily: 'Inter_400Regular',
-    fontStyle: 'italic',
-    marginTop: SPACING.m
-  }
+  safeArea: { flex: 1, backgroundColor: COLORS.fade, paddingTop: Platform.OS === 'android' ? 30 : 0 },
+  container: { padding: SPACING.l, paddingBottom: 100 },
+
+  avatarContainer: { alignItems: 'center', marginBottom: 32, marginTop: 10 },
+  avatarRing: { padding: 4, backgroundColor: '#FFF', borderRadius: 100, ...SHADOWS.small },
+  avatar: { width: 100, height: 100, borderRadius: 50, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 36, color: '#FFF', fontWeight: 'bold' },
+  camBtn: { position: 'absolute', bottom: 0, right: '35%', backgroundColor: COLORS.dark, padding: 8, borderRadius: 20, borderWidth: 2, borderColor: '#FFF' },
+
+  formCard: { padding: 20, borderRadius: 20, marginBottom: 24, ...SHADOWS.small },
+  inputGroup: { marginBottom: 16 },
+  label: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: COLORS.dark, marginBottom: 6 },
+  input: { backgroundColor: COLORS.fade, borderRadius: 12, padding: 14, fontSize: 15, fontFamily: 'Inter_400Regular', color: COLORS.dark },
+  textarea: { minHeight: 80, textAlignVertical: 'top' },
+
+  readOnlySection: { padding: 20, backgroundColor: COLORS.surfaceVariant, borderRadius: 20, marginBottom: 32 },
+  readOnlyTitle: { fontSize: 12, color: COLORS.gray, fontWeight: '600', textTransform: 'uppercase', marginBottom: 16, letterSpacing: 1 },
+  readOnlyRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: COLORS.fade, paddingBottom: 12 },
+  readOnlyRowLast: { flexDirection: 'row', justifyContent: 'space-between' },
+  roLabel: { fontSize: 14, color: COLORS.gray },
+  roValue: { fontSize: 14, color: COLORS.dark, fontWeight: '600' }
 });
