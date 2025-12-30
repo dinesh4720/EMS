@@ -804,10 +804,8 @@ export default function StudentOverview() {
         </DrawerContent>
       </Drawer>
 
-    </Modal >
-
-  {/* Add Remark Drawer */ }
-  < Drawer isOpen={isRemarkOpen} onOpenChange={setIsRemarkOpen} placement="right" size="sm" classNames={{ base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]" }}>
+      {/* Add Remark Drawer */}
+      <Drawer isOpen={isRemarkOpen} onOpenChange={setIsRemarkOpen} placement="right" size="sm" classNames={{ base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]" }}>
     <DrawerContent>
       {(onClose) => (
         <>
@@ -829,10 +827,10 @@ export default function StudentOverview() {
         </>
       )}
     </DrawerContent>
-  </Drawer >
+      </Drawer>
 
-  {/* Regularize Attendance Drawer */ }
-  < Drawer isOpen={isRegularizeOpen} onOpenChange={setIsRegularizeOpen} placement="right" size="md" classNames={{ base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]" }}>
+      {/* Regularize Attendance Drawer */}
+      <Drawer isOpen={isRegularizeOpen} onOpenChange={setIsRegularizeOpen} placement="right" size="md" classNames={{ base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]" }}>
     <DrawerContent>
       {(onClose) => (
         <>
