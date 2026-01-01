@@ -336,9 +336,9 @@ const StudentAttendance = memo(function StudentAttendance() {
                                 <TableCell>
                                     <div className="flex items-center gap-3">
                                         <img
-                                            src={`https://i.pravatar.cc/150?u=student${student.id}`}
+                                            src={student.photo || `https://i.pravatar.cc/150?u=student${student.id}`}
                                             alt={student.name}
-                                            className="w-10 h-10 rounded-full"
+                                            className="w-10 h-10 rounded-full object-cover"
                                         />
                                         <div className="flex flex-col">
                                             <span className="text-default-900 font-medium text-base">{student.name}</span>

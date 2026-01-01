@@ -12,7 +12,7 @@ import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <HeroUIProvider>
-    <NextThemesProvider attribute="class" defaultTheme="system">
+    <NextThemesProvider attribute="class" defaultTheme="light">
       <BrowserRouter>
         <App />
         <Toaster 

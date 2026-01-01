@@ -1305,10 +1305,58 @@ useEffect(() => {
 
 ### Loader UI
 ```jsx
-<div ref={loaderRef} className="flex justify-center py-4">
     {isLoading && <Spinner size="sm" color="primary" />}
     {!hasMore && items.length > ITEMS_PER_LOAD && (
         <span className="text-default-400 text-sm">All {items.length} items loaded</span>
     )}
 </div>
 ```
+
+---
+
+## Section 10: Tooltips
+
+All tooltips across the application should follow a standardized dark theme for high contrast.
+
+### Standard Tooltip Implementation
+```jsx
+<Tooltip
+    content="Tooltip Content Text"
+    placement="top" // or right, bottom, left
+    closeDelay={0}
+    classNames={{
+        content: "bg-black text-white rounded-lg",
+    }}
+>
+    {/* Trigger Element */}
+    <Button>Hover Details</Button>
+</Tooltip>
+```
+
+### Complex Tooltip Content
+For tooltips containing badges or icons:
+
+```jsx
+<Tooltip
+    content={
+        <div className="flex items-center gap-2">
+            <span>Label Text</span>
+            <Chip size="sm" variant="shadow" color="danger" className="h-4 min-w-4 px-1 text-[9px]">
+                Badge
+            </Chip>
+        </div>
+    }
+    placement="right"
+    closeDelay={0}
+    classNames={{
+        content: "bg-black text-white rounded-lg",
+    }}
+>
+    {/* Trigger Element */}
+</Tooltip>
+```
+
+### Key Props
+- **classNames**: `{ content: "bg-black text-white rounded-lg" }` (REQUIRED)
+- **closeDelay**: `0` (Recommended for snapper feel)
+- **placement**: `top`, `bottom`, `left`, `right` as needed

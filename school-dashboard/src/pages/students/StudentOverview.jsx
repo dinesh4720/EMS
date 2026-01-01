@@ -1,20 +1,28 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Card, CardBody, CardHeader, Chip, Progress, Button, Divider, Avatar,
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Tabs, Tab, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
   Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerFooter, Input, Select, SelectItem, Textarea,
-  RadioGroup, Radio, Checkbox, cn, Tooltip
+  RadioGroup, Radio, Checkbox, cn, Tooltip, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem
 } from "@heroui/react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, Phone, Mail, MapPin, Calendar, IndianRupee, User, Users,
   GraduationCap, FileText, Download, Edit, MessageSquare, Clock,
   CheckCircle, AlertCircle, BookOpen, Award, Upload, TrendingUp, CreditCard, Camera, Save,
   FileCheck, AlertTriangle, Printer, Eye, Plus, X, Check, Heart, Bus, ArrowRight,
-  Globe, Twitter, Linkedin, Github, MoreHorizontal, FolderPlus, CalendarCheck, XCircle
-} from "lucide-react";
+  Globe, Twitter, Linkedin, Github, MoreHorizontal, FolderPlus, CalendarCheck, XCircle,
+  FileOutput, BarChart4, TrendingUp as TrendingIcon, Trash2, Activity, MoreVertical, ChevronRight, Droplets, Shield, Search, Filter
+}
+  from "lucide-react";
+import { format } from "date-fns";
+import AddStudent from "./AddStudent";
+import TCGeneratorModal from "./TCGeneratorModal";
 import { useApp } from "../../context/AppContext";
+import { uploadApi } from "../../services/api";
+import { UnifiedUploadProgress } from "../../components/FileUploadProgress";
+import toast from "react-hot-toast";
 
 const genderOptions = ["Male", "Female", "Other"];
 const bloodGroupOptions = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -24,8 +32,9 @@ const academicYears = ["2024-25", "2025-26", "2023-24"];
 export default function StudentOverview() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getStudentById, getStudentFeeHistory, classesWithTeachers, staff, updateStudent, addFeePayment, loading } = useApp();
-  const [activeTab, setActiveTab] = useState("overview");
+  const { getStudentById, getStudentFeeHistory, classesWithTeachers, staff, updateStudent, addFeePayment, deleteStudent, loading } = useApp();
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "overview");
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
   const [isFeeStatusOpen, setIsFeeStatusOpen] = useState(false);
@@ -36,8 +45,293 @@ export default function StudentOverview() {
   const fileInputRef = useRef(null);
   const [photoPreview, setPhotoPreview] = useState(null);
 
+  // Documents state
+  const documentInputRef = useRef(null);
+  const [documents, setDocuments] = useState([]);
+  const [activeUploads, setActiveUploads] = useState([]);
+
+  const handleDocumentUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files && files.length > 0) {
+
+      // Initialize uploads state
+      const newUploads = files.map(file => ({
+        id: Date.now() + Math.random(),
+        name: file.name,
+        size: file.size,
+        progress: 0,
+        status: 'pending' // pending, uploading, completed, error
+      }));
+
+      setActiveUploads(prev => [...prev, ...newUploads]);
+
+      try {
+        let successCount = 0;
+        let failCount = 0;
+
+        // Upload each file
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const uploadId = newUploads[i].id;
+
+          // Update Status to Uploading
+          setActiveUploads(prev => prev.map(u =>
+            u.id === uploadId ? { ...u, status: 'uploading', progress: 5 } : u
+          ));
+
+          // Simulate progress for UX
+          const progressInterval = setInterval(() => {
+            setActiveUploads(prev => prev.map(u =>
+              u.id === uploadId && u.progress < 90 ? { ...u, progress: u.progress + 10 } : u
+            ));
+          }, 200);
+
+          try {
+            // Upload to backend/Cloudinary
+            const response = await uploadApi.uploadFile(file);
+
+            clearInterval(progressInterval);
+
+            // Format file size
+            const formatFileSize = (bytes) => {
+              if (bytes < 1024) return bytes + ' B';
+              if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+              return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+            };
+
+            // Construct new doc object
+            const newDoc = {
+              name: file.name,
+              type: file.type,
+              url: response.url,
+              size: formatFileSize(file.size),
+              uploadDate: new Date().toISOString()
+            };
+
+            // Use dedicated document endpoint to append to array
+            const response2 = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${id}/documents`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(newDoc)
+            });
+
+            if (!response2.ok) {
+              const error = await response2.json();
+              throw new Error(error.error || 'Failed to save document');
+            }
+
+            const result = await response2.json();
+            console.log('📄 Document saved to backend, received:', result);
+            console.log('📄 All documents from server:', result.documents);
+
+            // Update local state with all documents from server
+            setDocuments(result.documents || []);
+            console.log('📄 Local state updated with', result.documents?.length || 0, 'documents');
+
+            // Mark completed
+            setActiveUploads(prev => prev.map(u =>
+              u.id === uploadId ? { ...u, status: 'completed', progress: 100 } : u
+            ));
+
+            successCount++;
+          } catch (error) {
+            clearInterval(progressInterval);
+            console.error(`Upload error for ${file.name}:`, error);
+            // Mark error
+            setActiveUploads(prev => prev.map(u =>
+              u.id === uploadId ? { ...u, status: 'error', progress: 0 } : u
+            ));
+            failCount++;
+          }
+        }
+
+        // Auto-close after a few seconds if all success
+        if (failCount === 0) {
+          setTimeout(() => {
+            setActiveUploads([]); // Clear uploads
+            toast.success("All documents uploaded successfully");
+          }, 3000);
+        } else {
+          toast.error(`Uploaded ${successCount}, Failed ${failCount}`);
+        }
+
+      } catch (error) {
+        console.error("Batch upload error:", error);
+        toast.error("Upload failed");
+      } finally {
+        e.target.value = null; // Reset input
+      }
+    }
+  };
+
+  const handleDeleteDocument = async (docId) => {
+    console.log('🗑️ Attempting to delete document:', docId);
+    console.log('🗑️ Current documents:', documents);
+    
+    // Find the index of the document to delete
+    // Handle both doc.id and fallback doc-{index} format
+    let docIndex = documents.findIndex(d => d.id === docId);
+    
+    console.log('🗑️ Found document at index:', docIndex);
+    
+    // If not found by id, try to extract index from doc-{index} format
+    if (docIndex === -1 && docId.startsWith('doc-')) {
+      docIndex = parseInt(docId.replace('doc-', ''));
+      console.log('🗑️ Using fallback index:', docIndex);
+    }
+
+    if (docIndex === -1 || docIndex >= documents.length) {
+      console.error('🗑️ Document not found or invalid index');
+      toast.error("Document not found");
+      return;
+    }
+
+    const loadingToast = toast.loading("Deleting document...");
+
+    try {
+      const deleteUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${id}/documents/${docIndex}`;
+      console.log('🗑️ DELETE request to:', deleteUrl);
+      
+      // Call the backend DELETE endpoint with the document index
+      const response = await fetch(deleteUrl, {
+        method: 'DELETE',
+      });
+
+      console.log('🗑️ DELETE response status:', response.status);
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('🗑️ DELETE error response:', error);
+        throw new Error(error.error || 'Failed to delete document');
+      }
+
+      const result = await response.json();
+      console.log('🗑️ DELETE success, remaining documents:', result.documents?.length);
+
+      // Update local state with the documents array from server
+      setDocuments(result.documents || []);
+      toast.success("Document deleted successfully", { id: loadingToast });
+    } catch (error) {
+      console.error("🗑️ Delete error:", error);
+      toast.error("Failed to delete document: " + (error.message || "Unknown error"), { id: loadingToast });
+    }
+  };
+
+  const handleCleanupCorruptedDocuments = async () => {
+    console.log('🔧 Current documents before fix:', documents);
+    const loadingToast = toast.loading("Fixing documents...");
+
+    try {
+      // Call the fix-documents endpoint which removes corrupted docs and adds IDs
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${id}/fix-documents`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fix documents');
+      }
+
+      const result = await response.json();
+      console.log('✅ Fixed documents from server:', result.documents);
+      
+      // Update local state with fixed documents
+      setDocuments(result.documents || []);
+      toast.success("Documents fixed successfully", { id: loadingToast });
+    } catch (error) {
+      console.error("Fix error:", error);
+      toast.error("Failed to fix documents: " + (error.message || "Unknown error"), { id: loadingToast });
+    }
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const loadingToast = toast.loading("Uploading photo...");
+      try {
+        // Upload to Cloudinary
+        const response = await uploadApi.uploadFile(file);
+
+        // Update student photo using direct MongoDB update
+        const response2 = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            photo: response.url,
+            // Include all other fields to prevent data loss
+            name: student.name,
+            admissionId: student.admissionId,
+            classId: student.classId,
+            rollNo: student.rollNo,
+            gender: student.gender,
+            dateOfBirth: student.dateOfBirth,
+            bloodGroup: student.bloodGroup,
+            email: student.email,
+            phone: student.phone,
+            address: student.address,
+            parentName: student.parentName,
+            parentPhone: student.parentPhone,
+            parentEmail: student.parentEmail,
+            status: student.status,
+            feeStatus: student.feeStatus
+          })
+        });
+
+        if (!response2.ok) {
+          const error = await response2.json();
+          throw new Error(error.error || 'Failed to save photo');
+        }
+
+        // Update local preview
+        setPhotoPreview(response.url);
+        toast.success("Photo updated successfully", { id: loadingToast });
+
+        // Refresh page to show new photo
+        window.location.reload();
+      } catch (error) {
+        console.error("Photo upload error:", error);
+        toast.error("Photo upload failed: " + (error.message || "Unknown error"), { id: loadingToast });
+      } finally {
+        e.target.value = null;
+      }
+    }
+  };
+
   const student = getStudentById(id);
   const feeHistory = getStudentFeeHistory(id);
+  const [selectedExam, setSelectedExam] = useState(null);
+
+  // Fetch fresh student data on mount to get latest documents
+  useEffect(() => {
+    const fetchFreshStudentData = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${id}`);
+        if (response.ok) {
+          const freshStudent = await response.json();
+          if (freshStudent.documents) {
+            console.log('📄 Initial documents loaded:', freshStudent.documents.length);
+            setDocuments(freshStudent.documents);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching fresh student data:', error);
+      }
+    };
+
+    fetchFreshStudentData();
+  }, [id]);
+
+  // Only sync documents from student data if local documents state is empty
+  // This prevents overwriting newly uploaded documents with stale context data
+  useEffect(() => {
+    if (student?.documents && documents.length === 0) {
+      console.log('📄 Syncing documents from context (only if empty)');
+      setDocuments(student.documents);
+    }
+  }, [student, documents.length]);
 
   const [editForm, setEditForm] = useState({});
   const [paymentForm, setPaymentForm] = useState({ amount: "7000", month: "", date: new Date().toISOString().split('T')[0] });
@@ -47,7 +341,33 @@ export default function StudentOverview() {
   const [isRemarkOpen, setIsRemarkOpen] = useState(false);
   const [isExamConfigOpen, setIsExamConfigOpen] = useState(false);
   const [isRegularizeOpen, setIsRegularizeOpen] = useState(false);
-  const [selectedExam, setSelectedExam] = useState(null);
+  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+
+  // New Actions State
+  const { isOpen: isTcOpen, onOpen: onTcOpen, onClose: onTcClose } = useDisclosure();
+  const { isOpen: isPromoteOpen, onOpen: onPromoteOpen, onClose: onPromoteClose } = useDisclosure();
+  const { isOpen: isProgressOpen, onOpen: onProgressOpen, onClose: onProgressClose } = useDisclosure();
+
+  const [promoteToClass, setPromoteToClass] = useState("");
+
+  const handlePromoteStudent = async () => {
+    if (!promoteToClass) return;
+    try {
+      await updateStudent(student.id, { class: promoteToClass }); // Assuming updateStudent handles class string/id
+      toast.success(`Student promoted to ${promoteToClass}`);
+      onPromoteClose();
+      // optionally refresh or navigate
+    } catch (e) {
+      toast.error("Failed to promote student");
+    }
+  };
+
+  // Helper to get unique classes (mock or from context if available)
+  // For now using context's classesWithTeachers if available or formatted list
+  const availableClasses = useMemo(() => {
+    if (classesWithTeachers?.length) return classesWithTeachers.map(c => `${c.name}-${c.section}`);
+    return ["Nursery-A", "KG-A", "1-A", "2-A", "3-A", "4-A", "5-A", "6-A", "7-A", "8-A", "9-A", "10-A"];
+  }, [classesWithTeachers]);
 
   const openEditDrawer = () => {
     if (student) {
@@ -90,17 +410,59 @@ export default function StudentOverview() {
     }
   };
 
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => { setPhotoPreview(reader.result); setEditForm({ ...editForm, picture: reader.result }); };
-      reader.readAsDataURL(file);
-    }
-  };
 
-  const handleSaveEdit = () => {
+
+
+
+  const handleSaveEdit = async () => {
     const selectedClass = (classesWithTeachers || []).find(c => `${c.name}-${c.section}` === editForm.class);
+
+    let photoUrl = student.photo; // Default to existing photo
+    console.log('💾 Starting save - Current photo:', photoUrl);
+    console.log('💾 editForm.picture:', editForm.picture ? (typeof editForm.picture === 'string' ? editForm.picture.substring(0, 50) + '...' : 'File object') : 'null');
+
+    // Handle photo upload
+    if (editForm.picture) {
+      if (editForm.picture instanceof File) {
+        // If it's a File object, upload it
+        const loadingToast = toast.loading("Uploading photo...");
+        try {
+          const response = await uploadApi.uploadFile(editForm.picture);
+          photoUrl = response.url;
+          console.log('✅ Photo uploaded (File):', photoUrl);
+          toast.success("Photo uploaded", { id: loadingToast });
+        } catch (error) {
+          toast.error("Photo upload failed", { id: loadingToast });
+          console.error("Photo upload error:", error);
+        }
+      } else if (typeof editForm.picture === 'string') {
+        if (editForm.picture.startsWith('data:image')) {
+          // If it's a base64 string, convert to File and upload
+          const loadingToast = toast.loading("Uploading photo...");
+          try {
+            console.log('🔄 Converting base64 to File...');
+            // Convert base64 to blob
+            const response = await fetch(editForm.picture);
+            const blob = await response.blob();
+            const file = new File([blob], 'profile-photo.jpg', { type: 'image/jpeg' });
+
+            console.log('🔄 Uploading to Cloudinary...');
+            // Upload to Cloudinary
+            const uploadResponse = await uploadApi.uploadFile(file);
+            photoUrl = uploadResponse.url;
+            console.log('✅ Photo uploaded (base64):', photoUrl);
+            toast.success("Photo uploaded", { id: loadingToast });
+          } catch (error) {
+            toast.error("Photo upload failed", { id: loadingToast });
+            console.error("Photo upload error:", error);
+          }
+        } else if (editForm.picture.startsWith('http')) {
+          // If it's already a URL, use it
+          photoUrl = editForm.picture;
+          console.log('✅ Using existing URL:', photoUrl);
+        }
+      }
+    }
 
     const updatedData = {
       ...student,
@@ -117,11 +479,18 @@ export default function StudentOverview() {
       parentName: editForm.parentName,
       parentPhone: editForm.parentPhone,
       parentEmail: editForm.parentEmail,
-      photo: editForm.picture,
+      photo: photoUrl,
       status: editForm.status
     };
-    updateStudent(id, updatedData);
+
+    console.log('💾 Saving student with photo:', photoUrl);
+    console.log('💾 Full update data:', updatedData);
+
+    await updateStudent(id, updatedData);
     setIsEditOpen(false);
+
+    // Refresh the page to show updated data everywhere
+    window.location.reload();
   };
 
   const handleRecordPayment = () => {
@@ -159,25 +528,100 @@ export default function StudentOverview() {
 
   return (
     <div className="min-h-screen bg-background text-foreground animate-fade-in p-6 lg:p-8 pb-12">
-      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+      <div className="max-w-[1600px] mx-auto space-y-6">
 
-        {/* Main Content - Left Side */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* Header with Back Icon and Title - Moved Inside */}
-          <div className="mb-6">
-            <Button
-              variant="light"
-              onPress={() => navigate('/students')}
-              className="text-default-500 hover:text-default-900 pl-0 mb-2"
-              size="sm"
-              startContent={<ArrowLeft size={18} />}
-            >
-              Back to Students
-            </Button>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-semibold text-default-900">Student Profile</h1>
+        {/* Sidebar - Left Side (Moved from Right) */}
+        {/* Top Profile Header & Actions Row */}
+        <div className="w-full bg-white dark:bg-zinc-900 rounded-2xl p-6 border border-default-200 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-6 relative overflow-hidden">
+          {/* Background Decoration */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary-50/50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+
+          <div className="flex flex-col md:flex-row items-center gap-6 z-10 w-full lg:w-auto">
+            {/* Back Button */}
+            <div className="self-start md:self-center mr-2">
+              <Button isIconOnly variant="light" onPress={() => navigate('/students')} className="text-default-500">
+                <ArrowLeft size={20} />
+              </Button>
+            </div>
+
+            {/* Avatar */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handlePhotoUpload}
+            />
+            <div className="relative group">
+              <Avatar
+                src={student.photo || `https://i.pravatar.cc/150?u=student${student.id}`}
+                className="w-20 h-20 text-3xl ring-4 ring-white shadow-sm"
+              />
+              <div
+                className="absolute -bottom-1 -right-1 bg-white rounded-full p-1.5 shadow-sm border border-default-200 cursor-pointer hover:bg-default-50 transition-colors"
+                onClick={() => setIsEditOpen(true)}
+                title="Edit profile"
+              >
+                <Edit size={14} className="text-default-600" />
+              </div>
+            </div>
+
+            {/* Student Info */}
+            <div className="text-center md:text-left space-y-1">
+              <h1 className="text-2xl font-bold text-default-900">{student.name}</h1>
+              <div className="flex items-center justify-center md:justify-start gap-3 text-default-500 font-medium text-sm mt-1">
+                <span>@{student.admissionId || "Student"}</span>
+                <span className="text-sm font-medium text-default-600 bg-default-100 border border-default-200 px-2.5 py-0.5 rounded-md">
+                  {student.class || "N/A"}
+                </span>
+                <span>• Roll {student.rollNo || "N/A"}</span>
+              </div>
             </div>
           </div>
+
+          {/* Actions Row */}
+          <div className="flex flex-wrap items-center justify-center lg:justify-end gap-3 z-10 w-full lg:w-auto border-t lg:border-t-0 lg:border-l border-default-100 pt-4 lg:pt-0 lg:pl-6">
+            <Button variant="flat" color="default" startContent={<FileCheck size={18} />} onPress={onTcOpen}>
+              Generate TC
+            </Button>
+            <Button variant="flat" color="default" startContent={<BarChart4 size={18} />} onPress={onProgressOpen}>
+              Progress Card
+            </Button>
+            <Button color="primary" className="font-medium" startContent={<TrendingIcon size={18} />} onPress={onPromoteOpen}>
+              Promote
+            </Button>
+            <Dropdown>
+              <DropdownTrigger>
+                <Button isIconOnly variant="light" color="default">
+                  <MoreHorizontal size={20} />
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu aria-label="Profile actions">
+                <DropdownItem
+                  key="edit"
+                  startContent={<Edit size={16} />}
+                  onPress={() => setIsEditOpen(true)}
+                >
+                  Edit Profile
+                </DropdownItem>
+                <DropdownItem
+                  key="delete"
+                  className="text-danger"
+                  color="danger"
+                  startContent={<Trash2 size={16} />}
+                  onPress={onDeleteOpen}
+                >
+                  Delete Student
+                </DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
+          </div>
+        </div>
+
+
+
+        {/* Main Content Area */}
+        <div className="w-full space-y-6">
           <Tabs
             selectedKey={activeTab}
             onSelectionChange={setActiveTab}
@@ -192,7 +636,7 @@ export default function StudentOverview() {
             }}
           >
             <Tab key="overview" title="Overview" />
-            <Tab key="student_info" title="Student Info" />
+            <Tab key="student_info" title="Basic Details" />
             <Tab key="academics" title="Academics" />
             <Tab key="fees" title="Fees" />
             <Tab key="remarks" title="Remarks" />
@@ -208,27 +652,60 @@ export default function StudentOverview() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Attendance Card */}
+
+                  {/* Academic Performance Card - New */}
+                  <Card shadow="sm" className="border border-default-200 bg-background/60 backdrop-blur-md">
+                    <CardBody className="p-6">
+                      <div className="flex items-start justify-between mb-4 w-full">
+                        <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
+                          <Award size={24} />
+                        </div>
+                        <Chip size="sm" color="secondary" variant="flat" className="text-xs font-semibold">Exams</Chip>
+                      </div>
+                      <div className="space-y-1 text-left">
+                        <h4 className="text-2xl font-semibold text-default-900">85%</h4>
+                        <p className="text-sm font-medium text-default-500">Overall Percentage</p>
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-default-100 space-y-2">
+                        <div className="flex items-center gap-3 text-xs text-default-500">
+                          <span className="font-medium">Class Average:</span>
+                          <span className="font-bold text-default-700">78%</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-red-500">
+                          <span className="font-medium">Weak Subject:</span>
+                          <span className="font-bold">Mathematics</span>
+                        </div>
+                      </div>
+                    </CardBody>
+                  </Card>
+
+                  {/* Attendance Card - Updated */}
                   <Card isPressable onPress={() => setIsAttendanceOpen(true)} shadow="sm" className="border border-default-200 bg-background/60 backdrop-blur-md">
                     <CardBody className="p-6">
                       <div className="flex items-start justify-between mb-4 w-full">
                         <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
                           <Clock size={24} />
                         </div>
-                        <Chip size="sm" color="primary" variant="flat" className="text-xs font-semibold">92% Target</Chip>
+                        <Chip size="sm" color="primary" variant="flat" className="text-xs font-semibold">Expected: 90%</Chip>
                       </div>
                       <div className="space-y-1 text-left">
                         <h4 className="text-2xl font-semibold text-default-900">{attendanceStats.percentage}%</h4>
-                        <p className="text-sm font-medium text-default-500">Monthly Attendance</p>
+                        <p className="text-sm font-medium text-default-500">Attendance</p>
                       </div>
-                      <div className="mt-4 pt-4 border-t border-default-100 flex items-center justify-between text-xs text-default-400 w-full">
-                        <span>24 Days Present</span>
-                        <span>2 Days Leave</span>
+                      <div className="mt-4 pt-4 border-t border-default-100 space-y-2">
+                        <div className="flex items-center gap-3 text-xs text-default-500">
+                          <span className="font-medium">Total Present:</span>
+                          <span className="font-bold text-default-700">{attendanceStats.present}/{attendanceStats.total}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-red-500">
+                          <span className="font-medium">Absent Days:</span>
+                          <span className="font-bold">{attendanceStats.absent}</span>
+                        </div>
                       </div>
                     </CardBody>
                   </Card>
 
-                  {/* Fee Status Card */}
+                  {/* Fee Status Card - Updated */}
                   <Card isPressable onPress={() => setIsFeeStatusOpen(true)} shadow="sm" className="border border-default-200 bg-background/60 backdrop-blur-md">
                     <CardBody className="p-6">
                       <div className="flex items-start justify-between mb-4 w-full">
@@ -241,36 +718,23 @@ export default function StudentOverview() {
                       </div>
                       <div className="space-y-1 text-left">
                         <div className="flex items-center gap-2">
-                          <h4 className="text-2xl font-semibold text-default-900 capitalize">{student.feeStatus}</h4>
+                          {/* Pending Amount Logic Placeholder - assuming 19666 as example */}
+                          <h4 className="text-2xl font-semibold text-default-900">
+                            {student.feeStatus === 'paid' ? '₹0' : '₹19,666'}
+                          </h4>
                         </div>
-                        <p className="text-sm font-medium text-default-500">Fee Payment Status</p>
+                        <p className="text-sm font-medium text-default-500">{student.feeStatus === 'paid' ? 'No Dues' : 'Pending Amount'}</p>
                       </div>
-                      <div className="mt-4 pt-4 border-t border-default-100 flex items-center justify-between text-xs text-default-400 w-full">
-                        <span>Next Due: 5th Oct</span>
-                        <span className="text-primary hover:underline">Pay Now</span>
+                      <div className="mt-4 pt-4 border-t border-default-100 flex items-center justify-between w-full">
+                        <div className="flex items-center gap-3 text-xs text-default-500">
+                          <span className="font-medium text-danger-600">Next Due:</span>
+                          <span className="font-bold text-default-700">5th Oct</span>
+                        </div>
+                        <span className="text-xs font-semibold text-primary hover:text-primary-600 cursor-pointer transition-colors">Send Reminder</span>
                       </div>
                     </CardBody>
                   </Card>
 
-                  {/* Parent App Card */}
-                  <Card isPressable onPress={() => setIsParentAppOpen(true)} shadow="sm" className="border border-default-200 bg-background/60 backdrop-blur-md">
-                    <CardBody className="p-6">
-                      <div className="flex items-start justify-between mb-4 w-full">
-                        <div className="p-3 bg-fuchsia-50 text-fuchsia-600 rounded-xl">
-                          <Phone size={24} />
-                        </div>
-                        <Chip size="sm" color="success" variant="flat" className="text-xs font-semibold">Active</Chip>
-                      </div>
-                      <div className="space-y-1 text-left">
-                        <h4 className="text-2xl font-bold text-default-900">Connected</h4>
-                        <p className="text-sm font-medium text-default-500">Parent App Status</p>
-                      </div>
-                      <div className="mt-4 pt-4 border-t border-default-100 flex items-center justify-between text-xs text-default-400 w-full">
-                        <span>Last Login: Today</span>
-                        <span>iOS Device</span>
-                      </div>
-                    </CardBody>
-                  </Card>
                 </div>
               </div>
             </div>
@@ -357,24 +821,123 @@ export default function StudentOverview() {
               </Card>
 
               {/* Documents Section */}
+              {/* Documents Section */}
+              <input
+                type="file"
+                ref={documentInputRef}
+                className="hidden"
+                multiple
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                onChange={handleDocumentUpload}
+              />
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
                   <h3 className="text-lg font-semibold text-default-900">Documents</h3>
                   <div className="flex gap-2">
-                    <span className="text-sm text-default-500 self-center">0 documents</span>
-                    <Button size="sm" color="primary" variant="flat" startContent={<Upload size={16} />}>Upload New</Button>
+                    <span className="text-sm text-default-500 self-center">{documents.length} documents</span>
+                    {documents.some(doc => !doc.url || !doc.name || !doc.id) && (
+                      <Button 
+                        size="sm" 
+                        color="warning" 
+                        variant="flat" 
+                        startContent={<AlertTriangle size={16} />} 
+                        onPress={handleCleanupCorruptedDocuments}
+                      >
+                        Fix Documents
+                      </Button>
+                    )}
+                    <Button size="sm" color="primary" variant="flat" startContent={<Upload size={16} />} onPress={() => documentInputRef.current?.click()}>Upload New</Button>
                   </div>
                 </CardHeader>
                 <CardBody className="p-6">
-                  {/* If no documents, show empty state, else show list */}
-                  <div className="text-center py-12 border-2 border-dashed border-default-200 rounded-xl bg-default-50/50 hover:bg-default-100/50 transition-colors cursor-pointer group">
-                    <div className="inline-flex p-4 bg-white rounded-full mb-4 ring-1 ring-default-200 shadow-sm group-hover:scale-110 transition-transform">
-                      <FolderPlus size={32} className="text-primary" />
+                  {documents.length === 0 ? (
+                    <div className="text-center py-12 border-2 border-dashed border-default-200 rounded-xl bg-default-50/50 hover:bg-default-100/50 transition-colors cursor-pointer group" onClick={() => documentInputRef.current?.click()}>
+                      <div className="inline-flex p-4 bg-white rounded-full mb-4 ring-1 ring-default-200 shadow-sm group-hover:scale-110 transition-transform">
+                        <FolderPlus size={32} className="text-primary" />
+                      </div>
+                      <h4 className="font-semibold text-default-900 mb-1">No documents uploaded yet</h4>
+                      <p className="text-sm text-default-500 max-w-xs mx-auto">Upload birth certificate, transfer certificate, or other essential documents.</p>
+                      <Button className="mt-4" size="sm" color="primary" variant="ghost" onPress={() => documentInputRef.current?.click()}>Browse Files</Button>
                     </div>
-                    <h4 className="font-semibold text-default-900 mb-1">No documents uploaded yet</h4>
-                    <p className="text-sm text-default-500 max-w-xs mx-auto">Upload birth certificate, transfer certificate, or other essential documents.</p>
-                    <Button className="mt-4" size="sm" color="primary" variant="ghost">Browse Files</Button>
-                  </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {documents.map((doc, index) => {
+                        // Check if document has valid data
+                        const isCorrupted = !doc.url || !doc.name;
+                        const docId = doc.id || `doc-${index}`;
+                        
+                        return (
+                          <div key={docId} className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${isCorrupted ? 'border-danger-200 bg-danger-50/30' : 'border-default-200 hover:bg-default-50'}`}>
+                            <div className="flex items-center gap-3">
+                              <div className={`p-2 rounded-lg ${isCorrupted ? 'bg-danger-50 text-danger' : 'bg-primary-50 text-primary'}`}>
+                                {isCorrupted ? <AlertTriangle size={20} /> : <FileText size={20} />}
+                              </div>
+                              <div>
+                                <p className={`text-sm font-medium ${isCorrupted ? 'text-danger-700' : 'text-default-900'}`}>
+                                  {doc.name || 'Corrupted Document'}
+                                </p>
+                                <p className="text-xs text-default-500">
+                                  {isCorrupted ? 'Invalid file - please delete' : `${doc.date || 'Unknown date'} • ${doc.size || 'Unknown size'}`}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {!isCorrupted && doc.url && (
+                                <>
+                                  <Tooltip content="View document">
+                                    <Button 
+                                      isIconOnly 
+                                      size="sm" 
+                                      variant="light" 
+                                      onPress={() => {
+                                        console.log('👁️ Opening document:', doc.url);
+                                        
+                                        // For PDFs, use Google Docs Viewer or direct URL
+                                        if (doc.name?.toLowerCase().endsWith('.pdf')) {
+                                          // Use Google Docs Viewer as a proxy to force inline viewing
+                                          const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(doc.url)}&embedded=true`;
+                                          window.open(viewerUrl, '_blank', 'noopener,noreferrer');
+                                        } else {
+                                          // For images and other files, open directly
+                                          window.open(doc.url, '_blank', 'noopener,noreferrer');
+                                        }
+                                      }}
+                                    >
+                                      <Eye size={16} className="text-default-500" />
+                                    </Button>
+                                  </Tooltip>
+                                  <Tooltip content="Download document">
+                                    <Button 
+                                      isIconOnly 
+                                      size="sm" 
+                                      variant="light" 
+                                      as="a"
+                                      href={doc.url}
+                                      download={doc.name}
+                                      target="_blank"
+                                    >
+                                      <Download size={16} className="text-default-500" />
+                                    </Button>
+                                  </Tooltip>
+                                </>
+                              )}
+                              <Tooltip content="Delete document">
+                                <Button 
+                                  isIconOnly 
+                                  size="sm" 
+                                  variant="light" 
+                                  color="danger" 
+                                  onPress={() => handleDeleteDocument(docId)}
+                                >
+                                  <Trash2 size={16} />
+                                </Button>
+                              </Tooltip>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </CardBody>
               </Card>
 
@@ -384,17 +947,17 @@ export default function StudentOverview() {
           {activeTab === "fees" && (
             <div className="space-y-6 animate-fade-in">
               {/* Fee Hero Section */}
-              <div className="p-6 rounded-2xl bg-gradient-to-r from-primary-900 to-primary-800 text-white shadow-lg relative overflow-hidden">
-                <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+              <div className="p-6 rounded-2xl border border-default-200 bg-default-50/50 relative overflow-hidden">
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
                   <div className="space-y-2 text-center md:text-left">
-                    <p className="text-primary-100 font-medium">Total Outstanding</p>
-                    <h2 className="text-4xl font-bold">₹19,666</h2>
-                    <p className="text-xs text-primary-200 bg-primary-700/50 px-3 py-1 rounded-full inline-block">Next Due: 5th Oct 2024</p>
+                    <p className="text-default-500 font-medium">Total Outstanding</p>
+                    <h2 className="text-4xl font-bold text-default-900">₹19,666</h2>
+                    <p className="text-xs text-danger-600 bg-danger-50 px-3 py-1 rounded-full inline-block font-medium">Next Due: 5th Oct 2024</p>
                   </div>
-                  <div className="flex gap-3">
-                    <Button color="success" className="font-semibold shadow-xl" size="lg" onPress={() => setIsPaymentOpen(true)} startContent={<CreditCard size={20} />}>Pay Now</Button>
-                    <Button variant="bordered" className="text-white border-white/30 hover:bg-white/10" size="lg" startContent={<Download size={20} />}>Invoice</Button>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    <Button color="primary" className="font-semibold shadow-sm" onPress={() => setIsPaymentOpen(true)} startContent={<CreditCard size={18} />}>Collect Payment</Button>
+                    <Button variant="flat" color="warning" className="font-medium" startContent={<Mail size={18} />}>Send Reminder</Button>
+                    <Button variant="bordered" className="border-default-200 text-default-700 bg-white" startContent={<Download size={18} />}>Invoice</Button>
                   </div>
                 </div>
               </div>
@@ -412,7 +975,7 @@ export default function StudentOverview() {
                         </div>
                         <Progress value={(fee.paid / fee.total) * 100} color={fee.color} size="sm" radius="full" />
                         <div className="mt-2 text-xs text-default-400 text-right">
-                          {(fee.paid / fee.total) * 100}% Paid
+                          {((fee.paid / fee.total) * 100).toFixed(1)}% Paid
                         </div>
                       </div>
                     ))}
@@ -619,144 +1182,123 @@ export default function StudentOverview() {
                 </CardBody>
               </Card>
             </div>
-          )
-          }
-        </div >
-
-        <div className="lg:col-span-1 space-y-6 sticky top-0 lg:h-screen lg:overflow-y-auto no-scrollbar lg:pl-8 lg:border-l lg:border-default-200 animate-fade-in pt-2">
-          <div className="space-y-6">
-
-            {/* Profile Header */}
-            <div className="flex flex-col items-center lg:items-start text-center lg:text-left space-y-4">
-              <div className="relative group">
-                <Avatar
-                  src={student.photo || `https://i.pravatar.cc/150?u=student${student.id}`}
-                  className="w-32 h-32 text-4xl ring-4 ring-white shadow-lg cursor-pointer transition-transform group-hover:scale-105"
-                />
-                <div className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-md cursor-pointer hover:bg-default-50 border border-default-100 transition-colors" onClick={openEditDrawer}>
-                  <Edit size={16} className="text-default-700" />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <h1 className="text-2xl font-semibold text-default-900">{student.name}</h1>
-                <p className="text-default-500 font-medium">@{student.admissionId || "Student"}</p>
-              </div>
-
-              <div className="flex flex-wrap justify-center lg:justify-start gap-2 w-full">
-                <Chip variant="flat" size="sm" startContent={<GraduationCap size={14} />}>Class {student.class || "N/A"}</Chip>
-                <Chip variant="flat" size="sm" startContent={<User size={14} />}>Roll No. {student.rollNo || "N/A"}</Chip>
-              </div>
-            </div>
-
-            <Divider className="opacity-50" />
-
-            {/* Personal Details - Added Extra Info */}
-            <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-default-900 uppercase tracking-wider">Student Details</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-default-50 rounded-xl border border-default-100">
-                  <span className="text-xs text-default-500 block mb-1">Date of Birth</span>
-                  <span className="font-medium text-default-900 text-sm">{student.dateOfBirth || "-"}</span>
-                </div>
-                <div className="p-3 bg-default-50 rounded-xl border border-default-100">
-                  <span className="text-xs text-default-500 block mb-1">Blood Group</span>
-                  <span className="font-medium text-default-900 text-sm">{student.bloodGroup || "-"}</span>
-                </div>
-                <div className="p-3 bg-default-50 rounded-xl border border-default-100">
-                  <span className="text-xs text-default-500 block mb-1">House</span>
-                  <span className="font-medium text-default-900 text-sm">{student.house || "-"}</span>
-                </div>
-                <div className="p-3 bg-default-50 rounded-xl border border-default-100">
-                  <span className="text-xs text-default-500 block mb-1">Gender</span>
-                  <span className="font-medium text-default-900 text-sm">{student.gender || "-"}</span>
-                </div>
-              </div>
-            </div>
-
-            <Divider className="opacity-50" />
-
-            {/* Contact Info */}
-            <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-default-900 uppercase tracking-wider">Contact Info</h4>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3 text-sm text-default-600">
-                  <MapPin size={18} className="text-default-400 mt-0.5 shrink-0" />
-                  <span className="leading-snug">{student.address || "No Address Provided"}</span>
-                </div>
-                {student.email && (
-                  <div className="flex items-center gap-3 text-sm text-default-600 group cursor-pointer hover:text-primary transition-colors">
-                    <Mail size={18} className="text-default-400 group-hover:text-primary mt-0.5 shrink-0" />
-                    <span className="truncate">{student.email}</span>
-                  </div>
-                )}
-                {student.phone && (
-                  <div className="flex items-center gap-3 text-sm text-default-600 group cursor-pointer hover:text-primary transition-colors">
-                    <Phone size={18} className="text-default-400 group-hover:text-primary mt-0.5 shrink-0" />
-                    <span className="truncate">{student.phone}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <Divider className="opacity-50" />
-
-            {/* Guardians */}
-            <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-default-900 uppercase tracking-wider">Guardians</h4>
-              <div className="space-y-3">
-                {student.parentName && (
-                  <div className="flex items-center gap-3 p-2 bg-default-50 rounded-xl border border-default-100">
-                    <Avatar className="w-10 h-10" showFallback src={`https://i.pravatar.cc/150?u=${student.parentName}`} />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm text-default-900 truncate">{student.parentName}</div>
-                      <div className="text-xs text-default-500">{student.parentRelationship || "Guardian"}</div>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button isIconOnly size="sm" variant="light" radius="full" as="a" href={`tel:${student.parentPhone}`}><Phone size={16} className="text-default-500" /></Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="pt-4">
-              <Button fullWidth color="primary" variant="shadow" className="font-semibold" onPress={openEditDrawer} startContent={<Edit size={16} />}>
-                Edit Profile
-              </Button>
-            </div>
-
-          </div>
+          )}
         </div>
       </div >
 
+
+
+
       {/* Edit Drawer */}
-      < Drawer isOpen={isEditOpen} onOpenChange={setIsEditOpen} placement="right" size="md" classNames={{ base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]", backdrop: "bg-black/40 backdrop-blur-sm" }}>
+      {/* Edit Drawer - Uses AddStudent Component */}
+      <Drawer isOpen={isEditOpen} onOpenChange={setIsEditOpen} placement="right" size="5xl" classNames={{ base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]", backdrop: "bg-black/40 backdrop-blur-sm" }}>
         <DrawerContent>
           {(onClose) => (
             <>
               <DrawerHeader className="flex flex-col gap-1 border-b border-default-100 pb-4">
                 <div className="flex items-center gap-3"><div className="p-2 bg-primary/10 rounded-xl"><Edit size={20} className="text-primary" /></div><div><h3 className="text-lg font-semibold">Edit Student</h3><p className="text-xs text-default-500">Update student information</p></div></div>
               </DrawerHeader>
-              <DrawerBody className="py-6">
-                {/* ... Edit Fields ... */}
-                <div className="space-y-4">
-                  <Input size="sm" label="Full Name" value={editForm.fullName} onValueChange={(v) => setEditForm({ ...editForm, fullName: v })} variant="bordered" radius="lg" />
-                  <Input size="sm" label="Phone" value={editForm.mobile} onValueChange={(v) => setEditForm({ ...editForm, mobile: v })} variant="bordered" radius="lg" />
-                  {/* Add other fields as needed */}
-                </div>
+              <DrawerBody className="py-2 px-0">
+                <AddStudent
+                  onClose={onClose}
+                  onSave={(data) => {
+                    updateStudent(id, data);
+                    onClose();
+                  }}
+                  classesWithTeachers={classesWithTeachers || []}
+                  classOptions={classOptions}
+                  initialData={student}
+                />
               </DrawerBody>
-              <DrawerFooter>
-                <Button variant="flat" onPress={onClose}>Cancel</Button>
-                <Button color="primary" onPress={handleSaveEdit}>Save Changes</Button>
-              </DrawerFooter>
             </>
           )}
         </DrawerContent>
-      </Drawer >
+      </Drawer>
 
-      {/* Payment Modal */}
+      <Modal isOpen={isPaymentOpen} onClose={() => setIsPaymentOpen(false)}>
+        <ModalContent>
+          <ModalHeader>Record Fee Payment</ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <Input label="Amount" type="number" value={paymentForm.amount} onValueChange={(v) => setPaymentForm({ ...paymentForm, amount: v })} startContent="₹" variant="bordered" />
+              <Select label="Month" placeholder="Select month" selectedKeys={paymentForm.month ? [paymentForm.month] : []} onSelectionChange={(keys) => setPaymentForm({ ...paymentForm, month: Array.from(keys)[0] })} variant="bordered">
+                {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map(m => <SelectItem key={m}>{m}</SelectItem>)}
+              </Select>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={() => setIsPaymentOpen(false)}>Cancel</Button>
+            <Button color="primary" onPress={handleRecordPayment}>Record Payment</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* TC Generator Modal */}
+      <TCGeneratorModal
+        isOpen={isTcOpen}
+        onClose={onTcClose}
+        students={[student]}
+      />
+
+      {/* TC Generator Modal */}
+      <TCGeneratorModal
+        isOpen={isTcOpen}
+        onClose={onTcClose}
+        students={[student]}
+      />
+
+      <Modal isOpen={isPromoteOpen} onClose={onPromoteClose}>
+        <ModalContent>
+          <ModalHeader>Promote Student</ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <p className="text-default-500">
+                Current Class: <span className="font-semibold text-default-900">{student.class}</span>
+              </p>
+              <Select
+                label="Promote to Class"
+                placeholder="Select next class"
+                selectedKeys={promoteToClass ? [promoteToClass] : []}
+                onSelectionChange={(keys) => setPromoteToClass(Array.from(keys)[0])}
+                variant="bordered"
+              >
+                {availableClasses.map(c => <SelectItem key={c}>{c}</SelectItem>)}
+              </Select>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={onPromoteClose}>Cancel</Button>
+            <Button color="primary" onPress={handlePromoteStudent} isDisabled={!promoteToClass}>Promote</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Progress Card Modal */}
+      <Modal isOpen={isProgressOpen} onClose={onProgressClose}>
+        <ModalContent>
+          <ModalHeader>Student Progress Card</ModalHeader>
+          <ModalBody>
+            <div className="flex flex-col items-center gap-4 py-6 text-center">
+              <div className="p-4 bg-primary/10 rounded-full text-primary">
+                <BarChart4 size={48} />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">{student.name}</h3>
+                <p className="text-default-500">Class {student.class} • Roll {student.rollNo}</p>
+              </div>
+              <p className="text-sm text-default-500 max-w-xs">
+                Generate and download the detailed academic performance report card for the current academic year.
+              </p>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={onProgressClose}>Cancel</Button>
+            <Button color="primary" startContent={<Download size={18} />} onPress={() => { toast.success("Progress card downloading..."); onProgressClose(); }}>
+              Download Report
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
       {/* Side Drawers for Detail Cards */}
       <Drawer isOpen={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} placement="right" size="sm" classNames={{ base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]" }}>
         <DrawerContent>
@@ -806,121 +1348,173 @@ export default function StudentOverview() {
 
       {/* Add Remark Drawer */}
       <Drawer isOpen={isRemarkOpen} onOpenChange={setIsRemarkOpen} placement="right" size="sm" classNames={{ base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]" }}>
-    <DrawerContent>
-      {(onClose) => (
-        <>
-          <DrawerHeader className="border-b border-default-100"><h3 className="text-lg font-semibold">Add Remark</h3></DrawerHeader>
-          <DrawerBody className="p-6 space-y-6">
-            <Select label="Remark Type" placeholder="Select type" variant="bordered">
-              <SelectItem key="academic">Academic</SelectItem>
-              <SelectItem key="behavioral">Behavioral</SelectItem>
-              <SelectItem key="achievement">Achievement</SelectItem>
-            </Select>
-            <Input label="Title" placeholder="e.g. Excellent Performance" variant="bordered" />
-            <Textarea label="Description" placeholder="Enter detailed remark..." minRows={4} variant="bordered" />
-            <Checkbox defaultSelected>Visible to Parent</Checkbox>
-          </DrawerBody>
-          <DrawerFooter>
-            <Button variant="flat" onPress={onClose}>Cancel</Button>
-            <Button color="primary" onPress={onClose}>Save Remark</Button>
-          </DrawerFooter>
-        </>
-      )}
-    </DrawerContent>
+        <DrawerContent>
+          {(onClose) => (
+            <>
+              <DrawerHeader className="border-b border-default-100"><h3 className="text-lg font-semibold">Add Remark</h3></DrawerHeader>
+              <DrawerBody className="p-6 space-y-6">
+                <Select label="Remark Type" placeholder="Select type" variant="bordered">
+                  <SelectItem key="academic">Academic</SelectItem>
+                  <SelectItem key="behavioral">Behavioral</SelectItem>
+                  <SelectItem key="achievement">Achievement</SelectItem>
+                </Select>
+                <Input label="Title" placeholder="e.g. Excellent Performance" variant="bordered" />
+                <Textarea label="Description" placeholder="Enter detailed remark..." minRows={4} variant="bordered" />
+                <Checkbox defaultSelected>Visible to Parent</Checkbox>
+              </DrawerBody>
+              <DrawerFooter>
+                <Button variant="flat" onPress={onClose}>Cancel</Button>
+                <Button color="primary" onPress={onClose}>Save Remark</Button>
+              </DrawerFooter>
+            </>
+          )}
+        </DrawerContent>
       </Drawer>
 
       {/* Regularize Attendance Drawer */}
       <Drawer isOpen={isRegularizeOpen} onOpenChange={setIsRegularizeOpen} placement="right" size="md" classNames={{ base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]" }}>
-    <DrawerContent>
-      {(onClose) => (
-        <>
-          <DrawerHeader className="border-b border-default-100"><h3 className="text-lg font-semibold">Regularize Attendance</h3></DrawerHeader>
-          <DrawerBody className="p-0">
-            <div className="p-6 bg-warning-50/50 border-b border-warning-100">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="text-warning-600" size={24} />
-                <div>
-                  <h4 className="font-semibold text-warning-900">Unaccounted Absences</h4>
-                  <p className="text-sm text-warning-700">Select days to mark as present or add reason.</p>
-                </div>
-              </div>
-            </div>
-            <div className="p-6 space-y-4">
-              {["Oct 12, 2024", "Oct 15, 2024", "Oct 18, 2024"].map((date, i) => (
-                <div key={i} className="flex items-center justify-between p-4 border border-default-200 rounded-xl">
-                  <div className="flex items-center gap-4">
-                    <Checkbox />
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-default-100 rounded-lg text-default-500"><CalendarCheck size={20} /></div>
-                      <span className="font-medium text-default-900">{date}</span>
+        <DrawerContent>
+          {(onClose) => (
+            <>
+              <DrawerHeader className="border-b border-default-100"><h3 className="text-lg font-semibold">Regularize Attendance</h3></DrawerHeader>
+              <DrawerBody className="p-0">
+                <div className="p-6 bg-warning-50/50 border-b border-warning-100">
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle className="text-warning-600" size={24} />
+                    <div>
+                      <h4 className="font-semibold text-warning-900">Unaccounted Absences</h4>
+                      <p className="text-sm text-warning-700">Select days to mark as present or add reason.</p>
                     </div>
                   </div>
-                  <Select size="sm" placeholder="Select Reason" className="w-40" variant="bordered">
-                    <SelectItem key="sick">Sick Leave</SelectItem>
-                    <SelectItem key="personal">Personal</SelectItem>
-                    <SelectItem key="official">Official Duty</SelectItem>
-                  </Select>
                 </div>
-              ))}
-            </div>
-          </DrawerBody>
-          <DrawerFooter>
-            <Button variant="flat" onPress={onClose}>Cancel</Button>
-            <Button color="primary" onPress={onClose}>Update Attendance</Button>
-          </DrawerFooter>
-        </>
-      )}
-    </DrawerContent>
-  </Drawer >
+                <div className="p-6 space-y-4">
+                  {["Oct 12, 2024", "Oct 15, 2024", "Oct 18, 2024"].map((date, i) => (
+                    <div key={i} className="flex items-center justify-between p-4 border border-default-200 rounded-xl">
+                      <div className="flex items-center gap-4">
+                        <Checkbox />
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-default-100 rounded-lg text-default-500"><CalendarCheck size={20} /></div>
+                          <span className="font-medium text-default-900">{date}</span>
+                        </div>
+                      </div>
+                      <Select size="sm" placeholder="Select Reason" className="w-40" variant="bordered">
+                        <SelectItem key="sick">Sick Leave</SelectItem>
+                        <SelectItem key="personal">Personal</SelectItem>
+                        <SelectItem key="official">Official Duty</SelectItem>
+                      </Select>
+                    </div>
+                  ))}
+                </div>
+              </DrawerBody>
+              <DrawerFooter>
+                <Button variant="flat" onPress={onClose}>Cancel</Button>
+                <Button color="primary" onPress={onClose}>Update Attendance</Button>
+              </DrawerFooter>
+            </>
+          )}
+        </DrawerContent>
+      </Drawer >
 
-  {/* Exam Details Drawer */ }
-  < Drawer isOpen={isExamConfigOpen} onOpenChange={setIsExamConfigOpen} placement="right" size="md" classNames={{ base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]" }}>
-    <DrawerContent>
-      {(onClose) => (
-        <>
-          <DrawerHeader className="border-b border-default-100">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-xl text-primary"><FileText size={20} /></div>
-              <div>
-                <h3 className="text-lg font-semibold">{selectedExam?.name || "Exam Details"}</h3>
-                <p className="text-xs text-default-500">{selectedExam?.date}</p>
-              </div>
-            </div>
-          </DrawerHeader>
-          <DrawerBody className="p-0">
-            <div className="p-6 grid grid-cols-2 gap-4 bg-default-50 border-b border-default-200">
-              <div className="p-4 bg-white rounded-xl border border-default-200 text-center">
-                <span className="text-xs text-default-500 uppercase">Total Score</span>
-                <div className="text-2xl font-bold text-default-900 mt-1">{selectedExam?.score || "-"}</div>
-              </div>
-              <div className="p-4 bg-white rounded-xl border border-default-200 text-center">
-                <span className="text-xs text-default-500 uppercase">Rank</span>
-                <div className="text-2xl font-bold text-primary mt-1">#5</div>
-              </div>
-            </div>
-            <div className="p-6">
-              <h4 className="font-semibold text-default-900 mb-4">Subject-wise Performance</h4>
-              <div className="space-y-4">
-                {[{ sub: "Mathematics", score: 88 }, { sub: "Science", score: 92 }, { sub: "English", score: 85 }].map((s, i) => (
-                  <div key={i} className="flex items-center gap-4">
-                    <div className="w-32 font-medium text-sm">{s.sub}</div>
-                    <Progress value={s.score} color={s.score > 90 ? "success" : "primary"} size="sm" className="max-w-xs" />
-                    <div className="font-semibold text-sm">{s.score}/100</div>
+      {/* Exam Details Drawer */}
+      < Drawer isOpen={isExamConfigOpen} onOpenChange={setIsExamConfigOpen} placement="right" size="md" classNames={{ base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]" }}>
+        <DrawerContent>
+          {(onClose) => (
+            <>
+              <DrawerHeader className="border-b border-default-100">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-xl text-primary"><FileText size={20} /></div>
+                  <div>
+                    <h3 className="text-lg font-semibold">{selectedExam?.name || "Exam Details"}</h3>
+                    <p className="text-xs text-default-500">{selectedExam?.date}</p>
                   </div>
-                ))}
-              </div>
-            </div>
-          </DrawerBody>
-          <DrawerFooter>
-            <Button variant="light" onPress={onClose}>Close</Button>
-            <Button color="primary" startContent={<Download size={16} />}>Download Report</Button>
-          </DrawerFooter>
-        </>
-      )}
-    </DrawerContent>
-  </Drawer >
+                </div>
+              </DrawerHeader>
+              <DrawerBody className="p-0">
+                <div className="p-6 grid grid-cols-2 gap-4 bg-default-50 border-b border-default-200">
+                  <div className="p-4 bg-white rounded-xl border border-default-200 text-center">
+                    <span className="text-xs text-default-500 uppercase">Total Score</span>
+                    <div className="text-2xl font-bold text-default-900 mt-1">{selectedExam?.score || "-"}</div>
+                  </div>
+                  <div className="p-4 bg-white rounded-xl border border-default-200 text-center">
+                    <span className="text-xs text-default-500 uppercase">Rank</span>
+                    <div className="text-2xl font-bold text-primary mt-1">#5</div>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <h4 className="font-semibold text-default-900 mb-4">Subject-wise Performance</h4>
+                  <div className="space-y-4">
+                    {[{ sub: "Mathematics", score: 88 }, { sub: "Science", score: 92 }, { sub: "English", score: 85 }].map((s, i) => (
+                      <div key={i} className="flex items-center gap-4">
+                        <div className="w-32 font-medium text-sm">{s.sub}</div>
+                        <Progress value={s.score} color={s.score > 90 ? "success" : "primary"} size="sm" className="max-w-xs" />
+                        <div className="font-semibold text-sm">{s.score}/100</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </DrawerBody>
+              <DrawerFooter>
+                <Button variant="light" onPress={onClose}>Close</Button>
+                <Button color="primary" startContent={<Download size={16} />}>Download Report</Button>
+              </DrawerFooter>
+            </>
+          )}
+        </DrawerContent>
+      </Drawer>
 
-    </div >
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={isDeleteOpen} onClose={onDeleteClose}>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-danger-50 rounded-lg">
+                    <AlertTriangle size={24} className="text-danger" />
+                  </div>
+                  <span>Delete Student</span>
+                </div>
+              </ModalHeader>
+              <ModalBody>
+                <p className="text-default-600">
+                  Are you sure you want to delete <span className="font-semibold text-default-900">{student?.name}</span>?
+                </p>
+                <p className="text-sm text-danger mt-2">
+                  This action cannot be undone. All student data including attendance, fees, and academic records will be permanently removed.
+                </p>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="flat" onPress={onClose}>
+                  Cancel
+                </Button>
+                <Button
+                  color="danger"
+                  onPress={async () => {
+                    try {
+                      await deleteStudent(id);
+                      toast.success(`${student.name} has been deleted`);
+                      onClose();
+                      navigate('/students');
+                    } catch (error) {
+                      toast.error('Failed to delete student');
+                    }
+                  }}
+                  startContent={<Trash2 size={16} />}
+                >
+                  Delete Student
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      <UnifiedUploadProgress
+        uploads={activeUploads}
+        onClose={() => setActiveUploads([])}
+      />
+
+    </div>
   );
 }
 

@@ -23,7 +23,7 @@ export default function AiAssistant({ isCollapsed }) {
 
                         {/* The Orb Itself */}
                         {/* Using CSS gradients to simulate 3D depth */}
-                        <div className="w-full h-full rounded-full bg-gradient-to-tr from-[#c2410c] via-[#ff6c37] to-[#fdba74] animate-[spin_8s_linear_infinite] shadow-[inset_-2px_-2px_6px_rgba(0,0,0,0.2),inset_2px_2px_6px_rgba(255,255,255,0.4)] relative overflow-hidden">
+                        <div className="w-full h-full rounded-full bg-gradient-to-tr from-[#7e22ce] via-[#9333ea] to-[#d8b4fe] animate-[spin_8s_linear_infinite] shadow-[inset_-2px_-2px_6px_rgba(0,0,0,0.2),inset_2px_2px_6px_rgba(255,255,255,0.4)] relative overflow-hidden">
 
                             {/* Inner Shine/Gloss for 3D feel */}
                             <div className="absolute top-1 left-1.5 w-2.5 h-1.5 bg-white/40 blur-[1px] rounded-[50%] rotate-[-45deg] z-20"></div>

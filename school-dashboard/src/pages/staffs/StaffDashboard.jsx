@@ -37,6 +37,7 @@ export default function StaffDashboard() {
   const [selectedClassId, setSelectedClassId] = useState("");
   const [newTest, setNewTest] = useState({ title: "", classId: "", subject: "", date: "", time: "09:00" });
 
+
   const staff = getStaffById(id);
   const today = new Date();
   const monthlyStats = getMonthlyAttendance(id, today.getFullYear(), today.getMonth());
@@ -67,7 +68,7 @@ export default function StaffDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground animate-fade-in p-6 lg:p-8 pb-12">
+    <div className="min-h-screen bg-background text-foreground animate-fade-in p-4 lg:p-6 pb-8">
       {/* Header with Back Icon and Title */}
       <div className="max-w-[1600px] mx-auto mb-6">
         <div className="flex items-center gap-3">
@@ -84,16 +85,16 @@ export default function StaffDashboard() {
         </div>
       </div>
 
-      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
 
         {/* Main Content - Now on Left */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className="lg:col-span-3 space-y-4">
           <Tabs
             selectedKey={activeTab}
             onSelectionChange={setActiveTab}
             variant="underlined"
             classNames={{
-              tabList: "gap-6 border-b border-default-200 w-full p-0",
+              tabList: "gap-4 border-b border-default-200 w-full p-0",
               cursor: "w-full bg-primary",
               tab: "max-w-fit px-0 h-10 pb-2",
               tabContent: "group-data-[selected=true]:text-primary group-data-[selected=true]:font-semibold font-medium text-default-500"
@@ -108,7 +109,7 @@ export default function StaffDashboard() {
           </Tabs>
 
           {activeTab === "overview" && (
-            <div className="space-y-8 animate-fade-in">
+            <div className="space-y-4 animate-fade-in">
               {/* Stats Grid - "Reports" style */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-default-900">Reports</h3>
@@ -164,10 +165,10 @@ export default function StaffDashboard() {
           )}
 
           {activeTab === "about" && (
-            <div className="space-y-6 animate-fade-in">
+            <div className="space-y-4 animate-fade-in">
               <Card shadow="none" className="border border-default-200">
-                <CardHeader className="px-6 pt-6 pb-0"><h3 className="text-lg font-bold">Personal Information</h3></CardHeader>
-                <CardBody className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <CardHeader className="px-4 pt-4 pb-0"><h3 className="text-lg font-bold">Personal Information</h3></CardHeader>
+                <CardBody className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
                   <InfoItem label="Full Name" value={staff.name} />
                   <InfoItem label="Staff ID" value={staff.id} />
                   <InfoItem label="Date of Birth" value={staff.dateOfBirth} />
@@ -181,8 +182,8 @@ export default function StaffDashboard() {
               </Card>
 
               <Card shadow="none" className="border border-default-200">
-                <CardHeader className="px-6 pt-6 pb-0"><h3 className="text-lg font-bold">Employment Details</h3></CardHeader>
-                <CardBody className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <CardHeader className="px-4 pt-4 pb-0"><h3 className="text-lg font-bold">Employment Details</h3></CardHeader>
+                <CardBody className="p-4 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
                   <InfoItem label="Role" value={staff.role} />
                   <InfoItem label="Department" value={staff.department} />
                   <InfoItem label="Designation" value={staff.designation} />
@@ -193,8 +194,8 @@ export default function StaffDashboard() {
               </Card>
 
               <Card shadow="none" className="border border-default-200">
-                <CardHeader className="px-6 pt-6 pb-0"><h3 className="text-lg font-bold">Contact Details</h3></CardHeader>
-                <CardBody className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <CardHeader className="px-4 pt-4 pb-0"><h3 className="text-lg font-bold">Contact Details</h3></CardHeader>
+                <CardBody className="p-4 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
                   <InfoItem label="Email" value={staff.email} />
                   <InfoItem label="Phone" value={staff.phone} />
                   <InfoItem label="Address" value={staff.address} className="col-span-full" />
@@ -204,8 +205,8 @@ export default function StaffDashboard() {
               </Card>
 
               <Card shadow="none" className="border border-default-200">
-                <CardHeader className="px-6 pt-6 pb-0"><h3 className="text-lg font-bold">Bank Account Details</h3></CardHeader>
-                <CardBody className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <CardHeader className="px-4 pt-4 pb-0"><h3 className="text-lg font-bold">Bank Account Details</h3></CardHeader>
+                <CardBody className="p-4 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
                   <InfoItem label="Account Holder" value={staff.accountHolder} />
                   <InfoItem label="Account Number" value={staff.accountNumber} />
                   <InfoItem label="Bank Name" value={staff.bankName} />
@@ -217,7 +218,7 @@ export default function StaffDashboard() {
           )}
 
           {activeTab === "documents" && (
-            <div className="space-y-6 animate-fade-in">
+            <div className="space-y-4 animate-fade-in">
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-2"><h3 className="text-lg font-bold">Documents</h3></CardHeader>
                 <CardBody>
@@ -228,7 +229,7 @@ export default function StaffDashboard() {
           )}
 
           {activeTab === "payroll" && (
-            <div className="space-y-6 animate-fade-in">
+            <div className="space-y-4 animate-fade-in">
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="flex justify-between px-4 pt-4">
                   <h4 className="font-bold text-medium">Payroll History</h4>
@@ -261,7 +262,7 @@ export default function StaffDashboard() {
         </div>
 
         {/* Profile Card - Now on Right */}
-        <div className="lg:col-span-1 lg:pl-8 lg:border-l-2 lg:border-default-200 space-y-6 sticky top-8">
+        <div className="lg:col-span-1 lg:pl-6 lg:border-l-2 lg:border-default-200 space-y-4 sticky top-8">
           <div className="flex flex-col items-start space-y-4">
             <div className="relative group">
               <Avatar

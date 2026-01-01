@@ -1,11 +1,15 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button, Input, Select, SelectItem, Checkbox, Textarea, Chip, Avatar, RadioGroup, Radio, cn, Divider } from "@heroui/react";
 import { ArrowLeft, ArrowRight, Upload, X, Plus, User, FileText, Users, GraduationCap, Check, Heart, Bus } from "lucide-react";
+import { studentsApi, settingsApi, uploadApi } from "../../services/api";
+import toast from "react-hot-toast";
+import PhotoEditorModal from "../../components/PhotoEditorModal";
 
 // --- Constants ---
 const genders = ["Male", "Female", "Other"];
 const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-const relationships = ["Father", "Mother", "Guardian", "Grandparent", "Uncle", "Aunt", "Other"];
+const parentRelationships = ["Father", "Mother"];
+const guardianRelationships = ["Grandparent", "Uncle", "Aunt", "Sibling", "Other"];
 const academicYears = ["2024-25", "2025-26", "2023-24"];
 const mediumOptions = ["English", "Hindi", "Regional"];
 const houseOptions = ["Red House", "Blue House", "Green House", "Yellow House"];
@@ -21,7 +25,7 @@ const emptyForm = {
   mobile: "", isWhatsapp: true, whatsappNumber: "", email: "", address: "",
   // Parent/Guardian 1
   parents: [{
-    name: "", relationship: "Father", phone: "", email: "", occupation: "", isWhatsapp: true
+    name: "", relationship: "Father", phone: "", email: "", occupation: "", isWhatsapp: true, isParent: true
   }],
   alternatePhone: "",
   // Health & Safety
@@ -32,10 +36,42 @@ const emptyForm = {
   birthCertificate: null, transferCertificate: null, aadhaarDoc: null, studentPhoto: null, otherDocuments: []
 };
 
-export default function AddStudent({ onClose, onSave, classOptions = [], classesWithTeachers = [] }) {
+export default function AddStudent({ onClose, onSave, classOptions = [], classesWithTeachers = [], initialData = null }) {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState(emptyForm);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState(() => {
+    if (initialData) {
+      // Map initialData (student object) to form structure
+      return {
+        ...emptyForm,
+        ...initialData,
+        fullName: initialData.name || "",
+        mobile: initialData.phone || "",
+        picture: initialData.photo || null, // Map photo URL to picture field
+        rollNumber: initialData.rollNo?.toString() || "", // Map rollNo to rollNumber
+        // Ensure parents array is populated
+        parents: initialData.parents?.length > 0 ? initialData.parents : [{
+          name: initialData.parentName || "",
+          relationship: initialData.parentRelationship || "Father",
+          phone: initialData.parentPhone || "",
+          email: initialData.parentEmail || "",
+          occupation: initialData.parentOccupation || "",
+          isWhatsapp: true,
+          isParent: true
+        }],
+        // Class is already in "X-A" format from backend, use it directly
+        class: initialData.class || "",
+      };
+    }
+    return emptyForm;
+  });
   const [errors, setErrors] = useState({});
+  const [documentConfigs, setDocumentConfigs] = useState([]);
+  const scrollContainerRef = useRef(null);
+
+  // Photo Editor State
+  const [isPhotoEditorOpen, setIsPhotoEditorOpen] = useState(false);
+  const [selectedImageForEdit, setSelectedImageForEdit] = useState(null);
 
   // Refs
   const pictureInputRef = useRef(null);
@@ -44,6 +80,69 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
   const aadhaarRef = useRef(null);
   const photoRef = useRef(null);
   const otherDocsRef = useRef(null);
+
+  // Error field refs for auto-scroll
+  const fullNameRef = useRef(null);
+  const dobRef = useRef(null);
+  const genderRef = useRef(null);
+  const classRef = useRef(null);
+  const admissionIdRef = useRef(null);
+  const parentNameRef = useRef(null);
+  const parentPhoneRef = useRef(null);
+
+  // Load document configuration and auto-generate admission ID
+  useEffect(() => {
+    const loadConfigurations = async () => {
+      try {
+        // Load document configuration
+        const docConfigs = await settingsApi.getDocumentConfig();
+        setDocumentConfigs(docConfigs);
+        console.log('📄 Document configs loaded:', docConfigs);
+
+        // Auto-generate admission ID only for new students
+        if (!initialData) {
+          console.log('🔄 Fetching next admission ID...');
+          const response = await studentsApi.getNextAdmissionId();
+          console.log('✅ Admission ID received:', response);
+
+          if (response && response.admissionId) {
+            updateField("admissionId", response.admissionId);
+            console.log('✅ Admission ID set to:', response.admissionId);
+          } else {
+            console.error('❌ Invalid response format:', response);
+            toast.error('Failed to generate admission ID');
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error loading configurations:', error);
+        toast.error('Failed to load admission settings: ' + error.message);
+      }
+    };
+    loadConfigurations();
+  }, [initialData]);
+
+  // Auto-generate roll number when class is selected
+  useEffect(() => {
+    const generateRollNumber = async () => {
+      if (formData.class && !initialData) {
+        try {
+          const selectedClass = classesWithTeachers.find(c => `${c.name}-${c.section}` === formData.class);
+          if (selectedClass) {
+            // Use optimized API endpoint
+            const response = await fetch(`http://localhost:5000/api/classes/${selectedClass.id}/next-roll-number`);
+            const data = await response.json();
+            updateField("rollNumber", data.rollNumber.toString());
+            console.log('✅ Roll number set to:', data.rollNumber);
+          }
+        } catch (error) {
+          console.error('❌ Error generating roll number:', error);
+          // Set to 1 as fallback
+          updateField("rollNumber", "1");
+        }
+      }
+    };
+    generateRollNumber();
+  }, [formData.class, initialData, classesWithTeachers]);
 
   const updateField = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -58,7 +157,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
   const addParent = () => {
     if (formData.parents.length < 3) {
-      updateField("parents", [...formData.parents, { name: "", relationship: "Mother", phone: "", email: "", occupation: "", isWhatsapp: true }]);
+      updateField("parents", [...formData.parents, { name: "", relationship: "Mother", phone: "", email: "", occupation: "", isWhatsapp: true, isParent: true }]);
     }
   };
 
@@ -81,17 +180,78 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
   };
 
   const removeFile = (field, index) => {
-    if (Array.isArray(formData[field])) {
+    // Prevent event propagation is handled in the calling component event
+
+    // Check if it's a multi-file field like otherDocuments
+    if (field === "otherDocuments" && Array.isArray(formData[field])) {
       updateField(field, formData[field].filter((_, i) => i !== index));
     } else {
+      // For single file fields
       updateField(field, null);
     }
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImageForEdit(reader.result);
+        setIsPhotoEditorOpen(true);
+        // Reset so we can select same file again if needed
+        e.target.value = null;
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePhotoSave = (croppedImage) => {
+    // croppedImage is a data URL (string)
+    // We can convert it to a File/Blob if needed, but for now assuming direct usage or handling in submit
+    // Ideally convert dataURL to Blob/File to stay consistent with File object structure
+
+    // Helper to convert dataURL to File
+    const dataURLtoFile = (dataurl, filename) => {
+      let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+        bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      return new File([u8arr], filename, { type: mime });
+    }
+
+    const file = dataURLtoFile(croppedImage, "profile_photo.jpg");
+    updateField("picture", file);
   };
 
   const validateStep = (stepNum) => {
     const newErrors = {};
     if (stepNum === 1) {
       if (!formData.fullName.trim()) newErrors.fullName = "Required";
+
+      // Validate date of birth
+      if (!formData.dateOfBirth) {
+        newErrors.dateOfBirth = "Required";
+      } else {
+        // Check if it's in proper YYYY-MM-DD format (validated date)
+        const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+        if (!datePattern.test(formData.dateOfBirth)) {
+          newErrors.dateOfBirth = "Please enter a valid date in DD/MM/YYYY format";
+        } else {
+          // Additional validation for the date values
+          const [year, month, day] = formData.dateOfBirth.split('-').map(Number);
+          const currentYear = new Date().getFullYear();
+          if (year > currentYear || year < 1900) {
+            newErrors.dateOfBirth = "Year must be between 1900 and current year";
+          } else if (month < 1 || month > 12) {
+            newErrors.dateOfBirth = "Invalid month";
+          } else if (day < 1 || day > 31) {
+            newErrors.dateOfBirth = "Invalid day";
+          }
+        }
+      }
+
+      if (!formData.gender) newErrors.gender = "Required";
       if (!formData.admissionId.trim()) newErrors.admissionId = "Required";
       if (!formData.class) newErrors.class = "Required";
     }
@@ -109,17 +269,97 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     return Object.keys(newErrors).length === 0;
   };
 
+  const scrollToError = (stepNum) => {
+    // Scroll to the first error field
+    setTimeout(() => {
+      if (stepNum === 1) {
+        if (errors.fullName && fullNameRef.current) {
+          fullNameRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (errors.dateOfBirth && dobRef.current) {
+          dobRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (errors.gender && genderRef.current) {
+          genderRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (errors.admissionId && admissionIdRef.current) {
+          admissionIdRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (errors.class && classRef.current) {
+          classRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else if (stepNum === 2) {
+        if (errors.parentName && parentNameRef.current) {
+          parentNameRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (errors.parentPhone && parentPhoneRef.current) {
+          parentPhoneRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }, 100);
+  };
+
   const handleNext = () => {
-    if (validateStep(step)) setStep(prev => Math.min(prev + 1, 3));
+    if (validateStep(step)) {
+      setStep(prev => Math.min(prev + 1, 3));
+      // Scroll to top when moving to next step
+      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // Scroll to first error
+      scrollToError(step);
+    }
   };
 
   const handlePrev = () => setStep(prev => Math.max(prev - 1, 1));
 
-  const handleSubmit = () => {
-    if (validateStep(step)) {
+  const handleSubmit = async () => {
+    // Validate all steps before submitting
+    const step1Valid = validateStep(1);
+    const step2Valid = validateStep(2);
+
+    if (!step1Valid || !step2Valid) {
+      // Go back to the first invalid step
+      if (!step1Valid) {
+        setStep(1);
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        toast.error('Please fill in all required fields in Personal Information');
+        scrollToError(1);
+      } else if (!step2Valid) {
+        setStep(2);
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        toast.error('Please fill in all required parent/guardian information');
+        scrollToError(2);
+      }
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
       // Find the classId from the selected class
       const selectedClass = classesWithTeachers.find(c => `${c.name}-${c.section}` === formData.class);
-      
+
+      if (!selectedClass) {
+        toast.error('Selected class not found');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Upload photo to Cloudinary if it's a File object
+      let photoUrl = null;
+      if (formData.picture instanceof File) {
+        console.log('📸 Uploading photo to Cloudinary...');
+        const loadingToast = toast.loading("Uploading photo...");
+        try {
+          const uploadResponse = await uploadApi.uploadFile(formData.picture);
+          photoUrl = uploadResponse.url;
+          console.log('✅ Photo uploaded:', photoUrl);
+          toast.success("Photo uploaded", { id: loadingToast });
+        } catch (error) {
+          console.error('❌ Photo upload failed:', error);
+          toast.error("Photo upload failed", { id: loadingToast });
+          // Continue without photo
+        }
+      } else if (typeof formData.picture === 'string' && formData.picture.length > 0) {
+        // If it's already a URL string (editing existing student)
+        photoUrl = formData.picture;
+        console.log('✅ Using existing photo URL:', photoUrl);
+      }
+
       // Transform data for saving
       const studentData = {
         name: formData.fullName,
@@ -139,7 +379,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         parentRelationship: formData.parents[0]?.relationship,
         parentOccupation: formData.parents[0]?.occupation,
         parents: formData.parents,
-        alternatePhone: formData.alternatePhone,
         aadhaarNumber: formData.aadhaarNumber,
         nationality: formData.nationality,
         religion: formData.religion,
@@ -147,75 +386,68 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         motherTongue: formData.motherTongue,
         previousSchool: formData.previousSchool,
         tcNumber: formData.tcNumber,
-        mediumOfInstruction: formData.mediumOfInstruction,
-        house: formData.house,
         transportRequired: formData.transportRequired,
         hostelRequired: formData.hostelRequired,
         medicalConditions: formData.medicalConditions,
-        emergencyContactName: formData.emergencyContactName,
-        emergencyContactPhone: formData.emergencyContactPhone,
-        photo: formData.picture,
-        status: "active",
-        feeStatus: "pending"
+        // Use the uploaded photo URL (not the File object)
+        photo: photoUrl,
+        // Preserve existing documents when editing (don't include documents field to avoid overwriting)
+        // Documents are managed separately via the dedicated documents endpoint
+
+        status: initialData?.status || "active",
+        feeStatus: initialData?.feeStatus || "pending"
       };
-      onSave(studentData);
+
+      // Remove undefined values and empty objects to prevent MongoDB cast errors
+      Object.keys(studentData).forEach(key => {
+        if (studentData[key] === undefined) {
+          delete studentData[key];
+        }
+        // Remove empty objects (like photo: {})
+        if (typeof studentData[key] === 'object' && 
+            studentData[key] !== null && 
+            !Array.isArray(studentData[key]) && 
+            !(studentData[key] instanceof File) &&
+            Object.keys(studentData[key]).length === 0) {
+          delete studentData[key];
+        }
+      });
+
+      console.log('Submitting student data:', studentData);
+      await onSave(studentData);
+      // Success toast is shown in parent component
+      // Loading state will be reset when drawer closes
+    } catch (error) {
+      console.error('Error submitting student:', error);
+      // Error toast is shown in parent component
+      setIsSubmitting(false); // Reset loading state on error
     }
   };
 
   // --- Render Steps ---
   const renderStep1 = () => (
     <div className="space-y-6 animate-fade-in text-left">
-      {/* Profile Section */}
-      <div className="flex items-center gap-5">
-        <Avatar
-          src={formData.picture ? URL.createObjectURL(formData.picture) : undefined}
-          name={!formData.picture ? (formData.fullName?.[0] || "") : undefined}
-          className="w-20 h-20 text-3xl"
-          isBordered
-          radius="full"
-          color="primary"
-        />
-        <div className="flex flex-col gap-1 text-left">
-          <div className="flex items-center gap-3">
-            <button
-              className="text-sm font-semibold text-primary hover:text-primary-600 transition-colors cursor-pointer"
-              onClick={() => pictureInputRef.current?.click()}
-            >
-              Upload Photo
-            </button>
-            <span className="text-gray-300">|</span>
-            <button
-              className="text-sm font-semibold text-danger hover:text-danger-600 transition-colors cursor-pointer"
-              onClick={() => updateField("picture", null)}
-            >
-              Delete
-            </button>
-          </div>
-          <p className="text-xs text-gray-500 max-w-[250px]">
-            Upload a passport-size photo of the student
-          </p>
-          <input ref={pictureInputRef} type="file" accept="image/*" className="hidden"
-            onChange={(e) => updateField("picture", e.target.files[0])} />
-        </div>
-      </div>
-
-      {/* Academic Year & Admission ID */}
+      {/* Admission Details - At the top */}
       <div className="space-y-2">
         <label className="text-sm font-semibold text-gray-900">Admission Details</label>
         <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="Admission ID"
-            labelPlacement="outside"
-            placeholder="e.g., ADM2024001"
-            value={formData.admissionId}
-            onValueChange={v => updateField("admissionId", v)}
-            isInvalid={!!errors.admissionId}
-            errorMessage={errors.admissionId}
-            variant="bordered"
-            radius="sm"
-            isRequired
-            classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-          />
+          <div ref={admissionIdRef}>
+            <Input
+              label="Admission ID"
+              labelPlacement="outside"
+              placeholder="e.g., ADM2024001"
+              value={formData.admissionId}
+              onValueChange={v => updateField("admissionId", v)}
+              isInvalid={!!errors.admissionId}
+              errorMessage={errors.admissionId}
+              variant="bordered"
+              radius="sm"
+              isRequired
+              isReadOnly
+              description="Auto-generated from settings"
+              classNames={{ inputWrapper: "bg-gray-50 border-1 border-gray-200 h-10" }}
+            />
+          </div>
           <Select
             label="Academic Year"
             labelPlacement="outside"
@@ -231,8 +463,51 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         </div>
       </div>
 
+      {/* Profile Section */}
+      <div className="flex items-center gap-5 pt-2 border-t border-solid border-gray-200">
+        {formData.picture ? (
+          <Avatar
+            src={formData.picture instanceof File ? URL.createObjectURL(formData.picture) : formData.picture}
+            className="w-20 h-20 text-3xl"
+            isBordered
+            radius="full"
+            color="primary"
+          />
+        ) : (
+          <div className="w-20 h-20 rounded-full border-2 border-gray-200 bg-gray-50 flex items-center justify-center">
+            <User size={32} className="text-gray-400" />
+          </div>
+        )}
+        <div className="flex flex-col gap-1 text-left">
+          <div className="flex items-center gap-3">
+            <button
+              className="text-sm font-semibold text-primary hover:text-primary-600 transition-colors cursor-pointer"
+              onClick={() => pictureInputRef.current?.click()}
+            >
+              {formData.picture ? "Change Photo" : "Upload Photo"}
+            </button>
+            {formData.picture && (
+              <>
+                <span className="text-gray-300">|</span>
+                <button
+                  className="text-sm font-semibold text-danger hover:text-danger-600 transition-colors cursor-pointer"
+                  onClick={() => updateField("picture", null)}
+                >
+                  Delete
+                </button>
+              </>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 max-w-[250px]">
+            Upload a passport-size photo of the student
+          </p>
+          <input ref={pictureInputRef} type="file" accept="image/*" className="hidden"
+            onChange={handleFileSelect} />
+        </div>
+      </div>
+
       {/* Personal Information */}
-      <div className="space-y-2">
+      <div className="space-y-2" ref={fullNameRef}>
         <label className="text-sm font-semibold text-gray-900">Personal Information</label>
         <Input
           label="Full Name"
@@ -250,23 +525,114 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <Input
-          type="date"
-          label="Date of Birth"
-          labelPlacement="outside"
-          value={formData.dateOfBirth}
-          onValueChange={v => updateField("dateOfBirth", v)}
-          variant="bordered"
-          radius="sm"
-          classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-        />
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-600">Gender</label>
+        <div ref={dobRef}>
+          <Input
+            type="text"
+            label="Date of Birth"
+            labelPlacement="outside"
+            placeholder="DD/MM/YYYY"
+            value={(() => {
+              if (!formData.dateOfBirth) return '';
+              // Check if it's already in DD/MM/YYYY format (partial input)
+              if (formData.dateOfBirth.includes('/')) {
+                return formData.dateOfBirth;
+              }
+              // Convert from YYYY-MM-DD to DD/MM/YYYY
+              const parts = formData.dateOfBirth.split('-');
+              if (parts.length === 3) {
+                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+              }
+              return formData.dateOfBirth;
+            })()}
+            onValueChange={v => {
+              // 1. Keep strictly digits
+              const digits = v.replace(/\D/g, '');
+
+              // Prevent typing more than 8 digits
+              if (digits.length > 8) return;
+
+              // 3. Format with slashes
+              let formatted = digits;
+              if (digits.length > 2) {
+                formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+              }
+              if (digits.length > 4) {
+                formatted = `${formatted.slice(0, 5)}/${digits.slice(4)}`;
+              }
+
+              // Update State with formatted string FIRST (so user sees what they type)
+              updateField("dateOfBirth", formatted);
+
+              // 2. Validate parts and accumulate errors
+              const validationErrors = [];
+              const currentYear = new Date().getFullYear();
+
+              if (digits.length >= 2) {
+                const day = parseInt(digits.slice(0, 2));
+                if (day > 31 || day === 0) {
+                  validationErrors.push("Day must be between 1-31");
+                }
+              }
+
+              if (digits.length >= 4) {
+                const month = parseInt(digits.slice(2, 4));
+                if (month > 12 || month === 0) {
+                  validationErrors.push("Month must be between 1-12");
+                }
+              }
+
+              if (digits.length >= 8) {
+                const year = parseInt(digits.slice(4, 8));
+                if (year < 1900 || year > currentYear) {
+                  validationErrors.push(`Year must be between 1900-${currentYear}`);
+                }
+              }
+
+              // If valid complete date, overwrite with ISO format
+              if (validationErrors.length === 0 && digits.length === 8) {
+                const day = parseInt(digits.slice(0, 2));
+                const month = parseInt(digits.slice(2, 4));
+                const year = parseInt(digits.slice(4, 8));
+
+                if (day > 0 && day <= 31 && month > 0 && month <= 12 && year >= 1900 && year <= currentYear) {
+                  updateField("dateOfBirth", `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
+                  return;
+                }
+              }
+
+              // Set accumulated errors if any exist
+              if (validationErrors.length > 0) {
+                setErrors(prev => ({
+                  ...prev,
+                  dateOfBirth: (
+                    <div className="flex flex-col gap-0.5 mt-1">
+                      {validationErrors.map((err, i) => (
+                        <span key={i} className="text-xs">{err}</span>
+                      ))}
+                    </div>
+                  )
+                }));
+              }
+            }}
+            isInvalid={!!errors.dateOfBirth}
+            errorMessage={errors.dateOfBirth}
+            variant="bordered"
+            radius="sm"
+            isRequired
+            description="Format: DD/MM/YYYY"
+            endContent={<span className="text-default-400 text-xs">DD/MM/YYYY</span>}
+            classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+          />
+        </div>
+        <div className="space-y-1" ref={genderRef}>
+          <label className="text-xs font-medium text-gray-600">Gender <span className="text-danger">*</span></label>
           <RadioGroup
             orientation="horizontal"
             value={formData.gender}
             onValueChange={v => updateField("gender", v)}
             classNames={{ wrapper: "gap-4" }}
+            isInvalid={!!errors.gender}
+            errorMessage={errors.gender}
           >
             {genders.map(g => (
               <Radio key={g} value={g} size="sm" classNames={{ label: "text-sm" }}>{g}</Radio>
@@ -276,63 +642,43 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       </div>
 
       {/* Class Info */}
-      <div className="space-y-2 pt-2 border-t border-dashed border-gray-200">
+      <div className="space-y-2 pt-2 border-t border-solid border-gray-200">
         <label className="text-sm font-semibold text-gray-900 block mt-2">Class Information</label>
-        <div className="grid grid-cols-3 gap-4">
-          <Select
-            label="Class"
-            labelPlacement="outside"
-            placeholder="Select..."
-            selectedKeys={formData.class ? [formData.class] : []}
-            onSelectionChange={keys => updateField("class", Array.from(keys)[0])}
-            isInvalid={!!errors.class}
-            errorMessage={errors.class}
-            variant="bordered"
-            radius="sm"
-            isRequired
-            classNames={{ trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-          >
-            {classOptions.map(c => <SelectItem key={c}>{c}</SelectItem>)}
-          </Select>
+        <div className="grid grid-cols-2 gap-4">
+          <div ref={classRef}>
+            <Select
+              label="Class"
+              labelPlacement="outside"
+              placeholder="Select..."
+              selectedKeys={formData.class ? [formData.class] : []}
+              onSelectionChange={keys => updateField("class", Array.from(keys)[0])}
+              isInvalid={!!errors.class}
+              errorMessage={errors.class}
+              variant="bordered"
+              radius="sm"
+              isRequired
+              classNames={{ trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+            >
+              {classOptions.map(c => <SelectItem key={c}>{c}</SelectItem>)}
+            </Select>
+          </div>
           <Input
             label="Roll Number"
             labelPlacement="outside"
-            placeholder="Optional"
+            placeholder="Auto-generated"
             value={formData.rollNumber}
             onValueChange={v => updateField("rollNumber", v)}
             variant="bordered"
             radius="sm"
-            classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+            isReadOnly
+            description="Auto-generated based on class"
+            classNames={{ inputWrapper: "bg-gray-50 border-1 border-gray-200 h-10" }}
           />
-          <Select
-            label="Medium"
-            labelPlacement="outside"
-            placeholder="Select..."
-            selectedKeys={formData.mediumOfInstruction ? [formData.mediumOfInstruction] : []}
-            onSelectionChange={keys => updateField("mediumOfInstruction", Array.from(keys)[0])}
-            variant="bordered"
-            radius="sm"
-            classNames={{ trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-          >
-            {mediumOptions.map(m => <SelectItem key={m}>{m}</SelectItem>)}
-          </Select>
         </div>
-        <Select
-          label="House / Group"
-          labelPlacement="outside"
-          placeholder="Select house (optional)"
-          selectedKeys={formData.house ? [formData.house] : []}
-          onSelectionChange={keys => updateField("house", Array.from(keys)[0])}
-          variant="bordered"
-          radius="sm"
-          classNames={{ trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-        >
-          {houseOptions.map(h => <SelectItem key={h}>{h}</SelectItem>)}
-        </Select>
       </div>
 
       {/* Contact Info */}
-      <div className="space-y-2 pt-2 border-t border-dashed border-gray-200">
+      <div className="space-y-2 pt-2 border-t border-solid border-gray-200">
         <label className="text-sm font-semibold text-gray-900 block mt-2">Contact Details</label>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -349,7 +695,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             />
             <Checkbox size="sm" isSelected={formData.isWhatsapp} onValueChange={v => updateField("isWhatsapp", v)}
               classNames={{ label: "text-xs text-gray-500" }}>
-              Same as WhatsApp
+              Same for WhatsApp
             </Checkbox>
           </div>
           {!formData.isWhatsapp && (
@@ -390,7 +736,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       </div>
 
       {/* Optional Fields */}
-      <div className="space-y-2 pt-2 border-t border-dashed border-gray-200">
+      <div className="space-y-2 pt-2 border-t border-solid border-gray-200">
         <label className="text-sm font-semibold text-gray-900 block mt-2">Optional Information</label>
         <p className="text-xs text-gray-500 mb-3">These fields are optional and can be filled later</p>
         <div className="grid grid-cols-2 gap-4">
@@ -483,200 +829,274 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     </div>
   );
 
-  const renderStep2 = () => (
-    <div className="space-y-6 animate-fade-in text-left">
-      {/* Parents/Guardians */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <label className="text-sm font-semibold text-gray-900">Parents / Guardians</label>
-          {formData.parents.length < 3 && (
-            <Button size="sm" color="primary" variant="flat" onPress={addParent} className="h-8 text-xs">
-              <Plus size={14} /> Add Another Parent
-            </Button>
+  const renderStep2 = () => {
+    const parents = formData.parents.filter(p => p.isParent);
+    const guardians = formData.parents.filter(p => !p.isParent);
+
+    return (
+      <div className="space-y-6 animate-fade-in text-left">
+        {/* Parent Details */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-semibold text-gray-900">Parent Details</label>
+          </div>
+
+          {parents.map((parent, idx) => {
+            const index = formData.parents.findIndex(p => p === parent);
+            return (
+              <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">
+                    {idx === 0 ? "Primary Parent" : `Parent ${idx + 1}`}
+                  </span>
+                  {parents.length > 1 && (
+                    <Button size="sm" variant="light" color="danger" onPress={() => removeParent(index)}>
+                      <X size={14} /> Remove
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div ref={index === 0 ? parentNameRef : null}>
+                    <Input
+                      label="Full Name"
+                      labelPlacement="outside"
+                      placeholder="Parent name"
+                      value={parent.name}
+                      onValueChange={v => updateParent(index, "name", v)}
+                      isInvalid={index === 0 && !!errors.parentName}
+                      errorMessage={index === 0 ? errors.parentName : ""}
+                      variant="bordered"
+                      radius="sm"
+                      isRequired={index === 0}
+                      classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                    />
+                  </div>
+                  <Select
+                    label="Relationship"
+                    labelPlacement="outside"
+                    placeholder="Select..."
+                    selectedKeys={parent.relationship ? [parent.relationship] : []}
+                    onSelectionChange={keys => updateParent(index, "relationship", Array.from(keys)[0])}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                  >
+                    {parentRelationships.map(r => <SelectItem key={r}>{r}</SelectItem>)}
+                  </Select>
+                  <div className="space-y-2" ref={index === 0 ? parentPhoneRef : null}>
+                    <Input
+                      label="Phone Number"
+                      labelPlacement="outside"
+                      startContent={<span className="text-gray-400 text-xs">+91</span>}
+                      placeholder="10 digit number"
+                      value={parent.phone}
+                      onValueChange={v => updateParent(index, "phone", v)}
+                      isInvalid={index === 0 && !!errors.parentPhone}
+                      errorMessage={index === 0 ? errors.parentPhone : ""}
+                      variant="bordered"
+                      radius="sm"
+                      isRequired={index === 0}
+                      classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                    />
+                    <Checkbox size="sm" isSelected={parent.isWhatsapp} onValueChange={v => updateParent(index, "isWhatsapp", v)}
+                      classNames={{ label: "text-xs text-gray-500" }}>
+                      Same as WhatsApp
+                    </Checkbox>
+                  </div>
+                  <Input
+                    label="Email"
+                    labelPlacement="outside"
+                    placeholder="parent@email.com"
+                    value={parent.email}
+                    onValueChange={v => updateParent(index, "email", v)}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                  />
+                  <Input
+                    label="Occupation"
+                    labelPlacement="outside"
+                    placeholder="e.g., Engineer, Doctor"
+                    value={parent.occupation}
+                    onValueChange={v => updateParent(index, "occupation", v)}
+                    variant="bordered"
+                    radius="sm"
+                    className="col-span-2"
+                    classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                  />
+                </div>
+              </div>
+            )
+          })}
+
+          {parents.length < 2 && (
+            <button
+              className="text-sm font-medium text-primary hover:text-primary-600 transition-colors"
+              onClick={() => {
+                updateField("parents", [...formData.parents, { name: "", relationship: "Mother", phone: "", email: "", occupation: "", isWhatsapp: true, isParent: true }]);
+              }}
+            >
+              + Add Another Parent
+            </button>
           )}
         </div>
 
-        {formData.parents.map((parent, index) => (
-          <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-700">
-                {index === 0 ? "Primary Contact" : `Parent/Guardian ${index + 1}`}
-              </span>
-              {index > 0 && (
-                <Button size="sm" variant="light" color="danger" onPress={() => removeParent(index)}>
-                  <X size={14} /> Remove
-                </Button>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="Full Name"
-                labelPlacement="outside"
-                placeholder="Parent/Guardian name"
-                value={parent.name}
-                onValueChange={v => updateParent(index, "name", v)}
-                isInvalid={index === 0 && !!errors.parentName}
-                errorMessage={index === 0 ? errors.parentName : ""}
-                variant="bordered"
-                radius="sm"
-                isRequired={index === 0}
-                classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-              />
-              <Select
-                label="Relationship"
-                labelPlacement="outside"
-                placeholder="Select..."
-                selectedKeys={parent.relationship ? [parent.relationship] : []}
-                onSelectionChange={keys => updateParent(index, "relationship", Array.from(keys)[0])}
-                variant="bordered"
-                radius="sm"
-                classNames={{ trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-              >
-                {relationships.map(r => <SelectItem key={r}>{r}</SelectItem>)}
-              </Select>
-              <div className="space-y-2">
-                <Input
-                  label="Phone Number"
-                  labelPlacement="outside"
-                  startContent={<span className="text-gray-400 text-xs">+91</span>}
-                  placeholder="10 digit number"
-                  value={parent.phone}
-                  onValueChange={v => updateParent(index, "phone", v)}
-                  isInvalid={index === 0 && !!errors.parentPhone}
-                  errorMessage={index === 0 ? errors.parentPhone : ""}
-                  variant="bordered"
-                  radius="sm"
-                  isRequired={index === 0}
-                  classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-                />
-                <Checkbox size="sm" isSelected={parent.isWhatsapp} onValueChange={v => updateParent(index, "isWhatsapp", v)}
-                  classNames={{ label: "text-xs text-gray-500" }}>
-                  Same as WhatsApp
-                </Checkbox>
+        {/* Guardian Details */}
+        <div className="space-y-4 pt-2 border-t border-solid border-gray-200">
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-semibold text-gray-900">Guardian Details</label>
+            <span className="text-xs text-gray-500">(Optional)</span>
+          </div>
+
+          {guardians.map((guardian, idx) => {
+            const index = formData.parents.findIndex(p => p === guardian);
+            return (
+              <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">
+                    Guardian {idx + 1}
+                  </span>
+                  <Button size="sm" variant="light" color="danger" onPress={() => removeParent(index)}>
+                    <X size={14} /> Remove
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    label="Full Name"
+                    labelPlacement="outside"
+                    placeholder="Guardian name"
+                    value={guardian.name}
+                    onValueChange={v => updateParent(index, "name", v)}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                  />
+                  <Select
+                    label="Relationship"
+                    labelPlacement="outside"
+                    placeholder="Select..."
+                    selectedKeys={guardian.relationship ? [guardian.relationship] : []}
+                    onSelectionChange={keys => updateParent(index, "relationship", Array.from(keys)[0])}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                  >
+                    {guardianRelationships.map(r => <SelectItem key={r}>{r}</SelectItem>)}
+                  </Select>
+                  <div className="space-y-2">
+                    <Input
+                      label="Phone Number"
+                      labelPlacement="outside"
+                      startContent={<span className="text-gray-400 text-xs">+91</span>}
+                      placeholder="10 digit number"
+                      value={guardian.phone}
+                      onValueChange={v => updateParent(index, "phone", v)}
+                      variant="bordered"
+                      radius="sm"
+                      classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                    />
+                    <Checkbox size="sm" isSelected={guardian.isWhatsapp} onValueChange={v => updateParent(index, "isWhatsapp", v)}
+                      classNames={{ label: "text-xs text-gray-500" }}>
+                      Same as WhatsApp
+                    </Checkbox>
+                  </div>
+                  <Input
+                    label="Email"
+                    labelPlacement="outside"
+                    placeholder="guardian@email.com"
+                    value={guardian.email}
+                    onValueChange={v => updateParent(index, "email", v)}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                  />
+                  <Input
+                    label="Occupation"
+                    labelPlacement="outside"
+                    placeholder="e.g., Engineer, Doctor"
+                    value={guardian.occupation}
+                    onValueChange={v => updateParent(index, "occupation", v)}
+                    variant="bordered"
+                    radius="sm"
+                    className="col-span-2"
+                    classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                  />
+                </div>
               </div>
-              <Input
-                label="Email"
-                labelPlacement="outside"
-                placeholder="parent@email.com"
-                value={parent.email}
-                onValueChange={v => updateParent(index, "email", v)}
-                variant="bordered"
-                radius="sm"
-                classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-              />
-              <Input
-                label="Occupation"
-                labelPlacement="outside"
-                placeholder="e.g., Engineer, Doctor"
-                value={parent.occupation}
-                onValueChange={v => updateParent(index, "occupation", v)}
-                variant="bordered"
-                radius="sm"
-                className="col-span-2"
-                classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
+            )
+          })}
 
-      {/* Alternate Contact */}
-      <div className="space-y-2 pt-2 border-t border-dashed border-gray-200">
-        <label className="text-sm font-semibold text-gray-900 block mt-2">Alternate Contact</label>
-        <Input
-          label="Alternate Mobile Number"
-          labelPlacement="outside"
-          startContent={<span className="text-gray-400 text-xs">+91</span>}
-          placeholder="Optional alternate number"
-          value={formData.alternatePhone}
-          onValueChange={v => updateField("alternatePhone", v)}
-          variant="bordered"
-          radius="sm"
-          classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-        />
-      </div>
+          {guardians.length === 0 && (
+            <button
+              className="text-sm font-medium text-primary hover:text-primary-600 transition-colors"
+              onClick={() => {
+                updateField("parents", [...formData.parents, { name: "", relationship: "Grandparent", phone: "", email: "", occupation: "", isWhatsapp: true, isParent: false }]);
+              }}
+            >
+              + Add Guardian
+            </button>
+          )}
+        </div>
 
-      {/* Health & Safety */}
-      <div className="space-y-2 pt-2 border-t border-dashed border-gray-200">
-        <label className="text-sm font-semibold text-gray-900 block mt-2">Health & Safety</label>
-        <Textarea
-          label="Medical Conditions"
-          labelPlacement="outside"
-          placeholder="Any allergies, medical conditions, or special needs (optional)"
-          value={formData.medicalConditions}
-          onValueChange={v => updateField("medicalConditions", v)}
-          variant="bordered"
-          radius="sm"
-          minRows={2}
-          classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300" }}
-        />
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="Emergency Contact Name"
+        {/* Health & Safety */}
+        <div className="space-y-2 pt-2 border-t border-solid border-gray-200">
+          <label className="text-sm font-semibold text-gray-900 block mt-2">Health & Safety</label>
+          <Textarea
+            label="Medical Conditions"
             labelPlacement="outside"
-            placeholder="Name"
-            value={formData.emergencyContactName}
-            onValueChange={v => updateField("emergencyContactName", v)}
+            placeholder="Any allergies, medical conditions, or special needs (optional)"
+            value={formData.medicalConditions}
+            onValueChange={v => updateField("medicalConditions", v)}
             variant="bordered"
             radius="sm"
-            classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-          />
-          <Input
-            label="Emergency Contact Phone"
-            labelPlacement="outside"
-            startContent={<span className="text-gray-400 text-xs">+91</span>}
-            placeholder="Phone number"
-            value={formData.emergencyContactPhone}
-            onValueChange={v => updateField("emergencyContactPhone", v)}
-            variant="bordered"
-            radius="sm"
-            classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+            minRows={2}
+            classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300" }}
           />
         </div>
-      </div>
 
-      {/* Transport & Hostel */}
-      <div className="space-y-4 pt-2 border-t border-dashed border-gray-200">
-        <label className="text-sm font-semibold text-gray-900 block mt-2">Additional Requirements</label>
-        <div className="grid grid-cols-2 gap-4">
-          <div className={cn(
-            "cursor-pointer rounded-xl border-2 p-4 flex items-center gap-3 transition-all",
-            formData.transportRequired ? "border-primary bg-primary-50/20" : "border-gray-200 hover:border-gray-300"
-          )} onClick={() => updateField("transportRequired", !formData.transportRequired)}>
+        {/* Transport & Hostel */}
+        <div className="space-y-4 pt-2 border-t border-solid border-gray-200">
+          <label className="text-sm font-semibold text-gray-900 block mt-2">Additional Requirements</label>
+          <div className="grid grid-cols-2 gap-4">
             <div className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center",
-              formData.transportRequired ? "bg-primary text-white" : "bg-gray-100 text-gray-400"
-            )}>
-              <Bus size={20} />
+              "cursor-pointer rounded-xl border-2 p-4 flex items-center gap-3 transition-all",
+              formData.transportRequired ? "border-primary bg-primary-50/20" : "border-gray-200 hover:border-gray-300"
+            )} onClick={() => updateField("transportRequired", !formData.transportRequired)}>
+              <div className={cn(
+                "w-10 h-10 rounded-full flex items-center justify-center",
+                formData.transportRequired ? "bg-primary text-white" : "bg-gray-100 text-gray-400"
+              )}>
+                <Bus size={20} />
+              </div>
+              <div>
+                <span className={cn("text-sm font-medium", formData.transportRequired ? "text-primary-700" : "text-gray-600")}>
+                  Transport Required
+                </span>
+                <p className="text-xs text-gray-500">School bus facility</p>
+              </div>
             </div>
-            <div>
-              <span className={cn("text-sm font-medium", formData.transportRequired ? "text-primary-700" : "text-gray-600")}>
-                Transport Required
-              </span>
-              <p className="text-xs text-gray-500">School bus facility</p>
-            </div>
-          </div>
-          <div className={cn(
-            "cursor-pointer rounded-xl border-2 p-4 flex items-center gap-3 transition-all",
-            formData.hostelRequired ? "border-primary bg-primary-50/20" : "border-gray-200 hover:border-gray-300"
-          )} onClick={() => updateField("hostelRequired", !formData.hostelRequired)}>
             <div className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center",
-              formData.hostelRequired ? "bg-primary text-white" : "bg-gray-100 text-gray-400"
-            )}>
-              <Heart size={20} />
-            </div>
-            <div>
-              <span className={cn("text-sm font-medium", formData.hostelRequired ? "text-primary-700" : "text-gray-600")}>
-                Hostel Required
-              </span>
-              <p className="text-xs text-gray-500">Boarding facility</p>
+              "cursor-pointer rounded-xl border-2 p-4 flex items-center gap-3 transition-all",
+              formData.hostelRequired ? "border-primary bg-primary-50/20" : "border-gray-200 hover:border-gray-300"
+            )} onClick={() => updateField("hostelRequired", !formData.hostelRequired)}>
+              <div className={cn(
+                "w-10 h-10 rounded-full flex items-center justify-center",
+                formData.hostelRequired ? "bg-primary text-white" : "bg-gray-100 text-gray-400"
+              )}>
+                <Heart size={20} />
+              </div>
+              <div>
+                <span className={cn("text-sm font-medium", formData.hostelRequired ? "text-primary-700" : "text-gray-600")}>
+                  Hostel Required
+                </span>
+                <p className="text-xs text-gray-500">Boarding facility</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderStep3 = () => (
     <div className="space-y-6 animate-fade-in text-left">
@@ -689,7 +1109,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       <div className="space-y-2">
         <label className="text-xs font-medium text-gray-600">Birth Certificate</label>
         <div
-          className="border border-dashed border-gray-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+          className="border border-solid border-gray-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
           onClick={() => birthCertRef.current?.click()}
         >
           <div className="flex items-center gap-3">
@@ -716,7 +1136,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       <div className="space-y-2">
         <label className="text-xs font-medium text-gray-600">Transfer Certificate (TC)</label>
         <div
-          className="border border-dashed border-gray-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+          className="border border-solid border-gray-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
           onClick={() => tcRef.current?.click()}
         >
           <div className="flex items-center gap-3">
@@ -743,7 +1163,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       <div className="space-y-2">
         <label className="text-xs font-medium text-gray-600">Aadhaar Card (if provided)</label>
         <div
-          className="border border-dashed border-gray-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+          className="border border-solid border-gray-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
           onClick={() => aadhaarRef.current?.click()}
         >
           <div className="flex items-center gap-3">
@@ -766,38 +1186,12 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           onChange={(e) => handleFileUpload("aadhaarDoc", e.target.files[0])} />
       </div>
 
-      {/* Student Photo */}
-      <div className="space-y-2">
-        <label className="text-xs font-medium text-gray-600">Student Photograph</label>
-        <div
-          className="border border-dashed border-gray-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
-          onClick={() => photoRef.current?.click()}
-        >
-          <div className="flex items-center gap-3">
-            <FileText size={20} className="text-gray-400" />
-            {formData.studentPhoto ? (
-              <span className="text-sm text-gray-700">{formData.studentPhoto.name}</span>
-            ) : (
-              <span className="text-sm text-gray-500">Click to upload passport photo</span>
-            )}
-          </div>
-          {formData.studentPhoto ? (
-            <Button size="sm" variant="light" color="danger" onPress={(e) => { e.stopPropagation(); updateField("studentPhoto", null); }}>
-              <X size={14} />
-            </Button>
-          ) : (
-            <Upload size={16} className="text-gray-400" />
-          )}
-        </div>
-        <input ref={photoRef} type="file" accept="image/*" className="hidden"
-          onChange={(e) => handleFileUpload("studentPhoto", e.target.files[0])} />
-      </div>
-
       {/* Other Documents */}
       <div className="space-y-2">
         <label className="text-xs font-medium text-gray-600">Other Documents</label>
+        <p className="text-xs text-gray-500">Upload any other relevant documents (medical records, previous report cards, etc.)</p>
         <div
-          className="border border-dashed border-gray-300 rounded-lg p-4 flex items-center justify-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors"
+          className="border border-solid border-gray-300 rounded-lg p-4 flex items-center justify-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors"
           onClick={() => otherDocsRef.current?.click()}
         >
           <Upload size={14} className="text-gray-500" />
@@ -805,9 +1199,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         </div>
         <input ref={otherDocsRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden"
           onChange={(e) => handleMultiFileUpload("otherDocuments", e.target.files)} />
-        {formData.otherDocuments.length > 0 && (
+        {formData.otherDocuments?.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
-            {formData.otherDocuments.map((file, i) => (
+            {formData.otherDocuments?.map((file, i) => (
               <Chip key={i} onClose={() => removeFile("otherDocuments", i)} size="sm" variant="flat" className="h-8 border border-gray-200 bg-white">
                 {file.name}
               </Chip>
@@ -824,59 +1218,61 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     { number: 3, title: "Documents", icon: FileText }
   ];
 
+
+
   return (
-    <div className="h-full flex flex-col bg-white">
-      {/* Stepper */}
-      <div className="px-8 py-6">
-        <div className="flex items-center justify-between relative">
-          <div className="absolute top-[20px] left-0 right-0 h-[1.5px] border-t-2 border-dashed border-gray-200 -z-0" />
-          {steps.map((s) => {
-            const isActive = step >= s.number;
-            const isCurrent = step === s.number;
-            return (
-              <div key={s.number} className="flex flex-col items-center relative z-10 bg-white px-2">
-                <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all",
-                  isCurrent ? "border-primary text-primary bg-primary-50" :
-                    isActive ? "border-primary text-white bg-primary" :
-                      "border-gray-200 text-gray-400 bg-white"
-                )}>
-                  {isActive && !isCurrent ? <Check size={18} /> : <s.icon size={18} />}
-                </div>
-                <span className={cn(
-                  "text-xs mt-2 font-medium",
-                  isCurrent ? "text-primary" : isActive ? "text-gray-700" : "text-gray-400"
-                )}>{s.title}</span>
-              </div>
-            );
-          })}
+    <>
+      <div className="h-full flex flex-col bg-white">
+        {/* Header */}
+        <div className="flex-none p-4 border-b border-gray-200 flex items-center justify-between bg-white z-10">
+          <div className="flex items-center gap-3">
+            <Button isIconOnly variant="light" onPress={handlePrev} isDisabled={step === 1}>
+              <ArrowLeft size={20} className="text-gray-500" />
+            </Button>
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 leading-none">
+                {initialData ? "Edit Student" : "Add New Student"}
+              </h2>
+              <p className="text-xs text-gray-500 mt-1">
+                Step {step} of 2: {step === 1 ? "Personal Details" : "Parents & Guardian"}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onPress={step === 2 ? handleSubmit : handleNext}
+              isLoading={isSubmitting}
+            >
+              {step === 2 ? "Save Student" : "Next Step"}
+            </Button>
+          </div>
+        </div>
+
+        {/* Scrollable Content */}
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar"
+        >
+          <div className="max-w-3xl mx-auto pb-10">
+            {step === 1 && renderStep1()}
+            {step === 2 && renderStep2()}
+          </div>
         </div>
       </div>
 
-      {/* Form Content */}
-      <div className="flex-1 overflow-y-auto px-8 pb-6">
-        {step === 1 && renderStep1()}
-        {step === 2 && renderStep2()}
-        {step === 3 && renderStep3()}
-      </div>
-
-      {/* Footer */}
-      <div className="px-8 py-4 border-t border-gray-200 flex justify-between items-center bg-gray-50">
-        <Button variant="flat" onPress={step === 1 ? onClose : handlePrev} startContent={step > 1 && <ArrowLeft size={16} />}>
-          {step === 1 ? "Cancel" : "Back"}
-        </Button>
-        <div className="flex gap-2">
-          {step < 3 ? (
-            <Button color="primary" onPress={handleNext} endContent={<ArrowRight size={16} />}>
-              Continue
-            </Button>
-          ) : (
-            <Button color="primary" onPress={handleSubmit} startContent={<GraduationCap size={16} />}>
-              Add Student
-            </Button>
-          )}
-        </div>
-      </div>
-    </div>
+      {/* Photo Editor Modal */}
+      {selectedImageForEdit && (
+        <PhotoEditorModal
+          isOpen={isPhotoEditorOpen}
+          onClose={() => setIsPhotoEditorOpen(false)}
+          imageSrc={selectedImageForEdit}
+          onSave={handlePhotoSave}
+        />
+      )}
+    </>
   );
 }

@@ -1,4 +1,4 @@
-import { Avatar, Button, ScrollShadow, Chip } from "@heroui/react";
+import { Avatar, Button, ScrollShadow, Chip, Tooltip } from "@heroui/react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, BookOpen, MessageSquare, IndianRupee, Settings,
@@ -46,37 +46,43 @@ function NavSection({ title, items, isSidebarOpen, location, badgeColor = "dange
             <li key={index} className="overflow-visible">
               <NavLink to={item.href}>
                 {({ isActive }) => (
-                  <div className={`
-                    flex items-center ${isSidebarOpen ? 'justify-between px-3' : 'justify-center px-2'} py-2 rounded transition-all duration-200 group relative overflow-visible
-                    ${isActive
-                      ? "bg-primary/10 text-primary font-medium shadow-sm"
-                      : "text-default-500 hover:bg-default-100/50 hover:text-default-900"}
-                  `}>
-                    <div className={`flex items-center ${isSidebarOpen ? 'gap-3' : 'justify-center w-full'}`}>
-                      <span className={`${isActive ? "text-primary" : "text-default-400 group-hover:text-default-600"} transition-all group-hover:scale-110`}>
-                        {item.icon}
-                      </span>
-                      {isSidebarOpen && <span className="text-sm whitespace-nowrap">{item.label}</span>}
-                    </div>
-                    {item.badge && isSidebarOpen && (
-                      <Chip size="sm" variant="shadow" color={badgeColor} className="h-5 min-w-5 px-0 flex items-center justify-center text-[10px] font-medium">
-                        {item.badge}
-                      </Chip>
-                    )}
-                    {/* Tooltip for collapsed state */}
-                    {!isSidebarOpen && (
-                      <div className="absolute left-full ml-3 px-3 py-1.5 bg-default-900 dark:bg-default-800 text-white text-xs rounded-md shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity duration-200" style={{ zIndex: 9999 }}>
-                        {item.label}
+                  <Tooltip
+                    content={
+                      <div className="flex items-center gap-2">
+                        <span>{item.label}</span>
                         {item.badge && (
-                          <Chip size="sm" variant="shadow" color={badgeColor} className="ml-2 h-4 min-w-4 px-1 text-[9px]">
+                          <Chip size="sm" variant="shadow" color={badgeColor} className="h-4 min-w-4 px-1 text-[9px]">
                             {item.badge}
                           </Chip>
                         )}
-                        {/* Arrow */}
-                        <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-default-900 dark:border-r-default-800"></div>
                       </div>
-                    )}
-                  </div>
+                    }
+                    placement="right"
+                    isDisabled={isSidebarOpen}
+                    closeDelay={0}
+                    classNames={{
+                      content: "bg-black text-white rounded-lg",
+                    }}
+                  >
+                    <div className={`
+                      flex items-center ${isSidebarOpen ? 'justify-between px-3' : 'justify-center px-2'} py-2 rounded transition-all duration-200 group relative overflow-visible
+                      ${isActive
+                        ? "bg-primary/10 text-primary font-medium shadow-sm"
+                        : "text-default-500 hover:bg-default-100/50 hover:text-default-900"}
+                    `}>
+                      <div className={`flex items-center ${isSidebarOpen ? 'gap-3' : 'justify-center w-full'}`}>
+                        <span className={`${isActive ? "text-primary" : "text-default-400 group-hover:text-default-600"} transition-all group-hover:scale-110`}>
+                          {item.icon}
+                        </span>
+                        {isSidebarOpen && <span className="text-sm whitespace-nowrap">{item.label}</span>}
+                      </div>
+                      {item.badge && isSidebarOpen && (
+                        <Chip size="sm" variant="shadow" color={badgeColor} className="h-5 min-w-5 px-0 flex items-center justify-center text-[10px] font-medium">
+                          {item.badge}
+                        </Chip>
+                      )}
+                    </div>
+                  </Tooltip>
                 )}
               </NavLink>
             </li>
@@ -152,27 +158,29 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
             <li className="overflow-visible">
               <NavLink to={settingsItem.href}>
                 {({ isActive }) => (
-                  <div className={`
-                    flex items-center ${isSidebarOpen ? 'justify-between px-3' : 'justify-center px-2'} py-2 rounded transition-all duration-200 group relative overflow-visible
-                    ${isActive
-                      ? "bg-primary/10 text-primary font-medium shadow-sm"
-                      : "text-default-500 hover:bg-default-100/50 hover:text-default-900"}
-                  `}>
-                    <div className={`flex items-center ${isSidebarOpen ? 'gap-3' : 'justify-center w-full'}`}>
-                      <span className={`${isActive ? "text-primary" : "text-default-400 group-hover:text-default-600"} transition-all group-hover:scale-110`}>
-                        {settingsItem.icon}
-                      </span>
-                      {isSidebarOpen && <span className="text-sm whitespace-nowrap">{settingsItem.label}</span>}
-                    </div>
-                    {/* Tooltip for collapsed state */}
-                    {!isSidebarOpen && (
-                      <div className="absolute left-full ml-3 px-3 py-1.5 bg-default-900 dark:bg-default-800 text-white text-xs rounded-md shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity duration-200" style={{ zIndex: 9999 }}>
-                        {settingsItem.label}
-                        {/* Arrow */}
-                        <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-default-900 dark:border-r-default-800"></div>
+                  <Tooltip
+                    content={settingsItem.label}
+                    placement="right"
+                    isDisabled={isSidebarOpen}
+                    closeDelay={0}
+                    classNames={{
+                      content: "bg-black text-white rounded-lg",
+                    }}
+                  >
+                    <div className={`
+                      flex items-center ${isSidebarOpen ? 'justify-between px-3' : 'justify-center px-2'} py-2 rounded transition-all duration-200 group relative overflow-visible
+                      ${isActive
+                        ? "bg-primary/10 text-primary font-medium shadow-sm"
+                        : "text-default-500 hover:bg-default-100/50 hover:text-default-900"}
+                    `}>
+                      <div className={`flex items-center ${isSidebarOpen ? 'gap-3' : 'justify-center w-full'}`}>
+                        <span className={`${isActive ? "text-primary" : "text-default-400 group-hover:text-default-600"} transition-all group-hover:scale-110`}>
+                          {settingsItem.icon}
+                        </span>
+                        {isSidebarOpen && <span className="text-sm whitespace-nowrap">{settingsItem.label}</span>}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  </Tooltip>
                 )}
               </NavLink>
             </li>
@@ -186,27 +194,29 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
           <li className="overflow-visible">
             <NavLink to="/ai-assistant">
               {({ isActive }) => (
-                <div className={`
-                    flex items-center ${isSidebarOpen ? 'justify-between px-3' : 'justify-center px-2'} py-2 rounded transition-all duration-200 group relative overflow-visible
-                    ${isActive
-                    ? "bg-primary/10 text-primary font-medium shadow-sm"
-                    : "text-default-500 hover:bg-default-100/50 hover:text-default-900"}
-                  `}>
-                  <div className={`flex items-center ${isSidebarOpen ? 'gap-3' : 'justify-center w-full'}`}>
-                    <span className={`${isActive ? "text-primary" : "text-default-400 group-hover:text-default-600"} transition-all group-hover:scale-110`}>
-                      <Sparkles size={18} />
-                    </span>
-                    {isSidebarOpen && <span className="text-sm whitespace-nowrap">AI Assistant</span>}
-                  </div>
-                  {/* Tooltip for collapsed state */}
-                  {!isSidebarOpen && (
-                    <div className="absolute left-full ml-3 px-3 py-1.5 bg-default-900 dark:bg-default-800 text-white text-xs rounded-md shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity duration-200" style={{ zIndex: 9999 }}>
-                      AI Assistant
-                      {/* Arrow */}
-                      <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-default-900 dark:border-r-default-800"></div>
+                <Tooltip
+                  content="AI Assistant"
+                  placement="right"
+                  isDisabled={isSidebarOpen}
+                  closeDelay={0}
+                  classNames={{
+                    content: "bg-black text-white rounded-lg",
+                  }}
+                >
+                  <div className={`
+                      flex items-center ${isSidebarOpen ? 'justify-between px-3' : 'justify-center px-2'} py-2 rounded transition-all duration-200 group relative overflow-visible
+                      ${isActive
+                      ? "bg-primary/10 text-primary font-medium shadow-sm"
+                      : "text-default-500 hover:bg-default-100/50 hover:text-default-900"}
+                    `}>
+                    <div className={`flex items-center ${isSidebarOpen ? 'gap-3' : 'justify-center w-full'}`}>
+                      <span className={`${isActive ? "text-primary" : "text-default-400 group-hover:text-default-600"} transition-all group-hover:scale-110`}>
+                        <Sparkles size={18} />
+                      </span>
+                      {isSidebarOpen && <span className="text-sm whitespace-nowrap">AI Assistant</span>}
                     </div>
-                  )}
-                </div>
+                  </div>
+                </Tooltip>
               )}
             </NavLink>
           </li>

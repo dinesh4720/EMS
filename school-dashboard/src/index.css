@@ -287,3 +287,25 @@ div[role="alert"]>div>div:last-child {
   transform-origin: 70% 70%;
   display: inline-block;
 }
+
+/* Global Button Styles */
+button[data-color="primary"],
+.bg-primary {
+  font-weight: 600 !important;
+}
+
+@keyframes slide-in-top {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-top {
+  animation: slide-in-top 0.5s ease-out forwards;
+}

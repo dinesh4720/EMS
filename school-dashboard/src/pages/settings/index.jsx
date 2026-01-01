@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { useApp } from "../../context/AppContext";
 import {
   Building,
   Calendar,
@@ -16,7 +17,8 @@ import {
   Shield,
   Puzzle,
   Smartphone,
-  Mail
+  Mail,
+  Zap
 } from "lucide-react";
 import { Input, Kbd, Chip } from "@heroui/react";
 
@@ -33,10 +35,12 @@ import FeeHeadsSettings from "./FeeHeadsSettings";
 import IntakeFormsSettings from "./IntakeFormsSettings";
 import SubscriptionSettings from "./SubscriptionSettings";
 import RolesAccess from "./RolesAccess";
+import AdmissionFormSettings from "./AdmissionFormSettings";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { setShowOnboarding } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
 
   const menuCategories = [
@@ -45,6 +49,7 @@ export default function SettingsPage() {
       items: [
         { key: "institution", label: "General settings", icon: Building, path: "/settings" },
         { key: "academics", label: "Academics", icon: GraduationCap, path: "/settings/academics", isNew: true },
+        { key: "admission-form", label: "Admission Form", icon: FileText, path: "/settings/admission-form", isNew: true },
         { key: "intakeforms", label: "Intake Forms", icon: FileText, path: "/settings/intake-forms" },
       ]
     },
@@ -88,6 +93,7 @@ export default function SettingsPage() {
       items: [
         { key: "subscription", label: "Subscription", icon: CreditCard, path: "/settings/subscription" },
         { key: "integrations", label: "Apps & Integrations", icon: Puzzle, path: "/settings/integrations" },
+        { key: "onboarding", label: "Setup Wizard", icon: Zap, isAction: true, onClick: () => setShowOnboarding(true) },
       ]
     }
   ];
@@ -151,34 +157,34 @@ export default function SettingsPage() {
               </div>
             ) : (
               filteredCategories.map((category) => (
-              <div key={category.title} className="space-y-1">
-                <h3 className="text-[11px] font-bold text-default-400 uppercase tracking-wider px-3 mb-2">
-                  {category.title}
-                </h3>
-                <ul className="space-y-0.5">
-                  {category.items.map((item) => {
-                    const active = isActive(item.path);
-                    return (
-                      <li key={item.key}>
-                        <button
-                          onClick={() => navigate(item.path)}
-                          className={`
+                <div key={category.title} className="space-y-1">
+                  <h3 className="text-[11px] font-bold text-default-400 uppercase tracking-wider px-3 mb-2">
+                    {category.title}
+                  </h3>
+                  <ul className="space-y-0.5">
+                    {category.items.map((item) => {
+                      const active = isActive(item.path);
+                      return (
+                        <li key={item.key}>
+                          <button
+                            onClick={() => item.isAction ? item.onClick() : navigate(item.path)}
+                            className={`
                             w-full flex items-center justify-between px-3 py-1.5 rounded-md text-sm transition-colors duration-200
-                            ${active
-                              ? "bg-default-200/60 font-medium text-default-900"
-                              : "text-default-600 hover:bg-default-100 placeholder-opacity-0 hover:text-default-900"}
+                            ${!item.isAction && active
+                                ? "bg-default-200/60 font-medium text-default-900"
+                                : "text-default-600 hover:bg-default-100 placeholder-opacity-0 hover:text-default-900"}
                           `}
-                        >
-                          <span className="truncate">{item.label}</span>
-                          {item.isNew && (
-                            <Chip size="sm" color="primary" variant="solid" className="h-5 text-[10px] px-1 min-w-10">New</Chip>
-                          )}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
+                          >
+                            <span className="truncate">{item.label}</span>
+                            {item.isNew && (
+                              <Chip size="sm" color="primary" variant="solid" className="h-5 text-[10px] px-1 min-w-10">New</Chip>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               ))
             )}
           </div>
@@ -191,6 +197,7 @@ export default function SettingsPage() {
           <Routes>
             <Route index element={<InstitutionSettings />} />
             <Route path="academics" element={<AcademicSettings />} />
+            <Route path="admission-form" element={<AdmissionFormSettings />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="roles" element={<RolesAccess />} />
             <Route path="intake-forms" element={<IntakeFormsSettings />} />

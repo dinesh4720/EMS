@@ -6,7 +6,7 @@ import * as THREE from 'three';
 const BlobShaderMaterial = {
     uniforms: {
         uTime: { value: 0 },
-        uColorKey: { value: new THREE.Color("#FF6C37") }, // Primary Orange
+        uColorKey: { value: new THREE.Color("#9333ea") }, // Primary Purple
         uColorSecondary: { value: new THREE.Color("#FF2D55") }, // Secondary Red/Pink
     },
     vertexShader: `
@@ -126,7 +126,7 @@ function BlobMesh() {
         return new THREE.ShaderMaterial({
             uniforms: {
                 uTime: { value: 0 },
-                uColorKey: { value: new THREE.Color("#FF6C37") },
+                uColorKey: { value: new THREE.Color("#9333ea") },
                 uColorSecondary: { value: new THREE.Color("#FF2D55") },
             },
             vertexShader: BlobShaderMaterial.vertexShader,

@@ -73,26 +73,27 @@ export function AppProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [settingsLoading, setSettingsLoading] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Fetch data from API on mount
   const fetchData = useCallback(async () => {
     try {
       console.log('🔄 Starting to fetch data...');
       setLoading(true);
-      
+
       console.log('📡 Fetching from API...');
       const [staffData, studentsData, classesData] = await Promise.all([
         staffApi.getAll(),
         studentsApi.getAll(),
         classesApi.getAll(),
       ]);
-      
+
       console.log('✅ Data fetched successfully:', {
         staff: staffData.length,
         students: studentsData.length,
         classes: classesData.length
       });
-      
+
       setStaff(staffData);
       setStudents(studentsData);
       setClasses(classesData.map(c => ({
@@ -129,7 +130,7 @@ export function AppProvider({ children }) {
       if (schoolData) {
         setSchoolSettings(prev => ({ ...prev, ...schoolData }));
       }
-      
+
       if (holidaysData.length > 0) {
         // Merge holidays into events
         const holidayEvents = holidaysData.map(h => ({
@@ -268,7 +269,7 @@ export function AppProvider({ children }) {
   const updateStaff = async (id, updates) => {
     try {
       const updated = await staffApi.update(id, updates);
-      setStaff(prev => prev.map(s => s.id === id ? updated : s));
+      setStaff(prev => prev.map(s => String(s.id) === String(id) ? updated : s));
       return updated;
     } catch (err) {
       setError(err.message);
@@ -279,7 +280,7 @@ export function AppProvider({ children }) {
   const deleteStaff = async (id) => {
     try {
       await staffApi.delete(id);
-      setStaff(prev => prev.filter(s => s.id !== id));
+      setStaff(prev => prev.filter(s => String(s.id) !== String(id)));
     } catch (err) {
       setError(err.message);
       throw err;
@@ -311,7 +312,7 @@ export function AppProvider({ children }) {
   const updateStudent = async (id, updates) => {
     try {
       const updated = await studentsApi.update(id, updates);
-      setStudents(prev => prev.map(s => s.id === id ? { ...s, ...updated } : s));
+      setStudents(prev => prev.map(s => String(s.id) === String(id) ? { ...s, ...updated } : s));
       return updated;
     } catch (err) {
       setError(err.message);
@@ -322,7 +323,7 @@ export function AppProvider({ children }) {
   const deleteStudent = async (id) => {
     try {
       await studentsApi.delete(id);
-      setStudents(prev => prev.filter(s => s.id !== id));
+      setStudents(prev => prev.filter(s => String(s.id) !== String(id)));
     } catch (err) {
       setError(err.message);
       throw err;
@@ -735,6 +736,47 @@ export function AppProvider({ children }) {
     upcomingEvents: events.filter(e => new Date(e.date) >= new Date()).length,
   }), [staff, students, classes, teachers, feeDefaulters, events]);
 
+  // Theme Management (simplified - no color changing)
+  const initialThemeSettings = {
+    mode: "light",
+    fontFamily: "Inter",
+    fontSizeScale: 1,
+    borderRadius: 12,
+    reduceMotion: false,
+  };
+
+  const [themeSettings, setThemeSettings] = useState(() => {
+    const saved = localStorage.getItem("themeSettings");
+    return saved ? JSON.parse(saved) : initialThemeSettings;
+  });
+
+  const updateThemeSettings = (newSettings) => {
+    setThemeSettings(newSettings);
+    localStorage.setItem("themeSettings", JSON.stringify(newSettings));
+  };
+
+  const resetThemeSettings = () => {
+    setThemeSettings(initialThemeSettings);
+    localStorage.setItem("themeSettings", JSON.stringify(initialThemeSettings));
+  };
+
+  // Apply theme settings (font, border radius, etc.)
+  useEffect(() => {
+    const root = document.documentElement;
+
+    // Apply Font
+    root.style.setProperty('--font-sans', `"${themeSettings.fontFamily}", sans-serif`);
+
+    // Apply Border Radius
+    root.style.setProperty('--nextui-radius-small', `${themeSettings.borderRadius * 0.5}px`);
+    root.style.setProperty('--nextui-radius-medium', `${themeSettings.borderRadius}px`);
+    root.style.setProperty('--nextui-radius-large', `${themeSettings.borderRadius * 1.5}px`);
+
+    // Apply Font Scale
+    root.style.fontSize = `${themeSettings.fontSizeScale * 100}%`;
+
+  }, [themeSettings]);
+
   const value = {
     // Data
     staff, students, classes, events, feePayments, announcements,
@@ -769,7 +811,11 @@ export function AppProvider({ children }) {
     updateSalarySettings, updateStaffSalary, processPayroll, getPayrollForMonth,
     // Academic & other actions
     lessonPlans, documents, remarks,
-    addLessonPlan, addDocument, addRemark
+    addLessonPlan, addDocument, addRemark,
+    // Theme
+    themeSettings, updateThemeSettings, resetThemeSettings,
+    // Onboarding
+    showOnboarding, setShowOnboarding
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

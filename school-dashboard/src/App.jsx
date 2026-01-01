@@ -18,8 +18,9 @@ import StyleGuide from "./pages/StyleGuide";
 import Login from "./pages/Login";
 import { AppProvider, useApp } from "./context/AppContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import OnboardingFlow from "./components/onboarding/OnboardingFlow";
 import { AlertCircle, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function BeforeSchoolAlert() {
   const { isBeforeSchoolHours, schoolSettings } = useApp();
@@ -49,13 +50,22 @@ function BeforeSchoolAlert() {
 function AuthenticatedApp() {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { showOnboarding, setShowOnboarding } = useApp();
+
+  useEffect(() => {
+    // Check if onboarding is completed
+    const hasCompleted = localStorage.getItem("hasCompletedOnboarding");
+    if (!hasCompleted) {
+      setShowOnboarding(true);
+    }
+  }, [setShowOnboarding]);
 
   const isSettingsPage = location.pathname.startsWith("/settings");
   // Force collapsed state on settings page, otherwise use user preference
   const effectiveSidebarOpen = isSettingsPage ? false : isSidebarOpen;
 
   return (
-    <AppProvider>
+    <>
       <div className="flex min-h-screen bg-background font-sans text-foreground relative overflow-hidden">
         {/* Global Ambient Background */}
         <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0 overflow-hidden">
@@ -63,6 +73,8 @@ function AuthenticatedApp() {
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/5 rounded-full blur-[120px] animate-blob-bounce animation-delay-2000 mix-blend-multiply dark:mix-blend-normal dark:bg-secondary/10"></div>
           <div className="absolute top-[40%] left-[40%] w-[30%] h-[30%] bg-purple-500/5 rounded-full blur-[100px] animate-float mix-blend-multiply dark:mix-blend-normal dark:bg-purple-500/10"></div>
         </div>
+
+        {showOnboarding && <OnboardingFlow onComplete={() => setShowOnboarding(false)} />}
 
         <Sidebar isSidebarOpen={effectiveSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
         <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${effectiveSidebarOpen ? 'ml-56' : 'ml-16'} relative z-10 bg-default-100/80 dark:bg-default-100/20`}>
@@ -90,7 +102,7 @@ function AuthenticatedApp() {
           </main>
         </div>
       </div>
-    </AppProvider>
+    </>
   );
 }
 
@@ -125,7 +137,9 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppRoutes />
+      <AppProvider>
+        <AppRoutes />
+      </AppProvider>
     </AuthProvider>
   );
 }

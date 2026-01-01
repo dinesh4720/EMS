@@ -5,26 +5,26 @@ console.log('🌐 API URL configured:', API_URL);
 async function request(endpoint, options = {}) {
   const url = `${API_URL}${endpoint}`;
   console.log(`📡 API Request: ${options.method || 'GET'} ${url}`);
-  
+
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-    
+
     const response = await fetch(url, {
       ...options,
       headers: { 'Content-Type': 'application/json', ...options.headers },
       signal: controller.signal,
     });
-    
+
     clearTimeout(timeoutId);
-    
+
     console.log(`✅ API Response: ${response.status} ${url}`);
-    
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Request failed' }));
       throw new Error(error.error || `Request failed with status ${response.status}`);
     }
-    
+
     const data = await response.json();
     console.log(`📦 API Data received from ${endpoint}:`, Array.isArray(data) ? `${data.length} items` : 'object');
     return data;
@@ -55,6 +55,7 @@ export const studentsApi = {
   create: (data) => request('/students', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/students/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => request(`/students/${id}`, { method: 'DELETE' }),
+  getNextAdmissionId: () => request('/students/next-admission-id'),
 };
 
 // Classes API
@@ -88,30 +89,52 @@ export const settingsApi = {
   // School Settings
   getSchoolSettings: () => request('/settings/school'),
   updateSchoolSettings: (data) => request('/settings/school', { method: 'PUT', body: JSON.stringify(data) }),
-  
+
   // Holidays
   getHolidays: () => request('/settings/holidays'),
   createHoliday: (data) => request('/settings/holidays', { method: 'POST', body: JSON.stringify(data) }),
   updateHoliday: (id, data) => request(`/settings/holidays/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteHoliday: (id) => request(`/settings/holidays/${id}`, { method: 'DELETE' }),
-  
+
   // Leave Types
   getLeaveTypes: () => request('/settings/leave-types'),
   createLeaveType: (data) => request('/settings/leave-types', { method: 'POST', body: JSON.stringify(data) }),
   updateLeaveType: (id, data) => request(`/settings/leave-types/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteLeaveType: (id) => request(`/settings/leave-types/${id}`, { method: 'DELETE' }),
-  
+
   // Fee Heads
   getFeeHeads: () => request('/settings/fee-heads'),
   createFeeHead: (data) => request('/settings/fee-heads', { method: 'POST', body: JSON.stringify(data) }),
   updateFeeHead: (id, data) => request(`/settings/fee-heads/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteFeeHead: (id) => request(`/settings/fee-heads/${id}`, { method: 'DELETE' }),
-  
+
   // Subjects
   getSubjects: () => request('/settings/subjects'),
   createSubject: (data) => request('/settings/subjects', { method: 'POST', body: JSON.stringify(data) }),
   updateSubject: (id, data) => request(`/settings/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteSubject: (id) => request(`/settings/subjects/${id}`, { method: 'DELETE' }),
+
+  // Admission Form Configuration
+  getAdmissionFormConfig: (fieldType) => request(`/settings/admission-form-config${fieldType ? `?fieldType=${fieldType}` : ''}`),
+  createAdmissionFormConfig: (data) => request('/settings/admission-form-config', { method: 'POST', body: JSON.stringify(data) }),
+  bulkUpdateAdmissionFormConfig: (configs) => request('/settings/admission-form-config/bulk', { method: 'PUT', body: JSON.stringify({ configs }) }),
+  deleteAdmissionFormConfig: (id) => request(`/settings/admission-form-config/${id}`, { method: 'DELETE' }),
+
+  // Admission ID Configuration
+  getAdmissionIdConfig: () => request('/settings/admission-id-config'),
+  updateAdmissionIdConfig: (data) => request('/settings/admission-id-config', { method: 'PUT', body: JSON.stringify(data) }),
+  previewAdmissionId: (data) => request('/settings/admission-id-config/preview', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Roll Number Configuration
+  getRollNumberConfig: () => request('/settings/roll-number-config'),
+  updateRollNumberConfig: (data) => request('/settings/roll-number-config', { method: 'PUT', body: JSON.stringify(data) }),
+
+  // Document Configuration
+  getDocumentConfig: () => request('/settings/document-config'),
+  createDocumentConfig: (data) => request('/settings/document-config', { method: 'POST', body: JSON.stringify(data) }),
+  updateDocumentConfig: (id, data) => request(`/settings/document-config/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  bulkUpdateDocumentConfig: (configs) => request('/settings/document-config/bulk', { method: 'PUT', body: JSON.stringify({ configs }) }),
+  deleteDocumentConfig: (id) => request(`/settings/document-config/${id}`, { method: 'DELETE' }),
 };
 
 // Intake Forms API
@@ -123,14 +146,14 @@ export const intakeFormsApi = {
   update: (id, data) => request(`/intake-forms/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => request(`/intake-forms/${id}`, { method: 'DELETE' }),
   duplicate: (id, createdBy) => request(`/intake-forms/${id}/duplicate`, { method: 'POST', body: JSON.stringify({ createdBy }) }),
-  
+
   // Form Assignment
   assign: (id, data) => request(`/intake-forms/${id}/assign`, { method: 'POST', body: JSON.stringify(data) }),
   getAssignments: (formId, status) => request(`/form-assignments${formId || status ? `?${formId ? `formId=${formId}` : ''}${status ? `&status=${status}` : ''}` : ''}`),
   getAssignment: (id) => request(`/form-assignments/${id}`),
   resendAssignment: (id) => request(`/form-assignments/${id}/resend`, { method: 'PUT' }),
   deleteAssignment: (id) => request(`/form-assignments/${id}`, { method: 'DELETE' }),
-  
+
   // Form Submissions
   getSubmissions: (formId, reviewStatus) => request(`/form-submissions${formId || reviewStatus ? `?${formId ? `formId=${formId}` : ''}${reviewStatus ? `&reviewStatus=${reviewStatus}` : ''}` : ''}`),
   getSubmission: (id) => request(`/form-submissions/${id}`),
@@ -163,16 +186,16 @@ export const feesApi = {
   createPayment: (data) => request('/fees/payments', { method: 'POST', body: JSON.stringify(data) }),
   updatePayment: (id, data) => request(`/fees/payments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deletePayment: (id) => request(`/fees/payments/${id}`, { method: 'DELETE' }),
-  
+
   // Defaulters
   getDefaulters: (filters) => {
     const params = new URLSearchParams(filters).toString();
     return request(`/fees/defaulters${params ? `?${params}` : ''}`);
   },
-  
+
   // Student Summary
   getStudentSummary: (studentId, academicYear) => request(`/fees/students/${studentId}/summary${academicYear ? `?academicYear=${academicYear}` : ''}`),
-  
+
   // Refunds
   getRefunds: (filters) => {
     const params = new URLSearchParams(filters).toString();
@@ -185,10 +208,30 @@ export const feesApi = {
   rejectRefund: (id, data) => request(`/fees/refunds/${id}/reject`, { method: 'PUT', body: JSON.stringify(data) }),
   updateRefund: (id, data) => request(`/fees/refunds/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteRefund: (id) => request(`/fees/refunds/${id}`, { method: 'DELETE' }),
-  
+
   // Fee Structure
   getFeeStructure: (classId, academicYear) => request(`/fees/structure/${classId}${academicYear ? `?academicYear=${academicYear}` : ''}`),
   saveFeeStructure: (data) => request('/fees/structure', { method: 'POST', body: JSON.stringify(data) }),
 };
 
-export default { staffApi, studentsApi, classesApi, attendanceApi, timetableApi, settingsApi, intakeFormsApi, publicApi, notificationsApi, feesApi };
+// Upload API
+export const uploadApi = {
+  uploadFile: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_URL}/upload`, {
+      method: 'POST',
+      body: formData,
+      // Content-Type header is skipped so browser can set boundary
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+      throw new Error(errorData.error || `Upload failed with status ${response.status}`);
+    }
+    return await response.json();
+  }
+};
+
+export default { staffApi, studentsApi, classesApi, attendanceApi, timetableApi, settingsApi, intakeFormsApi, publicApi, notificationsApi, feesApi, uploadApi };
