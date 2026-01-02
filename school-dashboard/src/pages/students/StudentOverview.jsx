@@ -938,8 +938,13 @@ export default function StudentOverview() {
                                               toast.error('Failed to open document');
                                             });
                                         } else {
-                                          // For regular URLs (Cloudinary, etc.)
-                                          window.open(doc.url, '_blank', 'noopener,noreferrer');
+                                          // For Cloudinary URLs, add fl_attachment flag for PDFs to force download/view
+                                          let viewUrl = doc.url;
+                                          if (doc.url.includes('cloudinary.com') && doc.name?.toLowerCase().endsWith('.pdf')) {
+                                            // Insert fl_attachment:false to force inline viewing
+                                            viewUrl = doc.url.replace('/upload/', '/upload/fl_attachment:false/');
+                                          }
+                                          window.open(viewUrl, '_blank', 'noopener,noreferrer');
                                         }
                                       }}
                                     >
