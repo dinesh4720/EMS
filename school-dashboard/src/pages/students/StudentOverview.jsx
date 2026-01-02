@@ -922,13 +922,23 @@ export default function StudentOverview() {
                                       onPress={() => {
                                         console.log('👁️ Opening document:', doc.url);
                                         
-                                        // For PDFs, use Google Docs Viewer or direct URL
-                                        if (doc.name?.toLowerCase().endsWith('.pdf')) {
-                                          // Use Google Docs Viewer as a proxy to force inline viewing
-                                          const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(doc.url)}&embedded=true`;
-                                          window.open(viewerUrl, '_blank', 'noopener,noreferrer');
+                                        // Check if it's a data URL (base64)
+                                        if (doc.url.startsWith('data:')) {
+                                          // Convert data URL to Blob and create object URL
+                                          fetch(doc.url)
+                                            .then(res => res.blob())
+                                            .then(blob => {
+                                              const objectUrl = URL.createObjectURL(blob);
+                                              window.open(objectUrl, '_blank', 'noopener,noreferrer');
+                                              // Clean up after a delay
+                                              setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
+                                            })
+                                            .catch(err => {
+                                              console.error('Error opening document:', err);
+                                              toast.error('Failed to open document');
+                                            });
                                         } else {
-                                          // For images and other files, open directly
+                                          // For regular URLs (Cloudinary, etc.)
                                           window.open(doc.url, '_blank', 'noopener,noreferrer');
                                         }
                                       }}
