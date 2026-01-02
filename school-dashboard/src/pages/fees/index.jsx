@@ -1,9 +1,10 @@
 import { Routes, Route } from "react-router-dom";
 import { Card, Breadcrumbs, BreadcrumbItem, Tabs, Tab } from "@heroui/react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { IndianRupee, RotateCcw, Home, Download, AlertTriangle, Settings } from "lucide-react";
+import { IndianRupee, RotateCcw, Home, Download, AlertTriangle, Settings, Layers } from "lucide-react";
 import Payments from "./Payments";
 import Refunds from "./Refunds";
+import FeeTemplatesManagement from "./FeeTemplatesManagement";
 
 export default function FeesPage() {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ export default function FeesPage() {
 
   const getActiveTab = () => {
     if (location.pathname.includes("/refunds")) return "refunds";
+    if (location.pathname.includes("/templates")) return "templates";
     return "payments";
   };
 
@@ -42,6 +44,7 @@ export default function FeesPage() {
             onSelectionChange={(key) => {
               if (key === "payments") navigate("/fees");
               else if (key === "refunds") navigate("/fees/refunds");
+              else if (key === "templates") navigate("/fees/templates");
             }}
             size="md"
             color="default"
@@ -71,6 +74,15 @@ export default function FeesPage() {
                 </div>
               }
             />
+            <Tab
+              key="templates"
+              title={
+                <div className="flex items-center gap-2">
+                  <Layers size={16} />
+                  <span>Templates</span>
+                </div>
+              }
+            />
           </Tabs>
         </div>
 
@@ -78,17 +90,19 @@ export default function FeesPage() {
         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-6 border-b border-default-200 overflow-hidden">
           {/* Gradient background */}
           <div className="absolute right-0 top-0 w-1/2 h-full bg-gradient-to-l from-purple-200/80 to-transparent blur-3xl pointer-events-none" />
-
           <div className="pl-2 relative z-10">
             <h1 className="text-2xl font-medium text-default-900">
-              {activeTab === "payments" ? "Fee Payments" : "Fee Refunds"}
+              {activeTab === "payments" ? "Fee Payments" : activeTab === "templates" ? "Fee Templates" : "Fee Refunds"}
             </h1>
             <p className="text-sm text-default-500 mt-1">
               {activeTab === "payments"
                 ? "Collect fees, track payments, and manage defaulters"
+                : activeTab === "templates"
+                ? "Create and manage fee templates for different sections"
                 : "Process refunds and track refund history"}
             </p>
           </div>
+
 
           {/* Action Buttons */}
           <div className="flex gap-2 relative z-10 flex-wrap">
@@ -121,6 +135,7 @@ export default function FeesPage() {
           <Routes>
             <Route index element={<Payments />} />
             <Route path="refunds" element={<Refunds />} />
+            <Route path="templates" element={<FeeTemplatesManagement />} />
           </Routes>
         </div>
       </Card>

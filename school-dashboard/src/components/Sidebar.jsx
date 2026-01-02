@@ -1,10 +1,12 @@
-import { Avatar, Button, ScrollShadow, Chip, Tooltip } from "@heroui/react";
+import { Avatar, Button, ScrollShadow, Chip, Tooltip, Badge, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, BookOpen, MessageSquare, IndianRupee, Settings,
-  ChevronsLeft, GraduationCap, Calendar, BarChart3, FileText, Send, CheckSquare, DoorOpen, Sparkles
+  ChevronsLeft, GraduationCap, Calendar, BarChart3, FileText, Send, CheckSquare, DoorOpen,
+  Bell, Sun, Moon, LogOut
 } from "lucide-react";
-import AiAssistant from "./AiAssistant";
+import { useTheme } from "next-themes";
+import { useAuth } from "../context/AuthContext";
 import MetallicLogo from "./MetallicLogo";
 
 // Main Menu - Core Operations
@@ -95,6 +97,8 @@ function NavSection({ title, items, isSidebarOpen, location, badgeColor = "dange
 
 export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
   const location = useLocation();
+  const { theme, setTheme } = useTheme();
+  const { user, logout } = useAuth();
 
   return (
     <aside className={`fixed left-0 top-0 h-screen bg-background/60 backdrop-blur-xl border-r border-default-300 dark:border-default-200 flex flex-col z-50 transition-all duration-300 ${isSidebarOpen ? 'w-56' : 'w-16'} overflow-visible`}>
@@ -188,40 +192,108 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
         </div>
       </ScrollShadow>
 
-      {/* Pinned AI Assistant Footer */}
+      {/* Bottom Section - Profile, Notifications, Theme Toggle */}
       <div className="p-2 border-t border-default-200/50 mt-auto">
         <ul className="space-y-1">
+          {/* Notifications */}
           <li className="overflow-visible">
-            <NavLink to="/ai-assistant">
-              {({ isActive }) => (
-                <Tooltip
-                  content="AI Assistant"
-                  placement="right"
-                  isDisabled={isSidebarOpen}
-                  closeDelay={0}
-                  classNames={{
-                    content: "bg-black text-white rounded-lg",
-                  }}
-                >
-                  <div className={`
-                      flex items-center ${isSidebarOpen ? 'justify-between px-3' : 'justify-center px-2'} py-2 rounded transition-all duration-200 group relative overflow-visible
-                      ${isActive
-                      ? "bg-primary/10 text-primary font-medium shadow-sm"
-                      : "text-default-500 hover:bg-default-100/50 hover:text-default-900"}
-                    `}>
-                    <div className={`flex items-center ${isSidebarOpen ? 'gap-3' : 'justify-center w-full'}`}>
-                      <span className={`${isActive ? "text-primary" : "text-default-400 group-hover:text-default-600"} transition-all group-hover:scale-110`}>
-                        <Sparkles size={18} />
-                      </span>
-                      {isSidebarOpen && <span className="text-sm whitespace-nowrap">AI Assistant</span>}
-                    </div>
+            <Tooltip
+              content="Notifications"
+              placement="right"
+              isDisabled={isSidebarOpen}
+              closeDelay={0}
+              classNames={{ content: "bg-black text-white rounded-lg" }}
+            >
+              <div className={`
+                flex items-center ${isSidebarOpen ? 'justify-between px-3' : 'justify-center px-2'} py-2 rounded transition-all duration-200 group
+                text-default-500 hover:bg-default-100/50 hover:text-default-900
+              `}>
+                <div className={`flex items-center ${isSidebarOpen ? 'gap-3' : 'justify-center w-full'}`}>
+                  <Badge content="4" color="danger" shape="circle" size="sm">
+                    <span className="text-default-400 group-hover:text-default-600 transition-all group-hover:scale-110">
+                      <Bell size={18} />
+                    </span>
+                  </Badge>
+                  {isSidebarOpen && <span className="text-sm whitespace-nowrap">Notifications</span>}
+                </div>
+              </div>
+            </Tooltip>
+          </li>
+
+          {/* Dark Mode Toggle */}
+          <li className="overflow-visible">
+            <Tooltip
+              content="Toggle Theme"
+              placement="right"
+              isDisabled={isSidebarOpen}
+              closeDelay={0}
+              classNames={{ content: "bg-black text-white rounded-lg" }}
+            >
+              <div
+                className={`
+                  flex items-center ${isSidebarOpen ? 'justify-between px-3' : 'justify-center px-2'} py-2 rounded transition-all duration-200 group cursor-pointer
+                  text-default-500 hover:bg-default-100/50 hover:text-default-900
+                `}
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              >
+                <div className={`flex items-center ${isSidebarOpen ? 'gap-3' : 'justify-center w-full'}`}>
+                  <span className="text-default-400 group-hover:text-default-600 transition-all group-hover:scale-110">
+                    {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+                  </span>
+                  {isSidebarOpen && <span className="text-sm whitespace-nowrap">{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>}
+                </div>
+              </div>
+            </Tooltip>
+          </li>
+
+          {/* Profile Dropdown */}
+          <li className="overflow-visible">
+            <Dropdown placement="top-start">
+              <DropdownTrigger>
+                <div className={`
+                  flex items-center ${isSidebarOpen ? 'justify-between px-3' : 'justify-center px-2'} py-2 rounded transition-all duration-200 group cursor-pointer
+                  hover:bg-default-100/50 hover:text-default-900 text-default-500
+                `}>
+                  <div className={`flex items-center ${isSidebarOpen ? 'gap-3' : 'justify-center w-full'}`}>
+                    <Avatar
+                      isBordered
+                      className="transition-transform ring-2 ring-transparent hover:ring-primary/20"
+                      color="primary"
+                      name={user?.name || "User"}
+                      size="sm"
+                      src={`https://i.pravatar.cc/150?u=${user?.id || 'default'}`}
+                    />
+                    {isSidebarOpen && (
+                      <div className="flex flex-col items-start">
+                        <span className="text-sm font-medium whitespace-nowrap">{user?.name || "User"}</span>
+                        <span className="text-[10px] text-default-400 whitespace-nowrap">{user?.email || "user@example.com"}</span>
+                      </div>
+                    )}
                   </div>
-                </Tooltip>
-              )}
-            </NavLink>
+                </div>
+              </DropdownTrigger>
+              <DropdownMenu aria-label="Profile Actions" variant="flat">
+                <DropdownItem key="profile" className="h-14 gap-2">
+                  <p className="font-medium">Signed in as</p>
+                  <p className="font-medium">{user?.email || "user@example.com"}</p>
+                </DropdownItem>
+                <DropdownItem key="settings">My Settings</DropdownItem>
+                <DropdownItem key="team_settings">Team Settings</DropdownItem>
+                <DropdownItem key="analytics">Analytics</DropdownItem>
+                <DropdownItem key="system">System</DropdownItem>
+                <DropdownItem key="configurations">Configurations</DropdownItem>
+                <DropdownItem key="help_and_feedback">Help & Feedback</DropdownItem>
+                <DropdownItem key="logout" color="danger" onPress={logout}>
+                  <div className="flex items-center gap-2">
+                    <LogOut size={16} />
+                    <span>Log Out</span>
+                  </div>
+                </DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
           </li>
         </ul>
       </div>
-    </aside >
+    </aside>
   );
 }

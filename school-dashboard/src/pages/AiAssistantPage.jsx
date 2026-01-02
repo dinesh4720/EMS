@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-    Send, Sparkles, AlertCircle, Loader2, Copy,
+    Send, Sparkles, AlertCircle, Loader2, Copy, X,
     Paperclip, ChevronDown, MoveUp, Search, UserPlus, FileText,
     MessageSquare, Code, Settings, User, History, ArrowLeft, Mic, MicOff
 } from 'lucide-react';
@@ -9,8 +9,19 @@ import AiOrb from '../components/AiOrb';
 import Antigravity from '../components/Antigravity';
 import { Avatar } from '@heroui/react';
 import toast from 'react-hot-toast';
+import { useAiAssistant } from '../components/AiAssistant/AiAssistantPanel';
 
 export default function AiAssistantPage() {
+    // Get closePanel from context if available (when used in panel), otherwise undefined (when used as page)
+    const aiContext = useAiAssistant ? (() => {
+        try {
+            return useAiAssistant();
+        } catch {
+            return null;
+        }
+    })() : null;
+    
+    const closePanel = aiContext?.closePanel;
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -147,7 +158,7 @@ export default function AiAssistantPage() {
     };
 
     return (
-        <div className="flex h-[calc(100vh-6rem)] bg-white dark:bg-zinc-950 text-gray-800 dark:text-gray-100 font-sans transition-colors duration-300 rounded-3xl overflow-hidden border border-gray-200 dark:border-zinc-800 shadow-xl">
+        <div className="flex h-full bg-white dark:bg-zinc-950 text-gray-800 dark:text-gray-100 font-sans transition-colors duration-300 overflow-hidden">
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col items-center relative overflow-hidden">
@@ -174,8 +185,8 @@ export default function AiAssistantPage() {
                     {!hasInteracted ? (
                         /* Initial State (Centered Greeting) */
                         <div className="flex flex-col items-center justify-center h-full w-full max-w-4xl px-4 animate-fade-in py-2 relative">
-                            {/* Model Selector (Initial) */}
-                            <div className="absolute top-4 right-4 z-30">
+                            {/* Model Selector and Close Button (Initial) */}
+                            <div className="absolute top-4 right-4 z-30 flex items-center gap-2">
                                 <div className="relative">
                                     <button
                                         onClick={() => setShowModelSelector(!showModelSelector)}
@@ -211,6 +222,17 @@ export default function AiAssistantPage() {
                                         </div>
                                     )}
                                 </div>
+                                
+                                {/* Close button (only show in panel context) */}
+                                {closePanel && (
+                                    <button
+                                        onClick={closePanel}
+                                        className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
+                                        aria-label="Close AI Assistant"
+                                    >
+                                        <X size={18} />
+                                    </button>
+                                )}
                             </div>
 
                             {/* Purple Orb */}
@@ -307,8 +329,9 @@ export default function AiAssistantPage() {
                                     <ArrowLeft size={16} /> Back
                                 </button>
 
-                                {/* Model Selector */}
-                                <div className="relative pointer-events-auto">
+                                <div className="flex items-center gap-2">
+                                    {/* Model Selector */}
+                                    <div className="relative pointer-events-auto">
                                     <button
                                         onClick={() => setShowModelSelector(!showModelSelector)}
                                         className="flex items-center gap-2 text-xs font-medium bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 shadow-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
@@ -342,6 +365,18 @@ export default function AiAssistantPage() {
                                             ))}
                                         </div>
                                     )}
+                                </div>
+                                
+                                {/* Close button (only show in panel context) */}
+                                {closePanel && (
+                                    <button
+                                        onClick={closePanel}
+                                        className="pointer-events-auto p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
+                                        aria-label="Close AI Assistant"
+                                    >
+                                        <X size={18} />
+                                    </button>
+                                )}
                                 </div>
                             </div>
 

@@ -19,6 +19,7 @@ import Login from "./pages/Login";
 import { AppProvider, useApp } from "./context/AppContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import OnboardingFlow from "./components/onboarding/OnboardingFlow";
+import { AiAssistantProvider, AiAssistantLayout, AiAssistantPanel } from "./components/AiAssistant/AiAssistantPanel";
 import { AlertCircle, X } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -77,31 +78,38 @@ function AuthenticatedApp() {
         {showOnboarding && <OnboardingFlow onComplete={() => setShowOnboarding(false)} />}
 
         <Sidebar isSidebarOpen={effectiveSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
-        <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${effectiveSidebarOpen ? 'ml-56' : 'ml-16'} relative z-10 bg-default-100/80 dark:bg-default-100/20`}>
-          <Topbar />
-          <BeforeSchoolAlert />
-          <main className={`flex-1 ${isSettingsPage ? 'p-0' : 'p-2 md:p-3'}`}>
-            <div className={`${isSettingsPage ? 'w-full' : 'max-w-[1600px] mx-auto space-y-6'}`}>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/front-desk/*" element={<FrontDeskPage />} />
-                <Route path="/staffs/*" element={<StaffsPage />} />
-                <Route path="/students/*" element={<StudentsPage />} />
-                <Route path="/classes/*" element={<ClassesPage />} />
-                <Route path="/calendar" element={<CalendarPage />} />
-                <Route path="/messaging/*" element={<MessagingPage />} />
-                <Route path="/fees/*" element={<FeesPage />} />
-                <Route path="/settings/*" element={<SettingsPage />} />
-                <Route path="/intake-forms/assignments" element={<FormAssignments />} />
-                <Route path="/intake-forms/submissions" element={<FormSubmissions />} />
-                <Route path="/ai-assistant" element={<AiAssistantPage />} />
-                <Route path="/style-guide" element={<StyleGuide />} />
-              </Routes>
-            </div>
-          </main>
-        </div>
+        <AiAssistantLayout>
+          <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${effectiveSidebarOpen ? 'ml-56' : 'ml-16'} relative z-10 bg-default-100/80 dark:bg-default-100/20`}>
+            <Topbar />
+            <BeforeSchoolAlert />
+            <main className={`flex-1 ${isSettingsPage ? 'p-0' : 'p-2 md:p-3'}`}>
+              <div className={`${isSettingsPage ? 'w-full' : 'max-w-[1600px] mx-auto space-y-6'}`}>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/front-desk/*" element={<FrontDeskPage />} />
+                  <Route path="/staffs/*" element={<StaffsPage />} />
+                  <Route path="/students/*" element={<StudentsPage />} />
+                  <Route path="/classes/*" element={<ClassesPage />} />
+                  <Route path="/calendar" element={<CalendarPage />} />
+                  <Route path="/messaging/*" element={<MessagingPage />} />
+                  <Route path="/fees/*" element={<FeesPage />} />
+                  <Route path="/settings/*" element={<SettingsPage />} />
+                  <Route path="/intake-forms/assignments" element={<FormAssignments />} />
+                  <Route path="/intake-forms/submissions" element={<FormSubmissions />} />
+                  <Route path="/ai-assistant" element={<AiAssistantPage />} />
+                  <Route path="/style-guide" element={<StyleGuide />} />
+                </Routes>
+              </div>
+            </main>
+          </div>
+        </AiAssistantLayout>
       </div>
+
+      {/* AI Assistant Panel rendered outside main layout */}
+      <AiAssistantPanel>
+        <AiAssistantPage />
+      </AiAssistantPanel>
     </>
   );
 }
@@ -138,7 +146,9 @@ export default function App() {
   return (
     <AuthProvider>
       <AppProvider>
-        <AppRoutes />
+        <AiAssistantProvider>
+          <AppRoutes />
+        </AiAssistantProvider>
       </AppProvider>
     </AuthProvider>
   );

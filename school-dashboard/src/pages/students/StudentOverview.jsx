@@ -745,7 +745,12 @@ export default function StudentOverview() {
               {/* Personal Information */}
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-default-900">Personal Information</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                      <User size={20} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-default-900">Personal Information</h3>
+                  </div>
                   <Button isIconOnly size="sm" variant="light" onPress={() => openEditDrawer("personal")}><Edit size={16} className="text-default-500" /></Button>
                 </CardHeader>
                 <CardBody className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-6">
@@ -764,7 +769,12 @@ export default function StudentOverview() {
 
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-default-900">Contact Details</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-green-50 text-green-600 rounded-xl">
+                      <Phone size={20} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-default-900">Contact Details</h3>
+                  </div>
                   <Button isIconOnly size="sm" variant="light" onPress={() => openEditDrawer("contact")}><Edit size={16} className="text-default-500" /></Button>
                 </CardHeader>
                 <CardBody className="p-8 grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-6">
@@ -779,7 +789,12 @@ export default function StudentOverview() {
 
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-default-900">Parent / Guardian</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
+                      <Users size={20} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-default-900">Parent / Guardian</h3>
+                  </div>
                   <Button isIconOnly size="sm" variant="light" onPress={() => openEditDrawer("parents")}><Edit size={16} className="text-default-500" /></Button>
                 </CardHeader>
                 <CardBody className="p-8 grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-6">
@@ -794,7 +809,12 @@ export default function StudentOverview() {
 
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-default-900">Previous Education</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-orange-50 text-orange-600 rounded-xl">
+                      <GraduationCap size={20} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-default-900">Previous Education</h3>
+                  </div>
                   <Button isIconOnly size="sm" variant="light" onPress={() => openEditDrawer("education")}><Edit size={16} className="text-default-500" /></Button>
                 </CardHeader>
                 <CardBody className="p-8 grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-6">
@@ -805,7 +825,12 @@ export default function StudentOverview() {
 
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-default-900">Additional Information</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-cyan-50 text-cyan-600 rounded-xl">
+                      <FileCheck size={20} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-default-900">Additional Information</h3>
+                  </div>
                   <Button isIconOnly size="sm" variant="light" onPress={() => openEditDrawer("additional")}><Edit size={16} className="text-default-500" /></Button>
                 </CardHeader>
                 <CardBody className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-6">
@@ -832,7 +857,12 @@ export default function StudentOverview() {
               />
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-default-900">Documents</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
+                      <FileText size={20} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-default-900">Documents</h3>
+                  </div>
                   <div className="flex gap-2">
                     <span className="text-sm text-default-500 self-center">{documents.length} documents</span>
                     {documents.some(doc => !doc.url || !doc.name || !doc.id) && (
@@ -946,67 +976,297 @@ export default function StudentOverview() {
 
           {activeTab === "fees" && (
             <div className="space-y-6 animate-fade-in">
-              {/* Fee Hero Section */}
-              <div className="p-6 rounded-2xl border border-default-200 bg-default-50/50 relative overflow-hidden">
+              {/* Fee Hero Section - Enhanced with Real Data */}
+              <div className={`p-6 rounded-2xl border relative overflow-hidden ${
+                studentFeeSummary?.totalPending <= 0 
+                  ? "bg-success-50 border-success-200" 
+                  : "bg-gradient-to-br from-danger-50 to-orange-50 border-danger-200"
+              }`}>
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
                   <div className="space-y-2 text-center md:text-left">
-                    <p className="text-default-500 font-medium">Total Outstanding</p>
-                    <h2 className="text-4xl font-bold text-default-900">₹19,666</h2>
-                    <p className="text-xs text-danger-600 bg-danger-50 px-3 py-1 rounded-full inline-block font-medium">Next Due: 5th Oct 2024</p>
+                    <p className="text-default-600 font-medium">Total Outstanding</p>
+                    <h2 className="text-4xl font-bold text-default-900">
+                      ₹{studentFeeSummary?.totalPending?.toLocaleString() || 0}
+                    </h2>
+                    <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                      {studentFeeSummary?.nextDueDate && new Date(studentFeeSummary.nextDueDate) < new Date() ? (
+                        <p className="text-xs text-danger-600 bg-danger-100 px-3 py-1 rounded-full inline-block font-medium">
+                          Overdue: {new Date(studentFeeSummary.nextDueDate).toLocaleDateString()}
+                        </p>
+                      ) : studentFeeSummary?.nextDueDate ? (
+                        <p className="text-xs text-warning-600 bg-warning-100 px-3 py-1 rounded-full inline-block font-medium">
+                          Next Due: {new Date(studentFeeSummary.nextDueDate).toLocaleDateString()}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-success-600 bg-success-100 px-3 py-1 rounded-full inline-block font-medium">
+                          All fees paid
+                        </p>
+                      )}
+                      {studentFeeSummary?.collectionMode && (
+                        <p className="text-xs text-default-600 bg-white px-3 py-1 rounded-full inline-block font-medium capitalize">
+                          {studentFeeSummary.collectionMode}-wise collection
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <div className="flex flex-wrap justify-center gap-3">
-                    <Button color="primary" className="font-semibold shadow-sm" onPress={() => setIsPaymentOpen(true)} startContent={<CreditCard size={18} />}>Collect Payment</Button>
-                    <Button variant="flat" color="warning" className="font-medium" startContent={<Mail size={18} />}>Send Reminder</Button>
-                    <Button variant="bordered" className="border-default-200 text-default-700 bg-white" startContent={<Download size={18} />}>Invoice</Button>
+                    {studentFeeSummary?.totalPending > 0 && (
+                      <>
+                        <Button 
+                          color="primary" 
+                          className="font-semibold shadow-sm" 
+                          onPress={() => setIsPaymentOpen(true)} 
+                          startContent={<CreditCard size={18} />}
+                        >
+                          Collect Payment
+                        </Button>
+                        <Button 
+                          variant="flat" 
+                          color="warning" 
+                          className="font-medium" 
+                          startContent={<Mail size={18} />}
+                          onPress={() => handleSendReminder()}
+                        >
+                          Send Reminder
+                        </Button>
+                      </>
+                    )}
+                    <Button 
+                      variant="bordered" 
+                      className="border-default-200 text-default-700 bg-white" 
+                      startContent={<Download size={18} />}
+                      onPress={() => handleDownloadInvoice()}
+                    >
+                      Invoice
+                    </Button>
                   </div>
                 </div>
+              </div>
+
+              {/* Fee Summary Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="border border-default-200">
+                  <CardBody className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                        <IndianRupee size={20} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-default-500">Total Fee</p>
+                        <p className="text-lg font-bold text-default-900">
+                          ₹{studentFeeSummary?.totalFee?.toLocaleString() || 0}
+                        </p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+
+                <Card className="border border-default-200">
+                  <CardBody className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-success-50 text-success-600 rounded-xl">
+                        <CheckCircle size={20} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-default-500">Paid</p>
+                        <p className="text-lg font-bold text-success-600">
+                          ₹{studentFeeSummary?.totalPaid?.toLocaleString() || 0}
+                        </p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+
+                <Card className="border border-default-200">
+                  <CardBody className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-warning-50 text-warning-600 rounded-xl">
+                        <AlertTriangle size={20} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-default-500">Pending</p>
+                        <p className="text-lg font-bold text-warning-600">
+                          ₹{studentFeeSummary?.totalPending?.toLocaleString() || 0}
+                        </p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+
+                <Card className="border border-default-200">
+                  <CardBody className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
+                        <TrendingUp size={20} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-default-500">Discount</p>
+                        <p className="text-lg font-bold text-purple-600">
+                          ₹{studentFeeSummary?.totalDiscount?.toLocaleString() || 0}
+                        </p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Fee Heads Status */}
+                {/* Fee Breakdown by Period */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-default-900">Fee Breakdown</h3>
-                  <div className="space-y-4">
-                    {[{ head: "Tuition Fee", total: 45000, paid: 25000, color: "primary" }, { head: "Transport Fee", total: 12000, paid: 4000, color: "warning" }, { head: "Library Fee", total: 2000, paid: 2000, color: "success" }].map((fee, idx) => (
-                      <div key={idx} className="p-4 rounded-xl border border-default-200 bg-white shadow-none">
-                        <div className="flex justify-between mb-2">
-                          <span className="font-semibold text-default-700">{fee.head}</span>
-                          <span className="text-sm font-medium text-default-500">₹{fee.paid} / ₹{fee.total}</span>
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-default-900">Fee Breakdown by Period</h3>
+                    <Chip size="sm" variant="flat" className="capitalize">
+                      {studentFeeSummary?.collectionMode || 'Term'}-wise
+                    </Chip>
+                  </div>
+                  <div className="space-y-3">
+                    {studentFeeSummary?.pendingDuesByPeriod && Object.keys(studentFeeSummary.pendingDuesByPeriod).length > 0 ? (
+                      Object.entries(studentFeeSummary.pendingDuesByPeriod).map(([period, data]) => (
+                        <div key={period} className={`p-4 rounded-xl border bg-white shadow-none ${
+                          data.status === 'paid' ? 'border-success-200 bg-success-50/30' :
+                          data.status === 'overdue' ? 'border-danger-200 bg-danger-50/30' :
+                          'border-default-200'
+                        }`}>
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-default-700 capitalize">{period}</span>
+                                <Chip 
+                                  size="sm" 
+                                  color={data.status === 'paid' ? 'success' : data.status === 'overdue' ? 'danger' : 'warning'}
+                                  variant="flat"
+                                  className="text-xs capitalize"
+                                >
+                                  {data.status}
+                                </Chip>
+                              </div>
+                              <p className="text-xs text-default-500 mt-1">
+                                Due: {data.dueDate ? new Date(data.dueDate).toLocaleDateString() : 'N/A'}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-medium text-default-500">
+                                ₹{data.paid?.toLocaleString() || 0} / ₹{data.total?.toLocaleString() || 0}
+                              </p>
+                              <p className="text-lg font-bold text-default-900">
+                                {data.status === 'paid' ? 'Paid' : `₹${data.pending?.toLocaleString() || 0} pending`}
+                              </p>
+                            </div>
+                          </div>
+                          <Progress 
+                            value={data.total ? ((data.paid || 0) / data.total) * 100 : 0} 
+                            color={data.status === 'paid' ? 'success' : data.status === 'overdue' ? 'danger' : 'warning'} 
+                            size="sm" 
+                            radius="full" 
+                            className="mt-2"
+                          />
                         </div>
-                        <Progress value={(fee.paid / fee.total) * 100} color={fee.color} size="sm" radius="full" />
-                        <div className="mt-2 text-xs text-default-400 text-right">
-                          {((fee.paid / fee.total) * 100).toFixed(1)}% Paid
-                        </div>
+                      ))
+                    ) : (
+                      <div className="p-8 text-center border border-default-200 rounded-xl bg-default-50">
+                        <CheckCircle size={32} className="mx-auto text-success-500 mb-2" />
+                        <p className="text-sm text-default-600">No pending dues</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
 
-                {/* Recent Activity */}
+                {/* Payment History Timeline */}
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-default-900">Recent Transactions</h3>
-                    <Button size="sm" variant="light" color="primary">View All</Button>
+                    <h3 className="text-lg font-semibold text-default-900">Payment History</h3>
+                    <Button size="sm" variant="light" color="primary" onPress={() => navigate('/fees')}>View All</Button>
                   </div>
-                  <div className="space-y-0 border border-default-200 rounded-xl divide-y divide-default-100 bg-white shadow-none h-fit">
-                    {feeHistory.slice(0, 4).map((fee) => (
-                      <div key={fee.id} className="flex justify-between items-center p-4 hover:bg-default-50 transition-colors">
+                  <div className="space-y-0 border border-default-200 rounded-xl divide-y divide-default-100 bg-white shadow-none max-h-[400px] overflow-y-auto">
+                    {feeHistory.length > 0 ? feeHistory.map((payment, idx) => (
+                      <div key={payment.id || idx} className="flex justify-between items-center p-4 hover:bg-default-50 transition-colors">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-success-50 text-success rounded-lg"><CheckCircle size={16} /></div>
+                          <div className={`p-2 rounded-lg ${
+                            payment.status === 'completed' || payment.status === 'success'
+                              ? 'bg-success-50 text-success' 
+                              : 'bg-warning-50 text-warning'
+                          }`}>
+                            <CheckCircle size={16} />
+                          </div>
                           <div>
-                            <p className="font-semibold text-sm text-default-900">Payment for {fee.month}</p>
-                            <p className="text-xs text-default-500">{fee.date}</p>
+                            <p className="font-semibold text-sm text-default-900">
+                              {payment.paymentPeriod || payment.feeHeads?.[0]?.period || 'Fee Payment'}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs text-default-500">
+                                {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : payment.date}
+                              </p>
+                              {payment.receiptNumber && (
+                                <span className="text-xs text-default-400">• {payment.receiptNumber}</span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                        <span className="font-semibold text-default-900">₹{fee.amount}</span>
+                        <div className="text-right">
+                          <p className="font-semibold text-default-900">₹{payment.amount?.toLocaleString() || 0}</p>
+                          <p className="text-xs text-default-500 capitalize">{payment.paymentMode || payment.mode}</p>
+                        </div>
                       </div>
-                    ))}
-                    <div className="p-2 text-center">
-                      <Button size="sm" variant="light" className="text-default-400">No more recent history</Button>
-                    </div>
+                    )) : (
+                      <div className="p-8 text-center">
+                        <CreditCard size={32} className="mx-auto text-default-300 mb-2" />
+                        <p className="text-sm text-default-500">No payment history yet</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
+
+              {/* Fee Heads Detailed Breakdown */}
+              {studentFeeSummary?.feeHeads && studentFeeSummary.feeHeads.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-default-900">Fee Heads Breakdown</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {studentFeeSummary.feeHeads.map((head, idx) => (
+                      <Card key={idx} className="border border-default-200">
+                        <CardBody className="p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <p className="font-semibold text-default-900">{head.name}</p>
+                              <p className="text-xs text-default-500 capitalize">{head.category}</p>
+                            </div>
+                            <Chip 
+                              size="sm" 
+                              color={head.paid >= head.amount ? 'success' : 'warning'}
+                              variant="flat"
+                            >
+                              {head.paid >= head.amount ? 'Paid' : 'Partial'}
+                            </Chip>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-default-500">Total:</span>
+                              <span className="font-medium">₹{head.amount?.toLocaleString() || 0}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-default-500">Paid:</span>
+                              <span className="font-medium text-success-600">₹{head.paid?.toLocaleString() || 0}</span>
+                            </div>
+                            {head.pending > 0 && (
+                              <div className="flex justify-between text-xs">
+                                <span className="text-default-500">Pending:</span>
+                                <span className="font-medium text-warning-600">₹{head.pending?.toLocaleString() || 0}</span>
+                              </div>
+                            )}
+                          </div>
+                          <Progress 
+                            value={head.amount ? (head.paid / head.amount) * 100 : 0} 
+                            color={head.paid >= head.amount ? 'success' : 'warning'}
+                            size="sm" 
+                            radius="full"
+                            className="mt-3"
+                          />
+                        </CardBody>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
