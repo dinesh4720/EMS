@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card, CardBody, CardHeader, Chip, Progress, Button, Divider,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
@@ -9,10 +9,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Calendar, CheckSquare, MessageSquare, Clock, Mail, Phone, MapPin, Briefcase,
   Edit, User, FileText, Download, Upload, Plus, AlertCircle, BookOpen, GraduationCap,
-  DollarSign, FileCheck, Layers, Settings, ChevronRight, Globe, TrendingUp, IndianRupee
+  DollarSign, FileCheck, Layers, Settings, ChevronRight, Globe, TrendingUp, IndianRupee, AlertTriangle, Bell, Info
 } from "lucide-react";
 import PageHeader from "../../components/PageHeader";
 import { useApp } from "../../context/AppContext";
+import toast from "react-hot-toast";
 
 export default function StaffDashboard() {
   const { id } = useParams();
@@ -28,6 +29,7 @@ export default function StaffDashboard() {
   const { isOpen, onOpen, onClose } = useDisclosure(); // Message Modal
   const { isOpen: isRemarkOpen, onOpen: onRemarkOpen, onClose: onRemarkClose } = useDisclosure(); // Remark Modal
   const { isOpen: isTestModalOpen, onOpen: onTestOpen, onClose: onTestClose } = useDisclosure(); // Test Modal
+  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure(); // Edit Modal
 
   const [message, setMessage] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
@@ -36,6 +38,17 @@ export default function StaffDashboard() {
 
   const [selectedClassId, setSelectedClassId] = useState("");
   const [newTest, setNewTest] = useState({ title: "", classId: "", subject: "", date: "", time: "09:00" });
+
+  // Edit form state
+  const [editForm, setEditForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    role: "",
+    department: "",
+    status: "",
+    address: ""
+  });
 
 
   const staff = getStaffById(id);
@@ -59,7 +72,81 @@ export default function StaffDashboard() {
 
   const { totalEarnings, totalDeductions, netSalary } = calculateTotals(staffSalary);
 
+  const mockAlerts = [
+    {
+      id: 1,
+      type: "critical",
+      title: "Urgent: Leave Applied",
+      desc: "Medical Leave (2 Days) awaits approval.",
+      time: "2h ago",
+      icon: AlertCircle
+    },
+    {
+      id: 2,
+      type: "warning",
+      title: "Low Attendance Warning",
+      desc: "Attendance dropped below 85%.",
+      time: "1d ago",
+      icon: AlertTriangle
+    },
+    {
+      id: 3,
+      type: "info",
+      title: "Document Pending",
+      desc: "Updated ID Proof is required.",
+      time: "3d ago",
+      icon: FileText
+    },
+    {
+      id: 4,
+      type: "success",
+      title: "Salary Processed",
+      desc: "October salary has been credited.",
+      time: "5d ago",
+      icon: IndianRupee
+    }
+  ];
+
   if (!staff) return <div className="p-8 text-center text-default-500">Staff member not found</div>;
+
+  // Initialize edit form when staff data loads
+  useEffect(() => {
+    if (staff) {
+      setEditForm({
+        name: staff.name || "",
+        email: staff.email || "",
+        phone: staff.phone || "",
+        role: staff.role || "",
+        department: staff.department || "",
+        status: staff.status || "active",
+        address: staff.address || ""
+      });
+    }
+  }, [staff]);
+
+  const handleEditOpen = () => {
+    setEditForm({
+      name: staff.name || "",
+      email: staff.email || "",
+      phone: staff.phone || "",
+      role: staff.role || "",
+      department: staff.department || "",
+      status: staff.status || "active",
+      address: staff.address || ""
+    });
+    onEditOpen();
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      await updateStaff(id, editForm);
+      toast.success("Staff details updated successfully");
+      onEditClose();
+    } catch (error) {
+      console.error("Error updating staff:", error);
+      toast.error("Failed to update staff details");
+    }
+  };
 
   const handleSendMessage = () => {
     console.log("Sending message to", staff.name, ":", message);
@@ -271,7 +358,10 @@ export default function StaffDashboard() {
                 isBordered
                 color="primary"
               />
-              <div className="absolute bottom-0 right-0 bg-background rounded-full p-1 border border-default-200 shadow-sm cursor-pointer hover:bg-default-100">
+              <div 
+                className="absolute bottom-0 right-0 bg-background rounded-full p-1 border border-default-200 shadow-sm cursor-pointer hover:bg-default-100"
+                onClick={handleEditOpen}
+              >
                 <Edit size={14} className="text-default-600" />
               </div>
             </div>
@@ -328,6 +418,48 @@ export default function StaffDashboard() {
               <Button fullWidth color="primary" variant="flat" startContent={<MessageSquare size={16} />} onPress={onOpen}>Send Message</Button>
             </div>
 
+            <Divider className="my-2" />
+
+            {/* Critical Alerts Section */}
+            <div className="w-full space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-danger-100 rounded-lg text-danger-600">
+                    <AlertTriangle size={16} />
+                  </div>
+                  <h3 className="font-bold text-default-900 text-medium">Critical Alerts</h3>
+                </div>
+                <Chip size="sm" color="danger" variant="flat" className="h-6">4 New</Chip>
+              </div>
+
+              <div className="space-y-3 mt-4">
+                {mockAlerts.map((alert) => (
+                  <div key={alert.id} className="group flex gap-3 p-3 rounded-xl border border-default-200 bg-content1 hover:border-danger-200 hover:shadow-sm transition-all cursor-pointer">
+                    <div className={`mt-1 min-w-[8px] max-w-[8px] h-8 rounded-full ${alert.type === 'critical' ? 'bg-danger-500' :
+                      alert.type === 'warning' ? 'bg-warning-500' :
+                        alert.type === 'success' ? 'bg-success-500' : 'bg-primary-500'
+                      }`} />
+                    <div className="flex-1 space-y-1">
+                      <div className="flex justify-between items-start">
+                        <h4 className={`text-sm font-semibold ${alert.type === 'critical' ? 'text-danger-600' : 'text-default-900'
+                          }`}>
+                          {alert.title}
+                        </h4>
+                        <span className="text-[10px] text-default-400 whitespace-nowrap">{alert.time}</span>
+                      </div>
+                      <p className="text-xs text-default-500 leading-relaxed">
+                        {alert.desc}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Button fullWidth variant="light" className="text-default-400 hover:text-default-600" size="sm">
+                View All Alerts
+              </Button>
+            </div>
+
           </div>
         </div>
       </div>
@@ -349,6 +481,89 @@ export default function StaffDashboard() {
           <ModalFooter>
             <Button variant="light" onPress={onClose}>Cancel</Button>
             <Button color="primary" onPress={handleSendMessage} isDisabled={!message.trim()}>Send</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Edit Staff Modal */}
+      <Modal isOpen={isEditOpen} onClose={onEditClose} backdrop="blur" size="2xl">
+        <ModalContent>
+          <ModalHeader>Edit Staff Details</ModalHeader>
+          <ModalBody>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Full Name"
+                placeholder="Enter full name"
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                variant="bordered"
+                isRequired
+              />
+              <Input
+                label="Email"
+                type="email"
+                placeholder="Enter email"
+                value={editForm.email}
+                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                variant="bordered"
+                isRequired
+              />
+              <Input
+                label="Phone"
+                placeholder="Enter phone number"
+                value={editForm.phone}
+                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                variant="bordered"
+                isRequired
+              />
+              <Select
+                label="Role"
+                placeholder="Select role"
+                selectedKeys={editForm.role ? [editForm.role] : []}
+                onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                variant="bordered"
+                isRequired
+              >
+                <SelectItem key="Teacher" value="Teacher">Teacher</SelectItem>
+                <SelectItem key="Admin" value="Admin">Admin</SelectItem>
+                <SelectItem key="Principal" value="Principal">Principal</SelectItem>
+                <SelectItem key="Vice Principal" value="Vice Principal">Vice Principal</SelectItem>
+                <SelectItem key="Accountant" value="Accountant">Accountant</SelectItem>
+                <SelectItem key="Librarian" value="Librarian">Librarian</SelectItem>
+                <SelectItem key="Lab Assistant" value="Lab Assistant">Lab Assistant</SelectItem>
+              </Select>
+              <Input
+                label="Department"
+                placeholder="Enter department"
+                value={editForm.department}
+                onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
+                variant="bordered"
+              />
+              <Select
+                label="Status"
+                placeholder="Select status"
+                selectedKeys={editForm.status ? [editForm.status] : []}
+                onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                variant="bordered"
+                isRequired
+              >
+                <SelectItem key="active" value="active">Active</SelectItem>
+                <SelectItem key="inactive" value="inactive">Inactive</SelectItem>
+                <SelectItem key="transferred" value="transferred">Transferred</SelectItem>
+              </Select>
+              <Input
+                label="Address"
+                placeholder="Enter address"
+                value={editForm.address}
+                onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                variant="bordered"
+                className="md:col-span-2"
+              />
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onEditClose}>Cancel</Button>
+            <Button color="primary" onPress={handleSaveEdit}>Save Changes</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

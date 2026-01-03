@@ -6,7 +6,10 @@ import { Megaphone, Bell, FileText, Plus, MessageCircle, Home } from "lucide-rea
 import Announcements from "./Announcements";
 import Reminders from "./Reminders";
 import CommunicationLogs from "./CommunicationLogs";
-import Chat from "./Chat";
+import ChatFull from "./ChatFull";
+// import ChatSimple from "./ChatSimple";
+// import Chat from "./Chat";
+// import ChatWithPermissions from "./ChatWithPermissions";
 
 export default function MessagingPage() {
   const navigate = useNavigate();
@@ -137,7 +140,7 @@ export default function MessagingPage() {
         {/* Content Area - Full screen for Chat */}
         <div className={isChat ? "h-[calc(100vh-16rem)]" : "min-h-[500px] px-6 py-6"}>
           <Routes>
-            <Route index element={<Chat />} />
+            <Route index element={<ChatFull />} />
             <Route
               path="announcements"
               element={<Announcements isDrawerOpen={openDrawer} setIsDrawerOpen={setOpenDrawer} />}

@@ -336,6 +336,13 @@ export default function StudentOverview() {
   const [editForm, setEditForm] = useState({});
   const [paymentForm, setPaymentForm] = useState({ amount: "7000", month: "", date: new Date().toISOString().split('T')[0] });
   const [complaintForm, setComplaintForm] = useState({ subject: "", description: "" });
+  const [remarkForm, setRemarkForm] = useState({ 
+    type: "", 
+    customType: "", 
+    title: "", 
+    description: "", 
+    sendToParent: false 
+  });
 
   // New States
   const [isRemarkOpen, setIsRemarkOpen] = useState(false);
@@ -500,6 +507,53 @@ export default function StudentOverview() {
     setPaymentForm({ amount: "7000", month: "", date: new Date().toISOString().split('T')[0] });
   };
 
+  const handleSaveRemark = () => {
+    // Validate form
+    if (!remarkForm.title.trim()) {
+      toast.error("Please enter a title");
+      return;
+    }
+    if (!remarkForm.type && !remarkForm.customType.trim()) {
+      toast.error("Please select or enter a remark type");
+      return;
+    }
+    if (!remarkForm.description.trim()) {
+      toast.error("Please enter a description");
+      return;
+    }
+
+    // Create remark object
+    const newRemark = {
+      id: Date.now(),
+      type: remarkForm.customType.trim() || remarkForm.type,
+      title: remarkForm.title.trim(),
+      description: remarkForm.description.trim(),
+      sendToParent: remarkForm.sendToParent,
+      date: new Date().toISOString(),
+      addedBy: "Current User" // Replace with actual user from context
+    };
+
+    // Here you would typically save to backend
+    console.log("Saving remark:", newRemark);
+    
+    // Show success message
+    if (remarkForm.sendToParent) {
+      toast.success(`Remark added and sent to ${student.parentName || 'parent'}`);
+    } else {
+      toast.success("Remark added successfully");
+    }
+
+    // Reset form and close drawer
+    setRemarkForm({ 
+      type: "", 
+      customType: "", 
+      title: "", 
+      description: "", 
+      sendToParent: false 
+    });
+    setIsRemarkOpen(false);
+  };
+
   const classOptions = (classesWithTeachers || []).map(c => `${c.name}-${c.section}`);
 
   const classInfo = useMemo(() => {
@@ -520,6 +574,47 @@ export default function StudentOverview() {
     const present = Math.floor(workingDays * 0.9);
     return { present, absent: workingDays - present, total: workingDays, percentage: Math.round((present / workingDays) * 100) };
   }, []);
+
+  // Compute student fee summary
+  const studentFeeSummary = useMemo(() => {
+    if (!feeHistory || feeHistory.length === 0) {
+      return {
+        totalFee: 0,
+        totalPaid: 0,
+        totalPending: 0,
+        totalDiscount: 0,
+        nextDueDate: null,
+        collectionMode: 'term',
+        pendingDuesByPeriod: {},
+        feeHeads: []
+      };
+    }
+
+    const totalPaid = feeHistory.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    const totalFee = 50000; // Mock total annual fee
+    const totalPending = totalFee - totalPaid;
+    const totalDiscount = 0;
+
+    return {
+      totalFee,
+      totalPaid,
+      totalPending,
+      totalDiscount,
+      nextDueDate: totalPending > 0 ? new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString() : null,
+      collectionMode: 'term',
+      pendingDuesByPeriod: {},
+      feeHeads: []
+    };
+  }, [feeHistory]);
+
+  // Helper functions for fee actions
+  const handleSendReminder = () => {
+    toast.success(`Fee reminder sent to ${student.parentName || 'parent'}`);
+  };
+
+  const handleDownloadInvoice = () => {
+    toast.success('Downloading invoice...');
+  };
 
   if (loading) return <div className="p-8 text-center text-default-500">Loading profile...</div>;
   if (!student) return <div className="p-8 text-center text-default-500">Student not found</div>;
@@ -637,8 +732,15 @@ export default function StudentOverview() {
           >
             <Tab key="overview" title="Overview" />
             <Tab key="student_info" title="Basic Details" />
+            <Tab key="attendance" title="Attendance" />
             <Tab key="academics" title="Academics" />
             <Tab key="fees" title="Fees" />
+            <Tab key="documents" title={
+              <div className="flex items-center gap-2">
+                <span>Documents</span>
+                <Chip size="sm" variant="flat" color="primary">{documents.length}</Chip>
+              </div>
+            } />
             <Tab key="remarks" title="Remarks" />
           </Tabs>
 
@@ -742,6 +844,27 @@ export default function StudentOverview() {
 
           {activeTab === "student_info" && (
             <div className="space-y-6 animate-fade-in">
+              {/* Academic Information - Moved from Academics Tab */}
+              <Card shadow="none" className="border border-default-200">
+                <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                      <GraduationCap size={20} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-default-900">Academic Information</h3>
+                  </div>
+                  <Button isIconOnly size="sm" variant="light" onPress={() => openEditDrawer("academic")}><Edit size={16} className="text-default-500" /></Button>
+                </CardHeader>
+                <CardBody className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-6">
+                  <InfoItem label="Class" value={student.class || "N/A"} />
+                  <InfoItem label="Roll Number" value={student.rollNo || "N/A"} />
+                  <InfoItem label="Academic Year" value={student.academicYear || "2024-25"} />
+                  <InfoItem label="Class Teacher" value={classTeacher?.name || "Not Assigned"} />
+                  <InfoItem label="Medium of Instruction" value={student.mediumOfInstruction || "English"} />
+                  <InfoItem label="House" value={student.house || "Not Assigned"} />
+                </CardBody>
+              </Card>
+
               {/* Personal Information */}
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
@@ -844,8 +967,11 @@ export default function StudentOverview() {
                   <InfoItem label="Emergency Contact Phone" value={student.emergencyContactPhone || "-"} />
                 </CardBody>
               </Card>
+            </div>
+          )}
 
-              {/* Documents Section */}
+          {activeTab === "documents" && (
+            <div className="space-y-6 animate-fade-in">
               {/* Documents Section */}
               <input
                 type="file"
@@ -855,42 +981,38 @@ export default function StudentOverview() {
                 accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                 onChange={handleDocumentUpload}
               />
-              <Card shadow="none" className="border border-default-200">
-                <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
-                      <FileText size={20} />
-                    </div>
-                    <h3 className="text-lg font-semibold text-default-900">Documents</h3>
+              
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-default-500">{documents.length} documents</span>
+                </div>
+                <div className="flex gap-2">
+                  {documents.some(doc => !doc.url || !doc.name || !doc.id) && (
+                    <Button 
+                      size="sm" 
+                      color="warning" 
+                      variant="flat" 
+                      startContent={<AlertTriangle size={16} />} 
+                      onPress={handleCleanupCorruptedDocuments}
+                    >
+                      Fix Documents
+                    </Button>
+                  )}
+                  <Button size="sm" color="primary" startContent={<Upload size={16} />} onPress={() => documentInputRef.current?.click()}>Upload Document</Button>
+                </div>
+              </div>
+
+              {documents.length === 0 ? (
+                <div className="text-center py-16 border-2 border-dashed border-default-200 rounded-xl bg-default-50/50 hover:bg-default-100/50 transition-colors cursor-pointer group" onClick={() => documentInputRef.current?.click()}>
+                  <div className="inline-flex p-4 bg-white rounded-full mb-4 ring-1 ring-default-200 shadow-sm group-hover:scale-110 transition-transform">
+                    <FolderPlus size={32} className="text-primary" />
                   </div>
-                  <div className="flex gap-2">
-                    <span className="text-sm text-default-500 self-center">{documents.length} documents</span>
-                    {documents.some(doc => !doc.url || !doc.name || !doc.id) && (
-                      <Button 
-                        size="sm" 
-                        color="warning" 
-                        variant="flat" 
-                        startContent={<AlertTriangle size={16} />} 
-                        onPress={handleCleanupCorruptedDocuments}
-                      >
-                        Fix Documents
-                      </Button>
-                    )}
-                    <Button size="sm" color="primary" variant="flat" startContent={<Upload size={16} />} onPress={() => documentInputRef.current?.click()}>Upload New</Button>
-                  </div>
-                </CardHeader>
-                <CardBody className="p-6">
-                  {documents.length === 0 ? (
-                    <div className="text-center py-12 border-2 border-dashed border-default-200 rounded-xl bg-default-50/50 hover:bg-default-100/50 transition-colors cursor-pointer group" onClick={() => documentInputRef.current?.click()}>
-                      <div className="inline-flex p-4 bg-white rounded-full mb-4 ring-1 ring-default-200 shadow-sm group-hover:scale-110 transition-transform">
-                        <FolderPlus size={32} className="text-primary" />
-                      </div>
-                      <h4 className="font-semibold text-default-900 mb-1">No documents uploaded yet</h4>
-                      <p className="text-sm text-default-500 max-w-xs mx-auto">Upload birth certificate, transfer certificate, or other essential documents.</p>
-                      <Button className="mt-4" size="sm" color="primary" variant="ghost" onPress={() => documentInputRef.current?.click()}>Browse Files</Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
+                  <h4 className="font-semibold text-default-900 mb-1">No documents uploaded yet</h4>
+                  <p className="text-sm text-default-500 max-w-xs mx-auto">Upload birth certificate, transfer certificate, or other essential documents.</p>
+                  <Button className="mt-4" size="sm" color="primary" variant="ghost" onPress={() => documentInputRef.current?.click()}>Browse Files</Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
                       {documents.map((doc, index) => {
                         // Check if document has valid data
                         const isCorrupted = !doc.url || !doc.name;
@@ -983,9 +1105,6 @@ export default function StudentOverview() {
                       })}
                     </div>
                   )}
-                </CardBody>
-              </Card>
-
             </div>
           )}
 
@@ -1285,54 +1404,534 @@ export default function StudentOverview() {
             </div>
           )}
 
+          {activeTab === "attendance" && (
+            <div className="space-y-6 animate-fade-in">
+              {/* Attendance Overview Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="border border-default-200">
+                  <CardBody className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-primary-50 text-primary-600 rounded-xl">
+                        <Activity size={20} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-default-500">Average Attendance</p>
+                        <p className="text-lg font-bold text-default-900">{attendanceStats.percentage}%</p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+
+                <Card className="border border-default-200">
+                  <CardBody className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-success-50 text-success-600 rounded-xl">
+                        <CheckCircle size={20} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-default-500">Present Days</p>
+                        <p className="text-lg font-bold text-success-600">{attendanceStats.present}</p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+
+                <Card className="border border-default-200">
+                  <CardBody className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-danger-50 text-danger-600 rounded-xl">
+                        <XCircle size={20} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-default-500">Absent Days</p>
+                        <p className="text-lg font-bold text-danger-600">{attendanceStats.absent}</p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+
+                <Card className="border border-default-200">
+                  <CardBody className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-default-100 text-default-600 rounded-xl">
+                        <Calendar size={20} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-default-500">Total Days</p>
+                        <p className="text-lg font-bold text-default-900">{attendanceStats.total}</p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+              </div>
+
+              {/* Mark Attendance Section */}
+              <Card shadow="none" className="border border-default-200">
+                <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                        <CheckCircle size={20} />
+                      </div>
+                      <h3 className="text-lg font-semibold text-default-900">Mark Today's Attendance</h3>
+                    </div>
+                    <Input
+                      type="date"
+                      size="sm"
+                      variant="bordered"
+                      defaultValue={new Date().toISOString().split('T')[0]}
+                      className="w-48"
+                    />
+                  </div>
+                </CardHeader>
+                <CardBody className="p-6">
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      color="success"
+                      variant="flat"
+                      startContent={<CheckCircle size={18} />}
+                      onPress={() => toast.success("Marked as Present")}
+                    >
+                      Mark Present
+                    </Button>
+                    <Button
+                      color="danger"
+                      variant="flat"
+                      startContent={<XCircle size={18} />}
+                      onPress={() => toast.error("Marked as Absent")}
+                    >
+                      Mark Absent
+                    </Button>
+                    <Button
+                      color="warning"
+                      variant="flat"
+                      startContent={<Clock size={18} />}
+                      onPress={() => toast("Marked as Half Day", { icon: "⏰" })}
+                    >
+                      Mark Half Day
+                    </Button>
+                    <Button
+                      color="primary"
+                      variant="flat"
+                      startContent={<Calendar size={18} />}
+                      onPress={() => toast("Marked as Leave", { icon: "📅" })}
+                    >
+                      Mark Leave
+                    </Button>
+                  </div>
+                </CardBody>
+              </Card>
+
+              {/* Subject-wise Attendance */}
+              <Card shadow="none" className="border border-default-200">
+                <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
+                      <BookOpen size={20} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-default-900">Subject-wise Attendance</h3>
+                  </div>
+                </CardHeader>
+                <CardBody className="p-6">
+                  <div className="space-y-4">
+                    {[
+                      { subject: "Mathematics", present: 18, total: 20, percentage: 90 },
+                      { subject: "Science", present: 19, total: 20, percentage: 95 },
+                      { subject: "English", present: 17, total: 20, percentage: 85 },
+                      { subject: "Social Studies", present: 18, total: 20, percentage: 90 },
+                      { subject: "Computer Science", present: 20, total: 20, percentage: 100 },
+                      { subject: "Physical Education", present: 16, total: 20, percentage: 80 }
+                    ].map((subject, idx) => (
+                      <div key={idx} className="flex items-center gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium text-default-900">{subject.subject}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm text-default-500">
+                                {subject.present}/{subject.total} classes
+                              </span>
+                              <span className={`text-sm font-semibold ${
+                                subject.percentage >= 90 ? 'text-success' : 
+                                subject.percentage >= 75 ? 'text-warning' : 'text-danger'
+                              }`}>
+                                {subject.percentage}%
+                              </span>
+                            </div>
+                          </div>
+                          <Progress
+                            value={subject.percentage}
+                            color={subject.percentage >= 90 ? "success" : subject.percentage >= 75 ? "warning" : "danger"}
+                            size="sm"
+                            radius="full"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardBody>
+              </Card>
+
+              {/* Attendance Calendar & History */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Monthly Calendar View */}
+                <Card shadow="none" className="border border-default-200">
+                  <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-cyan-50 text-cyan-600 rounded-xl">
+                          <Calendar size={20} />
+                        </div>
+                        <h3 className="text-lg font-semibold text-default-900">Monthly Overview</h3>
+                      </div>
+                      <Select size="sm" variant="bordered" defaultSelectedKeys={["december"]} className="w-32">
+                        <SelectItem key="december">December</SelectItem>
+                        <SelectItem key="november">November</SelectItem>
+                        <SelectItem key="october">October</SelectItem>
+                      </Select>
+                    </div>
+                  </CardHeader>
+                  <CardBody className="p-6">
+                    <div className="grid grid-cols-7 gap-2 mb-4">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                        <div key={day} className="text-center text-xs font-semibold text-default-500 py-2">
+                          {day}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-7 gap-2">
+                      {Array.from({ length: 31 }, (_, i) => {
+                        const status = i % 5 === 0 ? 'absent' : i % 7 === 0 ? 'leave' : 'present';
+                        return (
+                          <Tooltip
+                            key={i}
+                            content={`${i + 1} Dec - ${status === 'present' ? 'Present' : status === 'absent' ? 'Absent' : 'Leave'}`}
+                          >
+                            <div
+                              className={`aspect-square flex items-center justify-center text-xs font-medium rounded-lg cursor-pointer transition-all hover:scale-110 ${
+                                status === 'present' ? 'bg-success-100 text-success-700 hover:bg-success-200' :
+                                status === 'absent' ? 'bg-danger-100 text-danger-700 hover:bg-danger-200' :
+                                'bg-warning-100 text-warning-700 hover:bg-warning-200'
+                              }`}
+                            >
+                              {i + 1}
+                            </div>
+                          </Tooltip>
+                        );
+                      })}
+                    </div>
+                    <div className="flex items-center justify-center gap-4 mt-6 pt-4 border-t border-default-100">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded bg-success-500"></div>
+                        <span className="text-xs text-default-600">Present</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded bg-danger-500"></div>
+                        <span className="text-xs text-default-600">Absent</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded bg-warning-500"></div>
+                        <span className="text-xs text-default-600">Leave</span>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+
+                {/* Regularize Attendance */}
+                <Card shadow="none" className="border border-default-200">
+                  <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-orange-50 text-orange-600 rounded-xl">
+                        <AlertTriangle size={20} />
+                      </div>
+                      <h3 className="text-lg font-semibold text-default-900">Regularize Attendance</h3>
+                    </div>
+                  </CardHeader>
+                  <CardBody className="p-6">
+                    <div className="space-y-4">
+                      <p className="text-sm text-default-600">
+                        Request to regularize attendance for days marked as absent or missing.
+                      </p>
+                      
+                      {/* Pending Regularization Requests */}
+                      <div className="space-y-3">
+                        {[
+                          { date: "Dec 15, 2024", status: "Pending", reason: "Medical Leave" },
+                          { date: "Dec 10, 2024", status: "Approved", reason: "Family Emergency" },
+                          { date: "Dec 5, 2024", status: "Rejected", reason: "No valid reason" }
+                        ].map((request, idx) => (
+                          <div key={idx} className={`p-4 rounded-lg border ${
+                            request.status === 'Pending' ? 'border-warning-200 bg-warning-50/30' :
+                            request.status === 'Approved' ? 'border-success-200 bg-success-50/30' :
+                            'border-danger-200 bg-danger-50/30'
+                          }`}>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium text-default-900">{request.date}</span>
+                              <Chip
+                                size="sm"
+                                color={request.status === 'Pending' ? 'warning' : request.status === 'Approved' ? 'success' : 'danger'}
+                                variant="flat"
+                              >
+                                {request.status}
+                              </Chip>
+                            </div>
+                            <p className="text-xs text-default-600">{request.reason}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <Button
+                        color="primary"
+                        variant="flat"
+                        fullWidth
+                        startContent={<Plus size={18} />}
+                        onPress={() => setIsRegularizeOpen(true)}
+                      >
+                        New Regularization Request
+                      </Button>
+                    </div>
+                  </CardBody>
+                </Card>
+              </div>
+
+              {/* Send Report to Parent */}
+              <Card shadow="none" className="border border-default-200">
+                <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-green-50 text-green-600 rounded-xl">
+                      <Mail size={20} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-default-900">Send Attendance Report</h3>
+                  </div>
+                </CardHeader>
+                <CardBody className="p-6">
+                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm text-default-600 mb-2">
+                        Send a detailed attendance report to the parent via email or SMS.
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-default-500">
+                        <Mail size={14} />
+                        <span>{student.parentEmail || "No email on file"}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-default-500 mt-1">
+                        <Phone size={14} />
+                        <span>{student.parentPhone || "No phone on file"}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        color="primary"
+                        variant="flat"
+                        startContent={<Mail size={18} />}
+                        onPress={() => toast.success("Attendance report sent via email")}
+                      >
+                        Send via Email
+                      </Button>
+                      <Button
+                        color="primary"
+                        variant="bordered"
+                        startContent={<Phone size={18} />}
+                        onPress={() => toast.success("Attendance report sent via SMS")}
+                      >
+                        Send via SMS
+                      </Button>
+                      <Button
+                        color="default"
+                        variant="bordered"
+                        isIconOnly
+                        onPress={() => toast.success("Downloading attendance report...")}
+                      >
+                        <Download size={18} />
+                      </Button>
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
+
+              {/* Attendance Trends */}
+              <Card shadow="none" className="border border-default-200">
+                <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                      <TrendingUp size={20} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-default-900">Attendance Trends</h3>
+                  </div>
+                </CardHeader>
+                <CardBody className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-100">
+                      <p className="text-xs text-default-600 mb-1">This Month</p>
+                      <p className="text-2xl font-bold text-blue-600">92%</p>
+                      <p className="text-xs text-success-600 mt-1">↑ 3% from last month</p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-100">
+                      <p className="text-xs text-default-600 mb-1">This Quarter</p>
+                      <p className="text-2xl font-bold text-purple-600">89%</p>
+                      <p className="text-xs text-warning-600 mt-1">↓ 1% from last quarter</p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100">
+                      <p className="text-xs text-default-600 mb-1">This Year</p>
+                      <p className="text-2xl font-bold text-green-600">90%</p>
+                      <p className="text-xs text-success-600 mt-1">↑ 2% from last year</p>
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
+            </div>
+          )}
+
           {activeTab === "remarks" && (
             <div className="space-y-6 animate-fade-in">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-default-900">Recent Remarks & Notes</h3>
-                <Button size="sm" color="primary" variant="flat" startContent={<Plus size={16} />} onPress={() => setIsRemarkOpen(true)}>Add Note</Button>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
+                    <MessageSquare size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-default-900">Student Remarks</h3>
+                    <p className="text-xs text-default-500">Notes and observations about the student</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Select 
+                    size="sm" 
+                    placeholder="Filter by category" 
+                    className="w-full sm:w-48" 
+                    variant="bordered"
+                    defaultSelectedKeys={["all"]}
+                  >
+                    <SelectItem key="all">All Categories</SelectItem>
+                    <SelectItem key="academic">Academic</SelectItem>
+                    <SelectItem key="behavioral">Behavioral</SelectItem>
+                    <SelectItem key="achievement">Achievement</SelectItem>
+                    <SelectItem key="attendance">Attendance</SelectItem>
+                    <SelectItem key="health">Health</SelectItem>
+                    <SelectItem key="general">General</SelectItem>
+                  </Select>
+                  <Button size="sm" color="primary" variant="flat" startContent={<Plus size={16} />} onPress={() => setIsRemarkOpen(true)}>Add Remark</Button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-4">
-                <div className="group flex flex-col sm:flex-row gap-4 p-5 rounded-2xl border border-default-200 bg-white hover:border-primary/30 hover:shadow-sm transition-all hover:bg-default-50/50">
+                {/* Sample Remark 1 - Sent to Parent */}
+                <div className="group flex flex-col sm:flex-row gap-4 p-5 rounded-2xl border border-default-200 bg-white hover:border-primary/30 hover:shadow-md transition-all">
                   <div className="flex-shrink-0 mt-1">
                     <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
                       <MessageSquare size={20} />
                     </div>
                   </div>
-                  <div className="flex-1 space-y-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-semibold text-default-900">Excellent participation in class</h4>
-                        <p className="text-sm text-default-500 mt-0.5">Academic • Teacher A</p>
+                  <div className="flex-1 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-default-900 mb-1">Excellent participation in class</h4>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Chip size="sm" variant="flat" color="primary" className="capitalize">Academic</Chip>
+                          <Chip size="sm" variant="flat" color="success" startContent={<Mail size={12} />}>Sent to Parent</Chip>
+                          <span className="text-xs text-default-400">• Teacher A • Dec 20, 2024</span>
+                        </div>
                       </div>
-                      <Chip size="sm" variant="flat" className="bg-default-100 text-default-600">Dec 20</Chip>
+                      <Dropdown>
+                        <DropdownTrigger>
+                          <Button isIconOnly size="sm" variant="light">
+                            <MoreVertical size={16} />
+                          </Button>
+                        </DropdownTrigger>
+                        <DropdownMenu aria-label="Remark actions">
+                          <DropdownItem key="edit" startContent={<Edit size={14} />}>Edit</DropdownItem>
+                          <DropdownItem key="resend" startContent={<Mail size={14} />}>Resend to Parent</DropdownItem>
+                          <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 size={14} />}>Delete</DropdownItem>
+                        </DropdownMenu>
+                      </Dropdown>
                     </div>
                     <p className="text-sm text-default-600 leading-relaxed">
-                      Student shows great enthusiasm and actively participates in discussions. Consistently asks insightful questions.
+                      Student shows great enthusiasm and actively participates in discussions. Consistently asks insightful questions and helps other students understand concepts.
                     </p>
                   </div>
                 </div>
 
-                <div className="group flex flex-col sm:flex-row gap-4 p-5 rounded-2xl border border-default-200 bg-white hover:border-warning/30 hover:shadow-sm transition-all hover:bg-default-50/50">
+                {/* Sample Remark 2 - Not Sent */}
+                <div className="group flex flex-col sm:flex-row gap-4 p-5 rounded-2xl border border-default-200 bg-white hover:border-warning/30 hover:shadow-md transition-all">
                   <div className="flex-shrink-0 mt-1">
                     <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-600">
                       <AlertCircle size={20} />
                     </div>
                   </div>
-                  <div className="flex-1 space-y-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-semibold text-default-900">Needs improvement in homework</h4>
-                        <p className="text-sm text-default-500 mt-0.5">Behavioral • Teacher B</p>
+                  <div className="flex-1 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-default-900 mb-1">Needs improvement in homework</h4>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Chip size="sm" variant="flat" color="warning" className="capitalize">Behavioral</Chip>
+                          <Chip size="sm" variant="flat" color="default">Staff Only</Chip>
+                          <span className="text-xs text-default-400">• Teacher B • Dec 18, 2024</span>
+                        </div>
                       </div>
-                      <Chip size="sm" variant="flat" className="bg-default-100 text-default-600">Dec 18</Chip>
+                      <Dropdown>
+                        <DropdownTrigger>
+                          <Button isIconOnly size="sm" variant="light">
+                            <MoreVertical size={16} />
+                          </Button>
+                        </DropdownTrigger>
+                        <DropdownMenu aria-label="Remark actions">
+                          <DropdownItem key="edit" startContent={<Edit size={14} />}>Edit</DropdownItem>
+                          <DropdownItem key="send" startContent={<Mail size={14} />}>Send to Parent</DropdownItem>
+                          <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 size={14} />}>Delete</DropdownItem>
+                        </DropdownMenu>
+                      </Dropdown>
                     </div>
                     <p className="text-sm text-default-600 leading-relaxed">
-                      Homework submission has been irregular this week. Please ensure daily monitoring.
+                      Homework submission has been irregular this week. Please ensure daily monitoring and provide additional support if needed.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Sample Remark 3 - Achievement */}
+                <div className="group flex flex-col sm:flex-row gap-4 p-5 rounded-2xl border border-default-200 bg-white hover:border-success/30 hover:shadow-md transition-all">
+                  <div className="flex-shrink-0 mt-1">
+                    <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600">
+                      <Award size={20} />
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-default-900 mb-1">Won Science Fair Competition</h4>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Chip size="sm" variant="flat" color="success" className="capitalize">Achievement</Chip>
+                          <Chip size="sm" variant="flat" color="success" startContent={<Mail size={12} />}>Sent to Parent</Chip>
+                          <span className="text-xs text-default-400">• Principal • Dec 15, 2024</span>
+                        </div>
+                      </div>
+                      <Dropdown>
+                        <DropdownTrigger>
+                          <Button isIconOnly size="sm" variant="light">
+                            <MoreVertical size={16} />
+                          </Button>
+                        </DropdownTrigger>
+                        <DropdownMenu aria-label="Remark actions">
+                          <DropdownItem key="edit" startContent={<Edit size={14} />}>Edit</DropdownItem>
+                          <DropdownItem key="resend" startContent={<Mail size={14} />}>Resend to Parent</DropdownItem>
+                          <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 size={14} />}>Delete</DropdownItem>
+                        </DropdownMenu>
+                      </Dropdown>
+                    </div>
+                    <p className="text-sm text-default-600 leading-relaxed">
+                      Congratulations! Student won first place in the inter-school science fair with an innovative project on renewable energy. Excellent research and presentation skills demonstrated.
                     </p>
                   </div>
                 </div>
               </div>
+
+              {/* Empty State (hidden when remarks exist) */}
+              {/* <div className="text-center py-12 border-2 border-dashed border-default-200 rounded-xl">
+                <MessageSquare size={48} className="mx-auto text-default-300 mb-3" />
+                <h4 className="font-semibold text-default-700 mb-1">No remarks yet</h4>
+                <p className="text-sm text-default-500 mb-4">Add your first remark or observation about this student</p>
+                <Button color="primary" variant="flat" startContent={<Plus size={16} />} onPress={() => setIsRemarkOpen(true)}>
+                  Add First Remark
+                </Button>
+              </div> */}
             </div>
           )}
 
@@ -1340,44 +1939,177 @@ export default function StudentOverview() {
 
           {activeTab === "academics" && (
             <div className="space-y-6 animate-fade-in">
+              {/* Academic Overview Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="border border-default-200 bg-gradient-to-br from-blue-50 to-cyan-50">
+                  <CardBody className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-blue-100 text-blue-600 rounded-xl">
+                        <Award size={20} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-default-600">Overall Grade</p>
+                        <p className="text-lg font-bold text-blue-700">A+</p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+
+                <Card className="border border-default-200 bg-gradient-to-br from-purple-50 to-pink-50">
+                  <CardBody className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-purple-100 text-purple-600 rounded-xl">
+                        <TrendingUp size={20} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-default-600">Average Score</p>
+                        <p className="text-lg font-bold text-purple-700">88.5%</p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+
+                <Card className="border border-default-200 bg-gradient-to-br from-green-50 to-emerald-50">
+                  <CardBody className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-green-100 text-green-600 rounded-xl">
+                        <Users size={20} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-default-600">Class Rank</p>
+                        <p className="text-lg font-bold text-green-700">#5</p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+
+                <Card className="border border-default-200 bg-gradient-to-br from-orange-50 to-amber-50">
+                  <CardBody className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-orange-100 text-orange-600 rounded-xl">
+                        <User size={20} />
+                      </div>
+                      <div>
+                        <p className="text-xs text-default-600">Class Teacher</p>
+                        <p className="text-sm font-bold text-orange-700 truncate">{classTeacher?.name || "Not Assigned"}</p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+              </div>
+
+              {/* Subject-wise Performance */}
               <Card shadow="none" className="border border-default-200">
-                <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100"><h3 className="text-lg font-semibold text-default-900">Current Academic Status</h3></CardHeader>
-                <CardBody className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-6">
-                  <InfoItem label="Class" value={student.class || "N/A"} />
-                  <InfoItem label="Roll Number" value={student.rollNo || "N/A"} />
-                  <InfoItem label="Academic Year" value={student.academicYear || "2024-25"} />
-                  <InfoItem label="Class Teacher" value={classTeacher?.name || "Not Assigned"} />
-                  <InfoItem label="Medium" value={student.mediumOfInstruction || "English"} />
-                  <InfoItem label="House" value={student.house || "Not Assigned"} />
+                <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                      <BookOpen size={20} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-default-900">Subject-wise Performance</h3>
+                  </div>
+                </CardHeader>
+                <CardBody className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {[
+                      { subject: "Mathematics", score: 88, grade: "A", color: "blue", icon: "📐" },
+                      { subject: "Science", score: 92, grade: "A+", color: "green", icon: "🔬" },
+                      { subject: "English", score: 85, grade: "A", color: "purple", icon: "📚" },
+                      { subject: "Social Studies", score: 90, grade: "A+", color: "orange", icon: "🌍" },
+                      { subject: "Computer Science", score: 95, grade: "A+", color: "cyan", icon: "💻" },
+                      { subject: "Physical Education", score: 87, grade: "A", color: "red", icon: "⚽" }
+                    ].map((subject, idx) => (
+                      <div key={idx} className="p-4 rounded-xl border border-default-200 bg-white hover:shadow-md transition-all">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">{subject.icon}</span>
+                            <div>
+                              <h4 className="font-semibold text-default-900">{subject.subject}</h4>
+                              <p className="text-xs text-default-500">Current Term</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className={`text-2xl font-bold text-${subject.color}-600`}>{subject.score}%</div>
+                            <Chip size="sm" variant="flat" color={subject.score >= 90 ? "success" : "primary"} className="mt-1">
+                              Grade {subject.grade}
+                            </Chip>
+                          </div>
+                        </div>
+                        <Progress
+                          value={subject.score}
+                          color={subject.score >= 90 ? "success" : subject.score >= 75 ? "primary" : "warning"}
+                          size="sm"
+                          radius="full"
+                          className="mt-2"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </CardBody>
               </Card>
 
-              {/* Exam Performance - Cards Grid */}
+              {/* Exam Performance - Cards Grid with Responsive Layout */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-default-900">Exam Overview</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
+                      <FileText size={20} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-default-900">Exam Overview</h3>
+                  </div>
                   <Select size="sm" placeholder="Select Term" className="w-32" variant="bordered" defaultSelectedKeys={["term1"]}>
                     <SelectItem key="term1">Term 1</SelectItem>
                     <SelectItem key="term2">Term 2</SelectItem>
                   </Select>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Exam Cards */}
-                  {[{ name: "Unit Test 1", date: "Aug 2024", status: "Published", score: "88%" }, { name: "Half Yearly", date: "Sept 2024", status: "Pending", score: "-" }, { name: "Unit Test 2", date: "Nov 2024", status: "Scheduled", score: "-" }].map((exam, i) => (
-                    <Card key={i} isPressable onPress={() => { setSelectedExam(exam); setIsExamConfigOpen(true); }} shadow="none" className="border border-default-200 hover:border-primary hover:bg-primary-50/10 transition-colors">
-                      <CardBody className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {/* Exam Cards - Now responsive for more than 3 cards */}
+                  {[
+                    { name: "Unit Test 1", date: "Aug 2024", status: "Published", score: "88%", percentage: 88 },
+                    { name: "Half Yearly", date: "Sept 2024", status: "Published", score: "92%", percentage: 92 },
+                    { name: "Unit Test 2", date: "Nov 2024", status: "Published", score: "85%", percentage: 85 },
+                    { name: "Annual Exam", date: "Dec 2024", status: "Scheduled", score: "-", percentage: 0 }
+                  ].map((exam, i) => (
+                    <Card 
+                      key={i} 
+                      isPressable 
+                      onPress={() => { setSelectedExam(exam); setIsExamConfigOpen(true); }} 
+                      shadow="none" 
+                      className="border border-default-200 hover:border-primary hover:shadow-lg transition-all hover:scale-105"
+                    >
+                      <CardBody className="p-5">
                         <div className="flex justify-between items-start mb-4">
-                          <div className="p-2.5 bg-default-100 rounded-lg text-default-600">
-                            <FileText size={20} />
+                          <div className={`p-2.5 rounded-lg ${
+                            exam.status === "Published" ? "bg-success-50 text-success-600" :
+                            exam.status === "Pending" ? "bg-warning-50 text-warning-600" :
+                            "bg-default-100 text-default-600"
+                          }`}>
+                            <FileText size={18} />
                           </div>
-                          <Chip size="sm" color={exam.status === "Published" ? "success" : exam.status === "Pending" ? "warning" : "default"} variant="flat">{exam.status}</Chip>
+                          <Chip 
+                            size="sm" 
+                            color={exam.status === "Published" ? "success" : exam.status === "Pending" ? "warning" : "default"} 
+                            variant="flat"
+                          >
+                            {exam.status}
+                          </Chip>
                         </div>
-                        <h4 className="text-lg font-semibold text-default-900 mb-1">{exam.name}</h4>
+                        <h4 className="text-base font-semibold text-default-900 mb-1">{exam.name}</h4>
                         <p className="text-xs text-default-500 mb-4">{exam.date}</p>
-                        <div className="flex items-center justify-between text-sm pt-4 border-t border-default-100">
+                        {exam.percentage > 0 && (
+                          <Progress 
+                            value={exam.percentage} 
+                            color={exam.percentage >= 90 ? "success" : exam.percentage >= 75 ? "primary" : "warning"}
+                            size="sm" 
+                            radius="full"
+                            className="mb-3"
+                          />
+                        )}
+                        <div className="flex items-center justify-between text-sm pt-3 border-t border-default-100">
                           <span className="text-default-500">Score</span>
-                          <span className="font-bold text-default-900">{exam.score}</span>
+                          <span className={`font-bold ${exam.percentage >= 90 ? "text-success" : exam.percentage >= 75 ? "text-primary" : "text-default-900"}`}>
+                            {exam.score}
+                          </span>
                         </div>
                       </CardBody>
                     </Card>
@@ -1385,88 +2117,56 @@ export default function StudentOverview() {
                 </div>
               </div>
 
-              {/* Attendance Summary */}
+              {/* Academic Achievements */}
               <Card shadow="none" className="border border-default-200">
-                <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-default-900">Attendance Summary</h3>
-                  <Button size="sm" variant="flat" color="warning" startContent={<Clock size={16} />} onPress={() => setIsRegularizeOpen(true)}>Regularize Attendance</Button>
+                <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-yellow-50 text-yellow-600 rounded-xl">
+                      <Award size={20} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-default-900">Achievements & Awards</h3>
+                  </div>
                 </CardHeader>
-                <CardBody className="p-8">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div className="text-center p-6 bg-primary-50/50 rounded-2xl border border-primary-100">
-                      <div className="text-4xl font-semibold text-primary mb-2">{attendanceStats.percentage}%</div>
-                      <div className="text-sm font-medium text-default-600 uppercase tracking-wider">Overall</div>
-                    </div>
-                    {/* ... other stats same styling ... */}
-                    <div className="text-center p-6 bg-success-50/50 rounded-2xl border border-success-100">
-                      <div className="text-4xl font-semibold text-success-600 mb-2">{attendanceStats.present}</div>
-                      <div className="text-sm font-medium text-default-600 uppercase tracking-wider">Present</div>
-                    </div>
-                    <div className="text-center p-6 bg-danger-50/50 rounded-2xl border border-danger-100">
-                      <div className="text-4xl font-semibold text-danger-600 mb-2">{attendanceStats.absent}</div>
-                      <div className="text-sm font-medium text-default-600 uppercase tracking-wider">Absent</div>
-                    </div>
-                    <div className="text-center p-6 bg-default-100/50 rounded-2xl border border-default-200">
-                      <div className="text-4xl font-semibold text-default-700 mb-2">{attendanceStats.total}</div>
-                      <div className="text-sm font-medium text-default-600 uppercase tracking-wider">Total Days</div>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm font-medium">
-                      <span>Attendance Progress</span>
-                      <span className="text-primary">{attendanceStats.percentage}%</span>
-                    </div>
-                    <Progress value={attendanceStats.percentage} color="primary" size="md" radius="lg" classNames={{ track: "bg-default-100", indicator: "bg-primary" }} />
-                    <p className="text-xs text-default-400 text-center pt-2">Based on current academic session records</p>
+                <CardBody className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { title: "Best Student Award", date: "Dec 2024", icon: "🏆" },
+                      { title: "Science Fair Winner", date: "Nov 2024", icon: "🔬" },
+                      { title: "Perfect Attendance", date: "Oct 2024", icon: "📅" },
+                      { title: "Math Olympiad Bronze", date: "Sept 2024", icon: "🥉" }
+                    ].map((achievement, idx) => (
+                      <div key={idx} className="flex items-center gap-4 p-4 rounded-lg border border-default-200 bg-gradient-to-r from-yellow-50 to-amber-50">
+                        <span className="text-3xl">{achievement.icon}</span>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-default-900">{achievement.title}</h4>
+                          <p className="text-xs text-default-500">{achievement.date}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </CardBody>
               </Card>
 
-
-              {/* Progress Reports */}
-              <Card shadow="sm" className="border border-default-200">
-                <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100"><h3 className="text-lg font-semibold text-default-900">Progress Reports & Remarks</h3></CardHeader>
-                <CardBody className="p-8 space-y-6">
-                  <div className="p-6 bg-blue-50/50 rounded-xl border border-blue-100 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <MessageSquare size={18} className="text-blue-600" />
-                      <h4 className="font-semibold text-blue-900">Teacher Comments</h4>
-                    </div>
-                    <ul className="space-y-2 text-sm text-blue-800/80 list-disc list-inside pl-2">
-                      <li>Shows excellent understanding of concepts</li>
-                      <li>Active participation in class discussions</li>
-                      <li>Needs to improve time management for assignments</li>
-                    </ul>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-6 bg-success-50/50 rounded-xl border border-success-100 space-y-3">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1 bg-success-100 rounded-full"><Plus size={14} className="text-success-700" /></div>
-                        <h4 className="font-semibold text-success-900">Strengths</h4>
-                      </div>
-                      <p className="text-sm text-success-800/80 leading-relaxed">Problem-solving, Analytical thinking, Team collaboration in science projects.</p>
-                    </div>
-                    <div className="p-6 bg-warning-50/50 rounded-xl border border-warning-100 space-y-3">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1 bg-warning-100 rounded-full"><AlertCircle size={14} className="text-warning-700" /></div>
-                        <h4 className="font-semibold text-warning-900">Areas to Improve</h4>
-                      </div>
-                      <p className="text-sm text-warning-800/80 leading-relaxed">Handwriting legibility, Consistent homework completion, Time management during exams.</p>
-                    </div>
-                  </div>
-                </CardBody>
-              </Card>
             </div>
           )}
         </div>
-      </div >
-
+      </div>
 
 
 
       {/* Edit Drawer */}
       {/* Edit Drawer - Uses AddStudent Component */}
-      <Drawer isOpen={isEditOpen} onOpenChange={setIsEditOpen} placement="right" size="5xl" classNames={{ base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]", backdrop: "bg-black/40 backdrop-blur-sm" }}>
+      <Drawer 
+        isOpen={isEditOpen} 
+        onOpenChange={setIsEditOpen} 
+        placement="right" 
+        size="5xl" 
+        classNames={{ 
+          wrapper: "!z-50", 
+          base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]",
+          backdrop: "!z-40"
+        }}
+      >
         <DrawerContent>
           {(onClose) => (
             <>
@@ -1575,7 +2275,17 @@ export default function StudentOverview() {
         </ModalContent>
       </Modal>
       {/* Side Drawers for Detail Cards */}
-      <Drawer isOpen={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} placement="right" size="sm" classNames={{ base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]" }}>
+      <Drawer 
+        isOpen={isAttendanceOpen} 
+        onOpenChange={setIsAttendanceOpen} 
+        placement="right" 
+        size="sm" 
+        classNames={{ 
+          wrapper: "!z-50", 
+          base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]",
+          backdrop: "!z-40"
+        }}
+      >
         <DrawerContent>
           {(onClose) => (
             <>
@@ -1591,7 +2301,17 @@ export default function StudentOverview() {
         </DrawerContent>
       </Drawer>
 
-      <Drawer isOpen={isFeeStatusOpen} onOpenChange={setIsFeeStatusOpen} placement="right" size="sm" classNames={{ base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]" }}>
+      <Drawer 
+        isOpen={isFeeStatusOpen} 
+        onOpenChange={setIsFeeStatusOpen} 
+        placement="right" 
+        size="sm" 
+        classNames={{ 
+          wrapper: "!z-50", 
+          base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]",
+          backdrop: "!z-40"
+        }}
+      >
         <DrawerContent>
           {(onClose) => (
             <>
@@ -1607,7 +2327,17 @@ export default function StudentOverview() {
         </DrawerContent>
       </Drawer>
 
-      <Drawer isOpen={isParentAppOpen} onOpenChange={setIsParentAppOpen} placement="right" size="sm" classNames={{ base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]" }}>
+      <Drawer 
+        isOpen={isParentAppOpen} 
+        onOpenChange={setIsParentAppOpen} 
+        placement="right" 
+        size="sm" 
+        classNames={{ 
+          wrapper: "!z-50", 
+          base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]",
+          backdrop: "!z-40"
+        }}
+      >
         <DrawerContent>
           {(onClose) => (
             <>
@@ -1622,24 +2352,157 @@ export default function StudentOverview() {
       </Drawer>
 
       {/* Add Remark Drawer */}
-      <Drawer isOpen={isRemarkOpen} onOpenChange={setIsRemarkOpen} placement="right" size="sm" classNames={{ base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]" }}>
+      <Drawer 
+        isOpen={isRemarkOpen} 
+        onOpenChange={setIsRemarkOpen} 
+        placement="right" 
+        size="md" 
+        classNames={{ 
+          wrapper: "!z-50", 
+          base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]",
+          backdrop: "!z-40"
+        }}
+      >
         <DrawerContent>
           {(onClose) => (
             <>
-              <DrawerHeader className="border-b border-default-100"><h3 className="text-lg font-semibold">Add Remark</h3></DrawerHeader>
+              <DrawerHeader className="border-b border-default-100">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-50 rounded-xl">
+                    <MessageSquare size={20} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">Add Remark</h3>
+                    <p className="text-xs text-default-500">Add a note or observation about the student</p>
+                  </div>
+                </div>
+              </DrawerHeader>
               <DrawerBody className="p-6 space-y-6">
-                <Select label="Remark Type" placeholder="Select type" variant="bordered">
-                  <SelectItem key="academic">Academic</SelectItem>
-                  <SelectItem key="behavioral">Behavioral</SelectItem>
-                  <SelectItem key="achievement">Achievement</SelectItem>
-                </Select>
-                <Input label="Title" placeholder="e.g. Excellent Performance" variant="bordered" />
-                <Textarea label="Description" placeholder="Enter detailed remark..." minRows={4} variant="bordered" />
-                <Checkbox defaultSelected>Visible to Parent</Checkbox>
+                {/* Remark Type - Dropdown with Custom Option */}
+                <div className="space-y-2">
+                  <Select 
+                    label="Remark Type" 
+                    placeholder="Select type or enter custom" 
+                    variant="bordered"
+                    selectedKeys={remarkForm.type ? [remarkForm.type] : []}
+                    onSelectionChange={(keys) => {
+                      const selected = Array.from(keys)[0];
+                      setRemarkForm({ ...remarkForm, type: selected, customType: "" });
+                    }}
+                  >
+                    <SelectItem key="academic">Academic</SelectItem>
+                    <SelectItem key="behavioral">Behavioral</SelectItem>
+                    <SelectItem key="achievement">Achievement</SelectItem>
+                    <SelectItem key="attendance">Attendance</SelectItem>
+                    <SelectItem key="health">Health</SelectItem>
+                    <SelectItem key="general">General</SelectItem>
+                    <SelectItem key="custom">Custom Type...</SelectItem>
+                  </Select>
+                  
+                  {/* Show custom type input when "custom" is selected */}
+                  {remarkForm.type === "custom" && (
+                    <Input
+                      label="Custom Type"
+                      placeholder="Enter custom remark type"
+                      variant="bordered"
+                      value={remarkForm.customType}
+                      onChange={(e) => setRemarkForm({ ...remarkForm, customType: e.target.value })}
+                      maxLength={30}
+                      description={`${remarkForm.customType.length}/30 characters`}
+                    />
+                  )}
+                </div>
+
+                {/* Title with Character Limit */}
+                <Input 
+                  label="Title" 
+                  placeholder="e.g. Excellent Performance in Mathematics" 
+                  variant="bordered"
+                  value={remarkForm.title}
+                  onChange={(e) => setRemarkForm({ ...remarkForm, title: e.target.value })}
+                  maxLength={100}
+                  description={`${remarkForm.title.length}/100 characters`}
+                  isRequired
+                />
+
+                {/* Description */}
+                <Textarea 
+                  label="Description" 
+                  placeholder="Enter detailed remark or observation..." 
+                  minRows={5}
+                  variant="bordered"
+                  value={remarkForm.description}
+                  onChange={(e) => setRemarkForm({ ...remarkForm, description: e.target.value })}
+                  maxLength={500}
+                  description={`${remarkForm.description.length}/500 characters`}
+                  isRequired
+                />
+
+                {/* Send to Parent */}
+                <div className="p-4 rounded-lg border border-default-200 bg-default-50">
+                  <Checkbox 
+                    isSelected={remarkForm.sendToParent}
+                    onValueChange={(checked) => setRemarkForm({ ...remarkForm, sendToParent: checked })}
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium text-default-900">Send to Parent</span>
+                      <span className="text-xs text-default-500">
+                        {remarkForm.sendToParent 
+                          ? `Will be sent to ${student.parentEmail || student.parentPhone || 'parent'}`
+                          : 'Remark will only be visible to staff'
+                        }
+                      </span>
+                    </div>
+                  </Checkbox>
+                </div>
+
+                {/* Preview */}
+                {(remarkForm.title || remarkForm.description) && (
+                  <div className="p-4 rounded-lg border border-primary-200 bg-primary-50/30">
+                    <p className="text-xs font-semibold text-primary-600 uppercase mb-2">Preview</p>
+                    {remarkForm.title && (
+                      <h4 className="font-semibold text-default-900 mb-1">{remarkForm.title}</h4>
+                    )}
+                    {remarkForm.description && (
+                      <p className="text-sm text-default-600">{remarkForm.description}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-2">
+                      <Chip size="sm" variant="flat" color="primary" className="capitalize">
+                        {remarkForm.customType || remarkForm.type || "No Type"}
+                      </Chip>
+                      {remarkForm.sendToParent && (
+                        <Chip size="sm" variant="flat" color="success" startContent={<Mail size={12} />}>
+                          Will Send
+                        </Chip>
+                      )}
+                    </div>
+                  </div>
+                )}
               </DrawerBody>
-              <DrawerFooter>
-                <Button variant="flat" onPress={onClose}>Cancel</Button>
-                <Button color="primary" onPress={onClose}>Save Remark</Button>
+              <DrawerFooter className="border-t border-default-100">
+                <Button 
+                  variant="flat" 
+                  onPress={() => {
+                    setRemarkForm({ 
+                      type: "", 
+                      customType: "", 
+                      title: "", 
+                      description: "", 
+                      sendToParent: false 
+                    });
+                    onClose();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  color="primary" 
+                  onPress={handleSaveRemark}
+                  startContent={<Plus size={16} />}
+                  isDisabled={!remarkForm.title.trim() || !remarkForm.description.trim() || (!remarkForm.type && !remarkForm.customType.trim())}
+                >
+                  {remarkForm.sendToParent ? "Save & Send" : "Save Remark"}
+                </Button>
               </DrawerFooter>
             </>
           )}
@@ -1647,7 +2510,17 @@ export default function StudentOverview() {
       </Drawer>
 
       {/* Regularize Attendance Drawer */}
-      <Drawer isOpen={isRegularizeOpen} onOpenChange={setIsRegularizeOpen} placement="right" size="md" classNames={{ base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]" }}>
+      <Drawer 
+        isOpen={isRegularizeOpen} 
+        onOpenChange={setIsRegularizeOpen} 
+        placement="right" 
+        size="md" 
+        classNames={{ 
+          wrapper: "!z-50", 
+          base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]",
+          backdrop: "!z-40"
+        }}
+      >
         <DrawerContent>
           {(onClose) => (
             <>
@@ -1688,10 +2561,20 @@ export default function StudentOverview() {
             </>
           )}
         </DrawerContent>
-      </Drawer >
+      </Drawer>
 
       {/* Exam Details Drawer */}
-      < Drawer isOpen={isExamConfigOpen} onOpenChange={setIsExamConfigOpen} placement="right" size="md" classNames={{ base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]" }}>
+      <Drawer 
+        isOpen={isExamConfigOpen} 
+        onOpenChange={setIsExamConfigOpen} 
+        placement="right" 
+        size="md" 
+        classNames={{ 
+          wrapper: "!z-50", 
+          base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]",
+          backdrop: "!z-40"
+        }}
+      >
         <DrawerContent>
           {(onClose) => (
             <>
@@ -1720,15 +2603,19 @@ export default function StudentOverview() {
                   <div className="space-y-4">
                     {[{ sub: "Mathematics", score: 88 }, { sub: "Science", score: 92 }, { sub: "English", score: 85 }].map((s, i) => (
                       <div key={i} className="flex items-center gap-4">
-                        <div className="w-32 font-medium text-sm">{s.sub}</div>
-                        <Progress value={s.score} color={s.score > 90 ? "success" : "primary"} size="sm" className="max-w-xs" />
-                        <div className="font-semibold text-sm">{s.score}/100</div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-default-700">{s.sub}</span>
+                            <span className="text-sm font-semibold">{s.score}/100</span>
+                          </div>
+                          <Progress value={s.score} color={s.score > 90 ? "success" : "primary"} size="sm" className="w-full" />
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
               </DrawerBody>
-              <DrawerFooter>
+              <DrawerFooter className="border-t border-default-100">
                 <Button variant="light" onPress={onClose}>Close</Button>
                 <Button color="primary" startContent={<Download size={16} />}>Download Report</Button>
               </DrawerFooter>

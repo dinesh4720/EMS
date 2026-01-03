@@ -49,7 +49,8 @@ export const AuthProvider = ({ children }) => {
   }, [credentials]);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("app_user");
+    // Use sessionStorage instead of localStorage to avoid tab collision
+    const storedUser = sessionStorage.getItem("app_user");
     if (storedUser) {
       setUser(JSON.parse(storedUser));
       setIsAuthenticated(true);
@@ -57,34 +58,48 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = (email, password) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const userCreds = credentials[email];
-        
-        if (userCreds && userCreds.password === password) {
-          const userData = {
-            email,
-            name: userCreds.name,
-            role: userCreds.role,
-            id: userCreds.id
-          };
-          setUser(userData);
-          setIsAuthenticated(true);
-          localStorage.setItem("app_user", JSON.stringify(userData));
-          resolve(userData);
-          navigate("/");
-        } else {
-          reject(new Error("Invalid email or password"));
-        }
-      }, 800);
-    });
+  const login = async (emailOrPhone, password) => {
+    try {
+      // Call the backend API
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: emailOrPhone.includes('@') ? emailOrPhone : undefined,
+          phone: !emailOrPhone.includes('@') ? emailOrPhone : undefined,
+          password
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Login failed');
+      }
+
+      const userData = await response.json();
+      
+      // Store user data
+      setUser(userData);
+      setIsAuthenticated(true);
+      // Use sessionStorage to keep sessions separate per tab
+      sessionStorage.setItem("app_user", JSON.stringify(userData));
+      
+      navigate("/");
+      return userData;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   };
 
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
-    localStorage.removeItem("app_user");
+    // Clear session storage instead of localStorage
+    sessionStorage.removeItem("app_user");
     navigate("/login");
   };
 

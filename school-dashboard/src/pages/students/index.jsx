@@ -223,7 +223,8 @@ export default function StudentsPage() {
         size="xl"
         hideCloseButton
         classNames={{
-          base: "max-w-[900px] z-[9999]",
+          base: "max-w-[900px]",
+          wrapper: "z-[9999]",
           backdrop: "z-[9998]"
         }}
       >

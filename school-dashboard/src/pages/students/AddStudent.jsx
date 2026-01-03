@@ -241,8 +241,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           // Additional validation for the date values
           const [year, month, day] = formData.dateOfBirth.split('-').map(Number);
           const currentYear = new Date().getFullYear();
-          if (year > currentYear || year < 1900) {
-            newErrors.dateOfBirth = "Year must be between 1900 and current year";
+          if (year >= currentYear || year < 1900) {
+            newErrors.dateOfBirth = `Year must be between 1900 and ${currentYear - 1}`;
           } else if (month < 1 || month > 12) {
             newErrors.dateOfBirth = "Invalid month";
           } else if (day < 1 || day > 31) {
@@ -404,11 +404,11 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           delete studentData[key];
         }
         // Remove empty objects (like photo: {})
-        if (typeof studentData[key] === 'object' && 
-            studentData[key] !== null && 
-            !Array.isArray(studentData[key]) && 
-            !(studentData[key] instanceof File) &&
-            Object.keys(studentData[key]).length === 0) {
+        if (typeof studentData[key] === 'object' &&
+          studentData[key] !== null &&
+          !Array.isArray(studentData[key]) &&
+          !(studentData[key] instanceof File) &&
+          Object.keys(studentData[key]).length === 0) {
           delete studentData[key];
         }
       });
@@ -551,6 +551,39 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               // Prevent typing more than 8 digits
               if (digits.length > 8) return;
 
+              // 2. Validate chunks & BLOCK invalid inputs
+              const currentYear = new Date().getFullYear();
+
+              // Check Day
+              if (digits.length >= 2) {
+                const day = parseInt(digits.slice(0, 2));
+                if (day > 31 || day === 0) return;
+              }
+              // Strict check for first digit of day? (Optional, but "32" block is covered above)
+              // If digit[0] > 3, it's impossible for day (unless single digit, but we expect 0X).
+              if (digits.length >= 1) {
+                const d1 = parseInt(digits[0]);
+                if (d1 > 3) return; // Block 4-9 as first digit
+              }
+
+
+              // Check Month
+              if (digits.length >= 4) {
+                const month = parseInt(digits.slice(2, 4));
+                if (month > 12 || month === 0) return;
+              }
+              // Strict check for first digit of month
+              if (digits.length >= 3) {
+                const m1 = parseInt(digits[2]);
+                if (m1 > 1) return; // Block 2-9 as first digit of month
+              }
+
+              // Check Year
+              if (digits.length >= 8) {
+                const year = parseInt(digits.slice(4, 8));
+                if (year >= currentYear) return;
+              }
+
               // 3. Format with slashes
               let formatted = digits;
               if (digits.length > 2) {
@@ -560,58 +593,27 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                 formatted = `${formatted.slice(0, 5)}/${digits.slice(4)}`;
               }
 
-              // Update State with formatted string FIRST (so user sees what they type)
+              // Update State
               updateField("dateOfBirth", formatted);
 
-              // 2. Validate parts and accumulate errors
-              const validationErrors = [];
-              const currentYear = new Date().getFullYear();
-
-              if (digits.length >= 2) {
-                const day = parseInt(digits.slice(0, 2));
-                if (day > 31 || day === 0) {
-                  validationErrors.push("Day must be between 1-31");
-                }
-              }
-
-              if (digits.length >= 4) {
-                const month = parseInt(digits.slice(2, 4));
-                if (month > 12 || month === 0) {
-                  validationErrors.push("Month must be between 1-12");
-                }
-              }
-
-              if (digits.length >= 8) {
-                const year = parseInt(digits.slice(4, 8));
-                if (year < 1900 || year > currentYear) {
-                  validationErrors.push(`Year must be between 1900-${currentYear}`);
-                }
-              }
-
-              // If valid complete date, overwrite with ISO format
-              if (validationErrors.length === 0 && digits.length === 8) {
+              // 4. Clear errors if potentially valid, or set calendar error if full date is invalid (e.g., Feb 30)
+              if (digits.length === 8) {
                 const day = parseInt(digits.slice(0, 2));
                 const month = parseInt(digits.slice(2, 4));
                 const year = parseInt(digits.slice(4, 8));
 
-                if (day > 0 && day <= 31 && month > 0 && month <= 12 && year >= 1900 && year <= currentYear) {
-                  updateField("dateOfBirth", `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
-                  return;
-                }
-              }
+                // Check true calendar validity
+                const date = new Date(year, month - 1, day);
+                const isValidDate = date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 
-              // Set accumulated errors if any exist
-              if (validationErrors.length > 0) {
-                setErrors(prev => ({
-                  ...prev,
-                  dateOfBirth: (
-                    <div className="flex flex-col gap-0.5 mt-1">
-                      {validationErrors.map((err, i) => (
-                        <span key={i} className="text-xs">{err}</span>
-                      ))}
-                    </div>
-                  )
-                }));
+                if (!isValidDate) {
+                  setErrors(prev => ({ ...prev, dateOfBirth: "Invalid calendar date" }));
+                } else {
+                  setErrors(prev => ({ ...prev, dateOfBirth: null }));
+                }
+              } else {
+                // Clear error while typing (unless empty/required check happens elsewhere)
+                if (errors.dateOfBirth) setErrors(prev => ({ ...prev, dateOfBirth: null }));
               }
             }}
             isInvalid={!!errors.dateOfBirth}
@@ -688,9 +690,13 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               startContent={<span className="text-gray-400 text-xs">+91</span>}
               placeholder="Student's mobile (if any)"
               value={formData.mobile}
-              onValueChange={v => updateField("mobile", v)}
+              onValueChange={v => {
+                const digitsOnly = v.replace(/\D/g, '').slice(0, 10);
+                updateField("mobile", digitsOnly);
+              }}
               variant="bordered"
               radius="sm"
+              maxLength={10}
               classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
             />
             <Checkbox size="sm" isSelected={formData.isWhatsapp} onValueChange={v => updateField("isWhatsapp", v)}
@@ -890,12 +896,17 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                       startContent={<span className="text-gray-400 text-xs">+91</span>}
                       placeholder="10 digit number"
                       value={parent.phone}
-                      onValueChange={v => updateParent(index, "phone", v)}
+                      onValueChange={v => {
+                        // Only allow digits and limit to 10 characters
+                        const digitsOnly = v.replace(/\D/g, '').slice(0, 10);
+                        updateParent(index, "phone", digitsOnly);
+                      }}
                       isInvalid={index === 0 && !!errors.parentPhone}
                       errorMessage={index === 0 ? errors.parentPhone : ""}
                       variant="bordered"
                       radius="sm"
                       isRequired={index === 0}
+                      maxLength={10}
                       classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
                     />
                     <Checkbox size="sm" isSelected={parent.isWhatsapp} onValueChange={v => updateParent(index, "isWhatsapp", v)}
@@ -990,9 +1001,13 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                       startContent={<span className="text-gray-400 text-xs">+91</span>}
                       placeholder="10 digit number"
                       value={guardian.phone}
-                      onValueChange={v => updateParent(index, "phone", v)}
+                      onValueChange={v => {
+                        const digitsOnly = v.replace(/\D/g, '').slice(0, 10);
+                        updateParent(index, "phone", digitsOnly);
+                      }}
                       variant="bordered"
                       radius="sm"
+                      maxLength={10}
                       classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
                     />
                     <Checkbox size="sm" isSelected={guardian.isWhatsapp} onValueChange={v => updateParent(index, "isWhatsapp", v)}
@@ -1238,18 +1253,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="light" onPress={onClose}>
-              Cancel
-            </Button>
-            <Button
-              color="primary"
-              onPress={step === 2 ? handleSubmit : handleNext}
-              isLoading={isSubmitting}
-            >
-              {step === 2 ? "Save Student" : "Next Step"}
-            </Button>
-          </div>
         </div>
 
         {/* Scrollable Content */}
@@ -1260,6 +1263,22 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           <div className="max-w-3xl mx-auto pb-10">
             {step === 1 && renderStep1()}
             {step === 2 && renderStep2()}
+          </div>
+        </div>
+
+        {/* Footer with Action Buttons */}
+        <div className="flex-none p-4 border-t border-gray-200 bg-white z-10">
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onPress={step === 2 ? handleSubmit : handleNext}
+              isLoading={isSubmitting}
+            >
+              {step === 2 ? "Save Student" : "Next Step"}
+            </Button>
           </div>
         </div>
       </div>

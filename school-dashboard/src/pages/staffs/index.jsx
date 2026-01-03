@@ -62,27 +62,65 @@ export default function StaffsPage() {
   const isProfileView = location.pathname !== "/staffs" && location.pathname !== "/staffs/" && location.pathname !== "/staffs/attendance" && location.pathname !== "/staffs/payroll" && !location.pathname.endsWith("/staffs");
 
   const handleSaveStaff = async (staffData) => {
-    // Transform the comprehensive form data to match the existing staff structure
+    // Send all the comprehensive form data to the backend
     const transformedData = {
+      // Basic fields (for backward compatibility)
       name: staffData.fullName,
       role: staffData.staffType === "Teaching" ? "Teacher" : staffData.staffType,
       department: staffData.expertise || "General",
       phone: staffData.mobile,
       email: staffData.email,
       status: "active",
-      classes: staffData.assignedClasses || [],
       address: staffData.address,
       joinDate: new Date().toISOString().split('T')[0],
-      // Store additional comprehensive data
-      fullData: staffData
+      
+      // Personal Details
+      dob: staffData.dob,
+      gender: staffData.gender,
+      fatherName: staffData.fatherName,
+      bloodGroup: staffData.bloodGroup,
+      maritalStatus: staffData.maritalStatus,
+      employmentType: staffData.employmentType,
+      emergencyContact: staffData.emergencyContact,
+      emergencyPhone: staffData.emergencyPhone,
+      whatsappNumber: staffData.isWhatsapp ? staffData.mobile : staffData.whatsappNumber,
+      
+      // Documents (will need to upload these separately if they're files)
+      picture: staffData.picture,
+      idDocuments: staffData.idDocuments,
+      
+      // Qualifications
+      professionalQualifications: staffData.professionalQualifications,
+      totalExperience: staffData.totalExperience,
+      previousOrganization: staffData.previousOrganization,
+      qualificationDocs: staffData.qualificationDocs,
+      
+      // Staff Info
+      staffNumber: staffData.staffNumber,
+      staffType: staffData.staffType,
+      expertise: staffData.expertise,
+      assignedClasses: staffData.assignedClasses || [],
+      isClassTeacher: staffData.isClassTeacher,
+      classTeacherOf: staffData.classTeacherOf,
+      
+      // Bank & Salary
+      accountNumber: staffData.accountNumber,
+      ifscCode: staffData.ifscCode,
+      bankName: staffData.bankName,
+      branchName: staffData.branchName,
+      salaryTemplate: staffData.salaryTemplate,
+      salaryBreakdown: staffData.salaryBreakdown
     };
+    
     try {
       await addStaff(transformedData);
+      toast.success('Staff member added successfully!');
       setIsAddStaffOpen(false);
       // Delay unmounting to allow smooth close animation
       setTimeout(() => setShouldRenderAddStaff(false), 300);
     } catch (err) {
       console.error('Failed to add staff:', err);
+      toast.error('Failed to add staff member');
     }
   };
 
@@ -235,6 +273,7 @@ export default function StaffsPage() {
             <Route path="list" element={<StaffList onStaffClick={handleOpenStaffProfile} />} />
             <Route path="attendance" element={<StaffAttendance onStaffClick={handleOpenStaffProfile} />} />
             <Route path="payroll" element={<StaffPayroll onStaffClick={handleOpenStaffProfile} />} />
+            <Route path=":id" element={<StaffDashboard />} />
           </Routes>
         </div>
       </Card>

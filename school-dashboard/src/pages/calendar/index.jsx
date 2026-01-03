@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Button, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select, SelectItem, useDisclosure, ButtonGroup } from "@heroui/react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Button, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select, SelectItem, useDisclosure } from "@heroui/react";
+import { ChevronLeft, ChevronRight, Plus, MapPin, Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { motion } from "framer-motion";
 
 const eventTypes = {
   holiday: { label: "Holiday", color: "danger" },
@@ -113,8 +114,8 @@ export default function CalendarPage() {
     for (let i = firstDayOfMonth - 1; i >= 0; i--) {
       const day = daysInPrevMonth - i;
       days.push(
-        <div key={`prev-${day}`} className="p-2 flex-1 min-h-28 text-default-300">
-          <span className="text-sm">{day}</span>
+        <div key={`prev-${day}`} className="min-h-[120px] p-2 border-r border-b border-default-100 dark:border-default-50/10 bg-default-50/20 text-default-300">
+          <span className="text-sm font-medium">{day}</span>
         </div>
       );
     }
@@ -129,22 +130,37 @@ export default function CalendarPage() {
         <div
           key={day}
           onClick={() => handleDateClick(dateKey)}
-          className={`p-2 flex-1 min-h-28 cursor-pointer hover:bg-default-100/50 transition-colors rounded ${isToday ? "bg-primary/5" : ""}`}
+          className={`min-h-[120px] p-2 border-r border-b border-default-100 dark:border-default-50/10 cursor-pointer transition-colors group relative
+            bg-background hover:bg-default-50
+          `}
         >
-          <div className="flex items-center justify-between mb-1">
-            <span className={`text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full ${isToday ? "bg-primary text-white" : ""}`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className={`
+               text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full transition-all
+               ${isToday ? "bg-primary text-white shadow-md shadow-primary/20" : "text-default-700 group-hover:bg-default-200/50"}
+            `}>
               {day}
             </span>
-            {dayEvents.length > 0 && <span className="text-xs text-default-400">{dayEvents.length}</span>}
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             {dayEvents.slice(0, 3).map(event => (
-              <div key={event.id} className={`text-xs px-1.5 py-0.5 rounded truncate bg-${eventTypes[event.type].color}/10 text-${eventTypes[event.type].color}`}>
+              <motion.div
+                initial={{ opacity: 0, y: 2 }}
+                animate={{ opacity: 1, y: 0 }}
+                key={event.id}
+                className={`
+                    text-[10px] px-1.5 py-1 rounded-md truncate font-medium border border-transparent
+                    ${event.type === 'holiday' ? 'bg-danger-50 text-danger-700 border-danger-100' : ''}
+                    ${event.type === 'exam' ? 'bg-warning-50 text-warning-700 border-warning-100' : ''}
+                    ${event.type === 'event' ? 'bg-primary-50 text-primary-700 border-primary-100' : ''}
+                    ${event.type === 'meeting' ? 'bg-secondary-50 text-secondary-700 border-secondary-100' : ''}
+                 `}
+              >
                 {event.title}
-              </div>
+              </motion.div>
             ))}
             {dayEvents.length > 3 && (
-              <div className="text-xs text-default-400 px-1">+{dayEvents.length - 3} more</div>
+              <div className="text-[10px] font-medium text-default-400 px-1">+{dayEvents.length - 3} more</div>
             )}
           </div>
         </div>
@@ -155,8 +171,8 @@ export default function CalendarPage() {
     const remainingDays = 42 - days.length;
     for (let day = 1; day <= remainingDays; day++) {
       days.push(
-        <div key={`next-${day}`} className="p-2 flex-1 min-h-28 text-default-300">
-          <span className="text-sm">{day}</span>
+        <div key={`next-${day}`} className="min-h-[120px] p-2 border-r border-b border-default-100 dark:border-default-50/10 bg-default-50/20 text-default-300">
+          <span className="text-sm font-medium">{day}</span>
         </div>
       );
     }
@@ -167,178 +183,232 @@ export default function CalendarPage() {
   const selectedDateEvents = selectedDate ? getEventsForDate(selectedDate) : [];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-5.5rem)] -m-6">
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <Button isIconOnly size="sm" variant="light" onPress={() => navigate(-1)} title="Previous">
-              <ChevronLeft size={18} />
-            </Button>
-            <h2 className="text-xl font-semibold min-w-64 text-center">
-              {getHeaderTitle()}
-            </h2>
-            <Button isIconOnly size="sm" variant="light" onPress={() => navigate(1)} title="Next">
-              <ChevronRight size={18} />
-            </Button>
-          </div>
-          <div className="flex items-center gap-3">
-            <ButtonGroup size="sm" variant="flat">
-              <Button color={view === "month" ? "primary" : "default"} onPress={() => setView("month")}>Month</Button>
-              <Button color={view === "week" ? "primary" : "default"} onPress={() => setView("week")}>Week</Button>
-              <Button color={view === "day" ? "primary" : "default"} onPress={() => setView("day")}>Day</Button>
-            </ButtonGroup>
-            <Button size="sm" variant="flat" onPress={goToToday}>Today</Button>
-            <Button size="sm" color="primary" startContent={<Plus size={16} />} onPress={() => { setSelectedDate(formatDateKey(year, month, currentDate.getDate())); onOpen(); }}>
-              Add Event
-            </Button>
-          </div>
+    <div className="flex flex-col h-full bg-background min-h-screen -m-3"> {/* Clean Background, Negative Margin to fill container */}
+      {/* Sleek Toolbar */}
+      <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-background/80 backdrop-blur-md border-b border-default-200">
+        <div className="flex items-center gap-1">
+          <Button isIconOnly size="sm" variant="light" className="text-default-500 hover:text-foreground" onPress={() => navigate(-1)}>
+            <ChevronLeft size={20} />
+          </Button>
+          <Button isIconOnly size="sm" variant="light" className="text-default-500 hover:text-foreground" onPress={() => navigate(1)}>
+            <ChevronRight size={20} />
+          </Button>
+          <h2 className="text-lg font-semibold ml-2 min-w-40 tracking-tight text-foreground">
+            {getHeaderTitle()}
+          </h2>
         </div>
 
-        {/* Calendar Grid */}
-        <div className="flex-1 flex flex-col px-6 pb-6 overflow-auto">
+        <div className="flex items-center gap-3">
+          <div className="bg-default-100 p-1 rounded-lg flex items-center">
+            {["Month", "Week", "Day"].map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v.toLowerCase())}
+                className={`
+                           px-3 py-1.5 text-xs font-semibold rounded-md transition-all
+                           ${view === v.toLowerCase()
+                    ? "bg-white dark:bg-zinc-800 text-foreground shadow-sm"
+                    : "text-default-500 hover:text-default-700"}
+                        `}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+
+          <div className="h-6 w-px bg-default-300 mx-1"></div>
+
+          <Button
+            size="sm"
+            variant="ghost"
+            className="font-medium text-default-600 border border-default-200 hover:bg-default-100"
+            onPress={goToToday}
+          >
+            Today
+          </Button>
+
+          <Button
+            size="sm"
+            className="bg-primary text-white font-medium shadow-md shadow-primary/20"
+            startContent={<Plus size={16} />}
+            onPress={() => { setSelectedDate(formatDateKey(year, month, currentDate.getDate())); onOpen(); }}
+          >
+            Add Event
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex-1 flex overflow-hidden">
+        {/* Main Grid */}
+        <div className="flex-1 overflow-y-auto">
           {view === "month" && (
-            <>
-              <div className="grid grid-cols-7">
+            <div className="flex flex-col min-w-[800px]">
+              <div className="grid grid-cols-7 border-b border-default-200 sticky top-0 bg-background/95 z-10">
                 {daysOfWeek.map(day => (
-                  <div key={day} className="p-2 text-center text-sm font-medium text-default-500">{day}</div>
+                  <div key={day} className="py-2 text-center text-xs font-semibold text-default-400 uppercase tracking-wider">{day}</div>
                 ))}
               </div>
-              <div className="flex-1 grid grid-cols-7 grid-rows-6 gap-1">
+              <div className="grid grid-cols-7 border-l border-t border-default-100 dark:border-default-50/10">
                 {renderCalendarDays()}
               </div>
-            </>
+            </div>
           )}
 
           {view === "week" && (
-            <>
-              <div className="grid grid-cols-7 gap-1">
-                {getWeekDates().map((date, i) => {
-                  const dateKey = formatDateKey(date.getFullYear(), date.getMonth(), date.getDate());
-                  const isToday = dateKey === formatDateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
-                  return (
-                    <div key={i} className={`p-2 text-center ${isToday ? "bg-primary/10 rounded-t" : ""}`}>
-                      <div className="text-sm font-medium text-default-500">{daysOfWeek[i]}</div>
-                      <div className={`text-lg font-semibold ${isToday ? "text-primary" : ""}`}>{date.getDate()}</div>
+            <div className="p-4 grid grid-cols-7 gap-3 min-w-[1000px]">
+              {getWeekDates().map((date, i) => {
+                const dateKey = formatDateKey(date.getFullYear(), date.getMonth(), date.getDate());
+                const dayEvents = getEventsForDate(dateKey);
+                const isToday = dateKey === formatDateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+
+                return (
+                  <div key={i} className={`flex flex-col rounded-xl border ${isToday ? 'border-primary/30 bg-primary/5' : 'border-default-200 bg-white dark:bg-zinc-900'} min-h-[500px] hover:shadow-sm transition-shadow`}>
+                    <div className="p-3 border-b border-default-100 text-center">
+                      <div className={`text-xs font-semibold uppercase ${isToday ? 'text-primary' : 'text-default-400'}`}>{daysOfWeek[i]}</div>
+                      <div className={`text-xl font-bold mt-1 ${isToday ? 'text-primary' : 'text-foreground'}`}>{date.getDate()}</div>
                     </div>
-                  );
-                })}
-              </div>
-              <div className="flex-1 grid grid-cols-7 gap-1">
-                {getWeekDates().map((date, i) => {
-                  const dateKey = formatDateKey(date.getFullYear(), date.getMonth(), date.getDate());
-                  const dayEvents = getEventsForDate(dateKey);
-                  const isToday = dateKey === formatDateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
-                  return (
-                    <div
-                      key={i}
-                      onClick={() => handleDateClick(dateKey)}
-                      className={`p-2 min-h-[400px] cursor-pointer hover:bg-default-100/50 transition-colors rounded-b ${isToday ? "bg-primary/5" : ""}`}
-                    >
-                      <div className="space-y-1">
-                        {dayEvents.map(event => (
-                          <div key={event.id} className={`text-xs px-2 py-1 rounded bg-${eventTypes[event.type].color}/10 text-${eventTypes[event.type].color}`}>
-                            {!event.allDay && event.startTime && <span className="font-medium">{formatTime(event.startTime)} </span>}
-                            {event.title}
-                          </div>
-                        ))}
-                      </div>
+                    <div className="flex-1 p-2 space-y-2 cursor-pointer" onClick={() => handleDateClick(dateKey)}>
+                      {dayEvents.map(event => (
+                        <div key={event.id} className={`p-2 rounded-lg text-xs border ${event.type === 'event' ? 'border-primary-100 bg-primary-50 text-primary-800' : 'border-default-200 bg-white shadow-sm'}`}>
+                          <div className="font-semibold">{event.title}</div>
+                          {event.startTime && <div className="text-[10px] opacity-70 mt-1 flex items-center gap-1"><Clock size={10} /> {formatTime(event.startTime)}</div>}
+                        </div>
+                      ))}
+                      {dayEvents.length === 0 && (
+                        <div className="h-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                          <Button size="sm" variant="flat" className="h-6 w-6 min-w-0 p-0 rounded-full"><Plus size={14} /></Button>
+                        </div>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
-            </>
+                  </div>
+                )
+              })}
+            </div>
           )}
 
           {view === "day" && (
-            <div className="flex-1">
-              <div className="text-center mb-4">
-                <div className="text-default-500">{daysOfWeekFull[currentDate.getDay()]}</div>
-                <div className="text-4xl font-bold">{currentDate.getDate()}</div>
-              </div>
-              <div
-                onClick={() => handleDateClick(formatDateKey(year, month, currentDate.getDate()))}
-                className="min-h-[400px] p-4 rounded hover:bg-default-100/50 cursor-pointer transition-colors"
-              >
-                {getEventsForDate(formatDateKey(year, month, currentDate.getDate())).length === 0 ? (
-                  <div className="text-center text-default-400 py-8">No events scheduled. Click to add one.</div>
-                ) : (
-                  <div className="space-y-2">
-                    {getEventsForDate(formatDateKey(year, month, currentDate.getDate())).map(event => (
-                      <div key={event.id} className={`p-3 rounded bg-${eventTypes[event.type].color}/10 border-l-4 border-${eventTypes[event.type].color}`}>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="font-medium">{event.title}</span>
-                            <div className="text-xs text-default-500 mt-0.5">
-                              {event.allDay ? "All day" : event.startTime ? `${formatTime(event.startTime)}${event.endTime ? ` - ${formatTime(event.endTime)}` : ""}` : "All day"}
-                            </div>
+            <div className="flex justify-center p-8">
+              <div className="max-w-2xl w-full bg-white dark:bg-zinc-900 rounded-2xl border border-default-200 shadow-sm p-6">
+                <div className="flex items-baseline gap-4 border-b border-default-100 pb-6 mb-6">
+                  <h1 className="text-4xl font-bold tracking-tight text-foreground">{currentDate.getDate()}</h1>
+                  <div className="text-xl text-default-400 font-medium">{daysOfWeekFull[currentDate.getDay()]}</div>
+                  <div className="ml-auto text-lg text-default-500 font-medium">{currentDate.toLocaleDateString("en-US", { month: 'long', year: 'numeric' })}</div>
+                </div>
+
+                <div className="space-y-4">
+                  {getEventsForDate(formatDateKey(year, month, currentDate.getDate())).length === 0 ? (
+                    <div className="py-12 text-center flex flex-col items-center gap-3">
+                      <div className="w-16 h-16 rounded-full bg-default-50 flex items-center justify-center text-default-300">
+                        <Calendar size={32} />
+                      </div>
+                      <p className="text-default-400">No events scheduled regarding this day.</p>
+                      <Button size="sm" color="primary" variant="flat" onPress={() => handleDateClick(formatDateKey(year, month, currentDate.getDate()))}>Create Event</Button>
+                    </div>
+                  ) : (
+                    getEventsForDate(formatDateKey(year, month, currentDate.getDate())).map(event => (
+                      <div key={event.id} className="flex gap-4 group p-3 rounded-xl hover:bg-default-50 border border-default-100 hover:border-default-200 transition-all">
+                        <div className="w-16 flex flex-col items-center pt-1">
+                          <span className="text-xs font-semibold text-default-500">
+                            {event.allDay ? "ALL DAY" : formatTime(event.startTime)}
+                          </span>
+                          {event.endTime && <span className="text-[10px] text-default-300 mt-1">{formatTime(event.endTime)}</span>}
+                        </div>
+                        <div className={`w-1 rounded-full bg-${eventTypes[event.type].color}`}></div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-foreground">{event.title}</h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Chip size="sm" variant="flat" color={eventTypes[event.type].color} className="h-5 text-[10px] rounded-md px-1">{eventTypes[event.type].label}</Chip>
                           </div>
-                          <Chip size="sm" color={eventTypes[event.type].color} variant="flat">{eventTypes[event.type].label}</Chip>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      <Modal isOpen={isOpen} onClose={onClose} size="md">
+      <Modal isOpen={isOpen} onClose={onClose} size="md" backdrop="blur" classNames={{
+        base: "bg-background border border-default-200 rounded-xl shadow-xl",
+        header: "border-b border-default-100",
+        footer: "border-t border-default-100"
+      }}>
         <ModalContent>
-          <ModalHeader>{selectedDate}</ModalHeader>
-          <ModalBody>
+          <ModalHeader className="flex flex-col gap-1">
+            <h2 className="text-xl font-semibold">
+              {selectedDate ? new Date(selectedDate).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric' }) : "New Event"}
+            </h2>
+          </ModalHeader>
+          <ModalBody className="py-6 space-y-4">
             {selectedDateEvents.length > 0 && (
-              <div className="mb-4">
-                <p className="text-sm font-medium mb-2">Events on this day:</p>
-                <div className="space-y-2">
-                  {selectedDateEvents.map(event => (
-                    <div key={event.id} className="flex items-center justify-between p-3 bg-default-50 rounded border border-default-100">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <Chip size="sm" color={eventTypes[event.type].color} variant="dot" classNames={{ base: "border-1 border-default-200 pl-2" }}>{eventTypes[event.type].label}</Chip>
-                          <span className="text-sm font-medium text-default-700">{event.title}</span>
-                        </div>
-                        <span className="text-xs text-default-400">
-                          {event.allDay ? "All day" : event.startTime ? `${formatTime(event.startTime)}${event.endTime ? ` - ${formatTime(event.endTime)}` : ""}` : "All day"}
-                        </span>
+              <div className="space-y-3 pb-4 border-b border-default-100">
+                <p className="text-xs font-semibold text-default-400 uppercase tracking-wider">Scheduled Events</p>
+                {selectedDateEvents.map(event => (
+                  <div key={event.id} className="flex items-center justify-between p-2 rounded-lg bg-default-50 border border-default-100">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full bg-${eventTypes[event.type].color}`}></div>
+                      <div>
+                        <div className="text-sm font-medium">{event.title}</div>
+                        <div className="text-[11px] text-default-400">{event.allDay ? "All Day" : formatTime(event.startTime)}</div>
                       </div>
-                      <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => handleDeleteEvent(event.id)}><ChevronRight size={16} className="rotate-45" /></Button>
                     </div>
-                  ))}
-                </div>
+                    <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => handleDeleteEvent(event.id)}><Plus size={16} className="rotate-45" /></Button>
+                  </div>
+                ))}
               </div>
             )}
-            <div className="space-y-3">
-              <p className="text-sm font-medium">Add new event:</p>
-              <Input size="sm" label="Event Title" placeholder="Enter event title" value={newEvent.title} onValueChange={(v) => setNewEvent({ ...newEvent, title: v })} />
-              <Select size="sm" label="Event Type" selectedKeys={new Set([newEvent.type])} onSelectionChange={(keys) => setNewEvent({ ...newEvent, type: Array.from(keys)[0] })} aria-label="Event Type">
-                {Object.entries(eventTypes).map(([key, { label }]) => (
-                  <SelectItem key={key} textValue={label}>{label}</SelectItem>
-                ))}
-              </Select>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="allDay"
-                  checked={newEvent.allDay}
-                  onChange={(e) => setNewEvent({ ...newEvent, allDay: e.target.checked })}
-                  className="w-4 h-4 rounded border-default-300"
-                />
-                <label htmlFor="allDay" className="text-sm">All day event</label>
+
+            <div className="space-y-4">
+              <p className="text-xs font-semibold text-default-400 uppercase tracking-wider">Create New Event</p>
+              <Input
+                label="Title"
+                placeholder="Review Meeting"
+                variant="bordered"
+                size="sm"
+                labelPlacement="outside"
+                value={newEvent.title}
+                onValueChange={(v) => setNewEvent({ ...newEvent, title: v })}
+                classNames={{ inputWrapper: "border-default-200 hover:border-default-400 focus-within:border-primary" }}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <Select
+                  label="Type"
+                  variant="bordered"
+                  size="sm"
+                  labelPlacement="outside"
+                  selectedKeys={new Set([newEvent.type])}
+                  onSelectionChange={(keys) => setNewEvent({ ...newEvent, type: Array.from(keys)[0] })}
+                >
+                  {Object.entries(eventTypes).map(([key, { label }]) => (
+                    <SelectItem key={key}>{label}</SelectItem>
+                  ))}
+                </Select>
+
+                <div className="flex items-center pt-6">
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${newEvent.allDay ? 'bg-primary border-primary text-white' : 'border-default-300 bg-transparent'}`}>
+                      {newEvent.allDay && <Plus size={14} className="rotate-45" />}
+                      <input type="checkbox" className="hidden" checked={newEvent.allDay} onChange={(e) => setNewEvent({ ...newEvent, allDay: e.target.checked })} />
+                    </div>
+                    <span className="text-sm text-default-600 group-hover:text-default-900">All Day Event</span>
+                  </label>
+                </div>
               </div>
+
               {!newEvent.allDay && (
-                <div className="grid grid-cols-2 gap-3">
-                  <Input size="sm" type="time" label="Start Time" value={newEvent.startTime} onValueChange={(v) => setNewEvent({ ...newEvent, startTime: v })} />
-                  <Input size="sm" type="time" label="End Time" value={newEvent.endTime} onValueChange={(v) => setNewEvent({ ...newEvent, endTime: v })} />
+                <div className="grid grid-cols-2 gap-4">
+                  <Input type="time" label="From" variant="bordered" size="sm" labelPlacement="outside" value={newEvent.startTime} onValueChange={(v) => setNewEvent({ ...newEvent, startTime: v })} />
+                  <Input type="time" label="To" variant="bordered" size="sm" labelPlacement="outside" value={newEvent.endTime} onValueChange={(v) => setNewEvent({ ...newEvent, endTime: v })} />
                 </div>
               )}
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={onClose}>Cancel</Button>
-            <Button color="primary" onPress={handleAddEvent} isDisabled={!newEvent.title.trim()}>Add Event</Button>
+            <Button variant="light" onPress={onClose} className="text-default-500 font-medium">Cancel</Button>
+            <Button className="bg-primary text-white font-medium shadow-md shadow-primary/20" onPress={handleAddEvent} isDisabled={!newEvent.title.trim()}>Save Event</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

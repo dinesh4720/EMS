@@ -18,6 +18,7 @@ import StyleGuide from "./pages/StyleGuide";
 import Login from "./pages/Login";
 import { AppProvider, useApp } from "./context/AppContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ChatNotificationProvider } from "./context/ChatNotificationContext";
 import OnboardingFlow from "./components/onboarding/OnboardingFlow";
 import { AiAssistantProvider, AiAssistantLayout, AiAssistantPanel } from "./components/AiAssistant/AiAssistantPanel";
 import { AlertCircle, X } from "lucide-react";
@@ -67,7 +68,7 @@ function AuthenticatedApp() {
 
   return (
     <>
-      <div className="flex min-h-screen bg-background font-sans text-foreground relative overflow-hidden">
+      <div className="flex min-h-screen bg-background font-sans text-foreground relative overflow-x-hidden">
         {/* Global Ambient Background */}
         <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0 overflow-hidden">
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] animate-blob-bounce mix-blend-multiply dark:mix-blend-normal dark:bg-primary/10"></div>
@@ -79,29 +80,31 @@ function AuthenticatedApp() {
 
         <Sidebar isSidebarOpen={effectiveSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
         <AiAssistantLayout>
-          <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${effectiveSidebarOpen ? 'ml-56' : 'ml-16'} relative z-10 bg-default-100/80 dark:bg-default-100/20`}>
-            <Topbar />
-            <BeforeSchoolAlert />
-            <main className={`flex-1 ${isSettingsPage ? 'p-0' : 'p-2 md:p-3'}`}>
-              <div className={`${isSettingsPage ? 'w-full' : 'max-w-[1600px] mx-auto space-y-6'}`}>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/analytics" element={<Analytics />} />
-                  <Route path="/front-desk/*" element={<FrontDeskPage />} />
-                  <Route path="/staffs/*" element={<StaffsPage />} />
-                  <Route path="/students/*" element={<StudentsPage />} />
-                  <Route path="/classes/*" element={<ClassesPage />} />
-                  <Route path="/calendar" element={<CalendarPage />} />
-                  <Route path="/messaging/*" element={<MessagingPage />} />
-                  <Route path="/fees/*" element={<FeesPage />} />
-                  <Route path="/settings/*" element={<SettingsPage />} />
-                  <Route path="/intake-forms/assignments" element={<FormAssignments />} />
-                  <Route path="/intake-forms/submissions" element={<FormSubmissions />} />
-                  <Route path="/ai-assistant" element={<AiAssistantPage />} />
-                  <Route path="/style-guide" element={<StyleGuide />} />
-                </Routes>
-              </div>
-            </main>
+          <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${effectiveSidebarOpen ? 'ml-[260px]' : 'ml-[68px]'} relative z-10 bg-default-100/80 dark:bg-default-100/20`}>
+            <Topbar isSidebarOpen={effectiveSidebarOpen} />
+            <div className="mt-14">
+              <BeforeSchoolAlert />
+              <main className={`flex-1 ${isSettingsPage ? 'p-0' : 'p-2 md:p-3'}`}>
+                <div className={`${isSettingsPage ? 'w-full' : 'max-w-[1600px] mx-auto space-y-6'}`}>
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/analytics" element={<Analytics />} />
+                    <Route path="/front-desk/*" element={<FrontDeskPage />} />
+                    <Route path="/staffs/*" element={<StaffsPage />} />
+                    <Route path="/students/*" element={<StudentsPage />} />
+                    <Route path="/classes/*" element={<ClassesPage />} />
+                    <Route path="/calendar" element={<CalendarPage />} />
+                    <Route path="/messaging/*" element={<MessagingPage />} />
+                    <Route path="/fees/*" element={<FeesPage />} />
+                    <Route path="/settings/*" element={<SettingsPage />} />
+                    <Route path="/intake-forms/assignments" element={<FormAssignments />} />
+                    <Route path="/intake-forms/submissions" element={<FormSubmissions />} />
+                    <Route path="/ai-assistant" element={<AiAssistantPage />} />
+                    <Route path="/style-guide" element={<StyleGuide />} />
+                  </Routes>
+                </div>
+              </main>
+            </div>
           </div>
         </AiAssistantLayout>
       </div>
@@ -146,9 +149,11 @@ export default function App() {
   return (
     <AuthProvider>
       <AppProvider>
-        <AiAssistantProvider>
-          <AppRoutes />
-        </AiAssistantProvider>
+        <ChatNotificationProvider>
+          <AiAssistantProvider>
+            <AppRoutes />
+          </AiAssistantProvider>
+        </ChatNotificationProvider>
       </AppProvider>
     </AuthProvider>
   );

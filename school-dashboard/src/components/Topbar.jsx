@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { Button } from "@heroui/react";
-import { Search, Command } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { Search, Command, ChevronRight } from "lucide-react";
+import { useLocation, Link } from "react-router-dom";
 import GlobalSearch from "./GlobalSearch";
 import { AiAssistantToggle } from "./AiAssistant/AiAssistantPanel";
 
-export default function Topbar() {
+export default function Topbar({ isSidebarOpen }) {
     const [searchOpen, setSearchOpen] = useState(false);
+    const location = useLocation();
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -19,52 +19,85 @@ export default function Topbar() {
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, []);
 
-    const location = useLocation();
-
-    const getPageTitle = () => {
+    const getBreadcrumbs = () => {
         const path = location.pathname;
-        if (path === "/") return "Dashboard";
-        if (path.startsWith("/staffs")) return "Staffs";
-        if (path.startsWith("/students")) return "Students";
-        if (path.startsWith("/classes")) return "Classes";
-        if (path.startsWith("/calendar")) return "Calendar";
-        if (path.startsWith("/messaging")) return "Messaging";
-        if (path.startsWith("/fees")) return "Fees";
-        if (path.startsWith("/settings")) return "Settings";
-        return "Dashboard";
+        const parts = path.split("/").filter(Boolean);
+
+        // Map common paths to readable names
+        const pathMap = {
+            "staffs": "Staff Management",
+            "students": "Student Directory",
+            "classes": "Class Management",
+            "calendar": "Schedule",
+            "messaging": "Communication",
+            "fees": "Finance",
+            "settings": "Settings",
+            "front-desk": "Front Desk",
+            "analytics": "Analytics",
+            "accounts": "Accounts"
+        };
+
+        if (parts.length === 0) return [{ label: "Dashboard", path: "/" }];
+
+        return parts.map((part, index) => {
+            const currentPath = `/${parts.slice(0, index + 1).join("/")}`;
+            return {
+                label: pathMap[part] || part.charAt(0).toUpperCase() + part.slice(1),
+                path: currentPath
+            };
+        });
     };
 
+    const breadcrumbs = getBreadcrumbs();
+
     return (
-        <div className="h-12 px-4 border-b border-default-300 dark:border-default-200 bg-background/50 backdrop-blur-xl sticky top-0 z-40 flex items-center justify-between w-full">
+        <header
+            className="fixed top-0 right-0 z-40 h-14 px-6 border-b border-default-200 dark:border-default-100/50 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md flex items-center justify-between transition-all duration-300"
+            style={{ left: isSidebarOpen ? '260px' : '68px' }}
+        >
             <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
 
-            {/* Left Title */}
-            <div className="flex-1 flex items-center">
-                <h2 className="text-base font-medium text-default-800 tracking-tight">
-                    {getPageTitle()}
-                </h2>
+            {/* Left: Breadcrumbs */}
+            <div className="flex-1 flex items-center gap-2 text-sm">
+                <Link to="/" className="text-default-500 hover:text-foreground transition-colors font-medium">
+                    Home
+                </Link>
+                {breadcrumbs.map((crumb, index) => (
+                    <div key={crumb.path} className="flex items-center gap-2">
+                        <ChevronRight size={14} className="text-default-400" />
+                        <Link
+                            to={crumb.path}
+                            className={`font-medium transition-colors ${index === breadcrumbs.length - 1
+                                ? "text-foreground"
+                                : "text-default-500 hover:text-foreground"
+                                }`}
+                        >
+                            {crumb.label}
+                        </Link>
+                    </div>
+                ))}
             </div>
 
-            {/* Center Search */}
-            <div className="flex-1 max-w-xl flex justify-center">
+            {/* Center: Search */}
+            <div className="flex-1 flex justify-center">
                 <button
                     onClick={() => setSearchOpen(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-default-100 hover:bg-default-200 rounded-md transition-colors max-w-xs w-full"
+                    className="group flex items-center gap-2 px-3 py-1.5 bg-default-50 hover:bg-default-100 border border-default-200 dark:border-default-800 rounded-lg transition-all w-80"
                 >
-                    <Search className="text-default-400 flex-shrink-0" size={16} />
-                    <span className="text-default-400 text-sm flex-1 text-left">Search...</span>
-                    <div className="flex items-center gap-1 text-default-400 flex-shrink-0">
-                        <Command size={12} />
-                        <span className="text-[10px] font-mono">K</span>
+                    <Search className="text-default-400 group-hover:text-default-600 transition-colors" size={14} />
+                    <span className="text-default-400 text-xs font-medium flex-1 text-left group-hover:text-default-600">Search...</span>
+                    <div className="flex items-center gap-1 text-default-400 bg-white dark:bg-black/20 px-1.5 py-0.5 rounded border border-default-200 dark:border-default-800">
+                        <Command size={10} />
+                        <span className="text-[10px] font-bold">K</span>
                     </div>
                 </button>
             </div>
 
-            {/* Right Actions */}
-            <div className="flex-1 flex items-center justify-end gap-2">
+            {/* Right: Actions */}
+            <div className="flex-1 flex items-center justify-end gap-4">
                 {/* AI Assistant Toggle Button */}
                 <AiAssistantToggle />
             </div>
-        </div>
+        </header>
     );
 }
