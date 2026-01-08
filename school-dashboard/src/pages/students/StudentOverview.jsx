@@ -32,7 +32,7 @@ const academicYears = ["2024-25", "2025-26", "2023-24"];
 export default function StudentOverview() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getStudentById, getStudentFeeHistory, classesWithTeachers, staff, updateStudent, addFeePayment, deleteStudent, loading } = useApp();
+  const { getStudentById, classesWithTeachers, staff, updateStudent, deleteStudent, loading } = useApp();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "overview");
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -301,8 +301,72 @@ export default function StudentOverview() {
   };
 
   const student = getStudentById(id);
-  const feeHistory = getStudentFeeHistory(id);
   const [selectedExam, setSelectedExam] = useState(null);
+  
+  // Fee structure state
+  const [studentFeeStructure, setStudentFeeStructure] = useState(null);
+  const [loadingFeeStructure, setLoadingFeeStructure] = useState(false);
+  
+  // Payment history state
+  const [feeHistory, setFeeHistory] = useState([]);
+  const [loadingPaymentHistory, setLoadingPaymentHistory] = useState(false);
+  
+  // Fetch student fee structure
+  const fetchFeeStructure = async () => {
+    if (!id) return;
+    
+    try {
+      setLoadingFeeStructure(true);
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${API_URL}/student-fees/student/${id}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setStudentFeeStructure(data);
+      } else if (response.status === 404) {
+        // No fee structure yet, initialize it
+        const initResponse = await fetch(`${API_URL}/student-fees/initialize/${id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ academicYear: '2024-25' })
+        });
+        
+        if (initResponse.ok) {
+          const data = await initResponse.json();
+          setStudentFeeStructure(data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching fee structure:', error);
+    } finally {
+      setLoadingFeeStructure(false);
+    }
+  };
+  
+  // Fetch payment history from database
+  const fetchPaymentHistory = async () => {
+    if (!id) return;
+    
+    try {
+      setLoadingPaymentHistory(true);
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${API_URL}/fees/payments?studentId=${id}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setFeeHistory(data);
+      }
+    } catch (error) {
+      console.error('Error fetching payment history:', error);
+    } finally {
+      setLoadingPaymentHistory(false);
+    }
+  };
+  
+  useEffect(() => {
+    fetchFeeStructure();
+    fetchPaymentHistory();
+  }, [id]);
 
   // Fetch fresh student data on mount to get latest documents
   useEffect(() => {
@@ -334,7 +398,11 @@ export default function StudentOverview() {
   }, [student, documents.length]);
 
   const [editForm, setEditForm] = useState({});
-  const [paymentForm, setPaymentForm] = useState({ amount: "7000", month: "", date: new Date().toISOString().split('T')[0] });
+  const [paymentForm, setPaymentForm] = useState({ 
+    amount: "", 
+    paymentMode: "cash", 
+    date: new Date().toISOString().split('T')[0] 
+  });
   const [complaintForm, setComplaintForm] = useState({ subject: "", description: "" });
   const [remarkForm, setRemarkForm] = useState({ 
     type: "", 
@@ -500,11 +568,118 @@ export default function StudentOverview() {
     window.location.reload();
   };
 
-  const handleRecordPayment = () => {
-    if (!paymentForm.month || !paymentForm.amount) return;
-    addFeePayment({ studentId: id, amount: parseInt(paymentForm.amount), month: paymentForm.month, date: paymentForm.date, status: "paid" });
-    setIsPaymentOpen(false);
-    setPaymentForm({ amount: "7000", month: "", date: new Date().toISOString().split('T')[0] });
+  const handleRecordPayment = async () => {
+    if (!paymentForm.amount || !paymentForm.paymentMode) {
+      toast.error("Please enter amount and select payment method");
+      return;
+    }
+    
+    const paymentAmount = parseInt(paymentForm.amount);
+    if (paymentAmount <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+    
+    const loadingToast = toast.loading("Recording payment...");
+    
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      
+      // 1. Create payment record in database
+      const paymentData = {
+        studentId: id,
+        classId: student.classId,
+        academicYear: '2024-25',
+        paymentDate: paymentForm.date,
+        amount: paymentAmount,
+        paymentMode: paymentForm.paymentMode,
+        feeHeads: [{
+          period: new Date(paymentForm.date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          amount: paymentAmount
+        }],
+        remarks: `Fee payment via ${paymentForm.paymentMode}`,
+        collectedBy: null // Can be set to current user ID if available
+      };
+      
+      const paymentResponse = await fetch(`${API_URL}/fees/payments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(paymentData)
+      });
+      
+      if (!paymentResponse.ok) {
+        throw new Error('Failed to create payment record');
+      }
+      
+      // 2. Update StudentFeeStructure via backend API
+      if (studentFeeStructure && studentFeeStructure.feeHeads) {
+        // Distribute payment across pending fee heads (FIFO - First In First Out)
+        const feeHeadPayments = [];
+        let remainingAmount = paymentAmount;
+        
+        for (const feeHead of studentFeeStructure.feeHeads) {
+          if (remainingAmount <= 0) break;
+          
+          const balance = feeHead.balanceAmount || 0;
+          if (balance > 0) {
+            const paymentForThisHead = Math.min(remainingAmount, balance);
+            
+            // Extract feeHeadId - handle both populated (object) and unpopulated (string) cases
+            let feeHeadId;
+            if (typeof feeHead.feeHeadId === 'object' && feeHead.feeHeadId !== null) {
+              feeHeadId = feeHead.feeHeadId._id || feeHead.feeHeadId.id;
+            } else {
+              feeHeadId = feeHead.feeHeadId;
+            }
+            
+            feeHeadPayments.push({
+              feeHeadId: feeHeadId,
+              amount: paymentForThisHead
+            });
+            remainingAmount -= paymentForThisHead;
+          }
+        }
+        
+        console.log('💰 Recording payment:', { paymentAmount, feeHeadPayments });
+        
+        // Call backend to record payment in fee structure
+        const feeStructureResponse = await fetch(`${API_URL}/student-fees/student/${id}/payment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: paymentAmount,
+            feeHeadPayments,
+            academicYear: studentFeeStructure.academicYear || '2024-25'
+          })
+        });
+        
+        if (!feeStructureResponse.ok) {
+          const errorData = await feeStructureResponse.json();
+          console.error('❌ Payment API error:', errorData);
+          throw new Error(errorData.error || 'Failed to update fee structure');
+        }
+        
+        const updatedStructure = await feeStructureResponse.json();
+        console.log('✅ Payment recorded, new balance:', updatedStructure.totalBalance);
+        
+        // Refresh fee structure
+        await fetchFeeStructure();
+      }
+      
+      // 3. Refresh payment history
+      await fetchPaymentHistory();
+      
+      toast.success("Payment recorded successfully", { id: loadingToast });
+      setIsPaymentOpen(false);
+      setPaymentForm({ 
+        amount: "", 
+        paymentMode: "cash", 
+        date: new Date().toISOString().split('T')[0] 
+      });
+    } catch (error) {
+      console.error('Error recording payment:', error);
+      toast.error("Failed to record payment: " + (error.message || "Unknown error"), { id: loadingToast });
+    }
   };
 
   const handleSaveRemark = () => {
@@ -808,31 +983,49 @@ export default function StudentOverview() {
                   </Card>
 
                   {/* Fee Status Card - Updated */}
-                  <Card isPressable onPress={() => setIsFeeStatusOpen(true)} shadow="sm" className="border border-default-200 bg-background/60 backdrop-blur-md">
+                  <Card isPressable onPress={() => setActiveTab("fees")} shadow="sm" className="border border-default-200 bg-background/60 backdrop-blur-md">
                     <CardBody className="p-6">
                       <div className="flex items-start justify-between mb-4 w-full">
-                        <div className={`p-3 rounded-xl ${student.feeStatus === "paid" ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"}`}>
+                        <div className={`p-3 rounded-xl ${(studentFeeStructure?.totalBalance || 0) <= 0 ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"}`}>
                           <IndianRupee size={24} />
                         </div>
-                        <Chip size="sm" color={student.feeStatus === "paid" ? "success" : "warning"} variant="flat" className="capitalize text-xs font-semibold">
-                          {student.feeStatus}
+                        <Chip size="sm" color={(studentFeeStructure?.totalBalance || 0) <= 0 ? "success" : "warning"} variant="flat" className="capitalize text-xs font-semibold">
+                          {(studentFeeStructure?.totalBalance || 0) <= 0 ? 'Paid' : studentFeeStructure?.overallStatus || 'Pending'}
                         </Chip>
                       </div>
                       <div className="space-y-1 text-left">
                         <div className="flex items-center gap-2">
-                          {/* Pending Amount Logic Placeholder - assuming 19666 as example */}
                           <h4 className="text-2xl font-semibold text-default-900">
-                            {student.feeStatus === 'paid' ? '₹0' : '₹19,666'}
+                            ₹{studentFeeStructure?.totalBalance?.toLocaleString() || 0}
                           </h4>
                         </div>
-                        <p className="text-sm font-medium text-default-500">{student.feeStatus === 'paid' ? 'No Dues' : 'Pending Amount'}</p>
+                        <p className="text-sm font-medium text-default-500">
+                          {(studentFeeStructure?.totalBalance || 0) <= 0 ? 'No Dues' : 'Outstanding Amount'}
+                        </p>
                       </div>
                       <div className="mt-4 pt-4 border-t border-default-100 flex items-center justify-between w-full">
                         <div className="flex items-center gap-3 text-xs text-default-500">
-                          <span className="font-medium text-danger-600">Next Due:</span>
-                          <span className="font-bold text-default-700">5th Oct</span>
+                          {studentFeeStructure?.totalBalance > 0 && (
+                            <>
+                              <span className="font-medium text-default-600">Total Fee:</span>
+                              <span className="font-bold text-default-700">₹{studentFeeStructure?.totalFee?.toLocaleString() || 0}</span>
+                            </>
+                          )}
+                          {(studentFeeStructure?.totalBalance || 0) <= 0 && (
+                            <span className="font-medium text-success-600">All fees paid ✓</span>
+                          )}
                         </div>
-                        <span className="text-xs font-semibold text-primary hover:text-primary-600 cursor-pointer transition-colors">Send Reminder</span>
+                        {studentFeeStructure?.totalBalance > 0 && (
+                          <span 
+                            className="text-xs font-semibold text-primary hover:text-primary-600 cursor-pointer transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSendReminder();
+                            }}
+                          >
+                            Send Reminder
+                          </span>
+                        )}
                       </div>
                     </CardBody>
                   </Card>
@@ -1110,9 +1303,9 @@ export default function StudentOverview() {
 
           {activeTab === "fees" && (
             <div className="space-y-6 animate-fade-in">
-              {/* Fee Hero Section - Enhanced with Real Data */}
+              {/* Fee Hero Section - Enhanced with Real Data from StudentFeeStructure */}
               <div className={`p-6 rounded-2xl border relative overflow-hidden ${
-                studentFeeSummary?.totalPending <= 0 
+                (studentFeeStructure?.totalBalance || 0) <= 0 
                   ? "bg-success-50 border-success-200" 
                   : "bg-gradient-to-br from-danger-50 to-orange-50 border-danger-200"
               }`}>
@@ -1120,31 +1313,27 @@ export default function StudentOverview() {
                   <div className="space-y-2 text-center md:text-left">
                     <p className="text-default-600 font-medium">Total Outstanding</p>
                     <h2 className="text-4xl font-bold text-default-900">
-                      ₹{studentFeeSummary?.totalPending?.toLocaleString() || 0}
+                      ₹{studentFeeStructure?.totalBalance?.toLocaleString() || 0}
                     </h2>
                     <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                      {studentFeeSummary?.nextDueDate && new Date(studentFeeSummary.nextDueDate) < new Date() ? (
-                        <p className="text-xs text-danger-600 bg-danger-100 px-3 py-1 rounded-full inline-block font-medium">
-                          Overdue: {new Date(studentFeeSummary.nextDueDate).toLocaleDateString()}
-                        </p>
-                      ) : studentFeeSummary?.nextDueDate ? (
-                        <p className="text-xs text-warning-600 bg-warning-100 px-3 py-1 rounded-full inline-block font-medium">
-                          Next Due: {new Date(studentFeeSummary.nextDueDate).toLocaleDateString()}
-                        </p>
-                      ) : (
+                      {(studentFeeStructure?.totalBalance || 0) <= 0 ? (
                         <p className="text-xs text-success-600 bg-success-100 px-3 py-1 rounded-full inline-block font-medium">
                           All fees paid
                         </p>
-                      )}
-                      {studentFeeSummary?.collectionMode && (
+                      ) : (studentFeeStructure?.totalBalance || 0) > 0 ? (
+                        <p className="text-xs text-danger-600 bg-danger-100 px-3 py-1 rounded-full inline-block font-medium">
+                          Payment pending
+                        </p>
+                      ) : null}
+                      {studentFeeStructure?.overallStatus && (
                         <p className="text-xs text-default-600 bg-white px-3 py-1 rounded-full inline-block font-medium capitalize">
-                          {studentFeeSummary.collectionMode}-wise collection
+                          Status: {studentFeeStructure.overallStatus}
                         </p>
                       )}
                     </div>
                   </div>
                   <div className="flex flex-wrap justify-center gap-3">
-                    {studentFeeSummary?.totalPending > 0 && (
+                    {(studentFeeStructure?.totalBalance || 0) > 0 && (
                       <>
                         <Button 
                           color="primary" 
@@ -1177,230 +1366,192 @@ export default function StudentOverview() {
                 </div>
               </div>
 
-              {/* Fee Summary Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="border border-default-200">
-                  <CardBody className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
-                        <IndianRupee size={20} />
-                      </div>
-                      <div>
-                        <p className="text-xs text-default-500">Total Fee</p>
-                        <p className="text-lg font-bold text-default-900">
-                          ₹{studentFeeSummary?.totalFee?.toLocaleString() || 0}
-                        </p>
-                      </div>
-                    </div>
-                  </CardBody>
-                </Card>
-
-                <Card className="border border-default-200">
-                  <CardBody className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-success-50 text-success-600 rounded-xl">
-                        <CheckCircle size={20} />
-                      </div>
-                      <div>
-                        <p className="text-xs text-default-500">Paid</p>
-                        <p className="text-lg font-bold text-success-600">
-                          ₹{studentFeeSummary?.totalPaid?.toLocaleString() || 0}
-                        </p>
-                      </div>
-                    </div>
-                  </CardBody>
-                </Card>
-
-                <Card className="border border-default-200">
-                  <CardBody className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-warning-50 text-warning-600 rounded-xl">
-                        <AlertTriangle size={20} />
-                      </div>
-                      <div>
-                        <p className="text-xs text-default-500">Pending</p>
-                        <p className="text-lg font-bold text-warning-600">
-                          ₹{studentFeeSummary?.totalPending?.toLocaleString() || 0}
-                        </p>
-                      </div>
-                    </div>
-                  </CardBody>
-                </Card>
-
-                <Card className="border border-default-200">
-                  <CardBody className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
-                        <TrendingUp size={20} />
-                      </div>
-                      <div>
-                        <p className="text-xs text-default-500">Discount</p>
-                        <p className="text-lg font-bold text-purple-600">
-                          ₹{studentFeeSummary?.totalDiscount?.toLocaleString() || 0}
-                        </p>
-                      </div>
-                    </div>
-                  </CardBody>
-                </Card>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Fee Breakdown by Period */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-default-900">Fee Breakdown by Period</h3>
-                    <Chip size="sm" variant="flat" className="capitalize">
-                      {studentFeeSummary?.collectionMode || 'Term'}-wise
-                    </Chip>
-                  </div>
-                  <div className="space-y-3">
-                    {studentFeeSummary?.pendingDuesByPeriod && Object.keys(studentFeeSummary.pendingDuesByPeriod).length > 0 ? (
-                      Object.entries(studentFeeSummary.pendingDuesByPeriod).map(([period, data]) => (
-                        <div key={period} className={`p-4 rounded-xl border bg-white shadow-none ${
-                          data.status === 'paid' ? 'border-success-200 bg-success-50/30' :
-                          data.status === 'overdue' ? 'border-danger-200 bg-danger-50/30' :
-                          'border-default-200'
+              {/* Payment History */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-default-900">Payment History</h3>
+                  <Button size="sm" variant="light" color="primary" onPress={() => navigate('/fees')}>View All</Button>
+                </div>
+                <div className="space-y-0 border border-default-200 rounded-xl divide-y divide-default-100 bg-white shadow-none max-h-[400px] overflow-y-auto">
+                  {feeHistory.length > 0 ? feeHistory.map((payment, idx) => (
+                    <div key={payment.id || idx} className="flex justify-between items-center p-4 hover:bg-default-50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${
+                          payment.status === 'completed' || payment.status === 'success'
+                            ? 'bg-success-50 text-success' 
+                            : 'bg-warning-50 text-warning'
                         }`}>
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-default-700 capitalize">{period}</span>
-                                <Chip 
-                                  size="sm" 
-                                  color={data.status === 'paid' ? 'success' : data.status === 'overdue' ? 'danger' : 'warning'}
-                                  variant="flat"
-                                  className="text-xs capitalize"
-                                >
-                                  {data.status}
-                                </Chip>
-                              </div>
-                              <p className="text-xs text-default-500 mt-1">
-                                Due: {data.dueDate ? new Date(data.dueDate).toLocaleDateString() : 'N/A'}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm font-medium text-default-500">
-                                ₹{data.paid?.toLocaleString() || 0} / ₹{data.total?.toLocaleString() || 0}
-                              </p>
-                              <p className="text-lg font-bold text-default-900">
-                                {data.status === 'paid' ? 'Paid' : `₹${data.pending?.toLocaleString() || 0} pending`}
-                              </p>
-                            </div>
-                          </div>
-                          <Progress 
-                            value={data.total ? ((data.paid || 0) / data.total) * 100 : 0} 
-                            color={data.status === 'paid' ? 'success' : data.status === 'overdue' ? 'danger' : 'warning'} 
-                            size="sm" 
-                            radius="full" 
-                            className="mt-2"
-                          />
+                          <CheckCircle size={16} />
                         </div>
-                      ))
-                    ) : (
-                      <div className="p-8 text-center border border-default-200 rounded-xl bg-default-50">
-                        <CheckCircle size={32} className="mx-auto text-success-500 mb-2" />
-                        <p className="text-sm text-default-600">No pending dues</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Payment History Timeline */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-default-900">Payment History</h3>
-                    <Button size="sm" variant="light" color="primary" onPress={() => navigate('/fees')}>View All</Button>
-                  </div>
-                  <div className="space-y-0 border border-default-200 rounded-xl divide-y divide-default-100 bg-white shadow-none max-h-[400px] overflow-y-auto">
-                    {feeHistory.length > 0 ? feeHistory.map((payment, idx) => (
-                      <div key={payment.id || idx} className="flex justify-between items-center p-4 hover:bg-default-50 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${
-                            payment.status === 'completed' || payment.status === 'success'
-                              ? 'bg-success-50 text-success' 
-                              : 'bg-warning-50 text-warning'
-                          }`}>
-                            <CheckCircle size={16} />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-sm text-default-900">
-                              {payment.paymentPeriod || payment.feeHeads?.[0]?.period || 'Fee Payment'}
+                        <div>
+                          <p className="font-semibold text-sm text-default-900">
+                            {payment.paymentPeriod || payment.feeHeads?.[0]?.period || 'Fee Payment'}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs text-default-500">
+                              {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : payment.date}
                             </p>
-                            <div className="flex items-center gap-2">
-                              <p className="text-xs text-default-500">
-                                {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : payment.date}
-                              </p>
-                              {payment.receiptNumber && (
-                                <span className="text-xs text-default-400">• {payment.receiptNumber}</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-default-900">₹{payment.amount?.toLocaleString() || 0}</p>
-                          <p className="text-xs text-default-500 capitalize">{payment.paymentMode || payment.mode}</p>
-                        </div>
-                      </div>
-                    )) : (
-                      <div className="p-8 text-center">
-                        <CreditCard size={32} className="mx-auto text-default-300 mb-2" />
-                        <p className="text-sm text-default-500">No payment history yet</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Fee Heads Detailed Breakdown */}
-              {studentFeeSummary?.feeHeads && studentFeeSummary.feeHeads.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-default-900">Fee Heads Breakdown</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {studentFeeSummary.feeHeads.map((head, idx) => (
-                      <Card key={idx} className="border border-default-200">
-                        <CardBody className="p-4">
-                          <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <p className="font-semibold text-default-900">{head.name}</p>
-                              <p className="text-xs text-default-500 capitalize">{head.category}</p>
-                            </div>
-                            <Chip 
-                              size="sm" 
-                              color={head.paid >= head.amount ? 'success' : 'warning'}
-                              variant="flat"
-                            >
-                              {head.paid >= head.amount ? 'Paid' : 'Partial'}
-                            </Chip>
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-xs">
-                              <span className="text-default-500">Total:</span>
-                              <span className="font-medium">₹{head.amount?.toLocaleString() || 0}</span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-default-500">Paid:</span>
-                              <span className="font-medium text-success-600">₹{head.paid?.toLocaleString() || 0}</span>
-                            </div>
-                            {head.pending > 0 && (
-                              <div className="flex justify-between text-xs">
-                                <span className="text-default-500">Pending:</span>
-                                <span className="font-medium text-warning-600">₹{head.pending?.toLocaleString() || 0}</span>
-                              </div>
+                            {payment.receiptNumber && (
+                              <span className="text-xs text-default-400">• {payment.receiptNumber}</span>
                             )}
                           </div>
-                          <Progress 
-                            value={head.amount ? (head.paid / head.amount) * 100 : 0} 
-                            color={head.paid >= head.amount ? 'success' : 'warning'}
-                            size="sm" 
-                            radius="full"
-                            className="mt-3"
-                          />
-                        </CardBody>
-                      </Card>
-                    ))}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-default-900">₹{payment.amount?.toLocaleString() || 0}</p>
+                        <p className="text-xs text-default-500 capitalize">{payment.paymentMode || payment.mode}</p>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="p-8 text-center">
+                      <CreditCard size={32} className="mx-auto text-default-300 mb-2" />
+                      <p className="text-sm text-default-500">No payment history yet</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Fee Heads from StudentFeeStructure */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-default-900">Applicable Fee Heads</h3>
+                  <div className="flex items-center gap-2">
+                    {studentFeeStructure && (
+                      <Chip size="sm" variant="flat" color="primary">
+                        {studentFeeStructure.feeHeads?.length || 0} Fee Heads
+                      </Chip>
+                    )}
+                    <Button
+                      size="sm"
+                      color="primary"
+                      variant="flat"
+                      startContent={<BookOpen size={16} />}
+                      onPress={() => navigate('/settings?tab=fee-heads')}
+                    >
+                      Configure Fee Heads
+                    </Button>
                   </div>
                 </div>
-              )}
+                
+                {loadingFeeStructure ? (
+                  <div className="p-8 text-center border border-default-200 rounded-xl bg-default-50">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                    <p className="text-sm text-default-600">Loading fee structure...</p>
+                  </div>
+                ) : studentFeeStructure && studentFeeStructure.feeHeads && studentFeeStructure.feeHeads.length > 0 ? (
+                  <div className="border border-default-200 rounded-xl overflow-hidden bg-white">
+                    <Table
+                      aria-label="Student Fee Heads"
+                      removeWrapper
+                      classNames={{
+                        th: "bg-default-50 text-default-600 font-semibold text-xs uppercase",
+                        td: "py-4"
+                      }}
+                    >
+                      <TableHeader>
+                        <TableColumn>FEE HEAD</TableColumn>
+                        <TableColumn>CATEGORY</TableColumn>
+                        <TableColumn>AMOUNT</TableColumn>
+                        <TableColumn>PAID</TableColumn>
+                        <TableColumn>BALANCE</TableColumn>
+                        <TableColumn>STATUS</TableColumn>
+                      </TableHeader>
+                      <TableBody>
+                        {studentFeeStructure.feeHeads.map((feeHead, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell>
+                              <div>
+                                <p className="font-semibold text-default-900">{feeHead.name}</p>
+                                <p className="text-xs text-default-500 capitalize">{feeHead.frequency}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Chip size="sm" variant="flat" color="primary">
+                                {feeHead.category}
+                              </Chip>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-mono text-default-900">
+                                ₹{feeHead.amount?.toLocaleString() || 0}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-mono text-success-600">
+                                ₹{feeHead.paidAmount?.toLocaleString() || 0}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-mono text-warning-600">
+                                ₹{feeHead.balanceAmount?.toLocaleString() || 0}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                size="sm"
+                                variant="flat"
+                                color={
+                                  feeHead.status === 'paid' ? 'success' :
+                                  feeHead.status === 'partial' ? 'warning' :
+                                  'danger'
+                                }
+                              >
+                                {feeHead.status === 'paid' ? 'Paid' :
+                                 feeHead.status === 'partial' ? 'Partial' :
+                                 'Pending'}
+                              </Chip>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    
+                    {/* Fee Structure Summary */}
+                    <div className="p-4 bg-default-50 border-t border-default-200">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <p className="text-xs text-default-500 mb-1">Total Fee</p>
+                          <p className="text-lg font-bold text-default-900">
+                            ₹{studentFeeStructure.totalFee?.toLocaleString() || 0}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-default-500 mb-1">Total Paid</p>
+                          <p className="text-lg font-bold text-success-600">
+                            ₹{studentFeeStructure.totalPaid?.toLocaleString() || 0}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-default-500 mb-1">Discount</p>
+                          <p className="text-lg font-bold text-purple-600">
+                            ₹{studentFeeStructure.discountApplied?.toLocaleString() || 0}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-default-500 mb-1">Balance</p>
+                          <p className="text-lg font-bold text-warning-600">
+                            ₹{studentFeeStructure.totalBalance?.toLocaleString() || 0}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {studentFeeStructure.discountReason && (
+                        <div className="mt-3 pt-3 border-t border-default-200">
+                          <p className="text-xs text-default-500">Discount Reason:</p>
+                          <p className="text-sm text-default-700">{studentFeeStructure.discountReason}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-8 text-center border border-default-200 rounded-xl bg-default-50">
+                    <IndianRupee size={32} className="mx-auto text-default-300 mb-2" />
+                    <p className="text-sm text-default-600 mb-2">No fee structure assigned yet</p>
+                    <p className="text-xs text-default-500">
+                      Fee heads will be automatically assigned based on the student's class
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -2190,20 +2341,65 @@ export default function StudentOverview() {
         </DrawerContent>
       </Drawer>
 
-      <Modal isOpen={isPaymentOpen} onClose={() => setIsPaymentOpen(false)}>
+      <Modal 
+        isOpen={isPaymentOpen} 
+        onClose={() => setIsPaymentOpen(false)}
+        onOpenChange={(open) => {
+          if (open && studentFeeStructure?.totalBalance) {
+            // Auto-populate with outstanding amount when modal opens
+            setPaymentForm(prev => ({ 
+              ...prev, 
+              amount: studentFeeStructure.totalBalance.toString() 
+            }));
+          }
+        }}
+      >
         <ModalContent>
           <ModalHeader>Record Fee Payment</ModalHeader>
           <ModalBody>
             <div className="space-y-4">
-              <Input label="Amount" type="number" value={paymentForm.amount} onValueChange={(v) => setPaymentForm({ ...paymentForm, amount: v })} startContent="₹" variant="bordered" />
-              <Select label="Month" placeholder="Select month" selectedKeys={paymentForm.month ? [paymentForm.month] : []} onSelectionChange={(keys) => setPaymentForm({ ...paymentForm, month: Array.from(keys)[0] })} variant="bordered">
-                {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map(m => <SelectItem key={m}>{m}</SelectItem>)}
+              <Input 
+                label="Amount" 
+                type="number" 
+                value={paymentForm.amount} 
+                onValueChange={(v) => setPaymentForm({ ...paymentForm, amount: v })} 
+                startContent="₹" 
+                variant="bordered"
+                description={`Outstanding: ₹${studentFeeStructure?.totalBalance?.toLocaleString() || 0}`}
+                isRequired
+              />
+              <Select 
+                label="Payment Method" 
+                placeholder="Select payment method" 
+                selectedKeys={[paymentForm.paymentMode]} 
+                onSelectionChange={(keys) => setPaymentForm({ ...paymentForm, paymentMode: Array.from(keys)[0] })} 
+                variant="bordered"
+                isRequired
+              >
+                <SelectItem key="cash">Cash</SelectItem>
+                <SelectItem key="online">Online/UPI</SelectItem>
+                <SelectItem key="card">Card</SelectItem>
+                <SelectItem key="cheque">Cheque</SelectItem>
+                <SelectItem key="bank_transfer">Bank Transfer</SelectItem>
               </Select>
+              <Input 
+                label="Payment Date" 
+                type="date" 
+                value={paymentForm.date} 
+                onValueChange={(v) => setPaymentForm({ ...paymentForm, date: v })} 
+                variant="bordered"
+              />
             </div>
           </ModalBody>
           <ModalFooter>
             <Button variant="flat" onPress={() => setIsPaymentOpen(false)}>Cancel</Button>
-            <Button color="primary" onPress={handleRecordPayment}>Record Payment</Button>
+            <Button 
+              color="primary" 
+              onPress={handleRecordPayment}
+              isDisabled={!paymentForm.amount || !paymentForm.paymentMode}
+            >
+              Record Payment
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

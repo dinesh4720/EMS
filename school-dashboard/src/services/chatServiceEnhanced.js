@@ -148,12 +148,16 @@ class ChatServiceEnhanced {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${API_URL.replace('/api', '')}/api/upload`, {
+      // API_URL already includes /api, so just use it directly
+      const response = await fetch(`${API_URL}/upload`, {
         method: 'POST',
         body: formData
       });
 
-      if (!response.ok) throw new Error('Failed to upload file');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to upload file');
+      }
       return await response.json();
     } catch (error) {
       console.error('Error uploading file:', error);

@@ -482,7 +482,7 @@ export default function StaffAttendance() {
                         <Popover placement="bottom-start">
                             <PopoverTrigger>
                                 <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
-                                    <button 
+                                    <div 
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             const date = new Date(selectedDate);
@@ -492,21 +492,22 @@ export default function StaffAttendance() {
                                         className="p-0.5 hover:bg-default-100 rounded cursor-pointer"
                                     >
                                         <ChevronLeft size={14} className="text-default-400" />
-                                    </button>
+                                    </div>
                                     <CalendarDays size={16} className="text-default-400 flex-shrink-0" />
                                     <span>{new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                                    <button 
+                                    <div 
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            const date = new Date(selectedDate);
-                                            date.setDate(date.getDate() + 1);
-                                            setSelectedDate(date.toISOString().split('T')[0]);
+                                            if (selectedDate < new Date().toISOString().split('T')[0]) {
+                                                const date = new Date(selectedDate);
+                                                date.setDate(date.getDate() + 1);
+                                                setSelectedDate(date.toISOString().split('T')[0]);
+                                            }
                                         }}
-                                        disabled={selectedDate >= new Date().toISOString().split('T')[0]}
-                                        className="p-0.5 hover:bg-default-100 rounded cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                        className={`p-0.5 hover:bg-default-100 rounded cursor-pointer ${selectedDate >= new Date().toISOString().split('T')[0] ? 'opacity-30 cursor-not-allowed' : ''}`}
                                     >
                                         <ChevronRight size={14} className="text-default-400" />
-                                    </button>
+                                    </div>
                                 </button>
                             </PopoverTrigger>
                             <PopoverContent className="p-0">
@@ -588,6 +589,14 @@ export default function StaffAttendance() {
                     >
                         <Download size={16} className="text-default-400" />
                         <span>Download Report</span>
+                    </button>
+
+                    <button 
+                        className="flex items-center gap-2 px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary-600 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap"
+                        onClick={() => navigate("/staffs/attendance/regularize")}
+                    >
+                        <CalendarDays size={16} />
+                        <span>Regularize</span>
                     </button>
 
                     <Dropdown>

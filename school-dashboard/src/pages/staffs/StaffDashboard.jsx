@@ -1,18 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Card, CardBody, CardHeader, Chip, Progress, Button, Divider,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
   Textarea, Avatar, Tabs, Tab, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Tooltip,
-  Input, Select, SelectItem
+  Input, Select, SelectItem, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem
 } from "@heroui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Calendar, CheckSquare, MessageSquare, Clock, Mail, Phone, MapPin, Briefcase,
   Edit, User, FileText, Download, Upload, Plus, AlertCircle, BookOpen, GraduationCap,
-  DollarSign, FileCheck, Layers, Settings, ChevronRight, Globe, TrendingUp, IndianRupee, AlertTriangle, Bell, Info
+  DollarSign, FileCheck, Layers, Settings, ChevronRight, Globe, TrendingUp, IndianRupee, AlertTriangle, Bell, Info,
+  MoreHorizontal, Trash2, FolderPlus, Eye, CreditCard
 } from "lucide-react";
 import PageHeader from "../../components/PageHeader";
 import { useApp } from "../../context/AppContext";
+import { uploadApi } from "../../services/api";
 import toast from "react-hot-toast";
 
 export default function StaffDashboard() {
@@ -27,17 +29,20 @@ export default function StaffDashboard() {
   } = useApp();
 
   const { isOpen, onOpen, onClose } = useDisclosure(); // Message Modal
-  const { isOpen: isRemarkOpen, onOpen: onRemarkOpen, onClose: onRemarkClose } = useDisclosure(); // Remark Modal
-  const { isOpen: isTestModalOpen, onOpen: onTestOpen, onClose: onTestClose } = useDisclosure(); // Test Modal
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure(); // Edit Modal
+  const { isOpen: isSalaryOpen, onOpen: onSalaryOpen, onClose: onSalaryClose } = useDisclosure();
 
   const [message, setMessage] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
-  const [newRemark, setNewRemark] = useState({ studentId: "", remark: "" });
+  // Document State
+  const documentInputRef = useRef(null);
+  const [documents, setDocuments] = useState([]);
+  const [activeUploads, setActiveUploads] = useState([]);
 
-  const [selectedClassId, setSelectedClassId] = useState("");
-  const [newTest, setNewTest] = useState({ title: "", classId: "", subject: "", date: "", time: "09:00" });
+  // Photo Upload State
+  const fileInputRef = useRef(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -50,11 +55,15 @@ export default function StaffDashboard() {
     address: ""
   });
 
+  const staff = getStaffById(id); // Don't parse as number - MongoDB IDs are strings
 
-  const staff = getStaffById(id);
   const today = new Date();
-  const monthlyStats = getMonthlyAttendance(id, today.getFullYear(), today.getMonth());
+  const monthlyStats = useMemo(() => {
+    return getMonthlyAttendance(id, today.getFullYear(), today.getMonth());
+  }, [id, attendance]);
+
   const attendanceRate = monthlyStats.total > 0 ? Math.round((monthlyStats.present / monthlyStats.total) * 100) : 0;
+
   const staffSalary = staffSalaries?.[id] || {};
 
   const calculateTotals = (salaryData) => {
@@ -72,44 +81,7 @@ export default function StaffDashboard() {
 
   const { totalEarnings, totalDeductions, netSalary } = calculateTotals(staffSalary);
 
-  const mockAlerts = [
-    {
-      id: 1,
-      type: "critical",
-      title: "Urgent: Leave Applied",
-      desc: "Medical Leave (2 Days) awaits approval.",
-      time: "2h ago",
-      icon: AlertCircle
-    },
-    {
-      id: 2,
-      type: "warning",
-      title: "Low Attendance Warning",
-      desc: "Attendance dropped below 85%.",
-      time: "1d ago",
-      icon: AlertTriangle
-    },
-    {
-      id: 3,
-      type: "info",
-      title: "Document Pending",
-      desc: "Updated ID Proof is required.",
-      time: "3d ago",
-      icon: FileText
-    },
-    {
-      id: 4,
-      type: "success",
-      title: "Salary Processed",
-      desc: "October salary has been credited.",
-      time: "5d ago",
-      icon: IndianRupee
-    }
-  ];
-
-  if (!staff) return <div className="p-8 text-center text-default-500">Staff member not found</div>;
-
-  // Initialize edit form when staff data loads
+  // Initialize data
   useEffect(() => {
     if (staff) {
       setEditForm({
@@ -121,20 +93,106 @@ export default function StaffDashboard() {
         status: staff.status || "active",
         address: staff.address || ""
       });
+      setPhotoPreview(staff.photo || null);
+
+      // Initialize Documents if available in staff object
+      // This assumes staff object has a documents array, similar to students
+      if (staff.documents) {
+        setDocuments(staff.documents);
+      }
     }
   }, [staff]);
 
-  const handleEditOpen = () => {
-    setEditForm({
-      name: staff.name || "",
-      email: staff.email || "",
-      phone: staff.phone || "",
-      role: staff.role || "",
-      department: staff.department || "",
-      status: staff.status || "active",
-      address: staff.address || ""
-    });
-    onEditOpen();
+  const handleDocumentUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files && files.length > 0) {
+      // Mock Upload Process similar to StudentOverview
+      const newUploads = files.map(file => ({
+        id: Date.now() + Math.random(),
+        name: file.name,
+        size: file.size,
+        progress: 0,
+        status: 'pending'
+      }));
+
+      setActiveUploads(prev => [...prev, ...newUploads]);
+
+      try {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const uploadId = newUploads[i].id;
+
+          // Simulate upload progress
+          setActiveUploads(prev => prev.map(u => u.id === uploadId ? { ...u, status: 'uploading', progress: 50 } : u));
+
+          const response = await uploadApi.uploadFile(file);
+
+          const formatFileSize = (bytes) => {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+          };
+
+          const newDoc = {
+            id: Date.now().toString(), // Mock ID
+            name: file.name,
+            type: file.type,
+            url: response.url,
+            size: formatFileSize(file.size),
+            uploadDate: new Date().toISOString()
+          };
+
+          // In a real scenario, you would POST this to the backend
+          // await updateStaffDocuments(id, newDoc); 
+          // For now, we update local state and mock the backend update:
+          const updatedDocs = [...documents, newDoc];
+          setDocuments(updatedDocs);
+
+          // Update Context (Mock)
+          // updateStaff(id, { ...staff, documents: updatedDocs });
+
+          setActiveUploads(prev => prev.map(u => u.id === uploadId ? { ...u, status: 'completed', progress: 100 } : u));
+        }
+
+        setTimeout(() => setActiveUploads([]), 2000);
+        toast.success("Documents uploaded successfully");
+
+      } catch (error) {
+        console.error("Upload error:", error);
+        toast.error("Upload failed");
+      } finally {
+        e.target.value = null;
+      }
+    }
+  };
+
+  const handleDeleteDocument = (docId) => {
+    // Mock delete
+    const updatedDocs = documents.filter(d => d.id !== docId && d.url !== docId); // Handle both ID types
+    setDocuments(updatedDocs);
+    toast.success("Document deleted");
+    // updateStaff(id, { ...staff, documents: updatedDocs });
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const loadingToast = toast.loading("Uploading photo...");
+      try {
+        const response = await uploadApi.uploadFile(file);
+
+        // Update staff photo
+        await updateStaff(id, { ...staff, photo: response.url });
+
+        setPhotoPreview(response.url);
+        toast.success("Photo updated successfully", { id: loadingToast });
+      } catch (error) {
+        console.error("Photo upload error:", error);
+        toast.error("Photo upload failed", { id: loadingToast });
+      } finally {
+        e.target.value = null;
+      }
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -152,96 +210,210 @@ export default function StaffDashboard() {
     console.log("Sending message to", staff.name, ":", message);
     setMessage("");
     onClose();
+    toast.success("Message sent");
   };
 
+  if (!staff) return <div className="p-8 text-center text-default-500">Staff member not found</div>;
+
   return (
-    <div className="min-h-screen bg-background text-foreground animate-fade-in p-4 lg:p-6 pb-8">
-      {/* Header with Back Icon and Title */}
-      <div className="max-w-[1600px] mx-auto mb-6">
-        <div className="flex items-center gap-3">
-          <Button
-            isIconOnly
-            variant="light"
-            onPress={() => navigate('/staffs')}
-            className="text-default-600 hover:text-default-900"
-            size="sm"
-          >
-            <ArrowLeft size={20} />
-          </Button>
-          <h1 className="text-2xl font-bold text-default-900">Staff Profile</h1>
+    <div className="min-h-screen bg-background text-foreground animate-fade-in p-6 lg:p-8 pb-12">
+      <div className="max-w-[1600px] mx-auto space-y-6">
+
+        {/* Top Profile Header & Actions Row - Matches StudentOverview */}
+        <div className="w-full bg-white dark:bg-zinc-900 rounded-2xl p-6 border border-default-200 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-6 relative overflow-hidden">
+          {/* Background Decoration */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary-50/50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+
+          <div className="flex flex-col md:flex-row items-center gap-6 z-10 w-full lg:w-auto">
+            {/* Back Button */}
+            <div className="self-start md:self-center mr-2">
+              <Button isIconOnly variant="light" onPress={() => navigate('/staffs')} className="text-default-500">
+                <ArrowLeft size={20} />
+              </Button>
+            </div>
+
+            {/* Avatar */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handlePhotoUpload}
+            />
+            <div className="relative group">
+              <Avatar
+                src={photoPreview || staff.photo || `https://i.pravatar.cc/150?u=${staff.id}`}
+                name={staff.name}
+                className="w-20 h-20 text-3xl ring-4 ring-white shadow-sm"
+              />
+              <div
+                className="absolute -bottom-1 -right-1 bg-white rounded-full p-1.5 shadow-sm border border-default-200 cursor-pointer hover:bg-default-50 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+                title="Update photo"
+              >
+                <Edit size={14} className="text-default-600" />
+              </div>
+            </div>
+
+            {/* Staff Info */}
+            <div className="text-center md:text-left space-y-1">
+              <h1 className="text-2xl font-bold text-default-900">{staff.name}</h1>
+              <div className="flex items-center justify-center md:justify-start gap-3 text-default-500 font-medium text-sm mt-1">
+                <span>@{staff.role?.toLowerCase()?.replace(" ", "_") || "staff"}</span>
+                <span className="text-sm font-medium text-default-600 bg-default-100 border border-default-200 px-2.5 py-0.5 rounded-md">
+                  {staff.department || "General"}
+                </span>
+                {staff.joinDate && <span>• Joined {staff.joinDate}</span>}
+              </div>
+            </div>
+          </div>
+
+          {/* Actions Row */}
+          <div className="flex flex-wrap items-center justify-center lg:justify-end gap-3 z-10 w-full lg:w-auto border-t lg:border-t-0 lg:border-l border-default-100 pt-4 lg:pt-0 lg:pl-6">
+            <Button variant="flat" color="primary" startContent={<MessageSquare size={18} />} onPress={onOpen}>
+              Send Message
+            </Button>
+            <Button variant="flat" color="default" startContent={<CreditCard size={18} />} onPress={() => setActiveTab("payroll")}>
+              View Salary
+            </Button>
+
+            <Dropdown>
+              <DropdownTrigger>
+                <Button isIconOnly variant="light" color="default">
+                  <MoreHorizontal size={20} />
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu aria-label="Profile actions">
+                <DropdownItem
+                  key="edit"
+                  startContent={<Edit size={16} />}
+                  onPress={onEditOpen}
+                >
+                  Edit Profile
+                </DropdownItem>
+                <DropdownItem
+                  key="delete"
+                  className="text-danger"
+                  color="danger"
+                  startContent={<Trash2 size={16} />}
+                  onPress={() => toast.error("Delete functionality constrained by permissions")}
+                >
+                  Delete Staff
+                </DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
+          </div>
         </div>
-      </div>
 
-      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-
-        {/* Main Content - Now on Left */}
-        <div className="lg:col-span-3 space-y-4">
+        {/* Main Content Area */}
+        <div className="w-full space-y-6">
           <Tabs
             selectedKey={activeTab}
             onSelectionChange={setActiveTab}
-            variant="underlined"
+            size="lg"
+            color="primary"
+            variant="solid"
             classNames={{
-              tabList: "gap-4 border-b border-default-200 w-full p-0",
-              cursor: "w-full bg-primary",
-              tab: "max-w-fit px-0 h-10 pb-2",
-              tabContent: "group-data-[selected=true]:text-primary group-data-[selected=true]:font-semibold font-medium text-default-500"
+              tabList: "gap-1 p-1.5 bg-default-100/50 rounded-2xl border border-default-200 mb-6",
+              cursor: "bg-background rounded-xl shadow-sm ring-1 ring-black/5",
+              tab: "px-6 h-10 transition-all",
+              tabContent: "group-data-[selected=true]:text-default-900 group-data-[selected=true]:font-semibold text-default-500 font-medium"
             }}
           >
             <Tab key="overview" title="Overview" />
             <Tab key="about" title="About" />
             <Tab key="academics" title="Timetable & Plans" />
             <Tab key="payroll" title="Payroll" />
-            <Tab key="documents" title="Documents" />
-            <Tab key="settings" title="Settings" />
+            <Tab key="documents" title={
+              <div className="flex items-center gap-2">
+                <span>Documents</span>
+                <Chip size="sm" variant="flat" color="primary">{documents.length}</Chip>
+              </div>
+            } />
           </Tabs>
 
           {activeTab === "overview" && (
-            <div className="space-y-4 animate-fade-in">
-              {/* Stats Grid - "Reports" style */}
+            <div className="space-y-8 animate-fade-in">
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-default-900">Reports</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Attendance Report */}
-                  <Card shadow="none" className="border border-default-200 hover:border-primary/50 transition-colors group">
-                    <CardBody className="p-0 overflow-hidden flex flex-row h-32">
-                      <div className="w-1/3 bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
-                        <div className="text-center">
-                          <span className="text-3xl font-bold text-blue-600 block">{attendanceRate}%</span>
-                          <span className="text-xs text-blue-500 font-bold uppercase">Attendance</span>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-default-900">Performance & Stats</h3>
+                  <span className="text-sm text-default-500">Last updated today</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Attendance Card */}
+                  <Card shadow="sm" className="border border-default-200 bg-background/60 backdrop-blur-md">
+                    <CardBody className="p-6">
+                      <div className="flex items-start justify-between mb-4 w-full">
+                        <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                          <Clock size={24} />
                         </div>
+                        <Chip size="sm" color="primary" variant="flat" className="text-xs font-semibold">Regular</Chip>
                       </div>
-                      <div className="flex-1 p-4 flex flex-col justify-between">
-                        <div>
-                          <h4 className="font-semibold text-default-900 group-hover:text-primary transition-colors">Monthly Attendance</h4>
-                          <p className="text-xs text-default-500 mt-1">Present: {monthlyStats.present} | Absent: {monthlyStats.absent}</p>
+                      <div className="space-y-1 text-left">
+                        <h4 className="text-2xl font-semibold text-default-900">{attendanceRate}%</h4>
+                        <p className="text-sm font-medium text-default-500">Monthly Attendance</p>
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-default-100 space-y-2">
+                        <div className="flex items-center gap-3 text-xs text-default-500">
+                          <span className="font-medium">Present:</span>
+                          <span className="font-bold text-default-700">{monthlyStats.present}/{monthlyStats.total} Days</span>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-default-400">
-                          <TrendingUp size={12} />
-                          <span>Regular</span>
-                          <span className="ml-auto">Last sync: Today</span>
+                        <div className="flex items-center gap-3 text-xs text-red-500">
+                          <span className="font-medium">Absent:</span>
+                          <span className="font-bold">{monthlyStats.absent} Days</span>
                         </div>
                       </div>
                     </CardBody>
                   </Card>
 
-                  {/* Salary Report */}
-                  <Card shadow="none" className="border border-default-200 hover:border-success/50 transition-colors group">
-                    <CardBody className="p-0 overflow-hidden flex flex-row h-32">
-                      <div className="w-1/3 flex items-center justify-center p-4 bg-gradient-to-br from-success-50 to-success-100">
-                        <div className="text-center">
-                          <span className="text-xl font-bold text-success-600 block">₹{(netSalary / 1000).toFixed(1)}k</span>
-                          <span className="text-xs text-success-500 font-bold uppercase">Net Pay</span>
+                  {/* Salary Card */}
+                  <Card shadow="sm" className="border border-default-200 bg-background/60 backdrop-blur-md">
+                    <CardBody className="p-6">
+                      <div className="flex items-start justify-between mb-4 w-full">
+                        <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                          <IndianRupee size={24} />
+                        </div>
+                        <Chip size="sm" color="success" variant="flat" className="text-xs font-semibold">Processed</Chip>
+                      </div>
+                      <div className="space-y-1 text-left">
+                        <h4 className="text-2xl font-semibold text-default-900">₹{(netSalary / 1000).toFixed(1)}k</h4>
+                        <p className="text-sm font-medium text-default-500">Net Salary</p>
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-default-100 space-y-2">
+                        <div className="flex items-center gap-3 text-xs text-default-500">
+                          <span className="font-medium">Base Pay:</span>
+                          <span className="font-bold text-default-700">₹{(totalEarnings).toLocaleString()}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-default-500">
+                          <span className="font-medium">Deductions:</span>
+                          <span className="font-bold text-default-700">₹{(totalDeductions).toLocaleString()}</span>
                         </div>
                       </div>
-                      <div className="flex-1 p-4 flex flex-col justify-between">
-                        <div>
-                          <h4 className="font-semibold text-default-900 group-hover:text-primary transition-colors">Current Earnings</h4>
-                          <p className="text-xs text-default-500 mt-1">Based on current month's payroll structure.</p>
+                    </CardBody>
+                  </Card>
+
+                  {/* Alerts / Tasks Card */}
+                  <Card shadow="sm" className="border border-default-200 bg-background/60 backdrop-blur-md">
+                    <CardBody className="p-6">
+                      <div className="flex items-start justify-between mb-4 w-full">
+                        <div className="p-3 bg-orange-50 text-orange-600 rounded-xl">
+                          <AlertTriangle size={24} />
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-default-400">
-                          <IndianRupee size={12} />
-                          <span>Processed</span>
-                          <span className="ml-auto">1st of Month</span>
+                        <Chip size="sm" color="warning" variant="flat" className="text-xs font-semibold">Actions</Chip>
+                      </div>
+                      <div className="space-y-1 text-left">
+                        <h4 className="text-2xl font-semibold text-default-900">3</h4>
+                        <p className="text-sm font-medium text-default-500">Pending Actions</p>
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-default-100 space-y-2">
+                        <div className="flex items-center gap-2 text-xs text-default-500">
+                          <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                          <span>Submit Lesson Plan</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-default-500">
+                          <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
+                          <span>Verify Attendance</span>
                         </div>
                       </div>
                     </CardBody>
@@ -252,10 +424,18 @@ export default function StaffDashboard() {
           )}
 
           {activeTab === "about" && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-6 animate-fade-in">
               <Card shadow="none" className="border border-default-200">
-                <CardHeader className="px-4 pt-4 pb-0"><h3 className="text-lg font-bold">Personal Information</h3></CardHeader>
-                <CardBody className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
+                <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                      <User size={20} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-default-900">Personal Information</h3>
+                  </div>
+                  <Button isIconOnly size="sm" variant="light" onPress={onEditOpen}><Edit size={16} className="text-default-500" /></Button>
+                </CardHeader>
+                <CardBody className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-6">
                   <InfoItem label="Full Name" value={staff.name} />
                   <InfoItem label="Staff ID" value={staff.id} />
                   <InfoItem label="Date of Birth" value={staff.dateOfBirth} />
@@ -269,8 +449,16 @@ export default function StaffDashboard() {
               </Card>
 
               <Card shadow="none" className="border border-default-200">
-                <CardHeader className="px-4 pt-4 pb-0"><h3 className="text-lg font-bold">Employment Details</h3></CardHeader>
-                <CardBody className="p-4 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+                <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
+                      <Briefcase size={20} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-default-900">Employment Details</h3>
+                  </div>
+                  <Button isIconOnly size="sm" variant="light" onPress={onEditOpen}><Edit size={16} className="text-default-500" /></Button>
+                </CardHeader>
+                <CardBody className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-6">
                   <InfoItem label="Role" value={staff.role} />
                   <InfoItem label="Department" value={staff.department} />
                   <InfoItem label="Designation" value={staff.designation} />
@@ -281,8 +469,16 @@ export default function StaffDashboard() {
               </Card>
 
               <Card shadow="none" className="border border-default-200">
-                <CardHeader className="px-4 pt-4 pb-0"><h3 className="text-lg font-bold">Contact Details</h3></CardHeader>
-                <CardBody className="p-4 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+                <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-green-50 text-green-600 rounded-xl">
+                      <Phone size={20} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-default-900">Contact Details</h3>
+                  </div>
+                  <Button isIconOnly size="sm" variant="light" onPress={onEditOpen}><Edit size={16} className="text-default-500" /></Button>
+                </CardHeader>
+                <CardBody className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-6">
                   <InfoItem label="Email" value={staff.email} />
                   <InfoItem label="Phone" value={staff.phone} />
                   <InfoItem label="Address" value={staff.address} className="col-span-full" />
@@ -292,8 +488,15 @@ export default function StaffDashboard() {
               </Card>
 
               <Card shadow="none" className="border border-default-200">
-                <CardHeader className="px-4 pt-4 pb-0"><h3 className="text-lg font-bold">Bank Account Details</h3></CardHeader>
-                <CardBody className="p-4 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+                <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+                      <DollarSign size={20} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-default-900">Bank Account Details</h3>
+                  </div>
+                </CardHeader>
+                <CardBody className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-6">
                   <InfoItem label="Account Holder" value={staff.accountHolder} />
                   <InfoItem label="Account Number" value={staff.accountNumber} />
                   <InfoItem label="Bank Name" value={staff.bankName} />
@@ -304,26 +507,33 @@ export default function StaffDashboard() {
             </div>
           )}
 
-          {activeTab === "documents" && (
-            <div className="space-y-4 animate-fade-in">
-              <Card shadow="none" className="border border-default-200">
-                <CardHeader className="px-6 pt-6 pb-2"><h3 className="text-lg font-bold">Documents</h3></CardHeader>
-                <CardBody>
-                  <p className="text-default-500 text-sm">No documents uploaded yet.</p>
-                </CardBody>
-              </Card>
+          {activeTab === "academics" && (
+            <div className="space-y-6 animate-fade-in">
+              {/* Placeholder for Timetable - similar to StudentOverview Academics */}
+              <div className="text-center py-16 border-2 border-dashed border-default-200 rounded-xl bg-default-50/50">
+                <Calendar size={32} className="mx-auto text-default-300 mb-2" />
+                <h4 className="font-semibold text-default-900 mb-1">Timetable & Lesson Plans</h4>
+                <p className="text-sm text-default-500">Schedule integration coming soon.</p>
+              </div>
             </div>
           )}
 
           {activeTab === "payroll" && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-6 animate-fade-in">
               <Card shadow="none" className="border border-default-200">
-                <CardHeader className="flex justify-between px-4 pt-4">
-                  <h4 className="font-bold text-medium">Payroll History</h4>
+                <CardHeader className="flex justify-between px-6 pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+                      <IndianRupee size={20} />
+                    </div>
+                    <h4 className="font-bold text-lg text-default-900">Payroll History</h4>
+                  </div>
                 </CardHeader>
-                <CardBody>
-                  {/* Reuse existing payroll table logic here or simplified view */}
-                  <Table aria-label="Payroll History" removeWrapper>
+                <CardBody className="p-4">
+                  <Table aria-label="Payroll History" removeWrapper classNames={{
+                    th: "bg-default-50 text-default-600 font-semibold text-xs uppercase",
+                    td: "py-4"
+                  }}>
                     <TableHeader>
                       <TableColumn>MONTH</TableColumn>
                       <TableColumn>AMOUNT</TableColumn>
@@ -333,7 +543,7 @@ export default function StaffDashboard() {
                     <TableBody>
                       {payrollHistory.map((record) => (
                         <TableRow key={record.id}>
-                          <TableCell>{record.month}</TableCell>
+                          <TableCell><span className="font-medium text-default-700">{record.month}</span></TableCell>
                           <TableCell>₹{staffSalary ? (calculateTotals(staffSalary).netSalary).toLocaleString() : 0}</TableCell>
                           <TableCell><Chip size="sm" color="success" variant="flat">Paid</Chip></TableCell>
                           <TableCell>{record.date}</TableCell>
@@ -346,121 +556,70 @@ export default function StaffDashboard() {
             </div>
           )}
 
-        </div>
-
-        {/* Profile Card - Now on Right */}
-        <div className="lg:col-span-1 lg:pl-6 lg:border-l-2 lg:border-default-200 space-y-4 sticky top-8">
-          <div className="flex flex-col items-start space-y-4">
-            <div className="relative group">
-              <Avatar
-                name={staff.name}
-                className="w-32 h-32 text-3xl ring-4 ring-offset-2 ring-default-100 cursor-pointer transition-transform group-hover:scale-105"
-                isBordered
-                color="primary"
+          {activeTab === "documents" && (
+            <div className="space-y-6 animate-fade-in">
+              <input
+                type="file"
+                ref={documentInputRef}
+                className="hidden"
+                multiple
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                onChange={handleDocumentUpload}
               />
-              <div 
-                className="absolute bottom-0 right-0 bg-background rounded-full p-1 border border-default-200 shadow-sm cursor-pointer hover:bg-default-100"
-                onClick={handleEditOpen}
-              >
-                <Edit size={14} className="text-default-600" />
-              </div>
-            </div>
 
-            <div>
-              <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-default-900 to-default-600">
-                {staff?.name || "Staff Member"}
-              </h1>
-              <p className="text-default-500 font-medium">@{staff?.role?.toLowerCase()?.replace(" ", "_") || "staff"} • {staff?.department || "General"}</p>
-            </div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-default-500">{documents.length} documents</span>
+                </div>
+                <Button size="sm" color="primary" startContent={<Upload size={16} />} onPress={() => documentInputRef.current?.click()}>Upload Document</Button>
+              </div>
 
-            <div className="text-sm text-default-600 flex flex-col gap-2 w-full">
-              <div className="flex items-center gap-2">
-                <Briefcase size={16} className="text-default-400" />
-                <span>Joined {staff?.joinDate || "2024"}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin size={16} className="text-default-400" />
-                <span className="truncate">{staff?.address || "No Address"}</span>
-              </div>
-              {staff?.email && (
-                <div className="flex items-center gap-2 group cursor-pointer hover:text-primary transition-colors">
-                  <Mail size={16} className="text-default-400 group-hover:text-primary" />
-                  <span className="truncate">{staff.email}</span>
+              {documents.length === 0 ? (
+                <div className="text-center py-16 border-2 border-dashed border-default-200 rounded-xl bg-default-50/50 hover:bg-default-100/50 transition-colors cursor-pointer group" onClick={() => documentInputRef.current?.click()}>
+                  <div className="inline-flex p-4 bg-white rounded-full mb-4 ring-1 ring-default-200 shadow-sm group-hover:scale-110 transition-transform">
+                    <FolderPlus size={32} className="text-primary" />
+                  </div>
+                  <h4 className="font-semibold text-default-900 mb-1">No documents uploaded yet</h4>
+                  <p className="text-sm text-default-500 max-w-xs mx-auto">Upload certificates, ID proofs, or other essential documents.</p>
+                  <Button className="mt-4" size="sm" color="primary" variant="ghost" onPress={() => documentInputRef.current?.click()}>Browse Files</Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {documents.map((doc, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border border-default-200 rounded-lg hover:bg-default-50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-primary-50 text-primary">
+                          <FileText size={20} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-default-900">{doc.name}</p>
+                          <p className="text-xs text-default-500">{doc.uploadDate ? new Date(doc.uploadDate).toLocaleDateString() : 'Just now'} • {doc.size || 'Unknown'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Tooltip content="View document">
+                          <Button isIconOnly size="sm" variant="light" onPress={() => window.open(doc.url, '_blank')}>
+                            <Eye size={16} className="text-default-500" />
+                          </Button>
+                        </Tooltip>
+                        <Tooltip content="Download document">
+                          <Button isIconOnly size="sm" variant="light" as="a" href={doc.url} download={doc.name} target="_blank">
+                            <Download size={16} className="text-default-500" />
+                          </Button>
+                        </Tooltip>
+                        <Tooltip content="Delete document">
+                          <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => handleDeleteDocument(doc.id || doc.url)}>
+                            <Trash2 size={16} />
+                          </Button>
+                        </Tooltip>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
+          )}
 
-            <Divider className="my-2" />
-
-            <div className="w-full space-y-3">
-              <h3 className="font-semibold text-default-900 text-sm">Teams & Dept</h3>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-sm text-default-600 hover:bg-default-100 p-1.5 rounded-lg transition-colors cursor-pointer">
-                  <div className="w-6 h-6 rounded-md bg-purple-100 text-purple-600 flex items-center justify-center">
-                    <Briefcase size={14} />
-                  </div>
-                  <span className="font-medium">{staff?.department || "General"} Dept</span>
-                </div>
-                {staff?.classes && staff.classes.length > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-default-600 hover:bg-default-100 p-1.5 rounded-lg transition-colors cursor-pointer">
-                    <div className="w-6 h-6 rounded-md bg-orange-100 text-orange-600 flex items-center justify-center">
-                      <GraduationCap size={14} />
-                    </div>
-                    <span className="font-medium">Class Teacher: {staff.classes[0]}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <Divider className="my-2" />
-
-            <div className="w-full">
-              <Button fullWidth color="primary" variant="flat" startContent={<MessageSquare size={16} />} onPress={onOpen}>Send Message</Button>
-            </div>
-
-            <Divider className="my-2" />
-
-            {/* Critical Alerts Section */}
-            <div className="w-full space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-danger-100 rounded-lg text-danger-600">
-                    <AlertTriangle size={16} />
-                  </div>
-                  <h3 className="font-bold text-default-900 text-medium">Critical Alerts</h3>
-                </div>
-                <Chip size="sm" color="danger" variant="flat" className="h-6">4 New</Chip>
-              </div>
-
-              <div className="space-y-3 mt-4">
-                {mockAlerts.map((alert) => (
-                  <div key={alert.id} className="group flex gap-3 p-3 rounded-xl border border-default-200 bg-content1 hover:border-danger-200 hover:shadow-sm transition-all cursor-pointer">
-                    <div className={`mt-1 min-w-[8px] max-w-[8px] h-8 rounded-full ${alert.type === 'critical' ? 'bg-danger-500' :
-                      alert.type === 'warning' ? 'bg-warning-500' :
-                        alert.type === 'success' ? 'bg-success-500' : 'bg-primary-500'
-                      }`} />
-                    <div className="flex-1 space-y-1">
-                      <div className="flex justify-between items-start">
-                        <h4 className={`text-sm font-semibold ${alert.type === 'critical' ? 'text-danger-600' : 'text-default-900'
-                          }`}>
-                          {alert.title}
-                        </h4>
-                        <span className="text-[10px] text-default-400 whitespace-nowrap">{alert.time}</span>
-                      </div>
-                      <p className="text-xs text-default-500 leading-relaxed">
-                        {alert.desc}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <Button fullWidth variant="light" className="text-default-400 hover:text-default-600" size="sm">
-                View All Alerts
-              </Button>
-            </div>
-
-          </div>
         </div>
       </div>
 
@@ -567,7 +726,6 @@ export default function StaffDashboard() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-
     </div>
   );
 }

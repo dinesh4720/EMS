@@ -350,7 +350,27 @@ If the page doesn't have a padded parent wrapper, skip the negative margins:
 
 ## Section 3: Date Picker
 
-### Date Picker with Navigation Arrows
+### Form Date Picker (Standard)
+For form inputs, use the `DatePicker` component directly with `parseDate`.
+
+```jsx
+import { DatePicker } from "@heroui/react";
+import { parseDate } from "@internationalized/date";
+
+<DatePicker
+    label="Date of Birth"
+    labelPlacement="outside"
+    value={value ? parseDate(value.split('T')[0]) : null}
+    onChange={(date) => setValue(date ? date.toString() : "")}
+    variant="bordered"
+    radius="sm"
+    showMonthAndYearPickers
+    classNames={{ label: "text-xs font-medium text-default-600 mb-1" }}
+    aria-label="Select date"
+/>
+```
+
+### Date Picker with Navigation Arrows (Toolbar)
 ```jsx
 <Popover placement="bottom-start">
     <PopoverTrigger>

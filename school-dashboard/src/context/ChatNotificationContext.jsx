@@ -2,7 +2,9 @@ import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import socketService from '../services/socketServiceEnhanced';
-import { MessageCircle, X } from 'lucide-react';
+import chatService from '../services/chatServiceEnhanced';
+import { MessageCircle, X, Reply, Send } from 'lucide-react';
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea } from '@heroui/react';
 
 const ChatNotificationContext = createContext();
 
@@ -17,6 +19,10 @@ export function ChatNotificationProvider({ children }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [replyModalOpen, setReplyModalOpen] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
   const locationRef = useRef(location.pathname);
 
   // Update location ref when location changes
@@ -163,6 +169,53 @@ export function ChatNotificationProvider({ children }) {
     // The chat page will handle opening the specific conversation
   };
 
+  const handleReply = (notification) => {
+    setReplyingTo(notification);
+    setReplyModalOpen(true);
+  };
+
+  const handleSendReply = async () => {
+    if (!replyMessage.trim() || !replyingTo) return;
+
+    setSendingReply(true);
+    try {
+      const messageData = {
+        conversationId: replyingTo.conversationId,
+        content: replyMessage.trim(),
+        type: 'text'
+      };
+
+      // Send via socket if connected
+      if (socketService.isConnected()) {
+        socketService.sendMessage(messageData);
+      } else {
+        // Fallback to REST API
+        await chatService.sendMessage({
+          ...messageData,
+          senderId: user.id,
+          senderModel: 'Staff'
+        });
+      }
+
+      // Close modal and clear
+      setReplyModalOpen(false);
+      setReplyMessage('');
+      dismissNotification(replyingTo.id);
+      setReplyingTo(null);
+    } catch (error) {
+      console.error('❌ Error sending reply:', error);
+      alert('Failed to send reply');
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setReplyModalOpen(false);
+    setReplyMessage('');
+    setReplyingTo(null);
+  };
+
   return (
     <ChatNotificationContext.Provider value={{ unreadCount, isConnected }}>
       {children}
@@ -172,39 +225,125 @@ export function ChatNotificationProvider({ children }) {
         {notifications.map((notification) => (
           <div
             key={notification.id}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 flex items-start gap-3 animate-slide-in-right cursor-pointer hover:shadow-xl transition-shadow"
-            onClick={() => {
-              goToChat(notification.conversationId);
-              dismissNotification(notification.id);
-            }}
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden animate-slide-in-right"
           >
-            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <MessageCircle size={20} className="text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                {notification.senderName}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                {notification.type === 'text' 
-                  ? notification.content 
-                  : notification.type === 'image' 
-                    ? '📷 Image' 
-                    : '📎 File'}
-              </p>
-            </div>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
+            {/* Notification Content */}
+            <div
+              className="p-4 flex items-start gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              onClick={() => {
+                goToChat(notification.conversationId);
                 dismissNotification(notification.id);
               }}
-              className="flex-shrink-0 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
             >
-              <X size={16} className="text-gray-500" />
-            </button>
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <MessageCircle size={20} className="text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {notification.senderName}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                  {notification.type === 'text' 
+                    ? notification.content 
+                    : notification.type === 'image' 
+                      ? '📷 Image' 
+                      : '📎 File'}
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleReply(notification);
+                }}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary/5 transition-colors"
+              >
+                <Reply size={16} />
+                Reply
+              </button>
+              <div className="w-px bg-gray-200 dark:bg-gray-700" />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  dismissNotification(notification.id);
+                }}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <X size={16} />
+                Close
+              </button>
+            </div>
           </div>
         ))}
       </div>
+
+      {/* Quick Reply Modal */}
+      <Modal 
+        isOpen={replyModalOpen} 
+        onClose={handleCloseModal}
+        size="md"
+        placement="center"
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            <p className="text-lg font-semibold">Quick Reply</p>
+            {replyingTo && (
+              <p className="text-sm text-default-500 font-normal">
+                Replying to {replyingTo.senderName}
+              </p>
+            )}
+          </ModalHeader>
+          <ModalBody>
+            {replyingTo && (
+              <div className="mb-3 p-3 bg-default-100 rounded-lg">
+                <p className="text-xs text-default-500 mb-1">Original message:</p>
+                <p className="text-sm text-default-700">
+                  {replyingTo.type === 'text' 
+                    ? replyingTo.content 
+                    : replyingTo.type === 'image' 
+                      ? '📷 Image' 
+                      : '📎 File'}
+                </p>
+              </div>
+            )}
+            <Textarea
+              placeholder="Type your reply..."
+              value={replyMessage}
+              onChange={(e) => setReplyMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendReply();
+                }
+              }}
+              minRows={3}
+              maxRows={6}
+              autoFocus
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button 
+              variant="flat" 
+              onPress={handleCloseModal}
+              isDisabled={sendingReply}
+            >
+              Cancel
+            </Button>
+            <Button 
+              color="primary" 
+              onPress={handleSendReply}
+              isLoading={sendingReply}
+              isDisabled={!replyMessage.trim()}
+              startContent={!sendingReply && <Send size={16} />}
+            >
+              Send Reply
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </ChatNotificationContext.Provider>
   );
 }

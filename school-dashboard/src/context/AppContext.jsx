@@ -666,10 +666,10 @@ export function AppProvider({ children }) {
   }, [schoolSettings.schoolStartTime]);
 
   // Attendance functions
-  const markStaffAttendance = (staffId, date, status, inTime = "-", outTime = "-") => {
+  const markStaffAttendance = (staffId, date, status, inTime = "-", outTime = "-", reason = "") => {
     setStaffAttendance(prev => ({
       ...prev,
-      [staffId]: { ...prev[staffId], [date]: { status, inTime, outTime } }
+      [staffId]: { ...prev[staffId], [date]: { status, inTime, outTime, reason } }
     }));
   };
 

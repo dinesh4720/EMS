@@ -2,9 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Tabs, Tab, Button, Drawer, DrawerContent, DrawerHeader, DrawerBody, Card, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
-import { Plus, X, Mail, Phone, Send, UserPlus, FileText, CheckCircle2, ChevronDown } from "lucide-react";
+import { Plus, X, Mail, Phone, Send, UserPlus, FileText, CheckCircle2, ChevronDown, Briefcase } from "lucide-react";
 import StaffList from "./StaffList";
 import StaffAttendance from "./StaffAttendance";
+import StaffAttendanceRegularize from "./StaffAttendanceRegularize";
 import StaffPayroll from "./StaffPayroll";
 import StaffDashboard from "./StaffDashboard";
 import AddStaff from "./AddStaff";
@@ -28,6 +29,7 @@ export default function StaffsPage() {
   const [isSendingForm, setIsSendingForm] = useState(false);
   const [isFormDropdownOpen, setIsFormDropdownOpen] = useState(false);
   const formDropdownRef = useRef(null);
+  const addStaffRef = useRef(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -60,6 +62,7 @@ export default function StaffsPage() {
   // The user interaction assumes clicking a staff opens their dashboard.
   // Usually this means we go to a detail view which might not show the main "All Staffs" tabs.
   const isProfileView = location.pathname !== "/staffs" && location.pathname !== "/staffs/" && location.pathname !== "/staffs/attendance" && location.pathname !== "/staffs/payroll" && !location.pathname.endsWith("/staffs");
+  const isRegularizeView = location.pathname.includes("/attendance/regularize");
 
   const handleSaveStaff = async (staffData) => {
     // Send all the comprehensive form data to the backend
@@ -73,7 +76,7 @@ export default function StaffsPage() {
       status: "active",
       address: staffData.address,
       joinDate: new Date().toISOString().split('T')[0],
-      
+
       // Personal Details
       dob: staffData.dob,
       gender: staffData.gender,
@@ -84,17 +87,17 @@ export default function StaffsPage() {
       emergencyContact: staffData.emergencyContact,
       emergencyPhone: staffData.emergencyPhone,
       whatsappNumber: staffData.isWhatsapp ? staffData.mobile : staffData.whatsappNumber,
-      
+
       // Documents (will need to upload these separately if they're files)
       picture: staffData.picture,
       idDocuments: staffData.idDocuments,
-      
+
       // Qualifications
       professionalQualifications: staffData.professionalQualifications,
       totalExperience: staffData.totalExperience,
       previousOrganization: staffData.previousOrganization,
       qualificationDocs: staffData.qualificationDocs,
-      
+
       // Staff Info
       staffNumber: staffData.staffNumber,
       staffType: staffData.staffType,
@@ -102,7 +105,7 @@ export default function StaffsPage() {
       assignedClasses: staffData.assignedClasses || [],
       isClassTeacher: staffData.isClassTeacher,
       classTeacherOf: staffData.classTeacherOf,
-      
+
       // Bank & Salary
       accountNumber: staffData.accountNumber,
       ifscCode: staffData.ifscCode,
@@ -111,7 +114,7 @@ export default function StaffsPage() {
       salaryTemplate: staffData.salaryTemplate,
       salaryBreakdown: staffData.salaryBreakdown
     };
-    
+
     try {
       await addStaff(transformedData);
       toast.success('Staff member added successfully!');
@@ -196,7 +199,7 @@ export default function StaffsPage() {
 
   const tabHeaderInfo = {
     list: {
-      title: "All Staffs",
+      title: "All Staff",
       description: "Manage staff members, roles, departments, and contact details"
     },
     overview: {
@@ -213,11 +216,14 @@ export default function StaffsPage() {
   // The current structure wraps everything in a Card with Tabs.
   // We probably want the Profile to take over the full page.
 
-  if (isProfileView) {
+  if (isProfileView || isRegularizeView) {
     return (
-      <Routes>
-        <Route path=":id" element={<StaffDashboard />} />
-      </Routes>
+      <div className="space-y-6 animate-fade-in pb-8">
+        <Routes>
+          <Route path=":id" element={<StaffDashboard />} />
+          <Route path="attendance/regularize" element={<StaffAttendanceRegularize />} />
+        </Routes>
+      </div>
     )
   }
 
@@ -272,6 +278,7 @@ export default function StaffsPage() {
             <Route index element={<StaffList onStaffClick={handleOpenStaffProfile} />} />
             <Route path="list" element={<StaffList onStaffClick={handleOpenStaffProfile} />} />
             <Route path="attendance" element={<StaffAttendance onStaffClick={handleOpenStaffProfile} />} />
+            <Route path="attendance/regularize" element={<StaffAttendanceRegularize />} />
             <Route path="payroll" element={<StaffPayroll onStaffClick={handleOpenStaffProfile} />} />
             <Route path=":id" element={<StaffDashboard />} />
           </Routes>
@@ -283,9 +290,21 @@ export default function StaffsPage() {
         <Drawer
           isOpen={isAddStaffOpen}
           onOpenChange={(open) => {
-            if (!open) handleCloseAddStaff();
+            if (!open) {
+              if (addStaffRef.current) {
+                addStaffRef.current.attemptClose();
+              } else {
+                // Fallback
+                if (window.staffDrawerCloseHandler) {
+                  const canClose = window.staffDrawerCloseHandler();
+                  if (!canClose) return;
+                }
+                handleCloseAddStaff();
+              }
+            }
           }}
           placement="right"
+          hideCloseButton
           classNames={{
             wrapper: "justify-end",
             base: "w-[720px] max-w-[95vw]",
@@ -293,17 +312,42 @@ export default function StaffsPage() {
           }}
         >
           <DrawerContent>
-            <>
-              <DrawerHeader className="border-b border-default-200 px-6 py-3 flex justify-between items-center">
-                <h2 className="text-lg font-semibold text-gray-900">New Staff</h2>
-                <Button isIconOnly size="sm" variant="light" onPress={handleCloseAddStaff}>
-                  <X size={20} className="text-default-500" />
-                </Button>
-              </DrawerHeader>
-              <DrawerBody className="p-0 overflow-y-auto">
-                <AddStaff onClose={handleCloseAddStaff} onSave={handleSaveStaff} />
-              </DrawerBody>
-            </>
+            {(onClose) => (
+              <>
+                <DrawerHeader className="border-b border-default-200 px-6 py-4 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-xl">
+                      <Briefcase size={20} className="text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-default-900">Create New Staff</h2>
+                      <p className="text-xs text-default-500">Fill in the staff details below</p>
+                    </div>
+                  </div>
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="light"
+                    onPress={() => {
+                      if (addStaffRef.current) {
+                        addStaffRef.current.attemptClose();
+                      } else {
+                        if (window.staffDrawerCloseHandler) {
+                          window.staffDrawerCloseHandler();
+                        } else {
+                          handleCloseAddStaff();
+                        }
+                      }
+                    }}
+                  >
+                    <X size={20} className="text-default-500" />
+                  </Button>
+                </DrawerHeader>
+                <DrawerBody className="p-0 overflow-hidden">
+                  <AddStaff ref={addStaffRef} onClose={handleCloseAddStaff} onSave={handleSaveStaff} />
+                </DrawerBody>
+              </>
+            )}
           </DrawerContent>
         </Drawer>
       )}
@@ -340,11 +384,6 @@ export default function StaffsPage() {
                       Send an intake form to the staff member's email or phone. They fill it out themselves.
                     </p>
                   </div>
-                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    ✓ Less work for admin<br />
-                    ✓ Staff provides their own details<br />
-                    ✓ Review before approval
-                  </div>
                 </div>
               </button>
 
@@ -362,11 +401,6 @@ export default function StaffsPage() {
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Fill out all staff details directly in the admin panel. Immediate registration.
                     </p>
-                  </div>
-                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    ✓ Immediate access<br />
-                    ✓ Complete control<br />
-                    ✓ No waiting for submission
                   </div>
                 </div>
               </button>

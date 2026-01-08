@@ -1,12 +1,17 @@
 import { useState, useEffect } from "react";
-import { Search, Command, ChevronRight } from "lucide-react";
-import { useLocation, Link } from "react-router-dom";
+import { Search, Command, ChevronRight, MessageCircle } from "lucide-react";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import GlobalSearch from "./GlobalSearch";
 import { AiAssistantToggle } from "./AiAssistant/AiAssistantPanel";
+import { useChatNotifications } from "../context/ChatNotificationContext";
+import { Tooltip, Badge } from "@heroui/react";
 
 export default function Topbar({ isSidebarOpen }) {
     const [searchOpen, setSearchOpen] = useState(false);
     const location = useLocation();
+    const navigate = useNavigate();
+    const chatNotifications = useChatNotifications();
+    const unreadCount = chatNotifications?.unreadCount || 0;
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -94,7 +99,28 @@ export default function Topbar({ isSidebarOpen }) {
             </div>
 
             {/* Right: Actions */}
-            <div className="flex-1 flex items-center justify-end gap-4">
+            <div className="flex-1 flex items-center justify-end gap-2">
+                {/* Chat Button */}
+                <Tooltip 
+                    content={unreadCount > 0 ? `${unreadCount} new message${unreadCount > 1 ? 's' : ''}` : "Messages"} 
+                    placement="bottom"
+                    classNames={{
+                        content: unreadCount > 0 ? "bg-red-500 text-white font-semibold" : ""
+                    }}
+                >
+                    <button
+                        onClick={() => navigate('/messaging')}
+                        className="relative p-2 hover:bg-default-100 rounded-lg transition-colors"
+                    >
+                        <MessageCircle size={20} className="text-default-600" />
+                        {unreadCount > 0 && (
+                            <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full animate-pulse">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                        )}
+                    </button>
+                </Tooltip>
+                
                 {/* AI Assistant Toggle Button */}
                 <AiAssistantToggle />
             </div>

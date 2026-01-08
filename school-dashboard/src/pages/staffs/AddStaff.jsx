@@ -1,45 +1,129 @@
-import { useState, useRef } from "react";
-import { Button, Input, Select, SelectItem, Checkbox, Switch, Textarea, Chip, Divider, Avatar, RadioGroup, Radio, cn } from "@heroui/react";
-import { ArrowLeft, ArrowRight, Upload, X, Plus, User, FileText, Briefcase, DollarSign, Trash2, Check, Banknote, GraduationCap, MapPin, Phone, Mail, BadgeCheck, FileBadge, Calendar as CalendarIcon, Clock, HeartPulse, MoreHorizontal } from "lucide-react";
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
+import { parseDate } from "@internationalized/date";
+import { Button, Input, Select, SelectItem, Checkbox, Switch, Textarea, Chip, Divider, Avatar, RadioGroup, Radio, cn, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, DatePicker, Autocomplete, AutocompleteItem } from "@heroui/react";
+import { ArrowLeft, ArrowRight, Upload, X, Plus, User, FileText, Briefcase, DollarSign, Trash2, Check, Banknote, GraduationCap, MapPin, Phone, Mail, BadgeCheck, FileBadge, Calendar as CalendarIcon, Clock, HeartPulse, MoreHorizontal, AlertTriangle, PenLine, FileScan } from "lucide-react";
+import PhotoEditorModal from "../../components/PhotoEditorModal";
 
 // --- Constants ---
 const employmentTypes = [
   { label: "Full-Time", value: "Full-time" },
+  { label: "Part-Time", value: "Part-time" },
   { label: "Contract", value: "Contract" },
 ];
 const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const genders = ["Male", "Female", "Other"];
 const maritalStatuses = ["Single", "Married", "Divorced", "Widowed"];
 const staffTypes = ["Teaching", "Non-Teaching", "Admin", "Lab Assistant", "Accountant", "Others"];
+const idProofTypes = ["Aadhar Card", "PAN Card", "Driving License", "Passport", "Voter ID", "Other"];
+const degreeOptions = [
+  { label: "B.Ed", value: "B.Ed" }, { label: "M.Ed", value: "M.Ed" },
+  { label: "PhD", value: "PhD" }, { label: "B.Sc", value: "B.Sc" },
+  { label: "M.Sc", value: "M.Sc" }, { label: "B.A", value: "B.A" },
+  { label: "M.A", value: "M.A" }, { label: "B.Com", value: "B.Com" },
+  { label: "M.Com", value: "M.Com" }, { label: "MBA", value: "MBA" },
+  { label: "B.Tech", value: "B.Tech" }, { label: "M.Tech", value: "M.Tech" },
+  { label: "Other", value: "Other" }
+];
+const departments = ["Science", "Mathematics", "Languages", "Social Studies", "Arts", "Sports", "Admin", "Others"];
+
 const classOptions = Array.from({ length: 12 }, (_, i) => i + 1).flatMap(num => ["A", "B", "C", "D"].map(sec => `${num}-${sec}`));
 
 const emptyForm = {
   // Personal Details
   fullName: "", dob: "", expertise: "", picture: null, mobile: "", isWhatsapp: false,
   whatsappNumber: "", email: "", fatherName: "", bloodGroup: "", gender: "Male", maritalStatus: "",
-  employmentType: "Full-time", fatherMotherNumber: "", idDocuments: [], customDocuments: [],
-  emergencyContact: "", emergencyPhone: "", address: "",
+  employmentType: "Full-time", fatherMotherNumber: "", idDocuments: {}, customDocuments: [],
+  emergencyContacts: [{ name: "", relationship: "", phone: "" }], address: "",
   // Qualifications
-  professionalQualifications: [], totalExperience: "", previousOrganization: "", qualificationDocs: [],
+  professionalQualifications: [], totalExperience: "", previousOrganization: "", roleInOrganization: "", qualificationDocs: [],
   // Staff Info
-  staffNumber: "", staffType: "", assignedClasses: [], isClassTeacher: false, classTeacherOf: "",
+  staffNumber: "", staffType: "", department: "", assignedClasses: [], isClassTeacher: false, classTeacherOf: "",
   // Salary Details
   accountNumber: "", ifscCode: "", bankName: "", branchName: "", salaryTemplate: "", salaryBreakdown: []
 };
 
-export default function AddStaff({ onClose, onSave }) {
+const AddStaff = forwardRef(({ onClose, onSave }, ref) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState(emptyForm);
   const [errors, setErrors] = useState({});
+  const [hasChanges, setHasChanges] = useState(false);
+  const [showConfirmClose, setShowConfirmClose] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [tempImage, setTempImage] = useState(null);
 
   // Refs
   const pictureInputRef = useRef(null);
   const idDocsInputRef = useRef(null);
   const qualDocsInputRef = useRef(null);
 
+  // Auto-generate Staff ID on component mount
+  useEffect(() => {
+    if (!formData.staffNumber) {
+      // Generate staff ID based on format: STF-YYYY-XXX
+      const year = new Date().getFullYear();
+      const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      const staffId = `STF-${year}-${randomNum}`;
+      setFormData(prev => ({ ...prev, staffNumber: staffId }));
+    }
+  }, []);
+
+  const handleClose = () => {
+    if (hasChanges) {
+      setShowConfirmClose(true);
+    } else {
+      onClose();
+    }
+  };
+
+  const confirmClose = () => {
+    setShowConfirmClose(false);
+    onClose();
+  };
+
+  const cancelClose = () => {
+    setShowConfirmClose(false);
+  };
+
+  useImperativeHandle(ref, () => ({
+    attemptClose: handleClose
+  }));
+
+  const validateSingleField = (field, value) => {
+    let newError = null;
+    switch (field) {
+      case "fullName":
+        if (!value.trim()) newError = "Required";
+        break;
+      case "mobile":
+        if (!value.trim()) newError = "Required";
+        else if (!/^\d{10}$/.test(value)) newError = "Invalid";
+        break;
+      case "email":
+        if (value.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) newError = "Invalid email";
+        break;
+      case "staffType":
+        if (!value) newError = "Required";
+        break;
+      case "dob":
+        if (!value) newError = "Required";
+        break;
+      case "gender":
+        if (!value) newError = "Required";
+        break;
+      case "staffNumber":
+        if (!value.trim()) newError = "Required";
+        break;
+      case "department":
+        if (!value) newError = "Required";
+        break;
+    }
+    setErrors(prev => ({ ...prev, [field]: newError }));
+  };
+
   const updateField = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }));
+    setHasChanges(true); // Mark as changed whenever any field is updated
+    validateSingleField(field, value);
   };
 
   const addQualification = () => {
@@ -54,6 +138,19 @@ export default function AddStaff({ onClose, onSave }) {
     const updated = [...formData.professionalQualifications];
     updated[index][field] = value;
     updateField("professionalQualifications", updated);
+
+    // Real-time validation for qualification fields
+    if (field === "name") {
+      setErrors(prev => ({ ...prev, [`qualName_${index}`]: !value ? "Required" : null }));
+    }
+    if (field === "year") {
+      let error = null;
+      if (value && !/^\d{4}$/.test(value)) error = "Invalid Year";
+      if (value && (parseInt(value) < 1950 || parseInt(value) > new Date().getFullYear())) {
+        error = "Invalid Year";
+      }
+      setErrors(prev => ({ ...prev, [`qualYear_${index}`]: error }));
+    }
   };
 
   const handleQualificationDocUpload = (index, files) => {
@@ -81,23 +178,42 @@ export default function AddStaff({ onClose, onSave }) {
   const validateStep = (stepNum) => {
     const newErrors = {};
     if (stepNum === 1) {
+      // Personal Info validation
       if (!formData.fullName.trim()) newErrors.fullName = "Required";
+      if (!formData.dob) newErrors.dob = "Required";
+      if (!formData.gender) newErrors.gender = "Required";
       if (!formData.mobile.trim()) newErrors.mobile = "Required";
       else if (!/^\d{10}$/.test(formData.mobile)) newErrors.mobile = "Invalid";
       if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
         newErrors.email = "Invalid email";
       }
     }
-    if (stepNum === 3) {
-      if (!formData.staffNumber.trim()) newErrors.staffNumber = "Required";
+    if (stepNum === 2) {
+      // Education validation - At least one degree is mandatory for all staff
+      if (formData.professionalQualifications.length === 0) {
+        newErrors.qualifications = "At least one degree is required";
+      }
+      formData.professionalQualifications.forEach((q, i) => {
+        if (!q.name) newErrors[`qualName_${i}`] = "Required";
+        if (q.year && !/^\d{4}$/.test(q.year)) newErrors[`qualYear_${i}`] = "Invalid Year";
+        if (q.year && (parseInt(q.year) < 1950 || parseInt(q.year) > new Date().getFullYear())) {
+          newErrors[`qualYear_${i}`] = "Invalid Year";
+        }
+      });
+    }
+    // Step 3 (Documents) has no required validations
+    if (stepNum === 4) {
+      // Role validation
       if (!formData.staffType) newErrors.staffType = "Required";
+      // staffNumber is auto-generated, no validation needed
+      if (!formData.department) newErrors.department = "Required";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleNext = () => {
-    if (validateStep(step)) setStep(prev => Math.min(prev + 1, 4));
+    if (validateStep(step)) setStep(prev => Math.min(prev + 1, 5));
   };
 
   const handlePrev = () => setStep(prev => Math.max(prev - 1, 1));
@@ -108,63 +224,128 @@ export default function AddStaff({ onClose, onSave }) {
 
   // --- Render Steps ---
 
+  const handleImageSelect = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.addEventListener("load", () => {
+        setTempImage(reader.result);
+        setIsEditorOpen(true);
+      });
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleEditorSave = (croppedImage) => {
+    // croppedImage is a blob or base64. PhotoEditorModal returns blob usually or base64.
+    // Assuming it returns a blob URL or base64. We need a File object for consistency usually,
+    // but saving it as is is fine for now, we'll convert if needed.
+    // Actually, usually we want to store the File.
+    // Let's check PhotoEditorModal behavior. It calls onSave(croppedImage).
+    // Let's convert base64/blob to file if needed, or just store it.
+    // For preview we use URL.createObjectURL or base64 directly.
+    fetch(croppedImage)
+      .then(res => res.blob())
+      .then(blob => {
+        const file = new File([blob], "profile_photo.jpg", { type: "image/jpeg" });
+        updateField("picture", file);
+      });
+  };
+
+  const handleEmergencyContactChange = (index, field, value) => {
+    const updated = [...formData.emergencyContacts];
+    updated[index][field] = value;
+    updateField("emergencyContacts", updated);
+  };
+
+  const addEmergencyContact = () => {
+    updateField("emergencyContacts", [...formData.emergencyContacts, { name: "", relationship: "", phone: "" }]);
+  };
+
+  const removeEmergencyContact = (index) => {
+    updateField("emergencyContacts", formData.emergencyContacts.filter((_, i) => i !== index));
+  };
+
+  const handleIDProofUpload = (type, files) => {
+    if (files && files.length > 0) {
+      const updated = { ...formData.idDocuments, [type]: files[0] };
+      updateField("idDocuments", updated);
+    }
+  };
+
+  const removeIDProof = (type) => {
+    const updated = { ...formData.idDocuments };
+    delete updated[type];
+    updateField("idDocuments", updated);
+  };
+
   const renderStep1 = () => (
     <div className="space-y-6 animate-fade-in text-left">
       {/* Profile Section */}
       <div className="flex items-center gap-5">
-        <Avatar
-          src={formData.picture ? URL.createObjectURL(formData.picture) : undefined}
-          name={!formData.picture ? (formData.fullName?.[0] || "") : undefined}
-          className="w-20 h-20 text-3xl"
-          isBordered
-          radius="full"
-        />
-        <div className="flex flex-col gap-1 text-left">
-          <div className="flex items-center gap-3">
+        <div className="relative group">
+          <Avatar
+            src={formData.picture ? URL.createObjectURL(formData.picture) : undefined}
+            name={!formData.picture ? (formData.fullName?.[0] || "") : undefined}
+            className="w-24 h-24 text-3xl"
+            isBordered
+            radius="full"
+          />
+          {formData.picture && (
             <button
-              className="text-sm font-semibold text-primary hover:text-primary-600 transition-colors"
+              className="absolute bottom-0 right-0 p-1.5 bg-primary text-white rounded-full shadow-lg hover:bg-primary-600 transition-colors"
               onClick={() => pictureInputRef.current?.click()}
             >
-              Upload Photo
+              <PenLine size={14} />
             </button>
-            <span className="text-gray-300">|</span>
+          )}
+        </div>
+        <div className="flex flex-col gap-1.5 text-left">
+          <div className="flex items-center gap-3">
             <button
-              className="text-sm font-semibold text-danger hover:text-danger-600 transition-colors"
-              onClick={() => updateField("picture", null)}
+              className="px-4 py-2 bg-primary-50 text-primary font-medium rounded-lg text-sm hover:bg-primary-100 transition-colors flex items-center gap-2"
+              onClick={() => pictureInputRef.current?.click()}
             >
-              Delete
+              <Upload size={16} />
+              {formData.picture ? "Change Photo" : "Upload Photo"}
             </button>
+            {formData.picture && (
+              <button
+                className="px-3 py-2 text-sm font-medium text-danger hover:bg-danger-50 transition-colors rounded-lg"
+                onClick={() => updateField("picture", null)}
+              >
+                Delete
+              </button>
+            )}
           </div>
-          <p className="text-xs text-gray-500 max-w-[250px]">
-            An image of the person, it's best if it has the same height and width.
+          <p className="text-xs text-default-500 max-w-[280px]">
+            Upload a professional photo. You can crop, rotate and adjust it after uploading.
           </p>
           <input ref={pictureInputRef} type="file" accept="image/*" className="hidden"
-            onChange={(e) => updateField("picture", e.target.files[0])} />
+            onChange={handleImageSelect} />
         </div>
       </div>
 
       {/* Type Selection */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <label className="text-sm font-semibold text-gray-900">Employment Type</label>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-3">
           {employmentTypes.map((type) => {
             const isSelected = formData.employmentType === type.value;
             return (
-              <div
-                key={type.value}
-                className={cn(
-                  "cursor-pointer rounded-xl border-2 p-3 flex items-center gap-3 transition-all",
-                  isSelected ? "border-primary bg-primary-50/20" : "border-gray-200 hover:border-gray-300"
-                )}
+              <div key={type.value} className={cn(
+                "cursor-pointer rounded-xl border-2 p-3 flex items-center justify-center gap-2 transition-all text-center h-20",
+                isSelected ? "border-primary bg-primary-50/20" : "border-default-200 hover:border-default-300"
+              )}
                 onClick={() => updateField("employmentType", type.value)}
               >
                 <div className={cn(
-                  "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-                  isSelected ? "border-primary" : "border-gray-300"
+                  "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                  isSelected ? "border-primary" : "border-default-300"
                 )}>
-                  {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                  {isSelected && <div className="w-2 h-2 rounded-full bg-primary" />}
                 </div>
-                <span className={cn("text-sm font-medium", isSelected ? "text-primary-700" : "text-gray-600")}>
+                <span className={cn("text-xs font-semibold uppercase tracking-wide", isSelected ? "text-primary-700 dark:text-primary-400" : "text-default-600")}>
                   {type.label}
                 </span>
               </div>
@@ -174,102 +355,128 @@ export default function AddStaff({ onClose, onSave }) {
       </div>
 
       {/* Name Field */}
-      <div className="space-y-2">
-        <label className="text-sm font-semibold text-gray-900">Personal Information</label>
-        <Input
-          label="Full Name"
-          labelPlacement="outside"
-          placeholder="Enter full name"
-          value={formData.fullName}
-          onValueChange={v => updateField("fullName", v)}
-          isInvalid={!!errors.fullName}
-          errorMessage={errors.fullName}
-          variant="bordered"
-          radius="sm"
-          classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-        />
-      </div>
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <label className="text-sm font-semibold text-default-900">Personal Information</label>
+          <Input
+            label="Full Name"
+            labelPlacement="outside"
+            placeholder="Enter full name"
+            value={formData.fullName}
+            onValueChange={v => updateField("fullName", v)}
+            isInvalid={!!errors.fullName}
+            errorMessage={errors.fullName}
+            variant="bordered"
+            radius="sm"
+            isRequired
+            classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+          />
+        </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Input
-          type="date"
-          label="Date of Birth"
-          labelPlacement="outside"
-          value={formData.dob}
-          onValueChange={v => updateField("dob", v)}
-          variant="bordered"
-          radius="sm"
-          classNames={{ label: "text-xs font-medium text-gray-600 mb-1", inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-        />
-        <Select
-          label="Gender"
-          labelPlacement="outside"
-          placeholder="Select..."
-          selectedKeys={formData.gender ? [formData.gender] : []}
-          onSelectionChange={keys => updateField("gender", Array.from(keys)[0])}
-          variant="bordered"
-          radius="sm"
-          classNames={{ label: "text-xs font-medium text-gray-600 mb-1", trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-        >
-          {genders.map(g => <SelectItem key={g}>{g}</SelectItem>)}
-        </Select>
-        <Input
-          label="Father's Name"
-          labelPlacement="outside"
-          placeholder="Full Name"
-          value={formData.fatherName}
-          onValueChange={v => updateField("fatherName", v)}
-          variant="bordered"
-          radius="sm"
-          classNames={{ label: "text-xs font-medium text-gray-600 mb-1", inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-        />
-        <Select
-          label="Marital Status"
-          labelPlacement="outside"
-          placeholder="Select..."
-          selectedKeys={formData.maritalStatus ? [formData.maritalStatus] : []}
-          onSelectionChange={keys => updateField("maritalStatus", Array.from(keys)[0])}
-          variant="bordered"
-          radius="sm"
-          classNames={{ label: "text-xs font-medium text-gray-600 mb-1", trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-        >
-          {maritalStatuses.map(ms => <SelectItem key={ms}>{ms}</SelectItem>)}
-        </Select>
+        <div className="grid grid-cols-2 gap-4">
+          <DatePicker
+            aria-label="Date of Birth"
+            label="Date of Birth"
+            labelPlacement="outside"
+            value={formData.dob ? parseDate(formData.dob.split('T')[0]) : null}
+            onChange={(date) => updateField("dob", date ? date.toString() : "")}
+            variant="bordered"
+            radius="sm"
+            showMonthAndYearPickers
+            isRequired
+            isInvalid={!!errors.dob}
+            errorMessage={errors.dob}
+            classNames={{ label: "text-xs font-medium text-default-600 mb-1" }}
+          />
+
+          <Select
+            aria-label="Gender"
+            label="Gender"
+            labelPlacement="outside"
+            placeholder="Select..."
+            selectedKeys={formData.gender ? [formData.gender] : []}
+            onSelectionChange={keys => updateField("gender", Array.from(keys)[0])}
+            variant="bordered"
+            radius="sm"
+            isRequired
+            classNames={{ label: "text-xs font-medium text-default-600 mb-1", trigger: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+          >
+            {genders.map(g => <SelectItem key={g}>{g}</SelectItem>)}
+          </Select>
+          <Input
+            label="Father's Name"
+            labelPlacement="outside"
+            placeholder="Full Name"
+            value={formData.fatherName}
+            onValueChange={v => updateField("fatherName", v)}
+            variant="bordered"
+            radius="sm"
+            classNames={{ label: "text-xs font-medium text-default-600 mb-1", inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+          />
+          <Select
+            aria-label="Marital Status"
+            label="Marital Status"
+            labelPlacement="outside"
+            placeholder="Select..."
+            selectedKeys={formData.maritalStatus ? [formData.maritalStatus] : []}
+            onSelectionChange={keys => updateField("maritalStatus", Array.from(keys)[0])}
+            variant="bordered"
+            radius="sm"
+            classNames={{ label: "text-xs font-medium text-default-600 mb-1", trigger: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+          >
+            {maritalStatuses.map(ms => <SelectItem key={ms}>{ms}</SelectItem>)}
+          </Select>
+        </div>
       </div>
 
       {/* Contact Info */}
-      <div className="space-y-2 pt-2 border-t border-dashed border-gray-200">
-        <label className="text-sm font-semibold text-gray-900 block mt-2">Contact Details</label>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-1 space-y-2">
-            <Input
-              label="Mobile Number"
-              labelPlacement="outside"
-              startContent={<span className="text-gray-400 text-xs">+91</span>}
-              placeholder="Mobile Number"
-              value={formData.mobile}
-              onValueChange={v => updateField("mobile", v)}
-              variant="bordered"
-              radius="sm"
-              classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-            />
-            <Checkbox classNames={{ label: "text-xs text-gray-500" }} size="sm" isSelected={formData.isWhatsapp} onValueChange={v => updateField("isWhatsapp", v)}>
-              Same as WhatsApp
-            </Checkbox>
-          </div>
-          {!formData.isWhatsapp && (
+      <div className="space-y-4 pt-4 border-t border-dashed border-default-200">
+        <label className="text-sm font-semibold text-default-900 block">Contact Details</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            label="Mobile Number"
+            labelPlacement="outside"
+            startContent={<span className="text-default-400 text-xs">+91</span>}
+            placeholder="10-digit number"
+            value={formData.mobile}
+            onValueChange={v => {
+              if (v.length <= 10 && /^\d*$/.test(v)) updateField("mobile", v);
+            }}
+            variant="bordered"
+            radius="sm"
+            isRequired
+            isInvalid={!!errors.mobile}
+            errorMessage={errors.mobile}
+            classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+          />
+
+          <div className="space-y-2">
             <Input
               label="WhatsApp Number"
               labelPlacement="outside"
-              startContent={<span className="text-gray-400 text-xs">+91</span>}
+              startContent={<span className="text-default-400 text-xs">+91</span>}
               placeholder="WhatsApp Number"
               value={formData.whatsappNumber}
               onValueChange={v => updateField("whatsappNumber", v)}
               variant="bordered"
               radius="sm"
-              classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+              isDisabled={formData.isWhatsapp}
+              classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
             />
-          )}
+            <Checkbox
+              classNames={{ label: "text-xs text-default-500" }}
+              size="sm"
+              isSelected={formData.isWhatsapp}
+              onValueChange={v => {
+                updateField("isWhatsapp", v);
+                if (v) updateField("whatsappNumber", formData.mobile);
+              }}
+            >
+              Same as mobile
+            </Checkbox>
+          </div>
+
+
           <Input
             label="Email Address"
             labelPlacement="outside"
@@ -278,19 +485,9 @@ export default function AddStaff({ onClose, onSave }) {
             onValueChange={v => updateField("email", v)}
             variant="bordered"
             radius="sm"
-            className="col-span-2"
-            classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-          />
-          <Input
-            label="Emergency Contact"
-            labelPlacement="outside"
-            placeholder="Emergency Contact (Name & Phone)"
-            value={formData.emergencyContact}
-            onValueChange={v => updateField("emergencyContact", v)}
-            variant="bordered"
-            radius="sm"
-            className="col-span-2"
-            classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+            className="col-span-1 md:col-span-2"
+            classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+            autoComplete="email"
           />
         </div>
       </div>
@@ -298,8 +495,8 @@ export default function AddStaff({ onClose, onSave }) {
       {/* Address */}
       <div className="space-y-1">
         <div className="flex justify-between">
-          <label className="text-sm font-semibold text-gray-900">Address</label>
-          <span className="text-xs text-gray-400">{formData.address.length} / 200</span>
+          <label className="text-sm font-semibold text-default-900">Address</label>
+          <span className="text-xs text-default-400">{formData.address.length} / 200</span>
         </div>
         <Textarea
           placeholder="Full Residential Address"
@@ -308,163 +505,184 @@ export default function AddStaff({ onClose, onSave }) {
           variant="bordered"
           radius="sm"
           minRows={2}
-          classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300" }}
+          classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300" }}
         />
       </div>
 
-      {/* Identity Docs */}
-      <div className="space-y-2 pt-2">
-        <label className="text-sm font-semibold text-gray-900">Identity Proofs</label>
-        <div className="flex flex-wrap gap-2">
-          <button
-            className="h-8 px-3 rounded-lg border border-dashed border-gray-300 text-xs font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-2 transition-colors"
-            onClick={() => idDocsInputRef.current?.click()}
-          >
-            <Upload size={14} /> Upload ID
-          </button>
-          <input ref={idDocsInputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden"
-            onChange={(e) => handleFileUpload("idDocuments", e.target.files)} />
-
-          {formData.idDocuments.map((file, i) => (
-            <Chip key={i} onClose={() => removeFile("idDocuments", i)} size="sm" variant="flat" className="h-8 border border-gray-200 bg-white" classNames={{ content: "text-xs" }}>
-              {file.name}
-            </Chip>
-          ))}
+      {/* Emergency Contacts */}
+      <div className="space-y-3 pt-4 border-t border-dashed border-default-200">
+        <div className="flex justify-between items-center">
+          <label className="text-sm font-semibold text-default-900">Emergency Contacts</label>
+          <Button size="sm" variant="light" color="primary" onPress={addEmergencyContact} startContent={<Plus size={14} />}>
+            Add Contact
+          </Button>
         </div>
+
+        {formData.emergencyContacts.map((contact, index) => (
+          <div key={index} className="p-4 border border-default-200 rounded-xl space-y-3 relative group hover:border-default-300 transition-colors">
+            {formData.emergencyContacts.length > 1 && (
+              <button
+                className="absolute top-2 right-2 text-default-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => removeEmergencyContact(index)}
+              >
+                <X size={14} />
+              </button>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Input
+                placeholder="Contact Name"
+                value={contact.name}
+                onValueChange={v => handleEmergencyContactChange(index, "name", v)}
+                size="sm"
+                radius="sm"
+                variant="bordered"
+                classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-9" }}
+              />
+              <Input
+                placeholder="Relationship"
+                value={contact.relationship}
+                onValueChange={v => handleEmergencyContactChange(index, "relationship", v)}
+                size="sm"
+                radius="sm"
+                variant="bordered"
+                classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-9" }}
+              />
+              <Input
+                placeholder="Phone Number"
+                value={contact.phone}
+                onValueChange={v => handleEmergencyContactChange(index, "phone", v)}
+                size="sm"
+                radius="sm"
+                variant="bordered"
+                classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-9" }}
+              />
+            </div>
+          </div>
+        ))}
       </div>
+
+      {/* Photo Editor Modal */}
+      {tempImage && (
+        <PhotoEditorModal
+          isOpen={isEditorOpen}
+          onClose={() => setIsEditorOpen(false)}
+          imageSrc={tempImage}
+          onSave={handleEditorSave}
+        />
+      )}
     </div>
   );
 
   const renderStep2 = () => (
     <div className="space-y-6 animate-fade-in text-left">
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="text-sm font-semibold text-gray-900">Education Details</h3>
-        <Button size="sm" color="primary" variant="flat" onPress={addQualification} className="h-8 text-xs">
-          <Plus size={14} /> Add Degree
-        </Button>
-      </div>
+      <div className="space-y-4">
+        <label className="text-sm font-semibold text-default-900 block">Job Details</label>
 
-      <div className="space-y-3">
-        {formData.professionalQualifications.map((qual, i) => (
-          <div key={i} className="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
-            <div className="flex gap-3 items-start">
-              <Input
-                className="flex-1"
-                placeholder="Degree / Certificate"
-                value={qual.name}
-                onValueChange={v => updateQualification(i, "name", v)}
+        {/* Role Selection */}
+        <div className="space-y-1.5">
+          <Select
+            aria-label="Staff Role"
+            label="Staff Role"
+            labelPlacement="outside"
+            placeholder="Select Role"
+            selectedKeys={formData.staffType ? [formData.staffType] : []}
+            onSelectionChange={(keys) => updateField("staffType", Array.from(keys)[0])}
+            variant="bordered"
+            radius="sm"
+            isRequired
+            classNames={{ trigger: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+            isInvalid={!!errors.staffType}
+            errorMessage={errors.staffType}
+          >
+            {staffTypes.map((role) => (
+              <SelectItem key={role}>{role}</SelectItem>
+            ))}
+          </Select>
+        </div>
+
+        <div className="space-y-4">
+          <Input
+            label="Staff ID / Number"
+            labelPlacement="outside"
+            placeholder="Auto-generated"
+            value={formData.staffNumber}
+            isReadOnly
+            variant="bordered"
+            radius="sm"
+            isRequired
+            classNames={{ inputWrapper: "bg-default-100 dark:bg-default-100/50 border-1 border-default-200 h-10" }}
+            description="Auto-generated staff ID"
+          />
+
+          <Select
+            label="Department"
+            labelPlacement="outside"
+            placeholder="Select Department"
+            selectedKeys={formData.department ? [formData.department] : []}
+            onSelectionChange={(keys) => updateField("department", Array.from(keys)[0])}
+            variant="bordered"
+            radius="sm"
+            isRequired
+            isInvalid={!!errors.department}
+            errorMessage={errors.department}
+            classNames={{ trigger: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+          >
+            {departments.map((dept) => (
+              <SelectItem key={dept}>{dept}</SelectItem>
+            ))}
+          </Select>
+        </div>
+
+        {formData.staffType === "Teaching" && (
+          <div className="space-y-4 pt-4 border-t border-dashed border-default-200">
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-default-900">Assign Classes</label>
+              <Select
+                selectionMode="multiple"
+                placeholder="Select classes"
+                selectedKeys={new Set(formData.assignedClasses)}
+                onSelectionChange={(keys) => updateField("assignedClasses", Array.from(keys))}
                 variant="bordered"
                 radius="sm"
-                size="sm"
-                classNames={{ inputWrapper: "bg-white border-1 border-gray-200 h-9" }}
-              />
-              <Input
-                className="w-24"
-                placeholder="Year"
-                value={qual.year}
-                onValueChange={v => updateQualification(i, "year", v)}
-                variant="bordered"
-                radius="sm"
-                size="sm"
-                classNames={{ inputWrapper: "bg-white border-1 border-gray-200 h-9" }}
-              />
-              <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => removeQualification(i)}>
-                <Trash2 size={16} />
-              </Button>
-            </div>
-            
-            {/* Document Upload for this qualification */}
-            <div className="flex items-center gap-2">
-              <Button 
-                size="sm" 
-                variant="flat" 
-                className="h-7 text-xs"
-                onPress={() => document.getElementById(`qual-doc-${i}`).click()}
+                classNames={{ trigger: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 min-h-unit-10" }}
               >
-                <Upload size={12} /> Upload Certificate
-              </Button>
-              <input 
-                id={`qual-doc-${i}`} 
-                type="file" 
-                multiple 
-                accept=".pdf,.jpg,.jpeg,.png" 
-                className="hidden" 
-                onChange={(e) => handleQualificationDocUpload(i, e.target.files)} 
-              />
-              {qual.documents && qual.documents.length > 0 && (
-                <span className="text-xs text-gray-500">{qual.documents.length} file(s)</span>
+                {classOptions.map((cls) => (
+                  <SelectItem key={cls}>{cls}</SelectItem>
+                ))}
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-2 p-4 border border-default-200 rounded-xl bg-default-50/50">
+              <div className="flex justify-between items-center">
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold text-default-900">Class Teacher Responsibility</span>
+                  <span className="text-xs text-default-500">Is this staff member a class teacher?</span>
+                </div>
+                <Switch
+                  size="sm"
+                  isSelected={formData.isClassTeacher}
+                  onValueChange={(v) => updateField("isClassTeacher", v)}
+                />
+              </div>
+
+              {formData.isClassTeacher && (
+                <Select
+                  className="mt-2"
+                  label="Select Class"
+                  placeholder="Select class"
+                  selectedKeys={formData.classTeacherOf ? [formData.classTeacherOf] : []}
+                  onSelectionChange={(keys) => updateField("classTeacherOf", Array.from(keys)[0])}
+                  variant="bordered"
+                  radius="sm"
+                  size="sm"
+                  classNames={{ trigger: "bg-white dark:bg-default-100 border-1 border-default-200" }}
+                >
+                  {classOptions.map((cls) => (
+                    <SelectItem key={cls}>{cls}</SelectItem>
+                  ))}
+                </Select>
               )}
             </div>
-            
-            {/* Show uploaded documents */}
-            {qual.documents && qual.documents.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {qual.documents.map((file, docIdx) => (
-                  <Chip
-                    key={docIdx}
-                    size="sm"
-                    variant="flat"
-                    onClose={() => removeQualificationDoc(i, docIdx)}
-                    classNames={{ base: "h-6 text-xs" }}
-                  >
-                    {file.name}
-                  </Chip>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-        {formData.professionalQualifications.length === 0 && (
-          <div className="text-center py-6 border border-dashed border-gray-200 rounded-lg text-gray-400 text-xs">
-            No qualifications added yet.
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-2 pt-4 border-t border-dashed border-gray-200">
-        <label className="text-sm font-semibold text-gray-900">Experience</label>
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="Total Experience"
-            labelPlacement="outside"
-            placeholder="Years"
-            value={formData.totalExperience}
-            onValueChange={v => updateField("totalExperience", v)}
-            variant="bordered"
-            radius="sm"
-            classNames={{ label: "text-xs font-medium text-gray-600 mb-1", inputWrapper: "bg-white border-1 border-gray-200 h-10" }}
-          />
-          <Input
-            label="Previous Org."
-            labelPlacement="outside"
-            placeholder="Organization Name"
-            value={formData.previousOrganization}
-            onValueChange={v => updateField("previousOrganization", v)}
-            variant="bordered"
-            radius="sm"
-            classNames={{ label: "text-xs font-medium text-gray-600 mb-1", inputWrapper: "bg-white border-1 border-gray-200 h-10" }}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2 pt-2">
-        <label className="text-sm font-semibold text-gray-900">Certificates</label>
-        <div
-          className="border border-dashed border-gray-300 rounded-lg p-3 flex items-center justify-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors"
-          onClick={() => qualDocsInputRef.current?.click()}
-        >
-          <Upload size={14} className="text-gray-500" />
-          <span className="text-xs text-gray-600">Upload Scanned Documents</span>
-          <input ref={qualDocsInputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden"
-            onChange={(e) => handleFileUpload("qualificationDocs", e.target.files)} />
-        </div>
-        {formData.qualificationDocs.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {formData.qualificationDocs.map((file, i) => (
-              <Chip key={i} onClose={() => removeFile("qualificationDocs", i)} size="sm" variant="flat" className="text-xs h-7">
-                {file.name}
-              </Chip>
-            ))}
           </div>
         )}
       </div>
@@ -473,82 +691,261 @@ export default function AddStaff({ onClose, onSave }) {
 
   const renderStep3 = () => (
     <div className="space-y-6 animate-fade-in text-left">
-      <div className="space-y-2">
-        <label className="text-sm font-semibold text-gray-900">Role Designation</label>
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="Staff ID"
-            labelPlacement="outside"
-            placeholder="Code"
-            value={formData.staffNumber}
-            onValueChange={v => updateField("staffNumber", v)}
-            variant="bordered"
-            radius="sm"
-            classNames={{ label: "text-xs font-medium text-gray-600 mb-1", inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-          />
-          <Select
-            label="Role"
-            labelPlacement="outside"
-            placeholder="Select..."
-            selectedKeys={formData.staffType ? [formData.staffType] : []}
-            onSelectionChange={keys => updateField("staffType", Array.from(keys)[0])}
-            variant="bordered"
-            radius="sm"
-            classNames={{ label: "text-xs font-medium text-gray-600 mb-1", trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-          >
-            {staffTypes.map(st => <SelectItem key={st}>{st}</SelectItem>)}
-          </Select>
+      <div className="flex justify-between items-end mb-2 border-b border-default-100 pb-2">
+        <div>
+          <h3 className="text-sm font-semibold text-default-900">Education Details</h3>
+          <p className="text-xs text-danger-500 mt-0.5">* At least one degree is required</p>
         </div>
-        <Input
-          label="Department / Expertise"
-          labelPlacement="outside"
-          placeholder="e.g. Science"
-          value={formData.expertise}
-          onValueChange={v => updateField("expertise", v)}
-          variant="bordered"
-          radius="sm"
-          classNames={{ label: "text-xs font-medium text-gray-600 mb-1", inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-        />
+        {formData.professionalQualifications.length > 0 && (
+          <Button
+            size="sm"
+            variant="light"
+            color="primary"
+            onPress={addQualification}
+            className="h-8 text-xs font-medium bg-transparent hover:bg-primary-50 px-2"
+            startContent={<Plus size={14} />}
+          >
+            Add Degree
+          </Button>
+        )}
       </div>
 
-      {formData.staffType === "Teaching" && (
-        <div className="space-y-2 pt-2 border-t border-dashed border-gray-200">
-          <label className="text-sm font-semibold text-gray-900 block mt-2">Class Assignments</label>
-          <Select
-            placeholder="Assign Classes"
-            selectionMode="multiple"
-            selectedKeys={new Set(formData.assignedClasses)}
-            onSelectionChange={keys => updateField("assignedClasses", Array.from(keys))}
-            variant="bordered"
-            radius="sm"
-            classNames={{ trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 min-h-[40px]" }}
-          >
-            {classOptions.map(c => <SelectItem key={c}>{c}</SelectItem>)}
-          </Select>
+      <div className="space-y-4">
+        {formData.professionalQualifications.map((qual, i) => (
+          <div key={i} className="p-4 border border-default-200 rounded-xl space-y-4 relative group hover:border-default-300 transition-colors bg-default-50/20">
+            <button
+              className="absolute top-3 right-3 text-default-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-default-100 rounded-lg"
+              onClick={() => removeQualification(i)}
+            >
+              <X size={14} />
+            </button>
 
-          <div className="flex items-center justify-between py-2 px-1">
-            <span className="text-sm text-gray-700">Class Teacher Responsibility?</span>
-            <Switch size="sm" isSelected={formData.isClassTeacher} onValueChange={v => updateField("isClassTeacher", v)} />
+            <div className="grid grid-cols-12 gap-3 pr-8">
+              <div className="col-span-8">
+                <Autocomplete
+                  label="Degree / Certificate"
+                  labelPlacement="outside"
+                  placeholder="Select or type degree"
+                  defaultItems={degreeOptions}
+                  inputValue={qual.name}
+                  onInputChange={(v) => updateQualification(i, "name", v)}
+                  allowsCustomValue
+                  isRequired
+                  variant="bordered"
+                  radius="sm"
+                  size="sm"
+                  classNames={{
+                    base: "max-w-full",
+                    trigger: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-9 min-h-unit-8"
+                  }}
+                  isInvalid={!!errors[`qualName_${i}`]}
+                  errorMessage={errors[`qualName_${i}`]}
+                >
+                  {(item) => <AutocompleteItem key={item.value}>{item.label}</AutocompleteItem>}
+                </Autocomplete>
+              </div>
+              <div className="col-span-4">
+                <Input
+                  label="Year"
+                  labelPlacement="outside"
+                  placeholder="Year"
+                  value={qual.year}
+                  onValueChange={v => {
+                    if (v.length <= 4 && /^\d*$/.test(v)) updateQualification(i, "year", v);
+                  }}
+                  variant="bordered"
+                  radius="sm"
+                  size="sm"
+                  isInvalid={!!errors[`qualYear_${i}`]}
+                  errorMessage={errors[`qualYear_${i}`]}
+                  classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-9" }}
+                />
+              </div>
+            </div>
+
+            {/* Document Upload for this qualification */}
+            <div className="flex items-center gap-3 pt-1">
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="flat"
+                  className="h-8 text-xs bg-default-100 text-default-600 hover:bg-default-200"
+                  onPress={() => document.getElementById(`qual-doc-${i}`).click()}
+                  startContent={<Upload size={14} />}
+                >
+                  Upload Certificate
+                </Button>
+                {qual.documents && qual.documents.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="light"
+                    className="h-8 text-xs text-primary font-medium"
+                    startContent={<FileScan size={14} />}
+                    onPress={() => { /* Add logic later */ }}
+                  >
+                    Extract Info
+                  </Button>
+                )}
+              </div>
+
+              <input
+                id={`qual-doc-${i}`}
+                type="file"
+                multiple
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+                onChange={(e) => handleQualificationDocUpload(i, e.target.files)}
+              />
+
+              {qual.documents && qual.documents.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 align-middle ml-auto">
+                  {qual.documents.map((file, docIdx) => (
+                    <Chip
+                      key={docIdx}
+                      size="sm"
+                      variant="flat"
+                      onClose={() => removeQualificationDoc(i, docIdx)}
+                      classNames={{ base: "h-6 text-xs bg-success-50 text-success-700" }}
+                      startContent={<Check size={12} />}
+                    >
+                      {file.name}
+                    </Chip>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
+        ))}
 
-          {formData.isClassTeacher && (
-            <Select
-              placeholder="Class Teacher Of"
-              selectedKeys={formData.classTeacherOf ? [formData.classTeacherOf] : []}
-              onSelectionChange={keys => updateField("classTeacherOf", Array.from(keys)[0])}
+        {formData.professionalQualifications.length === 0 && (
+          <div className="text-center py-10 border-2 border-dashed border-default-200 rounded-xl bg-default-50/30 flex flex-col items-center justify-center gap-2">
+            <div className="w-10 h-10 rounded-full bg-default-100 flex items-center justify-center text-default-400">
+              <GraduationCap size={20} />
+            </div>
+            <div className="text-xs text-default-500">
+              No degrees added. <span className="text-danger">*Required</span>
+            </div>
+            <Button size="sm" variant="light" color="primary" onPress={addQualification} className="text-xs font-medium">Add Degree</Button>
+          </div>
+        )}
+        {errors.qualifications && <p className="text-xs text-danger">{errors.qualifications}</p>}
+      </div>
+
+      <div className="space-y-4 pt-6 border-t border-dashed border-default-200">
+        <label className="text-sm font-semibold text-default-900 block">Experience</label>
+
+        <div className="space-y-3">
+          {/* Row 1: Org Name (Flex) and Years (Fixed small width) */}
+          <div className="flex gap-4">
+            <Input
+              label="Previous Organization"
+              labelPlacement="outside"
+              placeholder="Organization Name"
+              value={formData.previousOrganization}
+              onValueChange={v => updateField("previousOrganization", v)}
               variant="bordered"
               radius="sm"
-              classNames={{ trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
-            >
-              {formData.assignedClasses.length > 0 ? formData.assignedClasses.map(c => <SelectItem key={c}>{c}</SelectItem>) : <SelectItem key="none" isDisabled>Select assigned classes first</SelectItem>}
-            </Select>
-          )}
+              className="flex-1"
+              classNames={{ label: "text-xs font-medium text-default-600 mb-1", inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+            />
+            <Input
+              label="Exp. (Years)"
+              labelPlacement="outside"
+              placeholder="0"
+              value={formData.totalExperience}
+              onValueChange={v => {
+                // Only allow numbers and limit to 2 digits
+                const numericValue = v.replace(/\D/g, '').slice(0, 2);
+                updateField("totalExperience", numericValue);
+              }}
+              variant="bordered"
+              radius="sm"
+              className="w-28"
+              classNames={{ label: "text-xs font-medium text-default-600 mb-1", inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+              maxLength={2}
+            />
+          </div>
+
+          {/* Row 2: Role in Organization */}
+          <Input
+            label="Role / Designation"
+            labelPlacement="outside"
+            placeholder="e.g. Senior Teacher"
+            value={formData.roleInOrganization}
+            onValueChange={v => updateField("roleInOrganization", v)}
+            variant="bordered"
+            radius="sm"
+            classNames={{ label: "text-xs font-medium text-default-600 mb-1", inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+          />
         </div>
-      )}
+      </div>
     </div>
   );
 
-  const renderStep4 = () => {
+  const renderStep4 = () => (
+    <div className="space-y-6 animate-fade-in text-left">
+      {/* Identity Docs & Proofs */}
+      <div className="space-y-3">
+        <label className="text-sm font-semibold text-default-900">Documents & Proofs</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {idProofTypes.map((type) => (
+            <div key={type} className="flex items-center justify-between p-3 border border-default-200 rounded-lg bg-default-50/50 hover:bg-default-100 transition-colors">
+              <div className="flex items-center gap-2">
+                <FileBadge size={16} className="text-default-500" />
+                <span className="text-sm font-medium text-default-700">{type}</span>
+              </div>
+              {formData.idDocuments[type] ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-success-600 font-medium truncate max-w-[100px]">{formData.idDocuments[type].name}</span>
+                  <button onClick={() => removeIDProof(type)} className="text-default-400 hover:text-danger p-1 rounded-full hover:bg-default-200">
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <button className="text-xs font-semibold text-primary hover:text-primary-600 transition-colors px-2 py-1">
+                    Upload
+                  </button>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={(e) => handleIDProofUpload(type, e.target.files)}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-2 pt-2">
+          <label className="text-sm font-semibold text-default-900">Other Certificates</label>
+          <div
+            className="border border-dashed border-default-300 rounded-xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-default-50 transition-colors text-center"
+            onClick={() => qualDocsInputRef.current?.click()}
+          >
+            <div className="w-8 h-8 rounded-full bg-default-100 flex items-center justify-center text-default-500">
+              <Upload size={16} />
+            </div>
+            <span className="text-xs text-default-600">Click to upload scanned documents</span>
+            <input ref={qualDocsInputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden"
+              onChange={(e) => handleFileUpload("qualificationDocs", e.target.files)} />
+          </div>
+          {formData.qualificationDocs.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {formData.qualificationDocs.map((file, i) => (
+                <Chip key={i} onClose={() => removeFile("qualificationDocs", i)} size="sm" variant="flat" className="text-xs h-7 bg-default-100">
+                  {file.name}
+                </Chip>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderStep5 = () => {
     // Salary Templates Local Logic
     const salaryTemplates = [
       { name: "Teacher", breakdown: [{ component: "Basic Salary", amount: 25000 }, { component: "HRA", amount: 10000 }, { component: "Allowance", amount: 5000 }] },
@@ -573,19 +970,20 @@ export default function AddStaff({ onClose, onSave }) {
 
     return (
       <div className="space-y-6 animate-fade-in text-left">
+        {/* Bank Details */}
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-gray-900">Bank Details</label>
+          <label className="text-sm font-semibold text-default-900">Bank Details</label>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Account Number" labelPlacement="outside" placeholder="Account No" value={formData.accountNumber} onValueChange={v => updateField("accountNumber", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-white border-1 h-10" }} />
-            <Input label="IFSC Code" labelPlacement="outside" placeholder="IFSC" value={formData.ifscCode} onValueChange={v => updateField("ifscCode", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-white border-1 h-10" }} />
-            <Input label="Bank Name" labelPlacement="outside" placeholder="Bank Name" value={formData.bankName} onValueChange={v => updateField("bankName", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-white border-1 h-10" }} />
-            <Input label="Branch Name" labelPlacement="outside" placeholder="Branch" value={formData.branchName} onValueChange={v => updateField("branchName", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-white border-1 h-10" }} />
+            <Input label="Account Number" labelPlacement="outside" placeholder="Account No" value={formData.accountNumber} onValueChange={v => updateField("accountNumber", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
+            <Input label="IFSC Code" labelPlacement="outside" placeholder="IFSC" value={formData.ifscCode} onValueChange={v => updateField("ifscCode", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
+            <Input label="Bank Name" labelPlacement="outside" placeholder="Bank Name" value={formData.bankName} onValueChange={v => updateField("bankName", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
+            <Input label="Branch Name" labelPlacement="outside" placeholder="Branch" value={formData.branchName} onValueChange={v => updateField("branchName", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
           </div>
         </div>
 
-        <div className="space-y-2 pt-4 border-t border-dashed border-gray-200">
+        <div className="space-y-2 pt-4 border-t border-dashed border-default-200">
           <div className="flex justify-between items-center">
-            <label className="text-sm font-semibold text-gray-900">Salary Structure</label>
+            <label className="text-sm font-semibold text-default-900">Salary Structure</label>
             <Select
               size="sm"
               placeholder="Load Template"
@@ -600,20 +998,36 @@ export default function AddStaff({ onClose, onSave }) {
             </Select>
           </div>
 
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="border border-default-200 rounded-lg overflow-hidden">
             {formData.salaryBreakdown.map((item, i) => (
-              <div key={i} className="flex items-center gap-2 p-2 border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                <Input size="sm" value={item.component} onValueChange={v => updateBreakdownItem(i, "component", v)} variant="flat" classNames={{ inputWrapper: "bg-transparent shadow-none" }} />
-                <Input size="sm" type="number" value={item.amount} onValueChange={v => updateBreakdownItem(i, "amount", v)} variant="flat" startContent="₹" classNames={{ inputWrapper: "bg-transparent shadow-none w-24" }} />
+              <div key={i} className="flex items-center gap-2 p-2 border-b border-default-100 last:border-0 hover:bg-default-50">
+                <Input 
+                  size="sm" 
+                  value={item.component} 
+                  onValueChange={v => updateBreakdownItem(i, "component", v)} 
+                  variant="flat" 
+                  placeholder="Enter component name"
+                  classNames={{ inputWrapper: "bg-transparent shadow-none" }} 
+                />
+                <Input 
+                  size="sm" 
+                  type="number" 
+                  value={item.amount} 
+                  onValueChange={v => updateBreakdownItem(i, "amount", v)} 
+                  variant="flat" 
+                  placeholder="0"
+                  startContent="₹" 
+                  classNames={{ inputWrapper: "bg-transparent shadow-none w-24" }} 
+                />
                 <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => updateField("salaryBreakdown", formData.salaryBreakdown.filter((_, idx) => idx !== i))}><X size={14} /></Button>
               </div>
             ))}
-            <Button fullWidth variant="light" size="sm" className="text-gray-500 font-medium" onPress={() => updateField("salaryBreakdown", [...formData.salaryBreakdown, { component: "", amount: 0 }])}>+ Add Component</Button>
+            <Button fullWidth variant="light" size="sm" className="text-default-500 font-medium" onPress={() => updateField("salaryBreakdown", [...formData.salaryBreakdown, { component: "", amount: 0 }])}>+ Add Component</Button>
           </div>
 
           <div className="flex justify-between items-center px-2 pt-2">
-            <span className="text-sm font-medium text-gray-600">Total Salary</span>
-            <span className="text-lg font-bold text-gray-900">₹{totalSalary.toLocaleString()}</span>
+            <span className="text-sm font-medium text-default-600">Total Salary</span>
+            <span className="text-lg font-bold text-default-900">₹{totalSalary.toLocaleString()}</span>
           </div>
         </div>
       </div>
@@ -621,10 +1035,11 @@ export default function AddStaff({ onClose, onSave }) {
   };
 
   const steps = [
-    { number: 1, title: "Staff Info", icon: User },
+    { number: 1, title: "Personal Info", icon: User },
     { number: 2, title: "Education", icon: GraduationCap },
-    { number: 3, title: "Role", icon: Briefcase },
-    { number: 4, title: "Payroll", icon: Banknote }
+    { number: 3, title: "Documents", icon: FileText },
+    { number: 4, title: "Role", icon: Briefcase },
+    { number: 5, title: "Payroll", icon: Banknote }
   ];
 
   return (
@@ -633,24 +1048,24 @@ export default function AddStaff({ onClose, onSave }) {
       <div className="px-8 py-6">
         <div className="flex items-center justify-between relative">
           {/* Dashed Line Background */}
-          <div className="absolute top-[20px] left-0 right-0 h-[1.5px] border-t-2 border-dashed border-gray-200 -z-0" />
+          <div className="absolute top-[20px] left-0 right-0 h-[1.5px] border-t-2 border-dashed border-default-200 -z-0" />
 
           {steps.map((s, i) => {
             const isActive = step >= s.number;
             const isCurrent = step === s.number;
             return (
-              <div key={s.number} className="flex flex-col items-center relative z-10 bg-white px-2">
+              <div key={s.number} className="flex flex-col items-center relative z-10 bg-white dark:bg-black px-2">
                 <div className={cn(
                   "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all",
-                  isCurrent ? "border-primary text-primary bg-primary-50" :
+                  isCurrent ? "border-primary text-primary bg-primary-50 dark:bg-primary-900/20" :
                     isActive ? "border-primary text-white bg-primary" :
-                      "border-gray-200 text-gray-400 bg-white"
+                      "border-default-200 text-default-400 bg-white dark:bg-default-50"
                 )}>
                   <s.icon size={18} strokeWidth={2} />
                 </div>
                 <span className={cn(
                   "text-[11px] font-semibold mt-2 uppercase tracking-wide",
-                  isCurrent ? "text-primary" : "text-gray-400"
+                  isCurrent ? "text-primary" : "text-default-400"
                 )}>
                   {s.title}
                 </span>
@@ -664,24 +1079,25 @@ export default function AddStaff({ onClose, onSave }) {
       <div className="flex-1 overflow-y-auto px-8 py-2 custom-scrollbar">
         <div className="max-w-2xl mx-auto">
           {step === 1 && renderStep1()}
-          {step === 2 && renderStep2()}
-          {step === 3 && renderStep3()}
-          {step === 4 && renderStep4()}
+          {step === 2 && renderStep3()}
+          {step === 3 && renderStep4()}
+          {step === 4 && renderStep2()}
+          {step === 5 && renderStep5()}
         </div>
       </div>
 
       {/* Footer */}
-      <div className="px-8 py-6 flex justify-center gap-4 border-t border-gray-100">
+      <div className="px-8 py-6 flex justify-center gap-4 border-t border-default-100">
         <Button
           className="w-32 font-medium"
           variant="light"
-          onPress={onClose}
+          onPress={handleClose}
         >
           Cancel
         </Button>
         {step > 1 && (
           <Button
-            className="w-32 font-medium border-gray-300 text-gray-700"
+            className="w-32 font-medium border-default-200 text-default-700"
             variant="bordered"
             onPress={handlePrev}
           >
@@ -691,11 +1107,36 @@ export default function AddStaff({ onClose, onSave }) {
         <Button
           className="w-32 font-medium shadow-lg shadow-primary/20"
           color="primary"
-          onPress={step === 4 ? handleSubmit : handleNext}
+          onPress={step === 5 ? handleSubmit : handleNext}
         >
-          {step === 4 ? "Save" : "Next"}
+          {step === 5 ? "Save" : "Next"}
         </Button>
       </div>
+
+      {/* Confirmation Modal */}
+      <Modal isOpen={showConfirmClose} onClose={cancelClose} size="sm">
+        <ModalContent>
+          <ModalHeader className="flex gap-2 items-center">
+            <AlertTriangle size={20} className="text-warning" />
+            <span>Unsaved Changes</span>
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-default-600">
+              You have unsaved changes. Are you sure you want to close without saving?
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={cancelClose}>
+              Continue Editing
+            </Button>
+            <Button color="danger" onPress={confirmClose}>
+              Discard Changes
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
-}
+});
+
+export default AddStaff;

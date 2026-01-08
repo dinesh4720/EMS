@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
     Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-    Button, Chip, Spinner,
-    Dropdown, DropdownTrigger, DropdownMenu, DropdownItem
+    Button, Chip, Spinner, Avatar,
+    Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection
 } from "@heroui/react";
-import { Search, Filter, ArrowUpDown, MoreVertical, Eye, Edit, Trash2, X, ChevronDown, Check } from "lucide-react";
+import { Search, Filter, ArrowUpDown, Edit, Trash2, X, ChevronDown, Check, Download, Users, ChevronRight } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -12,7 +13,7 @@ import toast from "react-hot-toast";
 const ITEMS_PER_LOAD = 10;
 
 export default function StaffList({ onStaffClick }) {
-    const { staff, deleteStaff } = useApp();
+    const { staff, deleteStaff, updateStaff } = useApp();
     const [searchQuery, setSearchQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState("all");
     const [deptFilter, setDeptFilter] = useState("all");
@@ -24,19 +25,23 @@ export default function StaffList({ onStaffClick }) {
         column: "name",
         direction: "ascending",
     });
+    const [selectedStaff, setSelectedStaff] = useState(new Set());
+    const [showDeptSubmenu, setShowDeptSubmenu] = useState(false);
+    const deptItemRef = useRef(null);
 
     const [columnWidths] = useState({
-        name: 280,
-        role: 150,
-        department: 140,
-        contact: 120,
-        status: 100,
-        actions: 50
+        name: 260,
+        role: 140,
+        department: 130,
+        contact: 140,
+        attendance: 120,
+        status: 120,
+        actions: 80
     });
 
-    const roles = ["Teacher", "Admin", "Accountant", "Librarian", "Lab Assistant"];
+    const roles = ["Teacher", "Admin", "Principal", "Vice Principal", "Accountant", "Librarian", "Lab Assistant"];
     const departments = [...new Set(staff.map(s => s.department))];
-    const statusOptions = ["active", "inactive", "transferred"];
+    const statusOptions = ["active", "inactive"];
 
     // Get counts for each status
     const statusCounts = useMemo(() => {
@@ -44,9 +49,14 @@ export default function StaffList({ onStaffClick }) {
             all: staff.length,
             active: staff.filter(s => s.status === "active").length,
             inactive: staff.filter(s => s.status === "inactive").length,
-            transferred: staff.filter(s => s.status === "transferred").length,
         };
     }, [staff]);
+
+    // Calculate attendance percentage for each staff
+    const getAttendancePercentage = (staffId) => {
+        // Mock calculation - replace with actual attendance data
+        return Math.floor(Math.random() * 30) + 70; // Random 70-100%
+    };
 
     const filteredItems = useMemo(() => {
         let filtered = [...staff];
@@ -55,7 +65,9 @@ export default function StaffList({ onStaffClick }) {
             const lowerQuery = searchQuery.toLowerCase();
             filtered = filtered.filter((s) =>
                 s.name.toLowerCase().includes(lowerQuery) ||
-                s.email.toLowerCase().includes(lowerQuery)
+                s.email.toLowerCase().includes(lowerQuery) ||
+                s.code?.toLowerCase().includes(lowerQuery) ||
+                s.phone?.toLowerCase().includes(lowerQuery)
             );
         }
 
@@ -82,6 +94,8 @@ export default function StaffList({ onStaffClick }) {
     const visibleItems = useMemo(() => {
         return filteredItems.slice(0, visibleCount);
     }, [filteredItems, visibleCount]);
+
+    const selectedCount = selectedStaff === "all" ? filteredItems.length : selectedStaff.size;
 
     const hasMore = visibleCount < filteredItems.length;
 
@@ -124,8 +138,143 @@ export default function StaffList({ onStaffClick }) {
         switch (status) {
             case "active": return "bg-success-500";
             case "inactive": return "bg-danger-500";
-            case "transferred": return "bg-warning-500";
             default: return "bg-default-400";
+        }
+    };
+
+    // Handle status change
+    const handleStatusChange = async (staffId, newStatus) => {
+        try {
+            const staffMember = staff.find(s => s.id === staffId);
+            await updateStaff(staffId, { ...staffMember, status: newStatus });
+            toast.success(`Status updated to ${newStatus}`);
+        } catch (err) {
+            toast.error("Failed to update status");
+        }
+    };
+
+    // Export functions
+    const exportToCSV = () => {
+        const headers = ["Staff Name", "Employee ID", "Role", "Department", "Contact", "Email", "Status", "Attendance %"];
+        const rows = filteredItems.map(s => [
+            s.name,
+            s.code,
+            s.role,
+            s.department,
+            s.phone || "N/A",
+            s.email,
+            s.status,
+            `${getAttendancePercentage(s.id)}%`
+        ]);
+
+        const csvContent = [
+            headers.join(","),
+            ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `staff-list-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        toast.success("Staff list exported successfully");
+    };
+
+    const exportToPDF = () => {
+        toast.info("PDF export feature coming soon");
+    };
+
+    // Bulk actions
+    // Bulk actions
+    const getSelectedIds = () => {
+        if (selectedStaff === "all") {
+            return filteredItems.map(s => s.id);
+        }
+        return Array.from(selectedStaff);
+    };
+
+    const handleBulkStatusChange = async (newStatus) => {
+        if (selectedCount === 0) return;
+
+        try {
+            const ids = getSelectedIds();
+            const updates = ids.map(async (staffId) => {
+                const numericId = Number(staffId);
+                const staffMember = staff.find(s => s.id === numericId);
+                if (staffMember) {
+                    await updateStaff(numericId, { ...staffMember, status: newStatus });
+                }
+            });
+
+            await Promise.all(updates);
+            toast.success(`Status updated to ${newStatus} for ${selectedCount} staff members`);
+            setSelectedStaff(new Set());
+        } catch (err) {
+            toast.error("Failed to update status");
+        }
+    };
+
+    const handleBulkRoleChange = async (newRole) => {
+        if (selectedCount === 0) return;
+
+        try {
+            const ids = getSelectedIds();
+            const updates = ids.map(async (staffId) => {
+                const numericId = Number(staffId);
+                const staffMember = staff.find(s => s.id === numericId);
+                if (staffMember) {
+                    await updateStaff(numericId, { ...staffMember, role: newRole });
+                }
+            });
+
+            await Promise.all(updates);
+            toast.success(`Role updated to ${newRole} for ${selectedCount} staff members`);
+            setSelectedStaff(new Set());
+        } catch (err) {
+            toast.error("Failed to update role");
+        }
+    };
+
+    const handleBulkDepartmentChange = async (newDept) => {
+        if (selectedCount === 0) return;
+
+        try {
+            const ids = getSelectedIds();
+            const updates = ids.map(async (staffId) => {
+                const numericId = Number(staffId);
+                const staffMember = staff.find(s => s.id === numericId);
+                if (staffMember) {
+                    await updateStaff(numericId, { ...staffMember, department: newDept });
+                }
+            });
+
+            await Promise.all(updates);
+            toast.success(`Department updated to ${newDept} for ${selectedCount} staff members`);
+            setSelectedStaff(new Set());
+        } catch (err) {
+            toast.error("Failed to update department");
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedCount === 0) return;
+
+        if (!confirm(`Are you sure you want to delete ${selectedCount} staff members?`)) {
+            return;
+        }
+
+        try {
+            const ids = getSelectedIds();
+            const deletions = ids.map(async (staffId) => {
+                await deleteStaff(Number(staffId));
+            });
+
+            await Promise.all(deletions);
+            toast.success(`${selectedCount} staff members deleted successfully`);
+            setSelectedStaff(new Set());
+        } catch (err) {
+            toast.error("Failed to delete staff members");
         }
     };
 
@@ -152,15 +301,15 @@ export default function StaffList({ onStaffClick }) {
                                 toast.info(`Filter applied: ${key === 'all' ? 'All status' : key}`);
                             }}
                         >
-                            <DropdownItem 
-                                key="all" 
+                            <DropdownItem
+                                key="all"
                                 startContent={statusFilter === "all" ? <Check size={14} className="text-primary" /> : <span className="w-3.5"></span>}
                                 endContent={<span className="text-default-400 text-xs">{statusCounts.all}</span>}
                             >
                                 All Status
                             </DropdownItem>
-                            <DropdownItem 
-                                key="active" 
+                            <DropdownItem
+                                key="active"
                                 startContent={statusFilter === "active" ? <Check size={14} className="text-primary" /> : <span className="w-3.5"></span>}
                                 endContent={<span className="text-default-400 text-xs">{statusCounts.active}</span>}
                                 className="capitalize"
@@ -170,8 +319,8 @@ export default function StaffList({ onStaffClick }) {
                                     Active
                                 </span>
                             </DropdownItem>
-                            <DropdownItem 
-                                key="inactive" 
+                            <DropdownItem
+                                key="inactive"
                                 startContent={statusFilter === "inactive" ? <Check size={14} className="text-primary" /> : <span className="w-3.5"></span>}
                                 endContent={<span className="text-default-400 text-xs">{statusCounts.inactive}</span>}
                                 className="capitalize"
@@ -181,28 +330,20 @@ export default function StaffList({ onStaffClick }) {
                                     Inactive
                                 </span>
                             </DropdownItem>
-                            <DropdownItem 
-                                key="transferred" 
-                                startContent={statusFilter === "transferred" ? <Check size={14} className="text-primary" /> : <span className="w-3.5"></span>}
-                                endContent={<span className="text-default-400 text-xs">{statusCounts.transferred}</span>}
-                                className="capitalize"
-                            >
-                                <span className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-warning-500"></span>
-                                    Transferred
-                                </span>
-                            </DropdownItem>
                         </DropdownMenu>
                     </Dropdown>
 
-                    <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-default-100 rounded-lg border border-default-200 hover:border-primary hover:bg-default-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
+                    <div className="flex items-center gap-2 w-full sm:max-w-[280px] px-3 py-2 bg-default-100 rounded-lg border border-default-200 hover:border-primary hover:bg-default-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
                         <Search size={16} className="text-default-400" />
                         <input
-                            type="text"
-                            placeholder="Search staff..."
+                            type="search"
+                            name="staff-search-query"
+                            placeholder="Search by name, email, or ID..."
                             className="flex-1 bg-transparent outline-none text-sm"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
+                            autoComplete="off"
+                            data-form-type="other"
                         />
                         {searchQuery && (
                             <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-default-200 rounded cursor-pointer">
@@ -214,6 +355,138 @@ export default function StaffList({ onStaffClick }) {
 
                 {/* Right Side - Filters & Actions */}
                 <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+                    {/* Bulk Actions */}
+                    {selectedCount > 0 && (
+                        <div className="relative">
+                            <Dropdown>
+                                <DropdownTrigger>
+                                    <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap text-default-900">
+                                        <Users size={16} className="text-default-400" />
+                                        <span>Bulk Actions ({selectedCount})</span>
+                                        <ChevronDown size={14} className="text-default-400" />
+                                    </button>
+                                </DropdownTrigger>
+                                <DropdownMenu aria-label="Bulk actions" className="relative">
+                                    <DropdownSection title="Change Status" showDivider>
+                                        <DropdownItem
+                                            key="status-active"
+                                            onPress={() => handleBulkStatusChange("active")}
+                                            startContent={<span className="w-2 h-2 rounded-full bg-success-500"></span>}
+                                        >
+                                            Set as Active
+                                        </DropdownItem>
+                                        <DropdownItem
+                                            key="status-inactive"
+                                            onPress={() => handleBulkStatusChange("inactive")}
+                                            startContent={<span className="w-2 h-2 rounded-full bg-danger-500"></span>}
+                                        >
+                                            Set as Inactive
+                                        </DropdownItem>
+                                    </DropdownSection>
+                                    <DropdownSection title="Change Role" showDivider>
+                                        {roles.map((role) => (
+                                            <DropdownItem
+                                                key={`role-${role}`}
+                                                onPress={() => handleBulkRoleChange(role)}
+                                            >
+                                                Set as {role}
+                                            </DropdownItem>
+                                        ))}
+                                    </DropdownSection>
+                                    <DropdownSection title="Change Department" showDivider>
+                                        <DropdownItem
+                                            key="dept-submenu"
+                                            textValue="Move to Department"
+                                            className="relative [&>span]:w-full"
+                                        >
+                                            <div
+                                                ref={deptItemRef}
+                                                className={`flex items-center justify-between w-full cursor-pointer group/dept ${showDeptSubmenu ? "bg-default-100 text-default-900" : "text-default-700"}`}
+                                                onPointerEnter={() => setShowDeptSubmenu(true)}
+                                                onPointerLeave={() => {
+                                                    // Small delay to allow moving to submenu
+                                                    setTimeout(() => {
+                                                        const submenu = document.querySelector('.dept-submenu');
+                                                        if (submenu && !submenu.matches(':hover')) {
+                                                            setShowDeptSubmenu(false);
+                                                        }
+                                                    }, 100);
+                                                }}
+                                            >
+                                                <span>Move to Department</span>
+                                                <ChevronRight size={14} className="text-default-400" />
+                                            </div>
+                                        </DropdownItem>
+                                    </DropdownSection>
+                                    <DropdownSection title="Actions">
+                                        <DropdownItem
+                                            key="delete"
+                                            className="text-danger"
+                                            color="danger"
+                                            onPress={handleBulkDelete}
+                                            startContent={<Trash2 size={14} />}
+                                        >
+                                            Delete Selected
+                                        </DropdownItem>
+                                    </DropdownSection>
+                                </DropdownMenu>
+                            </Dropdown>
+
+                            {/* Department Submenu Portal */}
+                            {showDeptSubmenu && deptItemRef.current && createPortal(
+                                <div
+                                    className="dept-submenu fixed bg-content1 border border-default-200 rounded-lg shadow-xl p-1 min-w-[200px] max-h-[300px] overflow-y-auto"
+                                    style={{
+                                        left: `${deptItemRef.current.getBoundingClientRect().right + 8}px`,
+                                        top: `${deptItemRef.current.getBoundingClientRect().top}px`,
+                                        zIndex: 2147483647
+                                    }}
+                                    onPointerEnter={() => {
+                                        console.log('Pointer entered submenu');
+                                        setShowDeptSubmenu(true);
+                                    }}
+                                    onPointerLeave={() => {
+                                        console.log('Pointer left submenu');
+                                        setShowDeptSubmenu(false);
+                                    }}
+                                >
+                                    {departments.map((dept) => (
+                                        <button
+                                            key={`dept-${dept}`}
+                                            onClick={() => {
+                                                handleBulkDepartmentChange(dept);
+                                                setShowDeptSubmenu(false);
+                                            }}
+                                            className="w-full text-left px-2 py-1.5 text-sm font-normal text-default-700 rounded-md hover:bg-default-100 hover:text-default-900 transition-colors"
+                                        >
+                                            {dept}
+                                        </button>
+                                    ))}
+                                </div>,
+                                document.body
+                            )}
+                        </div>
+                    )}
+
+                    {/* Export */}
+                    <Dropdown>
+                        <DropdownTrigger>
+                            <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
+                                <Download size={16} className="text-default-400" />
+                                <span>Export</span>
+                                <ChevronDown size={14} className="text-default-400" />
+                            </button>
+                        </DropdownTrigger>
+                        <DropdownMenu aria-label="Export options">
+                            <DropdownItem key="csv" onPress={exportToCSV}>
+                                Export as CSV
+                            </DropdownItem>
+                            <DropdownItem key="pdf" onPress={exportToPDF}>
+                                Export as PDF
+                            </DropdownItem>
+                        </DropdownMenu>
+                    </Dropdown>
+
                     {/* Role Filter */}
                     <Dropdown>
                         <DropdownTrigger>
@@ -291,106 +564,143 @@ export default function StaffList({ onStaffClick }) {
 
             {/* Table */}
             <Table
-                aria-label="Staff list table"
+                aria-label="All Staff table"
+                selectionMode="multiple"
+                selectedKeys={selectedStaff}
+                onSelectionChange={setSelectedStaff}
                 sortDescriptor={sortDescriptor}
                 onSortChange={setSortDescriptor}
+                onRowAction={(key) => onStaffClick(key)} // Don't convert to number - MongoDB IDs are strings
                 removeWrapper
                 radius="none"
                 classNames={{
                     base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0",
-                    thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3",
-                    th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6 hover:bg-default-100 transition-colors cursor-pointer [&_svg]:text-default-300 [&:hover_svg]:text-default-500 [&_svg]:opacity-100 first:hover:bg-transparent first:cursor-default",
+                    thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12 [&>tr>th:first-child]:sticky [&>tr>th:first-child]:left-0 [&>tr>th:first-child]:z-20 [&>tr>th:first-child]:bg-background [&>tr>th:nth-child(2)]:sticky [&>tr>th:nth-child(2)]:left-12 [&>tr>th:nth-child(2)]:z-20 [&>tr>th:nth-child(2)]:bg-background",
+                    th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6 hover:bg-default-100 transition-colors first:hover:bg-transparent",
                     td: "py-5 border-b border-default-200 group-data-[last=true]:border-none last:pr-6",
-                    tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr:first-child>td]:pt-5",
-                    tr: "",
+                    tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr>td:first-child]:sticky [&>tr>td:first-child]:left-0 [&>tr>td:first-child]:z-20 [&>tr>td:first-child]:bg-background [&>tr>td:nth-child(2)]:sticky [&>tr>td:nth-child(2)]:left-12 [&>tr>td:nth-child(2)]:z-20 [&>tr>td:nth-child(2)]:bg-background group-hover:[&>tr>td:first-child]:bg-default-50 group-hover:[&>tr>td:nth-child(2)]:bg-default-50",
+                    tr: "group"
                 }}
             >
                 <TableHeader>
-                    <TableColumn key="name" allowsSorting style={{ width: columnWidths.name }}>STAFF MEMBER</TableColumn>
+                    <TableColumn key="name" allowsSorting style={{ width: columnWidths.name }}>STAFF NAME</TableColumn>
                     <TableColumn key="role" allowsSorting style={{ width: columnWidths.role }}>ROLE</TableColumn>
                     <TableColumn key="department" allowsSorting style={{ width: columnWidths.department }}>DEPARTMENT</TableColumn>
+                    <TableColumn key="contact" style={{ width: columnWidths.contact }}>CONTACT INFO</TableColumn>
+                    <TableColumn key="attendance" style={{ width: columnWidths.attendance }}>ATTENDANCE %</TableColumn>
                     <TableColumn key="status" style={{ width: columnWidths.status }}>STATUS</TableColumn>
-                    <TableColumn align="end" style={{ width: columnWidths.actions }}>ACTIONS</TableColumn>
+                    <TableColumn key="actions" align="end" style={{ width: columnWidths.actions }}>ACTIONS</TableColumn>
                 </TableHeader>
                 <TableBody items={visibleItems} emptyContent="No staff members found">
                     {(s) => (
-                        <TableRow key={s.id}>
-                            <TableCell>
+                        <TableRow
+                            key={s.id}
+                            className="cursor-pointer transition-colors hover:bg-default-50"
+                        >
+                            <TableCell key="name">
                                 <div className="flex items-center gap-3">
-                                    <img 
-                                        src={`https://i.pravatar.cc/150?u=${s.id}`} 
-                                        alt={s.name}
-                                        className="w-10 h-10 rounded-full"
+                                    <Avatar
+                                        src={s.picture || s.photo}
+                                        name={s.name}
+                                        className="w-10 h-10"
+                                        showFallback
                                     />
                                     <div className="flex flex-col">
-                                        <Link 
+                                        <Link
                                             to={`/staffs/${s.id}`}
+                                            onClick={(e) => e.stopPropagation()}
                                             className="text-default-900 font-medium text-base hover:text-primary transition-colors cursor-pointer"
                                         >
                                             {s.name}
                                         </Link>
-                                        <span className="text-default-500 text-xs">{s.email}</span>
+                                        <span className="text-default-500 text-xs">{s.code}</span>
                                     </div>
                                 </div>
                             </TableCell>
-                            <TableCell>
-                                <div className="flex flex-col">
-                                    <span className="text-default-900 text-sm">{s.role}</span>
-                                    <span className="text-default-500 text-xs">{s.code}</span>
-                                </div>
+                            <TableCell key="role">
+                                <span className="text-default-900 text-sm">{s.role}</span>
                             </TableCell>
-                            <TableCell>
+                            <TableCell key="department">
                                 <Chip size="sm" variant="flat" color="secondary" className="capitalize">
                                     {s.department}
                                 </Chip>
                             </TableCell>
-                            <TableCell>
-                                <div className={`inline-flex items-center px-3 py-1.5 rounded-lg border text-xs font-medium ${getStatusStyle(s.status)}`}>
-                                    <span className="capitalize">{s.status}</span>
+                            <TableCell key="contact">
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-default-900 text-xs">{s.phone || "N/A"}</span>
+                                    <span className="text-default-500 text-xs">{s.email}</span>
                                 </div>
                             </TableCell>
-                            <TableCell>
-                                <div className="flex justify-end">
+                            <TableCell key="attendance">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex-1 bg-default-200 rounded-full h-1.5 w-16">
+                                        <div
+                                            className="bg-success-500 h-1.5 rounded-full transition-all"
+                                            style={{ width: `${getAttendancePercentage(s.id)}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-default-900 text-xs font-medium min-w-[35px]">
+                                        {getAttendancePercentage(s.id)}%
+                                    </span>
+                                </div>
+                            </TableCell>
+                            <TableCell key="status">
+                                <div onClick={(e) => e.stopPropagation()}>
                                     <Dropdown>
                                         <DropdownTrigger>
-                                            <Button isIconOnly size="sm" variant="light" className="text-default-400">
-                                                <MoreVertical size={18} />
-                                            </Button>
+                                            <button className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer ${getStatusStyle(s.status)}`}>
+                                                <span className="capitalize">{s.status}</span>
+                                                <ChevronDown size={12} />
+                                            </button>
                                         </DropdownTrigger>
-                                        <DropdownMenu aria-label="Staff actions">
-                                            <DropdownItem
-                                                key="view"
-                                                startContent={<Eye size={14} />}
-                                                onPress={() => onStaffClick(s.id)}
-                                            >
-                                                View Profile
+                                        <DropdownMenu
+                                            aria-label="Change status"
+                                            onAction={(key) => handleStatusChange(s.id, key)}
+                                        >
+                                            <DropdownItem key="active">
+                                                <span className="flex items-center gap-2">
+                                                    <span className="w-2 h-2 rounded-full bg-success-500"></span>
+                                                    Active
+                                                </span>
                                             </DropdownItem>
-                                            <DropdownItem
-                                                key="edit"
-                                                startContent={<Edit size={14} />}
-                                                onPress={() => onStaffClick(s.id)}
-                                            >
-                                                Edit Details
-                                            </DropdownItem>
-                                            <DropdownItem
-                                                key="delete"
-                                                className="text-danger"
-                                                color="danger"
-                                                startContent={<Trash2 size={14} />}
-                                                onPress={async () => {
-                                                    try {
-                                                        await deleteStaff(s.id);
-                                                        toast.success(`${s.name} deleted successfully`);
-                                                    } catch (err) {
-                                                        console.error('Failed to delete staff:', err);
-                                                        toast.error('Failed to delete staff member');
-                                                    }
-                                                }}
-                                            >
-                                                Delete Staff
+                                            <DropdownItem key="inactive">
+                                                <span className="flex items-center gap-2">
+                                                    <span className="w-2 h-2 rounded-full bg-danger-500"></span>
+                                                    Inactive
+                                                </span>
                                             </DropdownItem>
                                         </DropdownMenu>
                                     </Dropdown>
+                                </div>
+                            </TableCell>
+                            <TableCell key="actions">
+                                <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                                    <Button
+                                        isIconOnly
+                                        size="sm"
+                                        variant="light"
+                                        className="text-default-400 hover:text-primary"
+                                        onPress={() => onStaffClick(s.id)}
+                                    >
+                                        <Edit size={16} />
+                                    </Button>
+                                    <Button
+                                        isIconOnly
+                                        size="sm"
+                                        variant="light"
+                                        className="text-default-400 hover:text-danger"
+                                        onPress={async () => {
+                                            try {
+                                                await deleteStaff(s.id);
+                                                toast.success(`${s.name} deleted successfully`);
+                                            } catch (err) {
+                                                console.error('Failed to delete staff:', err);
+                                                toast.error('Failed to delete staff member');
+                                            }
+                                        }}
+                                    >
+                                        <Trash2 size={16} />
+                                    </Button>
                                 </div>
                             </TableCell>
                         </TableRow>

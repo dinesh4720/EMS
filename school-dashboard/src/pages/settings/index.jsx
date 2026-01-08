@@ -25,7 +25,7 @@ import { Input, Kbd, Chip } from "@heroui/react";
 import InstitutionSettings from "./InstitutionSettings";
 import AcademicSettings from "./AcademicSettings";
 import AttendanceRules from "./AttendanceRules";
-import FeeRules from "./FeeRules";
+import FeeManagementSettings from "./FeeManagementSettings";
 import CommunicationSettings from "./CommunicationSettings";
 import PayrollSettings from "./PayrollSettings";
 import UserManagement from "./UserManagement";
@@ -36,6 +36,7 @@ import IntakeFormsSettings from "./IntakeFormsSettings";
 import SubscriptionSettings from "./SubscriptionSettings";
 import RolesAccess from "./RolesAccess";
 import AdmissionFormSettings from "./AdmissionFormSettings";
+import StaffIdSettings from "./StaffIdSettings";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -57,6 +58,7 @@ export default function SettingsPage() {
       title: "User Data",
       items: [
         { key: "users", label: "User Management", icon: User, path: "/settings/users" },
+        { key: "staff-id", label: "Staff ID Configuration", icon: User, path: "/settings/staff-id", isNew: true },
       ]
     },
     {
@@ -70,8 +72,7 @@ export default function SettingsPage() {
     {
       title: "Financial",
       items: [
-        { key: "feeheads", label: "Fee Heads", icon: BookOpen, path: "/settings/fee-heads" },
-        { key: "fees", label: "Fee Rules", icon: IndianRupee, path: "/settings/fee-rules" },
+        { key: "fees", label: "Fee Management", icon: IndianRupee, path: "/settings/fees" },
         { key: "payroll", label: "Payroll Settings", icon: IndianRupee, path: "/settings/payroll" },
       ]
     },
@@ -199,11 +200,11 @@ export default function SettingsPage() {
             <Route path="academics" element={<AcademicSettings />} />
             <Route path="admission-form" element={<AdmissionFormSettings />} />
             <Route path="users" element={<UserManagement />} />
+            <Route path="staff-id" element={<StaffIdSettings />} />
             <Route path="roles" element={<RolesAccess />} />
             <Route path="intake-forms" element={<IntakeFormsSettings />} />
             <Route path="attendance-rules" element={<AttendanceRules />} />
-            <Route path="fee-heads" element={<FeeHeadsSettings />} />
-            <Route path="fee-rules" element={<FeeRules />} />
+            <Route path="fees" element={<FeeManagementSettings />} />
             <Route path="holidays" element={<HolidaySettings />} />
             <Route path="leaves" element={<LeaveSettings />} />
             <Route path="communication" element={<CommunicationSettings />} />

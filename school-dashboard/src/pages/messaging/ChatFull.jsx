@@ -23,6 +23,8 @@ export default function ChatFull() {
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [contactSearch, setContactSearch] = useState("");
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -316,6 +318,12 @@ export default function ChatFull() {
   };
 
   const handleSend = async () => {
+    // If file is selected, send file with text
+    if (selectedFile) {
+      await handleSendFile();
+      return;
+    }
+
     if (!newMessage.trim() || !selectedConversation || sending) return;
 
     const messageContent = newMessage.trim();
@@ -403,46 +411,110 @@ export default function ChatFull() {
       return;
     }
 
+    // Store file and create preview
+    setSelectedFile(file);
+    
+    // Create preview for images
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFilePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setFilePreview(null);
+    }
+  };
+
+  const handleSendFile = async () => {
+    if (!selectedFile || !selectedConversation) return;
+
+    const messageText = newMessage.trim();
+    setNewMessage("");
+    setSending(true);
+
     try {
       setUploadingFile(true);
-      console.log('📤 Uploading file:', file.name);
+      console.log('📤 Uploading file:', selectedFile.name, 'Type:', selectedFile.type, 'Size:', selectedFile.size);
 
       // Upload file
-      const uploadResult = await chatService.uploadFile(file);
-      console.log('✅ File uploaded:', uploadResult.url);
+      const uploadResult = await chatService.uploadFile(selectedFile);
+      console.log('✅ File uploaded:', uploadResult);
 
-      // Send message with file
+      if (!uploadResult.url) {
+        throw new Error('Upload succeeded but no URL returned');
+      }
+
+      // Get receiver info
+      const otherParticipant = selectedConversation.otherParticipant || 
+        selectedConversation.participants?.find(p => p.userId !== user?.id);
+      
+      if (!otherParticipant) {
+        throw new Error('Cannot find conversation participant');
+      }
+
+      // Send message with file (use text message if provided, otherwise use filename)
       const messageData = {
         conversationId: selectedConversation.id,
-        receiverId: selectedConversation.otherParticipant.userId,
-        receiverModel: selectedConversation.otherParticipant.userType === 'staff' ? 'Staff' : 'Student',
-        content: file.name,
-        type: file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : 'file',
+        receiverId: otherParticipant.userId,
+        receiverModel: otherParticipant.userType === 'staff' ? 'Staff' : 'Student',
+        content: messageText || selectedFile.name,
+        type: selectedFile.type.startsWith('image/') ? 'image' : selectedFile.type.startsWith('video/') ? 'video' : 'file',
         fileUrl: uploadResult.url,
-        fileName: file.name,
-        fileSize: file.size // Send as number (bytes)
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size
       };
+
+      console.log('📨 Sending file message:', messageData);
 
       if (socketService.isConnected()) {
         socketService.sendMessage(messageData);
+        
+        // Optimistically add message
+        const optimisticMessage = {
+          id: Date.now(),
+          ...messageData,
+          senderId: user.id,
+          senderName: user.name,
+          status: 'sending',
+          createdAt: new Date()
+        };
+        setMessages(prev => [...prev, optimisticMessage]);
+        setTimeout(() => scrollToBottom(), 100);
       } else {
-        await chatService.sendMessage({
+        const sentMessage = await chatService.sendMessage({
           ...messageData,
           senderId: user.id,
           senderModel: 'Staff'
         });
+        setMessages(prev => [...prev, sentMessage]);
+        setTimeout(() => scrollToBottom(), 100);
       }
+
+      // Clear preview and file
+      setSelectedFile(null);
+      setFilePreview(null);
 
       // Reload conversations
       loadConversations();
     } catch (error) {
       console.error('❌ Error uploading file:', error);
-      alert('Failed to upload file');
+      alert(`Failed to upload file: ${error.message}`);
+      setNewMessage(messageText); // Restore message on error
     } finally {
       setUploadingFile(false);
+      setSending(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    }
+  };
+
+  const handleCancelFile = () => {
+    setSelectedFile(null);
+    setFilePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -754,6 +826,39 @@ export default function ChatFull() {
 
             {/* Input */}
             <div className="p-4 border-t border-default-200 shrink-0">
+              {/* File Preview */}
+              {selectedFile && (
+                <div className="mb-3 p-3 bg-default-50 rounded-lg border border-default-200">
+                  <div className="flex items-center gap-3">
+                    {filePreview ? (
+                      <img 
+                        src={filePreview} 
+                        alt="Preview" 
+                        className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 bg-default-200 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">
+                        {getFileIcon(selectedFile.name)}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{selectedFile.name}</p>
+                      <p className="text-xs text-default-500">{formatFileSize(selectedFile.size)}</p>
+                    </div>
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      onPress={handleCancelFile}
+                      isDisabled={uploadingFile}
+                      className="flex-shrink-0"
+                    >
+                      <X size={18} />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
               <div className="flex gap-2">
                 <input
                   ref={fileInputRef}
@@ -767,17 +872,17 @@ export default function ChatFull() {
                     isIconOnly
                     variant="light"
                     onPress={() => fileInputRef.current?.click()}
-                    isLoading={uploadingFile}
+                    isDisabled={uploadingFile}
                   >
                     <Paperclip size={20} />
                   </Button>
                 </Tooltip>
                 <Input
-                  placeholder="Type a message..."
+                  placeholder={selectedFile ? "Add a caption (optional)..." : "Type a message..."}
                   value={newMessage}
                   onChange={handleTyping}
                   onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-                  disabled={sending}
+                  disabled={sending || uploadingFile}
                   classNames={{
                     input: "text-sm",
                     inputWrapper: "h-10"
@@ -786,8 +891,9 @@ export default function ChatFull() {
                 <Button
                   color="primary"
                   onPress={handleSend}
-                  isLoading={sending}
+                  isLoading={sending || uploadingFile}
                   isIconOnly
+                  isDisabled={!selectedFile && !newMessage.trim()}
                 >
                   <Send size={18} />
                 </Button>
