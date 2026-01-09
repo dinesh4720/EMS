@@ -19,6 +19,7 @@ import Login from "./pages/Login";
 import { AppProvider, useApp } from "./context/AppContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ChatNotificationProvider } from "./context/ChatNotificationContext";
+import { PermissionProvider } from "./context/PermissionContext";
 import OnboardingFlow from "./components/onboarding/OnboardingFlow";
 import { AiAssistantProvider, AiAssistantLayout, AiAssistantPanel } from "./components/AiAssistant/AiAssistantPanel";
 import { AlertCircle, X } from "lucide-react";
@@ -149,11 +150,13 @@ export default function App() {
   return (
     <AuthProvider>
       <AppProvider>
-        <ChatNotificationProvider>
-          <AiAssistantProvider>
-            <AppRoutes />
-          </AiAssistantProvider>
-        </ChatNotificationProvider>
+        <PermissionProvider>
+          <ChatNotificationProvider>
+            <AiAssistantProvider>
+              <AppRoutes />
+            </AiAssistantProvider>
+          </ChatNotificationProvider>
+        </PermissionProvider>
       </AppProvider>
     </AuthProvider>
   );

@@ -37,6 +37,7 @@ import SubscriptionSettings from "./SubscriptionSettings";
 import RolesAccess from "./RolesAccess";
 import AdmissionFormSettings from "./AdmissionFormSettings";
 import StaffIdSettings from "./StaffIdSettings";
+import PermissionRequests from "./PermissionRequests";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -59,6 +60,8 @@ export default function SettingsPage() {
       items: [
         { key: "users", label: "User Management", icon: User, path: "/settings/users" },
         { key: "staff-id", label: "Staff ID Configuration", icon: User, path: "/settings/staff-id", isNew: true },
+        { key: "roles", label: "Roles & Permissions", icon: Shield, path: "/settings/roles" },
+        { key: "permission-requests", label: "Permission Requests", icon: Shield, path: "/settings/permission-requests", isNew: true },
       ]
     },
     {
@@ -202,6 +205,7 @@ export default function SettingsPage() {
             <Route path="users" element={<UserManagement />} />
             <Route path="staff-id" element={<StaffIdSettings />} />
             <Route path="roles" element={<RolesAccess />} />
+            <Route path="permission-requests" element={<PermissionRequests />} />
             <Route path="intake-forms" element={<IntakeFormsSettings />} />
             <Route path="attendance-rules" element={<AttendanceRules />} />
             <Route path="fees" element={<FeeManagementSettings />} />
