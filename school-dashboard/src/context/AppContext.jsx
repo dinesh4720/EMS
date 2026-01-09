@@ -174,6 +174,149 @@ export function AppProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - only run once on mount
 
+  // Initialize Socket.IO for real-time updates when user is available
+  useEffect(() => {
+    // Get user from sessionStorage
+    const userStr = sessionStorage.getItem('app_user');
+    if (!userStr) {
+      console.log('⚠️ No user found in sessionStorage, skipping socket initialization');
+      return;
+    }
+
+    let user;
+    try {
+      user = JSON.parse(userStr);
+      if (!user || !user.id) {
+        console.log('⚠️ Invalid user data in sessionStorage');
+        return;
+      }
+    } catch (err) {
+      console.error('❌ Failed to parse user from sessionStorage:', err);
+      return;
+    }
+
+    console.log('🔌 AppContext: Initializing socket for user:', user.id);
+    
+    // Import and initialize socket service
+    import('../services/socketService').then(({ default: socketService }) => {
+      console.log('✅ Socket service imported');
+      
+      // Make it globally available
+      window.socketService = socketService;
+      
+      // Connect socket
+      socketService.connect(user.id, 'staff');
+      
+      // Test listeners
+      socketService.on('authenticated', () => {
+        console.log('✅ Socket authenticated successfully');
+      });
+      
+      socketService.on('connect_error', (error) => {
+        console.error('❌ Socket connection error:', error);
+      });
+      
+      socketService.on('error', (error) => {
+        console.error('❌ Socket error:', error);
+      });
+
+      // Set up global real-time update listeners
+      socketService.on('staff_updated', (data) => {
+        console.log('📢 Global: Staff updated', data);
+        updateStaffLocal(data.staffId, {
+          name: data.name,
+          role: data.role,
+          department: data.department,
+          status: data.status,
+          phone: data.phone,
+          email: data.email,
+          picture: data.picture
+        });
+      });
+
+      socketService.on('student_updated', (data) => {
+        console.log('📢 Global: Student updated', data);
+        updateStudentLocal(data.studentId, {
+          name: data.name,
+          classId: data.classId,
+          rollNo: data.rollNo,
+          photo: data.photo,
+          status: data.status
+        });
+      });
+
+      socketService.on('class_updated', (data) => {
+        console.log('📢 Global: Class updated', data);
+        updateClassLocal(data.classId, {
+          name: data.name,
+          section: data.section,
+          classTeacherId: data.classTeacherId
+        });
+      });
+
+      // Attendance events
+      socketService.on('attendance_updated', (data) => {
+        console.log('📢 Global: Attendance updated', data);
+        if (data.type === 'staff') {
+          setStaffAttendance(prev => ({
+            ...prev,
+            [data.staffId]: {
+              ...prev[data.staffId],
+              [data.date]: {
+                status: data.status,
+                inTime: data.inTime,
+                outTime: data.outTime,
+                reason: data.reason
+              }
+            }
+          }));
+        } else if (data.type === 'student') {
+          setStudentAttendance(prev => ({
+            ...prev,
+            [data.studentId]: {
+              ...prev[data.studentId],
+              [data.date]: data.status
+            }
+          }));
+        }
+      });
+
+      socketService.on('attendance_bulk_updated', (data) => {
+        console.log('📢 Global: Bulk attendance updated', data);
+        // Trigger a refetch for the affected class/date
+        // Components listening to this can refresh their data
+      });
+
+      // Fee payment events
+      socketService.on('fee_payment_created', (data) => {
+        console.log('📢 Global: Fee payment created', data);
+        // Update fee payments list
+        setFeePayments(prev => [...prev, {
+          id: data.paymentId,
+          studentId: data.studentId,
+          amount: data.amount,
+          date: data.paymentDate,
+          status: 'paid'
+        }]);
+        
+        // Update student fee status
+        updateStudentLocal(data.studentId, {
+          feeStatus: 'paid'
+        });
+      });
+    }).catch(err => {
+      console.error('❌ Failed to import socket service:', err);
+    });
+
+    return () => {
+      // Cleanup socket on unmount
+      if (window.socketService) {
+        console.log('🔌 Disconnecting socket...');
+        window.socketService.disconnect();
+      }
+    };
+  }, [updateStaffLocal, updateStudentLocal, updateClassLocal]); // Run once on mount, user should already be in sessionStorage
+
   // Salary State
   const [salarySettings, setSalarySettings] = useState({
     earnings: [
@@ -275,6 +418,36 @@ export function AppProvider({ children }) {
       setError(err.message);
       throw err;
     }
+  };
+
+  // Update staff in state without API call (for real-time updates)
+  const updateStaffLocal = (id, updates) => {
+    setStaff(prev => prev.map(s => {
+      if (String(s.id) === String(id)) {
+        return { ...s, ...updates };
+      }
+      return s;
+    }));
+  };
+
+  // Update student in state without API call (for real-time updates)
+  const updateStudentLocal = (id, updates) => {
+    setStudents(prev => prev.map(s => {
+      if (String(s.id) === String(id)) {
+        return { ...s, ...updates };
+      }
+      return s;
+    }));
+  };
+
+  // Update class in state without API call (for real-time updates)
+  const updateClassLocal = (id, updates) => {
+    setClasses(prev => prev.map(c => {
+      if (String(c.id) === String(id)) {
+        return { ...c, ...updates };
+      }
+      return c;
+    }));
   };
 
   const deleteStaff = async (id) => {
@@ -786,11 +959,11 @@ export function AppProvider({ children }) {
     // Computed
     teachers, classesWithTeachers, feeDefaulters, dashboardStats, isBeforeSchoolHours,
     // Staff actions
-    addStaff, updateStaff, deleteStaff, toggleStaffStatus, getStaffById,
+    addStaff, updateStaff, updateStaffLocal, deleteStaff, toggleStaffStatus, getStaffById,
     // Student actions
-    addStudent, updateStudent, deleteStudent, getStudentById, getStudentsByClass,
+    addStudent, updateStudent, updateStudentLocal, deleteStudent, getStudentById, getStudentsByClass,
     // Class actions
-    addClass, updateClass, deleteClass, getClassById,
+    addClass, updateClass, updateClassLocal, deleteClass, getClassById,
     // Event actions
     addEvent, updateEvent, deleteEvent, getEventsForDate,
     // Fee actions

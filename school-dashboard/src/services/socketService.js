@@ -88,6 +88,35 @@ class SocketService {
     this.socket.on('joined_conversation', (data) => {
       this.emit('joined_conversation', data);
     });
+
+    // Staff update events
+    this.socket.on('staff_updated', (data) => {
+      this.emit('staff_updated', data);
+    });
+
+    // Student update events
+    this.socket.on('student_updated', (data) => {
+      this.emit('student_updated', data);
+    });
+
+    // Class update events
+    this.socket.on('class_updated', (data) => {
+      this.emit('class_updated', data);
+    });
+
+    // Attendance events
+    this.socket.on('attendance_updated', (data) => {
+      this.emit('attendance_updated', data);
+    });
+
+    this.socket.on('attendance_bulk_updated', (data) => {
+      this.emit('attendance_bulk_updated', data);
+    });
+
+    // Fee payment events
+    this.socket.on('fee_payment_created', (data) => {
+      this.emit('fee_payment_created', data);
+    });
   }
 
   disconnect() {

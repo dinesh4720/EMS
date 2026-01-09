@@ -10,7 +10,7 @@ import {
   ArrowLeft, Calendar, CheckSquare, MessageSquare, Clock, Mail, Phone, MapPin, Briefcase,
   Edit, User, FileText, Download, Upload, Plus, AlertCircle, BookOpen, GraduationCap,
   DollarSign, FileCheck, Layers, Settings, ChevronRight, Globe, TrendingUp, IndianRupee, AlertTriangle, Bell, Info,
-  MoreHorizontal, Trash2, FolderPlus, Eye, CreditCard
+  MoreHorizontal, Trash2, FolderPlus, Eye, CreditCard, ChevronLeft, Share2, Star, Shield, Activity, X, CheckCircle
 } from "lucide-react";
 import PageHeader from "../../components/PageHeader";
 import { useApp } from "../../context/AppContext";
@@ -23,9 +23,9 @@ export default function StaffDashboard() {
 
   const {
     getStaffById, getMonthlyAttendance, markStaffAttendance: markAttendance, staffAttendance: attendance,
-    staffSalaries, salarySettings, classes, updateClass, students, updateStaff, deleteStaff,
+    staffSalaries, salarySettings, classes, updateClass, students, updateStaff, updateStaffLocal, deleteStaff,
     lessonPlans: allLessonPlans, documents: allDocuments, remarks: allRemarks,
-    addLessonPlan, addDocument, addRemark, addEvent, payrollHistory
+    addLessonPlan, addDocument, addRemark, addEvent, payrollHistory, staff: allStaffList
   } = useApp();
 
   const { isOpen, onOpen, onClose } = useDisclosure(); // Message Modal
@@ -56,6 +56,14 @@ export default function StaffDashboard() {
   });
 
   const staff = getStaffById(id); // Don't parse as number - MongoDB IDs are strings
+
+  // Navigation Logic
+  const currentStaffIndex = allStaffList?.findIndex(s => s.id === id) || 0;
+  const prevStaffId = allStaffList?.[currentStaffIndex - 1]?.id;
+  const nextStaffId = allStaffList?.[currentStaffIndex + 1]?.id;
+
+  const handlePrevStaff = () => prevStaffId && navigate(`/staffs/${prevStaffId}`);
+  const handleNextStaff = () => nextStaffId && navigate(`/staffs/${nextStaffId}`);
 
   const today = new Date();
   const monthlyStats = useMemo(() => {
@@ -102,6 +110,62 @@ export default function StaffDashboard() {
       }
     }
   }, [staff]);
+
+  // Listen for real-time staff updates via Socket.IO
+  useEffect(() => {
+    const socketService = window.socketService;
+    if (!socketService || !staff) {
+      console.log('⚠️ Socket service or staff not available');
+      return;
+    }
+
+    const handleStaffUpdate = (data) => {
+      // Only update if this is the current staff member being viewed
+      if (data.staffId === staff.id) {
+        console.log('📢 Received update for current staff:', data);
+        
+        // Update the staff in global state
+        updateStaffLocal(data.staffId, {
+          name: data.name,
+          role: data.role,
+          department: data.department,
+          status: data.status,
+          phone: data.phone,
+          email: data.email,
+          picture: data.picture
+        });
+        
+        // Update the edit form with new data
+        setEditForm(prev => ({
+          ...prev,
+          name: data.name || prev.name,
+          role: data.role || prev.role,
+          department: data.department || prev.department,
+          status: data.status || prev.status,
+          phone: data.phone || prev.phone,
+          email: data.email || prev.email
+        }));
+        
+        // Update photo preview if changed
+        if (data.picture) {
+          setPhotoPreview(data.picture);
+        }
+        
+        toast.success('Profile updated by another user', {
+          duration: 3000,
+          icon: '🔄'
+        });
+      }
+    };
+
+    console.log('🎧 Setting up staff_updated listener for staff:', staff.id);
+    socketService.on('staff_updated', handleStaffUpdate);
+
+    return () => {
+      console.log('🔇 Removing staff_updated listener');
+      socketService.off('staff_updated', handleStaffUpdate);
+    };
+  }, [staff, updateStaffLocal]);
 
   const handleDocumentUpload = async (e) => {
     const files = Array.from(e.target.files || []);
@@ -225,8 +289,8 @@ export default function StaffDashboard() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary-50/50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
 
           <div className="flex flex-col md:flex-row items-center gap-6 z-10 w-full lg:w-auto">
-            {/* Back Button */}
-            <div className="self-start md:self-center mr-2">
+            {/* Back Button & Navigation */}
+            <div className="self-start md:self-center mr-2 flex items-center gap-2">
               <Button isIconOnly variant="light" onPress={() => navigate('/staffs')} className="text-default-500">
                 <ArrowLeft size={20} />
               </Button>
@@ -270,6 +334,14 @@ export default function StaffDashboard() {
 
           {/* Actions Row */}
           <div className="flex flex-wrap items-center justify-center lg:justify-end gap-3 z-10 w-full lg:w-auto border-t lg:border-t-0 lg:border-l border-default-100 pt-4 lg:pt-0 lg:pl-6">
+            <div className="flex items-center gap-2 mr-2">
+              <Button isIconOnly variant="light" disabled={!prevStaffId} onPress={handlePrevStaff}>
+                <ChevronLeft size={20} />
+              </Button>
+              <Button isIconOnly variant="light" disabled={!nextStaffId} onPress={handleNextStaff}>
+                <ChevronRight size={20} />
+              </Button>
+            </div>
             <Button variant="flat" color="primary" startContent={<MessageSquare size={18} />} onPress={onOpen}>
               Send Message
             </Button>
@@ -333,88 +405,211 @@ export default function StaffDashboard() {
           </Tabs>
 
           {activeTab === "overview" && (
-            <div className="space-y-8 animate-fade-in">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-default-900">Performance & Stats</h3>
-                  <span className="text-sm text-default-500">Last updated today</span>
+            <div className="space-y-6 animate-fade-in">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Today's Status */}
+                  <Card shadow="sm" className="border border-default-200">
+                    <CardHeader className="px-6 py-4 border-b border-default-100 flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary-50 text-primary rounded-lg">
+                          <Activity size={20} />
+                        </div>
+                        <h3 className="font-semibold text-default-900">Today's Status</h3>
+                      </div>
+                      <Chip color="success" variant="flat" size="sm" startContent={<CheckCircle size={14} />}>Present</Chip>
+                    </CardHeader>
+                    <CardBody className="p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-default-500 uppercase">Check-in Time</p>
+                          <p className="text-xl font-bold text-default-900">08:24 AM</p>
+                          <p className="text-xs text-primary font-medium">On Time</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-default-500 uppercase">Current Class</p>
+                          <p className="text-xl font-bold text-default-900">Class 10-A</p>
+                          <p className="text-xs text-default-500">Mathematics • Period 3</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-default-500 uppercase">Next Class</p>
+                          <p className="text-xl font-bold text-default-900">Class 8-B</p>
+                          <p className="text-xs text-default-500">Physics • 11:30 AM</p>
+                        </div>
+                      </div>
+                      <Divider className="my-6" />
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="flex flex-col">
+                            <span className="text-xs text-default-500">Leave Status</span>
+                            <span className="font-medium text-default-900">No leaves pending</span>
+                          </div>
+                        </div>
+                        <Button size="sm" variant="flat" color="primary">Apply Leave</Button>
+                      </div>
+                    </CardBody>
+                  </Card>
+
+                  {/* Classes Handling */}
+                  <Card shadow="sm" className="border border-default-200">
+                    <CardHeader className="px-6 py-4 border-b border-default-100">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
+                          <BookOpen size={20} />
+                        </div>
+                        <h3 className="font-semibold text-default-900">Classes Handling</h3>
+                      </div>
+                    </CardHeader>
+                    <CardBody className="p-0">
+                      <Table aria-label="Classes" removeWrapper shadow="none" classNames={{ th: "bg-default-50", td: "py-3 px-6" }}>
+                        <TableHeader>
+                          <TableColumn>CLASS</TableColumn>
+                          <TableColumn>SUBJECT</TableColumn>
+                          <TableColumn>STUDENTS</TableColumn>
+                          <TableColumn>VIBE</TableColumn>
+                        </TableHeader>
+                        <TableBody>
+                          <TableRow>
+                            <TableCell><span className="font-semibold">10-A</span></TableCell>
+                            <TableCell>Mathematics</TableCell>
+                            <TableCell>42</TableCell>
+                            <TableCell>
+                              <div className="flex gap-1 text-warning">
+                                <Star size={14} fill="currentColor" />
+                                <Star size={14} fill="currentColor" />
+                                <Star size={14} fill="currentColor" />
+                                <Star size={14} fill="currentColor" />
+                                <Star size={14} className="text-default-300" />
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell><span className="font-semibold">8-B</span></TableCell>
+                            <TableCell>Physics</TableCell>
+                            <TableCell>38</TableCell>
+                            <TableCell>
+                              <div className="flex gap-1 text-warning">
+                                <Star size={14} fill="currentColor" />
+                                <Star size={14} fill="currentColor" />
+                                <Star size={14} fill="currentColor" />
+                                <Star size={14} fill="currentColor" />
+                                <Star size={14} fill="currentColor" />
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </CardBody>
+                  </Card>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Attendance Card */}
-                  <Card shadow="sm" className="border border-default-200 bg-background/60 backdrop-blur-md">
+                {/* Right Column */}
+                <div className="space-y-6">
+                  {/* Attendance Stats */}
+                  <Card shadow="sm" className="border border-default-200">
+                    <CardHeader className="px-6 py-4 border-b border-default-100">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                          <Clock size={20} />
+                        </div>
+                        <h3 className="font-semibold text-default-900">Attendance</h3>
+                      </div>
+                    </CardHeader>
+                    <CardBody className="p-6 space-y-6">
+                      <div className="flex items-center justify-center">
+                        <div className="relative w-32 h-32 flex items-center justify-center rounded-full border-8 border-primary-100">
+                          <div className="absolute inset-0 rounded-full border-8 border-primary border-t-transparent animate-spin-slow" style={{ borderRightColor: 'transparent', borderBottomColor: 'transparent', transform: 'rotate(-45deg)' }}></div>
+                          <div className="text-center">
+                            <span className="text-3xl font-bold text-default-900">{attendanceRate}%</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-3 bg-default-50 rounded-xl text-center">
+                          <p className="text-xs text-default-500 uppercase font-semibold">Present</p>
+                          <p className="text-lg font-bold text-success">{monthlyStats.present}</p>
+                        </div>
+                        <div className="p-3 bg-default-50 rounded-xl text-center">
+                          <p className="text-xs text-default-500 uppercase font-semibold">Absent</p>
+                          <p className="text-lg font-bold text-danger">{monthlyStats.absent}</p>
+                        </div>
+                        <div className="p-3 bg-default-50 rounded-xl text-center">
+                          <p className="text-xs text-default-500 uppercase font-semibold">Total Days</p>
+                          <p className="text-lg font-bold text-default-900">{monthlyStats.total}</p>
+                        </div>
+                        <div className="p-3 bg-default-50 rounded-xl text-center">
+                          <p className="text-xs text-default-500 uppercase font-semibold">Leaves Used</p>
+                          <p className="text-lg font-bold text-warning">{monthlyStats.leaves || 0}</p>
+                        </div>
+                      </div>
+                      <Button fullWidth variant="flat" color="primary">Regularize Attendance</Button>
+                    </CardBody>
+                  </Card>
+
+                  {/* Ratings */}
+                  <Card shadow="sm" className="border border-default-200">
+                    <CardHeader className="px-6 py-4 border-b border-default-100">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
+                          <Star size={20} />
+                        </div>
+                        <h3 className="font-semibold text-default-900">Rating & Feedback</h3>
+                      </div>
+                    </CardHeader>
                     <CardBody className="p-6">
-                      <div className="flex items-start justify-between mb-4 w-full">
-                        <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-                          <Clock size={24} />
+                      <div className="text-center space-y-2">
+                        <div className="text-4xl font-bold text-default-900">4.8</div>
+                        <div className="flex justify-center gap-1 text-warning">
+                          <Star size={20} fill="currentColor" />
+                          <Star size={20} fill="currentColor" />
+                          <Star size={20} fill="currentColor" />
+                          <Star size={20} fill="currentColor" />
+                          <Star size={20} fill="currentColor" className="text-default-300" />
                         </div>
-                        <Chip size="sm" color="primary" variant="flat" className="text-xs font-semibold">Regular</Chip>
+                        <p className="text-sm text-default-500">Based on 124 reviews</p>
                       </div>
-                      <div className="space-y-1 text-left">
-                        <h4 className="text-2xl font-semibold text-default-900">{attendanceRate}%</h4>
-                        <p className="text-sm font-medium text-default-500">Monthly Attendance</p>
-                      </div>
-                      <div className="mt-4 pt-4 border-t border-default-100 space-y-2">
-                        <div className="flex items-center gap-3 text-xs text-default-500">
-                          <span className="font-medium">Present:</span>
-                          <span className="font-bold text-default-700">{monthlyStats.present}/{monthlyStats.total} Days</span>
+                      <Divider className="my-4" />
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-default-500">Students</span>
+                          <span className="font-semibold">4.9/5.0</span>
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-red-500">
-                          <span className="font-medium">Absent:</span>
-                          <span className="font-bold">{monthlyStats.absent} Days</span>
+                        <Progress value={95} size="sm" color="warning" aria-label="Student Rating" />
+                        <div className="flex justify-between text-sm">
+                          <span className="text-default-500">Parents</span>
+                          <span className="font-semibold">4.6/5.0</span>
                         </div>
+                        <Progress value={85} size="sm" color="warning" aria-label="Parent Rating" />
                       </div>
                     </CardBody>
                   </Card>
 
-                  {/* Salary Card */}
-                  <Card shadow="sm" className="border border-default-200 bg-background/60 backdrop-blur-md">
-                    <CardBody className="p-6">
-                      <div className="flex items-start justify-between mb-4 w-full">
-                        <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-                          <IndianRupee size={24} />
+                  {/* Activity Log */}
+                  <Card shadow="sm" className="border border-default-200">
+                    <CardHeader className="px-6 py-4 border-b border-default-100">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-default-100 text-default-600 rounded-lg">
+                          <Activity size={20} />
                         </div>
-                        <Chip size="sm" color="success" variant="flat" className="text-xs font-semibold">Processed</Chip>
+                        <h3 className="font-semibold text-default-900">Activity Log</h3>
                       </div>
-                      <div className="space-y-1 text-left">
-                        <h4 className="text-2xl font-semibold text-default-900">₹{(netSalary / 1000).toFixed(1)}k</h4>
-                        <p className="text-sm font-medium text-default-500">Net Salary</p>
-                      </div>
-                      <div className="mt-4 pt-4 border-t border-default-100 space-y-2">
-                        <div className="flex items-center gap-3 text-xs text-default-500">
-                          <span className="font-medium">Base Pay:</span>
-                          <span className="font-bold text-default-700">₹{(totalEarnings).toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center gap-3 text-xs text-default-500">
-                          <span className="font-medium">Deductions:</span>
-                          <span className="font-bold text-default-700">₹{(totalDeductions).toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </CardBody>
-                  </Card>
-
-                  {/* Alerts / Tasks Card */}
-                  <Card shadow="sm" className="border border-default-200 bg-background/60 backdrop-blur-md">
-                    <CardBody className="p-6">
-                      <div className="flex items-start justify-between mb-4 w-full">
-                        <div className="p-3 bg-orange-50 text-orange-600 rounded-xl">
-                          <AlertTriangle size={24} />
-                        </div>
-                        <Chip size="sm" color="warning" variant="flat" className="text-xs font-semibold">Actions</Chip>
-                      </div>
-                      <div className="space-y-1 text-left">
-                        <h4 className="text-2xl font-semibold text-default-900">3</h4>
-                        <p className="text-sm font-medium text-default-500">Pending Actions</p>
-                      </div>
-                      <div className="mt-4 pt-4 border-t border-default-100 space-y-2">
-                        <div className="flex items-center gap-2 text-xs text-default-500">
-                          <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
-                          <span>Submit Lesson Plan</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-default-500">
-                          <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
-                          <span>Verify Attendance</span>
-                        </div>
+                    </CardHeader>
+                    <CardBody className="p-0">
+                      <div className="flex flex-col">
+                        {[
+                          { title: "Marked Attendance", time: "08:24 AM", icon: CheckCircle, color: "text-success" },
+                          { title: "Uploaded Lesson Plan", time: "Yesterday", icon: FileText, color: "text-primary" },
+                          { title: "Applied for Leave", time: "2 days ago", icon: Calendar, color: "text-warning" }
+                        ].map((item, i) => (
+                          <div key={i} className="flex items-center gap-4 p-4 border-b border-default-100 last:border-0 hover:bg-default-50">
+                            <item.icon size={18} className={item.color} />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-default-900">{item.title}</p>
+                              <p className="text-xs text-default-500">{item.time}</p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </CardBody>
                   </Card>
@@ -433,7 +628,6 @@ export default function StaffDashboard() {
                     </div>
                     <h3 className="text-lg font-semibold text-default-900">Personal Information</h3>
                   </div>
-                  <Button isIconOnly size="sm" variant="light" onPress={onEditOpen}><Edit size={16} className="text-default-500" /></Button>
                 </CardHeader>
                 <CardBody className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-6">
                   <InfoItem label="Full Name" value={staff.name} />
@@ -456,7 +650,6 @@ export default function StaffDashboard() {
                     </div>
                     <h3 className="text-lg font-semibold text-default-900">Employment Details</h3>
                   </div>
-                  <Button isIconOnly size="sm" variant="light" onPress={onEditOpen}><Edit size={16} className="text-default-500" /></Button>
                 </CardHeader>
                 <CardBody className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-6">
                   <InfoItem label="Role" value={staff.role} />
@@ -476,7 +669,6 @@ export default function StaffDashboard() {
                     </div>
                     <h3 className="text-lg font-semibold text-default-900">Contact Details</h3>
                   </div>
-                  <Button isIconOnly size="sm" variant="light" onPress={onEditOpen}><Edit size={16} className="text-default-500" /></Button>
                 </CardHeader>
                 <CardBody className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-6">
                   <InfoItem label="Email" value={staff.email} />
@@ -509,11 +701,125 @@ export default function StaffDashboard() {
 
           {activeTab === "academics" && (
             <div className="space-y-6 animate-fade-in">
-              {/* Placeholder for Timetable - similar to StudentOverview Academics */}
-              <div className="text-center py-16 border-2 border-dashed border-default-200 rounded-xl bg-default-50/50">
-                <Calendar size={32} className="mx-auto text-default-300 mb-2" />
-                <h4 className="font-semibold text-default-900 mb-1">Timetable & Lesson Plans</h4>
-                <p className="text-sm text-default-500">Schedule integration coming soon.</p>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Timetable Section */}
+                <div className="lg:col-span-2 space-y-6">
+                  <Card shadow="none" className="border border-default-200">
+                    <CardHeader className="px-6 py-4 border-b border-default-100 flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-pink-50 text-pink-600 rounded-lg">
+                          <Calendar size={20} />
+                        </div>
+                        <h3 className="font-semibold text-default-900">Weekly Timetable</h3>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="flat" color="primary" startContent={<Edit size={14} />}>Edit</Button>
+                        <Button size="sm" variant="bordered" startContent={<Download size={14} />}>Download</Button>
+                      </div>
+                    </CardHeader>
+                    <CardBody className="p-0 overflow-x-auto">
+                      <Table aria-label="Timetable" removeWrapper shadow="none" classNames={{ th: "bg-default-50", td: "py-4 px-4 whitespace-nowrap" }}>
+                        <TableHeader>
+                          <TableColumn>DAY</TableColumn>
+                          <TableColumn>PERIOD 1</TableColumn>
+                          <TableColumn>PERIOD 2</TableColumn>
+                          <TableColumn>PERIOD 3</TableColumn>
+                          <TableColumn>PERIOD 4</TableColumn>
+                          <TableColumn>PERIOD 5</TableColumn>
+                        </TableHeader>
+                        <TableBody>
+                          {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map((day) => (
+                            <TableRow key={day}>
+                              <TableCell><span className="font-semibold text-default-700">{day}</span></TableCell>
+                              <TableCell>
+                                <div className="text-xs">
+                                  <p className="font-semibold">Match (10-A)</p>
+                                  <p className="text-default-400">09:00 - 10:00</p>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-xs">
+                                  <p className="font-semibold">Physics (9-B)</p>
+                                  <p className="text-default-400">10:00 - 11:00</p>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-xs text-default-400 italic">Free Period</div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-xs">
+                                  <p className="font-semibold">Science (8-A)</p>
+                                  <p className="text-default-400">12:00 - 01:00</p>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-xs">
+                                  <p className="font-semibold">Lab (10-A)</p>
+                                  <p className="text-default-400">02:00 - 03:00</p>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </CardBody>
+                  </Card>
+                </div>
+
+                {/* Lesson Plans */}
+                <div className="space-y-6">
+                  <Card shadow="none" className="border border-default-200 h-full">
+                    <CardHeader className="px-6 py-4 border-b border-default-100">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                          <BookOpen size={20} />
+                        </div>
+                        <h3 className="font-semibold text-default-900">Lesson Plans</h3>
+                      </div>
+                    </CardHeader>
+                    <CardBody className="p-6 space-y-6">
+                      {/* Current Lesson */}
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="px-2 py-1 rounded-md bg-green-100 text-green-700 text-xs font-semibold uppercase">Ongoing</span>
+                            <h4 className="font-bold text-default-900 mt-1">Algebraic Expressions</h4>
+                            <p className="text-xs text-default-500">Class 10-A • Mathematics</p>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs font-semibold text-default-500">Due in</span>
+                            <p className="font-bold text-default-900">3 Days</p>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-default-500">Progress</span>
+                            <span className="font-semibold text-primary">65%</span>
+                          </div>
+                          <Progress value={65} size="sm" color="primary" className="h-2" />
+                        </div>
+                      </div>
+
+                      <Divider />
+
+                      {/* Upcoming Lesson */}
+                      <div className="space-y-3 opacity-60">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="px-2 py-1 rounded-md bg-default-100 text-default-600 text-xs font-semibold uppercase">Upcoming</span>
+                            <h4 className="font-bold text-default-900 mt-1">Quadratic Equations</h4>
+                            <p className="text-xs text-default-500">Class 10-A • Mathematics</p>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs font-semibold text-default-500">Starts in</span>
+                            <p className="font-bold text-default-900">4 Days</p>
+                          </div>
+                        </div>
+                      </div>
+
+                    </CardBody>
+                  </Card>
+                </div>
               </div>
             </div>
           )}
@@ -521,13 +827,16 @@ export default function StaffDashboard() {
           {activeTab === "payroll" && (
             <div className="space-y-6 animate-fade-in">
               <Card shadow="none" className="border border-default-200">
-                <CardHeader className="flex justify-between px-6 pt-6">
+                <CardHeader className="flex justify-between px-6 pt-6 mb-2">
                   <div className="flex items-center gap-3">
                     <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
                       <IndianRupee size={20} />
                     </div>
                     <h4 className="font-bold text-lg text-default-900">Payroll History</h4>
                   </div>
+                  <Button startContent={<Download size={16} />} variant="ghost" color="primary" size="sm">
+                    Download Payslip
+                  </Button>
                 </CardHeader>
                 <CardBody className="p-4">
                   <Table aria-label="Payroll History" removeWrapper classNames={{
@@ -539,6 +848,7 @@ export default function StaffDashboard() {
                       <TableColumn>AMOUNT</TableColumn>
                       <TableColumn>STATUS</TableColumn>
                       <TableColumn>DATE PAID</TableColumn>
+                      <TableColumn>ACTION</TableColumn>
                     </TableHeader>
                     <TableBody>
                       {payrollHistory.map((record) => (
@@ -547,6 +857,11 @@ export default function StaffDashboard() {
                           <TableCell>₹{staffSalary ? (calculateTotals(staffSalary).netSalary).toLocaleString() : 0}</TableCell>
                           <TableCell><Chip size="sm" color="success" variant="flat">Paid</Chip></TableCell>
                           <TableCell>{record.date}</TableCell>
+                          <TableCell>
+                            <Button isIconOnly size="sm" variant="light" className="text-default-400 hover:text-primary">
+                              <Download size={16} />
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -605,6 +920,11 @@ export default function StaffDashboard() {
                         <Tooltip content="Download document">
                           <Button isIconOnly size="sm" variant="light" as="a" href={doc.url} download={doc.name} target="_blank">
                             <Download size={16} className="text-default-500" />
+                          </Button>
+                        </Tooltip>
+                        <Tooltip content="Share document">
+                          <Button isIconOnly size="sm" variant="light" onPress={() => toast.success("Shared via internal messaging")}>
+                            <Share2 size={16} className="text-default-500" />
                           </Button>
                         </Tooltip>
                         <Tooltip content="Delete document">

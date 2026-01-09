@@ -205,6 +205,29 @@ export default function StudentsList() {
         };
     }, [hasMore]);
 
+    // Listen for real-time student updates via Socket.IO
+    useEffect(() => {
+        const socketService = window.socketService;
+        if (!socketService) {
+            console.log('⚠️ Socket service not available in StudentsList');
+            return;
+        }
+
+        const handleStudentUpdate = (data) => {
+            console.log('📢 StudentsList: Received student update:', data);
+            toast.success(`${data.name}'s profile was updated`, {
+                duration: 3000,
+                icon: '🔄'
+            });
+        };
+
+        socketService.on('student_updated', handleStudentUpdate);
+
+        return () => {
+            socketService.off('student_updated', handleStudentUpdate);
+        };
+    }, []);
+
     const getFeeStatusStyle = (status) => {
         switch (status) {
             case "paid": return "bg-success-50 border-success-200 text-success-700";

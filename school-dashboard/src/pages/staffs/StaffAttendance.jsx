@@ -591,14 +591,6 @@ export default function StaffAttendance() {
                         <span>Download Report</span>
                     </button>
 
-                    <button 
-                        className="flex items-center gap-2 px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary-600 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap"
-                        onClick={() => navigate("/staffs/attendance/regularize")}
-                    >
-                        <CalendarDays size={16} />
-                        <span>Regularize</span>
-                    </button>
-
                     <Dropdown>
                         <DropdownTrigger>
                             <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
@@ -693,17 +685,32 @@ export default function StaffAttendance() {
                                             >
                                                 {s.name}
                                             </span>
-                                            <span className="text-default-500 text-xs">{s.department}</span>
+                                            <span className="text-default-500 text-xs">{s.code}</span>
                                         </div>
                                     </div>
                                 </TableCell>
                                 <TableCell>
                                     <Dropdown>
                                         <DropdownTrigger>
-                                            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer border transition-all text-xs font-medium ${getStatusStyle(att.status)}`}>
-                                                {getStatusIcon(att.status)}
-                                                <span>{getStatusLabel(att.status)}</span>
-                                                <ChevronDown size={12} className="opacity-50" />
+                                            <div className="relative group">
+                                                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer border transition-all text-xs font-medium ${getStatusStyle(att.status)}`}>
+                                                    {getStatusIcon(att.status)}
+                                                    <span>{getStatusLabel(att.status)}</span>
+                                                    <ChevronDown size={12} className="opacity-50" />
+                                                </div>
+                                                {att.reason && (att.status === "absent" || att.status === "leave" || att.status === "halfday") && (
+                                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-default-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-normal break-words w-max max-w-[calc(100vw-2rem)] sm:max-w-xs z-50 pointer-events-none">
+                                                        <div className="relative">
+                                                            <div className="font-semibold mb-1">
+                                                                {att.status === "absent" ? "Absent Reason" : att.status === "leave" ? "Leave Reason" : "Half Day Reason"}
+                                                            </div>
+                                                            <div className="text-default-300">
+                                                                {att.reason}
+                                                            </div>
+                                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-default-900"></div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </DropdownTrigger>
                                         <DropdownMenu

@@ -13,7 +13,7 @@ import toast from "react-hot-toast";
 const ITEMS_PER_LOAD = 10;
 
 export default function StaffList({ onStaffClick }) {
-    const { staff, deleteStaff, updateStaff } = useApp();
+    const { staff, deleteStaff, updateStaff, updateStaffLocal } = useApp();
     const [searchQuery, setSearchQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState("all");
     const [deptFilter, setDeptFilter] = useState("all");
@@ -125,6 +125,43 @@ export default function StaffList({ onStaffClick }) {
 
         return () => observer.disconnect();
     }, [hasMore, isLoading]);
+
+    // Listen for real-time staff updates via Socket.IO
+    useEffect(() => {
+        const socketService = window.socketService;
+        if (!socketService) {
+            console.log('⚠️ Socket service not available yet');
+            return;
+        }
+
+        const handleStaffUpdate = (data) => {
+            console.log('📢 Received staff update:', data);
+            
+            // Directly update the staff member in state without API call
+            updateStaffLocal(data.staffId, {
+                name: data.name,
+                role: data.role,
+                department: data.department,
+                status: data.status,
+                phone: data.phone,
+                email: data.email,
+                picture: data.picture
+            });
+            
+            toast.success(`${data.name}'s profile was updated`, {
+                duration: 3000,
+                icon: '🔄'
+            });
+        };
+
+        console.log('🎧 Setting up staff_updated listener');
+        socketService.on('staff_updated', handleStaffUpdate);
+
+        return () => {
+            console.log('🔇 Removing staff_updated listener');
+            socketService.off('staff_updated', handleStaffUpdate);
+        };
+    }, [updateStaffLocal]);
 
     const getStatusStyle = (status) => {
         switch (status) {

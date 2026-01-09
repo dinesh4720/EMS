@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Tabs, Tab, Button, Drawer, DrawerContent, DrawerHeader, DrawerBody, Card, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
-import { Plus, X, Mail, Phone, Send, UserPlus, FileText, CheckCircle2, ChevronDown, Briefcase } from "lucide-react";
+import { Plus, X, Mail, Phone, Send, UserPlus, FileText, CheckCircle2, ChevronDown, Briefcase, CalendarDays } from "lucide-react";
 import StaffList from "./StaffList";
 import StaffAttendance from "./StaffAttendance";
 import StaffAttendanceRegularize from "./StaffAttendanceRegularize";
@@ -269,6 +269,15 @@ export default function StaffsPage() {
             >
               <Plus size={16} />
               <span>Create Staff</span>
+            </button>
+          )}
+          {activeTab === "overview" && (
+            <button
+              className="flex items-center gap-2 px-3 py-2 bg-primary text-white rounded-lg border border-primary hover:bg-primary-600 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap relative z-10"
+              onClick={() => navigate("/staffs/attendance/regularize")}
+            >
+              <CalendarDays size={16} />
+              <span>Regularize</span>
             </button>
           )}
         </div>

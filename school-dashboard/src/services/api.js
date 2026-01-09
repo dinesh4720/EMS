@@ -214,6 +214,18 @@ export const feesApi = {
   saveFeeStructure: (data) => request('/fees/structure', { method: 'POST', body: JSON.stringify(data) }),
 };
 
+// Payroll API
+export const payrollApi = {
+  getDashboard: (month, year) => request(`/payroll/dashboard/${month}/${year}`),
+  getRecords: (params) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/payroll/records${query ? `?${query}` : ''}`);
+  },
+  runPayroll: (data) => request('/payroll/run', { method: 'POST', body: JSON.stringify(data) }),
+  markAsPaid: (id, data) => request(`/payroll/records/${id}/pay`, { method: 'PUT', body: JSON.stringify(data) }),
+  bulkPay: (data) => request('/payroll/records/bulk-pay', { method: 'POST', body: JSON.stringify(data) }),
+};
+
 // Upload API
 export const uploadApi = {
   uploadFile: async (file) => {
@@ -234,4 +246,4 @@ export const uploadApi = {
   }
 };
 
-export default { staffApi, studentsApi, classesApi, attendanceApi, timetableApi, settingsApi, intakeFormsApi, publicApi, notificationsApi, feesApi, uploadApi };
+export default { staffApi, studentsApi, classesApi, attendanceApi, timetableApi, settingsApi, intakeFormsApi, publicApi, notificationsApi, feesApi, payrollApi, uploadApi };
