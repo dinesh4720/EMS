@@ -315,7 +315,7 @@ export function AppProvider({ children }) {
         window.socketService.disconnect();
       }
     };
-  }, [updateStaffLocal, updateStudentLocal, updateClassLocal]); // Run once on mount, user should already be in sessionStorage
+  }, []); // Empty dependency - socket listeners are set up once
 
   // Salary State
   const [salarySettings, setSalarySettings] = useState({
