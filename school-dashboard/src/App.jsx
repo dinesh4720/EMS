@@ -22,6 +22,7 @@ import { ChatNotificationProvider } from "./context/ChatNotificationContext";
 import { PermissionProvider } from "./context/PermissionContext";
 import OnboardingFlow from "./components/onboarding/OnboardingFlow";
 import { AiAssistantProvider, AiAssistantLayout, AiAssistantPanel } from "./components/AiAssistant/AiAssistantPanel";
+import PermissionGuard from "./components/PermissionGuard";
 import { AlertCircle, X } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -89,15 +90,51 @@ function AuthenticatedApp() {
                 <div className={`${isSettingsPage ? 'w-full' : 'max-w-[1600px] mx-auto space-y-6'}`}>
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/front-desk/*" element={<FrontDeskPage />} />
-                    <Route path="/staffs/*" element={<StaffsPage />} />
-                    <Route path="/students/*" element={<StudentsPage />} />
-                    <Route path="/classes/*" element={<ClassesPage />} />
-                    <Route path="/calendar" element={<CalendarPage />} />
-                    <Route path="/messaging/*" element={<MessagingPage />} />
-                    <Route path="/fees/*" element={<FeesPage />} />
-                    <Route path="/settings/*" element={<SettingsPage />} />
+                    <Route path="/analytics" element={
+                      <PermissionGuard module="analytics">
+                        <Analytics />
+                      </PermissionGuard>
+                    } />
+                    <Route path="/front-desk/*" element={
+                      <PermissionGuard module="front-desk">
+                        <FrontDeskPage />
+                      </PermissionGuard>
+                    } />
+                    <Route path="/staffs/*" element={
+                      <PermissionGuard module="staff">
+                        <StaffsPage />
+                      </PermissionGuard>
+                    } />
+                    <Route path="/students/*" element={
+                      <PermissionGuard module="students">
+                        <StudentsPage />
+                      </PermissionGuard>
+                    } />
+                    <Route path="/classes/*" element={
+                      <PermissionGuard module="classes">
+                        <ClassesPage />
+                      </PermissionGuard>
+                    } />
+                    <Route path="/calendar" element={
+                      <PermissionGuard module="timetable">
+                        <CalendarPage />
+                      </PermissionGuard>
+                    } />
+                    <Route path="/messaging/*" element={
+                      <PermissionGuard module="messaging">
+                        <MessagingPage />
+                      </PermissionGuard>
+                    } />
+                    <Route path="/fees/*" element={
+                      <PermissionGuard module="fees">
+                        <FeesPage />
+                      </PermissionGuard>
+                    } />
+                    <Route path="/settings/*" element={
+                      <PermissionGuard module="settings">
+                        <SettingsPage />
+                      </PermissionGuard>
+                    } />
                     <Route path="/intake-forms/assignments" element={<FormAssignments />} />
                     <Route path="/intake-forms/submissions" element={<FormSubmissions />} />
                     <Route path="/ai-assistant" element={<AiAssistantPage />} />

@@ -21,7 +21,7 @@ export function PermissionProvider({ children }) {
 
     try {
       const response = await fetch(`${API_URL}/api/permissions/user/${user.id}`);
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch permissions');
       }
@@ -30,24 +30,33 @@ export function PermissionProvider({ children }) {
       setPermissions(data);
     } catch (error) {
       console.error('Error fetching permissions:', error);
-      // Set default permissions on error
+      // Fallback for when backend is not reachable or user not found
       setPermissions({
-        role: 'teacher',
+        role: user?.role || 'teacher',
         permissions: [],
         customPermissions: false
       });
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user]);
 
-  // Fetch pending requests
+  // Fetch pending requests (User sees their own, Admin sees ALL)
   const fetchPendingRequests = useCallback(async () => {
     if (!user?.id) return;
 
     try {
-      const response = await fetch(`${API_URL}/api/permissions/user/${user.id}/requests?status=pending`);
-      
+      let url = `${API_URL}/api/permissions/user/${user.id}/requests?status=pending`;
+
+      // If user is admin (check against auth user role or loaded permissions role)
+      const isAdminUser = user.role === 'admin' || (permissions && permissions.role === 'admin');
+
+      if (isAdminUser) {
+        url = `${API_URL}/api/admin/requests/pending`;
+      }
+
+      const response = await fetch(url);
+
       if (response.ok) {
         const data = await response.json();
         setPendingRequests(data);
@@ -55,140 +64,136 @@ export function PermissionProvider({ children }) {
     } catch (error) {
       console.error('Error fetching pending requests:', error);
     }
-  }, [user?.id]);
+  }, [user, permissions]);
 
   useEffect(() => {
     if (isAuthenticated && user?.id) {
       fetchPermissions();
+    }
+  }, [isAuthenticated, user?.id, fetchPermissions]);
+
+  useEffect(() => {
+    // Fetch requests only after permissions are loaded to know if admin
+    if (!loading && isAuthenticated) {
       fetchPendingRequests();
     }
-  }, [isAuthenticated, user?.id, fetchPermissions, fetchPendingRequests]);
+  }, [loading, isAuthenticated, fetchPendingRequests]);
 
-  // Listen for permission updates via socket
-  useEffect(() => {
-    if (!window.socketService || !user?.id) return;
+  // Request Permission
+  const requestPermission = useCallback(async (module, permissionsList, reason) => {
+    try {
+      const response = await fetch(`${API_URL}/api/permissions/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          module,
+          permissions: permissionsList, // Currently backend just stores the module, but passing details is good
+          reason
+        })
+      });
 
-    const handlePermissionUpdate = (data) => {
-      if (data.userId === user.id) {
-        console.log('📢 Permission updated, refetching...');
-        fetchPermissions();
-        toast.success(`Your ${data.module} permissions have been updated`);
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to request permission');
       }
-    };
 
-    const handleRequestReviewed = (data) => {
-      if (data.userId === user.id) {
-        console.log('📢 Permission request reviewed');
-        fetchPermissions();
-        fetchPendingRequests();
-        
-        if (data.status === 'approved') {
-          toast.success(`Your request for ${data.module} access has been approved!`);
-        } else {
-          toast.error(`Your request for ${data.module} access was rejected`);
-        }
+      toast.success("Permission request submitted successfully");
+      fetchPendingRequests(); // Refresh list
+      return true;
+    } catch (error) {
+      toast.error(error.message);
+      return false;
+    }
+  }, [user, fetchPendingRequests]);
+
+  // Resolve Request (Admin only)
+  const resolveRequest = useCallback(async (requestId, status) => {
+    try {
+      const response = await fetch(`${API_URL}/api/admin/requests/resolve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requestId,
+          status,
+          adminId: user.id
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to resolve request');
       }
-    };
 
-    window.socketService.on('permission_updated', handlePermissionUpdate);
-    window.socketService.on('permission_request_reviewed', handleRequestReviewed);
-
-    return () => {
-      window.socketService.off('permission_updated', handlePermissionUpdate);
-      window.socketService.off('permission_request_reviewed', handleRequestReviewed);
-    };
-  }, [user?.id, fetchPermissions, fetchPendingRequests]);
+      toast.success(`Request ${status} successfully`);
+      fetchPendingRequests(); // Refresh admin list
+      return true;
+    } catch (error) {
+      toast.error(error.message);
+      return false;
+    }
+  }, [user, fetchPendingRequests]);
 
   /**
    * Check if user has permission for a module and action
-   * @param {string} module - Module name
-   * @param {string} action - Action type (view, create, edit, delete)
-   * @returns {boolean}
    */
   const hasPermission = useCallback((module, action = 'view') => {
-    if (!permissions) return false;
+    // If permissions haven't loaded yet, check the user object directly for admin role
+    if (loading && user?.role?.toLowerCase() === 'admin') return true;
 
-    // Admin has all permissions
-    if (permissions.role === 'admin') return true;
+    // If we have permissions state
+    if (permissions) {
+      if (permissions.role?.toLowerCase() === 'admin') return true;
 
-    // Find module permission
-    const modulePermission = permissions.permissions.find(p => p.module === module);
-    
-    if (!modulePermission) return false;
+      // Also check if permissions array exists
+      if (!permissions.permissions) return false;
 
-    return modulePermission[action] === true;
-  }, [permissions]);
+      const modulePermission = permissions.permissions.find(p => p.module === module);
+      if (!modulePermission) return false;
+      return modulePermission[action] === true;
+    }
+
+    // Fallback to user object if permissions state is missing but we have user
+    if (user?.role?.toLowerCase() === 'admin') return true;
+
+    return false;
+  }, [permissions, user, loading]);
 
   /**
    * Check if user has any permission for a module
-   * @param {string} module - Module name
-   * @returns {boolean}
    */
   const hasAnyPermission = useCallback((module) => {
-    if (!permissions) return false;
-    if (permissions.role === 'admin') return true;
+    if (loading && user?.role?.toLowerCase() === 'admin') return true;
 
-    const modulePermission = permissions.permissions.find(p => p.module === module);
-    if (!modulePermission) return false;
+    if (permissions) {
+      if (permissions.role?.toLowerCase() === 'admin') return true;
 
-    return modulePermission.view || modulePermission.create || 
-           modulePermission.edit || modulePermission.delete;
-  }, [permissions]);
+      if (!permissions.permissions) return false;
 
-  /**
-   * Get all permissions for a module
-   * @param {string} module - Module name
-   * @returns {object} - { view, create, edit, delete }
-   */
-  const getModulePermissions = useCallback((module) => {
-    if (!permissions) {
-      return { view: false, create: false, edit: false, delete: false };
+      const modulePermission = permissions.permissions.find(p => p.module === module);
+      if (!modulePermission) return false;
+      return modulePermission.view || modulePermission.create ||
+        modulePermission.edit || modulePermission.delete;
     }
 
-    if (permissions.role === 'admin') {
-      return { view: true, create: true, edit: true, delete: true };
-    }
+    if (user?.role?.toLowerCase() === 'admin') return true;
 
-    const modulePermission = permissions.permissions.find(p => p.module === module);
-    
-    if (!modulePermission) {
-      return { view: false, create: false, edit: false, delete: false };
-    }
+    return false;
+  }, [permissions, user, loading]);
 
-    return {
-      view: modulePermission.view || false,
-      create: modulePermission.create || false,
-      edit: modulePermission.edit || false,
-      delete: modulePermission.delete || false
-    };
-  }, [permissions]);
-
-  /**
-   * Check if user is admin
-   * @returns {boolean}
-   */
   const isAdmin = useCallback(() => {
-    return permissions?.role === 'admin';
-  }, [permissions]);
-
-  /**
-   * Check if user has a pending request for a module
-   * @param {string} module - Module name
-   * @returns {boolean}
-   */
-  const hasPendingRequest = useCallback((module) => {
-    return pendingRequests.some(req => req.module === module);
-  }, [pendingRequests]);
+    return permissions?.role === 'admin' || user?.role === 'admin';
+  }, [permissions, user]);
 
   const value = {
     permissions,
     loading,
     hasPermission,
     hasAnyPermission,
-    getModulePermissions,
     isAdmin,
     pendingRequests,
-    hasPendingRequest,
+    requestPermission,
+    resolveRequest,
     refetchPermissions: fetchPermissions,
     refetchPendingRequests: fetchPendingRequests
   };

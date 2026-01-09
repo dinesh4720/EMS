@@ -17,6 +17,7 @@ import {
 import { ShieldAlert, ArrowLeft, Send, CheckCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
+import { usePermissions } from "../context/PermissionContext";
 
 const MODULE_LABELS = {
   dashboard: "Dashboard",
@@ -42,7 +43,8 @@ const ACTION_LABELS = {
 
 export default function PermissionDenied({ module, action, onRequestSubmitted }) {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  // const { user } = useAuth(); // Not strictly needed if usePermissions handles it, but good for uniformity
+  const { requestPermission } = usePermissions();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -65,39 +67,23 @@ export default function PermissionDenied({ module, action, onRequestSubmitted })
     setLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/permissions/request`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.id,
-          userName: user.name,
-          userEmail: user.email,
-          module,
-          permissions: formData.permissions,
-          reason: formData.reason
-        })
-      });
+      const success = await requestPermission(module, formData.permissions, formData.reason);
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to submit request');
+      if (success) {
+        setSubmitted(true);
+
+        if (onRequestSubmitted) {
+          onRequestSubmitted();
+        }
+
+        setTimeout(() => {
+          onClose();
+          setSubmitted(false);
+          setFormData({ permissions: action ? [action] : [], reason: "" });
+        }, 2000);
       }
-
-      setSubmitted(true);
-      toast.success("Permission request submitted successfully");
-      
-      if (onRequestSubmitted) {
-        onRequestSubmitted();
-      }
-
-      setTimeout(() => {
-        onClose();
-        setSubmitted(false);
-        setFormData({ permissions: action ? [action] : [], reason: "" });
-      }, 2000);
     } catch (error) {
       console.error('Error submitting permission request:', error);
-      toast.error(error.message || "Failed to submit request");
     } finally {
       setLoading(false);
     }
