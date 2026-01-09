@@ -58,20 +58,32 @@ export const PermissionProvider = ({ children }) => {
 
   const hasPermission = (module, action = 'view') => {
     // Super Admin has all permissions
-    if (user?.role === 'Super Admin') {
+    if (user?.role === 'Super Admin' || user?.role === 'Admin') {
       return true;
     }
 
     // Check if user has wildcard permission
     const wildcardPermission = permissions.find(p => p.module === '*');
-    if (wildcardPermission && wildcardPermission.actions?.includes(action)) {
-      return true;
+    if (wildcardPermission) {
+      // Check if it has actions array (old format) or boolean fields (new format)
+      if (wildcardPermission.actions?.includes(action)) {
+        return true;
+      }
+      if (wildcardPermission[action] === true) {
+        return true;
+      }
     }
 
     // Check specific module permission
     const modulePermission = permissions.find(p => p.module === module);
-    if (modulePermission && modulePermission.actions?.includes(action)) {
-      return true;
+    if (modulePermission) {
+      // Check if it has actions array (old format) or boolean fields (new format)
+      if (modulePermission.actions?.includes(action)) {
+        return true;
+      }
+      if (modulePermission[action] === true) {
+        return true;
+      }
     }
 
     return false;
