@@ -31,7 +31,7 @@ import PayrollSettings from "./PayrollSettings";
 import UserManagement from "./UserManagement";
 import HolidaySettings from "./HolidaySettings";
 import LeaveSettings from "./LeaveSettings";
-import FeeHeadsSettings from "./FeeHeadsSettings";
+import FeeHeadsUnified from "./FeeHeadsUnified";
 import IntakeFormsSettings from "./IntakeFormsSettings";
 import SubscriptionSettings from "./SubscriptionSettings";
 import RolesAccess from "./RolesAccess";

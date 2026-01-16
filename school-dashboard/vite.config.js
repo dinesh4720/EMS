@@ -10,4 +10,21 @@ export default defineConfig({
   preview: {
     historyApiFallback: true,
   },
+  optimizeDeps: {
+    include: [
+      'framer-motion',
+      '@heroui/react',
+      '@heroui/theme',
+      'react',
+      'react-dom',
+      'react-router-dom',
+    ],
+    force: false, // Set to true if issues persist
+  },
+  build: {
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true,
+    },
+  },
 })

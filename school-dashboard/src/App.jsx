@@ -23,6 +23,7 @@ import { PermissionProvider } from "./context/PermissionContext";
 import OnboardingFlow from "./components/onboarding/OnboardingFlow";
 import { AiAssistantProvider, AiAssistantLayout, AiAssistantPanel } from "./components/AiAssistant/AiAssistantPanel";
 import PermissionGuard from "./components/PermissionGuard";
+import PayrollReminder from "./components/PayrollReminder";
 import { AlertCircle, X } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -151,6 +152,9 @@ function AuthenticatedApp() {
       <AiAssistantPanel>
         <AiAssistantPage />
       </AiAssistantPanel>
+
+      {/* Payroll Reminder */}
+      <PayrollReminder />
     </>
   );
 }

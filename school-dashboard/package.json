@@ -6,14 +6,20 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report",
+    "test:install": "playwright install chromium"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
     "@heroui/react": "^2.8.6",
     "@heroui/theme": "^2.4.24",
-    "@react-three/drei": "^10.7.7",
-    "@react-three/fiber": "^9.4.2",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
     "@tailwindcss/vite": "^4.1.18",
     "body-parser": "^2.2.2",
     "canvas-confetti": "^1.9.4",
@@ -37,6 +43,7 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@vitejs/plugin-react": "^4.3.4",
     "tailwindcss": "^4.1.18",
     "vite": "^6.0.3"

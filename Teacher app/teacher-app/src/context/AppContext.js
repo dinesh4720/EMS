@@ -121,7 +121,9 @@ export function AppProvider({ children }) {
                 feeStatus: s.feeStatus,
                 remarks: s.remarks || [],
               }));
-            } catch (err) { }
+            } catch (err) { 
+              console.error('Error loading stored data:', err);
+            }
           }
           if (Object.keys(studentsMap).length > 0) setStudents(studentsMap);
         }

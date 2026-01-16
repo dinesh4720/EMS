@@ -12,7 +12,9 @@ export async function analyzeUrl(url: string) {
   // Ensure CDP connection
   try {
     const tabs = await window.cdp.getTabs();
-    if ((tabs as any).error || !Array.isArray(tabs)) {
+    // Type guard for error response
+    const hasError = typeof tabs === 'object' && tabs !== null && 'error' in tabs;
+    if (hasError || !Array.isArray(tabs)) {
       await window.system.launchChrome();
       // Poll until /json/version is ready via preload checkConnection
       let ok = false;

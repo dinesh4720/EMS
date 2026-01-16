@@ -52,11 +52,38 @@ export const AuthProvider = ({ children }) => {
     // Use sessionStorage instead of localStorage to avoid tab collision
     const storedUser = sessionStorage.getItem("app_user");
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
-      setIsAuthenticated(true);
+      try {
+        const userData = JSON.parse(storedUser);
+        // Validate that we have required fields
+        if (userData.token) {
+          setUser(userData);
+          setIsAuthenticated(true);
+        }
+      } catch (err) {
+        console.error('Invalid stored user data:', err);
+        sessionStorage.removeItem("app_user");
+      }
     }
     setLoading(false);
   }, []);
+
+  // Monitor session storage for changes (e.g., when AppContext clears expired token)
+  useEffect(() => {
+    const checkAuth = () => {
+      const storedUser = sessionStorage.getItem("app_user");
+      if (!storedUser && isAuthenticated) {
+        // Session was cleared, log out
+        setUser(null);
+        setIsAuthenticated(false);
+        navigate("/login");
+      }
+    };
+
+    // Check periodically
+    const interval = setInterval(checkAuth, 1000);
+    
+    return () => clearInterval(interval);
+  }, [isAuthenticated, navigate]);
 
   const login = async (emailOrPhone, password) => {
     try {
@@ -81,11 +108,18 @@ export const AuthProvider = ({ children }) => {
 
       const userData = await response.json();
       
-      // Store user data
+      console.log('🔑 Login successful, token received:', userData.token ? 'YES' : 'NO');
+      
+      // Store user data in sessionStorage
+      sessionStorage.setItem("app_user", JSON.stringify(userData));
+      
+      // Update state immediately
       setUser(userData);
       setIsAuthenticated(true);
-      // Use sessionStorage to keep sessions separate per tab
-      sessionStorage.setItem("app_user", JSON.stringify(userData));
+      
+      // Dispatch custom event synchronously (no delay needed)
+      console.log('📢 Dispatching user-logged-in event');
+      window.dispatchEvent(new Event('user-logged-in'));
       
       navigate("/");
       return userData;

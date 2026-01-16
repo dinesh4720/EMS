@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs, Tab } from "@heroui/react";
 import { IndianRupee, Calendar, CreditCard, DollarSign, AlertCircle, Settings } from "lucide-react";
-import FeeHeadsCardBased from "./FeeHeadsCardBased";
+import FeeHeadsUnified from "./FeeHeadsUnified";
 
 // Import individual tab components from FeeRulesSettings
 import { 
@@ -47,7 +47,7 @@ export default function FeeManagementSettings() {
           }
         >
           <div className="mt-6">
-            <FeeHeadsCardBased embedded={true} />
+            <FeeHeadsUnified embedded={true} />
           </div>
         </Tab>
 

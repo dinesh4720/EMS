@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardBody, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Tabs, Tab } from "@heroui/react";
 import { Plus, Trash2, Edit2, CheckCircle, AlertCircle, IndianRupee, Users, Settings, FileText } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { settingsApi } from "../../services/api";
+import toast from "react-hot-toast";
 import StaffPayroll from "../../pages/staffs/StaffPayroll";
 import SalaryTemplates from "./SalaryTemplates";
 
@@ -158,6 +160,101 @@ function SalaryComponents() {
     );
 }
 
+function GeneralPayrollSettings() {
+    const [disburseDate, setDisburseDate] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [initialLoad, setInitialLoad] = useState(true);
+
+    // Fetch payroll settings on component mount
+    useEffect(() => {
+        const fetchPayrollSettings = async () => {
+            try {
+                const data = await settingsApi.getPayrollSettings();
+                setDisburseDate(data.data?.disburseDate || "");
+                setInitialLoad(false);
+            } catch (error) {
+                console.error('Failed to fetch payroll settings:', error);
+                // Don't show toast on initial load to avoid spam
+                setInitialLoad(false);
+            }
+        };
+
+        fetchPayrollSettings();
+    }, []);
+
+    const handleSave = async () => {
+        // Validate input
+        if (!disburseDate || disburseDate < 1 || disburseDate > 31) {
+            toast.error('Please enter a valid date between 1 and 31');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await settingsApi.updatePayrollSettings({ disburseDate: parseInt(disburseDate) });
+            toast.success('Payroll settings saved successfully');
+        } catch (error) {
+            console.error('Failed to save payroll settings:', error);
+            toast.error(error.message || 'Failed to save payroll settings');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <Card className="shadow-sm border border-default-200">
+                <CardBody className="p-6">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 bg-primary-50 rounded-lg text-primary">
+                            <Settings size={20} />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-semibold">Payroll Configuration</h3>
+                            <p className="text-xs text-default-500">Configure general payroll settings</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-default-700">Payroll Disburse Date</label>
+                            <p className="text-xs text-default-500">Day of the month when payroll is disbursed</p>
+                            <Input
+                                type="number"
+                                label="Disburse Date"
+                                placeholder="e.g. 1, 15, 30"
+                                min="1"
+                                max="31"
+                                value={disburseDate}
+                                onValueChange={setDisburseDate}
+                                variant="bordered"
+                                description="Enter a value between 1 and 31"
+                                isDisabled={initialLoad}
+                                endContent={
+                                    <div className="pointer-events-none flex items-center">
+                                        <span className="text-default-400 text-small">day of month</span>
+                                    </div>
+                                }
+                            />
+                        </div>
+                    </div>
+
+                    <div className="mt-6 flex justify-end">
+                        <Button
+                            color="primary"
+                            onPress={handleSave}
+                            isLoading={loading}
+                            isDisabled={initialLoad || !disburseDate}
+                        >
+                            Save Settings
+                        </Button>
+                    </div>
+                </CardBody>
+            </Card>
+        </div>
+    );
+}
+
 export default function PayrollSettings() {
     return (
         <div className="space-y-6 animate-fade-in">
@@ -172,6 +269,19 @@ export default function PayrollSettings() {
                     tabContent: "group-data-[selected=true]:text-primary text-default-500 font-medium"
                 }}
             >
+                <Tab
+                    key="general"
+                    title={
+                        <div className="flex items-center gap-2">
+                            <Settings size={16} />
+                            <span>General Settings</span>
+                        </div>
+                    }
+                >
+                    <div className="pt-2">
+                        <GeneralPayrollSettings />
+                    </div>
+                </Tab>
                 <Tab
                     key="salaries"
                     title={

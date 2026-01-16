@@ -17,9 +17,10 @@ import toast from "react-hot-toast";
 export default function StaffsPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { addStaff } = useApp();
+  const { addStaff, updateStaff, staff } = useApp();
   const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
   const [shouldRenderAddStaff, setShouldRenderAddStaff] = useState(false);
+  const [editingStaffId, setEditingStaffId] = useState(null); // NEW: Track editing state
   const [isMethodModalOpen, setIsMethodModalOpen] = useState(false);
   const [isFormSelectModalOpen, setIsFormSelectModalOpen] = useState(false);
   const [availableForms, setAvailableForms] = useState([]);
@@ -52,6 +53,21 @@ export default function StaffsPage() {
 
   const handleOpenStaffProfile = (staffId) => {
     navigate(`/staffs/${staffId}`);
+  };
+
+  // NEW: Handle edit staff - opens AddStaff drawer with pre-filled data
+  const handleEditStaff = (staffId) => {
+    setEditingStaffId(staffId);
+    setShouldRenderAddStaff(true);
+    requestAnimationFrame(() => {
+      setIsAddStaffOpen(true);
+    });
+  };
+
+  // Helper to get editing staff data
+  const getEditingStaff = () => {
+    if (!editingStaffId) return null;
+    return staff.find(s => s.id === editingStaffId || s._id === editingStaffId);
   };
 
   const activeTab = location.pathname.includes("/staffs/") && location.pathname !== "/staffs/attendance" && location.pathname !== "/staffs/payroll" && location.pathname !== "/staffs" && location.pathname !== "/staffs/"
@@ -116,18 +132,29 @@ export default function StaffsPage() {
     };
 
     try {
-      await addStaff(transformedData);
-      toast.success('Staff member added successfully!');
+      if (editingStaffId) {
+        // UPDATE: Edit existing staff
+        await updateStaff(editingStaffId, transformedData);
+        toast.success('Staff member updated successfully!');
+      } else {
+        // CREATE: Add new staff
+        await addStaff(transformedData);
+        toast.success('Staff member added successfully!');
+      }
       setIsAddStaffOpen(false);
+      // Reset editing state
+      setEditingStaffId(null);
       // Delay unmounting to allow smooth close animation
       setTimeout(() => setShouldRenderAddStaff(false), 300);
     } catch (err) {
-      console.error('Failed to add staff:', err);
-      toast.error('Failed to add staff member');
+      console.error('Failed to save staff:', err);
+      toast.error(editingStaffId ? 'Failed to update staff member' : 'Failed to add staff member');
     }
   };
 
   const handleOpenAddStaff = () => {
+    // Reset any existing edit state when opening for new staff creation
+    setEditingStaffId(null);
     setIsMethodModalOpen(true);
   };
 
@@ -193,6 +220,8 @@ export default function StaffsPage() {
 
   const handleCloseAddStaff = () => {
     setIsAddStaffOpen(false);
+    // Reset editing state when closing
+    setEditingStaffId(null);
     // Delay unmounting to allow smooth close animation
     setTimeout(() => setShouldRenderAddStaff(false), 300);
   };
@@ -284,8 +313,8 @@ export default function StaffsPage() {
 
         <div className="min-h-[500px] px-6 py-6">
           <Routes>
-            <Route index element={<StaffList onStaffClick={handleOpenStaffProfile} />} />
-            <Route path="list" element={<StaffList onStaffClick={handleOpenStaffProfile} />} />
+            <Route index element={<StaffList onStaffClick={handleOpenStaffProfile} onStaffEdit={handleEditStaff} />} />
+            <Route path="list" element={<StaffList onStaffClick={handleOpenStaffProfile} onStaffEdit={handleEditStaff} />} />
             <Route path="attendance" element={<StaffAttendance onStaffClick={handleOpenStaffProfile} />} />
             <Route path="attendance/regularize" element={<StaffAttendanceRegularize />} />
             <Route path="payroll" element={<StaffPayroll onStaffClick={handleOpenStaffProfile} />} />
@@ -329,8 +358,12 @@ export default function StaffsPage() {
                       <Briefcase size={20} className="text-primary" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold text-default-900">Create New Staff</h2>
-                      <p className="text-xs text-default-500">Fill in the staff details below</p>
+                      <h2 className="text-lg font-semibold text-default-900">
+                        {editingStaffId ? 'Edit Staff Member' : 'Create New Staff'}
+                      </h2>
+                      <p className="text-xs text-default-500">
+                        {editingStaffId ? 'Update staff member details' : 'Fill in the staff details below'}
+                      </p>
                     </div>
                   </div>
                   <Button
@@ -353,7 +386,12 @@ export default function StaffsPage() {
                   </Button>
                 </DrawerHeader>
                 <DrawerBody className="p-0 overflow-hidden">
-                  <AddStaff ref={addStaffRef} onClose={handleCloseAddStaff} onSave={handleSaveStaff} />
+                  <AddStaff
+                    ref={addStaffRef}
+                    onClose={handleCloseAddStaff}
+                    onSave={handleSaveStaff}
+                    editingStaff={getEditingStaff()}
+                  />
                 </DrawerBody>
               </>
             )}

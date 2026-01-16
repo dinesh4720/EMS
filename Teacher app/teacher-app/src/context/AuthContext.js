@@ -17,8 +17,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (phone, password) => {
-    // Demo login - use mock data without API calls
-    if (phone === '1234567890' && password === 'demo') {
+    // FIXED: Demo login only in development
+    if (process.env.NODE_ENV === 'development' && phone === '1234567890' && password === 'demo') {
       const demoUser = {
         id: 'demo-teacher-1',
         name: 'Demo Teacher',
@@ -41,7 +41,10 @@ export function AuthProvider({ children }) {
       await AsyncStorage.setItem('teacher_user', JSON.stringify(userData));
       return { success: true };
     } catch (err) {
-      return { success: false, error: 'Invalid credentials. Use demo login: 1234567890 / demo' };
+      const errorMessage = process.env.NODE_ENV === 'development' 
+        ? 'Invalid credentials. Demo: 1234567890 / demo' 
+        : 'Invalid credentials';
+      return { success: false, error: errorMessage };
     }
   };
 

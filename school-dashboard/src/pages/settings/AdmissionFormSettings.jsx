@@ -255,7 +255,7 @@ export default function AdmissionFormSettings() {
                   description="How the year should be displayed"
                 >
                   {yearFormatOptions.map((option) => (
-                    <SelectItem key={option.value}>{option.label}</SelectItem>
+                    <SelectItem key={option.value} textValue={option.label}>{option.label}</SelectItem>
                   ))}
                 </Select>
 
@@ -268,7 +268,7 @@ export default function AdmissionFormSettings() {
                   description="Character between parts of the ID"
                 >
                   {separatorOptions.map((option) => (
-                    <SelectItem key={option.value}>{option.label}</SelectItem>
+                    <SelectItem key={option.value} textValue={option.label}>{option.label}</SelectItem>
                   ))}
                 </Select>
 
@@ -304,7 +304,7 @@ export default function AdmissionFormSettings() {
                   description="When to reset the counter"
                 >
                   {resetFrequencyOptions.map((option) => (
-                    <SelectItem key={option.value}>{option.label}</SelectItem>
+                    <SelectItem key={option.value} textValue={option.label}>{option.label}</SelectItem>
                   ))}
                 </Select>
               </div>
@@ -505,7 +505,7 @@ export default function AdmissionFormSettings() {
                           variant="bordered"
                         >
                           {uploadTypeOptions.map((option) => (
-                            <SelectItem key={option.value}>{option.label}</SelectItem>
+                            <SelectItem key={option.value} textValue={option.label}>{option.label}</SelectItem>
                           ))}
                         </Select>
 

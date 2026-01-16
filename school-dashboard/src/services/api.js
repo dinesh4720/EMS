@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'https://ems-backend-poms.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 console.log('🌐 API URL configured:', API_URL);
 
@@ -10,9 +10,37 @@ async function request(endpoint, options = {}) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout for Render cold starts
 
+    // Get token from sessionStorage
+    const storedUser = sessionStorage.getItem('app_user');
+    let token = null;
+    
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        token = userData.token;
+      } catch (err) {
+        console.error('❌ Failed to parse user data from sessionStorage:', err);
+      }
+    }
+    
+    console.log(`🔐 Token for ${endpoint}:`, token ? `${token.substring(0, 20)}...` : 'NONE');
+
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers
+    };
+
+    // Add Authorization header if token exists
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+      console.log(`✅ Authorization header added for ${endpoint}`);
+    } else {
+      console.warn(`⚠️ No token available for ${endpoint}`);
+    }
+
     const response = await fetch(url, {
       ...options,
-      headers: { 'Content-Type': 'application/json', ...options.headers },
+      headers,
       signal: controller.signal,
     });
 
@@ -22,6 +50,13 @@ async function request(endpoint, options = {}) {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Request failed' }));
+      
+      // If unauthorized, clear session storage
+      if (response.status === 401) {
+        console.warn('⚠️ 401 Unauthorized - clearing session');
+        sessionStorage.removeItem('app_user');
+      }
+      
       throw new Error(error.error || `Request failed with status ${response.status}`);
     }
 
@@ -50,7 +85,11 @@ export const staffApi = {
 
 // Students API
 export const studentsApi = {
-  getAll: (classId) => request(`/students${classId ? `?classId=${classId}` : ''}`),
+  getAll: async (classId) => {
+    const response = await request(`/students${classId ? `?classId=${classId}` : ''}`);
+    // Backend returns paginated response with data property
+    return response.data || response;
+  },
   getById: (id) => request(`/students/${id}`),
   create: (data) => request('/students', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/students/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -113,6 +152,11 @@ export const settingsApi = {
   createSubject: (data) => request('/settings/subjects', { method: 'POST', body: JSON.stringify(data) }),
   updateSubject: (id, data) => request(`/settings/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteSubject: (id) => request(`/settings/subjects/${id}`, { method: 'DELETE' }),
+
+  // Payroll Settings
+  getPayrollSettings: () => request('/settings/payroll'),
+  updatePayrollSettings: (data) => request('/settings/payroll', { method: 'PUT', body: JSON.stringify(data) }),
+  getPayrollReminder: () => request('/settings/payroll/reminder'),
 
   // Admission Form Configuration
   getAdmissionFormConfig: (fieldType) => request(`/settings/admission-form-config${fieldType ? `?fieldType=${fieldType}` : ''}`),
@@ -221,9 +265,21 @@ export const payrollApi = {
     const query = new URLSearchParams(params).toString();
     return request(`/payroll/records${query ? `?${query}` : ''}`);
   },
+  validatePayroll: (data) => request('/payroll/validate', { method: 'POST', body: JSON.stringify(data) }),
   runPayroll: (data) => request('/payroll/run', { method: 'POST', body: JSON.stringify(data) }),
   markAsPaid: (id, data) => request(`/payroll/records/${id}/pay`, { method: 'PUT', body: JSON.stringify(data) }),
+  reversePayment: (id, data) => request(`/payroll/records/${id}/reverse`, { method: 'PUT', body: JSON.stringify(data) }),
   bulkPay: (data) => request('/payroll/records/bulk-pay', { method: 'POST', body: JSON.stringify(data) }),
+  fixSalaries: (data) => request('/payroll/fix-salaries', { method: 'POST', body: JSON.stringify(data || {}) }),
+  exportPayroll: (month, year) => {
+    const token = localStorage.getItem('token');
+    window.location.href = `${API_URL}/payroll/export/${month}/${year}?token=${token}`;
+    return Promise.resolve({ success: true });
+  },
+  getAuditLogs: (params) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/payroll/audit-logs${query ? `?${query}` : ''}`);
+  },
 };
 
 // Upload API

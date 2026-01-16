@@ -8,25 +8,36 @@ import {
 } from "@heroui/react";
 import {
   Clock, Filter, Search, Play, FileText,
-  TrendingUp, Wallet, CreditCard, Users, X
+  TrendingUp, Wallet, CreditCard, Users, X, AlertCircle, CheckCircle2, ChevronDown,
+  Download, Lock, RotateCcw, ShieldCheck, AlertTriangle
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { payrollApi } from "../../services/api";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 export default function StaffPayroll() {
-  const { staff } = useApp();
+  const { staff, loading: appLoading } = useApp();
   const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [payrollRecords, setPayrollRecords] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [runningPayroll, setRunningPayroll] = useState(false);
+  const [preparingRecords, setPreparingRecords] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState(new Set([]));
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [employmentFilter, setEmploymentFilter] = useState("all");
+
+  // Helper function to check if staff is active (case-insensitive, handles undefined)
+  const isActiveStaff = (s) => {
+    const status = (s.status || '').toLowerCase().trim();
+    return status === 'active' || !s.status;
+  };
+
+  // Helper function to count active staff
+  const getActiveStaffCount = () => staff.filter(isActiveStaff).length;
 
   // Lazy loading
   const ITEMS_PER_LOAD = 10;
@@ -43,24 +54,66 @@ export default function StaffPayroll() {
     notes: ''
   });
 
+  // Confirmation modals
+  const [runPayrollModalOpen, setRunPayrollModalOpen] = useState(false);
+  const [bulkPayModalOpen, setBulkPayModalOpen] = useState(false);
+  const [pendingBulkPay, setPendingBulkPay] = useState(null);
+
+  // New modals and states
+  const [validationModalOpen, setValidationModalOpen] = useState(false);
+  const [validationResults, setValidationResults] = useState(null);
+  const [validating, setValidating] = useState(false);
+  const [reverseModalOpen, setReverseModalOpen] = useState(false);
+  const [reverseRecord, setReverseRecord] = useState(null);
+  const [reverseReason, setReverseReason] = useState('');
+  const [reversing, setReversing] = useState(false);
+
   const months = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
   ];
 
-  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
+  // Restrict years to only current and past years
+  const years = Array.from({ length: 3 }, (_, i) => new Date().getFullYear() - 2 + i);
+
+  // Get current month and year for validation
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+
+  // Filter available months based on selected year
+  const availableMonths = months.filter((_, idx) => {
+    const monthNum = idx + 1;
+    // If current year is selected, only allow months up to current month
+    if (selectedYear === currentYear) {
+      return monthNum <= currentMonth;
+    }
+    // For past years, allow all months
+    return true;
+  });
 
   // Fetch dashboard data
   useEffect(() => {
-    fetchDashboard();
-    fetchPayrollRecords();
-  }, [selectedMonth, selectedYear]);
+    // Only fetch if staff data is loaded
+    if (!appLoading && staff && staff.length > 0) {
+      fetchDashboard();
+      fetchPayrollRecords();
+    }
+  }, [selectedMonth, selectedYear, appLoading, staff]);
+
+  // Auto-adjust month if it becomes invalid when year changes
+  useEffect(() => {
+    if (selectedYear === currentYear && selectedMonth > currentMonth) {
+      // If selected year is current year and selected month is in future, reset to current month
+      setSelectedMonth(currentMonth);
+    }
+  }, [selectedYear, currentMonth, currentYear]);
 
   const fetchDashboard = async () => {
     try {
       const response = await payrollApi.getDashboard(selectedMonth, selectedYear);
       if (response.success) {
         setDashboardData(response.data);
+        console.log('💰 Payroll Dashboard Data:', response.data);
       }
     } catch (error) {
       console.error('Error fetching dashboard:', error);
@@ -70,48 +123,118 @@ export default function StaffPayroll() {
   const fetchPayrollRecords = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Fetching payroll records for month:', selectedMonth, 'year:', selectedYear);
       const response = await payrollApi.getRecords({
         month: selectedMonth,
         year: selectedYear,
         limit: 1000
       });
+      console.log('📦 API Response:', response);
+
       if (response.success) {
-        setPayrollRecords(response.data);
+        const records = response.data || [];
+        setPayrollRecords(records);
+        console.log('📋 Payroll Records:', records.length, 'records');
+        console.log('📋 Record details:', records.map(r => ({
+          id: r._id,
+          employeeId: r.employeeId,
+          month: r.month,
+          year: r.year,
+          status: r.status,
+          netPay: r.netPay
+        })));
+        console.log('👥 Total Staff in System:', staff.length);
+        console.log('✅ Active Staff:', getActiveStaffCount());
+        console.log('📊 Staff Status Breakdown:', staff.reduce((acc, s) => {
+          const status = s.status || 'undefined';
+          acc[status] = (acc[status] || 0) + 1;
+          return acc;
+        }, {}));
+        
+        // CRITICAL DEBUG: Check ID matching
+        if (records.length > 0 && staff.length > 0) {
+          console.log('🔍 First payroll employeeId:', records[0].employeeId, '(type:', typeof records[0].employeeId, ')');
+          console.log('🔍 First 3 staff members:', staff.slice(0, 3).map(s => ({
+            _id: s._id,
+            id: s.id,
+            name: s.name,
+            _idType: typeof s._id,
+            idType: typeof s.id
+          })));
+          
+          // Try to find a match
+          const testMatch = staff.find(s => String(s._id || s.id) === String(records[0].employeeId));
+          console.log('🔍 Can we match first record?', testMatch ? 'YES - ' + testMatch.name : 'NO');
+        }
+      } else {
+        console.error('❌ API returned success=false:', response);
       }
     } catch (error) {
-      console.error('Error fetching records:', error);
+      console.error('❌ Error fetching records:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRunPayroll = async () => {
-    if (!confirm(`Run payroll for ${months[selectedMonth - 1]} ${selectedYear}?`)) {
-      return;
+  const handlePrepareRecords = async () => {
+    // First, validate before showing the modal
+    try {
+      setValidating(true);
+      const activeStaff = staff.filter(isActiveStaff);
+      const employeeIds = activeStaff.map(s => s._id || s.id);
+
+      const response = await payrollApi.validatePayroll({
+        month: selectedMonth,
+        year: selectedYear,
+        employeeIds
+      });
+
+      if (response.success) {
+        setValidationResults(response.data);
+        setValidationModalOpen(true);
+      } else {
+        toast.error(response.error || 'Validation failed');
+      }
+    } catch (error) {
+      console.error('Error validating payroll:', error);
+      toast.error(error.message || 'Validation failed');
+    } finally {
+      setValidating(false);
     }
+  };
+
+  const confirmPrepareRecords = async () => {
+    setValidationModalOpen(false);
+    setRunPayrollModalOpen(false);
 
     try {
-      setRunningPayroll(true);
-      const activeStaff = staff.filter(s => s.status === 'active');
-      const employeeIds = activeStaff.map(s => s.id);
+      setPreparingRecords(true);
+      // Use helper function to filter active staff
+      const activeStaff = staff.filter(isActiveStaff);
+      // FIXED: Use _id from MongoDB
+      const employeeIds = activeStaff.map(s => s._id || s.id);
 
       const response = await payrollApi.runPayroll({
         month: selectedMonth,
         year: selectedYear,
-        employeeIds,
-        staffData: activeStaff
+        employeeIds
       });
 
       if (response.success) {
-        alert(`Payroll completed!\nSuccess: ${response.data.results.success.length}\nFailed: ${response.data.results.failed.length}`);
+        const { success: succeeded, failed } = response.data.results;
+        if (failed.length === 0) {
+          toast.success(`Records prepared! ${succeeded.length} employees processed`);
+        } else {
+          toast.success(`Records prepared!\n✅ ${succeeded.length} processed\n❌ ${failed.length} failed`);
+        }
         fetchDashboard();
         fetchPayrollRecords();
       }
     } catch (error) {
-      console.error('Error running payroll:', error);
-      alert('Error running payroll: ' + error.message);
+      console.error('Error preparing records:', error);
+      toast.error(error.message || 'Error preparing records');
     } finally {
-      setRunningPayroll(false);
+      setPreparingRecords(false);
     }
   };
 
@@ -125,7 +248,7 @@ export default function StaffPayroll() {
       const response = await payrollApi.markAsPaid(editingRecord, paymentForm);
 
       if (response.success) {
-        alert('Payment recorded successfully!');
+        toast.success('Payment recorded successfully!');
         setPaymentModalOpen(false);
         setPaymentForm({ paymentMethod: 'bank_transfer', paymentReference: '', notes: '' });
         fetchDashboard();
@@ -133,31 +256,103 @@ export default function StaffPayroll() {
       }
     } catch (error) {
       console.error('Error marking as paid:', error);
-      alert('Error: ' + error.message);
+      toast.error(error.message || 'Failed to record payment');
     }
   };
 
   const handleBulkPay = async () => {
-    if (!confirm(`Mark ${selectedKeys.size} salaries as paid?`)) {
-      return;
-    }
+    const recordIds = selectedKeys === 'all' 
+      ? payrollRecords.map(r => r._id)
+      : Array.from(selectedKeys);
+
+    setPendingBulkPay({
+      count: recordIds.length,
+      recordIds: recordIds
+    });
+    // Initialize form with defaults
+    setPaymentForm({
+      paymentMethod: 'bank_transfer',
+      paymentReference: '',
+      notes: ''
+    });
+    setBulkPayModalOpen(true);
+  };
+
+  const confirmBulkPay = async () => {
+    setBulkPayModalOpen(false);
 
     try {
-      const recordIds = Array.from(selectedKeys);
       const response = await payrollApi.bulkPay({
-        recordIds,
-        paymentMethod: 'bank_transfer'
+        recordIds: pendingBulkPay.recordIds,
+        paymentMethod: paymentForm.paymentMethod,
+        paymentReference: paymentForm.paymentReference,
+        notes: paymentForm.notes
       });
 
       if (response.success) {
-        alert(`Bulk payment completed!\nSuccess: ${response.data.success.length}\nFailed: ${response.data.failed.length}`);
+        const { success: succeeded, failed } = response.data;
+        if (failed.length === 0) {
+          toast.success(`Records updated! ${succeeded.length} payments logged`);
+        } else {
+          toast.success(`Updates completed!\n✅ ${succeeded.length} logged\n❌ ${failed.length} failed`);
+        }
         setSelectedKeys(new Set([]));
+        setPendingBulkPay(null);
         fetchDashboard();
         fetchPayrollRecords();
       }
     } catch (error) {
-      console.error('Error bulk paying:', error);
-      alert('Error: ' + error.message);
+      console.error('Error logging bulk payments:', error);
+      toast.error(error.message || 'Failed to log bulk payments');
+    }
+  };
+
+  // Reverse payment function
+  const handleReversePayment = async (record) => {
+    setReverseRecord(record);
+    setReverseReason('');
+    setReverseModalOpen(true);
+  };
+
+  const confirmReversePayment = async () => {
+    if (!reverseReason.trim()) {
+      toast.error('Please provide a reason for reversal');
+      return;
+    }
+
+    try {
+      setReversing(true);
+      const response = await payrollApi.reversePayment(reverseRecord._id, {
+        reason: reverseReason
+      });
+
+      if (response.success) {
+        toast.success('Payment reversed successfully!');
+        setReverseModalOpen(false);
+        setReverseRecord(null);
+        setReverseReason('');
+        fetchDashboard();
+        fetchPayrollRecords();
+      }
+    } catch (error) {
+      console.error('Error reversing payment:', error);
+      toast.error(error.message || 'Failed to reverse payment');
+    } finally {
+      setReversing(false);
+    }
+  };
+
+  // Export function
+  const handleExportPayroll = async () => {
+    try {
+      toast.loading('Exporting payroll data...');
+      await payrollApi.exportPayroll(selectedMonth, selectedYear);
+      toast.dismiss();
+      toast.success('Payroll export downloaded!');
+    } catch (error) {
+      toast.dismiss();
+      console.error('Error exporting payroll:', error);
+      toast.error(error.message || 'Failed to export payroll');
     }
   };
 
@@ -172,6 +367,7 @@ export default function StaffPayroll() {
   };
 
   const getStatusLabel = (status) => {
+    if (status === 'paid') return 'Recorded';
     return status.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   };
 
@@ -189,7 +385,7 @@ export default function StaffPayroll() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(r => {
-        const emp = staff.find(s => s.id === r.employeeId);
+        const emp = staff.find(s => String(s.id) === String(r.employeeId));
         return emp && (
           emp.name.toLowerCase().includes(query) ||
           emp.code.toLowerCase().includes(query)
@@ -241,14 +437,24 @@ export default function StaffPayroll() {
     }).format(amount);
   };
 
+  const isAnySelected = selectedKeys === 'all' || selectedKeys.size > 0;
+  const selectedCount = selectedKeys === 'all' ? filteredRecords.length : selectedKeys.size;
+
   return (
     <div className="w-full flex flex-col gap-6">
+      {/* Show loading spinner while staff data is loading */}
+      {(appLoading || !staff || staff.length === 0) ? (
+        <div className="flex items-center justify-center h-screen">
+          <Spinner size="lg" label="Loading staff data..." />
+        </div>
+      ) : (
+        <>
       {/* Payment Modal */}
       <Modal isOpen={paymentModalOpen} onOpenChange={setPaymentModalOpen} size="md">
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader>Record Payment</ModalHeader>
+              <ModalHeader>Log Payment Details</ModalHeader>
               <ModalBody className="gap-4">
                 <Select
                   label="Payment Method"
@@ -256,10 +462,10 @@ export default function StaffPayroll() {
                   onSelectionChange={(keys) => setPaymentForm({ ...paymentForm, paymentMethod: Array.from(keys)[0] })}
                   variant="bordered"
                 >
-                  <SelectItem key="bank_transfer">Bank Transfer</SelectItem>
-                  <SelectItem key="cash">Cash</SelectItem>
-                  <SelectItem key="cheque">Cheque</SelectItem>
-                  <SelectItem key="online">Online Payment</SelectItem>
+                  <SelectItem key="bank_transfer" textValue="Bank Transfer">Bank Transfer</SelectItem>
+                  <SelectItem key="cash" textValue="Cash">Cash</SelectItem>
+                  <SelectItem key="cheque" textValue="Cheque">Cheque</SelectItem>
+                  <SelectItem key="online" textValue="Online Payment">Online Payment</SelectItem>
                 </Select>
                 <Input
                   label="Payment Reference"
@@ -280,7 +486,7 @@ export default function StaffPayroll() {
               <ModalFooter>
                 <Button variant="light" onPress={onClose}>Cancel</Button>
                 <Button color="success" onPress={confirmPayment}>
-                  Confirm Payment
+                  Record Payment
                 </Button>
               </ModalFooter>
             </>
@@ -288,35 +494,157 @@ export default function StaffPayroll() {
         </ModalContent>
       </Modal>
 
-      {/* Header Controls (Month/Year Selection) */}
-      <div className="flex justify-end gap-3 items-center mb-4">
-        <Select
-          label="Month"
-          selectedKeys={new Set([selectedMonth.toString()])}
-          onSelectionChange={(keys) => setSelectedMonth(parseInt(Array.from(keys)[0]))}
-          className="w-40"
-          size="sm"
-          variant="flat"
-          bg-white
-        >
-          {months.map((month, idx) => (
-            <SelectItem key={(idx + 1).toString()}>{month}</SelectItem>
-          ))}
-        </Select>
-        <Select
-          label="Year"
-          selectedKeys={new Set([selectedYear.toString()])}
-          onSelectionChange={(keys) => setSelectedYear(parseInt(Array.from(keys)[0]))}
-          className="w-32"
-          size="sm"
-          variant="flat"
-          bg-white
-        >
-          {years.map(year => (
-            <SelectItem key={year.toString()}>{year}</SelectItem>
-          ))}
-        </Select>
-      </div>
+      {/* Payroll Status Banner */}
+      {dashboardData && dashboardData.payrollRun && (
+        <div className={`
+          rounded-lg border p-4 flex items-start gap-4
+          ${dashboardData.payrollRun.status === 'completed'
+            ? 'bg-success-50 border-success-200'
+            : dashboardData.payrollRun.status === 'processing'
+            ? 'bg-warning-50 border-warning-200'
+            : 'bg-default-50 border-default-200'}
+        `}>
+          <div className={`
+            p-2 rounded-lg
+            ${dashboardData.payrollRun.status === 'completed'
+              ? 'bg-success-100'
+              : dashboardData.payrollRun.status === 'processing'
+              ? 'bg-warning-100'
+              : 'bg-default-200'}
+          `}>
+            {dashboardData.payrollRun.status === 'completed' ? (
+              <CheckCircle2 size={20} className="text-success-600" />
+            ) : dashboardData.payrollRun.status === 'processing' ? (
+              <Clock size={20} className="text-warning-600" />
+            ) : (
+              <AlertCircle size={20} className="text-default-600" />
+            )}
+          </div>
+          <div className="flex-1">
+            <h4 className={`font-semibold ${
+              dashboardData.payrollRun.status === 'completed'
+                ? 'text-success-900'
+                : dashboardData.payrollRun.status === 'processing'
+                ? 'text-warning-900'
+                : 'text-default-900'
+            }`}>
+              {dashboardData.payrollRun.status === 'completed'
+                ? 'Payment Records Finalized'
+                : dashboardData.payrollRun.status === 'processing'
+                ? 'Generating Records...'
+                : 'Payroll Status'}
+            </h4>
+            <p className={`text-sm mt-1 ${
+              dashboardData.payrollRun.status === 'completed'
+                ? 'text-success-700'
+                : dashboardData.payrollRun.status === 'processing'
+                ? 'text-warning-700'
+                : 'text-default-600'
+            }`}>
+              {dashboardData.payrollRun.status === 'completed'
+                ? `Records for ${months[selectedMonth - 1]} ${selectedYear} were prepared on ${new Date(dashboardData.payrollRun.completedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}. `
+                : `Payroll records for ${months[selectedMonth - 1]} ${selectedYear} are currently being generated. `
+              }
+              {dashboardData.payrollRun.processedEmployees} of {dashboardData.payrollRun.totalEmployees} active {dashboardData.payrollRun.totalEmployees === 1 ? 'employee' : 'employees'} processed
+              {staff.length > dashboardData.payrollRun.totalEmployees && (
+                <span className="text-xs ml-2 text-default-500">(Total staff in system: {staff.length})</span>
+              )}
+              {(() => {
+                // Count active staff using same robust logic as payroll run
+                const activeCount = getActiveStaffCount();
+                if (activeCount > dashboardData.payrollRun.totalEmployees) {
+                  return (
+                    <span className="text-xs ml-2 text-warning-600 font-medium">
+                      ({activeCount - dashboardData.payrollRun.totalEmployees} more active staff not included)
+                    </span>
+                  );
+                }
+                return null;
+              })()}
+              {dashboardData.payrollRun.status === 'completed' && dashboardData.payrollRun.totalPaid > 0 && (
+                <>. Total amount recorded: <strong>{formatCurrency(dashboardData.payrollRun.totalPaid)}</strong></>
+              )}
+            </p>
+
+            {/* Staff Status Breakdown */}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="text-xs text-default-500">System Staff:</span>
+              {Object.entries(staff.reduce((acc, s) => {
+                const status = s.status || 'unknown';
+                acc[status] = (acc[status] || 0) + 1;
+                return acc;
+              }, {})).map(([status, count]) => (
+                <span key={status} className="text-xs px-2 py-1 bg-default-100 rounded-full">
+                  {count} {status}
+                </span>
+              ))}
+            </div>
+
+            {dashboardData.payrollRun.errorLog && dashboardData.payrollRun.errorLog.length > 0 && (
+              <div className="mt-2 p-2 bg-danger-50 border border-danger-200 rounded">
+                <p className="text-xs text-danger-700">
+                  <strong>Errors:</strong> {dashboardData.payrollRun.errorLog.length} employees failed
+                </p>
+              </div>
+            )}
+          </div>
+          <div className="text-right">
+            <Chip
+              size="sm"
+              color={dashboardData.payrollRun.status === 'completed' ? 'success' : dashboardData.payrollRun.status === 'processing' ? 'warning' : 'default'}
+              variant="flat"
+              className="capitalize"
+            >
+              {dashboardData.payrollRun.status === 'completed' && 'Finalized'}
+              {dashboardData.payrollRun.status === 'processing' && 'Processing'}
+              {dashboardData.payrollRun.status === 'partial' && 'Partial'}
+            </Chip>
+          </div>
+        </div>
+      )}
+
+      {!dashboardData?.payrollRun && (
+        <div className="bg-info-50 border border-info-200 rounded-lg p-4 flex items-start gap-4">
+          <div className="p-2 bg-info-100 rounded-lg">
+            <AlertCircle size={20} className="text-info-600" />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-semibold text-info-900">Records Not Yet Generated</h4>
+            <p className="text-sm text-info-700 mt-1">
+              Payroll records for <strong>{months[selectedMonth - 1]} {selectedYear}</strong> have not been generated yet.
+              {(() => {
+                const activeCount = getActiveStaffCount();
+                const inactiveCount = staff.length - activeCount;
+                return (
+                  <>
+                    {activeCount > 0 && (
+                      <> {activeCount} active {activeCount === 1 ? 'employee' : 'employees'} available for records.</>
+                    )}
+                    {inactiveCount > 0 && (
+                      <> {inactiveCount} inactive {inactiveCount === 1 ? 'employee' : 'employees'} will be excluded.</>
+                    )}
+                  </>
+                );
+              })()}
+              Click "Prepare Records" to generate salary records for all active staff.
+            </p>
+
+            {/* Staff Status Breakdown */}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="text-xs text-info-600">All Staff:</span>
+              {Object.entries(staff.reduce((acc, s) => {
+                const status = s.status || 'unknown';
+                acc[status] = (acc[status] || 0) + 1;
+                return acc;
+              }, {})).map(([status, count]) => (
+                <span key={status} className="text-xs px-2 py-1 bg-info-100 rounded-full">
+                  {count} {status}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Content Wrapper with Padding Context */}
       {/* This mimics the padding a parent Card would provide, allowing the full-bleed children to work correctly using negative margins */}
@@ -328,33 +656,33 @@ export default function StaffPayroll() {
             <div className="p-4 bg-success-50 rounded-lg border border-success-200">
               <div className="flex items-center gap-2 mb-2">
                 <Wallet size={18} className="text-success-600" />
-                <span className="text-xs text-success-700 uppercase tracking-wider">Total Payout</span>
+                <span className="text-xs text-success-700 uppercase tracking-wider">Total Recorded</span>
               </div>
               <p className="text-2xl font-semibold text-success-700">
                 {formatCurrency(dashboardData.totalPayout)}
               </p>
               <p className="text-xs text-success-600 mt-1">
-                {dashboardData.paidCount} employees paid
+                {dashboardData.paidCount} records logged
               </p>
             </div>
 
             <div className="p-4 bg-primary-50 rounded-lg border border-primary-200">
               <div className="flex items-center gap-2 mb-2">
                 <Clock size={18} className="text-primary-600" />
-                <span className="text-xs text-primary-700 uppercase tracking-wider">Pending</span>
+                <span className="text-xs text-primary-700 uppercase tracking-wider">Unrecorded</span>
               </div>
               <p className="text-2xl font-semibold text-primary-700">
                 {formatCurrency(dashboardData.pendingAmount)}
               </p>
               <p className="text-xs text-primary-600 mt-1">
-                {dashboardData.pendingCount} salaries pending
+                {dashboardData.pendingCount} records pending
               </p>
             </div>
 
             <div className="p-4 bg-warning-50 rounded-lg border border-warning-200">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp size={18} className="text-warning-600" />
-                <span className="text-xs text-warning-700 uppercase tracking-wider">Projected</span>
+                <span className="text-xs text-warning-700 uppercase tracking-wider">Estimated</span>
               </div>
               <p className="text-2xl font-semibold text-warning-700">
                 {formatCurrency(dashboardData.projectedPayout)}
@@ -380,8 +708,48 @@ export default function StaffPayroll() {
         )}
 
         {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-background border-b border-default-200 py-4 -mx-6 -mt-6 px-6">
-          <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+        <div className="flex flex-col sm:flex-row justify-between gap-4 items-start bg-white border-b border-default-200 py-4 -mx-6 -mt-6 px-6">
+          <div className="flex flex-wrap gap-3 items-center w-full sm:w-auto">
+            {/* Month/Year Selector - Moved here */}
+            <div className="flex gap-2 items-center">
+              <Select
+                label="Month"
+                selectedKeys={new Set([selectedMonth.toString()])}
+                onSelectionChange={(keys) => setSelectedMonth(parseInt(Array.from(keys)[0]))}
+                className="w-36"
+                size="sm"
+                variant="bordered"
+                classNames={{
+                  label: "text-xs",
+                  trigger: "min-h-unit-8"
+                }}
+              >
+                {availableMonths.map((month, idx) => {
+                  const actualMonthIndex = months.indexOf(month) + 1;
+                  return (
+                    <SelectItem key={actualMonthIndex.toString()} textValue={month} className="text-sm">{month}</SelectItem>
+                  );
+                })}
+              </Select>
+              <Select
+                label="Year"
+                selectedKeys={new Set([selectedYear.toString()])}
+                onSelectionChange={(keys) => setSelectedYear(parseInt(Array.from(keys)[0]))}
+                className="w-28"
+                size="sm"
+                variant="bordered"
+                classNames={{
+                  label: "text-xs",
+                  trigger: "min-h-unit-8"
+                }}
+              >
+                {years.map(year => (
+                  <SelectItem key={year.toString()} textValue={year.toString()} className="text-sm">{year}</SelectItem>
+                ))}
+              </Select>
+            </div>
+
+            {/* Search */}
             <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-default-100 rounded-lg border border-default-200 hover:border-primary hover:bg-default-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
               <Search size={16} className="text-default-400" />
               <input
@@ -397,62 +765,151 @@ export default function StaffPayroll() {
                 </button>
               )}
             </div>
+
+            {/* Unified Filter Dropdown */}
             <Dropdown>
               <DropdownTrigger>
-                <button className="p-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 cursor-pointer">
+                <button className="flex items-center gap-2 px-3 py-2 bg-default-100 rounded-lg border border-default-300 hover:border-primary transition-all duration-200 cursor-pointer text-sm">
                   <Filter size={16} className="text-default-400" />
+                  <span className="text-default-600">Filters</span>
+                  {(statusFilter !== 'all' || employmentFilter !== 'all') && (
+                    <Chip size="sm" color="primary" variant="solid" className="h-5 min-w-5 px-1">
+                      {(statusFilter !== 'all' ? 1 : 0) + (employmentFilter !== 'all' ? 1 : 0)}
+                    </Chip>
+                  )}
+                  <ChevronDown size={14} className="text-default-400" />
                 </button>
               </DropdownTrigger>
-              <DropdownMenu
-                aria-label="Filter by status"
-                selectionMode="single"
-                selectedKeys={new Set([statusFilter])}
-                onSelectionChange={(keys) => setStatusFilter(Array.from(keys)[0])}
-              >
-                <DropdownItem key="all">All Status</DropdownItem>
-                <DropdownItem key="generated">Generated</DropdownItem>
-                <DropdownItem key="paid">Paid</DropdownItem>
-                <DropdownItem key="on_hold">On Hold</DropdownItem>
-                <DropdownItem key="failed">Failed</DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
-            <Dropdown>
-              <DropdownTrigger>
-                <button className="p-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 cursor-pointer">
-                  <Filter size={16} className="text-default-400" />
-                </button>
-              </DropdownTrigger>
-              <DropdownMenu
-                aria-label="Filter by employment type"
-                selectionMode="single"
-                selectedKeys={new Set([employmentFilter])}
-                onSelectionChange={(keys) => setEmploymentFilter(Array.from(keys)[0])}
-              >
-                <DropdownItem key="all">All Types</DropdownItem>
-                <DropdownItem key="full_time">Full Time</DropdownItem>
-                <DropdownItem key="part_time">Part Time</DropdownItem>
-                <DropdownItem key="contractor">Contractor</DropdownItem>
+              <DropdownMenu aria-label="Filters" className="w-64">
+                <DropdownItem key="status-header" isReadOnly className="opacity-100 font-semibold text-default-500 text-xs uppercase">
+                  Status
+                </DropdownItem>
+                <DropdownItem
+                  key="status-all"
+                  onClick={() => setStatusFilter('all')}
+                  className={statusFilter === 'all' ? 'bg-primary-50' : ''}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span>All Status</span>
+                    {statusFilter === 'all' && <CheckCircle2 size={14} className="text-primary" />}
+                  </div>
+                </DropdownItem>
+                <DropdownItem
+                  key="status-generated"
+                  onClick={() => setStatusFilter('generated')}
+                  className={statusFilter === 'generated' ? 'bg-primary-50' : ''}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span>Generated</span>
+                    {statusFilter === 'generated' && <CheckCircle2 size={14} className="text-primary" />}
+                  </div>
+                </DropdownItem>
+                <DropdownItem
+                  key="status-paid"
+                  onClick={() => setStatusFilter('paid')}
+                  className={statusFilter === 'paid' ? 'bg-primary-50' : ''}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span>Paid</span>
+                    {statusFilter === 'paid' && <CheckCircle2 size={14} className="text-primary" />}
+                  </div>
+                </DropdownItem>
+                <DropdownItem key="divider1" isReadOnly className="opacity-100">
+                  <div className="h-px bg-default-200 my-1" />
+                </DropdownItem>
+                <DropdownItem key="employment-header" isReadOnly className="opacity-100 font-semibold text-default-500 text-xs uppercase">
+                  Employment Type
+                </DropdownItem>
+                <DropdownItem
+                  key="employment-all"
+                  onClick={() => setEmploymentFilter('all')}
+                  className={employmentFilter === 'all' ? 'bg-primary-50' : ''}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span>All Types</span>
+                    {employmentFilter === 'all' && <CheckCircle2 size={14} className="text-primary" />}
+                  </div>
+                </DropdownItem>
+                <DropdownItem
+                  key="full_time"
+                  onClick={() => setEmploymentFilter('full_time')}
+                  className={employmentFilter === 'full_time' ? 'bg-primary-50' : ''}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span>Full Time</span>
+                    {employmentFilter === 'full_time' && <CheckCircle2 size={14} className="text-primary" />}
+                  </div>
+                </DropdownItem>
+                <DropdownItem
+                  key="part_time"
+                  onClick={() => setEmploymentFilter('part_time')}
+                  className={employmentFilter === 'part_time' ? 'bg-primary-50' : ''}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span>Part Time</span>
+                    {employmentFilter === 'part_time' && <CheckCircle2 size={14} className="text-primary" />}
+                  </div>
+                </DropdownItem>
+                <DropdownItem
+                  key="contractor"
+                  onClick={() => setEmploymentFilter('contractor')}
+                  className={employmentFilter === 'contractor' ? 'bg-primary-50' : ''}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span>Contractor</span>
+                    {employmentFilter === 'contractor' && <CheckCircle2 size={14} className="text-primary" />}
+                  </div>
+                </DropdownItem>
               </DropdownMenu>
             </Dropdown>
           </div>
 
           <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
-            {selectedKeys.size > 0 && (
+            {isAnySelected && (
               <button
                 className="flex items-center gap-2 px-3 py-2 bg-success text-white rounded-lg border border-success hover:bg-success-600 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap"
                 onClick={handleBulkPay}
               >
                 <CreditCard size={16} />
-                <span>Pay Selected ({selectedKeys.size})</span>
+                <span>Log Selected ({selectedCount})</span>
               </button>
             )}
             <button
               className="flex items-center gap-2 px-3 py-2 bg-primary text-white rounded-lg border border-primary hover:bg-primary-600 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={handleRunPayroll}
-              disabled={runningPayroll}
+              onClick={handlePrepareRecords}
+              disabled={preparingRecords}
             >
-              {runningPayroll ? <Spinner size="sm" color="white" /> : <Play size={16} />}
-              <span>{runningPayroll ? 'Running...' : 'Run Payroll'}</span>
+              {preparingRecords ? <Spinner size="sm" color="white" /> : <Play size={16} />}
+              <span>{preparingRecords ? 'Preparing...' : 'Prepare Records'}</span>
+            </button>
+            <button
+              className="flex items-center gap-2 px-3 py-2 bg-default-100 text-default-700 rounded-lg border border-default-300 hover:bg-default-200 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap"
+              onClick={handleExportPayroll}
+            >
+              <Download size={16} />
+              <span>Export CSV</span>
+            </button>
+            <button
+              className="flex items-center gap-2 px-3 py-2 bg-warning-500 text-white rounded-lg border border-warning-600 hover:bg-warning-600 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap"
+              onClick={async () => {
+                if (confirm('This will set a default salary of 50,000 for all staff who have 0 salary. Continue?')) {
+                  try {
+                    const res = await payrollApi.fixSalaries();
+                    if (res.success) {
+                      toast.success(res.message);
+                      fetchDashboard();
+                    } else {
+                        toast.error('Failed to fix salaries');
+                    }
+                  } catch (e) {
+                    console.error(e);
+                    toast.error('Error fixing salaries');
+                  }
+                }
+              }}
+            >
+              <Wallet size={16} />
+              <span>Fix Salaries</span>
             </button>
           </div>
         </div>
@@ -490,9 +947,27 @@ export default function StaffPayroll() {
                 <TableColumn align="end">ACTIONS</TableColumn>
               </TableHeader>
               <TableBody emptyContent="No payroll records found">
+                {(() => {
+                  // Debug: Check how many records are being filtered out
+                  const recordsWithEmployee = visibleRecords.filter(r => staff.find(s => String(s._id || s.id) === String(r.employeeId)));
+                  if (visibleRecords.length !== recordsWithEmployee.length) {
+                    console.warn(`⚠️ ${visibleRecords.length - recordsWithEmployee.length} of ${visibleRecords.length} records missing employee mapping`);
+                    console.log('📋 Sample record:', visibleRecords[0]);
+                    console.log('👋 Sample staff:', staff.slice(0, 3).map(s => ({ id: s._id || s.id, idType: typeof (s._id || s.id), name: s.name })));
+                  }
+                  return null; // This is just for debug, doesn't render
+                })()}
                 {visibleRecords.map((record) => {
-                  const employee = staff.find(s => s.id === record.employeeId);
-                  if (!employee) return null;
+                  // FIXED: Use _id from MongoDB and string comparison for ID matching
+                  const employee = staff.find(s => String(s._id || s.id) === String(record.employeeId));
+                  if (!employee) {
+                    console.warn('⚠️ Employee not found for record:', { 
+                      employeeId: record.employeeId, 
+                      employeeIdType: typeof record.employeeId,
+                      availableStaffIds: staff.slice(0, 3).map(s => s._id || s.id)
+                    });
+                    return null;
+                  }
 
                   return (
                     <TableRow key={record._id}>
@@ -543,7 +1018,14 @@ export default function StaffPayroll() {
                         </Chip>
                       </TableCell>
                       <TableCell>
-                        <div className="flex justify-end gap-1">
+                        <div className="flex justify-end gap-1 items-center">
+                          {/* Locked indicator */}
+                          {record.isLocked && (
+                            <div className="flex items-center gap-1 text-xs text-warning-600 bg-warning-50 px-2 py-1 rounded-full border border-warning-200">
+                              <Lock size={12} />
+                              <span>Locked</span>
+                            </div>
+                          )}
                           {record.status === 'generated' && (
                             <Button
                               size="sm"
@@ -551,7 +1033,18 @@ export default function StaffPayroll() {
                               variant="flat"
                               onPress={() => handleMarkAsPaid(record._id)}
                             >
-                              Pay
+                              Log Payment
+                            </Button>
+                          )}
+                          {record.status === 'paid' && record.isLocked && (
+                            <Button
+                              size="sm"
+                              color="warning"
+                              variant="flat"
+                              onPress={() => handleReversePayment(record)}
+                              startContent={<RotateCcw size={14} />}
+                            >
+                              Reverse
                             </Button>
                           )}
                           <Button
@@ -582,6 +1075,233 @@ export default function StaffPayroll() {
           </>
         )}
       </div>
+
+      {/* Run Payroll Confirmation Modal */}
+      <Modal isOpen={runPayrollModalOpen} onOpenChange={setRunPayrollModalOpen} size="md">
+        <ModalContent>
+          <ModalHeader className="flex gap-3">
+            <div className="p-2 bg-warning-100 rounded-lg">
+              <AlertCircle className="text-warning-600" size={24} />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold">Prepare Salary Records</h3>
+              <p className="text-sm text-default-500">This will generate payroll records for all active staff</p>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <div className="bg-default-50 rounded-lg p-4">
+                <p className="text-sm text-default-600 mb-2">You are about to generate records for:</p>
+                <p className="text-lg font-semibold text-default-900">{months[selectedMonth - 1]} {selectedYear}</p>
+              </div>
+              <div className="bg-warning-50 rounded-lg p-4 border border-warning-200">
+                <p className="text-sm text-warning-800">
+                  <strong>Note:</strong> This step only generates the salary breakdown. You will need to manually log the payment status afterwards.
+                </p>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={() => setRunPayrollModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button color="primary" onPress={confirmPrepareRecords} isDisabled={preparingRecords}>
+              {preparingRecords ? <Spinner size="sm" color="white" /> : 'Confirm & Generate'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Bulk Pay Confirmation Modal */}
+      <Modal isOpen={bulkPayModalOpen} onOpenChange={setBulkPayModalOpen} size="md">
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex gap-3">
+                <div className="p-2 bg-success-100 rounded-lg">
+                  <CreditCard className="text-success-600" size={24} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Log Bulk Payments</h3>
+                  <p className="text-sm text-default-500">Processing {pendingBulkPay?.count || 0} records</p>
+                </div>
+              </ModalHeader>
+              <ModalBody className="gap-4">
+                 <div className="bg-default-50 rounded-lg p-3 mb-2">
+                    <p className="text-sm text-default-600">
+                      You are about to record payments for <strong>{pendingBulkPay?.count || 0}</strong> staff members.
+                    </p>
+                 </div>
+                 
+                 <Select
+                  label="Payment Method"
+                  selectedKeys={new Set([paymentForm.paymentMethod])}
+                  onSelectionChange={(keys) => setPaymentForm({ ...paymentForm, paymentMethod: Array.from(keys)[0] })}
+                  variant="bordered"
+                >
+                  <SelectItem key="bank_transfer" textValue="Bank Transfer">Bank Transfer</SelectItem>
+                  <SelectItem key="cash" textValue="Cash">Cash</SelectItem>
+                  <SelectItem key="cheque" textValue="Cheque">Cheque</SelectItem>
+                  <SelectItem key="online" textValue="Online Payment">Online Payment</SelectItem>
+                </Select>
+
+                <Input
+                  label="Payment Reference / Batch ID"
+                  placeholder="e.g. BATCH-2024-001"
+                  value={paymentForm.paymentReference}
+                  onValueChange={(v) => setPaymentForm({ ...paymentForm, paymentReference: v })}
+                  variant="bordered"
+                  description="Applied to all selected records"
+                />
+
+                <Textarea
+                  label="Notes (Optional)"
+                  placeholder="Additional notes for this batch..."
+                  value={paymentForm.notes}
+                  onValueChange={(v) => setPaymentForm({ ...paymentForm, notes: v })}
+                  variant="bordered"
+                  minRows={2}
+                />
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="light" onPress={onClose}>
+                  Cancel
+                </Button>
+                <Button color="success" onPress={confirmBulkPay}>
+                  Log Payments
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      {/* Validation Modal */}
+      <Modal isOpen={validationModalOpen} onOpenChange={setValidationModalOpen} size="2xl" scrollBehavior="inside">
+        <ModalContent>
+          <ModalHeader className="flex gap-3">
+            <div className="p-2 bg-info-100 rounded-lg">
+              <ShieldCheck className="text-info-600" size={24} />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold">Payroll Validation Results</h3>
+              <p className="text-sm text-default-500">Review before generating records</p>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            {validating ? (
+              <div className="flex items-center justify-center py-8">
+                <Spinner size="lg" label="Validating payroll..." />
+              </div>
+            ) : validationResults && (
+              <div className="space-y-4">
+                {/* Valid Employees */}
+                <div className="bg-success-50 rounded-lg p-4 border border-success-200">
+                  <h4 className="font-semibold text-success-900 mb-2 flex items-center gap-2">
+                    <CheckCircle2 size={18} />
+                    Ready to Process ({validationResults.valid?.length || 0})
+                  </h4>
+                  {validationResults.valid?.length > 0 && (
+                    <div className="max-h-40 overflow-y-auto text-sm">
+                      {validationResults.valid.slice(0, 5).map(emp => (
+                        <div key={emp.employeeId} className="py-1">{emp.name} - {formatCurrency(emp.salary)}</div>
+                      ))}
+                      {validationResults.valid.length > 5 && (
+                        <div className="text-success-700 italic">...and {validationResults.valid.length - 5} more</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Invalid Employees */}
+                {validationResults.invalid?.length > 0 && (
+                  <div className="bg-danger-50 rounded-lg p-4 border border-danger-200">
+                    <h4 className="font-semibold text-danger-900 mb-2 flex items-center gap-2">
+                      <AlertTriangle size={18} />
+                      Will Be Excluded ({validationResults.invalid.length})
+                    </h4>
+                    <div className="max-h-40 overflow-y-auto text-sm space-y-1">
+                      {validationResults.invalid.map(emp => (
+                        <div key={emp.employeeId} className="text-danger-700">
+                          {emp.name}: {emp.reason}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Warnings */}
+                {validationResults.warnings?.length > 0 && (
+                  <div className="bg-warning-50 rounded-lg p-4 border border-warning-200">
+                    <h4 className="font-semibold text-warning-900 mb-2 flex items-center gap-2">
+                      <AlertCircle size={18} />
+                      Warnings ({validationResults.warnings.length})
+                    </h4>
+                    <div className="max-h-40 overflow-y-auto text-sm space-y-1">
+                      {validationResults.warnings.map((warning, idx) => (
+                        <div key={idx} className="text-warning-700">
+                          {warning.name || warning.message || `Warning: ${warning.reason}`}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={() => setValidationModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button color="primary" onPress={confirmPrepareRecords} isDisabled={preparingRecords || !validationResults?.valid?.length}>
+              {preparingRecords ? <Spinner size="sm" color="white" /> : `Generate Records (${validationResults?.valid?.length || 0})`}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Reverse Payment Modal */}
+      <Modal isOpen={reverseModalOpen} onOpenChange={setReverseModalOpen} size="md">
+        <ModalContent>
+          <ModalHeader className="flex gap-3">
+            <div className="p-2 bg-warning-100 rounded-lg">
+              <RotateCcw className="text-warning-600" size={24} />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold">Reverse Payment</h3>
+              <p className="text-sm text-default-500">Unlock and reset payment status</p>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <div className="bg-warning-50 rounded-lg p-4 border border-warning-200">
+                <p className="text-sm text-warning-800">
+                  <strong>Warning:</strong> This will unlock the record and reset its status to "Generated". You will need to log the payment again.
+                </p>
+              </div>
+              <Textarea
+                label="Reason for Reversal *"
+                placeholder="Please explain why this payment is being reversed..."
+                value={reverseReason}
+                onValueChange={setReverseReason}
+                variant="bordered"
+                minRows={3}
+                isRequired
+              />
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={() => setReverseModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button color="warning" onPress={confirmReversePayment} isDisabled={reversing || !reverseReason.trim()}>
+              {reversing ? <Spinner size="sm" color="white" /> : 'Confirm Reversal'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+        </>
+      )}
     </div>
   );
 }

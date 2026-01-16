@@ -2,59 +2,29 @@ import { createContext, useContext, useState, useMemo, useEffect, useCallback } 
 import { staffApi, studentsApi, classesApi, settingsApi } from "../services/api";
 import toast from "react-hot-toast";
 
-const initialEvents = [
-  { id: 1, title: "Winter Break Starts", date: "2025-12-25", type: "holiday", startTime: "", endTime: "", allDay: true, holidayType: "National" },
-  { id: 2, title: "Parent-Teacher Meeting", date: "2025-12-20", type: "meeting", startTime: "10:00", endTime: "13:00", allDay: false },
-  { id: 3, title: "Final Exams Begin", date: "2025-12-18", type: "exam", startTime: "09:00", endTime: "12:00", allDay: false },
-  { id: 4, title: "Annual Day", date: "2025-12-28", type: "event", startTime: "16:00", endTime: "20:00", allDay: false },
-  { id: 5, title: "New Year Holiday", date: "2026-01-01", type: "holiday", startTime: "", endTime: "", allDay: true, holidayType: "National" },
-  { id: 6, title: "Republic Day", date: "2026-01-26", type: "holiday", startTime: "", endTime: "", allDay: true, holidayType: "National" },
-  { id: 7, title: "Independence Day", date: "2025-08-15", type: "holiday", startTime: "", endTime: "", allDay: true, holidayType: "National" },
-  { id: 8, title: "Gandhi Jayanti", date: "2025-10-02", type: "holiday", startTime: "", endTime: "", allDay: true, holidayType: "National" },
-];
-
-const initialFeePayments = [
-  { id: 1, studentId: 1, amount: 15000, date: "2025-12-16", month: "December", status: "paid" },
-  { id: 2, studentId: 3, amount: 15000, date: "2025-12-15", month: "December", status: "paid" },
-  { id: 3, studentId: 5, amount: 15000, date: "2025-12-14", month: "December", status: "paid" },
-];
-
-const initialAnnouncements = [
-  { id: 1, title: "Parent-Teacher Meeting", content: "PTM scheduled for Dec 20th", target: "All Parents", status: "sent", date: "2025-12-15", channel: "SMS + App" },
-  { id: 2, title: "Winter Break", content: "School closed from Dec 25 to Jan 1", target: "All", status: "scheduled", date: "2025-12-18", channel: "App" },
-  { id: 3, title: "Fee Reminder", content: "Please clear pending dues", target: "Defaulters", status: "sent", date: "2025-12-14", channel: "SMS" },
-];
-
+// NOTE: These are minimal fallback values only.
+// The application fetches actual data from the API on mount.
+// These defaults prevent errors before data is loaded.
 const initialSchoolSettings = {
-  name: "Springfield High School",
-  address: "123 Education Lane, Springfield",
-  phone: "1234567890",
-  email: "info@springfieldhigh.edu",
-  udiseNo: "12345678901",
-  affiliationNo: "AFF/2024/001",
+  name: "",
+  address: "",
+  phone: "",
+  email: "",
+  udiseNo: "",
+  affiliationNo: "",
   logo: null,
-  boardOfEducation: "CBSE",
+  boardOfEducation: "",
   principalSignature: null,
   correspondentSignature: null,
-  academicYear: "2024-25",
-  academicYearStart: "2024-04-01",
-  academicYearEnd: "2025-03-31",
-  schoolStartTime: "08:00",
-  schoolEndTime: "14:30",
+  academicYear: "",
+  academicYearStart: "",
+  academicYearEnd: "",
+  schoolStartTime: "",
+  schoolEndTime: "",
   periodDuration: 45,
   periodsPerDay: 8,
   workingDays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-  subjects: [
-    { id: 1, name: "Mathematics", code: "MATH" },
-    { id: 2, name: "English", code: "ENG" },
-    { id: 3, name: "Hindi", code: "HIN" },
-    { id: 4, name: "Science", code: "SCI" },
-    { id: 5, name: "Social Studies", code: "SST" },
-    { id: 6, name: "Computer Science", code: "CS" },
-    { id: 7, name: "Physical Education", code: "PE" },
-    { id: 8, name: "Art", code: "ART" },
-    { id: 9, name: "Music", code: "MUS" },
-  ],
+  subjects: [],
 };
 
 const AppContext = createContext();
@@ -64,9 +34,9 @@ export function AppProvider({ children }) {
   const [staff, setStaff] = useState([]);
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
-  const [events, setEvents] = useState(initialEvents);
-  const [feePayments, setFeePayments] = useState(initialFeePayments);
-  const [announcements, setAnnouncements] = useState(initialAnnouncements);
+  const [events, setEvents] = useState([]);
+  const [feePayments, setFeePayments] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   const [staffAttendance, setStaffAttendance] = useState({});
   const [studentAttendance, setStudentAttendance] = useState({});
   const [schoolSettings, setSchoolSettings] = useState(initialSchoolSettings);
@@ -88,27 +58,41 @@ export function AppProvider({ children }) {
         classesApi.getAll(),
       ]);
 
+      // Ensure we always have arrays
+      const safeStaffData = Array.isArray(staffData) ? staffData : [];
+      const safeStudentsData = Array.isArray(studentsData) ? studentsData : [];
+      const safeClassesData = Array.isArray(classesData) ? classesData : [];
+
       console.log('✅ Data fetched successfully:', {
-        staff: staffData.length,
-        students: studentsData.length,
-        classes: classesData.length
+        staff: safeStaffData.length,
+        students: safeStudentsData.length,
+        classes: safeClassesData.length
       });
 
-      setStaff(staffData);
-      setStudents(studentsData);
-      setClasses(classesData.map(c => ({
+      setStaff(safeStaffData);
+      setStudents(safeStudentsData);
+      setClasses(safeClassesData.map(c => ({
         ...c,
         name: c.name.replace('Class ', ''),
         strength: c.studentCount || 0,
         classTeacherId: c.classTeacherId,
-        attendance: 85 + Math.floor(Math.random() * 10),
+        attendance: 0, // FIXED: Use 0 instead of random until real calculation available
+        // TODO: Calculate from actual student attendance data
       })));
       setError(null);
     } catch (err) {
       console.error('❌ Failed to fetch data:', err);
       console.error('Error details:', err.message);
-      setError(err.message);
-      toast.error('Failed to load data: ' + err.message);
+      
+      // If unauthorized, clear session and let AuthContext handle redirect
+      if (err.message === 'Unauthorized' || err.message === 'Authentication required') {
+        console.warn('⚠️ Token expired or invalid, clearing session');
+        sessionStorage.removeItem('app_user');
+        // Don't show error toast for auth issues, let login page handle it
+      } else {
+        setError(err.message);
+        toast.error('Failed to load data: ' + err.message);
+      }
     } finally {
       console.log('✅ Setting loading to false');
       setLoading(false);
@@ -169,10 +153,77 @@ export function AppProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    fetchData();
-    fetchSettings();
+    // Only fetch data if user is authenticated (has token in sessionStorage)
+    const storedUser = sessionStorage.getItem('app_user');
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        // Only fetch if we have a valid token
+        if (userData.token) {
+          fetchData();
+          fetchSettings();
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Invalid stored user data:', err);
+        setLoading(false);
+      }
+    } else {
+      // If not authenticated, just set loading to false
+      setLoading(false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - only run once on mount
+
+  // Listen for storage events to detect login from other tabs or login event
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'app_user' && e.newValue) {
+        // User just logged in, fetch data
+        fetchData();
+        fetchSettings();
+      }
+    };
+
+    // Also listen for a custom event for same-tab login
+    const handleLogin = () => {
+      // Verify token exists before fetching
+      const storedUser = sessionStorage.getItem('app_user');
+      console.log('🔍 handleLogin called, checking sessionStorage...');
+      
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          console.log('📋 User data found:', {
+            hasToken: !!userData.token,
+            userId: userData.id,
+            name: userData.name
+          });
+          
+          if (userData.token) {
+            console.log('✅ Token found, fetching data after login');
+            fetchData();
+            fetchSettings();
+          } else {
+            console.warn('⚠️ No token found in user data');
+          }
+        } catch (err) {
+          console.error('❌ Error parsing user data:', err);
+        }
+      } else {
+        console.warn('⚠️ No user data in sessionStorage');
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('user-logged-in', handleLogin);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('user-logged-in', handleLogin);
+    };
+  }, [fetchData, fetchSettings]);
 
   // Initialize Socket.IO for real-time updates when user is available
   useEffect(() => {
@@ -319,6 +370,7 @@ export function AppProvider({ children }) {
 
   // Salary State
   const [salarySettings, setSalarySettings] = useState({
+    disburseDate: "",
     earnings: [
       { id: "basic", name: "Basic Salary" },
       { id: "hra", name: "HRA" },
@@ -468,7 +520,7 @@ export function AppProvider({ children }) {
     }
   };
 
-  const getStaffById = (id) => staff.find(s => s.id === id || s.id === String(id));
+  const getStaffById = (id) => Array.isArray(staff) ? staff.find(s => s.id === id || s.id === String(id)) : undefined;
 
   // Student functions - now using API
   const addStudent = async (newStudent) => {
@@ -503,8 +555,8 @@ export function AppProvider({ children }) {
     }
   };
 
-  const getStudentById = (id) => students.find(s => String(s.id) === String(id));
-  const getStudentsByClass = (classId) => students.filter(s => s.classId === classId);
+  const getStudentById = (id) => Array.isArray(students) ? students.find(s => String(s.id) === String(id)) : undefined;
+  const getStudentsByClass = (classId) => Array.isArray(students) ? students.filter(s => s.classId === classId) : [];
 
   // Class functions - now using API
   const addClass = async (newClass) => {
@@ -539,7 +591,7 @@ export function AppProvider({ children }) {
     }
   };
 
-  const getClassById = (id) => classes.find(c => c.id === id);
+  const getClassById = (id) => Array.isArray(classes) ? classes.find(c => c.id === id) : undefined;
 
   // Event functions - with API integration for holidays
   const addEvent = async (newEvent) => {
@@ -626,7 +678,7 @@ export function AppProvider({ children }) {
     }
   };
 
-  const getEventsForDate = (date) => events.filter(e => e.date === date);
+  const getEventsForDate = (date) => Array.isArray(events) ? events.filter(e => e.date === date) : [];
 
   // Fee functions
   const addFeePayment = (payment) => {
@@ -637,7 +689,7 @@ export function AppProvider({ children }) {
     return paymentWithId;
   };
 
-  const getStudentFeeHistory = (studentId) => feePayments.filter(p => p.studentId === studentId);
+  const getStudentFeeHistory = (studentId) => Array.isArray(feePayments) ? feePayments.filter(p => p.studentId === studentId) : [];
 
   // Announcement functions
   const addAnnouncement = (announcement) => {
@@ -713,12 +765,14 @@ export function AppProvider({ children }) {
   };
 
   // Salary Logic
-  const updateSalarySettings = (type, action, item) => { // type: 'earnings' | 'deductions', action: 'add' | 'remove' | 'update'
+  const updateSalarySettings = (type, action, item) => { // type: 'earnings' | 'deductions' | 'general', action: 'add' | 'remove' | 'update'
     setSalarySettings(prev => {
       if (action === "add") {
         return { ...prev, [type]: [...prev[type], { id: item.name.toLowerCase().replace(/\s+/g, ''), ...item }] };
       } else if (action === "remove") {
         return { ...prev, [type]: prev[type].filter(i => i.id !== item.id) };
+      } else if (action === "update") {
+        return { ...prev, ...item };
       }
       return prev;
     });
@@ -742,7 +796,7 @@ export function AppProvider({ children }) {
     return newRecord;
   };
 
-  const getPayrollForMonth = (month) => payrollHistory.find(p => p.month === month);
+  const getPayrollForMonth = (month) => Array.isArray(payrollHistory) ? payrollHistory.find(p => p.month === month) : undefined;
 
   // Leave Types functions - with API integration
   const addLeaveType = async (leaveType) => {
@@ -855,21 +909,25 @@ export function AppProvider({ children }) {
 
   const getStaffAttendanceForDate = (date) => {
     const result = {};
-    staff.forEach(s => {
-      result[s.id] = staffAttendance[s.id]?.[date] || { status: "unmarked", inTime: "-", outTime: "-" };
-    });
+    if (Array.isArray(staff)) {
+      staff.forEach(s => {
+        result[s.id] = staffAttendance[s.id]?.[date] || { status: "unmarked", inTime: "-", outTime: "-" };
+      });
+    }
     return result;
   };
 
   const markAllStaffAttendance = (date, status) => {
     setStaffAttendance(prev => {
       const newAtt = { ...prev };
-      staff.filter(s => s.status === "active").forEach(s => {
-        newAtt[s.id] = {
-          ...newAtt[s.id],
-          [date]: { status, inTime: status === "present" ? "08:30" : "-", outTime: "-" }
-        };
-      });
+      if (Array.isArray(staff)) {
+        staff.filter(s => s.status === "active").forEach(s => {
+          newAtt[s.id] = {
+            ...newAtt[s.id],
+            [date]: { status, inTime: status === "present" ? "08:30" : "-", outTime: "-" }
+          };
+        });
+      }
       return newAtt;
     });
   };
@@ -889,24 +947,27 @@ export function AppProvider({ children }) {
   };
 
   // Computed values
-  const teachers = useMemo(() => staff.filter(s => s.role === "Teacher" && s.status === "active"), [staff]);
+  const teachers = useMemo(() => Array.isArray(staff) ? staff.filter(s => s.role === "Teacher" && s.status === "active") : [], [staff]);
 
-  const classesWithTeachers = useMemo(() => classes.map(c => ({
-    ...c,
-    teacher: staff.find(s => s.id === c.classTeacherId)?.name || "Unassigned",
-    studentCount: students.filter(s => s.classId === c.id).length,
-  })), [classes, staff, students]);
+  const classesWithTeachers = useMemo(() => {
+    if (!Array.isArray(classes) || !Array.isArray(staff) || !Array.isArray(students)) return [];
+    return classes.map(c => ({
+      ...c,
+      teacher: staff.find(s => s.id === c.classTeacherId)?.name || "Unassigned",
+      studentCount: students.filter(s => s.classId === c.id).length,
+    }));
+  }, [classes, staff, students]);
 
-  const feeDefaulters = useMemo(() => students.filter(s => s.feeStatus === "overdue" || s.feeStatus === "pending"), [students]);
+  const feeDefaulters = useMemo(() => Array.isArray(students) ? students.filter(s => s.feeStatus === "overdue" || s.feeStatus === "pending") : [], [students]);
 
   const dashboardStats = useMemo(() => ({
-    totalStaff: staff.length,
-    activeStaff: staff.filter(s => s.status === "active").length,
-    totalStudents: students.length,
-    totalClasses: classes.length,
+    totalStaff: Array.isArray(staff) ? staff.length : 0,
+    activeStaff: Array.isArray(staff) ? staff.filter(s => s.status === "active").length : 0,
+    totalStudents: Array.isArray(students) ? students.length : 0,
+    totalClasses: Array.isArray(classes) ? classes.length : 0,
     totalTeachers: teachers.length,
     feeDefaultersCount: feeDefaulters.length,
-    upcomingEvents: events.filter(e => new Date(e.date) >= new Date()).length,
+    upcomingEvents: Array.isArray(events) ? events.filter(e => new Date(e.date) >= new Date()).length : 0,
   }), [staff, students, classes, teachers, feeDefaulters, events]);
 
   // Theme Management (simplified - no color changing)

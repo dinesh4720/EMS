@@ -1,6 +1,14 @@
 import React, { useState } from "react";
-import { Avatar, Button, Tooltip, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Badge } from "@heroui/react";
-import { NavLink, useLocation } from "react-router-dom";
+import {
+  Avatar,
+  Button,
+  Tooltip,
+  Badge,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@heroui/react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, BookOpen, MessageSquare, IndianRupee, Settings,
   ChevronsLeft, GraduationCap, Calendar, BarChart3, FileText, DoorOpen,
@@ -145,11 +153,13 @@ const itemVariants = {
 
 export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
   const chatNotifications = useChatNotifications();
   const unreadCount = chatNotifications?.unreadCount || 0;
   const [expandedModules, setExpandedModules] = useState(["EMS"]);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   return (
     <aside
@@ -364,19 +374,6 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
           </div>
         </NavLink>
 
-        {/* Notifications */}
-        <div className={`
-          flex items-center cursor-pointer
-          ${isSidebarOpen ? 'h-9 px-3 gap-3' : 'h-10 justify-center w-10 mx-auto'}
-          rounded-lg transition-all duration-200 text-default-500 hover:text-foreground hover:bg-default-50 dark:hover:bg-default-50/5
-        `}>
-          <div className="relative">
-            <Bell size={18} />
-            <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border-2 border-background"></div>
-          </div>
-          {isSidebarOpen && <span className="text-[13.5px] font-medium">Notifications</span>}
-        </div>
-
         {/* Theme Toggle */}
         <div
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -393,29 +390,37 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
         {/* Divider */}
         {isSidebarOpen && <div className="h-px w-full bg-default-200 dark:bg-default-800 my-2" />}
 
-        {/* Upgrade Card (Only if open) */}
-        {isSidebarOpen && (
-          <div className="mx-0 p-0.5 rounded-xl bg-gradient-to-br from-default-100 to-default-50 dark:from-default-900 dark:to-default-900/50 border border-default-200 dark:border-default-800 mb-2">
-            <Button
-              className="w-full bg-background dark:bg-default-50/5 shadow-sm hover:shadow-md transition-all border border-default-100 dark:border-default-800/50 h-10 flex items-center justify-center gap-2"
-              variant="flat"
-            >
-              <div className="w-5 h-5 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center">
-                <Sparkles size={10} fill="currentColor" />
-              </div>
-              <span className="font-semibold text-sm">Upgrade</span>
-            </Button>
-          </div>
-        )}
 
         {/* User Profile */}
-        <Dropdown placement={isSidebarOpen ? "top-start" : "right-end"}>
-          <DropdownTrigger>
-            <div className={`
-              flex items-center cursor-pointer group
-              ${isSidebarOpen ? 'px-2 py-2 gap-3 hover:bg-default-100 rounded-xl' : 'justify-center w-10 h-10 rounded-full hover:ring-2 ring-default-200'}
-              transition-all
-            `}>
+        <Popover
+          placement={isSidebarOpen ? "top-start" : "right"}
+          isOpen={isUserMenuOpen}
+          onOpenChange={(open) => {
+            console.log('🟢 Popover onOpenChange called with:', open);
+            setIsUserMenuOpen(open);
+          }}
+          offset={12}
+          shouldBlockScroll={false}
+          showArrow
+          portalContainer={document.body}
+        >
+          <PopoverTrigger>
+            <button
+              type="button"
+              onClick={() => {
+                console.log('🔵 Profile clicked, toggling menu. Current state:', isUserMenuOpen);
+                setIsUserMenuOpen((v) => {
+                  console.log('🔵 New menu state will be:', !v);
+                  return !v;
+                });
+              }}
+              className={`
+                flex items-center group
+                ${isSidebarOpen ? 'w-full px-2 py-2 gap-3 hover:bg-default-100 rounded-xl' : 'justify-center w-10 h-10 rounded-full hover:ring-2 ring-default-200'}
+                transition-all
+                focus:outline-none
+              `}
+            >
               <Avatar
                 src={`https://i.pravatar.cc/150?u=${user?.id || 'admin'}`}
                 name={user?.name?.[0] || "A"}
@@ -433,21 +438,57 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                   </span>
                 </div>
               )}
-              {isSidebarOpen && <ChevronRight size={14} className="text-default-400 group-hover:translate-x-0.5 transition-transform" />}
+              {isSidebarOpen && (
+                <ChevronRight
+                  size={14}
+                  className="text-default-400 group-hover:translate-x-0.5 transition-transform"
+                />
+              )}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent 
+            className="p-0"
+            style={{ zIndex: 99999 }}
+          >
+            <div className="min-w-[220px] rounded-xl border border-default-200 bg-background shadow-xl">
+              <div className="px-3 py-2 border-b border-default-200">
+                <p className="text-xs text-default-500">Signed in as</p>
+                <p className="text-sm font-semibold text-foreground truncate">{user?.email}</p>
+              </div>
+              <div className="py-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    navigate('/settings');
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-default-100 transition-colors"
+                >
+                  My Settings
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsUserMenuOpen(false)}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-default-100 transition-colors"
+                >
+                  Help & Feedback
+                </button>
+                <div className="h-px bg-default-200 my-1" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    logout();
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm text-danger-600 hover:bg-danger-50 transition-colors flex items-center gap-2"
+                >
+                  <LogOut size={14} />
+                  Log Out
+                </button>
+              </div>
             </div>
-          </DropdownTrigger>
-          <DropdownMenu aria-label="User Actions" variant="flat">
-            <DropdownItem key="profile" className="h-14 gap-2">
-              <p className="font-semibold">Signed in as</p>
-              <p className="font-semibold">{user?.email}</p>
-            </DropdownItem>
-            <DropdownItem key="settings">My Settings</DropdownItem>
-            <DropdownItem key="help_and_feedback">Help & Feedback</DropdownItem>
-            <DropdownItem key="logout" color="danger" onPress={logout} startContent={<LogOut size={14} />}>
-              Log Out
-            </DropdownItem>
-          </DropdownMenu>
-        </Dropdown>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {!isSidebarOpen && (

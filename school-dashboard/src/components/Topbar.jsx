@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
-import { Search, Command, ChevronRight, MessageCircle } from "lucide-react";
+import { Search, Command, ChevronRight, MessageCircle, Bell } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import GlobalSearch from "./GlobalSearch";
 import { AiAssistantToggle } from "./AiAssistant/AiAssistantPanel";
 import { useChatNotifications } from "../context/ChatNotificationContext";
-import { Tooltip, Badge } from "@heroui/react";
+import { Tooltip, Badge, Button, Popover, PopoverTrigger, PopoverContent } from "@heroui/react";
 
 export default function Topbar({ isSidebarOpen }) {
     const [searchOpen, setSearchOpen] = useState(false);
+    const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
     const chatNotifications = useChatNotifications();
@@ -100,6 +101,51 @@ export default function Topbar({ isSidebarOpen }) {
 
             {/* Right: Actions */}
             <div className="flex-1 flex items-center justify-end gap-2">
+                {/* Notifications */}
+                <Popover
+                    isOpen={isNotificationOpen}
+                    onOpenChange={setIsNotificationOpen}
+                    placement="bottom-end"
+                    offset={10}
+                >
+                    <PopoverTrigger>
+                        <Button
+                            isIconOnly
+                            radius="lg"
+                            variant="light"
+                            className="h-9 w-9"
+                            onPress={() => setIsNotificationOpen(!isNotificationOpen)}
+                        >
+                            <div className="relative">
+                                <Bell size={18} className="text-default-600" />
+                                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border-2 border-background"></span>
+                            </div>
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0 max-w-sm">
+                        <div className="p-4 border-b border-default-200">
+                            <h3 className="text-sm font-semibold">Notifications</h3>
+                            <p className="text-xs text-default-500">Stay updated with latest activities</p>
+                        </div>
+                        <div className="max-h-80 overflow-y-auto">
+                            <div className="p-4 text-center text-sm text-default-500">
+                                <p>No new notifications</p>
+                            </div>
+                        </div>
+                        <div className="p-2 border-t border-default-200">
+                            <button
+                                onClick={() => {
+                                    setIsNotificationOpen(false);
+                                    navigate('/settings');
+                                }}
+                                className="w-full text-center text-xs font-medium text-default-600 hover:text-foreground py-2"
+                            >
+                                Notification Settings
+                            </button>
+                        </div>
+                    </PopoverContent>
+                </Popover>
+
                 {/* Chat Button */}
                 <Tooltip 
                     content={unreadCount > 0 ? `${unreadCount} new message${unreadCount > 1 ? 's' : ''}` : "Messages"} 

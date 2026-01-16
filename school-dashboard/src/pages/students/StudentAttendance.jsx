@@ -19,22 +19,44 @@ const StudentAttendance = memo(function StudentAttendance() {
     const [attendance, setAttendance] = useState({});
     const initializedRef = useRef(false);
 
-    // Initialize attendance only once
+    // Initialize attendance - FIXED: Fetch from backend instead of random
     useEffect(() => {
-        if (!initializedRef.current && students.length > 0) {
-            const initial = {};
-            students.forEach(s => {
-                const rand = Math.random();
-                initial[s.id] = {
-                    status: rand > 0.2 ? "present" : rand > 0.5 ? "absent" : "leave",
-                    inTime: "08:30",
-                    outTime: "03:30"
-                };
-            });
-            setAttendance(initial);
-            initializedRef.current = true;
+        const fetchAttendance = async () => {
+            try {
+                // TODO: Replace with actual API endpoint when available
+                // const response = await fetch(`/api/attendance/students?date=${selectedDate}`);
+                // const data = await response.json();
+                // setAttendance(data);
+                
+                // For now, initialize with unmarked status
+                const initial = {};
+                students.forEach(s => {
+                    initial[s.id] = {
+                        status: "unmarked",
+                        inTime: "-",
+                        outTime: "-"
+                    };
+                });
+                setAttendance(initial);
+            } catch (error) {
+                console.error('Failed to fetch attendance:', error);
+                // Initialize with unmarked state on error
+                const initial = {};
+                students.forEach(s => {
+                    initial[s.id] = {
+                        status: "unmarked",
+                        inTime: "-",
+                        outTime: "-"
+                    };
+                });
+                setAttendance(initial);
+            }
+        };
+        
+        if (students.length > 0) {
+            fetchAttendance();
         }
-    }, [students]);
+    }, [students, selectedDate]);
 
     const uniqueClasses = useMemo(() => [...new Set(students.map(s => s.class))].sort(), [students]);
 

@@ -23,13 +23,16 @@ class SocketService {
 
     this.socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
-      reconnection: true,
+      reconnection: true, // ENHANCED
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 10, // Increased from 5
+      timeout: 20000,
     });
 
     this.userId = userId;
     this.userType = userType;
+    this.conversationRooms = new Set(); // NEW: Track joined rooms
 
     this.socket.on('connect', () => {
       console.log('✅ Socket connected:', this.socket.id);
@@ -42,12 +45,46 @@ class SocketService {
     this.socket.on('authenticated', (data) => {
       console.log('✅ Authenticated:', data);
       this.emit('authenticated', data);
+      
+      // Rejoin all conversation rooms after reconnection - NEW
+      if (this.conversationRooms.size > 0) {
+        console.log(`🔄 Rejoining ${this.conversationRooms.size} conversation rooms`);
+        this.conversationRooms.forEach(conversationId => {
+          this.socket.emit('join_conversation', { conversationId });
+        });
+      }
     });
 
-    this.socket.on('disconnect', () => {
-      console.log('❌ Socket disconnected');
+    this.socket.on('disconnect', (reason) => {
+      console.log('❌ Socket disconnected:', reason);
       this.connected = false;
       this.emit('disconnected');
+      
+      // Auto-reconnect if server disconnected - NEW
+      if (reason === 'io server disconnect') {
+        console.log('🔄 Server disconnected, attempting to reconnect...');
+        this.socket.connect();
+      }
+    });
+    
+    // NEW: Reconnection event handlers
+    this.socket.on('reconnect', (attemptNumber) => {
+      console.log(`✅ Reconnected after ${attemptNumber} attempts`);
+      this.connected = true;
+      this.emit('reconnected', { attemptNumber });
+    });
+    
+    this.socket.on('reconnect_attempt', (attemptNumber) => {
+      console.log(`🔄 Reconnection attempt ${attemptNumber}`);
+    });
+    
+    this.socket.on('reconnect_error', (error) => {
+      console.error('❌ Reconnection error:', error);
+    });
+    
+    this.socket.on('reconnect_failed', () => {
+      console.error('❌ All reconnection attempts failed');
+      this.emit('reconnect_failed');
     });
 
     this.socket.on('error', (error) => {
@@ -127,6 +164,7 @@ class SocketService {
       this.userId = null;
       this.userType = null;
       this.listeners.clear();
+      this.conversationRooms.clear(); // Clear tracked rooms
     }
   }
 
@@ -138,6 +176,8 @@ class SocketService {
     }
 
     this.socket.emit('join_conversation', { conversationId });
+    this.conversationRooms.add(conversationId); // Track joined rooms
+    console.log(`📥 Joined conversation: ${conversationId}`);
   }
 
   // Send a message

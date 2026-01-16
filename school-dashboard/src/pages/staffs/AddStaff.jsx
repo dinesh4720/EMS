@@ -42,7 +42,7 @@ const emptyForm = {
   accountNumber: "", ifscCode: "", bankName: "", branchName: "", salaryTemplate: "", salaryBreakdown: []
 };
 
-const AddStaff = forwardRef(({ onClose, onSave }, ref) => {
+const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState(emptyForm);
   const [errors, setErrors] = useState({});
@@ -56,16 +56,60 @@ const AddStaff = forwardRef(({ onClose, onSave }, ref) => {
   const idDocsInputRef = useRef(null);
   const qualDocsInputRef = useRef(null);
 
-  // Auto-generate Staff ID on component mount
+  // Auto-generate Staff ID on component mount (only for new staff)
+  // Populate form with editingStaff data when editing
   useEffect(() => {
-    if (!formData.staffNumber) {
-      // Generate staff ID based on format: STF-YYYY-XXX
+    if (editingStaff) {
+      // EDIT MODE: Populate form with existing staff data
+      setFormData({
+        // Personal Details
+        fullName: editingStaff.name || "",
+        dob: editingStaff.dob || "",
+        expertise: editingStaff.expertise || editingStaff.department || "",
+        picture: editingStaff.picture || null,
+        mobile: editingStaff.phone || "",
+        isWhatsapp: editingStaff.whatsappNumber === editingStaff.phone,
+        whatsappNumber: editingStaff.whatsappNumber || "",
+        email: editingStaff.email || "",
+        fatherName: editingStaff.fatherName || "",
+        bloodGroup: editingStaff.bloodGroup || "",
+        gender: editingStaff.gender || "Male",
+        maritalStatus: editingStaff.maritalStatus || "",
+        employmentType: editingStaff.employmentType || "Full-time",
+        fatherMotherNumber: editingStaff.emergencyPhone || "",
+        idDocuments: editingStaff.idDocuments || {},
+        customDocuments: editingStaff.customDocuments || [],
+        emergencyContacts: editingStaff.emergencyContacts ? editingStaff.emergencyContacts : [{ name: "", relationship: "", phone: "" }],
+        address: editingStaff.address || "",
+        // Qualifications
+        professionalQualifications: editingStaff.professionalQualifications || [],
+        totalExperience: editingStaff.totalExperience || "",
+        previousOrganization: editingStaff.previousOrganization || "",
+        roleInOrganization: editingStaff.roleInOrganization || "",
+        qualificationDocs: editingStaff.qualificationDocs || [],
+        // Staff Info
+        staffNumber: editingStaff.staffNumber || editingStaff.code || "",
+        staffType: editingStaff.staffType || editingStaff.role || "",
+        department: editingStaff.department || "",
+        assignedClasses: editingStaff.assignedClasses || [],
+        isClassTeacher: editingStaff.isClassTeacher || false,
+        classTeacherOf: editingStaff.classTeacherOf || "",
+        // Salary Details
+        accountNumber: editingStaff.accountNumber || "",
+        ifscCode: editingStaff.ifscCode || "",
+        bankName: editingStaff.bankName || "",
+        branchName: editingStaff.branchName || "",
+        salaryTemplate: editingStaff.salaryTemplate || "",
+        salaryBreakdown: editingStaff.salaryBreakdown || []
+      });
+    } else if (!formData.staffNumber) {
+      // CREATE MODE: Generate staff ID based on format: STF-YYYY-XXX
       const year = new Date().getFullYear();
       const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
       const staffId = `STF-${year}-${randomNum}`;
       setFormData(prev => ({ ...prev, staffNumber: staffId }));
     }
-  }, []);
+  }, [editingStaff]);
 
   const handleClose = () => {
     if (hasChanges) {
@@ -218,8 +262,122 @@ const AddStaff = forwardRef(({ onClose, onSave }, ref) => {
 
   const handlePrev = () => setStep(prev => Math.max(prev - 1, 1));
 
-  const handleSubmit = () => {
-    if (validateStep(step)) onSave(formData);
+  const handleSubmit = async () => {
+    if (!validateStep(step)) return;
+    
+    setIsSubmitting(true);
+    try {
+      // Import uploadApi
+      const { uploadApi } = await import("../../services/api");
+      
+      // Upload profile picture to Cloudinary if it's a File object
+      let pictureUrl = null;
+      if (formData.picture instanceof File) {
+        console.log('📸 Uploading staff photo to Cloudinary...');
+        try {
+          const uploadResponse = await uploadApi.uploadFile(formData.picture);
+          pictureUrl = uploadResponse.url;
+          console.log('✅ Staff photo uploaded:', pictureUrl);
+        } catch (error) {
+          console.error('❌ Photo upload failed:', error);
+          // Continue without photo
+        }
+      } else if (typeof formData.picture === 'string' && formData.picture.length > 0) {
+        pictureUrl = formData.picture;
+      }
+
+      // Upload ID documents to Cloudinary
+      const uploadedIdDocuments = {};
+      for (const [type, file] of Object.entries(formData.idDocuments)) {
+        if (file instanceof File) {
+          try {
+            const uploadResponse = await uploadApi.uploadFile(file);
+            uploadedIdDocuments[type] = uploadResponse.url;
+            console.log(`✅ ${type} uploaded:`, uploadResponse.url);
+          } catch (error) {
+            console.error(`❌ ${type} upload failed:`, error);
+          }
+        }
+      }
+
+      // Upload qualification documents
+      const uploadedQualificationDocs = [];
+      for (const file of formData.qualificationDocs) {
+        if (file instanceof File) {
+          try {
+            const uploadResponse = await uploadApi.uploadFile(file);
+            uploadedQualificationDocs.push(uploadResponse.url);
+            console.log('✅ Qualification doc uploaded:', uploadResponse.url);
+          } catch (error) {
+            console.error('❌ Qualification doc upload failed:', error);
+          }
+        } else if (typeof file === 'string') {
+          uploadedQualificationDocs.push(file);
+        }
+      }
+
+      // Upload documents within professional qualifications
+      const uploadedProfessionalQualifications = await Promise.all(
+        formData.professionalQualifications.map(async (qual) => {
+          const uploadedDocs = [];
+          for (const doc of qual.documents || []) {
+            if (doc instanceof File) {
+              try {
+                const uploadResponse = await uploadApi.uploadFile(doc);
+                uploadedDocs.push(uploadResponse.url);
+              } catch (error) {
+                console.error('❌ Professional qualification doc upload failed:', error);
+              }
+            } else if (typeof doc === 'string') {
+              uploadedDocs.push(doc);
+            }
+          }
+          return {
+            name: qual.name,
+            year: qual.year,
+            documents: uploadedDocs
+          };
+        })
+      );
+
+      // Upload custom documents
+      const uploadedCustomDocuments = [];
+      for (const file of formData.customDocuments || []) {
+        if (file instanceof File) {
+          try {
+            const uploadResponse = await uploadApi.uploadFile(file);
+            uploadedCustomDocuments.push(uploadResponse.url);
+          } catch (error) {
+            console.error('❌ Custom document upload failed:', error);
+          }
+        } else if (typeof file === 'string') {
+          uploadedCustomDocuments.push(file);
+        }
+      }
+
+      // Prepare staff data with uploaded URLs
+      const staffData = {
+        ...formData,
+        picture: pictureUrl,
+        idDocuments: uploadedIdDocuments,
+        qualificationDocs: uploadedQualificationDocs,
+        professionalQualifications: uploadedProfessionalQualifications,
+        customDocuments: uploadedCustomDocuments,
+      };
+
+      // Remove undefined values
+      Object.keys(staffData).forEach(key => {
+        if (staffData[key] === undefined || staffData[key] === null) {
+          delete staffData[key];
+        }
+      });
+
+      console.log('Submitting staff data:', staffData);
+      await onSave(staffData);
+    } catch (error) {
+      console.error('Error submitting staff:', error);
+      setIsSubmitting(false);
+    }
   };
 
   // --- Render Steps ---

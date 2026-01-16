@@ -446,7 +446,7 @@ export default function IntakeFormsSettings() {
             }}
           >
             {field.options?.map((opt, idx) => (
-              <SelectItem key={idx} value={opt}>
+              <SelectItem key={idx} value={opt} textValue={opt}>
                 {opt}
               </SelectItem>
             ))}
@@ -694,13 +694,13 @@ export default function IntakeFormsSettings() {
                       variant="bordered"
                       size="sm"
                     >
-                      <SelectItem key="admission" value="admission">
+                      <SelectItem key="admission" value="admission" textValue="Admission">
                         Admission
                       </SelectItem>
-                      <SelectItem key="teacher" value="teacher">
+                      <SelectItem key="teacher" value="teacher" textValue="Teacher Application">
                         Teacher Application
                       </SelectItem>
-                      <SelectItem key="custom" value="custom">
+                      <SelectItem key="custom" value="custom" textValue="Custom">
                         Custom
                       </SelectItem>
                     </Select>

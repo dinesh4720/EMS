@@ -12,7 +12,7 @@ import toast from "react-hot-toast";
 
 const ITEMS_PER_LOAD = 10;
 
-export default function StaffList({ onStaffClick }) {
+export default function StaffList({ onStaffClick, onStaffEdit }) {
     const { staff, deleteStaff, updateStaff, updateStaffLocal } = useApp();
     const [searchQuery, setSearchQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState("all");
@@ -52,10 +52,16 @@ export default function StaffList({ onStaffClick }) {
         };
     }, [staff]);
 
-    // Calculate attendance percentage for each staff
+    // Calculate attendance percentage for each staff - FIXED: Use placeholder instead of random
     const getAttendancePercentage = (staffId) => {
-        // Mock calculation - replace with actual attendance data
-        return Math.floor(Math.random() * 30) + 70; // Random 70-100%
+        // TODO: Calculate from actual attendance records
+        // const attendanceRecords = staffAttendance[staffId] || [];
+        // if (attendanceRecords.length === 0) return 0;
+        // const presentDays = attendanceRecords.filter(r => r.status === 'present').length;
+        // return Math.round((presentDays / attendanceRecords.length) * 100);
+        
+        // Return placeholder value until API integration
+        return 0; // Will show as 0% until real data available
     };
 
     const filteredItems = useMemo(() => {
@@ -717,7 +723,7 @@ export default function StaffList({ onStaffClick }) {
                                         size="sm"
                                         variant="light"
                                         className="text-default-400 hover:text-primary"
-                                        onPress={() => onStaffClick(s.id)}
+                                        onPress={() => onStaffEdit ? onStaffEdit(s.id) : onStaffClick(s.id)}
                                     >
                                         <Edit size={16} />
                                     </Button>

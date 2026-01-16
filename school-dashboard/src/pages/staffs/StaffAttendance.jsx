@@ -155,14 +155,18 @@ export default function StaffAttendance() {
             setReason("");
             setReasonModalOpen(true);
         } else {
-            const inTime = status === "present" ? `08:${Math.floor(Math.random() * 30).toString().padStart(2, '0')}` : "-";
+            // FIXED: Use consistent time based on current time or default
+            const now = new Date();
+            const inTime = status === "present" ? now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : "-";
             markAttendance(staffId, selectedDate, status, inTime, "-");
         }
     };
 
     const handleConfirmReason = () => {
         if (pendingStatus.staffId && pendingStatus.status) {
-            const inTime = pendingStatus.status === "halfday" ? `08:${Math.floor(Math.random() * 30).toString().padStart(2, '0')}` : "-";
+            // FIXED: Use consistent time based on current time or default
+            const now = new Date();
+            const inTime = pendingStatus.status === "halfday" ? now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : "-";
             markAttendance(pendingStatus.staffId, selectedDate, pendingStatus.status, inTime, "-", reason);
         }
         setReasonModalOpen(false);
@@ -176,9 +180,11 @@ export default function StaffAttendance() {
             setReason("");
             setReasonModalOpen(true);
         } else {
+            // FIXED: Use consistent time for all staff in bulk operation
+            const now = new Date();
+            const inTime = action === "present" ? now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : "-";
             const idsToProcess = selectedKeys === "all" ? filteredStaff.map(s => s.id) : Array.from(selectedKeys);
             idsToProcess.forEach(id => {
-                const inTime = action === "present" ? `08:${Math.floor(Math.random() * 30).toString().padStart(2, '0')}` : "-";
                 markAttendance(id, selectedDate, action, inTime, "-");
             });
             setSelectedKeys(new Set([]));
@@ -186,9 +192,11 @@ export default function StaffAttendance() {
     };
 
     const handleBulkReasonConfirm = () => {
+        // FIXED: Use consistent time for all staff in bulk operation
+        const now = new Date();
+        const inTime = pendingStatus.status === "halfday" ? now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : "-";
         const idsToProcess = selectedKeys === "all" ? filteredStaff.map(s => s.id) : Array.from(selectedKeys);
         idsToProcess.forEach(id => {
-            const inTime = pendingStatus.status === "halfday" ? `08:${Math.floor(Math.random() * 30).toString().padStart(2, '0')}` : "-";
             markAttendance(id, selectedDate, pendingStatus.status, inTime, "-", reason);
         });
         setSelectedKeys(new Set([]));
