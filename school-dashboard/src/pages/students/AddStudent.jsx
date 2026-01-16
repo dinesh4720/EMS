@@ -129,7 +129,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           const selectedClass = classesWithTeachers.find(c => `${c.name}-${c.section}` === formData.class);
           if (selectedClass) {
             // Use optimized API endpoint
-            const response = await fetch(`http://localhost:5000/api/classes/${selectedClass.id}/next-roll-number`);
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+            const response = await fetch(`${API_URL}/classes/${selectedClass.id}/next-roll-number`);
             const data = await response.json();
             updateField("rollNumber", data.rollNumber.toString());
             console.log('✅ Roll number set to:', data.rollNumber);

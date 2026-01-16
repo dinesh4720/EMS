@@ -27,7 +27,8 @@ export default function StaffIdSettings() {
 
   const loadConfig = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/staff-id-config');
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${API_URL}/staff-id-config`);
       if (!response.ok) throw new Error('Failed to load configuration');
       const data = await response.json();
       setConfig({
@@ -59,7 +60,8 @@ export default function StaffIdSettings() {
   const handleSave = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/staff-id-config', {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${API_URL}/staff-id-config`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -15,7 +15,8 @@ export default function FeeDetailsCard({ student }) {
       
       try {
         setLoading(true);
-        const response = await fetch(http://localhost:5000/api/students//fee-summary);
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        const response = await fetch(`${API_URL}/students/${student.id}/fee-summary`);
         if (response.ok) {
           const data = await response.json();
           setFeeSummary(data);
