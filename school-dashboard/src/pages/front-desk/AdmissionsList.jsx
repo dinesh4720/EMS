@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select, SelectItem,
   Chip, useDisclosure, Textarea, Checkbox, Tabs, Tab, Button
 } from '@heroui/react';
-import { Edit, Trash2, Eye } from 'lucide-react';
-import api from '../../services/api';
+import { Edit, Trash2, Eye, Plus } from 'lucide-react';
+import { frontDeskApi, staffApi } from '../../services/api';
+import { validatePhone, validateEmail, validateFutureDate } from '../../utils/validations';
 import toast from 'react-hot-toast';
 
 const STATUS_OPTIONS = [
@@ -25,10 +26,11 @@ const STATUS_OPTIONS = [
 
 const SOURCE_OPTIONS = ['walk-in', 'call', 'website', 'reference'];
 
-export default function AdmissionsList() {
+const AdmissionsList = forwardRef((props, ref) => {
   const [admissions, setAdmissions] = useState([]);
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [errors, setErrors] = useState({});
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isDetailOpen, onOpen: onDetailOpen, onClose: onDetailClose } = useDisclosure();
   const [editingId, setEditingId] = useState(null);
@@ -56,11 +58,20 @@ export default function AdmissionsList() {
     loadStaff();
   }, []);
 
+  // Expose the openModal function to parent
+  useImperativeHandle(ref, () => ({
+    openModal: () => {
+      resetForm();
+      onOpen();
+    }
+  }));
+
   const loadAdmissions = async () => {
     try {
-      const response = await api.get('/front-desk/admissions');
-      setAdmissions(response.data);
+      const response = await frontDeskApi.getAdmissions();
+      setAdmissions(response);
     } catch (error) {
+      console.error('Failed to load admissions:', error);
       toast.error('Failed to load admissions');
     } finally {
       setLoading(false);
@@ -69,20 +80,57 @@ export default function AdmissionsList() {
 
   const loadStaff = async () => {
     try {
-      const response = await api.get('/staff');
-      setStaff(response.data.filter(s => s.role === 'Teacher'));
+      const response = await staffApi.getAll();
+      setStaff(response.filter(s => s.role === 'Teacher'));
     } catch (error) {
-      console.error('Failed to load staff');
+      console.error('Failed to load staff:', error);
     }
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.studentName.trim()) {
+      newErrors.studentName = 'Student name is required';
+    }
+    if (!formData.parentName.trim()) {
+      newErrors.parentName = 'Parent name is required';
+    }
+    if (!formData.phoneNumber) {
+      newErrors.phoneNumber = 'Phone number is required';
+    } else if (!validatePhone(formData.phoneNumber)) {
+      newErrors.phoneNumber = 'Please enter a valid 10-digit phone number';
+    }
+    if (formData.email && !validateEmail(formData.email)) {
+      newErrors.email = 'Invalid email address';
+    }
+    if (!formData.classApplyingFor) {
+      newErrors.classApplyingFor = 'Please enter a class';
+    }
+    if (formData.assessmentRequired) {
+      if (!formData.assignedTeacher) {
+        newErrors.assignedTeacher = 'Please assign a teacher';
+      }
+      if (formData.testDate && !validateFutureDate(formData.testDate)) {
+        newErrors.testDate = 'Test date must be in the future';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async () => {
+    if (!validateForm()) {
+      toast.error('Please fix the errors before submitting');
+      return;
+    }
     try {
       if (editingId) {
-        await api.put(`/front-desk/admissions/${editingId}`, formData);
+        await frontDeskApi.updateAdmission(editingId, formData);
         toast.success('Admission updated successfully');
       } else {
-        await api.post('/front-desk/admissions', formData);
+        await frontDeskApi.createAdmission(formData);
         toast.success('Admission inquiry created successfully');
       }
       onClose();
@@ -123,7 +171,7 @@ export default function AdmissionsList() {
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this admission inquiry?')) return;
     try {
-      await api.delete(`/front-desk/admissions/${id}`);
+      await frontDeskApi.deleteAdmission(id);
       toast.success('Admission inquiry deleted');
       loadAdmissions();
     } catch (error) {
@@ -133,6 +181,7 @@ export default function AdmissionsList() {
 
   const resetForm = () => {
     setEditingId(null);
+    setErrors({});
     setFormData({
       studentName: '',
       dateOfBirth: '',
@@ -159,6 +208,11 @@ export default function AdmissionsList() {
 
   return (
     <>
+      <div className="flex justify-end mb-4">
+        <Button color="primary" startContent={<Plus size={16} />} onPress={onOpen}>
+          New Admission Inquiry
+        </Button>
+      </div>
       <Table aria-label="Admissions table" removeWrapper>
             <TableHeader>
               <TableColumn>STUDENT NAME</TableColumn>
@@ -240,8 +294,13 @@ export default function AdmissionsList() {
                     label="Student Name"
                     placeholder="Enter student name"
                     value={formData.studentName}
-                    onChange={(e) => setFormData({ ...formData, studentName: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, studentName: e.target.value });
+                      if (errors.studentName) setErrors({ ...errors, studentName: '' });
+                    }}
                     isRequired
+                    isInvalid={!!errors.studentName}
+                    errorMessage={errors.studentName}
                   />
                   <Input
                     label="Date of Birth"
@@ -253,26 +312,50 @@ export default function AdmissionsList() {
                     label="Parent/Guardian Name"
                     placeholder="Enter parent name"
                     value={formData.parentName}
-                    onChange={(e) => setFormData({ ...formData, parentName: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, parentName: e.target.value });
+                      if (errors.parentName) setErrors({ ...errors, parentName: '' });
+                    }}
+                    isRequired
+                    isInvalid={!!errors.parentName}
+                    errorMessage={errors.parentName}
                   />
                   <Input
                     label="Phone Number"
-                    placeholder="Enter phone number"
+                    placeholder="Enter 10-digit phone number"
                     value={formData.phoneNumber}
-                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, phoneNumber: e.target.value });
+                      if (errors.phoneNumber) setErrors({ ...errors, phoneNumber: '' });
+                    }}
+                    maxLength={10}
+                    isRequired
+                    isInvalid={!!errors.phoneNumber}
+                    errorMessage={errors.phoneNumber}
                   />
                   <Input
                     label="Email"
                     type="email"
                     placeholder="Enter email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value });
+                      if (errors.email) setErrors({ ...errors, email: '' });
+                    }}
+                    isInvalid={!!errors.email}
+                    errorMessage={errors.email}
                   />
                   <Input
                     label="Class Applying For"
                     placeholder="e.g., Class 5"
                     value={formData.classApplyingFor}
-                    onChange={(e) => setFormData({ ...formData, classApplyingFor: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, classApplyingFor: e.target.value });
+                      if (errors.classApplyingFor) setErrors({ ...errors, classApplyingFor: '' });
+                    }}
+                    isRequired
+                    isInvalid={!!errors.classApplyingFor}
+                    errorMessage={errors.classApplyingFor}
                   />
                   <Select
                     label="Source"
@@ -315,10 +398,16 @@ export default function AdmissionsList() {
                         label="Assign To (Teacher)"
                         placeholder="Select teacher"
                         selectedKeys={formData.assignedTeacher ? [formData.assignedTeacher] : []}
-                        onChange={(e) => setFormData({ ...formData, assignedTeacher: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, assignedTeacher: e.target.value });
+                          if (errors.assignedTeacher) setErrors({ ...errors, assignedTeacher: '' });
+                        }}
+                        isRequired
+                        isInvalid={!!errors.assignedTeacher}
+                        errorMessage={errors.assignedTeacher}
                       >
                         {staff.map((teacher) => (
-                          <SelectItem key={teacher.id} value={teacher.id}>
+                          <SelectItem key={teacher._id} value={teacher._id}>
                             {teacher.name}
                           </SelectItem>
                         ))}
@@ -327,7 +416,12 @@ export default function AdmissionsList() {
                         label="Test Date"
                         type="date"
                         value={formData.testDate}
-                        onChange={(e) => setFormData({ ...formData, testDate: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, testDate: e.target.value });
+                          if (errors.testDate) setErrors({ ...errors, testDate: '' });
+                        }}
+                        isInvalid={!!errors.testDate}
+                        errorMessage={errors.testDate}
                       />
                       <Input
                         label="Test Time"
@@ -481,4 +575,8 @@ export default function AdmissionsList() {
       </Modal>
     </>
   );
-}
+});
+
+AdmissionsList.displayName = 'AdmissionsList';
+
+export default AdmissionsList;

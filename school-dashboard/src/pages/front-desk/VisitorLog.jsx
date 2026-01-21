@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Chip, useDisclosure, Button
 } from '@heroui/react';
-import { LogOut, Trash2 } from 'lucide-react';
-import api from '../../services/api';
+import { LogOut, Trash2, Plus } from 'lucide-react';
+import { frontDeskApi } from '../../services/api';
+import { validatePhone, validateRequired } from '../../utils/validations';
 import toast from 'react-hot-toast';
 
-export default function VisitorLog() {
+const VisitorLog = forwardRef((props, ref) => {
   const [visitors, setVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [errors, setErrors] = useState({});
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [formData, setFormData] = useState({
     visitorName: '',
@@ -20,24 +22,55 @@ export default function VisitorLog() {
     concernedPerson: '',
   });
 
+  // Expose the openModal function to parent
+  useImperativeHandle(ref, () => ({
+    openModal: () => {
+      resetForm();
+      onOpen();
+    }
+  }));
+
   useEffect(() => {
     loadVisitors();
   }, []);
 
   const loadVisitors = async () => {
     try {
-      const response = await api.get('/front-desk/visitors/today');
-      setVisitors(response.data);
+      const response = await frontDeskApi.getVisitorsToday();
+      setVisitors(response);
     } catch (error) {
+      console.error('Failed to load visitors:', error);
       toast.error('Failed to load visitors');
     } finally {
       setLoading(false);
     }
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Required fields validation
+    if (!formData.visitorName.trim()) {
+      newErrors.visitorName = 'Visitor name is required';
+    }
+
+    // Phone validation
+    if (formData.phoneNumber && !validatePhone(formData.phoneNumber)) {
+      newErrors.phoneNumber = 'Please enter a valid 10-digit phone number';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async () => {
+    if (!validateForm()) {
+      toast.error('Please fix the errors before submitting');
+      return;
+    }
+
     try {
-      await api.post('/front-desk/visitors', formData);
+      await frontDeskApi.createVisitor(formData);
       toast.success('Visitor checked in successfully');
       onClose();
       resetForm();
@@ -49,7 +82,7 @@ export default function VisitorLog() {
 
   const handleCheckout = async (id) => {
     try {
-      await api.put(`/front-desk/visitors/${id}/checkout`, {
+      await frontDeskApi.updateVisitor(id, {
         checkOutTime: new Date().toTimeString().slice(0, 5),
       });
       toast.success('Visitor checked out successfully');
@@ -62,7 +95,7 @@ export default function VisitorLog() {
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this visitor record?')) return;
     try {
-      await api.delete(`/front-desk/visitors/${id}`);
+      await frontDeskApi.deleteVisitor(id);
       toast.success('Visitor record deleted');
       loadVisitors();
     } catch (error) {
@@ -71,6 +104,7 @@ export default function VisitorLog() {
   };
 
   const resetForm = () => {
+    setErrors({});
     setFormData({
       visitorName: '',
       phoneNumber: '',
@@ -83,6 +117,11 @@ export default function VisitorLog() {
 
   return (
     <>
+      <div className="flex justify-end mb-4">
+        <Button color="primary" startContent={<Plus size={16} />} onPress={onOpen}>
+          Add New Visitor
+        </Button>
+      </div>
       <Table aria-label="Visitor log table" removeWrapper>
             <TableHeader>
               <TableColumn>VISITOR NAME</TableColumn>
@@ -154,28 +193,43 @@ export default function VisitorLog() {
                 label="Visitor Name"
                 placeholder="Enter visitor name"
                 value={formData.visitorName}
-                onChange={(e) => setFormData({ ...formData, visitorName: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, visitorName: e.target.value });
+                  if (errors.visitorName) setErrors({ ...errors, visitorName: '' });
+                }}
                 isRequired
+                isInvalid={!!errors.visitorName}
+                errorMessage={errors.visitorName}
               />
               <Input
                 label="Phone Number"
-                placeholder="Enter phone number"
+                placeholder="Enter 10-digit phone number"
                 value={formData.phoneNumber}
-                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, phoneNumber: e.target.value });
+                  if (errors.phoneNumber) setErrors({ ...errors, phoneNumber: '' });
+                }}
+                maxLength={10}
+                isInvalid={!!errors.phoneNumber}
+                errorMessage={errors.phoneNumber}
               />
               <Input
                 label="Date"
                 type="date"
                 value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                isRequired
+                isReadOnly
+                classNames={{
+                  input: "bg-default-100 cursor-not-allowed"
+                }}
               />
               <Input
                 label="Check In Time"
                 type="time"
                 value={formData.checkInTime}
-                onChange={(e) => setFormData({ ...formData, checkInTime: e.target.value })}
-                isRequired
+                isReadOnly
+                classNames={{
+                  input: "bg-default-100 cursor-not-allowed"
+                }}
               />
               <Input
                 label="Reason for Visit"
@@ -205,4 +259,8 @@ export default function VisitorLog() {
       </Modal>
     </>
   );
-}
+});
+
+VisitorLog.displayName = 'VisitorLog';
+
+export default VisitorLog;

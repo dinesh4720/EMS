@@ -13,7 +13,7 @@ import toast from "react-hot-toast";
 const ITEMS_PER_LOAD = 10;
 
 export default function StaffList({ onStaffClick, onStaffEdit }) {
-    const { staff, deleteStaff, updateStaff, updateStaffLocal } = useApp();
+    const { staff, deleteStaff, updateStaff, updateStaffLocal, staffAttendance } = useApp();
     const [searchQuery, setSearchQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState("all");
     const [deptFilter, setDeptFilter] = useState("all");
@@ -52,16 +52,15 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
         };
     }, [staff]);
 
-    // Calculate attendance percentage for each staff - FIXED: Use placeholder instead of random
+    // Calculate attendance percentage for each staff
     const getAttendancePercentage = (staffId) => {
-        // TODO: Calculate from actual attendance records
-        // const attendanceRecords = staffAttendance[staffId] || [];
-        // if (attendanceRecords.length === 0) return 0;
-        // const presentDays = attendanceRecords.filter(r => r.status === 'present').length;
-        // return Math.round((presentDays / attendanceRecords.length) * 100);
-        
-        // Return placeholder value until API integration
-        return 0; // Will show as 0% until real data available
+        // Get attendance records for this staff member
+        const attendanceRecords = staffAttendance && staffAttendance[staffId] ? staffAttendance[staffId] : [];
+
+        if (attendanceRecords.length === 0) return 0;
+
+        const presentDays = attendanceRecords.filter(r => r.status === 'present' || r.status === 'Present').length;
+        return Math.round((presentDays / attendanceRecords.length) * 100);
     };
 
     const filteredItems = useMemo(() => {

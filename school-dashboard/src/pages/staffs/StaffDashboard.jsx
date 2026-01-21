@@ -42,7 +42,7 @@ export default function StaffDashboard() {
 
   // Photo Upload State
   const fileInputRef = useRef(null);
-  const [photoPreview, setPhotoPreview] = useState(null);
+  const [picturePreview, setPicturePreview] = useState(null);
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -101,13 +101,63 @@ export default function StaffDashboard() {
         status: staff.status || "active",
         address: staff.address || ""
       });
-      setPhotoPreview(staff.photo || null);
+      setPicturePreview(staff.picture || null);
 
-      // Initialize Documents if available in staff object
-      // This assumes staff object has a documents array, similar to students
-      if (staff.documents) {
-        setDocuments(staff.documents);
+      // Initialize Documents from all staff document arrays
+      // Merge idDocuments, qualificationDocs, and customDocuments into unified format
+      const allDocs = [];
+
+      // Add ID documents with metadata
+      if (staff.idDocuments && Array.isArray(staff.idDocuments)) {
+        staff.idDocuments.forEach((doc, index) => {
+          // Handle both old format (array of URLs) and new format (array of objects)
+          if (typeof doc === 'string') {
+            allDocs.push({
+              id: `id-${index}`,
+              name: `ID Document ${index + 1}`,
+              type: 'ID Proof',
+              url: doc,
+              uploadDate: staff.createdAt || new Date().toISOString()
+            });
+          } else if (doc && doc.url) {
+            allDocs.push({
+              id: `id-${index}`,
+              name: doc.name || doc.type || 'ID Document',
+              type: doc.type || 'ID Proof',
+              url: doc.url,
+              uploadDate: staff.createdAt || new Date().toISOString()
+            });
+          }
+        });
       }
+
+      // Add qualification documents
+      if (staff.qualificationDocs && Array.isArray(staff.qualificationDocs)) {
+        staff.qualificationDocs.forEach((doc, index) => {
+          allDocs.push({
+            id: `qual-${index}`,
+            name: `Qualification Document ${index + 1}`,
+            type: 'Qualification',
+            url: doc,
+            uploadDate: staff.createdAt || new Date().toISOString()
+          });
+        });
+      }
+
+      // Add custom documents
+      if (staff.customDocuments && Array.isArray(staff.customDocuments)) {
+        staff.customDocuments.forEach((doc, index) => {
+          allDocs.push({
+            id: `custom-${index}`,
+            name: `Custom Document ${index + 1}`,
+            type: 'Custom',
+            url: doc,
+            uploadDate: staff.createdAt || new Date().toISOString()
+          });
+        });
+      }
+
+      setDocuments(allDocs);
     }
   }, [staff]);
 
@@ -148,7 +198,7 @@ export default function StaffDashboard() {
         
         // Update photo preview if changed
         if (data.picture) {
-          setPhotoPreview(data.picture);
+          setPicturePreview(data.picture);
         }
         
         toast.success('Profile updated by another user', {
@@ -246,9 +296,9 @@ export default function StaffDashboard() {
         const response = await uploadApi.uploadFile(file);
 
         // Update staff photo
-        await updateStaff(id, { ...staff, photo: response.url });
+        await updateStaff(id, { ...staff, picture: response.url });
 
-        setPhotoPreview(response.url);
+        setPicturePreview(response.url);
         toast.success("Photo updated successfully", { id: loadingToast });
       } catch (error) {
         console.error("Photo upload error:", error);
@@ -306,7 +356,7 @@ export default function StaffDashboard() {
             />
             <div className="relative group">
               <Avatar
-                src={photoPreview || staff.photo || `https://i.pravatar.cc/150?u=${staff.id}`}
+                src={picturePreview || staff.picture || `https://i.pravatar.cc/150?u=${staff.id}`}
                 name={staff.name}
                 className="w-20 h-20 text-3xl ring-4 ring-white shadow-sm"
               />
@@ -393,6 +443,7 @@ export default function StaffDashboard() {
             }}
           >
             <Tab key="overview" title="Overview" />
+            <Tab key="attendance" title="Attendance" />
             <Tab key="about" title="About" />
             <Tab key="academics" title="Timetable & Plans" />
             <Tab key="payroll" title="Payroll" />
@@ -418,35 +469,93 @@ export default function StaffDashboard() {
                         </div>
                         <h3 className="font-semibold text-default-900">Today's Status</h3>
                       </div>
-                      <Chip color="success" variant="flat" size="sm" startContent={<CheckCircle size={14} />}>Present</Chip>
+                      <Chip
+                        color={monthlyStats.present > 0 ? "success" : "default"}
+                        variant="flat"
+                        size="sm"
+                      >
+                        {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                      </Chip>
                     </CardHeader>
                     <CardBody className="p-6">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="space-y-1">
-                          <p className="text-xs font-medium text-default-500 uppercase">Check-in Time</p>
-                          <p className="text-xl font-bold text-default-900">08:24 AM</p>
-                          <p className="text-xs text-primary font-medium">On Time</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs font-medium text-default-500 uppercase">Current Class</p>
-                          <p className="text-xl font-bold text-default-900">Class 10-A</p>
-                          <p className="text-xs text-default-500">Mathematics • Period 3</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs font-medium text-default-500 uppercase">Next Class</p>
-                          <p className="text-xl font-bold text-default-900">Class 8-B</p>
-                          <p className="text-xs text-default-500">Physics • 11:30 AM</p>
-                        </div>
-                      </div>
-                      <Divider className="my-6" />
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="flex flex-col">
-                            <span className="text-xs text-default-500">Leave Status</span>
-                            <span className="font-medium text-default-900">No leaves pending</span>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {/* Attendance Status */}
+                        <div className="text-center p-4 bg-default-50 rounded-xl">
+                          <div className={`w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-2 ${
+                            monthlyStats.present > 0 ? 'bg-success-100' : 'bg-default-200'
+                          }`}>
+                            {monthlyStats.present > 0 ? (
+                              <CheckCircle size={24} className="text-success-600" />
+                            ) : (
+                              <Clock size={24} className="text-default-400" />
+                            )}
                           </div>
+                          <p className="text-xs text-default-500 uppercase font-semibold">Attendance</p>
+                          <p className={`text-lg font-bold ${monthlyStats.present > 0 ? 'text-success' : 'text-default-600'}`}>
+                            {monthlyStats.present > 0 ? 'Present' : 'Not Marked'}
+                          </p>
                         </div>
-                        <Button size="sm" variant="flat" color="primary">Apply Leave</Button>
+
+                        {/* Check-in Time */}
+                        <div className="text-center p-4 bg-default-50 rounded-xl">
+                          <div className="w-12 h-12 mx-auto rounded-full bg-blue-100 flex items-center justify-center mb-2">
+                            <Clock size={24} className="text-blue-600" />
+                          </div>
+                          <p className="text-xs text-default-500 uppercase font-semibold">Check-in</p>
+                          <p className="text-lg font-bold text-default-900">
+                            {attendance[id]?.[new Date().toISOString().split('T')[0]]?.inTime || '--:--'}
+                          </p>
+                        </div>
+
+                        {/* Current/Next Class - Only for teaching staff */}
+                        {staff.staffType === 'Teacher' && (
+                          <>
+                            <div className="text-center p-4 bg-default-50 rounded-xl">
+                              <div className="w-12 h-12 mx-auto rounded-full bg-orange-100 flex items-center justify-center mb-2">
+                                <BookOpen size={24} className="text-orange-600" />
+                              </div>
+                              <p className="text-xs text-default-500 uppercase font-semibold">Current Class</p>
+                              <p className="text-sm font-bold text-default-900">
+                                {staff.assignedClasses?.[0] || 'No Class'}
+                              </p>
+                            </div>
+
+                            <div className="text-center p-4 bg-default-50 rounded-xl">
+                              <div className="w-12 h-12 mx-auto rounded-full bg-purple-100 flex items-center justify-center mb-2">
+                                <Calendar size={24} className="text-purple-600" />
+                              </div>
+                              <p className="text-xs text-default-500 uppercase font-semibold">Next Class</p>
+                              <p className="text-sm font-bold text-default-900">
+                                {staff.assignedClasses?.[1] || '--'}
+                              </p>
+                            </div>
+                          </>
+                        )}
+
+                        {/* Leave Info - For all staff */}
+                        {!(staff.staffType === 'Teacher') && (
+                          <>
+                            <div className="text-center p-4 bg-default-50 rounded-xl">
+                              <div className="w-12 h-12 mx-auto rounded-full bg-warning-100 flex items-center justify-center mb-2">
+                                <AlertTriangle size={24} className="text-warning-600" />
+                              </div>
+                              <p className="text-xs text-default-500 uppercase font-semibold">Leave Balance</p>
+                              <p className="text-lg font-bold text-default-900">
+                                {12 - (monthlyStats.absent || 0)} days
+                              </p>
+                            </div>
+
+                            <div className="text-center p-4 bg-default-50 rounded-xl">
+                              <div className="w-12 h-12 mx-auto rounded-full bg-info-100 flex items-center justify-center mb-2">
+                                <TrendingUp size={24} className="text-info-600" />
+                              </div>
+                              <p className="text-xs text-default-500 uppercase font-semibold">This Month</p>
+                              <p className="text-lg font-bold text-default-900">
+                                {attendanceRate}%
+                              </p>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </CardBody>
                   </Card>
@@ -461,45 +570,28 @@ export default function StaffDashboard() {
                         <h3 className="font-semibold text-default-900">Classes Handling</h3>
                       </div>
                     </CardHeader>
-                    <CardBody className="p-0">
-                      <Table aria-label="Classes" removeWrapper shadow="none" classNames={{ th: "bg-default-50", td: "py-3 px-6" }}>
-                        <TableHeader>
-                          <TableColumn>CLASS</TableColumn>
-                          <TableColumn>SUBJECT</TableColumn>
-                          <TableColumn>STUDENTS</TableColumn>
-                          <TableColumn>VIBE</TableColumn>
-                        </TableHeader>
-                        <TableBody>
-                          <TableRow>
-                            <TableCell><span className="font-semibold">10-A</span></TableCell>
-                            <TableCell>Mathematics</TableCell>
-                            <TableCell>42</TableCell>
-                            <TableCell>
-                              <div className="flex gap-1 text-warning">
-                                <Star size={14} fill="currentColor" />
-                                <Star size={14} fill="currentColor" />
-                                <Star size={14} fill="currentColor" />
-                                <Star size={14} fill="currentColor" />
-                                <Star size={14} className="text-default-300" />
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell><span className="font-semibold">8-B</span></TableCell>
-                            <TableCell>Physics</TableCell>
-                            <TableCell>38</TableCell>
-                            <TableCell>
-                              <div className="flex gap-1 text-warning">
-                                <Star size={14} fill="currentColor" />
-                                <Star size={14} fill="currentColor" />
-                                <Star size={14} fill="currentColor" />
-                                <Star size={14} fill="currentColor" />
-                                <Star size={14} fill="currentColor" />
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </Table>
+                    <CardBody className="p-6">
+                      {staff.assignedClasses && staff.assignedClasses.length > 0 ? (
+                        <Table aria-label="Classes" removeWrapper shadow="none" classNames={{ th: "bg-default-50", td: "py-3 px-6" }}>
+                          <TableHeader>
+                            <TableColumn>CLASS</TableColumn>
+                            <TableColumn>ROLE</TableColumn>
+                          </TableHeader>
+                          <TableBody>
+                            {staff.assignedClasses.map((className, index) => (
+                              <TableRow key={index}>
+                                <TableCell><span className="font-semibold">{className}</span></TableCell>
+                                <TableCell>{staff.isClassTeacher && staff.classTeacherOf === className ? "Class Teacher" : "Assigned"}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      ) : (
+                        <div className="text-center py-8">
+                          <p className="text-default-500">No classes assigned yet</p>
+                          <p className="text-xs text-default-400 mt-2">Classes can be assigned during staff creation or editing</p>
+                        </div>
+                      )}
                     </CardBody>
                   </Card>
                 </div>
@@ -547,43 +639,6 @@ export default function StaffDashboard() {
                     </CardBody>
                   </Card>
 
-                  {/* Ratings */}
-                  <Card shadow="sm" className="border border-default-200">
-                    <CardHeader className="px-6 py-4 border-b border-default-100">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
-                          <Star size={20} />
-                        </div>
-                        <h3 className="font-semibold text-default-900">Rating & Feedback</h3>
-                      </div>
-                    </CardHeader>
-                    <CardBody className="p-6">
-                      <div className="text-center space-y-2">
-                        <div className="text-4xl font-bold text-default-900">4.8</div>
-                        <div className="flex justify-center gap-1 text-warning">
-                          <Star size={20} fill="currentColor" />
-                          <Star size={20} fill="currentColor" />
-                          <Star size={20} fill="currentColor" />
-                          <Star size={20} fill="currentColor" />
-                          <Star size={20} fill="currentColor" className="text-default-300" />
-                        </div>
-                        <p className="text-sm text-default-500">Based on 124 reviews</p>
-                      </div>
-                      <Divider className="my-4" />
-                      <div className="space-y-3">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-default-500">Students</span>
-                          <span className="font-semibold">4.9/5.0</span>
-                        </div>
-                        <Progress value={95} size="sm" color="warning" aria-label="Student Rating" />
-                        <div className="flex justify-between text-sm">
-                          <span className="text-default-500">Parents</span>
-                          <span className="font-semibold">4.6/5.0</span>
-                        </div>
-                        <Progress value={85} size="sm" color="warning" aria-label="Parent Rating" />
-                      </div>
-                    </CardBody>
-                  </Card>
 
                   {/* Activity Log */}
                   <Card shadow="sm" className="border border-default-200">
@@ -618,6 +673,126 @@ export default function StaffDashboard() {
             </div>
           )}
 
+          {activeTab === "attendance" && (
+            <div className="space-y-6 animate-fade-in">
+              {/* Attendance Statistics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card shadow="sm" className="border border-default-200">
+                  <CardBody className="p-6 text-center">
+                    <p className="text-xs text-default-500 uppercase font-semibold">Total Days</p>
+                    <p className="text-3xl font-bold text-default-900 mt-2">{monthlyStats.total}</p>
+                  </CardBody>
+                </Card>
+                <Card shadow="sm" className="border border-default-200">
+                  <CardBody className="p-6 text-center">
+                    <p className="text-xs text-default-500 uppercase font-semibold">Present Days</p>
+                    <p className="text-3xl font-bold text-success mt-2">{monthlyStats.present}</p>
+                  </CardBody>
+                </Card>
+                <Card shadow="sm" className="border border-default-200">
+                  <CardBody className="p-6 text-center">
+                    <p className="text-xs text-default-500 uppercase font-semibold">Absent Days</p>
+                    <p className="text-3xl font-bold text-danger mt-2">{monthlyStats.absent}</p>
+                  </CardBody>
+                </Card>
+                <Card shadow="sm" className="border border-default-200">
+                  <CardBody className="p-6 text-center">
+                    <p className="text-xs text-default-500 uppercase font-semibold">Leaves Used</p>
+                    <p className="text-3xl font-bold text-warning mt-2">{monthlyStats.leaves || 0}</p>
+                  </CardBody>
+                </Card>
+              </div>
+
+              {/* Attendance Calendar */}
+              <Card shadow="sm" className="border border-default-200">
+                <CardHeader className="px-6 py-4 border-b border-default-100 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary-50 text-primary rounded-lg">
+                      <CalendarDays size={20} />
+                    </div>
+                    <h3 className="font-semibold text-default-900">Attendance Calendar</h3>
+                  </div>
+                  <Chip color="primary" variant="flat" size="sm">
+                    {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </Chip>
+                </CardHeader>
+                <CardBody className="p-6">
+                  <div className="grid grid-cols-7 gap-2">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                      <div key={day} className="text-center text-xs font-semibold text-default-500 py-2">
+                        {day}
+                      </div>
+                    ))}
+
+                    {/* Calendar days - showing first 28 days for demo */}
+                    {Array.from({ length: 35 }, (_, i) => {
+                      const dayNum = i - 3; // Offset to start from first of month
+                      const dateStr = new Date(new Date().getFullYear(), new Date().getMonth(), dayNum)
+                        .toISOString().split('T')[0];
+
+                      if (dayNum < 1 || dayNum > 31) {
+                        return <div key={i} className="h-10"></div>;
+                      }
+
+                      const dayAttendance = attendance[id]?.[dateStr];
+                      let statusColor = 'bg-default-100';
+                      let statusText = '-';
+
+                      if (dayAttendance) {
+                        switch (dayAttendance.status) {
+                          case 'present':
+                            statusColor = 'bg-success-100 text-success-700';
+                            statusText = 'P';
+                            break;
+                          case 'absent':
+                            statusColor = 'bg-danger-100 text-danger-700';
+                            statusText = 'A';
+                            break;
+                          case 'leave':
+                            statusColor = 'bg-warning-100 text-warning-700';
+                            statusText = 'L';
+                            break;
+                          case 'halfday':
+                            statusColor = 'bg-info-100 text-info-700';
+                            statusText = 'H';
+                            break;
+                          default:
+                            statusColor = 'bg-default-100';
+                        }
+                      }
+
+                      const isToday = dayNum === new Date().getDate();
+
+                      return (
+                        <div
+                          key={i}
+                          className={`h-10 rounded-lg flex items-center justify-center text-xs font-medium cursor-pointer transition-all hover:scale-105 ${
+                            statusColor
+                          } ${isToday ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+                          title={dayAttendance ? `${statusText}: ${dayAttendance.reason || ''}` : 'Not marked'}
+                        >
+                          {dayNum}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardBody>
+              </Card>
+
+              {/* Regularization Button */}
+              <div className="flex justify-end">
+                <Button
+                  color="primary"
+                  variant="flat"
+                  startContent={<FileCheck size={16} />}
+                  onPress={() => toast.success('Attendance regularization feature coming soon!')}
+                >
+                  Regularize Attendance
+                </Button>
+              </div>
+            </div>
+          )}
+
           {activeTab === "about" && (
             <div className="space-y-6 animate-fade-in">
               <Card shadow="none" className="border border-default-200">
@@ -636,7 +811,6 @@ export default function StaffDashboard() {
                   <InfoItem label="Gender" value={staff.gender} />
                   <InfoItem label="Marital Status" value={staff.maritalStatus} />
                   <InfoItem label="Blood Group" value={staff.bloodGroup} />
-                  <InfoItem label="Nationality" value={staff.nationality} />
                   <InfoItem label="Qualification" value={staff.qualification} />
                   <InfoItem label="Experience" value={`${staff.experience || 0} Years`} />
                 </CardBody>
@@ -657,7 +831,8 @@ export default function StaffDashboard() {
                   <InfoItem label="Designation" value={staff.designation} />
                   <InfoItem label="Joining Date" value={staff.joinDate} />
                   <InfoItem label="Employment Status" value={staff.status} />
-                  <InfoItem label="Shift" value={staff.shift || "General"} />
+                  <InfoItem label="Previous Organization" value={staff.previousOrganization || "-"} />
+                  <InfoItem label="Role in Previous Organization" value={staff.roleInOrganization || "-"} />
                 </CardBody>
               </Card>
 
@@ -674,8 +849,23 @@ export default function StaffDashboard() {
                   <InfoItem label="Email" value={staff.email} />
                   <InfoItem label="Phone" value={staff.phone} />
                   <InfoItem label="Address" value={staff.address} className="col-span-full" />
-                  <InfoItem label="Emergency Contact" value={staff.emergencyContact} />
-                  <InfoItem label="Emergency Phone" value={staff.emergencyPhone} />
+                  {staff.emergencyContacts && staff.emergencyContacts.length > 0 ? (
+                    <>
+                      {staff.emergencyContacts.map((contact, index) => (
+                        <InfoItem
+                          key={index}
+                          label={`Emergency Contact ${index + 1}`}
+                          value={`${contact.name} (${contact.relationship}): ${contact.phone}`}
+                          className="col-span-full"
+                        />
+                      ))}
+                    </>
+                  ) : (
+                    <>
+                      <InfoItem label="Emergency Contact" value={staff.emergencyContact || "-"} />
+                      <InfoItem label="Emergency Phone" value={staff.emergencyPhone || "-"} />
+                    </>
+                  )}
                 </CardBody>
               </Card>
 
@@ -693,7 +883,6 @@ export default function StaffDashboard() {
                   <InfoItem label="Account Number" value={staff.accountNumber} />
                   <InfoItem label="Bank Name" value={staff.bankName} />
                   <InfoItem label="IFSC Code" value={staff.ifscCode} />
-                  <InfoItem label="PAN Number" value={staff.panNumber} />
                 </CardBody>
               </Card>
             </div>
@@ -839,33 +1028,40 @@ export default function StaffDashboard() {
                   </Button>
                 </CardHeader>
                 <CardBody className="p-4">
-                  <Table aria-label="Payroll History" removeWrapper classNames={{
-                    th: "bg-default-50 text-default-600 font-semibold text-xs uppercase",
-                    td: "py-4"
-                  }}>
-                    <TableHeader>
-                      <TableColumn>MONTH</TableColumn>
-                      <TableColumn>AMOUNT</TableColumn>
-                      <TableColumn>STATUS</TableColumn>
-                      <TableColumn>DATE PAID</TableColumn>
-                      <TableColumn>ACTION</TableColumn>
-                    </TableHeader>
-                    <TableBody>
-                      {payrollHistory.map((record) => (
-                        <TableRow key={record.id}>
-                          <TableCell><span className="font-medium text-default-700">{record.month}</span></TableCell>
-                          <TableCell>₹{staffSalary ? (calculateTotals(staffSalary).netSalary).toLocaleString() : 0}</TableCell>
-                          <TableCell><Chip size="sm" color="success" variant="flat">Paid</Chip></TableCell>
-                          <TableCell>{record.date}</TableCell>
-                          <TableCell>
-                            <Button isIconOnly size="sm" variant="light" className="text-default-400 hover:text-primary">
-                              <Download size={16} />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  {payrollHistory && payrollHistory.length > 0 ? (
+                    <Table aria-label="Payroll History" removeWrapper classNames={{
+                      th: "bg-default-50 text-default-600 font-semibold text-xs uppercase",
+                      td: "py-4"
+                    }}>
+                      <TableHeader>
+                        <TableColumn>MONTH</TableColumn>
+                        <TableColumn>AMOUNT</TableColumn>
+                        <TableColumn>STATUS</TableColumn>
+                        <TableColumn>DATE PAID</TableColumn>
+                        <TableColumn>ACTION</TableColumn>
+                      </TableHeader>
+                      <TableBody>
+                        {payrollHistory.map((record) => (
+                          <TableRow key={record.id}>
+                            <TableCell><span className="font-medium text-default-700">{record.month}</span></TableCell>
+                            <TableCell>₹{staffSalary ? (calculateTotals(staffSalary).netSalary).toLocaleString() : 0}</TableCell>
+                            <TableCell><Chip size="sm" color="success" variant="flat">Paid</Chip></TableCell>
+                            <TableCell>{record.date}</TableCell>
+                            <TableCell>
+                              <Button isIconOnly size="sm" variant="light" className="text-default-400 hover:text-primary">
+                                <Download size={16} />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-12">
+                      <p className="text-default-500">No payroll records found for this staff member</p>
+                      <p className="text-xs text-default-400 mt-2">Payroll can be generated from the Payroll section</p>
+                    </div>
+                  )}
                 </CardBody>
               </Card>
             </div>
@@ -1028,7 +1224,6 @@ export default function StaffDashboard() {
               >
                 <SelectItem key="active" value="active">Active</SelectItem>
                 <SelectItem key="inactive" value="inactive">Inactive</SelectItem>
-                <SelectItem key="transferred" value="transferred">Transferred</SelectItem>
               </Select>
               <Input
                 label="Address"

@@ -1,8 +1,8 @@
 import { Card, Breadcrumbs, BreadcrumbItem, Tabs, Tab, Chip, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@heroui/react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Users, UserPlus, DoorOpen, Calendar, MessageSquare, Phone, Plus, ChevronDown } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import api from '../../services/api';
+import { useState, useEffect, useRef } from 'react';
+import { frontDeskApi } from '../../services/api';
 import VisitorLog from './VisitorLog';
 import AdmissionsList from './AdmissionsList';
 import GatePassLog from './GatePassLog';
@@ -11,6 +11,13 @@ import FeedbacksList from './FeedbacksList';
 import CallLogsList from './CallLogsList';
 
 export default function FrontDeskDashboard() {
+  // Create refs for each component
+  const visitorLogRef = useRef(null);
+  const admissionsListRef = useRef(null);
+  const gatePassLogRef = useRef(null);
+  const appointmentsListRef = useRef(null);
+  const feedbacksListRef = useRef(null);
+  const callLogsListRef = useRef(null);
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState('visitors');
   const [stats, setStats] = useState({
@@ -29,23 +36,23 @@ export default function FrontDeskDashboard() {
   const loadStats = async () => {
     try {
       const [visitors, admissions, gatePasses, appointments, feedbacks, callLogs] = await Promise.all([
-        api.get('/front-desk/visitors/today'),
-        api.get('/front-desk/admissions?status=inquiry-logged'),
-        api.get('/front-desk/gate-passes/today'),
-        api.get('/front-desk/appointments?status=scheduled'),
-        api.get('/front-desk/feedbacks?status=open'),
-        api.get('/front-desk/call-logs'),
+        frontDeskApi.getVisitorsToday(),
+        frontDeskApi.getAdmissions({ status: 'inquiry-logged' }),
+        frontDeskApi.getGatePassesToday(),
+        frontDeskApi.getAppointments({ status: 'scheduled' }),
+        frontDeskApi.getFeedbacks({ status: 'open' }),
+        frontDeskApi.getCallLogs(),
       ]);
 
       const today = new Date().toISOString().split('T')[0];
-      const todayCalls = callLogs.data.filter(log => log.dateTime.startsWith(today));
+      const todayCalls = callLogs.filter(log => log.dateTime.startsWith(today));
 
       setStats({
-        todayVisitors: visitors.data.length,
-        activeAdmissions: admissions.data.length,
-        todayGatePasses: gatePasses.data.length,
-        upcomingAppointments: appointments.data.length,
-        openFeedbacks: feedbacks.data.length,
+        todayVisitors: visitors.length,
+        activeAdmissions: admissions.length,
+        todayGatePasses: gatePasses.length,
+        upcomingAppointments: appointments.length,
+        openFeedbacks: feedbacks.length,
         todayCalls: todayCalls.length,
       });
     } catch (error) {
@@ -72,9 +79,27 @@ export default function FrontDeskDashboard() {
   ];
 
   const handleNewAction = (key) => {
-    // Handle creating new items based on the selected action
-    console.log('Create new:', key);
-    // You can add modal logic here or navigate to create forms
+    // Map action keys to tabs and refs
+    const actionMap = {
+      'visitor': { tab: 'visitors', ref: visitorLogRef },
+      'admission': { tab: 'admissions', ref: admissionsListRef },
+      'gate-pass': { tab: 'gate-passes', ref: gatePassLogRef },
+      'appointment': { tab: 'appointments', ref: appointmentsListRef },
+      'feedback': { tab: 'feedbacks', ref: feedbacksListRef },
+      'call-log': { tab: 'call-logs', ref: callLogsListRef },
+    };
+
+    const action = actionMap[key];
+    if (action) {
+      // Switch to the appropriate tab
+      setSelectedTab(action.tab);
+      // Call the openModal function on the component after a small delay to allow the tab to switch
+      setTimeout(() => {
+        if (action.ref.current?.openModal) {
+          action.ref.current.openModal();
+        }
+      }, 100);
+    }
   };
 
   return (
@@ -154,12 +179,12 @@ export default function FrontDeskDashboard() {
 
         {/* Content Area */}
         <div className="min-h-[500px] px-6 py-6">
-          {selectedTab === 'visitors' && <VisitorLog />}
-          {selectedTab === 'admissions' && <AdmissionsList />}
-          {selectedTab === 'gate-passes' && <GatePassLog />}
-          {selectedTab === 'appointments' && <AppointmentsList />}
-          {selectedTab === 'feedbacks' && <FeedbacksList />}
-          {selectedTab === 'call-logs' && <CallLogsList />}
+          {selectedTab === 'visitors' && <VisitorLog ref={visitorLogRef} />}
+          {selectedTab === 'admissions' && <AdmissionsList ref={admissionsListRef} />}
+          {selectedTab === 'gate-passes' && <GatePassLog ref={gatePassLogRef} />}
+          {selectedTab === 'appointments' && <AppointmentsList ref={appointmentsListRef} />}
+          {selectedTab === 'feedbacks' && <FeedbacksList ref={feedbacksListRef} />}
+          {selectedTab === 'call-logs' && <CallLogsList ref={callLogsListRef} />}
         </div>
       </Card>
     </div>

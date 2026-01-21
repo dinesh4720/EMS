@@ -13,7 +13,7 @@ const employmentTypes = [
 const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const genders = ["Male", "Female", "Other"];
 const maritalStatuses = ["Single", "Married", "Divorced", "Widowed"];
-const staffTypes = ["Teaching", "Non-Teaching", "Admin", "Lab Assistant", "Accountant", "Others"];
+const staffTypes = ["Teacher", "Admin", "Principal", "Vice Principal", "Accountant", "Librarian", "Lab Assistant"];
 const idProofTypes = ["Aadhar Card", "PAN Card", "Driving License", "Passport", "Voter ID", "Other"];
 const degreeOptions = [
   { label: "B.Ed", value: "B.Ed" }, { label: "M.Ed", value: "M.Ed" },
@@ -30,9 +30,9 @@ const classOptions = Array.from({ length: 12 }, (_, i) => i + 1).flatMap(num => 
 
 const emptyForm = {
   // Personal Details
-  fullName: "", dob: "", expertise: "", picture: null, mobile: "", isWhatsapp: false,
+  fullName: "", dob: "", picture: null, mobile: "", isWhatsapp: false,
   whatsappNumber: "", email: "", fatherName: "", bloodGroup: "", gender: "Male", maritalStatus: "",
-  employmentType: "Full-time", fatherMotherNumber: "", idDocuments: {}, customDocuments: [],
+  employmentType: "Full-time", fatherMotherNumber: "", idDocuments: [], customDocuments: [],
   emergencyContacts: [{ name: "", relationship: "", phone: "" }], address: "",
   // Qualifications
   professionalQualifications: [], totalExperience: "", previousOrganization: "", roleInOrganization: "", qualificationDocs: [],
@@ -50,6 +50,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [tempImage, setTempImage] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Refs
   const pictureInputRef = useRef(null);
@@ -65,7 +66,6 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         // Personal Details
         fullName: editingStaff.name || "",
         dob: editingStaff.dob || "",
-        expertise: editingStaff.expertise || editingStaff.department || "",
         picture: editingStaff.picture || null,
         mobile: editingStaff.phone || "",
         isWhatsapp: editingStaff.whatsappNumber === editingStaff.phone,
@@ -77,7 +77,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         maritalStatus: editingStaff.maritalStatus || "",
         employmentType: editingStaff.employmentType || "Full-time",
         fatherMotherNumber: editingStaff.emergencyPhone || "",
-        idDocuments: editingStaff.idDocuments || {},
+        idDocuments: editingStaff.idDocuments || [],
         customDocuments: editingStaff.customDocuments || [],
         emergencyContacts: editingStaff.emergencyContacts ? editingStaff.emergencyContacts : [{ name: "", relationship: "", phone: "" }],
         address: editingStaff.address || "",
@@ -154,11 +154,19 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       case "gender":
         if (!value) newError = "Required";
         break;
+      case "fatherName":
+        if (!value.trim()) newError = "Required";
+        break;
       case "staffNumber":
         if (!value.trim()) newError = "Required";
         break;
       case "department":
         if (!value) newError = "Required";
+        break;
+      case "ifscCode":
+        if (value.trim() && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(value.toUpperCase())) {
+          newError = "Invalid IFSC format (e.g., SBIN0001234)";
+        }
         break;
     }
     setErrors(prev => ({ ...prev, [field]: newError }));
@@ -287,16 +295,23 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       }
 
       // Upload ID documents to Cloudinary
-      const uploadedIdDocuments = {};
-      for (const [type, file] of Object.entries(formData.idDocuments)) {
-        if (file instanceof File) {
+      const uploadedIdDocuments = [];
+      for (const doc of formData.idDocuments) {
+        if (doc.file instanceof File) {
           try {
-            const uploadResponse = await uploadApi.uploadFile(file);
-            uploadedIdDocuments[type] = uploadResponse.url;
-            console.log(`✅ ${type} uploaded:`, uploadResponse.url);
+            const uploadResponse = await uploadApi.uploadFile(doc.file);
+            uploadedIdDocuments.push({
+              type: doc.type,
+              url: uploadResponse.url,
+              name: doc.name
+            });
+            console.log(`✅ ${doc.type} uploaded:`, uploadResponse.url);
           } catch (error) {
-            console.error(`❌ ${type} upload failed:`, error);
+            console.error(`❌ ${doc.type} upload failed:`, error);
           }
+        } else if (doc.url) {
+          // Already uploaded, keep as is
+          uploadedIdDocuments.push(doc);
         }
       }
 
@@ -365,6 +380,15 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         customDocuments: uploadedCustomDocuments,
       };
 
+      // Calculate total salary from salaryBreakdown for payroll
+      if (formData.salaryBreakdown && formData.salaryBreakdown.length > 0) {
+        const totalSalary = formData.salaryBreakdown.reduce((sum, item) => {
+          return sum + (parseFloat(item.amount) || 0);
+        }, 0);
+        staffData.salary = totalSalary;
+        console.log('💰 Total salary calculated:', totalSalary, 'from breakdown:', formData.salaryBreakdown);
+      }
+
       // Remove undefined values
       Object.keys(staffData).forEach(key => {
         if (staffData[key] === undefined || staffData[key] === null) {
@@ -426,14 +450,16 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
 
   const handleIDProofUpload = (type, files) => {
     if (files && files.length > 0) {
-      const updated = { ...formData.idDocuments, [type]: files[0] };
+      // Remove existing document of same type if any
+      const filtered = formData.idDocuments.filter(doc => doc.type !== type);
+      // Add new document with metadata
+      const updated = [...filtered, { type, file: files[0], name: files[0].name }];
       updateField("idDocuments", updated);
     }
   };
 
   const removeIDProof = (type) => {
-    const updated = { ...formData.idDocuments };
-    delete updated[type];
+    const updated = formData.idDocuments.filter(doc => doc.type !== type);
     updateField("idDocuments", updated);
   };
 
@@ -569,6 +595,8 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             onValueChange={v => updateField("fatherName", v)}
             variant="bordered"
             radius="sm"
+            isRequired
+            errorMessage={errors.fatherName}
             classNames={{ label: "text-xs font-medium text-default-600 mb-1", inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
           />
           <Select
@@ -652,17 +680,16 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
 
       {/* Address */}
       <div className="space-y-1">
-        <div className="flex justify-between">
-          <label className="text-sm font-semibold text-default-900">Address</label>
-          <span className="text-xs text-default-400">{formData.address.length} / 200</span>
-        </div>
+        <label className="text-sm font-semibold text-default-900">Address</label>
         <Textarea
           placeholder="Full Residential Address"
           value={formData.address}
           onValueChange={v => updateField("address", v)}
+          maxLength={200}
           variant="bordered"
           radius="sm"
           minRows={2}
+          description={`${formData.address.length} / 200 characters`}
           classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300" }}
         />
       </div>
@@ -855,16 +882,14 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
           <p className="text-xs text-danger-500 mt-0.5">* At least one degree is required</p>
         </div>
         {formData.professionalQualifications.length > 0 && (
-          <Button
-            size="sm"
-            variant="light"
-            color="primary"
-            onPress={addQualification}
-            className="h-8 text-xs font-medium bg-transparent hover:bg-primary-50 px-2"
-            startContent={<Plus size={14} />}
+          <button
+            type="button"
+            onClick={addQualification}
+            className="h-8 text-xs font-medium text-primary hover:text-primary-600 hover:underline px-2 flex items-center gap-1 bg-transparent border-none cursor-pointer"
           >
+            <Plus size={14} />
             Add Degree
-          </Button>
+          </button>
         )}
       </div>
 
@@ -983,7 +1008,13 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             <div className="text-xs text-default-500">
               No degrees added. <span className="text-danger">*Required</span>
             </div>
-            <Button size="sm" variant="light" color="primary" onPress={addQualification} className="text-xs font-medium">Add Degree</Button>
+            <button
+              type="button"
+              onClick={addQualification}
+              className="text-xs font-medium text-primary hover:text-primary-600 hover:underline bg-transparent border-none cursor-pointer"
+            >
+              Add Degree
+            </button>
           </div>
         )}
         {errors.qualifications && <p className="text-xs text-danger">{errors.qualifications}</p>}
@@ -1040,40 +1071,47 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
     </div>
   );
 
-  const renderStep4 = () => (
+  const renderStep4 = () => {
+    // Helper function to find document by type
+    const findDocByType = (type) => formData.idDocuments.find(doc => doc.type === type);
+
+    return (
     <div className="space-y-6 animate-fade-in text-left">
       {/* Identity Docs & Proofs */}
       <div className="space-y-3">
         <label className="text-sm font-semibold text-default-900">Documents & Proofs</label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {idProofTypes.map((type) => (
-            <div key={type} className="flex items-center justify-between p-3 border border-default-200 rounded-lg bg-default-50/50 hover:bg-default-100 transition-colors">
-              <div className="flex items-center gap-2">
-                <FileBadge size={16} className="text-default-500" />
-                <span className="text-sm font-medium text-default-700">{type}</span>
-              </div>
-              {formData.idDocuments[type] ? (
+          {idProofTypes.map((type) => {
+            const doc = findDocByType(type);
+            return (
+              <div key={type} className="flex items-center justify-between p-3 border border-default-200 rounded-lg bg-default-50/50 hover:bg-default-100 transition-colors">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-success-600 font-medium truncate max-w-[100px]">{formData.idDocuments[type].name}</span>
-                  <button onClick={() => removeIDProof(type)} className="text-default-400 hover:text-danger p-1 rounded-full hover:bg-default-200">
-                    <X size={14} />
-                  </button>
+                  <FileBadge size={16} className="text-default-500" />
+                  <span className="text-sm font-medium text-default-700">{type}</span>
                 </div>
-              ) : (
-                <div className="relative">
-                  <button className="text-xs font-semibold text-primary hover:text-primary-600 transition-colors px-2 py-1">
-                    Upload
-                  </button>
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    onChange={(e) => handleIDProofUpload(type, e.target.files)}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
+                {doc ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-success-600 font-medium truncate max-w-[100px]">{doc.name}</span>
+                    <button onClick={() => removeIDProof(type)} className="text-default-400 hover:text-danger p-1 rounded-full hover:bg-default-200">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <button className="text-xs font-semibold text-primary hover:text-primary-600 transition-colors px-2 py-1">
+                      Upload
+                    </button>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      onChange={(e) => handleIDProofUpload(type, e.target.files)}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <div className="space-y-2 pt-2">
@@ -1101,7 +1139,8 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   const renderStep5 = () => {
     // Salary Templates Local Logic
@@ -1133,7 +1172,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
           <label className="text-sm font-semibold text-default-900">Bank Details</label>
           <div className="grid grid-cols-2 gap-4">
             <Input label="Account Number" labelPlacement="outside" placeholder="Account No" value={formData.accountNumber} onValueChange={v => updateField("accountNumber", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
-            <Input label="IFSC Code" labelPlacement="outside" placeholder="IFSC" value={formData.ifscCode} onValueChange={v => updateField("ifscCode", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
+            <Input label="IFSC Code" labelPlacement="outside" placeholder="IFSC (e.g., SBIN0001234)" value={formData.ifscCode} onValueChange={v => updateField("ifscCode", v)} variant="bordered" radius="sm" errorMessage={errors.ifscCode} classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
             <Input label="Bank Name" labelPlacement="outside" placeholder="Bank Name" value={formData.bankName} onValueChange={v => updateField("bankName", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
             <Input label="Branch Name" labelPlacement="outside" placeholder="Branch" value={formData.branchName} onValueChange={v => updateField("branchName", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
           </div>
@@ -1266,8 +1305,16 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
           className="w-32 font-medium shadow-lg shadow-primary/20"
           color="primary"
           onPress={step === 5 ? handleSubmit : handleNext}
+          isDisabled={isSubmitting}
         >
-          {step === 5 ? "Save" : "Next"}
+          {isSubmitting ? (
+            <span className="flex items-center gap-2">
+              <Spinner size="sm" color="white" />
+              {step === 5 ? "Creating..." : "Processing..."}
+            </span>
+          ) : (
+            step === 5 ? "Create Staff" : "Next"
+          )}
         </Button>
       </div>
 

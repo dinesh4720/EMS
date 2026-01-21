@@ -148,9 +148,31 @@ class ChatServiceEnhanced {
       const formData = new FormData();
       formData.append('file', file);
 
+      // Get token from sessionStorage
+      const storedUser = sessionStorage.getItem('app_user');
+      let token = null;
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          token = userData.token;
+        } catch (err) {
+          console.error('Failed to parse user data:', err);
+        }
+      }
+
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       // API_URL already includes /api, so just use it directly
       const response = await fetch(`${API_URL}/upload`, {
         method: 'POST',
+        headers,
         body: formData
       });
 

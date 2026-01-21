@@ -8,11 +8,12 @@ import {
 } from "@heroui/react";
 import {
     Search, Filter, ArrowUpDown, MoreVertical, Eye, Edit, Trash2, X, ChevronDown,
-    Phone, Check, Download, Upload, UserX, FileOutput,
-    ArrowUpCircle, Users, Calendar, Columns3, MessageSquare, GraduationCap, FileText, AlertTriangle
+    Phone, Check, Download, Upload, UserX, FileOutput, Pin, PinOff,
+    ArrowUpCircle, Calendar, Columns3, MessageSquare, GraduationCap, FileText, AlertTriangle
 } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
+import { studentsApi } from "../../services/api";
 import toast from "react-hot-toast";
 import TCGeneratorModal from "./TCGeneratorModal";
 
@@ -44,6 +45,7 @@ export default function StudentsList() {
     const [classFilter, setClassFilter] = useState("all");
     const [feeStatusFilter, setFeeStatusFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("active");
+    const [academicYearFilter, setAcademicYearFilter] = useState("all");
 
     const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
     const [isLoading, setIsLoading] = useState(false);
@@ -119,6 +121,7 @@ export default function StudentsList() {
     const [reminderTargetCount, setReminderTargetCount] = useState(0);
 
     const uniqueClasses = useMemo(() => [...new Set(students.map(s => s.class))].sort(), [students]);
+    const uniqueAcademicYears = useMemo(() => [...new Set(students.map(s => s.academicYear || "2024-25"))].sort(), [students]);
     const feeStatusOptions = ["paid", "pending", "overdue"];
 
     const statusCounts = useMemo(() => ({
@@ -133,6 +136,7 @@ export default function StudentsList() {
 
     const filteredItems = useMemo(() => {
         let filtered = students;
+
         if (searchQuery) {
             const search = searchQuery.toLowerCase();
             filtered = filtered.filter((s) =>
@@ -146,13 +150,26 @@ export default function StudentsList() {
         if (classFilter !== "all") filtered = filtered.filter((s) => s.class === classFilter);
         if (feeStatusFilter !== "all") filtered = filtered.filter((s) => s.feeStatus === feeStatusFilter);
         if (statusFilter !== "all") filtered = filtered.filter((s) => s.status === statusFilter);
+        if (academicYearFilter !== "all") filtered = filtered.filter((s) => (s.academicYear || "2024-25") === academicYearFilter);
         return filtered.sort((a, b) => {
+            // Pinned students always come first
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+            // If both are pinned or both are not pinned, sort by pinnedAt (most recent first)
+            if (a.isPinned && b.isPinned) {
+                if (a.pinnedAt && b.pinnedAt) {
+                    const dateA = new Date(a.pinnedAt).getTime();
+                    const dateB = new Date(b.pinnedAt).getTime();
+                    if (dateA !== dateB) return dateB - dateA;
+                }
+            }
+            // Then apply the selected sort
             const first = a[sortDescriptor.column];
             const second = b[sortDescriptor.column];
             const cmp = first < second ? -1 : first > second ? 1 : 0;
             return sortDescriptor.direction === "descending" ? -cmp : cmp;
         });
-    }, [students, searchQuery, classFilter, feeStatusFilter, statusFilter, sortDescriptor]);
+    }, [students, searchQuery, classFilter, feeStatusFilter, statusFilter, academicYearFilter, sortDescriptor]);
 
     const visibleItems = useMemo(() => filteredItems.slice(0, visibleCount), [filteredItems, visibleCount]);
     const hasMore = visibleCount < filteredItems.length;
@@ -163,7 +180,7 @@ export default function StudentsList() {
     useEffect(() => {
         setVisibleCount(ITEMS_PER_LOAD);
         setIsLoading(false); // Reset loading when filters change
-    }, [searchQuery, classFilter, feeStatusFilter, statusFilter, sortDescriptor]);
+    }, [searchQuery, classFilter, feeStatusFilter, statusFilter, academicYearFilter, sortDescriptor]);
 
     useEffect(() => {
         // Force loading to false if no more items
@@ -284,6 +301,24 @@ export default function StudentsList() {
             setPhoneInput("");
         } catch (error) {
             toast.error('Failed to add phone number');
+        }
+    };
+
+    const handlePinStudent = async (studentId) => {
+        try {
+            await studentsApi.pin(studentId);
+            toast.success('Student pinned');
+        } catch (error) {
+            toast.error('Failed to pin student');
+        }
+    };
+
+    const handleUnpinStudent = async (studentId) => {
+        try {
+            await studentsApi.unpin(studentId);
+            toast.success('Student unpinned');
+        } catch (error) {
+            toast.error('Failed to unpin student');
         }
     };
 
@@ -432,7 +467,7 @@ export default function StudentsList() {
     return (
         <div className="w-full flex flex-col">
             {/* Toolbar */}
-            <div className="flex flex-col gap-4 bg-background border-b border-default-200 py-4 -mx-6 -mt-6 px-6">
+            <div className="flex flex-col gap-4 bg-background border-b border-default-200 py-4 -mx-6 px-6">
                 <div className="flex flex-col sm:flex-row justify-between gap-4 items-center">
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                         <Dropdown placement="bottom-start">
@@ -501,15 +536,15 @@ export default function StudentsList() {
 
                         <Dropdown>
                             <DropdownTrigger>
-                                <button className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm cursor-pointer whitespace-nowrap ${(classFilter !== "all" || feeStatusFilter !== "all") ? "bg-primary-50/50 border-primary text-primary" : "bg-transparent border-default-300 hover:border-primary text-default-700"}`}>
-                                    <Filter size={16} className={(classFilter !== "all" || feeStatusFilter !== "all") ? "text-primary" : "text-default-400"} />
+                                <button className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm cursor-pointer whitespace-nowrap ${(classFilter !== "all" || feeStatusFilter !== "all" || academicYearFilter !== "all") ? "bg-primary-50/50 border-primary text-primary" : "bg-transparent border-default-300 hover:border-primary text-default-700"}`}>
+                                    <Filter size={16} className={(classFilter !== "all" || feeStatusFilter !== "all" || academicYearFilter !== "all") ? "text-primary" : "text-default-400"} />
                                     <span>Filters</span>
-                                    {(classFilter !== "all" || feeStatusFilter !== "all") && (
+                                    {(classFilter !== "all" || feeStatusFilter !== "all" || academicYearFilter !== "all") && (
                                         <Chip size="sm" color="primary" variant="solid" className="h-4 min-w-4 w-4 p-0 text-[10px]">
-                                            {(classFilter !== "all" ? 1 : 0) + (feeStatusFilter !== "all" ? 1 : 0)}
+                                            {(classFilter !== "all" ? 1 : 0) + (feeStatusFilter !== "all" ? 1 : 0) + (academicYearFilter !== "all" ? 1 : 0)}
                                         </Chip>
                                     )}
-                                    <ChevronDown size={14} className={(classFilter !== "all" || feeStatusFilter !== "all") ? "text-primary" : "text-default-400"} />
+                                    <ChevronDown size={14} className={(classFilter !== "all" || feeStatusFilter !== "all" || academicYearFilter !== "all") ? "text-primary" : "text-default-400"} />
                                 </button>
                             </DropdownTrigger>
                             <DropdownMenu aria-label="Filters" closeOnSelect={false}>
@@ -523,6 +558,12 @@ export default function StudentsList() {
                                     <DropdownItem key="fee-all" onPress={() => setFeeStatusFilter("all")} startContent={feeStatusFilter === "all" ? <Check size={14} className="text-primary" /> : <span className="w-3.5"></span>}>All Fee Status</DropdownItem>
                                     {feeStatusOptions.map((status) => (
                                         <DropdownItem key={`fee-${status}`} onPress={() => setFeeStatusFilter(status)} startContent={feeStatusFilter === status ? <Check size={14} className="text-primary" /> : <span className="w-3.5"></span>} className="capitalize">{status}</DropdownItem>
+                                    ))}
+                                </DropdownSection>
+                                <DropdownSection title="Academic Year">
+                                    <DropdownItem key="year-all" onPress={() => setAcademicYearFilter("all")} startContent={academicYearFilter === "all" ? <Check size={14} className="text-primary" /> : <span className="w-3.5"></span>}>All Years</DropdownItem>
+                                    {uniqueAcademicYears.map((year) => (
+                                        <DropdownItem key={`year-${year}`} onPress={() => setAcademicYearFilter(year)} startContent={academicYearFilter === year ? <Check size={14} className="text-primary" /> : <span className="w-3.5"></span>}>{year}</DropdownItem>
                                     ))}
                                 </DropdownSection>
                             </DropdownMenu>
@@ -655,13 +696,18 @@ export default function StudentsList() {
                             >
                                 <TableCell key="name">
                                     <div className="flex items-center gap-3">
-                                        <img 
-                                            src={student.photo || `https://i.pravatar.cc/150?u=student${student.id}`} 
-                                            alt={student.name} 
-                                            className="w-10 h-10 rounded-full flex-shrink-0 object-cover" 
+                                        <img
+                                            src={student.photo || `https://i.pravatar.cc/150?u=student${student.id}`}
+                                            alt={student.name}
+                                            className="w-10 h-10 rounded-full flex-shrink-0 object-cover"
                                         />
                                         <div className="flex flex-col min-w-0">
-                                            <Link to={`/students/${student.id}`} className="text-default-900 font-medium text-base hover:text-primary transition-colors cursor-pointer truncate">{student.name}</Link>
+                                            <div className="flex items-center gap-2">
+                                                <Link to={`/students/${student.id}`} className="text-default-900 font-medium text-base hover:text-primary transition-colors cursor-pointer truncate">{student.name}</Link>
+                                                {student.isPinned && (
+                                                    <Pin size={14} className="text-primary flex-shrink-0" />
+                                                )}
+                                            </div>
                                             <span className="text-default-500 text-xs">{student.admissionId || `ADM${String(student.id).padStart(4, '0')}`}</span>
                                         </div>
                                     </div>
@@ -807,6 +853,24 @@ export default function StudentsList() {
                                 {visibleColumnsArray.some(col => col.key === "actions") && (
                                     <TableCell key="actions">
                                         <div className="flex items-center justify-end gap-1">
+                                            <Tooltip content={student.isPinned ? "Unpin student" : "Pin student"}>
+                                                <Button
+                                                    isIconOnly
+                                                    size="sm"
+                                                    variant="light"
+                                                    className={student.isPinned ? "text-primary" : "text-default-400"}
+                                                    onPress={(e) => {
+                                                        e.stopPropagation();
+                                                        if (student.isPinned) {
+                                                            handleUnpinStudent(student.id);
+                                                        } else {
+                                                            handlePinStudent(student.id);
+                                                        }
+                                                    }}
+                                                >
+                                                    {student.isPinned ? <PinOff size={16} /> : <Pin size={16} />}
+                                                </Button>
+                                            </Tooltip>
                                             <Tooltip content="Edit Details">
                                                 <Button
                                                     isIconOnly

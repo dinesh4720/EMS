@@ -86,7 +86,7 @@ export default function StaffsPage() {
       // Basic fields (for backward compatibility)
       name: staffData.fullName,
       role: staffData.staffType === "Teaching" ? "Teacher" : staffData.staffType,
-      department: staffData.expertise || "General",
+      department: staffData.department || "General",
       phone: staffData.mobile,
       email: staffData.email,
       status: "active",
@@ -117,7 +117,6 @@ export default function StaffsPage() {
       // Staff Info
       staffNumber: staffData.staffNumber,
       staffType: staffData.staffType,
-      expertise: staffData.expertise,
       assignedClasses: staffData.assignedClasses || [],
       isClassTeacher: staffData.isClassTeacher,
       classTeacherOf: staffData.classTeacherOf,

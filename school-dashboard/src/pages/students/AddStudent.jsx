@@ -11,8 +11,6 @@ const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const parentRelationships = ["Father", "Mother"];
 const guardianRelationships = ["Grandparent", "Uncle", "Aunt", "Sibling", "Other"];
 const academicYears = ["2024-25", "2025-26", "2023-24"];
-const mediumOptions = ["English", "Hindi", "Regional"];
-const houseOptions = ["Red House", "Blue House", "Green House", "Yellow House"];
 
 const emptyForm = {
   // Personal Information
@@ -20,20 +18,22 @@ const emptyForm = {
   picture: null, aadhaarNumber: "", bloodGroup: "", nationality: "", religion: "",
   category: "", motherTongue: "", previousSchool: "", tcNumber: "",
   // Class Info
-  class: "", section: "", rollNumber: "", mediumOfInstruction: "", house: "",
+  class: "", section: "", rollNumber: "",
   // Contact
-  mobile: "", isWhatsapp: true, whatsappNumber: "", email: "", address: "",
+  mobile: "", isWhatsapp: true, whatsappNumber: "", email: "", address: "", city: "", state: "", zipCode: "",
   // Parent/Guardian 1
   parents: [{
     name: "", relationship: "Father", phone: "", email: "", occupation: "", isWhatsapp: true, isParent: true
   }],
   alternatePhone: "",
+  // Siblings (in same school only)
+  siblings: [],
   // Health & Safety
   medicalConditions: "", emergencyContactName: "", emergencyContactPhone: "",
   // Transport & Hostel
   transportRequired: false, hostelRequired: false,
   // Documents
-  birthCertificate: null, transferCertificate: null, aadhaarDoc: null, studentPhoto: null, otherDocuments: []
+  birthCertificate: null, transferCertificate: null, aadhaarFront: null, aadhaarBack: null, studentPhoto: null, otherDocuments: []
 };
 
 export default function AddStudent({ onClose, onSave, classOptions = [], classesWithTeachers = [], initialData = null }) {
@@ -59,6 +59,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           isWhatsapp: true,
           isParent: true
         }],
+        // Siblings array
+        siblings: initialData.siblings || [],
         // Class is already in "X-A" format from backend, use it directly
         class: initialData.class || "",
       };
@@ -77,7 +79,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
   const pictureInputRef = useRef(null);
   const birthCertRef = useRef(null);
   const tcRef = useRef(null);
-  const aadhaarRef = useRef(null);
+  const aadhaarFrontRef = useRef(null);
+  const aadhaarBackRef = useRef(null);
   const photoRef = useRef(null);
   const otherDocsRef = useRef(null);
 
@@ -166,6 +169,20 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     if (formData.parents.length > 1) {
       updateField("parents", formData.parents.filter((_, i) => i !== index));
     }
+  };
+
+  const updateSibling = (index, field, value) => {
+    const updated = [...formData.siblings];
+    updated[index] = { ...updated[index], [field]: value };
+    updateField("siblings", updated);
+  };
+
+  const addSibling = () => {
+    updateField("siblings", [...formData.siblings, { name: "", inSameSchool: true, classId: "" }]);
+  };
+
+  const removeSibling = (index) => {
+    updateField("siblings", formData.siblings.filter((_, i) => i !== index));
   };
 
   const handleFileUpload = (field, file) => {
@@ -362,6 +379,13 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       }
 
       // Transform data for saving
+      // Convert date from DD/MM/YYYY to YYYY-MM-DD for database storage
+      let formattedDateOfBirth = formData.dateOfBirth;
+      if (formData.dateOfBirth && formData.dateOfBirth.includes('/')) {
+        const [day, month, year] = formData.dateOfBirth.split('/');
+        formattedDateOfBirth = `${year}-${month}-${day}`;
+      }
+
       const studentData = {
         name: formData.fullName,
         admissionId: formData.admissionId,
@@ -369,17 +393,21 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         classId: selectedClass?.id,
         rollNo: formData.rollNumber ? parseInt(formData.rollNumber) : null,
         gender: formData.gender,
-        dateOfBirth: formData.dateOfBirth,
+        dateOfBirth: formattedDateOfBirth,
         bloodGroup: formData.bloodGroup,
         email: formData.email,
         phone: formData.mobile,
         address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zipCode,
         parentName: formData.parents[0]?.name,
         parentPhone: formData.parents[0]?.phone,
         parentEmail: formData.parents[0]?.email,
         parentRelationship: formData.parents[0]?.relationship,
         parentOccupation: formData.parents[0]?.occupation,
         parents: formData.parents,
+        siblings: formData.siblings,
         aadhaarNumber: formData.aadhaarNumber,
         nationality: formData.nationality,
         religion: formData.religion,
@@ -740,6 +768,36 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           minRows={2}
           classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300" }}
         />
+        <Input
+          label="City"
+          labelPlacement="outside"
+          placeholder="City"
+          value={formData.city}
+          onValueChange={v => updateField("city", v)}
+          variant="bordered"
+          radius="sm"
+          classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+        />
+        <Input
+          label="State"
+          labelPlacement="outside"
+          placeholder="State"
+          value={formData.state}
+          onValueChange={v => updateField("state", v)}
+          variant="bordered"
+          radius="sm"
+          classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+        />
+        <Input
+          label="ZIP Code"
+          labelPlacement="outside"
+          placeholder="PIN Code"
+          value={formData.zipCode}
+          onValueChange={v => updateField("zipCode", v)}
+          variant="bordered"
+          radius="sm"
+          classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+        />
       </div>
 
       {/* Optional Fields */}
@@ -1054,6 +1112,75 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           )}
         </div>
 
+        {/* Sibling Details */}
+        <div className="space-y-4 pt-2 border-t border-solid border-gray-200">
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-semibold text-gray-900">Sibling Details</label>
+            <span className="text-xs text-gray-500">(Siblings in same school only)</span>
+          </div>
+
+          {formData.siblings.map((sibling, idx) => (
+            <div key={idx} className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-700">
+                  Sibling {idx + 1}
+                </span>
+                <Button size="sm" variant="light" color="danger" onPress={() => removeSibling(idx)}>
+                  <X size={14} /> Remove
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Sibling Name"
+                  labelPlacement="outside"
+                  placeholder="Sibling's full name"
+                  value={sibling.name}
+                  onValueChange={v => updateSibling(idx, "name", v)}
+                  variant="bordered"
+                  radius="sm"
+                  classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                />
+                <div className="flex items-center gap-2 pt-6">
+                  <Checkbox
+                    isSelected={sibling.inSameSchool}
+                    onValueChange={v => {
+                      updateSibling(idx, "inSameSchool", v);
+                      if (!v) updateSibling(idx, "classId", "");
+                    }}
+                  >
+                    <span className="text-sm text-gray-700">Is sibling in this school?</span>
+                  </Checkbox>
+                </div>
+                {sibling.inSameSchool && (
+                  <Select
+                    label="Class"
+                    labelPlacement="outside"
+                    placeholder="Select class"
+                    selectedKeys={sibling.classId ? [sibling.classId] : []}
+                    onSelectionChange={keys => updateSibling(idx, "classId", Array.from(keys)[0])}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                  >
+                    {classesWithTeachers.map(c => (
+                      <SelectItem key={c.id}>
+                        {c.name} {c.section}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                )}
+              </div>
+            </div>
+          ))}
+
+          <button
+            className="text-sm font-medium text-primary hover:text-primary-600 transition-colors"
+            onClick={addSibling}
+          >
+            + Add Sibling
+          </button>
+        </div>
+
         {/* Health & Safety */}
         <div className="space-y-2 pt-2 border-t border-solid border-gray-200">
           <label className="text-sm font-semibold text-gray-900 block mt-2">Health & Safety</label>
@@ -1175,31 +1302,58 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           onChange={(e) => handleFileUpload("transferCertificate", e.target.files[0])} />
       </div>
 
-      {/* Aadhaar */}
+      {/* Aadhaar Card (Front & Back) */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-gray-600">Aadhaar Card (if provided)</label>
+        <label className="text-xs font-medium text-gray-600">Aadhaar Card (Front & Back)</label>
+        <p className="text-xs text-gray-500">Upload both sides of the Aadhaar card</p>
+
+        {/* Front Side */}
         <div
           className="border border-solid border-gray-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
-          onClick={() => aadhaarRef.current?.click()}
+          onClick={() => aadhaarFrontRef.current?.click()}
         >
           <div className="flex items-center gap-3">
             <FileText size={20} className="text-gray-400" />
-            {formData.aadhaarDoc ? (
-              <span className="text-sm text-gray-700">{formData.aadhaarDoc.name}</span>
+            {formData.aadhaarFront ? (
+              <span className="text-sm text-gray-700">Front: {formData.aadhaarFront.name}</span>
             ) : (
-              <span className="text-sm text-gray-500">Click to upload Aadhaar card</span>
+              <span className="text-sm text-gray-500">Click to upload FRONT side</span>
             )}
           </div>
-          {formData.aadhaarDoc ? (
-            <Button size="sm" variant="light" color="danger" onPress={(e) => { e.stopPropagation(); updateField("aadhaarDoc", null); }}>
+          {formData.aadhaarFront ? (
+            <Button size="sm" variant="light" color="danger" onPress={(e) => { e.stopPropagation(); updateField("aadhaarFront", null); }}>
               <X size={14} />
             </Button>
           ) : (
             <Upload size={16} className="text-gray-400" />
           )}
         </div>
-        <input ref={aadhaarRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
-          onChange={(e) => handleFileUpload("aadhaarDoc", e.target.files[0])} />
+        <input ref={aadhaarFrontRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
+          onChange={(e) => handleFileUpload("aadhaarFront", e.target.files[0])} />
+
+        {/* Back Side */}
+        <div
+          className="border border-solid border-gray-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+          onClick={() => aadhaarBackRef.current?.click()}
+        >
+          <div className="flex items-center gap-3">
+            <FileText size={20} className="text-gray-400" />
+            {formData.aadhaarBack ? (
+              <span className="text-sm text-gray-700">Back: {formData.aadhaarBack.name}</span>
+            ) : (
+              <span className="text-sm text-gray-500">Click to upload BACK side</span>
+            )}
+          </div>
+          {formData.aadhaarBack ? (
+            <Button size="sm" variant="light" color="danger" onPress={(e) => { e.stopPropagation(); updateField("aadhaarBack", null); }}>
+              <X size={14} />
+            </Button>
+          ) : (
+            <Upload size={16} className="text-gray-400" />
+          )}
+        </div>
+        <input ref={aadhaarBackRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
+          onChange={(e) => handleFileUpload("aadhaarBack", e.target.files[0])} />
       </div>
 
       {/* Other Documents */}
@@ -1250,7 +1404,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                 {initialData ? "Edit Student" : "Add New Student"}
               </h2>
               <p className="text-xs text-gray-500 mt-1">
-                Step {step} of 2: {step === 1 ? "Personal Details" : "Parents & Guardian"}
+                Step {step} of 3: {step === 1 ? "Personal Details" : step === 2 ? "Parents & Guardian" : "Documents"}
               </p>
             </div>
           </div>

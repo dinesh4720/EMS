@@ -29,6 +29,21 @@ const bloodGroupOptions = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const feeStatusOptions = ["paid", "pending", "overdue"];
 const academicYears = ["2024-25", "2025-26", "2023-24"];
 
+// Helper function to get auth token (same as api.js)
+const getAuthToken = () => {
+  const storedUser = sessionStorage.getItem('app_user');
+  if (storedUser) {
+    try {
+      const userData = JSON.parse(storedUser);
+      return userData.token;
+    } catch (err) {
+      console.error('Failed to parse user data:', err);
+      return null;
+    }
+  }
+  return null;
+};
+
 export default function StudentOverview() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -49,6 +64,88 @@ export default function StudentOverview() {
   const documentInputRef = useRef(null);
   const [documents, setDocuments] = useState([]);
   const [activeUploads, setActiveUploads] = useState([]);
+
+  // Remarks state
+  const [remarks, setRemarks] = useState([]);
+  const [remarksLoading, setRemarksLoading] = useState(false);
+  const [remarksCategoryFilter, setRemarksCategoryFilter] = useState('all');
+  const [isRemarkOpen, setIsRemarkOpen] = useState(false);
+
+  // Exam results state
+  const [results, setResults] = useState([]);
+  const [resultsLoading, setResultsLoading] = useState(false);
+
+  // Fetch remarks when tab changes or filter changes
+  useEffect(() => {
+    const fetchRemarks = async () => {
+      if (activeTab === 'remarks') {
+        setRemarksLoading(true);
+        try {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+          const token = getAuthToken();
+          console.log('Fetching remarks with token:', token ? 'present' : 'missing');
+          const response = await fetch(`${API_URL}/students/${id}/remarks?category=${remarksCategoryFilter}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          console.log('Remarks response status:', response.status);
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Remarks data received:', data);
+            setRemarks(data);
+          } else {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Error response:', errorData);
+          }
+        } catch (error) {
+          console.error('Error fetching remarks:', error);
+        } finally {
+          setRemarksLoading(false);
+        }
+      }
+    };
+
+    fetchRemarks();
+  }, [activeTab, remarksCategoryFilter, id]);
+
+  // Fetch exam results when academics tab is active
+  useEffect(() => {
+    const fetchResults = async () => {
+      if (activeTab === 'academics') {
+        setResultsLoading(true);
+        try {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+          const token = getAuthToken();
+          console.log('Fetching results with token:', token ? 'present' : 'missing');
+          const response = await fetch(`${API_URL}/students/${id}/results`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          console.log('Results response status:', response.status);
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Results data received:', data);
+            setResults(data);
+          } else {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Error response:', errorData);
+          }
+        } catch (error) {
+          console.error('Error fetching results:', error);
+        } finally {
+          setResultsLoading(false);
+        }
+      }
+    };
+
+    fetchResults();
+  }, [activeTab, id]);
 
   const handleDocumentUpload = async (e) => {
     const files = Array.from(e.target.files || []);
@@ -109,11 +206,16 @@ export default function StudentOverview() {
             };
 
             // Use dedicated document endpoint to append to array
+            const token = getAuthToken();
+            const headers = {
+              'Content-Type': 'application/json',
+            };
+            if (token) {
+              headers['Authorization'] = `Bearer ${token}`;
+            }
             const response2 = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${id}/documents`, {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
+              headers,
               body: JSON.stringify(newDoc)
             });
 
@@ -193,10 +295,17 @@ export default function StudentOverview() {
     try {
       const deleteUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${id}/documents/${docIndex}`;
       console.log('🗑️ DELETE request to:', deleteUrl);
-      
+
+      const token = getAuthToken();
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       // Call the backend DELETE endpoint with the document index
       const response = await fetch(deleteUrl, {
         method: 'DELETE',
+        headers
       });
 
       console.log('🗑️ DELETE response status:', response.status);
@@ -224,9 +333,16 @@ export default function StudentOverview() {
     const loadingToast = toast.loading("Fixing documents...");
 
     try {
+      const token = getAuthToken();
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       // Call the fix-documents endpoint which removes corrupted docs and adds IDs
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${id}/fix-documents`, {
         method: 'POST',
+        headers
       });
 
       if (!response.ok) {
@@ -253,12 +369,18 @@ export default function StudentOverview() {
         // Upload to Cloudinary
         const response = await uploadApi.uploadFile(file);
 
+        const token = getAuthToken();
+        const headers = {
+          'Content-Type': 'application/json',
+        };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
         // Update student photo using direct MongoDB update
         const response2 = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${id}`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify({
             photo: response.url,
             // Include all other fields to prevent data loss
@@ -272,6 +394,9 @@ export default function StudentOverview() {
             email: student.email,
             phone: student.phone,
             address: student.address,
+            city: student.city || "",
+            state: student.state || "",
+            zipCode: student.zipCode || "",
             parentName: student.parentName,
             parentPhone: student.parentPhone,
             parentEmail: student.parentEmail,
@@ -314,20 +439,29 @@ export default function StudentOverview() {
   // Fetch student fee structure
   const fetchFeeStructure = async () => {
     if (!id) return;
-    
+
     try {
       setLoadingFeeStructure(true);
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const response = await fetch(`${API_URL}/student-fees/student/${id}`);
-      
+      const token = getAuthToken();
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await fetch(`${API_URL}/student-fees/student/${id}`, { headers });
+
       if (response.ok) {
         const data = await response.json();
         setStudentFeeStructure(data);
       } else if (response.status === 404) {
         // No fee structure yet, initialize it
+        const initHeaders = { 'Content-Type': 'application/json' };
+        if (token) {
+          initHeaders['Authorization'] = `Bearer ${token}`;
+        }
         const initResponse = await fetch(`${API_URL}/student-fees/initialize/${id}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: initHeaders,
           body: JSON.stringify({ academicYear: '2024-25' })
         });
         
@@ -346,12 +480,17 @@ export default function StudentOverview() {
   // Fetch payment history from database
   const fetchPaymentHistory = async () => {
     if (!id) return;
-    
+
     try {
       setLoadingPaymentHistory(true);
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const response = await fetch(`${API_URL}/fees/payments?studentId=${id}`);
-      
+      const token = getAuthToken();
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await fetch(`${API_URL}/fees/payments?studentId=${id}`, { headers });
+
       if (response.ok) {
         const data = await response.json();
         setFeeHistory(data);
@@ -372,7 +511,12 @@ export default function StudentOverview() {
   useEffect(() => {
     const fetchFreshStudentData = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${id}`);
+        const token = getAuthToken();
+        const headers = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${id}`, { headers });
         if (response.ok) {
           const freshStudent = await response.json();
           if (freshStudent.documents) {
@@ -413,7 +557,6 @@ export default function StudentOverview() {
   });
 
   // New States
-  const [isRemarkOpen, setIsRemarkOpen] = useState(false);
   const [isExamConfigOpen, setIsExamConfigOpen] = useState(false);
   const [isRegularizeOpen, setIsRegularizeOpen] = useState(false);
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
@@ -465,8 +608,6 @@ export default function StudentOverview() {
         // Class Info
         class: student.class || "",
         rollNumber: student.rollNo?.toString() || "",
-        mediumOfInstruction: student.mediumOfInstruction || "",
-        house: student.house || "",
         // Contact
         mobile: student.phone || "",
         email: student.email || "",
@@ -476,6 +617,8 @@ export default function StudentOverview() {
         parentPhone: student.parentPhone || "",
         parentEmail: student.parentEmail || "",
         parents: student.parents || [],
+        // Siblings
+        siblings: student.siblings || [],
         // Status
         feeStatus: student.feeStatus || "pending",
         status: student.status || "active"
@@ -600,10 +743,16 @@ export default function StudentOverview() {
         remarks: `Fee payment via ${paymentForm.paymentMode}`,
         collectedBy: null // Can be set to current user ID if available
       };
-      
+
+      const token = getAuthToken();
+      const paymentHeaders = { 'Content-Type': 'application/json' };
+      if (token) {
+        paymentHeaders['Authorization'] = `Bearer ${token}`;
+      }
+
       const paymentResponse = await fetch(`${API_URL}/fees/payments`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: paymentHeaders,
         body: JSON.stringify(paymentData)
       });
       
@@ -641,11 +790,16 @@ export default function StudentOverview() {
         }
         
         console.log('💰 Recording payment:', { paymentAmount, feeHeadPayments });
-        
+
+        const feePaymentHeaders = { 'Content-Type': 'application/json' };
+        if (token) {
+          feePaymentHeaders['Authorization'] = `Bearer ${token}`;
+        }
+
         // Call backend to record payment in fee structure
         const feeStructureResponse = await fetch(`${API_URL}/student-fees/student/${id}/payment`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: feePaymentHeaders,
           body: JSON.stringify({
             amount: paymentAmount,
             feeHeadPayments,
@@ -682,7 +836,7 @@ export default function StudentOverview() {
     }
   };
 
-  const handleSaveRemark = () => {
+  const handleSaveRemark = async () => {
     // Validate form
     if (!remarkForm.title.trim()) {
       toast.error("Please enter a title");
@@ -697,36 +851,58 @@ export default function StudentOverview() {
       return;
     }
 
-    // Create remark object
-    const newRemark = {
-      id: Date.now(),
-      type: remarkForm.customType.trim() || remarkForm.type,
-      title: remarkForm.title.trim(),
-      description: remarkForm.description.trim(),
-      sendToParent: remarkForm.sendToParent,
-      date: new Date().toISOString(),
-      addedBy: "Current User" // Replace with actual user from context
-    };
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const token = getAuthToken();
 
-    // Here you would typically save to backend
-    console.log("Saving remark:", newRemark);
-    
-    // Show success message
-    if (remarkForm.sendToParent) {
-      toast.success(`Remark added and sent to ${student.parentName || 'parent'}`);
-    } else {
-      toast.success("Remark added successfully");
+      const remarkData = {
+        title: remarkForm.title.trim(),
+        description: remarkForm.description.trim(),
+        category: remarkForm.customType.trim() || remarkForm.type,
+        sentToParent: remarkForm.sendToParent
+      };
+
+      const response = await fetch(`${API_URL}/students/${id}/remarks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify(remarkData)
+      });
+
+      if (response.ok) {
+        const savedRemark = await response.json();
+        console.log("Remark saved successfully:", savedRemark);
+
+        // Add to local state
+        setRemarks([savedRemark, ...remarks]);
+
+        // Show success message
+        if (remarkForm.sendToParent) {
+          toast.success(`Remark added and sent to ${student.parentName || 'parent'}`);
+        } else {
+          toast.success("Remark added successfully");
+        }
+
+        // Reset form and close drawer
+        setRemarkForm({
+          type: "",
+          customType: "",
+          title: "",
+          description: "",
+          sendToParent: false
+        });
+        setIsRemarkOpen(false);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Error saving remark:", errorData);
+        toast.error(errorData.error || "Failed to save remark");
+      }
+    } catch (error) {
+      console.error("Error saving remark:", error);
+      toast.error("Failed to save remark");
     }
-
-    // Reset form and close drawer
-    setRemarkForm({ 
-      type: "", 
-      customType: "", 
-      title: "", 
-      description: "", 
-      sendToParent: false 
-    });
-    setIsRemarkOpen(false);
   };
 
   const classOptions = (classesWithTeachers || []).map(c => `${c.name}-${c.section}`);
@@ -1053,8 +1229,6 @@ export default function StudentOverview() {
                   <InfoItem label="Roll Number" value={student.rollNo || "N/A"} />
                   <InfoItem label="Academic Year" value={student.academicYear || "2024-25"} />
                   <InfoItem label="Class Teacher" value={classTeacher?.name || "Not Assigned"} />
-                  <InfoItem label="Medium of Instruction" value={student.mediumOfInstruction || "English"} />
-                  <InfoItem label="House" value={student.house || "Not Assigned"} />
                 </CardBody>
               </Card>
 
@@ -1116,12 +1290,63 @@ export default function StudentOverview() {
                 <CardBody className="p-8 grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-6">
                   <InfoItem label="Father's Name" value={student.parentName} />
                   <InfoItem label="Father's Occupation" value={student.parentOccupation} />
-                  <InfoItem label="Mother's Name" value={student.motherName} />
-                  <InfoItem label="Mother's Occupation" value={student.motherOccupation} />
+                  <InfoItem label="Mother's Name" value={
+                    student.parents && student.parents.find(p => p.relationship?.toLowerCase() === 'mother')?.name ||
+                    student.parents && student.parents.find(p => p.relationship?.toLowerCase() === 'wife')?.name ||
+                    'N/A'
+                  } />
+                  <InfoItem label="Mother's Occupation" value={
+                    student.parents && student.parents.find(p => p.relationship?.toLowerCase() === 'mother')?.occupation ||
+                    student.parents && student.parents.find(p => p.relationship?.toLowerCase() === 'wife')?.occupation ||
+                    'N/A'
+                  } />
                   <InfoItem label="Primary Phone" value={student.parentPhone} />
+                  <InfoItem label="Alternate Phone" value={student.alternatePhone} />
                   <InfoItem label="Primary Email" value={student.parentEmail} />
                 </CardBody>
               </Card>
+
+              {student.siblings && student.siblings.length > 0 && (
+                <Card shadow="none" className="border border-default-200">
+                  <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
+                        <Users size={20} />
+                      </div>
+                      <h3 className="text-lg font-semibold text-default-900">Sibling Information</h3>
+                    </div>
+                    <Button isIconOnly size="sm" variant="light" onPress={() => openEditDrawer("siblings")}><Edit size={16} className="text-default-500" /></Button>
+                  </CardHeader>
+                  <CardBody className="p-8">
+                    <div className="space-y-4">
+                      {student.siblings.map((sibling, idx) => (
+                        <div key={idx} className="p-4 bg-default-50 rounded-lg border border-default-200">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-default-900">{sibling.name}</span>
+                                {!sibling.inSameSchool && (
+                                  <Chip size="sm" variant="flat" className="bg-default-200 text-default-600">
+                                    Not in this school
+                                  </Chip>
+                                )}
+                              </div>
+                              {sibling.inSameSchool && sibling.classId && (
+                                <p className="text-sm text-default-500">
+                                  Class: {sibling.classId?.name || 'N/A'} {sibling.classId?.section || ''}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {student.siblings.length === 0 && (
+                        <p className="text-sm text-default-400 text-center py-4">No sibling information available</p>
+                      )}
+                    </div>
+                  </CardBody>
+                </Card>
+              )}
 
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
@@ -1151,8 +1376,6 @@ export default function StudentOverview() {
                 </CardHeader>
                 <CardBody className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-6">
                   <InfoItem label="Academic Year" value={student.academicYear || "2024-25"} />
-                  <InfoItem label="Medium of Instruction" value={student.mediumOfInstruction || "English"} />
-                  <InfoItem label="House" value={student.house || "Not Assigned"} />
                   <InfoItem label="Transport Required" value={student.transportRequired ? "Yes" : "No"} />
                   <InfoItem label="Hostel Required" value={student.hostelRequired ? "Yes" : "No"} />
                   <InfoItem label="Medical Conditions" value={student.medicalConditions || "None"} className="col-span-full" />
@@ -1208,9 +1431,10 @@ export default function StudentOverview() {
                 <div className="space-y-3">
                       {documents.map((doc, index) => {
                         // Check if document has valid data
-                        const isCorrupted = !doc.url || !doc.name;
+                        const isFrontBack = doc.front && doc.back;
+                        const isCorrupted = !doc.url && !isFrontBack;
                         const docId = doc.id || `doc-${index}`;
-                        
+
                         return (
                           <div key={docId} className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${isCorrupted ? 'border-danger-200 bg-danger-50/30' : 'border-default-200 hover:bg-default-50'}`}>
                             <div className="flex items-center gap-3">
@@ -1220,6 +1444,7 @@ export default function StudentOverview() {
                               <div>
                                 <p className={`text-sm font-medium ${isCorrupted ? 'text-danger-700' : 'text-default-900'}`}>
                                   {doc.name || 'Corrupted Document'}
+                                  {isFrontBack && <span className="ml-2 text-xs bg-primary-100 text-primary px-2 py-0.5 rounded">Front & Back</span>}
                                 </p>
                                 <p className="text-xs text-default-500">
                                   {isCorrupted ? 'Invalid file - please delete' : `${doc.date || 'Unknown date'} • ${doc.size || 'Unknown size'}`}
@@ -1227,16 +1452,46 @@ export default function StudentOverview() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              {!isCorrupted && doc.url && (
+                              {/* View buttons for front/back documents */}
+                              {isFrontBack ? (
+                                <>
+                                  <Tooltip content="View front">
+                                    <Button
+                                      isIconOnly
+                                      size="sm"
+                                      variant="light"
+                                      onPress={() => {
+                                        console.log('👁️ Opening front document:', doc.front.url);
+                                        window.open(doc.front.url, '_blank', 'noopener,noreferrer');
+                                      }}
+                                    >
+                                      <Eye size={16} className="text-default-500" />
+                                    </Button>
+                                  </Tooltip>
+                                  <Tooltip content="View back">
+                                    <Button
+                                      isIconOnly
+                                      size="sm"
+                                      variant="light"
+                                      onPress={() => {
+                                        console.log('👁️ Opening back document:', doc.back.url);
+                                        window.open(doc.back.url, '_blank', 'noopener,noreferrer');
+                                      }}
+                                    >
+                                      <Eye size={16} className="text-default-500" />
+                                    </Button>
+                                  </Tooltip>
+                                </>
+                              ) : !isCorrupted && doc.url && (
                                 <>
                                   <Tooltip content="View document">
-                                    <Button 
-                                      isIconOnly 
-                                      size="sm" 
-                                      variant="light" 
+                                    <Button
+                                      isIconOnly
+                                      size="sm"
+                                      variant="light"
                                       onPress={() => {
                                         console.log('👁️ Opening document:', doc.url);
-                                        
+
                                         // Check if it's a data URL (base64)
                                         if (doc.url.startsWith('data:')) {
                                           // Convert data URL to Blob and create object URL
@@ -1267,10 +1522,10 @@ export default function StudentOverview() {
                                     </Button>
                                   </Tooltip>
                                   <Tooltip content="Download document">
-                                    <Button 
-                                      isIconOnly 
-                                      size="sm" 
-                                      variant="light" 
+                                    <Button
+                                      isIconOnly
+                                      size="sm"
+                                      variant="light"
                                       as="a"
                                       href={doc.url}
                                       download={doc.name}
@@ -1282,11 +1537,11 @@ export default function StudentOverview() {
                                 </>
                               )}
                               <Tooltip content="Delete document">
-                                <Button 
-                                  isIconOnly 
-                                  size="sm" 
-                                  variant="light" 
-                                  color="danger" 
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="light"
+                                  color="danger"
                                   onPress={() => handleDeleteDocument(docId)}
                                 >
                                   <Trash2 size={16} />
@@ -1945,12 +2200,13 @@ export default function StudentOverview() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <Select 
-                    size="sm" 
-                    placeholder="Filter by category" 
-                    className="w-full sm:w-48" 
+                  <Select
+                    size="sm"
+                    placeholder="Filter by category"
+                    className="w-full sm:w-48"
                     variant="bordered"
-                    defaultSelectedKeys={["all"]}
+                    selectedKeys={remarksCategoryFilter === 'all' ? [] : [remarksCategoryFilter]}
+                    onSelectionChange={(keys) => setRemarksCategoryFilter(Array.from(keys)[0] || 'all')}
                   >
                     <SelectItem key="all">All Categories</SelectItem>
                     <SelectItem key="academic">Academic</SelectItem>
@@ -1965,124 +2221,90 @@ export default function StudentOverview() {
               </div>
 
               <div className="grid grid-cols-1 gap-4">
-                {/* Sample Remark 1 - Sent to Parent */}
-                <div className="group flex flex-col sm:flex-row gap-4 p-5 rounded-2xl border border-default-200 bg-white hover:border-primary/30 hover:shadow-md transition-all">
-                  <div className="flex-shrink-0 mt-1">
-                    <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                      <MessageSquare size={20} />
-                    </div>
+                {remarksLoading ? (
+                  <div className="text-center py-12">
+                    <p className="text-default-500">Loading remarks...</p>
                   </div>
-                  <div className="flex-1 space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-default-900 mb-1">Excellent participation in class</h4>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Chip size="sm" variant="flat" color="primary" className="capitalize">Academic</Chip>
-                          <Chip size="sm" variant="flat" color="success" startContent={<Mail size={12} />}>Sent to Parent</Chip>
-                          <span className="text-xs text-default-400">• Teacher A • Dec 20, 2024</span>
-                        </div>
-                      </div>
-                      <Dropdown>
-                        <DropdownTrigger>
-                          <Button isIconOnly size="sm" variant="light">
-                            <MoreVertical size={16} />
-                          </Button>
-                        </DropdownTrigger>
-                        <DropdownMenu aria-label="Remark actions">
-                          <DropdownItem key="edit" startContent={<Edit size={14} />}>Edit</DropdownItem>
-                          <DropdownItem key="resend" startContent={<Mail size={14} />}>Resend to Parent</DropdownItem>
-                          <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 size={14} />}>Delete</DropdownItem>
-                        </DropdownMenu>
-                      </Dropdown>
-                    </div>
-                    <p className="text-sm text-default-600 leading-relaxed">
-                      Student shows great enthusiasm and actively participates in discussions. Consistently asks insightful questions and helps other students understand concepts.
-                    </p>
+                ) : remarks.length === 0 ? (
+                  <div className="text-center py-12 border-2 border-dashed border-default-200 rounded-xl">
+                    <MessageSquare size={48} className="mx-auto text-default-300 mb-3" />
+                    <h4 className="font-semibold text-default-700 mb-1">No remarks yet</h4>
+                    <p className="text-sm text-default-500 mb-4">Add your first remark or observation about this student</p>
+                    <Button color="primary" variant="flat" startContent={<Plus size={16} />} onPress={() => setIsRemarkOpen(true)}>
+                      Add First Remark
+                    </Button>
                   </div>
-                </div>
+                ) : (
+                  remarks.map((remark) => {
+                    const getCategoryColor = (category) => {
+                      switch (category) {
+                        case 'academic': return 'primary';
+                        case 'behavioral': return 'warning';
+                        case 'achievement': return 'success';
+                        case 'attendance': return 'secondary';
+                        case 'health': return 'danger';
+                        default: return 'default';
+                      }
+                    };
 
-                {/* Sample Remark 2 - Not Sent */}
-                <div className="group flex flex-col sm:flex-row gap-4 p-5 rounded-2xl border border-default-200 bg-white hover:border-warning/30 hover:shadow-md transition-all">
-                  <div className="flex-shrink-0 mt-1">
-                    <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-600">
-                      <AlertCircle size={20} />
-                    </div>
-                  </div>
-                  <div className="flex-1 space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-default-900 mb-1">Needs improvement in homework</h4>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Chip size="sm" variant="flat" color="warning" className="capitalize">Behavioral</Chip>
-                          <Chip size="sm" variant="flat" color="default">Staff Only</Chip>
-                          <span className="text-xs text-default-400">• Teacher B • Dec 18, 2024</span>
-                        </div>
-                      </div>
-                      <Dropdown>
-                        <DropdownTrigger>
-                          <Button isIconOnly size="sm" variant="light">
-                            <MoreVertical size={16} />
-                          </Button>
-                        </DropdownTrigger>
-                        <DropdownMenu aria-label="Remark actions">
-                          <DropdownItem key="edit" startContent={<Edit size={14} />}>Edit</DropdownItem>
-                          <DropdownItem key="send" startContent={<Mail size={14} />}>Send to Parent</DropdownItem>
-                          <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 size={14} />}>Delete</DropdownItem>
-                        </DropdownMenu>
-                      </Dropdown>
-                    </div>
-                    <p className="text-sm text-default-600 leading-relaxed">
-                      Homework submission has been irregular this week. Please ensure daily monitoring and provide additional support if needed.
-                    </p>
-                  </div>
-                </div>
+                    const getCategoryIcon = (category) => {
+                      switch (category) {
+                        case 'academic': return MessageSquare;
+                        case 'behavioral': return AlertCircle;
+                        case 'achievement': return Award;
+                        case 'attendance': return CalendarCheck;
+                        case 'health': return Heart;
+                        default: return MessageSquare;
+                      }
+                    };
 
-                {/* Sample Remark 3 - Achievement */}
-                <div className="group flex flex-col sm:flex-row gap-4 p-5 rounded-2xl border border-default-200 bg-white hover:border-success/30 hover:shadow-md transition-all">
-                  <div className="flex-shrink-0 mt-1">
-                    <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600">
-                      <Award size={20} />
-                    </div>
-                  </div>
-                  <div className="flex-1 space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-default-900 mb-1">Won Science Fair Competition</h4>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Chip size="sm" variant="flat" color="success" className="capitalize">Achievement</Chip>
-                          <Chip size="sm" variant="flat" color="success" startContent={<Mail size={12} />}>Sent to Parent</Chip>
-                          <span className="text-xs text-default-400">• Principal • Dec 15, 2024</span>
+                    const CategoryIcon = getCategoryIcon(remark.category);
+
+                    return (
+                      <div key={remark._id} className="group flex flex-col sm:flex-row gap-4 p-5 rounded-2xl border border-default-200 bg-white hover:border-primary/30 hover:shadow-md transition-all">
+                        <div className="flex-shrink-0 mt-1">
+                          <div className={`w-10 h-10 rounded-full bg-${getCategoryColor(remark.category)}-50 flex items-center justify-center text-${getCategoryColor(remark.category)}-600`}>
+                            <CategoryIcon size={20} />
+                          </div>
+                        </div>
+                        <div className="flex-1 space-y-3">
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-default-900 mb-1">{remark.title}</h4>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Chip size="sm" variant="flat" color={getCategoryColor(remark.category)} className="capitalize">{remark.category}</Chip>
+                                {remark.sentToParent ? (
+                                  <Chip size="sm" variant="flat" color="success" startContent={<Mail size={12} />}>Sent to Parent</Chip>
+                                ) : (
+                                  <Chip size="sm" variant="flat" color="default">Staff Only</Chip>
+                                )}
+                                <span className="text-xs text-default-400">
+                                  • {remark.authorName || 'System'} • {new Date(remark.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </span>
+                              </div>
+                            </div>
+                            <Dropdown>
+                              <DropdownTrigger>
+                                <Button isIconOnly size="sm" variant="light">
+                                  <MoreVertical size={16} />
+                                </Button>
+                              </DropdownTrigger>
+                              <DropdownMenu aria-label="Remark actions">
+                                <DropdownItem key="edit" startContent={<Edit size={14} />}>Edit</DropdownItem>
+                                <DropdownItem key="resend" startContent={<Mail size={14} />}>Resend to Parent</DropdownItem>
+                                <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 size={14} />}>Delete</DropdownItem>
+                              </DropdownMenu>
+                            </Dropdown>
+                          </div>
+                          <p className="text-sm text-default-600 leading-relaxed">
+                            {remark.description}
+                          </p>
                         </div>
                       </div>
-                      <Dropdown>
-                        <DropdownTrigger>
-                          <Button isIconOnly size="sm" variant="light">
-                            <MoreVertical size={16} />
-                          </Button>
-                        </DropdownTrigger>
-                        <DropdownMenu aria-label="Remark actions">
-                          <DropdownItem key="edit" startContent={<Edit size={14} />}>Edit</DropdownItem>
-                          <DropdownItem key="resend" startContent={<Mail size={14} />}>Resend to Parent</DropdownItem>
-                          <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 size={14} />}>Delete</DropdownItem>
-                        </DropdownMenu>
-                      </Dropdown>
-                    </div>
-                    <p className="text-sm text-default-600 leading-relaxed">
-                      Congratulations! Student won first place in the inter-school science fair with an innovative project on renewable energy. Excellent research and presentation skills demonstrated.
-                    </p>
-                  </div>
-                </div>
+                    );
+                  })
+                )}
               </div>
-
-              {/* Empty State (hidden when remarks exist) */}
-              {/* <div className="text-center py-12 border-2 border-dashed border-default-200 rounded-xl">
-                <MessageSquare size={48} className="mx-auto text-default-300 mb-3" />
-                <h4 className="font-semibold text-default-700 mb-1">No remarks yet</h4>
-                <p className="text-sm text-default-500 mb-4">Add your first remark or observation about this student</p>
-                <Button color="primary" variant="flat" startContent={<Plus size={16} />} onPress={() => setIsRemarkOpen(true)}>
-                  Add First Remark
-                </Button>
-              </div> */}
             </div>
           )}
 
@@ -2207,20 +2429,72 @@ export default function StudentOverview() {
                     </div>
                     <h3 className="text-lg font-semibold text-default-900">Exam Overview</h3>
                   </div>
-                  <Select size="sm" placeholder="Select Term" className="w-32" variant="bordered" defaultSelectedKeys={["term1"]}>
-                    <SelectItem key="term1">Term 1</SelectItem>
-                    <SelectItem key="term2">Term 2</SelectItem>
-                  </Select>
+                  {resultsLoading && <Spinner size="sm" />}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {/* Exam Cards - Now responsive for more than 3 cards */}
-                  {[
-                    { name: "Unit Test 1", date: "Aug 2024", status: "Published", score: "88%", percentage: 88 },
-                    { name: "Half Yearly", date: "Sept 2024", status: "Published", score: "92%", percentage: 92 },
-                    { name: "Unit Test 2", date: "Nov 2024", status: "Published", score: "85%", percentage: 85 },
-                    { name: "Annual Exam", date: "Dec 2024", status: "Scheduled", score: "-", percentage: 0 }
-                  ].map((exam, i) => (
+                  {/* Real exam results when available */}
+                  {results.length > 0 ? results.map((result, i) => {
+                    const exam = result.examId;
+                    const scoreDisplay = result.isPublished ? `${Math.round(result.percentage)}%` : 'Not Published';
+                    const status = result.isPublished ? 'Published' : 'Pending';
+
+                    return (
+                      <Card
+                        key={i}
+                        isPressable
+                        onPress={() => { setSelectedExam(result); setIsExamConfigOpen(true); }}
+                        shadow="none"
+                        className="border border-default-200 hover:border-primary hover:shadow-lg transition-all hover:scale-105"
+                      >
+                        <CardBody className="p-5">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className={`p-2.5 rounded-lg ${
+                              result.isPublished ? "bg-success-50 text-success-600" :
+                              "bg-warning-50 text-warning-600"
+                            }`}>
+                              <FileText size={18} />
+                            </div>
+                            <Chip
+                              size="sm"
+                              color={result.isPublished ? "success" : "warning"}
+                              variant="flat"
+                            >
+                              {status}
+                            </Chip>
+                          </div>
+                          <h4 className="text-base font-semibold text-default-900 mb-1">{exam?.name || 'Exam'}</h4>
+                          <p className="text-xs text-default-500 mb-4">{exam?.startDate ? new Date(exam.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'No date'}</p>
+                          {result.isPublished && result.percentage > 0 && (
+                            <Progress
+                              value={result.percentage}
+                              color={result.percentage >= 90 ? "success" : result.percentage >= 75 ? "primary" : "warning"}
+                              size="sm"
+                              radius="full"
+                              className="mb-3"
+                            />
+                          )}
+                          <div className="flex items-center justify-between text-sm pt-3 border-t border-default-100">
+                            <span className="text-default-500">Score</span>
+                            <span className={`font-bold ${result.percentage >= 90 ? "text-success" : result.percentage >= 75 ? "text-primary" : "text-default-900"}`}>
+                              {scoreDisplay}
+                            </span>
+                          </div>
+                        </CardBody>
+                      </Card>
+                    );
+                  }) : resultsLoading ? (
+                    <div className="col-span-full flex justify-center py-8">
+                      <Spinner size="lg" />
+                    </div>
+                  ) : !resultsLoading && (
+                    /* Fallback mock data when no results exist */
+                    [
+                      { name: "Unit Test 1", date: "Aug 2024", status: "Published", score: "88%", percentage: 88 },
+                      { name: "Half Yearly", date: "Sept 2024", status: "Published", score: "92%", percentage: 92 },
+                      { name: "Unit Test 2", date: "Nov 2024", status: "Published", score: "85%", percentage: 85 },
+                      { name: "Annual Exam", date: "Dec 2024", status: "Scheduled", score: "-", percentage: 0 }
+                    ].map((exam, i) => (
                     <Card 
                       key={i} 
                       isPressable 
@@ -2264,7 +2538,8 @@ export default function StudentOverview() {
                         </div>
                       </CardBody>
                     </Card>
-                  ))}
+                  ))
+                  )}
                 </div>
               </div>
 
@@ -2307,13 +2582,14 @@ export default function StudentOverview() {
 
       {/* Edit Drawer */}
       {/* Edit Drawer - Uses AddStudent Component */}
-      <Drawer 
-        isOpen={isEditOpen} 
-        onOpenChange={setIsEditOpen} 
-        placement="right" 
-        size="5xl" 
-        classNames={{ 
-          wrapper: "!z-50", 
+      <Drawer
+        isOpen={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        placement="right"
+        size="5xl"
+        hideCloseButton={true}
+        classNames={{
+          wrapper: "!z-50",
           base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]",
           backdrop: "!z-40"
         }}

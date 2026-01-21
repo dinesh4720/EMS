@@ -4,15 +4,22 @@ import { useLocation, Link, useNavigate } from "react-router-dom";
 import GlobalSearch from "./GlobalSearch";
 import { AiAssistantToggle } from "./AiAssistant/AiAssistantPanel";
 import { useChatNotifications } from "../context/ChatNotificationContext";
-import { Tooltip, Badge, Button, Popover, PopoverTrigger, PopoverContent } from "@heroui/react";
+import { Tooltip, Badge, Button, Popover, PopoverTrigger, PopoverContent, Chip } from "@heroui/react";
+import NotificationCenter from "../pages/messaging/components/notifications/NotificationCenter";
 
 export default function Topbar({ isSidebarOpen }) {
     const [searchOpen, setSearchOpen] = useState(false);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+    const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
     const location = useLocation();
     const navigate = useNavigate();
     const chatNotifications = useChatNotifications();
     const unreadCount = chatNotifications?.unreadCount || 0;
+
+    useEffect(() => {
+        // Mock notification count - in real app, fetch from API
+        setNotificationUnreadCount(3);
+    }, []);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -104,9 +111,13 @@ export default function Topbar({ isSidebarOpen }) {
                 {/* Notifications */}
                 <Popover
                     isOpen={isNotificationOpen}
-                    onOpenChange={setIsNotificationOpen}
+                    onOpenChange={(open) => {
+                        setIsNotificationOpen(open);
+                        if (open) setNotificationUnreadCount(0); // Mark as read when opened
+                    }}
                     placement="bottom-end"
                     offset={10}
+                    shouldBlockScroll={false}
                 >
                     <PopoverTrigger>
                         <Button
@@ -114,35 +125,19 @@ export default function Topbar({ isSidebarOpen }) {
                             radius="lg"
                             variant="light"
                             className="h-9 w-9"
-                            onPress={() => setIsNotificationOpen(!isNotificationOpen)}
                         >
                             <div className="relative">
                                 <Bell size={18} className="text-default-600" />
-                                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border-2 border-background"></span>
+                                {notificationUnreadCount > 0 && (
+                                    <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full border-2 border-background">
+                                        {notificationUnreadCount > 9 ? '9+' : notificationUnreadCount}
+                                    </span>
+                                )}
                             </div>
                         </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="p-0 max-w-sm">
-                        <div className="p-4 border-b border-default-200">
-                            <h3 className="text-sm font-semibold">Notifications</h3>
-                            <p className="text-xs text-default-500">Stay updated with latest activities</p>
-                        </div>
-                        <div className="max-h-80 overflow-y-auto">
-                            <div className="p-4 text-center text-sm text-default-500">
-                                <p>No new notifications</p>
-                            </div>
-                        </div>
-                        <div className="p-2 border-t border-default-200">
-                            <button
-                                onClick={() => {
-                                    setIsNotificationOpen(false);
-                                    navigate('/settings');
-                                }}
-                                className="w-full text-center text-xs font-medium text-default-600 hover:text-foreground py-2"
-                            >
-                                Notification Settings
-                            </button>
-                        </div>
+                    <PopoverContent className="p-0 w-[400px]">
+                        <NotificationCenter onClose={() => setIsNotificationOpen(false)} isPopover={true} />
                     </PopoverContent>
                 </Popover>
 

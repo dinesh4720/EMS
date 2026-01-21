@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, Chip, useDisclosure,
   Select, SelectItem, Checkbox, Button
 } from '@heroui/react';
-import { Edit, Trash2 } from 'lucide-react';
-import api from '../../services/api';
+import { Edit, Trash2, Plus } from 'lucide-react';
+import { frontDeskApi, staffApi } from '../../services/api';
 import toast from 'react-hot-toast';
 
-export default function FeedbacksList() {
+const FeedbacksList = forwardRef((props, ref) => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,11 +29,20 @@ export default function FeedbacksList() {
     loadStaff();
   }, []);
 
+  // Expose the openModal function to parent
+  useImperativeHandle(ref, () => ({
+    openModal: () => {
+      resetForm();
+      onOpen();
+    }
+  }));
+
   const loadFeedbacks = async () => {
     try {
-      const response = await api.get('/front-desk/feedbacks');
-      setFeedbacks(response.data);
+      const response = await frontDeskApi.getFeedbacks();
+      setFeedbacks(response);
     } catch (error) {
+      console.error('Failed to load feedbacks:', error);
       toast.error('Failed to load feedbacks');
     } finally {
       setLoading(false);
@@ -42,20 +51,20 @@ export default function FeedbacksList() {
 
   const loadStaff = async () => {
     try {
-      const response = await api.get('/staff');
-      setStaff(response.data);
+      const response = await staffApi.getAll();
+      setStaff(response);
     } catch (error) {
-      console.error('Failed to load staff');
+      console.error('Failed to load staff:', error);
     }
   };
 
   const handleSubmit = async () => {
     try {
       if (editingId) {
-        await api.put(`/front-desk/feedbacks/${editingId}`, formData);
+        await frontDeskApi.updateFeedback(editingId, formData);
         toast.success('Feedback updated successfully');
       } else {
-        await api.post('/front-desk/feedbacks', formData);
+        await frontDeskApi.createFeedback(formData);
         toast.success('Feedback created successfully');
       }
       onClose();
@@ -83,7 +92,7 @@ export default function FeedbacksList() {
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this feedback?')) return;
     try {
-      await api.delete(`/front-desk/feedbacks/${id}`);
+      await frontDeskApi.deleteFeedback(id);
       toast.success('Feedback deleted');
       loadFeedbacks();
     } catch (error) {
@@ -106,6 +115,11 @@ export default function FeedbacksList() {
 
   return (
     <>
+      <div className="flex justify-end mb-4">
+        <Button color="primary" startContent={<Plus size={16} />} onPress={onOpen}>
+          New Feedback
+        </Button>
+      </div>
       <Table aria-label="Feedbacks table" removeWrapper>
             <TableHeader>
               <TableColumn>NAME</TableColumn>
@@ -195,7 +209,7 @@ export default function FeedbacksList() {
                 onChange={(e) => setFormData({ ...formData, assignedStaff: e.target.value })}
               >
                 {staff.map((member) => (
-                  <SelectItem key={member.id} value={member.id}>
+                  <SelectItem key={member._id} value={member._id}>
                     {member.name} ({member.role})
                   </SelectItem>
                 ))}
@@ -237,4 +251,8 @@ export default function FeedbacksList() {
       </Modal>
     </>
   );
-}
+});
+
+FeedbacksList.displayName = 'FeedbacksList';
+
+export default FeedbacksList;

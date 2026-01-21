@@ -4,6 +4,21 @@ import { IndianRupee, CheckCircle, AlertTriangle, TrendingUp, Calendar, Mail, Do
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
+// Helper function to get auth token
+const getAuthToken = () => {
+  const storedUser = sessionStorage.getItem('app_user');
+  if (storedUser) {
+    try {
+      const userData = JSON.parse(storedUser);
+      return userData.token;
+    } catch (err) {
+      console.error('Failed to parse user data:', err);
+      return null;
+    }
+  }
+  return null;
+};
+
 export default function FeeDetailsCard({ student }) {
   const navigate = useNavigate();
   const [feeSummary, setFeeSummary] = useState(null);
@@ -16,7 +31,12 @@ export default function FeeDetailsCard({ student }) {
       try {
         setLoading(true);
         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-        const response = await fetch(`${API_URL}/students/${student.id}/fee-summary`);
+        const token = getAuthToken();
+        const headers = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        const response = await fetch(`${API_URL}/students/${student.id}/fee-summary`, { headers });
         if (response.ok) {
           const data = await response.json();
           setFeeSummary(data);
@@ -55,7 +75,7 @@ export default function FeeDetailsCard({ student }) {
   }, [student?.id]);
 
   const handleSendReminder = () => {
-    toast.success(Reminder sent to \'s parents);
+    toast.success(`Reminder sent to ${student.name}'s parents`);
   };
 
   const handleDownloadInvoice = () => {
@@ -81,7 +101,7 @@ export default function FeeDetailsCard({ student }) {
   return (
     <div className="space-y-6">
       {/* Fee Hero Section */}
-      <div className={p-6 rounded-2xl border relative overflow-hidden \}>
+      <div className="p-6 rounded-2xl border border-default-200 bg-gradient-to-br from-primary-50 to-background relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="space-y-2 text-center md:text-left">
             <p className="text-default-600 font-medium">Total Outstanding</p>

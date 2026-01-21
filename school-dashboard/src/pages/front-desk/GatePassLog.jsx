@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select, SelectItem,
   Checkbox, useDisclosure, Button
 } from '@heroui/react';
-import { Trash2 } from 'lucide-react';
-import api from '../../services/api';
+import { Trash2, Plus } from 'lucide-react';
+import { frontDeskApi, studentsApi, staffApi } from '../../services/api';
 import toast from 'react-hot-toast';
 
-export default function GatePassLog() {
+const GatePassLog = forwardRef((props, ref) => {
   const [gatePasses, setGatePasses] = useState([]);
   const [students, setStudents] = useState([]);
   const [staff, setStaff] = useState([]);
@@ -31,11 +31,20 @@ export default function GatePassLog() {
     loadStaff();
   }, []);
 
+  // Expose the openModal function to parent
+  useImperativeHandle(ref, () => ({
+    openModal: () => {
+      resetForm();
+      onOpen();
+    }
+  }));
+
   const loadGatePasses = async () => {
     try {
-      const response = await api.get('/front-desk/gate-passes/today');
-      setGatePasses(response.data);
+      const response = await frontDeskApi.getGatePassesToday();
+      setGatePasses(response);
     } catch (error) {
+      console.error('Failed to load gate passes:', error);
       toast.error('Failed to load gate passes');
     } finally {
       setLoading(false);
@@ -44,25 +53,25 @@ export default function GatePassLog() {
 
   const loadStudents = async () => {
     try {
-      const response = await api.get('/students');
-      setStudents(response.data);
+      const response = await studentsApi.getAll();
+      setStudents(response);
     } catch (error) {
-      console.error('Failed to load students');
+      console.error('Failed to load students:', error);
     }
   };
 
   const loadStaff = async () => {
     try {
-      const response = await api.get('/staff');
-      setStaff(response.data);
+      const response = await staffApi.getAll();
+      setStaff(response);
     } catch (error) {
-      console.error('Failed to load staff');
+      console.error('Failed to load staff:', error);
     }
   };
 
   const handleSubmit = async () => {
     try {
-      await api.post('/front-desk/gate-passes', formData);
+      await frontDeskApi.createGatePass(formData);
       toast.success('Gate pass issued successfully');
       onClose();
       resetForm();
@@ -75,7 +84,7 @@ export default function GatePassLog() {
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this gate pass?')) return;
     try {
-      await api.delete(`/front-desk/gate-passes/${id}`);
+      await frontDeskApi.deleteGatePass(id);
       toast.success('Gate pass deleted');
       loadGatePasses();
     } catch (error) {
@@ -85,9 +94,9 @@ export default function GatePassLog() {
 
   const handlePersonSelect = (personId) => {
     const person = formData.personType === 'student'
-      ? students.find(s => s.id === personId)
-      : staff.find(s => s.id === personId);
-    
+      ? students.find(s => s._id === personId)
+      : staff.find(s => s._id === personId);
+
     if (person) {
       setFormData({
         ...formData,
@@ -112,6 +121,11 @@ export default function GatePassLog() {
 
   return (
     <>
+      <div className="flex justify-end mb-4">
+        <Button color="primary" startContent={<Plus size={16} />} onPress={onOpen}>
+          Issue New Gate Pass
+        </Button>
+      </div>
       <Table aria-label="Gate pass log table" removeWrapper>
             <TableHeader>
               <TableColumn>PERSON TYPE</TableColumn>
@@ -174,7 +188,7 @@ export default function GatePassLog() {
                 isRequired
               >
                 {(formData.personType === 'student' ? students : staff).map((person) => (
-                  <SelectItem key={person.id} value={person.id}>
+                  <SelectItem key={person._id} value={person._id}>
                     {person.name} {person.admissionId ? `(${person.admissionId})` : person.code ? `(${person.code})` : ''}
                   </SelectItem>
                 ))}
@@ -228,4 +242,8 @@ export default function GatePassLog() {
       </Modal>
     </>
   );
-}
+});
+
+GatePassLog.displayName = 'GatePassLog';
+
+export default GatePassLog;

@@ -626,7 +626,7 @@ export default function StaffPayroll() {
                   </>
                 );
               })()}
-              Click "Prepare Records" to generate salary records for all active staff.
+              Click "Run Payroll" to generate salary records for all active staff.
             </p>
 
             {/* Staff Status Breakdown */}
@@ -880,7 +880,7 @@ export default function StaffPayroll() {
               disabled={preparingRecords}
             >
               {preparingRecords ? <Spinner size="sm" color="white" /> : <Play size={16} />}
-              <span>{preparingRecords ? 'Preparing...' : 'Prepare Records'}</span>
+              <span>{preparingRecords ? 'Processing...' : 'Run Payroll'}</span>
             </button>
             <button
               className="flex items-center gap-2 px-3 py-2 bg-default-100 text-default-700 rounded-lg border border-default-300 hover:bg-default-200 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap"
@@ -1047,6 +1047,22 @@ export default function StaffPayroll() {
                               Reverse
                             </Button>
                           )}
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            color="primary"
+                            onPress={() => {
+                              setEditingRecord(record);
+                              setPaymentForm({
+                                paymentMethod: 'bank_transfer',
+                                paymentReference: '',
+                                notes: ''
+                              });
+                              setPaymentModalOpen(true);
+                            }}
+                          >
+                            Edit
+                          </Button>
                           <Button
                             size="sm"
                             variant="light"

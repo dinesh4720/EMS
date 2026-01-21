@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, useDisclosure, Button
 } from '@heroui/react';
-import { Edit, Trash2, Eye } from 'lucide-react';
-import api from '../../services/api';
+import { Edit, Trash2, Eye, Plus } from 'lucide-react';
+import { frontDeskApi } from '../../services/api';
+import { validatePhone } from '../../utils/validations';
 import toast from 'react-hot-toast';
 
-export default function CallLogsList() {
+const CallLogsList = forwardRef((props, ref) => {
   const [callLogs, setCallLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [errors, setErrors] = useState({});
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isDetailOpen, onOpen: onDetailOpen, onClose: onDetailClose } = useDisclosure();
   const [editingId, setEditingId] = useState(null);
@@ -29,24 +31,59 @@ export default function CallLogsList() {
     loadCallLogs();
   }, []);
 
+  // Expose the openModal function to parent
+  useImperativeHandle(ref, () => ({
+    openModal: () => {
+      resetForm();
+      onOpen();
+    }
+  }));
+
   const loadCallLogs = async () => {
     try {
-      const response = await api.get('/front-desk/call-logs');
-      setCallLogs(response.data);
+      const response = await frontDeskApi.getCallLogs();
+      setCallLogs(response);
     } catch (error) {
+      console.error('Failed to load call logs:', error);
       toast.error('Failed to load call logs');
     } finally {
       setLoading(false);
     }
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.callerName?.trim()) {
+      newErrors.callerName = 'Caller name is required';
+    }
+    if (!formData.phoneNumber) {
+      newErrors.phoneNumber = 'Phone number is required';
+    } else if (!validatePhone(formData.phoneNumber)) {
+      newErrors.phoneNumber = 'Please enter a valid 10-digit phone number';
+    }
+    if (!formData.dateTime) {
+      newErrors.dateTime = 'Date and time are required';
+    }
+    if (!formData.title?.trim()) {
+      newErrors.title = 'Title is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async () => {
+    if (!validateForm()) {
+      toast.error('Please fix the errors before submitting');
+      return;
+    }
     try {
       if (editingId) {
-        await api.put(`/front-desk/call-logs/${editingId}`, formData);
+        await frontDeskApi.updateCallLog(editingId, formData);
         toast.success('Call log updated successfully');
       } else {
-        await api.post('/front-desk/call-logs', formData);
+        await frontDeskApi.createCallLog(formData);
         toast.success('Call log created successfully');
       }
       onClose();
@@ -80,7 +117,7 @@ export default function CallLogsList() {
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this call log?')) return;
     try {
-      await api.delete(`/front-desk/call-logs/${id}`);
+      await frontDeskApi.deleteCallLog(id);
       toast.success('Call log deleted');
       loadCallLogs();
     } catch (error) {
@@ -90,6 +127,7 @@ export default function CallLogsList() {
 
   const resetForm = () => {
     setEditingId(null);
+    setErrors({});
     setFormData({
       callerName: '',
       phoneNumber: '',
@@ -104,6 +142,11 @@ export default function CallLogsList() {
 
   return (
     <>
+      <div className="flex justify-end mb-4">
+        <Button color="primary" startContent={<Plus size={16} />} onPress={onOpen}>
+          Log New Call
+        </Button>
+      </div>
       <Table aria-label="Call logs table" removeWrapper>
             <TableHeader>
               <TableColumn>TITLE</TableColumn>
@@ -173,27 +216,51 @@ export default function CallLogsList() {
                 label="Title"
                 placeholder="Enter call title"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, title: e.target.value });
+                  if (errors.title) setErrors({ ...errors, title: '' });
+                }}
+                isRequired
+                isInvalid={!!errors.title}
+                errorMessage={errors.title}
                 className="col-span-2"
               />
               <Input
                 label="Caller Name"
                 placeholder="Enter caller name"
                 value={formData.callerName}
-                onChange={(e) => setFormData({ ...formData, callerName: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, callerName: e.target.value });
+                  if (errors.callerName) setErrors({ ...errors, callerName: '' });
+                }}
+                isRequired
+                isInvalid={!!errors.callerName}
+                errorMessage={errors.callerName}
               />
               <Input
                 label="Phone Number"
-                placeholder="Enter phone number"
+                placeholder="Enter 10-digit phone number"
                 value={formData.phoneNumber}
-                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, phoneNumber: e.target.value });
+                  if (errors.phoneNumber) setErrors({ ...errors, phoneNumber: '' });
+                }}
+                maxLength={10}
+                isRequired
+                isInvalid={!!errors.phoneNumber}
+                errorMessage={errors.phoneNumber}
               />
               <Input
                 label="Date & Time"
                 type="datetime-local"
                 value={formData.dateTime}
-                onChange={(e) => setFormData({ ...formData, dateTime: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, dateTime: e.target.value });
+                  if (errors.dateTime) setErrors({ ...errors, dateTime: '' });
+                }}
                 isRequired
+                isInvalid={!!errors.dateTime}
+                errorMessage={errors.dateTime}
                 className="col-span-2"
               />
               <Input
@@ -292,4 +359,8 @@ export default function CallLogsList() {
       </Modal>
     </>
   );
-}
+});
+
+CallLogsList.displayName = 'CallLogsList';
+
+export default CallLogsList;

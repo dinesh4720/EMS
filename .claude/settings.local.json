@@ -1,7 +1,30 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run populate-staff:*)"
+      "Bash(npm run populate-staff:*)",
+      "Bash(find:*)",
+      "Bash(npm start)",
+      "Bash(ls:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(npx vite build:*)",
+      "Bash(npm install:*)",
+      "Bash(node:*)",
+      "Bash(if not exist \"C:\\\\Users\\\\bdk47\\\\Desktop\\\\kiro bp\\\\EMS\\\\changes\" mkdir:*)",
+      "Bash(del:*)",
+      "Bash(if not exist:*)",
+      "Bash(curl:*)",
+      "Bash(tasklist:*)",
+      "Bash(start cmd /k \"node server.js\")",
+      "Bash(dir:*)",
+      "Bash(npm run build)",
+      "Bash(taskkill:*)",
+      "Bash(ping:*)",
+      "Bash(powershell:*)",
+      "Bash(npm run)",
+      "Bash(net start:*)"
     ]
   }
 }

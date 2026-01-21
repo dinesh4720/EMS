@@ -1,13 +1,29 @@
 import { useState, useMemo, memo, useRef, useEffect } from "react";
 import {
     Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-    Chip,
+    Chip, Button,
     Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
     Popover, PopoverTrigger, PopoverContent, Calendar
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
-import { Search, Filter, ChevronDown, ChevronLeft, ChevronRight, CalendarDays, Check, X, Clock, UserCheck, UserX, Users, Layers, AlertCircle } from "lucide-react";
+import { Search, Filter, ChevronDown, ChevronLeft, ChevronRight, CalendarDays, Check, X, Clock, UserCheck, UserX, Users, Layers, AlertCircle, Save } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import toast from "react-hot-toast";
+
+// Helper function to get auth token (same as api.js)
+const getAuthToken = () => {
+    const storedUser = sessionStorage.getItem('app_user');
+    if (storedUser) {
+        try {
+            const userData = JSON.parse(storedUser);
+            return userData.token;
+        } catch (err) {
+            console.error('Failed to parse user data:', err);
+            return null;
+        }
+    }
+    return null;
+};
 
 const StudentAttendance = memo(function StudentAttendance() {
     const { students } = useApp();
@@ -121,6 +137,43 @@ const StudentAttendance = memo(function StudentAttendance() {
             setAttendance(prev => ({ ...prev, ...updates }));
         }
         setSelectedKeys(new Set([]));
+    };
+
+    const handleSaveAttendance = async () => {
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+            const token = getAuthToken();
+
+            // Build attendance array for bulk save
+            const attendanceData = filteredStudents.map(s => ({
+                studentId: s.id,
+                status: attendance[s.id]?.status || 'unmarked'
+            }));
+
+            // Use bulk attendance endpoint
+            const response = await fetch(`${API_URL}/attendance/bulk`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    date: selectedDate,
+                    attendance: attendanceData,
+                    markedBy: token ? JSON.parse(atob(token.split('.')[1])).id : null
+                })
+            });
+
+            if (response.ok) {
+                toast.success('Attendance saved successfully');
+            } else {
+                const error = await response.json();
+                toast.error(error.error || 'Failed to save attendance');
+            }
+        } catch (error) {
+            console.error('Error saving attendance:', error);
+            toast.error('Failed to save attendance');
+        }
     };
 
     const getStatusStyle = (status) => {
@@ -323,6 +376,18 @@ const StudentAttendance = memo(function StudentAttendance() {
                             </DropdownItem>
                         </DropdownMenu>
                     </Dropdown>
+
+                    {/* Save Button */}
+                    <Button
+                        color="primary"
+                        variant="flat"
+                        size="sm"
+                        startContent={<Save size={16} />}
+                        onPress={handleSaveAttendance}
+                        className="whitespace-nowrap"
+                    >
+                        Save Attendance
+                    </Button>
                 </div>
             </div>
 

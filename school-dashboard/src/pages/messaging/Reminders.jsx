@@ -1,176 +1,288 @@
-import { useState } from "react";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Select,
-  SelectItem,
-  Chip,
-  Checkbox,
-  CheckboxGroup,
-} from "@heroui/react";
-import { Send, IndianRupee, Calendar, Users } from "lucide-react";
-import { feeDefaulters, studentsData } from "../../data/mockData";
-
-const templates = [
-  {
-    id: 1,
-    name: "Fee Due Reminder",
-    content: "Dear Parent, Fee of ₹{amount} is pending for {student}. Please pay by {date}.",
-  },
-  {
-    id: 2,
-    name: "Absence Notification",
-    content: "Dear Parent, {student} was absent on {date}. Please contact school if needed.",
-  },
-  {
-    id: 3,
-    name: "PTM Reminder",
-    content: "Dear Parent, PTM is scheduled on {date}. Your presence is requested.",
-  },
-];
+import { useState, useEffect } from "react";
+import { Button, Card, Tabs, Tab } from "@heroui/react";
+import { Plus, Bell, DollarSign, Calendar, BookOpen, Users } from "lucide-react";
+import ReminderForm from "./components/reminders/ReminderForm";
+import RemindersList from "./components/reminders/RemindersList";
+import ReminderTemplates from "./components/reminders/ReminderTemplates";
+import { remindersApi } from "../../services/api";
+import toast from "react-hot-toast";
 
 export default function Reminders() {
-  const [reminderType, setReminderType] = useState("fee");
-  const [selectedTemplate, setSelectedTemplate] = useState("");
-  const [selectedRecipients, setSelectedRecipients] = useState([]);
+  const [reminders, setReminders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showTemplatesModal, setShowTemplatesModal] = useState(false);
+  const [editReminder, setEditReminder] = useState(null);
+  const [selectedType, setSelectedType] = useState("all");
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const recipients = reminderType === "fee" ? feeDefaulters : studentsData;
+  useEffect(() => {
+    loadReminders();
+  }, [refreshKey]);
+
+  const loadReminders = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      console.log('🔔 Loading reminders...');
+      const response = await remindersApi.getAll();
+      console.log('🔔 Reminders loaded:', response);
+      // Backend returns { reminders: [], ... }
+      setReminders(response.reminders || response || []);
+    } catch (error) {
+      console.error('Error loading reminders:', error);
+      const errorMsg = error.message || 'Unknown error';
+      setError(errorMsg);
+      toast.error(`Failed to load reminders: ${errorMsg}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreate = async (formData) => {
+    try {
+      if (editReminder) {
+        await remindersApi.update(editReminder._id, formData);
+        toast.success('Reminder updated successfully');
+      } else {
+        await remindersApi.create(formData);
+        toast.success('Reminder created successfully');
+      }
+      setRefreshKey(prev => prev + 1);
+      setShowCreateModal(false);
+      setEditReminder(null);
+    } catch (error) {
+      console.error('Error saving reminder:', error);
+      toast.error('Failed to save reminder');
+    }
+  };
+
+  const handleEdit = (reminder) => {
+    setEditReminder(reminder);
+    setShowCreateModal(true);
+  };
+
+  const handleDelete = async (reminderId) => {
+    try {
+      await remindersApi.delete(reminderId);
+      setRefreshKey(prev => prev + 1);
+    } catch (error) {
+      console.error('Error deleting reminder:', error);
+      throw error;
+    }
+  };
+
+  const handleToggle = async (reminderId, active) => {
+    try {
+      await remindersApi.toggle(reminderId, active);
+      setRefreshKey(prev => prev + 1);
+    } catch (error) {
+      console.error('Error toggling reminder:', error);
+      throw error;
+    }
+  };
+
+  const handleDuplicate = async (reminder) => {
+    try {
+      await remindersApi.duplicate(reminder._id);
+      setRefreshKey(prev => prev + 1);
+    } catch (error) {
+      console.error('Error duplicating reminder:', error);
+      throw error;
+    }
+  };
+
+  const handleSelectTemplate = (template) => {
+    setEditReminder({
+      title: template.title,
+      message: template.message,
+      trigger: template.trigger,
+      type: selectedType,
+    });
+    setShowTemplatesModal(false);
+    setShowCreateModal(true);
+  };
+
+  const filteredReminders = selectedType === 'all'
+    ? reminders
+    : reminders.filter(r => r.type === selectedType);
+
+  const stats = {
+    total: reminders.length,
+    active: reminders.filter(r => r.active).length,
+    fee: reminders.filter(r => r.type === 'fee').length,
+    attendance: reminders.filter(r => r.type === 'attendance').length,
+  };
 
   return (
-    <div className="w-full flex flex-col gap-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="md:col-span-1 shadow-sm border border-default-200 bg-background rounded-lg">
-          <CardHeader className="py-3 px-4 bg-default-50/50 border-b border-default-200">
-            <h3 className="text-sm font-semibold text-default-900">Reminder Type</h3>
-          </CardHeader>
-          <CardBody className="p-3 space-y-2">
-            <button
-              className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
-                reminderType === "fee"
-                  ? "bg-primary text-white"
-                  : "bg-transparent text-default-600 hover:bg-default-100 border border-default-200"
-              }`}
-              onClick={() => setReminderType("fee")}
-            >
-              <IndianRupee size={16} />
-              <span>Fee Due Reminder</span>
-            </button>
-            <button
-              className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
-                reminderType === "absence"
-                  ? "bg-primary text-white"
-                  : "bg-transparent text-default-600 hover:bg-default-100 border border-default-200"
-              }`}
-              onClick={() => setReminderType("absence")}
-            >
-              <Calendar size={16} />
-              <span>Absence Reminder</span>
-            </button>
-            <button
-              className={`w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
-                reminderType === "custom"
-                  ? "bg-primary text-white"
-                  : "bg-transparent text-default-600 hover:bg-default-100 border border-default-200"
-              }`}
-              onClick={() => setReminderType("custom")}
-            >
-              <Users size={16} />
-              <span>Custom Message</span>
-            </button>
-          </CardBody>
+    <div className="w-full">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Bell className="text-primary" size={28} />
+            Reminders
+          </h1>
+          <p className="text-default-500 mt-1">
+            Automated reminders for fees, attendance, and events
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="flat"
+            onPress={() => setShowTemplatesModal(true)}
+            startContent={<BookOpen size={18} />}
+          >
+            Templates
+          </Button>
+          <Button
+            color="primary"
+            onPress={() => {
+              setEditReminder(null);
+              setShowCreateModal(true);
+            }}
+            startContent={<Plus size={18} />}
+          >
+            Create Reminder
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card className="border border-default-200">
+          <div className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Bell size={24} className="text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-default-500">Total Reminders</p>
+                <p className="text-2xl font-bold">{stats.total}</p>
+              </div>
+            </div>
+          </div>
         </Card>
 
-        <Card className="md:col-span-2 shadow-sm border border-default-200 bg-background rounded-lg">
-          <CardHeader className="py-3 px-4 bg-default-50/50 border-b border-default-200">
-            <h3 className="text-sm font-semibold text-default-900">Select Recipients</h3>
-          </CardHeader>
-          <CardBody className="p-4">
-            <div className="flex justify-between mb-3">
-              <span className="text-xs text-default-500 font-medium">
-                {selectedRecipients.length} selected
-              </span>
-              <button
-                onClick={() => setSelectedRecipients(recipients.map((r) => r.id.toString()))}
-                className="text-xs text-primary hover:text-primary-600 font-medium cursor-pointer transition-colors"
-              >
-                Select All
-              </button>
-            </div>
-            <CheckboxGroup value={selectedRecipients} onChange={setSelectedRecipients}>
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                {recipients.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-3 bg-default-50 rounded-lg border border-default-200 hover:border-primary transition-colors"
-                  >
-                    <Checkbox value={item.id.toString()} size="sm">
-                      <span className="text-sm text-default-900 font-medium">
-                        {item.student || item.name}
-                      </span>
-                    </Checkbox>
-                    {reminderType === "fee" && (
-                      <div className="text-right">
-                        <Chip
-                          size="sm"
-                          color="danger"
-                          variant="flat"
-                          classNames={{
-                            base: "h-6",
-                            content: "text-xs font-semibold",
-                          }}
-                        >
-                          ₹{item.pending?.toLocaleString()}
-                        </Chip>
-                        <p className="text-[10px] text-default-400 mt-0.5">
-                          {item.days} days overdue
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
+        <Card className="border border-default-200">
+          <div className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
+                <svg className="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
               </div>
-            </CheckboxGroup>
-          </CardBody>
+              <div>
+                <p className="text-sm text-default-500">Active</p>
+                <p className="text-2xl font-bold">{stats.active}</p>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="border border-default-200">
+          <div className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-warning/10 flex items-center justify-center">
+                <DollarSign size={24} className="text-warning" />
+              </div>
+              <div>
+                <p className="text-sm text-default-500">Fee Reminders</p>
+                <p className="text-2xl font-bold">{stats.fee}</p>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="border border-default-200">
+          <div className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-danger/10 flex items-center justify-center">
+                <Users size={24} className="text-danger" />
+              </div>
+              <div>
+                <p className="text-sm text-default-500">Attendance Alerts</p>
+                <p className="text-2xl font-bold">{stats.attendance}</p>
+              </div>
+            </div>
+          </div>
         </Card>
       </div>
 
-      <Card className="shadow-sm border border-default-200 bg-background rounded-lg">
-        <CardHeader className="py-3 px-4 bg-default-50/50 border-b border-default-200">
-          <h3 className="text-sm font-semibold text-default-900">Message Template</h3>
-        </CardHeader>
-        <CardBody className="p-4">
-          <Select
-            size="sm"
-            label="Select Template"
-            variant="bordered"
-            className="max-w-md mb-3"
-            selectedKeys={selectedTemplate ? [selectedTemplate] : []}
-            onChange={(e) => setSelectedTemplate(e.target.value)}
-            aria-label="Select Template"
-          >
-            {templates.map((t) => (
-              <SelectItem key={t.id.toString()} textValue={t.name}>
-                {t.name}
-              </SelectItem>
-            ))}
-          </Select>
-          {selectedTemplate && (
-            <div className="p-3 bg-default-50 rounded-lg border border-default-200 text-sm text-default-700 mb-4">
-              {templates.find((t) => t.id.toString() === selectedTemplate)?.content}
+      {/* Type Tabs */}
+      <Tabs
+        selectedKey={selectedType}
+        onSelectionChange={(key) => setSelectedType(key)}
+        className="mb-4"
+      >
+        <Tab key="all" title="All Reminders" />
+        <Tab key="fee" title={<div className="flex items-center gap-1"><DollarSign size={16} /> Fee</div>} />
+        <Tab key="attendance" title={<div className="flex items-center gap-1"><Users size={16} /> Attendance</div>} />
+        <Tab key="academic" title={<div className="flex items-center gap-1"><BookOpen size={16} /> Academic</div>} />
+        <Tab key="event" title={<div className="flex items-center gap-1"><Calendar size={16} /> Events</div>} />
+      </Tabs>
+
+      {/* Error State */}
+      {error && reminders.length === 0 && (
+        <Card className="border border-default-200">
+          <div className="p-12">
+            <div className="flex flex-col items-center justify-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center">
+                <svg className="w-8 h-8 text-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <p className="text-lg font-medium text-danger">Failed to load reminders</p>
+              <p className="text-sm text-default-500 max-w-md text-center">{error}</p>
+              <Button
+                color="primary"
+                size="sm"
+                onPress={() => setRefreshKey(prev => prev + 1)}
+                startContent={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>}
+              >
+                Retry
+              </Button>
             </div>
-          )}
-          <div className="flex justify-end">
-            <button
-              disabled={selectedRecipients.length === 0}
-              className="flex items-center gap-2 px-3 py-2 bg-primary text-white rounded-lg border border-primary hover:bg-primary-600 transition-all duration-200 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Send size={14} />
-              <span>Send to {selectedRecipients.length} Recipients</span>
-            </button>
           </div>
-        </CardBody>
+        </Card>
+      )}
+
+      {/* Reminders List */}
+      <Card className="border border-default-200">
+        <div className="p-6">
+          <RemindersList
+            key={refreshKey}
+            reminders={filteredReminders}
+            loading={loading}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onToggle={handleToggle}
+            onDuplicate={handleDuplicate}
+          />
+        </div>
       </Card>
+
+      {/* Create/Edit Modal */}
+      <ReminderForm
+        isOpen={showCreateModal}
+        onClose={() => {
+          setShowCreateModal(false);
+          setEditReminder(null);
+        }}
+        onSave={handleCreate}
+        editData={editReminder}
+      />
+
+      {/* Templates Modal */}
+      <ReminderTemplates
+        isOpen={showTemplatesModal}
+        onClose={() => setShowTemplatesModal(false)}
+        type={selectedType === 'all' ? 'fee' : selectedType}
+        onSelectTemplate={handleSelectTemplate}
+      />
     </div>
   );
 }

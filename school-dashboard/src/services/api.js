@@ -2,13 +2,13 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 console.log('🌐 API URL configured:', API_URL);
 
-async function request(endpoint, options = {}) {
+export async function request(endpoint, options = {}) {
   const url = `${API_URL}${endpoint}`;
   console.log(`📡 API Request: ${options.method || 'GET'} ${url}`);
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout for Render cold starts
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
     // Get token from sessionStorage
     const storedUser = sessionStorage.getItem('app_user');
@@ -66,7 +66,7 @@ async function request(endpoint, options = {}) {
   } catch (error) {
     if (error.name === 'AbortError') {
       console.error(`⏱️ API Timeout: ${url}`);
-      throw new Error('Request timeout - please check if backend is running');
+      throw new Error('Backend request timed out. Please check if the backend server is running on port 3001 and MongoDB is connected.');
     }
     console.error(`❌ API Error: ${url}`, error);
     throw error;
@@ -95,6 +95,29 @@ export const studentsApi = {
   update: (id, data) => request(`/students/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => request(`/students/${id}`, { method: 'DELETE' }),
   getNextAdmissionId: () => request('/students/next-admission-id'),
+  pin: (id) => request(`/students/${id}/pin`, { method: 'PUT' }),
+  unpin: (id) => request(`/students/${id}/unpin`, { method: 'PUT' }),
+  getResults: (id, academicYear) => request(`/students/${id}/results${academicYear ? `?academicYear=${academicYear}` : ''}`),
+};
+
+// Exams API
+export const examsApi = {
+  getAll: (params) => {
+    const queryString = params ? new URLSearchParams(params).toString() : '';
+    return request(`/exams${queryString ? `?${queryString}` : ''}`);
+  },
+  getById: (id) => request(`/exams/${id}`),
+  create: (data) => request('/exams', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/exams/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/exams/${id}`, { method: 'DELETE' }),
+  getResults: (id) => request(`/exams/${id}/results`),
+  publishResults: (id, publish) => request(`/exams/${id}/publish-results`, { method: 'PUT', body: JSON.stringify({ publish }) }),
+};
+
+// Results API
+export const resultsApi = {
+  create: (data) => request('/results', { method: 'POST', body: JSON.stringify(data) }),
+  bulkCreate: (results) => request('/results/bulk', { method: 'POST', body: JSON.stringify({ results }) }),
 };
 
 // Classes API
@@ -217,6 +240,11 @@ export const notificationsApi = {
   getAll: (email, phone) => request(`/notifications${email || phone ? `?${email ? `email=${email}` : ''}${phone ? `&phone=${phone}` : ''}` : ''}`),
   markAsRead: (id) => request(`/notifications/${id}/read`, { method: 'PUT' }),
   markAllAsRead: (email, phone) => request('/notifications/read-all', { method: 'PUT', body: JSON.stringify({ email, phone }) }),
+  delete: (id) => request(`/notifications/${id}`, { method: 'DELETE' }),
+  clearAll: (email, phone) => request('/notifications/clear-all', { method: 'DELETE', body: JSON.stringify({ email, phone }) }),
+  getPreferences: () => request('/notification-preferences'),
+  updatePreferences: (data) => request('/notification-preferences', { method: 'PUT', body: JSON.stringify(data) }),
+  resetPreferences: (role) => request('/notification-preferences/reset', { method: 'POST', body: JSON.stringify({ role }) }),
 };
 
 // Fees API
@@ -302,4 +330,137 @@ export const uploadApi = {
   }
 };
 
-export default { staffApi, studentsApi, classesApi, attendanceApi, timetableApi, settingsApi, intakeFormsApi, publicApi, notificationsApi, feesApi, payrollApi, uploadApi };
+// Announcements API
+export const announcementsApi = {
+  getAll: (params) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/announcements${query ? `?${query}` : ''}`);
+  },
+  getById: (id) => request(`/announcements/${id}`),
+  create: (data) => request('/announcements', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/announcements/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/announcements/${id}`, { method: 'DELETE' }),
+  send: (id) => request(`/announcements/${id}/send`, { method: 'POST' }),
+  resend: (id, data) => request(`/announcements/${id}/resend`, { method: 'POST', body: JSON.stringify(data || {}) }),
+  getAnalytics: (id) => request(`/announcements/${id}/analytics`),
+};
+
+// Reminders API
+export const remindersApi = {
+  getAll: (params) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/reminders${query ? `?${query}` : ''}`);
+  },
+  getById: (id) => request(`/reminders/${id}`),
+  create: (data) => request('/reminders', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/reminders/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/reminders/${id}`, { method: 'DELETE' }),
+  toggle: (id, active) => request(`/reminders/${id}/toggle`, { method: 'POST', body: JSON.stringify({ active }) }),
+  duplicate: (id) => request(`/reminders/${id}/duplicate`, { method: 'POST' }),
+  // Templates
+  getTemplates: (type) => request(`/reminders/templates${type ? `?type=${type}` : ''}`),
+  createTemplate: (data) => request('/reminders/templates', { method: 'POST', body: JSON.stringify(data) }),
+  updateTemplate: (id, data) => request(`/reminders/templates/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteTemplate: (id) => request(`/reminders/templates/${id}`, { method: 'DELETE' }),
+  setDefaultTemplate: (id) => request(`/reminders/templates/${id}/default`, { method: 'PUT' }),
+};
+
+// Calls API
+export const callsApi = {
+  initiate: (data) => request('/calls/initiate', { method: 'POST', body: JSON.stringify(data) }),
+  accept: (id) => request(`/calls/${id}/accept`, { method: 'POST' }),
+  reject: (id) => request(`/calls/${id}/reject`, { method: 'POST' }),
+  end: (id, reason) => request(`/calls/${id}/end`, { method: 'POST', body: JSON.stringify({ reason }) }),
+  getHistory: (limit) => request(`/calls/history/me${limit ? `?limit=${limit}` : ''}`),
+  getMissed: () => request('/calls/missed/me'),
+};
+
+// Front Office API
+// Visitors API
+export const visitorsApi = {
+  getAll: (params) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/visitors${query ? `?${query}` : ''}`);
+  },
+  getActive: () => request('/visitors/active'),
+  getToday: () => request('/visitors/today'),
+  search: (query) => request(`/visitors/search?q=${encodeURIComponent(query)}`),
+  getById: (id) => request(`/visitors/${id}`),
+  create: (data) => request('/visitors', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/visitors/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/visitors/${id}`, { method: 'DELETE' }),
+  checkOut: (id, notes = '') => request(`/visitors/${id}/check-out`, { method: 'POST', body: JSON.stringify({ notes }) }),
+  downloadBadge: (id) => request(`/visitors/${id}/badge`),
+  searchParents: (query) => request(`/visitors/parents/search?q=${encodeURIComponent(query)}`),
+};
+
+// Gate Passes API
+export const gatePassesApi = {
+  getAll: (params) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/gate-passes${query ? `?${query}` : ''}`);
+  },
+  getActive: () => request('/gate-passes/active'),
+  getToday: () => request('/gate-passes/today'),
+  getPending: () => request('/gate-passes/pending'),
+  getByStudent: (id) => request(`/gate-passes/student/${id}`),
+  getById: (id) => request(`/gate-passes/${id}`),
+  create: (data) => request('/gate-passes', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/gate-passes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/gate-passes/${id}`, { method: 'DELETE' }),
+  approve: (id) => request(`/gate-passes/${id}/approve`, { method: 'POST' }),
+  reject: (id, reason) => request(`/gate-passes/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) }),
+  markUsed: (id, whoCollected, signatureUrl) => request(`/gate-passes/${id}/mark-used`, { method: 'POST', body: JSON.stringify({ whoCollected, signatureUrl }) }),
+  cancel: (id, reason) => request(`/gate-passes/${id}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) }),
+  download: (id) => request(`/gate-passes/${id}/download`),
+};
+
+// Front Desk API
+export const frontDeskApi = {
+  // Visitors
+  getVisitorsToday: () => request('/front-desk/visitors/today'),
+  createVisitor: (data) => request('/front-desk/visitors', { method: 'POST', body: JSON.stringify(data) }),
+  updateVisitor: (id, data) => request(`/front-desk/visitors/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteVisitor: (id) => request(`/front-desk/visitors/${id}`, { method: 'DELETE' }),
+
+  // Admissions
+  getAdmissions: (params) => {
+    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+    return request(`/front-desk/admissions${query}`);
+  },
+  createAdmission: (data) => request('/front-desk/admissions', { method: 'POST', body: JSON.stringify(data) }),
+  updateAdmission: (id, data) => request(`/front-desk/admissions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteAdmission: (id) => request(`/front-desk/admissions/${id}`, { method: 'DELETE' }),
+
+  // Gate Passes
+  getGatePassesToday: () => request('/front-desk/gate-passes/today'),
+  createGatePass: (data) => request('/front-desk/gate-passes', { method: 'POST', body: JSON.stringify(data) }),
+  updateGatePass: (id, data) => request(`/front-desk/gate-passes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteGatePass: (id) => request(`/front-desk/gate-passes/${id}`, { method: 'DELETE' }),
+
+  // Appointments
+  getAppointments: (params) => {
+    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+    return request(`/front-desk/appointments${query}`);
+  },
+  createAppointment: (data) => request('/front-desk/appointments', { method: 'POST', body: JSON.stringify(data) }),
+  updateAppointment: (id, data) => request(`/front-desk/appointments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteAppointment: (id) => request(`/front-desk/appointments/${id}`, { method: 'DELETE' }),
+
+  // Feedbacks
+  getFeedbacks: (params) => {
+    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+    return request(`/front-desk/feedbacks${query}`);
+  },
+  createFeedback: (data) => request('/front-desk/feedbacks', { method: 'POST', body: JSON.stringify(data) }),
+  updateFeedback: (id, data) => request(`/front-desk/feedbacks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteFeedback: (id) => request(`/front-desk/feedbacks/${id}`, { method: 'DELETE' }),
+
+  // Call Logs
+  getCallLogs: () => request('/front-desk/call-logs'),
+  createCallLog: (data) => request('/front-desk/call-logs', { method: 'POST', body: JSON.stringify(data) }),
+  updateCallLog: (id, data) => request(`/front-desk/call-logs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCallLog: (id) => request(`/front-desk/call-logs/${id}`, { method: 'DELETE' }),
+};
+
+export default { staffApi, studentsApi, classesApi, attendanceApi, timetableApi, settingsApi, intakeFormsApi, publicApi, notificationsApi, feesApi, payrollApi, uploadApi, announcementsApi, remindersApi, callsApi, visitorsApi, gatePassesApi, frontDeskApi, examsApi, resultsApi };
