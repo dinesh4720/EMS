@@ -1,0 +1,310 @@
+import { io } from 'socket.io-client';
+import Peer from 'peerjs';
+
+class VideoCallService {
+  constructor() {
+    this.peer = null;
+    this.localStream = null;
+    this.remoteStreams = new Map();
+    this.calls = new Map();
+    this.currentCallId = null;
+    this.listeners = new Map();
+  }
+
+  /**
+   * Initialize PeerJS with user ID
+   */
+  async initialize(userId) {
+    try {
+      // Create Peer instance
+      this.peer = new Peer(userId.toString(), {
+        debug: process.env.NODE_ENV === 'development' ? 2 : 0
+      });
+
+      return new Promise((resolve, reject) => {
+        this.peer.on('open', (id) => {
+          console.log('✅ PeerJS initialized with ID:', id);
+          this.emit('peerReady', id);
+          resolve(id);
+        });
+
+        this.peer.on('error', (error) => {
+          console.error('❌ PeerJS error:', error);
+          this.emit('peerError', error);
+          reject(error);
+        });
+
+        // Handle incoming calls
+        this.peer.on('call', (call) => {
+          console.log('📞 Incoming call:', call);
+          this.handleIncomingCall(call);
+        });
+
+        // Timeout after 10 seconds
+        setTimeout(() => reject(new Error('PeerJS initialization timeout')), 10000);
+      });
+    } catch (error) {
+      console.error('❌ Failed to initialize PeerJS:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Start a video/audio call
+   */
+  async startCall(remotePeerId, options = {}) {
+    const {
+      video = true,
+      audio = true,
+      callId = null
+    } = options;
+
+    try {
+      console.log('📞 Starting call to:', remotePeerId);
+
+      // Get local media stream
+      this.localStream = await navigator.mediaDevices.getUserMedia({
+        video,
+        audio
+      });
+
+      // Create PeerJS call
+      const call = this.peer.call(remotePeerId.toString(), this.localStream, {
+        metadata: {
+          callerId: this.peer.id,
+          callType: video ? 'video' : 'audio',
+          callId
+        }
+      });
+
+      if (!call) {
+        throw new Error('Failed to create call');
+      }
+
+      this.setupCallHandlers(call);
+
+      // Store call
+      this.currentCallId = callId || Date.now().toString();
+      this.calls.set(this.currentCallId, call);
+
+      this.emit('callInitiated', {
+        callId: this.currentCallId,
+        remotePeerId,
+        callType: video ? 'video' : 'audio'
+      });
+
+      return call;
+    } catch (error) {
+      console.error('❌ Failed to start call:', error);
+      this.emit('callError', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Handle incoming call
+   */
+  handleIncomingCall(call) {
+    console.log('📞 Handling incoming call from:', call.peer);
+
+    this.setupCallHandlers(call);
+
+    const callId = Date.now().toString();
+    this.calls.set(callId, call);
+    this.currentCallId = callId;
+
+    this.emit('incomingCall', {
+      callId,
+      callerId: call.peer,
+      metadata: call.metadata
+    });
+  }
+
+  /**
+   * Accept incoming call
+   */
+  async acceptCall(callId, options = {}) {
+    const {
+      video = true,
+      audio = true
+    } = options;
+
+    try {
+      console.log('✅ Accepting call:', callId);
+
+      // Get local media stream
+      this.localStream = await navigator.mediaDevices.getUserMedia({
+        video,
+        audio
+      });
+
+      const call = this.calls.get(callId);
+      if (!call) {
+        throw new Error('Call not found');
+      }
+
+      // Answer the call
+      call.answer(this.localStream);
+
+      this.emit('callAccepted', { callId });
+    } catch (error) {
+      console.error('❌ Failed to accept call:', error);
+      this.emit('callError', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reject incoming call
+   */
+  rejectCall(callId) {
+    const call = this.calls.get(callId);
+    if (call) {
+      call.close();
+      this.calls.delete(callId);
+      console.log('❌ Call rejected:', callId);
+      this.emit('callRejected', { callId });
+    }
+  }
+
+  /**
+   * End call
+   */
+  endCall(callId) {
+    const call = this.calls.get(callId);
+    if (call) {
+      call.close();
+      this.calls.delete(callId);
+      console.log('📞 Call ended:', callId);
+      this.emit('callEnded', { callId });
+    }
+
+    // Stop local stream
+    if (this.localStream) {
+      this.localStream.getTracks().forEach(track => track.stop());
+      this.localStream = null;
+    }
+
+    // Clear remote streams
+    this.remoteStreams.forEach((stream) => {
+      stream.getTracks().forEach(track => track.stop());
+    });
+    this.remoteStreams.clear();
+
+    this.currentCallId = null;
+  }
+
+  /**
+   * Setup call event handlers
+   */
+  setupCallHandlers(call) {
+    call.on('stream', (remoteStream) => {
+      console.log('📹 Received remote stream');
+      this.remoteStreams.set(call.peer, remoteStream);
+      this.emit('remoteStream', {
+        stream: remoteStream,
+        peerId: call.peer
+      });
+    });
+
+    call.on('close', () => {
+      console.log('📞 Call closed by remote');
+      this.emit('callClosed', { peerId: call.peer });
+    });
+
+    call.on('error', (error) => {
+      console.error('❌ Call error:', error);
+      this.emit('callError', error);
+    });
+  }
+
+  /**
+   * Toggle audio/video tracks
+   */
+  toggleAudio(enabled) {
+    if (this.localStream) {
+      this.localStream.getAudioTracks().forEach(track => {
+        track.enabled = enabled;
+      });
+      this.emit('audioToggled', { enabled });
+    }
+  }
+
+  toggleVideo(enabled) {
+    if (this.localStream) {
+      this.localStream.getVideoTracks().forEach(track => {
+        track.enabled = enabled;
+      });
+      this.emit('videoToggled', { enabled });
+    }
+  }
+
+  /**
+   * Mute/unmute microphone
+   */
+  muteMic() {
+    this.toggleAudio(false);
+  }
+
+  unmuteMic() {
+    this.toggleAudio(true);
+  }
+
+  /**
+   * Turn camera on/off
+   */
+  turnOffCamera() {
+    this.toggleVideo(false);
+  }
+
+  turnOnCamera() {
+    this.toggleVideo(true);
+  }
+
+  /**
+   * Event listeners management
+   */
+  on(event, callback) {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, []);
+    }
+    this.listeners.get(event).push(callback);
+  }
+
+  off(event, callback) {
+    if (this.listeners.has(event)) {
+      const callbacks = this.listeners.get(event).filter(cb => cb !== callback);
+      this.listeners.set(event, callbacks);
+    }
+  }
+
+  emit(event, data) {
+    if (this.listeners.has(event)) {
+      this.listeners.get(event).forEach(callback => callback(data));
+    }
+  }
+
+  /**
+   * Cleanup
+   */
+  destroy() {
+    // End all calls
+    this.calls.forEach((call, callId) => {
+      this.endCall(callId);
+    });
+
+    // Destroy peer
+    if (this.peer) {
+      this.peer.destroy();
+      this.peer = null;
+    }
+
+    // Clear listeners
+    this.listeners.clear();
+  }
+}
+
+// Export singleton instance
+export const videoCallService = new VideoCallService();
+
+export default VideoCallService;
