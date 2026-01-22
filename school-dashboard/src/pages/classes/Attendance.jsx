@@ -6,16 +6,16 @@ import { useApp } from "../../context/AppContext";
 
 const ITEMS_PER_LOAD = 10;
 
-export default function Attendance() {
+export default function Attendance({ classId }) {
   const navigate = useNavigate();
   const { students, classesWithTeachers } = useApp();
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedClass, setSelectedClass] = useState("6-A");
+  const [selectedClass, setSelectedClass] = useState(classId || "6-A");
   const [attendance, setAttendance] = useState({});
   const [isLocked, setIsLocked] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editReason, setEditReason] = useState("");
-  
+
   // Lazy loading state
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -95,9 +95,11 @@ export default function Attendance() {
       <Card className="shadow-sm border border-default-200 rounded-2xl">
         <CardBody className="p-4">
           <div className="flex gap-2 mb-3 flex-wrap shrink-0">
-            <Select size="sm" selectedKeys={[selectedClass]} onChange={(e) => { setSelectedClass(e.target.value); }} className="max-w-[150px]" label="Class" aria-label="Class">
-              {classesWithTeachers.map(c => <SelectItem key={`${c.name}-${c.section}`} textValue={`Class ${c.name} - ${c.section}`}>Class {c.name} - {c.section}</SelectItem>)}
-            </Select>
+            {!classId && (
+              <Select size="sm" selectedKeys={[selectedClass]} onChange={(e) => { setSelectedClass(e.target.value); }} className="max-w-[150px]" label="Class" aria-label="Class">
+                {classesWithTeachers.map(c => <SelectItem key={`${c.name}-${c.section}`} textValue={`Class ${c.name} - ${c.section}`}>Class {c.name} - {c.section}</SelectItem>)}
+              </Select>
+            )}
             <Input type="date" size="sm" value={date} onChange={(e) => setDate(e.target.value)} className="max-w-[180px]" />
             <Button size="sm" color="success" startContent={<Check size={14} />} onPress={markAllPresent} isDisabled={isLocked}>Mark All Present</Button>
             {absentCount > 0 && <Button size="sm" color="warning" startContent={<Bell size={14} />}>Notify Parents ({absentCount})</Button>}

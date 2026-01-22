@@ -61,6 +61,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
   // Populate form with editingStaff data when editing
   useEffect(() => {
     if (editingStaff) {
+      console.log('📝 Editing staff member:', editingStaff);
       // EDIT MODE: Populate form with existing staff data
       setFormData({
         // Personal Details

@@ -442,16 +442,16 @@ export default function StaffAttendanceRegularize() {
                     onSelectionChange={(keys) => setRegularizeData({ ...regularizeData, status: Array.from(keys)[0] })}
                     variant="bordered"
                   >
-                    <SelectItem key="present" startContent={<Check size={16} className="text-success" />}>
+                    <SelectItem key="present" textValue="Present" startContent={<Check size={16} className="text-success" />}>
                       Present
                     </SelectItem>
-                    <SelectItem key="halfday" startContent={<AlertCircle size={16} className="text-secondary" />}>
+                    <SelectItem key="halfday" textValue="Half Day" startContent={<AlertCircle size={16} className="text-secondary" />}>
                       Half Day
                     </SelectItem>
-                    <SelectItem key="absent" startContent={<X size={16} className="text-danger" />}>
+                    <SelectItem key="absent" textValue="Absent" startContent={<X size={16} className="text-danger" />}>
                       Absent
                     </SelectItem>
-                    <SelectItem key="leave" startContent={<Clock size={16} className="text-warning" />}>
+                    <SelectItem key="leave" textValue="On Leave" startContent={<Clock size={16} className="text-warning" />}>
                       On Leave
                     </SelectItem>
                   </Select>

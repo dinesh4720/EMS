@@ -120,11 +120,18 @@ export default function StudentsPage() {
   const handleSaveStudent = async (studentData) => {
     try {
       console.log('handleSaveStudent called with:', studentData);
-      await addStudent(studentData);
+      console.log('Class ID:', studentData.classId);
+      const result = await addStudent(studentData);
+      console.log('Student saved successfully:', result);
       toast.success('Student added successfully!');
+      // Clear API cache to ensure fresh data on refresh
+      const { clearApiCache } = await import('../../services/api');
+      clearApiCache();
       handleCloseAddStudent();
     } catch (err) {
-      console.error('Failed to add student:', err);
+      console.error('Failed to add student - Full error:', err);
+      console.error('Error message:', err.message);
+      console.error('Error response:', err.response);
       toast.error('Failed to add student: ' + (err.message || 'Unknown error'));
       throw err; // Re-throw so AddStudent component can handle it
     }

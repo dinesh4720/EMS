@@ -30,6 +30,7 @@ export default function QuickStats({ data }) {
             </Chip>
           </div>
           <Progress
+            aria-label="Monthly fee collection progress"
             size="sm"
             radius="md"
             value={feeProgress}

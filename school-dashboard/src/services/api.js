@@ -1,73 +1,116 @@
+import { requestQueue, retryRequest, requestCache } from '../utils/requestQueue.js';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 console.log('🌐 API URL configured:', API_URL);
 
+// Export cache clearing function
+export function clearApiCache() {
+  requestCache.clear();
+  console.log('🧹 API cache cleared');
+}
+
 export async function request(endpoint, options = {}) {
   const url = `${API_URL}${endpoint}`;
-  console.log(`📡 API Request: ${options.method || 'GET'} ${url}`);
+  const method = options.method || 'GET';
+  
+  // Check cache for GET requests
+  if (method === 'GET' && !options.skipCache) {
+    const cached = requestCache.get(url);
+    if (cached) {
+      console.log(`💾 Cache hit: ${url}`);
+      return cached;
+    }
+  }
 
-  try {
+  // Create the actual request function
+  const makeRequest = async () => {
+    console.log(`📡 API Request: ${method} ${url}`);
+
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
-    // Get token from sessionStorage
-    const storedUser = sessionStorage.getItem('app_user');
-    let token = null;
-    
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        token = userData.token;
-      } catch (err) {
-        console.error('❌ Failed to parse user data from sessionStorage:', err);
-      }
-    }
-    
-    console.log(`🔐 Token for ${endpoint}:`, token ? `${token.substring(0, 20)}...` : 'NONE');
-
-    const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers
-    };
-
-    // Add Authorization header if token exists
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-      console.log(`✅ Authorization header added for ${endpoint}`);
-    } else {
-      console.warn(`⚠️ No token available for ${endpoint}`);
-    }
-
-    const response = await fetch(url, {
-      ...options,
-      headers,
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    console.log(`✅ API Response: ${response.status} ${url}`);
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Request failed' }));
+    try {
+      // Get token from sessionStorage
+      const storedUser = sessionStorage.getItem('app_user');
+      let token = null;
       
-      // If unauthorized, clear session storage
-      if (response.status === 401) {
-        console.warn('⚠️ 401 Unauthorized - clearing session');
-        sessionStorage.removeItem('app_user');
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          token = userData.token;
+        } catch (err) {
+          console.error('❌ Failed to parse user data from sessionStorage:', err);
+        }
+      }
+
+      const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+      };
+
+      // Add Authorization header if token exists
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(url, {
+        ...options,
+        headers,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      console.log(`✅ API Response: ${response.status} ${url}`);
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Request failed' }));
+        
+        // If unauthorized, clear session storage
+        if (response.status === 401) {
+          console.warn('⚠️ 401 Unauthorized - clearing session');
+          sessionStorage.removeItem('app_user');
+        }
+        
+        // If rate limited, throw specific error
+        if (response.status === 429) {
+          throw new Error('Too many requests - rate limit exceeded');
+        }
+        
+        // If conflict error (409), throw with detailed information
+        if (response.status === 409) {
+          const conflictError = new Error(error.message || error.error || 'Conflict detected');
+          conflictError.type = 'ConflictError';
+          conflictError.details = error.details || error;
+          conflictError.status = 409;
+          throw conflictError;
+        }
+        
+        throw new Error(error.error || error.message || `Request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Cache GET requests
+      if (method === 'GET' && !options.skipCache) {
+        requestCache.set(url, data);
       }
       
-      throw new Error(error.error || `Request failed with status ${response.status}`);
+      return data;
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.error(`⏱️ API Timeout: ${url}`);
+        throw new Error('Request timed out');
+      }
+      throw error;
     }
+  };
 
-    const data = await response.json();
-    console.log(`📦 API Data received from ${endpoint}:`, Array.isArray(data) ? `${data.length} items` : 'object');
-    return data;
+  // Use request queue for all requests
+  try {
+    return await requestQueue.add(() => retryRequest(makeRequest, 2, 1000));
   } catch (error) {
-    if (error.name === 'AbortError') {
-      console.error(`⏱️ API Timeout: ${url}`);
-      throw new Error('Backend request timed out. Please check if the backend server is running on port 3001 and MongoDB is connected.');
-    }
     console.error(`❌ API Error: ${url}`, error);
     throw error;
   }
@@ -128,6 +171,87 @@ export const classesApi = {
   update: (id, data) => request(`/classes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => request(`/classes/${id}`, { method: 'DELETE' }),
   getStudents: (id) => request(`/classes/${id}/students`),
+  getNextRollNumber: (classId) => request(`/classes/${classId}/next-roll-number`),
+  
+  // Class Settings
+  getSettings: (id) => request(`/class-settings/${id}`),
+  updateTag: async (id, tag) => {
+    try {
+      return await request(`/class-settings/${id}/tag`, { 
+        method: 'PUT', 
+        body: JSON.stringify({ classTag: tag }) 
+      });
+    } catch (error) {
+      // Re-throw validation errors with enhanced information
+      if (error.status === 400) {
+        const validationError = new Error(error.message || 'Validation failed');
+        validationError.type = 'ValidationError';
+        validationError.details = error.details || error;
+        throw validationError;
+      }
+      throw error;
+    }
+  },
+  updateSubjects: async (id, subjects) => {
+    try {
+      return await request(`/class-settings/${id}/subjects`, { 
+        method: 'PUT', 
+        body: JSON.stringify({ subjects: subjects }) 
+      });
+    } catch (error) {
+      // Re-throw validation errors with enhanced information
+      if (error.status === 400) {
+        const validationError = new Error(error.message || 'Validation failed');
+        validationError.type = 'ValidationError';
+        validationError.details = error.details || error;
+        throw validationError;
+      }
+      throw error;
+    }
+  },
+};
+
+// Classes Enhanced API
+export const classesEnhancedApi = {
+  // Academic Performance
+  getAcademicPerformance: (id, academicYear) => request(`/classes-enhanced/${id}/academic-performance${academicYear ? `?academicYear=${academicYear}` : ''}`),
+  recalculateAcademicPerformance: (id) => request(`/classes-enhanced/${id}/academic-performance/recalculate`, { method: 'POST' }),
+
+  // Activity Log
+  getActivityLog: (id, params) => {
+    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+    return request(`/classes-enhanced/${id}/activity-log${query}`);
+  },
+  createActivityLog: (id, data) => request(`/classes-enhanced/${id}/activity-log`, { method: 'POST', body: JSON.stringify(data) }),
+
+  // Class Rating
+  getRating: (id, academicYear) => request(`/classes-enhanced/${id}/rating${academicYear ? `?academicYear=${academicYear}` : ''}`),
+  recalculateRating: (id, data) => request(`/classes-enhanced/${id}/rating/recalculate`, { method: 'POST', body: JSON.stringify(data || {}) }),
+
+  // Attendance Analytics
+  getAttendanceAnalytics: (id, period) => request(`/classes-enhanced/${id}/attendance-analytics${period ? `?period=${period}` : ''}`),
+  getChronicAbsentees: (id, threshold) => request(`/classes-enhanced/${id}/chronic-absentees${threshold ? `?threshold=${threshold}` : ''}`),
+
+  // Today's Status
+  getTodayStatus: (id) => request(`/classes-enhanced/${id}/today-status`),
+
+  // Promotion
+  promoteClass: (id, data) => request(`/classes-enhanced/${id}/promote`, { method: 'POST', body: JSON.stringify(data) }),
+
+  // Subjects & Chapters
+  getSubjects: (id, academicYear) => request(`/classes-enhanced/${id}/subjects${academicYear ? `?academicYear=${academicYear}` : ''}`),
+  addSubject: (id, data) => request(`/classes-enhanced/${id}/subjects`, { method: 'POST', body: JSON.stringify(data) }),
+  updateChapter: (chapterId, data) => request(`/classes-enhanced/chapters/${chapterId}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  // Strength Limit
+  adjustStrengthLimit: (id, data) => request(`/classes-enhanced/${id}/strength-limit`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  // Announcements
+  getAnnouncements: (id, limit) => request(`/classes-enhanced/${id}/announcements${limit ? `?limit=${limit}` : ''}`),
+  sendAnnouncement: (id, data) => request(`/classes-enhanced/${id}/announcements`, { method: 'POST', body: JSON.stringify(data) }),
+
+  // Fees Overview
+  getFeesOverview: (id, academicYear) => request(`/classes-enhanced/${id}/fees-overview${academicYear ? `?academicYear=${academicYear}` : ''}`),
 };
 
 // Attendance API
@@ -140,10 +264,113 @@ export const attendanceApi = {
 // Timetable API
 export const timetableApi = {
   getByClass: (classId, academicYear) => request(`/timetable/${classId}${academicYear ? `?academicYear=${academicYear}` : ''}`),
+  
+  // Lazy loading: Get timetable with option to skip cache for fresh data
+  getByClassLazy: (classId, academicYear, skipCache = false) => 
+    request(`/timetable/${classId}${academicYear ? `?academicYear=${academicYear}` : ''}`, { skipCache }),
+  
   createOrUpdate: (data) => request('/timetable', { method: 'POST', body: JSON.stringify(data) }),
-  updateSlot: (classId, data) => request(`/timetable/${classId}/slot`, { method: 'PUT', body: JSON.stringify(data) }),
+  updateSlot: async (classId, data) => {
+    try {
+      return await request(`/timetable/${classId}/slot`, { method: 'PUT', body: JSON.stringify(data) });
+    } catch (error) {
+      // Re-throw conflict errors with enhanced information
+      if (error.type === 'ConflictError') {
+        throw error;
+      }
+      throw error;
+    }
+  },
+  
+  // Batch update multiple slots
+  batchUpdateSlots: async (classId, slots, academicYear) => {
+    try {
+      return await request(`/timetable/${classId}/batch`, {
+        method: 'POST',
+        body: JSON.stringify({ slots, academicYear })
+      });
+    } catch (error) {
+      // Handle batch conflict errors
+      if (error.type === 'BatchConflictError' || error.status === 409) {
+        throw error;
+      }
+      throw error;
+    }
+  },
+  
   updatePeriods: (classId, data) => request(`/timetable/${classId}/periods`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (classId, academicYear) => request(`/timetable/${classId}${academicYear ? `?academicYear=${academicYear}` : ''}`, { method: 'DELETE' }),
+  
+  // Cache management
+  clearCache: (pattern) => request('/timetable/cache/clear', { method: 'POST', body: JSON.stringify({ pattern }) }),
+  getCacheStats: () => request('/timetable/cache/stats'),
+};
+
+// Teacher Assignments API
+export const teacherAssignmentsApi = {
+  getAll: (teacherId) => request(`/teacher-assignments/${teacherId}`),
+  create: async (data) => {
+    try {
+      return await request('/teacher-assignments', { method: 'POST', body: JSON.stringify(data) });
+    } catch (error) {
+      // Re-throw validation errors with enhanced information
+      if (error.status === 400) {
+        const validationError = new Error(error.message || 'Validation failed');
+        validationError.type = 'ValidationError';
+        validationError.details = error.details || error;
+        throw validationError;
+      }
+      throw error;
+    }
+  },
+  update: async (id, data) => {
+    try {
+      return await request(`/teacher-assignments/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    } catch (error) {
+      // Re-throw validation errors with enhanced information
+      if (error.status === 400) {
+        const validationError = new Error(error.message || 'Validation failed');
+        validationError.type = 'ValidationError';
+        validationError.details = error.details || error;
+        throw validationError;
+      }
+      throw error;
+    }
+  },
+  delete: (id, teacherId) => request(`/teacher-assignments/${id}?teacherId=${teacherId}`, { method: 'DELETE' }),
+  getAvailableTeachers: (params) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/teacher-assignments/available-teachers?${query}`);
+  },
+};
+
+// Teacher Timetable API
+export const teacherTimetableApi = {
+  get: (teacherId, academicYear) => request(`/teacher-timetable/${teacherId}${academicYear ? `?academicYear=${academicYear}` : ''}`),
+  create: (teacherId, data) => request(`/teacher-timetable/${teacherId}`, { method: 'POST', body: JSON.stringify(data) }),
+  updateSlot: async (teacherId, data) => {
+    try {
+      return await request(`/teacher-timetable/${teacherId}/slot`, { method: 'PUT', body: JSON.stringify(data) });
+    } catch (error) {
+      // Re-throw conflict errors with enhanced information
+      if (error.type === 'ConflictError') {
+        throw error;
+      }
+      throw error;
+    }
+  },
+  getConflicts: (teacherId, academicYear) => request(`/teacher-timetable/${teacherId}/conflicts${academicYear ? `?academicYear=${academicYear}` : ''}`),
+  switchClass: async (teacherId, data) => {
+    try {
+      return await request(`/teacher-timetable/${teacherId}/switch-class`, { method: 'POST', body: JSON.stringify(data) });
+    } catch (error) {
+      // Re-throw conflict errors with enhanced information
+      if (error.type === 'ConflictError') {
+        throw error;
+      }
+      throw error;
+    }
+  },
 };
 
 // Settings API
@@ -463,4 +690,28 @@ export const frontDeskApi = {
   deleteCallLog: (id) => request(`/front-desk/call-logs/${id}`, { method: 'DELETE' }),
 };
 
-export default { staffApi, studentsApi, classesApi, attendanceApi, timetableApi, settingsApi, intakeFormsApi, publicApi, notificationsApi, feesApi, payrollApi, uploadApi, announcementsApi, remindersApi, callsApi, visitorsApi, gatePassesApi, frontDeskApi, examsApi, resultsApi };
+export default { 
+  staffApi, 
+  studentsApi, 
+  classesApi, 
+  classesEnhancedApi, 
+  attendanceApi, 
+  timetableApi, 
+  teacherAssignmentsApi,
+  teacherTimetableApi,
+  settingsApi, 
+  intakeFormsApi, 
+  publicApi, 
+  notificationsApi, 
+  feesApi, 
+  payrollApi, 
+  uploadApi, 
+  announcementsApi, 
+  remindersApi, 
+  callsApi, 
+  visitorsApi, 
+  gatePassesApi, 
+  frontDeskApi, 
+  examsApi, 
+  resultsApi 
+};

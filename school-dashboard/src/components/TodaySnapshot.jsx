@@ -51,6 +51,7 @@ export default function TodaySnapshot({ data }) {
               <p className="text-xl font-medium text-default-900 tracking-tight my-2">{stat.value}</p>
               {stat.progress !== null && (
                 <Progress
+                  aria-label={stat.label}
                   size="sm"
                   radius="md"
                   value={stat.progress}
@@ -60,7 +61,6 @@ export default function TodaySnapshot({ data }) {
                     track: "drop-shadow-sm",
                     indicator: "bg-gradient-to-r"
                   }}
-                  aria-label={stat.label}
                 />
               )}
             </div>

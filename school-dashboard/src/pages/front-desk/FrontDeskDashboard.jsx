@@ -1,8 +1,9 @@
 import { Card, Breadcrumbs, BreadcrumbItem, Tabs, Tab, Chip, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@heroui/react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Users, UserPlus, DoorOpen, Calendar, MessageSquare, Phone, Plus, ChevronDown } from 'lucide-react';
+import { Home, Users, UserPlus, DoorOpen, Calendar, MessageSquare, Phone, Plus, ChevronDown, LayoutDashboard } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { frontDeskApi } from '../../services/api';
+import Overview from './Overview';
 import VisitorLog from './VisitorLog';
 import AdmissionsList from './AdmissionsList';
 import GatePassLog from './GatePassLog';
@@ -19,7 +20,7 @@ export default function FrontDeskDashboard() {
   const feedbacksListRef = useRef(null);
   const callLogsListRef = useRef(null);
   const navigate = useNavigate();
-  const [selectedTab, setSelectedTab] = useState('visitors');
+  const [selectedTab, setSelectedTab] = useState('overview');
   const [stats, setStats] = useState({
     todayVisitors: 0,
     activeAdmissions: 0,
@@ -35,14 +36,23 @@ export default function FrontDeskDashboard() {
 
   const loadStats = async () => {
     try {
-      const [visitors, admissions, gatePasses, appointments, feedbacks, callLogs] = await Promise.all([
-        frontDeskApi.getVisitorsToday(),
-        frontDeskApi.getAdmissions({ status: 'inquiry-logged' }),
-        frontDeskApi.getGatePassesToday(),
-        frontDeskApi.getAppointments({ status: 'scheduled' }),
-        frontDeskApi.getFeedbacks({ status: 'open' }),
-        frontDeskApi.getCallLogs(),
-      ]);
+      // Load stats sequentially with small delays to avoid rate limiting
+      const visitors = await frontDeskApi.getVisitorsToday();
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const admissions = await frontDeskApi.getAdmissions({ status: 'inquiry-logged' });
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const gatePasses = await frontDeskApi.getGatePassesToday();
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const appointments = await frontDeskApi.getAppointments({ status: 'scheduled' });
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const feedbacks = await frontDeskApi.getFeedbacks({ status: 'open' });
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const callLogs = await frontDeskApi.getCallLogs();
 
       const today = new Date().toISOString().split('T')[0];
       const todayCalls = callLogs.filter(log => log.dateTime.startsWith(today));
@@ -61,6 +71,7 @@ export default function FrontDeskDashboard() {
   };
 
   const tabs = [
+    { key: 'overview', label: 'Overview', icon: <LayoutDashboard size={14} /> },
     { key: 'visitors', label: 'Visitor Log', count: stats.todayVisitors },
     { key: 'admissions', label: 'Admissions', count: stats.activeAdmissions },
     { key: 'gate-passes', label: 'Gate Pass', count: stats.todayGatePasses },
@@ -135,8 +146,9 @@ export default function FrontDeskDashboard() {
                 key={tab.key}
                 title={
                   <div className="flex items-center gap-2">
+                    {tab.icon && <span className="text-default-500">{tab.icon}</span>}
                     <span>{tab.label}</span>
-                    {tab.count > 0 && (
+                    {tab.count !== undefined && tab.count > 0 && (
                       <Chip size="sm" variant="flat" color="primary">
                         {tab.count}
                       </Chip>
@@ -179,6 +191,7 @@ export default function FrontDeskDashboard() {
 
         {/* Content Area */}
         <div className="min-h-[500px] px-6 py-6">
+          {selectedTab === 'overview' && <Overview stats={stats} onTabChange={setSelectedTab} />}
           {selectedTab === 'visitors' && <VisitorLog ref={visitorLogRef} />}
           {selectedTab === 'admissions' && <AdmissionsList ref={admissionsListRef} />}
           {selectedTab === 'gate-passes' && <GatePassLog ref={gatePassLogRef} />}

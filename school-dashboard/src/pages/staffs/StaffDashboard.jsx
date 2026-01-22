@@ -16,6 +16,8 @@ import PageHeader from "../../components/PageHeader";
 import { useApp } from "../../context/AppContext";
 import { uploadApi } from "../../services/api";
 import toast from "react-hot-toast";
+import StaffAssignmentPanel from "./StaffAssignmentPanel";
+import TeacherTimetableEditor from "./TeacherTimetableEditor";
 
 export default function StaffDashboard() {
   const { id } = useParams();
@@ -445,7 +447,8 @@ export default function StaffDashboard() {
             <Tab key="overview" title="Overview" />
             <Tab key="attendance" title="Attendance" />
             <Tab key="about" title="About" />
-            <Tab key="academics" title="Timetable & Plans" />
+            <Tab key="timetable" title="Timetable" />
+            <Tab key="assignments" title="Assignments" />
             <Tab key="payroll" title="Payroll" />
             <Tab key="documents" title={
               <div className="flex items-center gap-2">
@@ -888,128 +891,46 @@ export default function StaffDashboard() {
             </div>
           )}
 
-          {activeTab === "academics" && (
+          {activeTab === "timetable" && (
             <div className="space-y-6 animate-fade-in">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Timetable Section */}
-                <div className="lg:col-span-2 space-y-6">
-                  <Card shadow="none" className="border border-default-200">
-                    <CardHeader className="px-6 py-4 border-b border-default-100 flex justify-between items-center">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-pink-50 text-pink-600 rounded-lg">
-                          <Calendar size={20} />
-                        </div>
-                        <h3 className="font-semibold text-default-900">Weekly Timetable</h3>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="flat" color="primary" startContent={<Edit size={14} />}>Edit</Button>
-                        <Button size="sm" variant="bordered" startContent={<Download size={14} />}>Download</Button>
-                      </div>
-                    </CardHeader>
-                    <CardBody className="p-0 overflow-x-auto">
-                      <Table aria-label="Timetable" removeWrapper shadow="none" classNames={{ th: "bg-default-50", td: "py-4 px-4 whitespace-nowrap" }}>
-                        <TableHeader>
-                          <TableColumn>DAY</TableColumn>
-                          <TableColumn>PERIOD 1</TableColumn>
-                          <TableColumn>PERIOD 2</TableColumn>
-                          <TableColumn>PERIOD 3</TableColumn>
-                          <TableColumn>PERIOD 4</TableColumn>
-                          <TableColumn>PERIOD 5</TableColumn>
-                        </TableHeader>
-                        <TableBody>
-                          {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map((day) => (
-                            <TableRow key={day}>
-                              <TableCell><span className="font-semibold text-default-700">{day}</span></TableCell>
-                              <TableCell>
-                                <div className="text-xs">
-                                  <p className="font-semibold">Match (10-A)</p>
-                                  <p className="text-default-400">09:00 - 10:00</p>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-xs">
-                                  <p className="font-semibold">Physics (9-B)</p>
-                                  <p className="text-default-400">10:00 - 11:00</p>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-xs text-default-400 italic">Free Period</div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-xs">
-                                  <p className="font-semibold">Science (8-A)</p>
-                                  <p className="text-default-400">12:00 - 01:00</p>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-xs">
-                                  <p className="font-semibold">Lab (10-A)</p>
-                                  <p className="text-default-400">02:00 - 03:00</p>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </CardBody>
-                  </Card>
-                </div>
+              {/* Teacher Timetable Editor */}
+              <Card shadow="none" className="border border-default-200">
+                <CardHeader className="px-6 py-4 border-b border-default-100">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-pink-50 text-pink-600 rounded-lg">
+                      <Calendar size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-default-900">Weekly Timetable</h3>
+                      <p className="text-xs text-default-500 mt-0.5">Manage class schedules and assignments</p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardBody className="p-6">
+                  <TeacherTimetableEditor teacherId={id} teacherName={staff?.name} />
+                </CardBody>
+              </Card>
+            </div>
+          )}
 
-                {/* Lesson Plans */}
-                <div className="space-y-6">
-                  <Card shadow="none" className="border border-default-200 h-full">
-                    <CardHeader className="px-6 py-4 border-b border-default-100">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-                          <BookOpen size={20} />
-                        </div>
-                        <h3 className="font-semibold text-default-900">Lesson Plans</h3>
-                      </div>
-                    </CardHeader>
-                    <CardBody className="p-6 space-y-6">
-                      {/* Current Lesson */}
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <span className="px-2 py-1 rounded-md bg-green-100 text-green-700 text-xs font-semibold uppercase">Ongoing</span>
-                            <h4 className="font-bold text-default-900 mt-1">Algebraic Expressions</h4>
-                            <p className="text-xs text-default-500">Class 10-A • Mathematics</p>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-xs font-semibold text-default-500">Due in</span>
-                            <p className="font-bold text-default-900">3 Days</p>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-xs">
-                            <span className="text-default-500">Progress</span>
-                            <span className="font-semibold text-primary">65%</span>
-                          </div>
-                          <Progress value={65} size="sm" color="primary" className="h-2" />
-                        </div>
-                      </div>
-
-                      <Divider />
-
-                      {/* Upcoming Lesson */}
-                      <div className="space-y-3 opacity-60">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <span className="px-2 py-1 rounded-md bg-default-100 text-default-600 text-xs font-semibold uppercase">Upcoming</span>
-                            <h4 className="font-bold text-default-900 mt-1">Quadratic Equations</h4>
-                            <p className="text-xs text-default-500">Class 10-A • Mathematics</p>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-xs font-semibold text-default-500">Starts in</span>
-                            <p className="font-bold text-default-900">4 Days</p>
-                          </div>
-                        </div>
-                      </div>
-
-                    </CardBody>
-                  </Card>
-                </div>
-              </div>
+          {activeTab === "assignments" && (
+            <div className="space-y-6 animate-fade-in">
+              <Card shadow="none" className="border border-default-200">
+                <CardHeader className="px-6 py-4 border-b border-default-100">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                      <Briefcase size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-default-900">Subject & Class Assignments</h3>
+                      <p className="text-xs text-default-500 mt-0.5">Manage which subjects and classes this teacher can teach</p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardBody className="p-6">
+                  <StaffAssignmentPanel staffId={id} />
+                </CardBody>
+              </Card>
             </div>
           )}
 

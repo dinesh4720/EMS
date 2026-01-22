@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useMemo, useEffect, useCallback } from "react";
-import { staffApi, studentsApi, classesApi, settingsApi } from "../services/api";
+import { staffApi, studentsApi, classesApi, classesEnhancedApi, settingsApi, teacherAssignmentsApi, teacherTimetableApi } from "../services/api";
 import toast from "react-hot-toast";
 
 // NOTE: These are minimal fallback values only.
@@ -1046,6 +1046,8 @@ export function AppProvider({ children }) {
     // Academic & other actions
     lessonPlans, documents, remarks,
     addLessonPlan, addDocument, addRemark,
+    // APIs
+    classesApi, classesEnhancedApi, teacherAssignmentsApi, teacherTimetableApi,
     // Theme
     themeSettings, updateThemeSettings, resetThemeSettings,
     // Onboarding

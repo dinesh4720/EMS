@@ -57,6 +57,7 @@ export default function StaffsPage() {
 
   // NEW: Handle edit staff - opens AddStaff drawer with pre-filled data
   const handleEditStaff = (staffId) => {
+    console.log('📝 Editing staff with ID:', staffId);
     setEditingStaffId(staffId);
     setShouldRenderAddStaff(true);
     requestAnimationFrame(() => {
@@ -67,7 +68,9 @@ export default function StaffsPage() {
   // Helper to get editing staff data
   const getEditingStaff = () => {
     if (!editingStaffId) return null;
-    return staff.find(s => s.id === editingStaffId || s._id === editingStaffId);
+    const found = staff.find(s => s.id === editingStaffId || s._id === editingStaffId);
+    console.log('🔍 Found editing staff:', found);
+    return found;
   };
 
   const activeTab = location.pathname.includes("/staffs/") && location.pathname !== "/staffs/attendance" && location.pathname !== "/staffs/payroll" && location.pathname !== "/staffs" && location.pathname !== "/staffs/"

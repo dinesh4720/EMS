@@ -787,7 +787,7 @@ export default function StudentsList() {
                                                         {isInvalid ? "N/A" : `${attendance}%`}
                                                     </span>
                                                     {!isInvalid ? (
-                                                        <Progress size="sm" value={attendance} color={getAttendanceColor(attendance)} className="max-w-[60px]" />
+                                                        <Progress aria-label="Student attendance" size="sm" value={attendance} color={getAttendanceColor(attendance)} className="max-w-[60px]" />
                                                     ) : (
                                                         <div className="h-1 w-[60px] bg-default-100 rounded-full"></div>
                                                     )}

@@ -1,9 +1,7 @@
 import React, { useState } from "react";
 import {
   Avatar,
-  Button,
   Tooltip,
-  Badge,
   Popover,
   PopoverTrigger,
   PopoverContent,
@@ -12,8 +10,8 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, BookOpen, MessageSquare, IndianRupee, Settings,
   ChevronsLeft, GraduationCap, Calendar, BarChart3, FileText, DoorOpen,
-  Bell, Sun, Moon, LogOut, Sparkles, ChevronDown, ChevronRight,
-  ClipboardList, UserCheck, Briefcase, FileSpreadsheet,
+  Bell, Sun, Moon, LogOut, ChevronDown, ChevronRight,
+  Briefcase, FileSpreadsheet,
   PieChart, TrendingUp, Activity, Layers
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -42,27 +40,10 @@ const modules = {
       title: "Communication",
       items: [
         { icon: MessageSquare, label: "Messages", href: "/messaging" },
-        { icon: Bell, label: "Announcements", href: "/announcements" },
       ]
     }
   ],
-  FrontDesk: [
-    {
-      title: "Reception",
-      items: [
-        { icon: LayoutDashboard, label: "Overview", href: "/front-desk" },
-        { icon: ClipboardList, label: "Enquiries", href: "/front-desk/enquiries" },
-        { icon: UserCheck, label: "Visitors", href: "/front-desk/visitors" },
-      ]
-    },
-    {
-      title: "Logs",
-      items: [
-        { icon: DoorOpen, label: "Gate Pass", href: "/front-desk/gate-pass" },
-        { icon: FileText, label: "Call Logs", href: "/front-desk/calls" },
-      ]
-    }
-  ],
+  FrontDesk: [],
   Accounts: [
     {
       title: "Finance",
@@ -80,16 +61,7 @@ const modules = {
       ]
     }
   ],
-  Analytics: [
-    {
-      title: "Insights",
-      items: [
-        { icon: BarChart3, label: "Overview", href: "/analytics" },
-        { icon: TrendingUp, label: "Student Performance", href: "/analytics/students" },
-        { icon: Activity, label: "Staff Productivity", href: "/analytics/staff" },
-      ]
-    }
-  ]
+  Analytics: []
 };
 
 
@@ -242,9 +214,21 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
         <div className={`space-y-1 ${isSidebarOpen ? "px-3" : "px-3"}`}>
           {Object.entries(modules).map(([key, groups]) => {
             const info = moduleInfo[key];
-            const isActive = expandedModules.includes(key);
+            const isActive = key === 'FrontDesk' || key === 'Analytics'
+              ? (key === 'FrontDesk' ? location.pathname.startsWith('/front-desk') : location.pathname.startsWith('/analytics'))
+              : expandedModules.includes(key);
 
             const handleModuleClick = () => {
+              // FrontDesk and Analytics are now direct links, not expandable
+              if (key === 'FrontDesk') {
+                navigate('/front-desk');
+                return;
+              }
+              if (key === 'Analytics') {
+                navigate('/analytics');
+                return;
+              }
+
               if (!isSidebarOpen) {
                 setIsSidebarOpen(true);
                 if (!expandedModules.includes(key)) {
@@ -299,7 +283,7 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                         <span className={`text-[13.5px] font-medium ${isActive ? 'font-semibold' : ''}`}>{info.label}</span>
                       )}
                     </div>
-                    {isSidebarOpen && (
+                    {isSidebarOpen && key !== 'FrontDesk' && key !== 'Analytics' && (
                       <ChevronRight size={14} className={`text-default-400 transition-transform duration-300 ${isActive ? 'rotate-90' : ''}`} />
                     )}
                   </button>
@@ -307,7 +291,7 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
 
                 {/* Module Content (Expanded) */}
                 <AnimatePresence>
-                  {isSidebarOpen && isActive && (
+                  {isSidebarOpen && isActive && groups.length > 0 && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}

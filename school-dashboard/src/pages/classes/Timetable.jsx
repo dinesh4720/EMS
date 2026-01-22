@@ -1,9 +1,19 @@
 import { useState, useEffect } from "react";
-import { Card, CardBody, Button, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip } from "@heroui/react";
+import { Card, CardBody, Button, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Spinner } from "@heroui/react";
 import { motion } from "framer-motion";
-import { Settings, Plus, Trash2, Save, X, Clock } from "lucide-react";
+import { Settings, Plus, Trash2, Save, X, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { timetableApi } from "../../services/api";
+import { timetableApi, teacherAssignmentsApi } from "../../services/api";
+import ConflictIndicator from "../../components/ConflictIndicator";
+import ConfirmDialog from "../../components/ConfirmDialog";
+import { 
+  showErrorToast, 
+  showSuccessToast, 
+  showWarningToast,
+  executeWithFeedback,
+  parseError,
+  formatConflictDetails
+} from "../../utils/errorHandling";
 
 const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -35,18 +45,26 @@ const getSubjectColor = (subject) => {
   return colors[subject] || "default";
 };
 
-export default function Timetable() {
+export default function Timetable({ classId }) {
   const { classesWithTeachers, staff, schoolSettings } = useApp();
-  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedClass, setSelectedClass] = useState(classId || "");
   const [timetable, setTimetable] = useState(null);
   const [periods, setPeriods] = useState(defaultPeriods);
   const [schedule, setSchedule] = useState({});
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  
+  // New state for conflict detection and available teachers
+  const [availableTeachers, setAvailableTeachers] = useState([]);
+  const [loadingTeachers, setLoadingTeachers] = useState(false);
+  const [conflicts, setConflicts] = useState([]);
+  const [syncStatus, setSyncStatus] = useState(null); // 'syncing', 'success', 'error'
 
   // Modals
   const { isOpen: isPeriodsOpen, onOpen: onPeriodsOpen, onClose: onPeriodsClose } = useDisclosure();
   const { isOpen: isSlotOpen, onOpen: onSlotOpen, onClose: onSlotClose } = useDisclosure();
+  const { isOpen: isConfirmClearOpen, onOpen: onConfirmClearOpen, onClose: onConfirmClearClose } = useDisclosure();
+  const { isOpen: isConfirmSaveOpen, onOpen: onConfirmSaveOpen, onClose: onConfirmSaveClose } = useDisclosure();
   const [editingSlot, setEditingSlot] = useState(null);
   const [slotForm, setSlotForm] = useState({ subject: "", teacherId: "", room: "" });
 
@@ -81,6 +99,7 @@ export default function Timetable() {
       setHasChanges(false);
     } catch (err) {
       console.error('Failed to load timetable:', err);
+      showErrorToast(err, 'Failed to load timetable. Please try again.');
       setPeriods(defaultPeriods);
       setSchedule(initializeSchedule());
     } finally {
@@ -103,64 +122,266 @@ export default function Timetable() {
     const slot = schedule[day]?.[periodIndex] || { subject: "", teacherId: null, room: "" };
     setEditingSlot({ day, periodIndex });
     setSlotForm({ ...slot, teacherId: slot.teacherId || "" });
+    setConflicts([]); // Clear previous conflicts
     onSlotOpen();
   };
 
-  const handleSaveSlot = () => {
-    if (!editingSlot) return;
+  // Fetch available teachers when subject is selected
+  useEffect(() => {
+    if (isSlotOpen && slotForm.subject && editingSlot && selectedClass) {
+      fetchAvailableTeachers();
+    }
+  }, [slotForm.subject, isSlotOpen, editingSlot, selectedClass]);
 
-    const { day, periodIndex } = editingSlot;
-    const newSchedule = { ...schedule };
-    if (!newSchedule[day]) newSchedule[day] = [];
-    newSchedule[day][periodIndex] = {
-      subject: slotForm.subject,
-      teacherId: slotForm.teacherId || null,
-      room: slotForm.room
-    };
+  const fetchAvailableTeachers = async () => {
+    if (!slotForm.subject || !editingSlot || !selectedClass) return;
 
-    setSchedule(newSchedule);
-    setHasChanges(true);
-    onSlotClose();
-    setEditingSlot(null);
-    setSlotForm({ subject: "", teacherId: "", room: "" });
+    try {
+      setLoadingTeachers(true);
+      const { day, periodIndex } = editingSlot;
+      
+      const params = {
+        classId: selectedClass,
+        subject: slotForm.subject,
+        day,
+        period: periodIndex
+      };
+
+      const response = await teacherAssignmentsApi.getAvailableTeachers(params);
+      setAvailableTeachers(response.availableTeachers || []);
+      
+      if (response.availableTeachers?.length === 0) {
+        showWarningToast('No qualified teachers are available for this subject and time slot.');
+      }
+    } catch (err) {
+      console.error('Failed to fetch available teachers:', err);
+      showErrorToast(err, 'Failed to load available teachers.');
+      setAvailableTeachers([]);
+    } finally {
+      setLoadingTeachers(false);
+    }
   };
 
-  const handleClearSlot = () => {
+  // Check for conflicts when teacher is selected
+  const checkConflict = async (teacherId) => {
+    if (!teacherId || !editingSlot || !selectedClass) {
+      setConflicts([]);
+      return;
+    }
+
+    try {
+      const { day, periodIndex } = editingSlot;
+      
+      // Call the conflict detection endpoint
+      const params = {
+        classId: selectedClass,
+        subject: slotForm.subject,
+        day,
+        period: periodIndex
+      };
+
+      const response = await teacherAssignmentsApi.getAvailableTeachers(params);
+      
+      // Check if selected teacher is in available list
+      const isAvailable = response.availableTeachers?.some(t => 
+        String(t.id) === String(teacherId) || String(t._id) === String(teacherId)
+      );
+
+      if (!isAvailable && teacherId) {
+        // Teacher has a conflict
+        setConflicts([{
+          type: 'double_booking',
+          message: 'This teacher is already assigned to another class at this time',
+          teacherId,
+          day,
+          period: periodIndex
+        }]);
+      } else {
+        setConflicts([]);
+      }
+    } catch (err) {
+      console.error('Failed to check conflicts:', err);
+      setConflicts([]);
+    }
+  };
+
+  // Update teacher selection handler to check conflicts
+  const handleTeacherChange = (teacherId) => {
+    setSlotForm({ ...slotForm, teacherId });
+    checkConflict(teacherId);
+  };
+
+  const handleSaveSlot = async () => {
+    if (!editingSlot) return;
+
+    // Prevent saving if there are conflicts
+    if (conflicts.length > 0) {
+      showWarningToast('Cannot save: Teacher has a scheduling conflict. Please select a different teacher.');
+      return;
+    }
+
+    const { day, periodIndex } = editingSlot;
+    
+    const result = await executeWithFeedback(
+      async () => {
+        setSyncStatus('syncing');
+        
+        const slotData = {
+          day,
+          periodIndex,
+          subject: slotForm.subject,
+          teacherId: slotForm.teacherId || null,
+          room: slotForm.room
+        };
+
+        await timetableApi.updateSlot(selectedClass, slotData);
+        
+        // Update local state
+        const newSchedule = { ...schedule };
+        if (!newSchedule[day]) newSchedule[day] = [];
+        newSchedule[day][periodIndex] = {
+          subject: slotForm.subject,
+          teacherId: slotForm.teacherId || null,
+          room: slotForm.room
+        };
+
+        setSchedule(newSchedule);
+        setSyncStatus('success');
+        
+        return newSchedule;
+      },
+      {
+        loadingMessage: 'Saving and syncing timetable...',
+        successMessage: 'Timetable slot saved and synced successfully!',
+        errorMessage: null,
+        retries: 2,
+        onSuccess: async () => {
+          // Clear success status after 2 seconds
+          setTimeout(() => setSyncStatus(null), 2000);
+          
+          onSlotClose();
+          setEditingSlot(null);
+          setSlotForm({ subject: "", teacherId: "", room: "" });
+          setConflicts([]);
+          
+          // Reload timetable to get synced data
+          await loadTimetable();
+        },
+        onError: (error) => {
+          setSyncStatus('error');
+          
+          // Check if error is a conflict error
+          if (error.type === 'ConflictError') {
+            setConflicts([{
+              type: 'conflict_error',
+              message: formatConflictDetails(error),
+              details: error.details
+            }]);
+          }
+        }
+      }
+    );
+  };
+
+  const handleClearSlot = async () => {
+    if (!editingSlot) return;
+
+    // Show confirmation dialog
+    onConfirmClearOpen();
+  };
+
+  const confirmClearSlot = async () => {
     if (!editingSlot) return;
 
     const { day, periodIndex } = editingSlot;
-    const newSchedule = { ...schedule };
-    if (!newSchedule[day]) newSchedule[day] = [];
-    newSchedule[day][periodIndex] = {
-      subject: "",
-      teacherId: null,
-      room: ""
-    };
+    
+    const result = await executeWithFeedback(
+      async () => {
+        setSyncStatus('syncing');
+        
+        const slotData = {
+          day,
+          periodIndex,
+          subject: "",
+          teacherId: null,
+          room: ""
+        };
 
-    setSchedule(newSchedule);
-    setHasChanges(true);
-    onSlotClose();
-    setEditingSlot(null);
-    setSlotForm({ subject: "", teacherId: "", room: "" });
+        await timetableApi.updateSlot(selectedClass, slotData);
+        
+        // Update local state
+        const newSchedule = { ...schedule };
+        if (!newSchedule[day]) newSchedule[day] = [];
+        newSchedule[day][periodIndex] = {
+          subject: "",
+          teacherId: null,
+          room: ""
+        };
+
+        setSchedule(newSchedule);
+        setSyncStatus('success');
+        
+        return newSchedule;
+      },
+      {
+        loadingMessage: 'Clearing slot and syncing...',
+        successMessage: 'Slot cleared and synced successfully!',
+        errorMessage: null,
+        retries: 2,
+        onSuccess: async () => {
+          // Clear success status after 2 seconds
+          setTimeout(() => setSyncStatus(null), 2000);
+          
+          onConfirmClearClose();
+          onSlotClose();
+          setEditingSlot(null);
+          setSlotForm({ subject: "", teacherId: "", room: "" });
+          setConflicts([]);
+          
+          // Reload timetable to get synced data
+          await loadTimetable();
+        },
+        onError: (error) => {
+          setSyncStatus('error');
+          onConfirmClearClose();
+        }
+      }
+    );
   };
 
   const handleSaveTimetable = async () => {
-    try {
-      setLoading(true);
-      await timetableApi.createOrUpdate({
-        classId: selectedClass,
-        academicYear: schoolSettings.academicYear,
-        periods,
-        schedule
-      });
-      setHasChanges(false);
-      await loadTimetable();
-    } catch (err) {
-      console.error('Failed to save timetable:', err);
-      alert('Failed to save timetable');
-    } finally {
-      setLoading(false);
-    }
+    // Show confirmation dialog
+    onConfirmSaveOpen();
+  };
+
+  const confirmSaveTimetable = async () => {
+    const result = await executeWithFeedback(
+      async () => {
+        setLoading(true);
+        await timetableApi.createOrUpdate({
+          classId: selectedClass,
+          academicYear: schoolSettings.academicYear,
+          periods,
+          schedule
+        });
+        setHasChanges(false);
+        await loadTimetable();
+      },
+      {
+        loadingMessage: 'Saving timetable...',
+        successMessage: 'Timetable saved successfully!',
+        errorMessage: null,
+        retries: 2,
+        onSuccess: () => {
+          onConfirmSaveClose();
+        },
+        onError: () => {
+          onConfirmSaveClose();
+        }
+      }
+    );
+    
+    setLoading(false);
   };
 
   const handleSavePeriods = () => {
@@ -205,34 +426,52 @@ export default function Timetable() {
       {/* Compact Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
         <div className="flex flex-wrap items-center gap-2">
-          <Select 
-            size="sm" 
-            selectedKeys={selectedClass ? [selectedClass] : []} 
-            onChange={(e) => setSelectedClass(e.target.value)} 
-            className="w-[160px]" 
-            aria-label="Select Class" 
-            variant="bordered"
-            classNames={{
-              trigger: "h-9"
-            }}
-          >
-            {classesWithTeachers.map(c => (
-              <SelectItem key={c.id} textValue={`Class ${c.name}-${c.section}`}>
-                Class {c.name}-{c.section}
-              </SelectItem>
-            ))}
-          </Select>
+          {!classId && (
+            <Select
+              size="sm"
+              selectedKeys={selectedClass ? [selectedClass] : []}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="w-[160px]"
+              aria-label="Select Class"
+              variant="bordered"
+              classNames={{
+                trigger: "h-9"
+              }}
+            >
+              {classesWithTeachers.map(c => (
+                <SelectItem key={c.id} textValue={`Class ${c.name}-${c.section}`}>
+                  Class {c.name}-{c.section}
+                </SelectItem>
+              ))}
+            </Select>
+          )}
           {selectedClassData && (
             <Chip size="sm" variant="flat" color="primary" className="h-7">
               {schoolSettings.academicYear}
             </Chip>
           )}
+          {/* Sync Status Indicator */}
+          {syncStatus === 'syncing' && (
+            <Chip size="sm" variant="flat" color="default" className="h-7" startContent={<Spinner size="sm" />}>
+              Syncing...
+            </Chip>
+          )}
+          {syncStatus === 'success' && (
+            <Chip size="sm" variant="flat" color="success" className="h-7" startContent={<CheckCircle2 size={14} />}>
+              Synced
+            </Chip>
+          )}
+          {syncStatus === 'error' && (
+            <Chip size="sm" variant="flat" color="danger" className="h-7" startContent={<AlertTriangle size={14} />}>
+              Sync Failed
+            </Chip>
+          )}
         </div>
         <div className="flex gap-2">
-          <Button 
-            size="sm" 
-            variant="flat" 
-            radius="md" 
+          <Button
+            size="sm"
+            variant="flat"
+            radius="md"
             startContent={<Settings size={14} />}
             onPress={onPeriodsOpen}
             className="h-9"
@@ -240,10 +479,10 @@ export default function Timetable() {
             <span className="hidden sm:inline">Periods</span>
           </Button>
           {hasChanges && (
-            <Button 
-              size="sm" 
-              color="primary" 
-              radius="md" 
+            <Button
+              size="sm"
+              color="primary"
+              radius="md"
               startContent={<Save size={14} />}
               onPress={handleSaveTimetable}
               isLoading={loading}
@@ -339,7 +578,7 @@ export default function Timetable() {
                               </Card>
                             </motion.div>
                           ) : (
-                            <div 
+                            <div
                               className="w-full h-20 border border-dashed border-default-200 rounded-md flex items-center justify-center text-default-300 hover:border-primary hover:text-primary hover:bg-primary-50/10 cursor-pointer transition-all"
                               onClick={() => handleSlotClick(day, i)}
                             >
@@ -384,47 +623,47 @@ export default function Timetable() {
             <div className="space-y-3">
               {periods.map((period, i) => (
                 <div key={i} className="flex gap-2 items-end">
-                  <Input 
-                    size="sm" 
-                    value={period.name} 
+                  <Input
+                    size="sm"
+                    value={period.name}
                     onValueChange={(v) => updatePeriod(i, 'name', v)}
-                    label="Period Name" 
+                    label="Period Name"
                     className="flex-1"
                     variant="bordered"
                   />
-                  <Input 
-                    size="sm" 
-                    type="time" 
-                    value={period.startTime} 
+                  <Input
+                    size="sm"
+                    type="time"
+                    value={period.startTime}
                     onValueChange={(v) => updatePeriod(i, 'startTime', v)}
-                    label="Start Time" 
+                    label="Start Time"
                     className="w-32"
                     variant="bordered"
                   />
-                  <Input 
-                    size="sm" 
-                    type="time" 
-                    value={period.endTime} 
+                  <Input
+                    size="sm"
+                    type="time"
+                    value={period.endTime}
                     onValueChange={(v) => updatePeriod(i, 'endTime', v)}
-                    label="End Time" 
+                    label="End Time"
                     className="w-32"
                     variant="bordered"
                   />
                   <div className="flex items-center gap-2">
                     <label className="flex items-center gap-1 text-xs cursor-pointer">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={period.isBreak}
                         onChange={(e) => updatePeriod(i, 'isBreak', e.target.checked)}
                         className="rounded"
                       />
                       <span>Break</span>
                     </label>
-                    <Button 
-                      isIconOnly 
-                      size="sm" 
-                      color="danger" 
-                      variant="flat" 
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      color="danger"
+                      variant="flat"
                       radius="md"
                       onPress={() => removePeriod(i)}
                       isDisabled={periods.length <= 1}
@@ -434,10 +673,10 @@ export default function Timetable() {
                   </div>
                 </div>
               ))}
-              <Button 
-                size="sm" 
-                variant="flat" 
-                radius="md" 
+              <Button
+                size="sm"
+                variant="flat"
+                radius="md"
                 startContent={<Plus size={14} />}
                 onPress={addPeriod}
                 className="w-full"
@@ -475,19 +714,63 @@ export default function Timetable() {
                 ))}
               </Select>
 
-              <Select
-                label="Teacher"
-                placeholder="Select teacher (optional)"
-                selectedKeys={slotForm.teacherId ? [String(slotForm.teacherId)] : []}
-                onSelectionChange={(keys) => setSlotForm({ ...slotForm, teacherId: Array.from(keys)[0] || "" })}
-                variant="bordered"
-              >
-                {staff.filter(s => s.role === "Teacher" && s.status === "active").map(teacher => (
-                  <SelectItem key={String(teacher.id)} textValue={teacher.name}>
-                    {teacher.name}
-                  </SelectItem>
-                ))}
-              </Select>
+              {/* Show loading state while fetching teachers */}
+              {loadingTeachers && slotForm.subject && (
+                <div className="flex items-center justify-center gap-2 p-4 bg-default-50 rounded-lg">
+                  <Spinner size="sm" />
+                  <span className="text-sm text-default-500">Loading available teachers...</span>
+                </div>
+              )}
+
+              {/* Teacher selection - only show available teachers */}
+              {slotForm.subject && !loadingTeachers && (
+                <Select
+                  label="Teacher"
+                  placeholder={availableTeachers.length > 0 ? "Select teacher" : "No teachers available"}
+                  selectedKeys={slotForm.teacherId ? [String(slotForm.teacherId)] : []}
+                  onSelectionChange={(keys) => handleTeacherChange(Array.from(keys)[0] || "")}
+                  variant="bordered"
+                  isDisabled={availableTeachers.length === 0}
+                  description={
+                    availableTeachers.length === 0 
+                      ? "No qualified teachers are available for this subject and time slot"
+                      : `${availableTeachers.length} teacher(s) available`
+                  }
+                >
+                  {availableTeachers.map(teacher => (
+                    <SelectItem 
+                      key={String(teacher.id || teacher._id)} 
+                      textValue={teacher.name}
+                    >
+                      {teacher.name}
+                    </SelectItem>
+                  ))}
+                </Select>
+              )}
+
+              {/* Show conflict warning using ConflictIndicator */}
+              {conflicts.length > 0 && (
+                <ConflictIndicator
+                  conflicts={conflicts}
+                  onResolve={(resolutionData) => {
+                    const { action, classId } = resolutionData;
+                    
+                    if (action === 'remove_current') {
+                      // Clear the current slot
+                      handleClearSlot();
+                    } else if (action === 'choose_different') {
+                      // User needs to select a different teacher
+                      setConflicts([]);
+                      setSlotForm({ ...slotForm, teacherId: "" });
+                    } else if (action === 'remove_from_class') {
+                      // This would require additional API call to remove teacher from conflicting class
+                      alert(`To resolve this conflict, please go to ${resolutionData.resolution.className} timetable and remove the teacher from that slot.`);
+                    } else if (action === 'update_assignments') {
+                      alert('Please go to Staff Assignments to add this subject-class assignment to the teacher.');
+                    }
+                  }}
+                />
+              )}
 
               <Input
                 label="Room"
@@ -505,6 +788,7 @@ export default function Timetable() {
                   startContent={<X size={14} />}
                   onPress={handleClearSlot}
                   className="w-full"
+                  isLoading={syncStatus === 'syncing'}
                 >
                   Clear Slot
                 </Button>
@@ -513,16 +797,42 @@ export default function Timetable() {
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={onSlotClose}>Cancel</Button>
-            <Button 
-              color="primary" 
+            <Button
+              color="primary"
               onPress={handleSaveSlot}
-              isDisabled={!slotForm.subject}
+              isDisabled={!slotForm.subject || conflicts.length > 0}
+              isLoading={syncStatus === 'syncing'}
             >
-              Save
+              {syncStatus === 'syncing' ? 'Saving & Syncing...' : 'Save'}
             </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Confirmation Dialogs */}
+      <ConfirmDialog
+        isOpen={isConfirmClearOpen}
+        onClose={onConfirmClearClose}
+        onConfirm={confirmClearSlot}
+        title="Clear Timetable Slot"
+        message="Are you sure you want to clear this slot? This will remove the teacher assignment from both the class and teacher timetables."
+        confirmText="Clear Slot"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={syncStatus === 'syncing'}
+      />
+
+      <ConfirmDialog
+        isOpen={isConfirmSaveOpen}
+        onClose={onConfirmSaveClose}
+        onConfirm={confirmSaveTimetable}
+        title="Save Timetable"
+        message="Are you sure you want to save all changes to the timetable? This will update the schedule for the entire class."
+        confirmText="Save Changes"
+        cancelText="Cancel"
+        variant="info"
+        isLoading={loading}
+      />
     </div>
   );
 }

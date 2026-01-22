@@ -1,10 +1,11 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, Chip, useDisclosure, Select, SelectItem, Button
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, Chip, useDisclosure, Select, SelectItem, Checkbox, Button
 } from '@heroui/react';
 import { Edit, Trash2, Plus } from 'lucide-react';
 import { frontDeskApi, staffApi } from '../../services/api';
+import FormInput from '../../components/FormInput';
 import { validatePhone, validateFutureDate, validateDateRange } from '../../utils/validations';
 import toast from 'react-hot-toast';
 
@@ -24,6 +25,11 @@ const AppointmentsList = forwardRef((props, ref) => {
     meetingWith: '',
     notes: '',
     status: 'scheduled',
+    assignAsTask: false,
+    taskTitle: '',
+    taskPriority: 'medium',
+    assignedTo: '',
+    shareWithStaff: [],
   });
 
   useEffect(() => {
@@ -96,6 +102,37 @@ const AppointmentsList = forwardRef((props, ref) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const validateField = (name, value) => {
+    let error = '';
+    const nameRegex = /^[a-zA-Z\s]*$/;
+
+    switch (name) {
+      case 'visitorName':
+        if (!value.trim()) error = 'Visitor name is required';
+        else if (!nameRegex.test(value)) error = 'Visitor name should contain only letters';
+        break;
+      case 'phoneNumber':
+        if (value && (!validatePhone(value) || /^(\d)\1{9}$/.test(value))) error = 'Please enter a valid 10-digit phone number';
+        break;
+      case 'fromDateTime':
+        if (!value) error = 'Start time is required';
+        else if (!validateFutureDate(value)) error = 'Appointment must be in the future';
+        else if (formData.toDateTime && !validateDateRange(value, formData.toDateTime)) error = 'Start time must be before end time';
+        break;
+      case 'toDateTime':
+        if (!value) error = 'End time is required';
+        else if (formData.fromDateTime && !validateDateRange(formData.fromDateTime, value)) error = 'End time must be after start time';
+        break;
+      case 'meetingWith':
+        if (!value) error = 'Please select who to meet';
+        break;
+      default:
+        break;
+    }
+
+    setErrors(prev => ({ ...prev, [name]: error }));
+  };
+
   const handleSubmit = async () => {
     if (!validateForm()) {
       toast.error('Please fix the errors before submitting');
@@ -109,6 +146,15 @@ const AppointmentsList = forwardRef((props, ref) => {
         await frontDeskApi.createAppointment(formData);
         toast.success('Appointment created successfully');
       }
+
+      if (formData.assignAsTask) {
+        toast.info('Task will be created for the assigned staff member');
+      }
+
+      if (formData.shareWithStaff?.length > 0) {
+        toast.info(`Appointment will be shared with ${formData.shareWithStaff.length} staff member(s)`);
+      }
+
       onClose();
       resetForm();
       loadAppointments();
@@ -155,6 +201,11 @@ const AppointmentsList = forwardRef((props, ref) => {
       meetingWith: '',
       notes: '',
       status: 'scheduled',
+      assignAsTask: false,
+      taskTitle: '',
+      taskPriority: 'medium',
+      assignedTo: '',
+      shareWithStaff: [],
     });
   };
 
@@ -175,63 +226,63 @@ const AppointmentsList = forwardRef((props, ref) => {
         </Button>
       </div>
       <Table aria-label="Appointments table" removeWrapper>
-            <TableHeader>
-              <TableColumn>VISITOR NAME</TableColumn>
-              <TableColumn>PHONE</TableColumn>
-              <TableColumn>PURPOSE</TableColumn>
-              <TableColumn>FROM</TableColumn>
-              <TableColumn>TO</TableColumn>
-              <TableColumn>MEETING WITH</TableColumn>
-              <TableColumn>STATUS</TableColumn>
-              <TableColumn>ACTIONS</TableColumn>
-            </TableHeader>
-            <TableBody
-              items={appointments}
-              isLoading={loading}
-              emptyContent="No appointments"
-            >
-              {(appointment) => (
-                <TableRow key={appointment._id}>
-                  <TableCell>{appointment.visitorName}</TableCell>
-                  <TableCell>{appointment.phoneNumber || '-'}</TableCell>
-                  <TableCell>{appointment.purpose || '-'}</TableCell>
-                  <TableCell>{new Date(appointment.fromDateTime).toLocaleString()}</TableCell>
-                  <TableCell>{new Date(appointment.toDateTime).toLocaleString()}</TableCell>
-                  <TableCell>{appointment.meetingWith || '-'}</TableCell>
-                  <TableCell>
-                    <Chip
-                      size="sm"
-                      color={getStatusColor(appointment.status)}
-                      variant="flat"
-                    >
-                      {appointment.status}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        color="warning"
-                        variant="light"
-                        isIconOnly
-                        onPress={() => handleEdit(appointment)}
-                      >
-                        <Edit size={14} />
-                      </Button>
-                      <Button
-                        size="sm"
-                        color="danger"
-                        variant="light"
-                        isIconOnly
-                        onPress={() => handleDelete(appointment._id)}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
+        <TableHeader>
+          <TableColumn>VISITOR NAME</TableColumn>
+          <TableColumn>PHONE</TableColumn>
+          <TableColumn>PURPOSE</TableColumn>
+          <TableColumn>FROM</TableColumn>
+          <TableColumn>TO</TableColumn>
+          <TableColumn>MEETING WITH</TableColumn>
+          <TableColumn>STATUS</TableColumn>
+          <TableColumn>ACTIONS</TableColumn>
+        </TableHeader>
+        <TableBody
+          items={appointments}
+          isLoading={loading}
+          emptyContent="No appointments"
+        >
+          {(appointment) => (
+            <TableRow key={appointment._id}>
+              <TableCell>{appointment.visitorName}</TableCell>
+              <TableCell>{appointment.phoneNumber || '-'}</TableCell>
+              <TableCell>{appointment.purpose || '-'}</TableCell>
+              <TableCell>{new Date(appointment.fromDateTime).toLocaleString()}</TableCell>
+              <TableCell>{new Date(appointment.toDateTime).toLocaleString()}</TableCell>
+              <TableCell>{appointment.meetingWith || '-'}</TableCell>
+              <TableCell>
+                <Chip
+                  size="sm"
+                  color={getStatusColor(appointment.status)}
+                  variant="flat"
+                >
+                  {appointment.status}
+                </Chip>
+              </TableCell>
+              <TableCell>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    color="warning"
+                    variant="light"
+                    isIconOnly
+                    onPress={() => handleEdit(appointment)}
+                  >
+                    <Edit size={14} />
+                  </Button>
+                  <Button
+                    size="sm"
+                    color="danger"
+                    variant="light"
+                    isIconOnly
+                    onPress={() => handleDelete(appointment._id)}
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
       </Table>
 
       <Modal isOpen={isOpen} onClose={onClose} size="2xl">
@@ -239,68 +290,69 @@ const AppointmentsList = forwardRef((props, ref) => {
           <ModalHeader>{editingId ? 'Edit Appointment' : 'New Appointment'}</ModalHeader>
           <ModalBody>
             <div className="grid grid-cols-2 gap-4">
-              <Input
+              <FormInput
                 label="Visitor Name"
                 placeholder="Enter visitor name"
                 value={formData.visitorName}
                 onChange={(e) => {
-                  setFormData({ ...formData, visitorName: e.target.value });
-                  if (errors.visitorName) setErrors({ ...errors, visitorName: '' });
+                  const val = e.target.value;
+                  setFormData(prev => ({ ...prev, visitorName: val }));
+                  validateField('visitorName', val);
                 }}
-                isRequired
-                isInvalid={!!errors.visitorName}
-                errorMessage={errors.visitorName}
+                required
+                error={errors.visitorName}
               />
-              <Input
+              <FormInput
                 label="Phone Number"
                 placeholder="Enter 10-digit phone number"
                 value={formData.phoneNumber}
                 onChange={(e) => {
-                  setFormData({ ...formData, phoneNumber: e.target.value });
-                  if (errors.phoneNumber) setErrors({ ...errors, phoneNumber: '' });
+                  const val = e.target.value.replace(/\D/g, '');
+                  setFormData(prev => ({ ...prev, phoneNumber: val }));
+                  validateField('phoneNumber', val);
                 }}
                 maxLength={10}
-                isInvalid={!!errors.phoneNumber}
-                errorMessage={errors.phoneNumber}
+                error={errors.phoneNumber}
               />
-              <Input
+              <FormInput
                 label="Purpose"
                 placeholder="Enter purpose"
                 value={formData.purpose}
                 onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
-                className="col-span-2"
+                wrapperClassName="col-span-2"
               />
-              <Input
+              <FormInput
                 label="From Date & Time"
                 type="datetime-local"
                 value={formData.fromDateTime}
                 onChange={(e) => {
-                  setFormData({ ...formData, fromDateTime: e.target.value });
-                  if (errors.fromDateTime) setErrors({ ...errors, fromDateTime: '' });
+                  const val = e.target.value;
+                  setFormData(prev => ({ ...prev, fromDateTime: val }));
+                  validateField('fromDateTime', val);
                 }}
-                isRequired
-                isInvalid={!!errors.fromDateTime}
-                errorMessage={errors.fromDateTime}
+                required
+                error={errors.fromDateTime}
               />
-              <Input
+              <FormInput
                 label="To Date & Time"
                 type="datetime-local"
                 value={formData.toDateTime}
                 onChange={(e) => {
-                  setFormData({ ...formData, toDateTime: e.target.value });
-                  if (errors.toDateTime) setErrors({ ...errors, toDateTime: '' });
+                  const val = e.target.value;
+                  setFormData(prev => ({ ...prev, toDateTime: val }));
+                  validateField('toDateTime', val);
                 }}
-                isRequired
-                isInvalid={!!errors.toDateTime}
-                errorMessage={errors.toDateTime}
+                required
+                error={errors.toDateTime}
               />
               <Select
                 label="Meeting With"
                 placeholder="Select staff member"
                 selectedKeys={formData.meetingWith ? [formData.meetingWith] : []}
                 onChange={(e) => {
-                  setFormData({ ...formData, meetingWith: e.target.value });
-                  if (errors.meetingWith) setErrors({ ...errors, meetingWith: '' });
+                  const val = e.target.value;
+                  setFormData(prev => ({ ...prev, meetingWith: val }));
+                  validateField('meetingWith', val);
                 }}
                 isRequired
                 isInvalid={!!errors.meetingWith}
@@ -328,8 +380,45 @@ const AppointmentsList = forwardRef((props, ref) => {
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 className="col-span-2"
-                rows={3}
+                rows={2}
               />
+              <div className="col-span-2 border-t border-default-200 pt-4 mt-2">
+                <p className="text-sm font-medium text-default-700 mb-3">Additional Options</p>
+                <div className="space-y-3">
+                  <Checkbox
+                    isSelected={formData.assignAsTask}
+                    onValueChange={(value) => setFormData({ ...formData, assignAsTask: value })}
+                  >
+                    Assign as Task (Creates a task for the meeting)
+                  </Checkbox>
+                  {formData.assignAsTask && (
+                    <div className="grid grid-cols-2 gap-4 pl-6">
+                      <FormInput
+                        label="Task Title"
+                        placeholder="Enter task title"
+                        value={formData.taskTitle}
+                        onChange={(e) => setFormData({ ...formData, taskTitle: e.target.value })}
+                        required={formData.assignAsTask}
+                      />
+                      <Select
+                        label="Task Priority"
+                        placeholder="Select priority"
+                        selectedKeys={[formData.taskPriority]}
+                        onChange={(e) => setFormData({ ...formData, taskPriority: e.target.value })}
+                      >
+                        <SelectItem key="low" value="low">Low</SelectItem>
+                        <SelectItem key="medium" value="medium">Medium</SelectItem>
+                        <SelectItem key="high" value="high">High</SelectItem>
+                        <SelectItem key="urgent" value="urgent">Urgent</SelectItem>
+                      </Select>
+                    </div>
+                  )}
+                  <div className="bg-secondary-50 border border-secondary-200 p-3 rounded-lg">
+                    <p className="text-sm text-secondary-700">📤 Share to Internal Messaging</p>
+                    <p className="text-xs text-secondary-600 mt-1">Feature coming soon - share appointment with multiple staff members</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </ModalBody>
           <ModalFooter>

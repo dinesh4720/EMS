@@ -247,17 +247,17 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     if (stepNum === 1) {
       if (!formData.fullName.trim()) newErrors.fullName = "Required";
 
-      // Validate date of birth
+      // Validate date of birth (expects DD/MM/YYYY format)
       if (!formData.dateOfBirth) {
         newErrors.dateOfBirth = "Required";
       } else {
-        // Check if it's in proper YYYY-MM-DD format (validated date)
-        const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+        // Check if it's in proper DD/MM/YYYY format (user input format)
+        const datePattern = /^\d{2}\/\d{2}\/\d{4}$/;
         if (!datePattern.test(formData.dateOfBirth)) {
           newErrors.dateOfBirth = "Please enter a valid date in DD/MM/YYYY format";
         } else {
           // Additional validation for the date values
-          const [year, month, day] = formData.dateOfBirth.split('-').map(Number);
+          const [day, month, year] = formData.dateOfBirth.split('/').map(Number);
           const currentYear = new Date().getFullYear();
           if (year >= currentYear || year < 1900) {
             newErrors.dateOfBirth = `Year must be between 1900 and ${currentYear - 1}`;
@@ -265,6 +265,13 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             newErrors.dateOfBirth = "Invalid month";
           } else if (day < 1 || day > 31) {
             newErrors.dateOfBirth = "Invalid day";
+          } else {
+            // Check true calendar validity (e.g., reject Feb 30)
+            const date = new Date(year, month - 1, day);
+            const isValidDate = date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+            if (!isValidDate) {
+              newErrors.dateOfBirth = "Invalid calendar date";
+            }
           }
         }
       }
@@ -352,7 +359,17 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       const selectedClass = classesWithTeachers.find(c => `${c.name}-${c.section}` === formData.class);
 
       if (!selectedClass) {
+        console.error('❌ Selected class not found!');
+        console.error('❌ Looking for class:', formData.class);
+        console.error('❌ Available classes:', classesWithTeachers.map(c => ({ id: c.id, name: c.name, section: c.section })));
         toast.error('Selected class not found');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!selectedClass.id) {
+        console.error('❌ Selected class has no ID!', selectedClass);
+        toast.error('Class ID is missing. Please refresh and try again.');
         setIsSubmitting(false);
         return;
       }
@@ -442,7 +459,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         }
       });
 
-      console.log('Submitting student data:', studentData);
+      console.log('📤 Submitting student data:', studentData);
+      console.log('📤 Class ID being sent:', studentData.classId);
+      console.log('📤 Selected class:', selectedClass);
+
       await onSave(studentData);
       // Success toast is shown in parent component
       // Loading state will be reset when drawer closes
@@ -458,7 +478,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     <div className="space-y-6 animate-fade-in text-left">
       {/* Admission Details - At the top */}
       <div className="space-y-2">
-        <label className="text-sm font-semibold text-gray-900">Admission Details</label>
+        <label className="text-sm font-semibold text-default-900">Admission Details</label>
         <div className="grid grid-cols-2 gap-4">
           <div ref={admissionIdRef}>
             <Input
@@ -474,7 +494,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               isRequired
               isReadOnly
               description="Auto-generated from settings"
-              classNames={{ inputWrapper: "bg-gray-50 border-1 border-gray-200 h-10" }}
+              classNames={{ inputWrapper: "bg-default-50 border-1 border-default-200 h-10" }}
             />
           </div>
           <Select
@@ -485,7 +505,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             onSelectionChange={keys => updateField("academicYear", Array.from(keys)[0])}
             variant="bordered"
             radius="sm"
-            classNames={{ trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+            classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           >
             {academicYears.map(y => <SelectItem key={y}>{y}</SelectItem>)}
           </Select>
@@ -493,7 +513,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       </div>
 
       {/* Profile Section */}
-      <div className="flex items-center gap-5 pt-2 border-t border-solid border-gray-200">
+      <div className="flex items-center gap-5 pt-2 border-t border-solid border-default-200">
         {formData.picture ? (
           <Avatar
             src={formData.picture instanceof File ? URL.createObjectURL(formData.picture) : formData.picture}
@@ -503,8 +523,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             color="primary"
           />
         ) : (
-          <div className="w-20 h-20 rounded-full border-2 border-gray-200 bg-gray-50 flex items-center justify-center">
-            <User size={32} className="text-gray-400" />
+          <div className="w-20 h-20 rounded-full border-2 border-default-200 bg-default-50 flex items-center justify-center">
+            <User size={32} className="text-default-400" />
           </div>
         )}
         <div className="flex flex-col gap-1 text-left">
@@ -517,7 +537,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             </button>
             {formData.picture && (
               <>
-                <span className="text-gray-300">|</span>
+                <span className="text-default-300">|</span>
                 <button
                   className="text-sm font-semibold text-danger hover:text-danger-600 transition-colors cursor-pointer"
                   onClick={() => updateField("picture", null)}
@@ -527,7 +547,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               </>
             )}
           </div>
-          <p className="text-xs text-gray-500 max-w-[250px]">
+          <p className="text-xs text-default-500 max-w-[250px]">
             Upload a passport-size photo of the student
           </p>
           <input ref={pictureInputRef} type="file" accept="image/*" className="hidden"
@@ -537,7 +557,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
       {/* Personal Information */}
       <div className="space-y-2" ref={fullNameRef}>
-        <label className="text-sm font-semibold text-gray-900">Personal Information</label>
+        <label className="text-sm font-semibold text-default-900">Personal Information</label>
         <Input
           label="Full Name"
           labelPlacement="outside"
@@ -549,7 +569,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           variant="bordered"
           radius="sm"
           isRequired
-          classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
         />
       </div>
 
@@ -652,11 +672,11 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             isRequired
             description="Format: DD/MM/YYYY"
             endContent={<span className="text-default-400 text-xs">DD/MM/YYYY</span>}
-            classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           />
         </div>
         <div className="space-y-1" ref={genderRef}>
-          <label className="text-xs font-medium text-gray-600">Gender <span className="text-danger">*</span></label>
+          <label className="text-xs font-medium text-default-600">Gender <span className="text-danger">*</span></label>
           <RadioGroup
             orientation="horizontal"
             value={formData.gender}
@@ -673,8 +693,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       </div>
 
       {/* Class Info */}
-      <div className="space-y-2 pt-2 border-t border-solid border-gray-200">
-        <label className="text-sm font-semibold text-gray-900 block mt-2">Class Information</label>
+      <div className="space-y-2 pt-2 border-t border-solid border-default-200">
+        <label className="text-sm font-semibold text-default-900 block mt-2">Class Information</label>
         <div className="grid grid-cols-2 gap-4">
           <div ref={classRef}>
             <Select
@@ -688,7 +708,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               variant="bordered"
               radius="sm"
               isRequired
-              classNames={{ trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+              classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
             >
               {classOptions.map(c => <SelectItem key={c}>{c}</SelectItem>)}
             </Select>
@@ -703,20 +723,20 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             radius="sm"
             isReadOnly
             description="Auto-generated based on class"
-            classNames={{ inputWrapper: "bg-gray-50 border-1 border-gray-200 h-10" }}
+            classNames={{ inputWrapper: "bg-default-50 border-1 border-default-200 h-10" }}
           />
         </div>
       </div>
 
       {/* Contact Info */}
-      <div className="space-y-2 pt-2 border-t border-solid border-gray-200">
-        <label className="text-sm font-semibold text-gray-900 block mt-2">Contact Details</label>
+      <div className="space-y-2 pt-2 border-t border-solid border-default-200">
+        <label className="text-sm font-semibold text-default-900 block mt-2">Contact Details</label>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Input
               label="Mobile Number"
               labelPlacement="outside"
-              startContent={<span className="text-gray-400 text-xs">+91</span>}
+              startContent={<span className="text-default-400 text-xs">+91</span>}
               placeholder="Student's mobile (if any)"
               value={formData.mobile}
               onValueChange={v => {
@@ -726,10 +746,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               variant="bordered"
               radius="sm"
               maxLength={10}
-              classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+              classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
             />
             <Checkbox size="sm" isSelected={formData.isWhatsapp} onValueChange={v => updateField("isWhatsapp", v)}
-              classNames={{ label: "text-xs text-gray-500" }}>
+              classNames={{ label: "text-xs text-default-500" }}>
               Same for WhatsApp
             </Checkbox>
           </div>
@@ -737,13 +757,13 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             <Input
               label="WhatsApp Number"
               labelPlacement="outside"
-              startContent={<span className="text-gray-400 text-xs">+91</span>}
+              startContent={<span className="text-default-400 text-xs">+91</span>}
               placeholder="WhatsApp Number"
               value={formData.whatsappNumber}
               onValueChange={v => updateField("whatsappNumber", v)}
               variant="bordered"
               radius="sm"
-              classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+              classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
             />
           )}
         </div>
@@ -755,7 +775,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           onValueChange={v => updateField("email", v)}
           variant="bordered"
           radius="sm"
-          classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
         />
         <Textarea
           label="Address"
@@ -766,7 +786,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           variant="bordered"
           radius="sm"
           minRows={2}
-          classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300" }}
+          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300" }}
         />
         <Input
           label="City"
@@ -776,7 +796,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           onValueChange={v => updateField("city", v)}
           variant="bordered"
           radius="sm"
-          classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
         />
         <Input
           label="State"
@@ -786,7 +806,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           onValueChange={v => updateField("state", v)}
           variant="bordered"
           radius="sm"
-          classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
         />
         <Input
           label="ZIP Code"
@@ -796,14 +816,14 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           onValueChange={v => updateField("zipCode", v)}
           variant="bordered"
           radius="sm"
-          classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
         />
       </div>
 
       {/* Optional Fields */}
-      <div className="space-y-2 pt-2 border-t border-solid border-gray-200">
-        <label className="text-sm font-semibold text-gray-900 block mt-2">Optional Information</label>
-        <p className="text-xs text-gray-500 mb-3">These fields are optional and can be filled later</p>
+      <div className="space-y-2 pt-2 border-t border-solid border-default-200">
+        <label className="text-sm font-semibold text-default-900 block mt-2">Optional Information</label>
+        <p className="text-xs text-default-500 mb-3">These fields are optional and can be filled later</p>
         <div className="grid grid-cols-2 gap-4">
           <Input
             label="Aadhaar Number"
@@ -813,7 +833,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             onValueChange={v => updateField("aadhaarNumber", v)}
             variant="bordered"
             radius="sm"
-            classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           />
           <Select
             label="Blood Group"
@@ -823,7 +843,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             onSelectionChange={keys => updateField("bloodGroup", Array.from(keys)[0])}
             variant="bordered"
             radius="sm"
-            classNames={{ trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+            classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           >
             {bloodGroups.map(b => <SelectItem key={b}>{b}</SelectItem>)}
           </Select>
@@ -835,7 +855,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             onValueChange={v => updateField("nationality", v)}
             variant="bordered"
             radius="sm"
-            classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           />
           <Input
             label="Religion"
@@ -845,7 +865,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             onValueChange={v => updateField("religion", v)}
             variant="bordered"
             radius="sm"
-            classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           />
           <Input
             label="Category"
@@ -855,7 +875,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             onValueChange={v => updateField("category", v)}
             variant="bordered"
             radius="sm"
-            classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           />
           <Input
             label="Mother Tongue"
@@ -865,7 +885,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             onValueChange={v => updateField("motherTongue", v)}
             variant="bordered"
             radius="sm"
-            classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           />
           <Input
             label="Previous School"
@@ -876,7 +896,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             variant="bordered"
             radius="sm"
             className="col-span-2"
-            classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           />
           <Input
             label="Transfer Certificate No."
@@ -887,7 +907,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             variant="bordered"
             radius="sm"
             className="col-span-2"
-            classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           />
         </div>
       </div>
@@ -903,15 +923,15 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         {/* Parent Details */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <label className="text-sm font-semibold text-gray-900">Parent Details</label>
+            <label className="text-sm font-semibold text-default-900">Parent Details</label>
           </div>
 
           {parents.map((parent, idx) => {
             const index = formData.parents.findIndex(p => p === parent);
             return (
-              <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
+              <div key={index} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-default-700">
                     {idx === 0 ? "Primary Parent" : `Parent ${idx + 1}`}
                   </span>
                   {parents.length > 1 && (
@@ -933,7 +953,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                       variant="bordered"
                       radius="sm"
                       isRequired={index === 0}
-                      classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                      classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                     />
                   </div>
                   <Select
@@ -944,7 +964,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                     onSelectionChange={keys => updateParent(index, "relationship", Array.from(keys)[0])}
                     variant="bordered"
                     radius="sm"
-                    classNames={{ trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                    classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                   >
                     {parentRelationships.map(r => <SelectItem key={r}>{r}</SelectItem>)}
                   </Select>
@@ -952,7 +972,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                     <Input
                       label="Phone Number"
                       labelPlacement="outside"
-                      startContent={<span className="text-gray-400 text-xs">+91</span>}
+                      startContent={<span className="text-default-400 text-xs">+91</span>}
                       placeholder="10 digit number"
                       value={parent.phone}
                       onValueChange={v => {
@@ -966,10 +986,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                       radius="sm"
                       isRequired={index === 0}
                       maxLength={10}
-                      classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                      classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                     />
                     <Checkbox size="sm" isSelected={parent.isWhatsapp} onValueChange={v => updateParent(index, "isWhatsapp", v)}
-                      classNames={{ label: "text-xs text-gray-500" }}>
+                      classNames={{ label: "text-xs text-default-500" }}>
                       Same as WhatsApp
                     </Checkbox>
                   </div>
@@ -981,7 +1001,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                     onValueChange={v => updateParent(index, "email", v)}
                     variant="bordered"
                     radius="sm"
-                    classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                   />
                   <Input
                     label="Occupation"
@@ -992,7 +1012,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                     variant="bordered"
                     radius="sm"
                     className="col-span-2"
-                    classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                   />
                 </div>
               </div>
@@ -1012,18 +1032,18 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         </div>
 
         {/* Guardian Details */}
-        <div className="space-y-4 pt-2 border-t border-solid border-gray-200">
+        <div className="space-y-4 pt-2 border-t border-solid border-default-200">
           <div className="flex justify-between items-center">
-            <label className="text-sm font-semibold text-gray-900">Guardian Details</label>
-            <span className="text-xs text-gray-500">(Optional)</span>
+            <label className="text-sm font-semibold text-default-900">Guardian Details</label>
+            <span className="text-xs text-default-500">(Optional)</span>
           </div>
 
           {guardians.map((guardian, idx) => {
             const index = formData.parents.findIndex(p => p === guardian);
             return (
-              <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
+              <div key={index} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-default-700">
                     Guardian {idx + 1}
                   </span>
                   <Button size="sm" variant="light" color="danger" onPress={() => removeParent(index)}>
@@ -1039,7 +1059,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                     onValueChange={v => updateParent(index, "name", v)}
                     variant="bordered"
                     radius="sm"
-                    classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                   />
                   <Select
                     label="Relationship"
@@ -1049,7 +1069,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                     onSelectionChange={keys => updateParent(index, "relationship", Array.from(keys)[0])}
                     variant="bordered"
                     radius="sm"
-                    classNames={{ trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                    classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                   >
                     {guardianRelationships.map(r => <SelectItem key={r}>{r}</SelectItem>)}
                   </Select>
@@ -1057,7 +1077,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                     <Input
                       label="Phone Number"
                       labelPlacement="outside"
-                      startContent={<span className="text-gray-400 text-xs">+91</span>}
+                      startContent={<span className="text-default-400 text-xs">+91</span>}
                       placeholder="10 digit number"
                       value={guardian.phone}
                       onValueChange={v => {
@@ -1067,10 +1087,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                       variant="bordered"
                       radius="sm"
                       maxLength={10}
-                      classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                      classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                     />
                     <Checkbox size="sm" isSelected={guardian.isWhatsapp} onValueChange={v => updateParent(index, "isWhatsapp", v)}
-                      classNames={{ label: "text-xs text-gray-500" }}>
+                      classNames={{ label: "text-xs text-default-500" }}>
                       Same as WhatsApp
                     </Checkbox>
                   </div>
@@ -1082,7 +1102,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                     onValueChange={v => updateParent(index, "email", v)}
                     variant="bordered"
                     radius="sm"
-                    classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                   />
                   <Input
                     label="Occupation"
@@ -1093,7 +1113,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                     variant="bordered"
                     radius="sm"
                     className="col-span-2"
-                    classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                   />
                 </div>
               </div>
@@ -1113,16 +1133,16 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         </div>
 
         {/* Sibling Details */}
-        <div className="space-y-4 pt-2 border-t border-solid border-gray-200">
+        <div className="space-y-4 pt-2 border-t border-solid border-default-200">
           <div className="flex justify-between items-center">
-            <label className="text-sm font-semibold text-gray-900">Sibling Details</label>
-            <span className="text-xs text-gray-500">(Siblings in same school only)</span>
+            <label className="text-sm font-semibold text-default-900">Sibling Details</label>
+            <span className="text-xs text-default-500">(Siblings in same school only)</span>
           </div>
 
           {formData.siblings.map((sibling, idx) => (
-            <div key={idx} className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
+            <div key={idx} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-default-700">
                   Sibling {idx + 1}
                 </span>
                 <Button size="sm" variant="light" color="danger" onPress={() => removeSibling(idx)}>
@@ -1138,7 +1158,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                   onValueChange={v => updateSibling(idx, "name", v)}
                   variant="bordered"
                   radius="sm"
-                  classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                  classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                 />
                 <div className="flex items-center gap-2 pt-6">
                   <Checkbox
@@ -1148,7 +1168,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                       if (!v) updateSibling(idx, "classId", "");
                     }}
                   >
-                    <span className="text-sm text-gray-700">Is sibling in this school?</span>
+                    <span className="text-sm text-default-700">Is sibling in this school?</span>
                   </Checkbox>
                 </div>
                 {sibling.inSameSchool && (
@@ -1160,7 +1180,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                     onSelectionChange={keys => updateSibling(idx, "classId", Array.from(keys)[0])}
                     variant="bordered"
                     radius="sm"
-                    classNames={{ trigger: "bg-white border-1 border-gray-200 hover:border-gray-300 h-10" }}
+                    classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                   >
                     {classesWithTeachers.map(c => (
                       <SelectItem key={c.id}>
@@ -1182,8 +1202,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         </div>
 
         {/* Health & Safety */}
-        <div className="space-y-2 pt-2 border-t border-solid border-gray-200">
-          <label className="text-sm font-semibold text-gray-900 block mt-2">Health & Safety</label>
+        <div className="space-y-2 pt-2 border-t border-solid border-default-200">
+          <label className="text-sm font-semibold text-default-900 block mt-2">Health & Safety</label>
           <Textarea
             label="Medical Conditions"
             labelPlacement="outside"
@@ -1193,46 +1213,46 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             variant="bordered"
             radius="sm"
             minRows={2}
-            classNames={{ inputWrapper: "bg-white border-1 border-gray-200 hover:border-gray-300" }}
+            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300" }}
           />
         </div>
 
         {/* Transport & Hostel */}
-        <div className="space-y-4 pt-2 border-t border-solid border-gray-200">
-          <label className="text-sm font-semibold text-gray-900 block mt-2">Additional Requirements</label>
+        <div className="space-y-4 pt-2 border-t border-solid border-default-200">
+          <label className="text-sm font-semibold text-default-900 block mt-2">Additional Requirements</label>
           <div className="grid grid-cols-2 gap-4">
             <div className={cn(
               "cursor-pointer rounded-xl border-2 p-4 flex items-center gap-3 transition-all",
-              formData.transportRequired ? "border-primary bg-primary-50/20" : "border-gray-200 hover:border-gray-300"
+              formData.transportRequired ? "border-primary bg-primary-50/20" : "border-default-200 hover:border-default-300"
             )} onClick={() => updateField("transportRequired", !formData.transportRequired)}>
               <div className={cn(
                 "w-10 h-10 rounded-full flex items-center justify-center",
-                formData.transportRequired ? "bg-primary text-white" : "bg-gray-100 text-gray-400"
+                formData.transportRequired ? "bg-primary text-white" : "bg-default-100 text-default-400"
               )}>
                 <Bus size={20} />
               </div>
               <div>
-                <span className={cn("text-sm font-medium", formData.transportRequired ? "text-primary-700" : "text-gray-600")}>
+                <span className={cn("text-sm font-medium", formData.transportRequired ? "text-primary-700" : "text-default-600")}>
                   Transport Required
                 </span>
-                <p className="text-xs text-gray-500">School bus facility</p>
+                <p className="text-xs text-default-500">School bus facility</p>
               </div>
             </div>
             <div className={cn(
               "cursor-pointer rounded-xl border-2 p-4 flex items-center gap-3 transition-all",
-              formData.hostelRequired ? "border-primary bg-primary-50/20" : "border-gray-200 hover:border-gray-300"
+              formData.hostelRequired ? "border-primary bg-primary-50/20" : "border-default-200 hover:border-default-300"
             )} onClick={() => updateField("hostelRequired", !formData.hostelRequired)}>
               <div className={cn(
                 "w-10 h-10 rounded-full flex items-center justify-center",
-                formData.hostelRequired ? "bg-primary text-white" : "bg-gray-100 text-gray-400"
+                formData.hostelRequired ? "bg-primary text-white" : "bg-default-100 text-default-400"
               )}>
                 <Heart size={20} />
               </div>
               <div>
-                <span className={cn("text-sm font-medium", formData.hostelRequired ? "text-primary-700" : "text-gray-600")}>
+                <span className={cn("text-sm font-medium", formData.hostelRequired ? "text-primary-700" : "text-default-600")}>
                   Hostel Required
                 </span>
-                <p className="text-xs text-gray-500">Boarding facility</p>
+                <p className="text-xs text-default-500">Boarding facility</p>
               </div>
             </div>
           </div>
@@ -1244,23 +1264,23 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
   const renderStep3 = () => (
     <div className="space-y-6 animate-fade-in text-left">
       <div className="space-y-2">
-        <label className="text-sm font-semibold text-gray-900">Document Uploads</label>
-        <p className="text-xs text-gray-500">Upload required documents. All documents are optional and can be uploaded later.</p>
+        <label className="text-sm font-semibold text-default-900">Document Uploads</label>
+        <p className="text-xs text-default-500">Upload required documents. All documents are optional and can be uploaded later.</p>
       </div>
 
       {/* Birth Certificate */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-gray-600">Birth Certificate</label>
+        <label className="text-xs font-medium text-default-600">Birth Certificate</label>
         <div
-          className="border border-solid border-gray-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+          className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors"
           onClick={() => birthCertRef.current?.click()}
         >
           <div className="flex items-center gap-3">
-            <FileText size={20} className="text-gray-400" />
+            <FileText size={20} className="text-default-400" />
             {formData.birthCertificate ? (
-              <span className="text-sm text-gray-700">{formData.birthCertificate.name}</span>
+              <span className="text-sm text-default-700">{formData.birthCertificate.name}</span>
             ) : (
-              <span className="text-sm text-gray-500">Click to upload birth certificate</span>
+              <span className="text-sm text-default-500">Click to upload birth certificate</span>
             )}
           </div>
           {formData.birthCertificate ? (
@@ -1268,7 +1288,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               <X size={14} />
             </Button>
           ) : (
-            <Upload size={16} className="text-gray-400" />
+            <Upload size={16} className="text-default-400" />
           )}
         </div>
         <input ref={birthCertRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
@@ -1277,17 +1297,17 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
       {/* Transfer Certificate */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-gray-600">Transfer Certificate (TC)</label>
+        <label className="text-xs font-medium text-default-600">Transfer Certificate (TC)</label>
         <div
-          className="border border-solid border-gray-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+          className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors"
           onClick={() => tcRef.current?.click()}
         >
           <div className="flex items-center gap-3">
-            <FileText size={20} className="text-gray-400" />
+            <FileText size={20} className="text-default-400" />
             {formData.transferCertificate ? (
-              <span className="text-sm text-gray-700">{formData.transferCertificate.name}</span>
+              <span className="text-sm text-default-700">{formData.transferCertificate.name}</span>
             ) : (
-              <span className="text-sm text-gray-500">Click to upload transfer certificate</span>
+              <span className="text-sm text-default-500">Click to upload transfer certificate</span>
             )}
           </div>
           {formData.transferCertificate ? (
@@ -1295,7 +1315,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               <X size={14} />
             </Button>
           ) : (
-            <Upload size={16} className="text-gray-400" />
+            <Upload size={16} className="text-default-400" />
           )}
         </div>
         <input ref={tcRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
@@ -1304,20 +1324,20 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
       {/* Aadhaar Card (Front & Back) */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-gray-600">Aadhaar Card (Front & Back)</label>
-        <p className="text-xs text-gray-500">Upload both sides of the Aadhaar card</p>
+        <label className="text-xs font-medium text-default-600">Aadhaar Card (Front & Back)</label>
+        <p className="text-xs text-default-500">Upload both sides of the Aadhaar card</p>
 
         {/* Front Side */}
         <div
-          className="border border-solid border-gray-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+          className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors"
           onClick={() => aadhaarFrontRef.current?.click()}
         >
           <div className="flex items-center gap-3">
-            <FileText size={20} className="text-gray-400" />
+            <FileText size={20} className="text-default-400" />
             {formData.aadhaarFront ? (
-              <span className="text-sm text-gray-700">Front: {formData.aadhaarFront.name}</span>
+              <span className="text-sm text-default-700">Front: {formData.aadhaarFront.name}</span>
             ) : (
-              <span className="text-sm text-gray-500">Click to upload FRONT side</span>
+              <span className="text-sm text-default-500">Click to upload FRONT side</span>
             )}
           </div>
           {formData.aadhaarFront ? (
@@ -1325,7 +1345,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               <X size={14} />
             </Button>
           ) : (
-            <Upload size={16} className="text-gray-400" />
+            <Upload size={16} className="text-default-400" />
           )}
         </div>
         <input ref={aadhaarFrontRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
@@ -1333,15 +1353,15 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
         {/* Back Side */}
         <div
-          className="border border-solid border-gray-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+          className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors"
           onClick={() => aadhaarBackRef.current?.click()}
         >
           <div className="flex items-center gap-3">
-            <FileText size={20} className="text-gray-400" />
+            <FileText size={20} className="text-default-400" />
             {formData.aadhaarBack ? (
-              <span className="text-sm text-gray-700">Back: {formData.aadhaarBack.name}</span>
+              <span className="text-sm text-default-700">Back: {formData.aadhaarBack.name}</span>
             ) : (
-              <span className="text-sm text-gray-500">Click to upload BACK side</span>
+              <span className="text-sm text-default-500">Click to upload BACK side</span>
             )}
           </div>
           {formData.aadhaarBack ? (
@@ -1349,7 +1369,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               <X size={14} />
             </Button>
           ) : (
-            <Upload size={16} className="text-gray-400" />
+            <Upload size={16} className="text-default-400" />
           )}
         </div>
         <input ref={aadhaarBackRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
@@ -1358,21 +1378,21 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
       {/* Other Documents */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-gray-600">Other Documents</label>
-        <p className="text-xs text-gray-500">Upload any other relevant documents (medical records, previous report cards, etc.)</p>
+        <label className="text-xs font-medium text-default-600">Other Documents</label>
+        <p className="text-xs text-default-500">Upload any other relevant documents (medical records, previous report cards, etc.)</p>
         <div
-          className="border border-solid border-gray-300 rounded-lg p-4 flex items-center justify-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors"
+          className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-center gap-2 cursor-pointer hover:bg-default-50 transition-colors"
           onClick={() => otherDocsRef.current?.click()}
         >
-          <Upload size={14} className="text-gray-500" />
-          <span className="text-sm text-gray-600">Upload additional documents</span>
+          <Upload size={14} className="text-default-500" />
+          <span className="text-sm text-default-600">Upload additional documents</span>
         </div>
         <input ref={otherDocsRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden"
           onChange={(e) => handleMultiFileUpload("otherDocuments", e.target.files)} />
         {formData.otherDocuments?.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {formData.otherDocuments?.map((file, i) => (
-              <Chip key={i} onClose={() => removeFile("otherDocuments", i)} size="sm" variant="flat" className="h-8 border border-gray-200 bg-white">
+              <Chip key={i} onClose={() => removeFile("otherDocuments", i)} size="sm" variant="flat" className="h-8 border border-default-200 bg-background">
                 {file.name}
               </Chip>
             ))}
@@ -1392,18 +1412,18 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
   return (
     <>
-      <div className="h-full flex flex-col bg-white">
+      <div className="h-full flex flex-col bg-background">
         {/* Header */}
-        <div className="flex-none p-4 border-b border-gray-200 flex items-center justify-between bg-white z-10">
+        <div className="flex-none p-4 border-b border-default-200 flex items-center justify-between bg-background z-10">
           <div className="flex items-center gap-3">
             <Button isIconOnly variant="light" onPress={handlePrev} isDisabled={step === 1}>
-              <ArrowLeft size={20} className="text-gray-500" />
+              <ArrowLeft size={20} className="text-default-500" />
             </Button>
             <div>
-              <h2 className="text-lg font-bold text-gray-900 leading-none">
+              <h2 className="text-lg font-bold text-default-900 leading-none">
                 {initialData ? "Edit Student" : "Add New Student"}
               </h2>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-default-500 mt-1">
                 Step {step} of 3: {step === 1 ? "Personal Details" : step === 2 ? "Parents & Guardian" : "Documents"}
               </p>
             </div>
@@ -1422,7 +1442,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         </div>
 
         {/* Footer with Action Buttons */}
-        <div className="flex-none p-4 border-t border-gray-200 bg-white z-10">
+        <div className="flex-none p-4 border-t border-default-200 bg-background z-10">
           <div className="flex items-center justify-end gap-2">
             <Button variant="light" onPress={onClose}>
               Cancel
