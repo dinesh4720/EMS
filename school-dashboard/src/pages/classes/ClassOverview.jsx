@@ -12,6 +12,7 @@ import {
   Activity, Sparkles, Send, FileText, DollarSign, Settings
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { toast } from "react-hot-toast";
 import Attendance from "./Attendance";
 import Timetable from "./Timetable";
 import ClassSettingsPanel from "./ClassSettingsPanel";
@@ -260,6 +261,7 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
   const [ratingLoading, setRatingLoading] = useState(false);
   const [classSettings, setClassSettings] = useState(null);
   const [settingsLoading, setSettingsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Fetch data
   useEffect(() => {
@@ -270,26 +272,43 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
       setAcademicPerformanceLoading(true);
       setRatingLoading(true);
       setSettingsLoading(true);
+      setError(null);
 
       try {
         const status = await classesEnhancedApi.getTodayStatus(id);
         setTodayStatus(status);
-      } catch (e) { console.error(e); } finally { setTodayStatusLoading(false); }
+      } catch (e) {
+        console.error('Error loading today status:', e);
+        toast.error('Failed to load today status');
+        setError(e.message);
+      } finally { setTodayStatusLoading(false); }
 
       try {
         const perf = await classesEnhancedApi.getAcademicPerformance(id);
         setAcademicPerformance(perf);
-      } catch (e) { console.error(e); } finally { setAcademicPerformanceLoading(false); }
+      } catch (e) {
+        console.error('Error loading academic performance:', e);
+        toast.error('Failed to load academic performance');
+        setError(e.message);
+      } finally { setAcademicPerformanceLoading(false); }
 
       try {
         const rating = await classesEnhancedApi.getRating(id);
         setClassRating(rating);
-      } catch (e) { console.error(e); } finally { setRatingLoading(false); }
+      } catch (e) {
+        console.error('Error loading class rating:', e);
+        toast.error('Failed to load class rating');
+        setError(e.message);
+      } finally { setRatingLoading(false); }
 
       try {
         const settings = await classesApi.getSettings(id);
         setClassSettings(settings);
-      } catch (e) { console.error(e); } finally { setSettingsLoading(false); }
+      } catch (e) {
+        console.error('Error loading class settings:', e);
+        toast.error('Failed to load class settings');
+        setError(e.message);
+      } finally { setSettingsLoading(false); }
     };
 
     fetchData();
@@ -308,6 +327,13 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
 
   return (
     <div className="space-y-6">
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-4">
+          {error}
+        </div>
+      )}
+
       {/* Today's Status */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="shadow-sm border border-default-200">

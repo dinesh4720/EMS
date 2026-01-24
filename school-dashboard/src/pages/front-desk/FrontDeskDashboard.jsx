@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { frontDeskApi } from '../../services/api';
 import Overview from './Overview';
 import VisitorLog from './VisitorLog';
-import AdmissionsList from './AdmissionsList';
+// import AdmissionsList from './AdmissionsList';
 import GatePassLog from './GatePassLog';
 import AppointmentsList from './AppointmentsList';
 import FeedbacksList from './FeedbacksList';
@@ -14,7 +14,7 @@ import CallLogsList from './CallLogsList';
 export default function FrontDeskDashboard() {
   // Create refs for each component
   const visitorLogRef = useRef(null);
-  const admissionsListRef = useRef(null);
+  // const admissionsListRef = useRef(null);
   const gatePassLogRef = useRef(null);
   const appointmentsListRef = useRef(null);
   const feedbacksListRef = useRef(null);
@@ -23,7 +23,7 @@ export default function FrontDeskDashboard() {
   const [selectedTab, setSelectedTab] = useState('overview');
   const [stats, setStats] = useState({
     todayVisitors: 0,
-    activeAdmissions: 0,
+    // activeAdmissions: 0,
     todayGatePasses: 0,
     upcomingAppointments: 0,
     openFeedbacks: 0,
@@ -40,8 +40,8 @@ export default function FrontDeskDashboard() {
       const visitors = await frontDeskApi.getVisitorsToday();
       await new Promise(resolve => setTimeout(resolve, 100));
       
-      const admissions = await frontDeskApi.getAdmissions({ status: 'inquiry-logged' });
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // const admissions = await frontDeskApi.getAdmissions({ status: 'inquiry-logged' });
+      // await new Promise(resolve => setTimeout(resolve, 100));
       
       const gatePasses = await frontDeskApi.getGatePassesToday();
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -51,15 +51,17 @@ export default function FrontDeskDashboard() {
       
       const feedbacks = await frontDeskApi.getFeedbacks({ status: 'open' });
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       const callLogs = await frontDeskApi.getCallLogs();
 
-      const today = new Date().toISOString().split('T')[0];
-      const todayCalls = callLogs.filter(log => log.dateTime.startsWith(today));
+      // FIX: Use local date instead of toISOString() to avoid timezone issues
+      // toLocaleDateString('en-CA') returns YYYY-MM-DD format in local timezone
+      const today = new Date().toLocaleDateString('en-CA');
+      const todayCalls = callLogs.filter(log => log.dateTime?.startsWith(today));
 
       setStats({
         todayVisitors: visitors.length,
-        activeAdmissions: admissions.length,
+        // activeAdmissions: admissions.length,
         todayGatePasses: gatePasses.length,
         upcomingAppointments: appointments.length,
         openFeedbacks: feedbacks.length,
@@ -73,7 +75,7 @@ export default function FrontDeskDashboard() {
   const tabs = [
     { key: 'overview', label: 'Overview', icon: <LayoutDashboard size={14} /> },
     { key: 'visitors', label: 'Visitor Log', count: stats.todayVisitors },
-    { key: 'admissions', label: 'Admissions', count: stats.activeAdmissions },
+    // { key: 'admissions', label: 'Admissions', count: stats.activeAdmissions },
     { key: 'gate-passes', label: 'Gate Pass', count: stats.todayGatePasses },
     { key: 'appointments', label: 'Appointments', count: stats.upcomingAppointments },
     { key: 'feedbacks', label: 'Feedbacks', count: stats.openFeedbacks },
@@ -82,7 +84,7 @@ export default function FrontDeskDashboard() {
 
   const newActions = [
     { key: 'visitor', label: 'New Visitor', icon: <Users size={14} /> },
-    { key: 'admission', label: 'New Admission', icon: <UserPlus size={14} /> },
+    // { key: 'admission', label: 'New Admission', icon: <UserPlus size={14} /> },
     { key: 'gate-pass', label: 'Issue Gate Pass', icon: <DoorOpen size={14} /> },
     { key: 'appointment', label: 'New Appointment', icon: <Calendar size={14} /> },
     { key: 'feedback', label: 'New Feedback', icon: <MessageSquare size={14} /> },
@@ -93,7 +95,7 @@ export default function FrontDeskDashboard() {
     // Map action keys to tabs and refs
     const actionMap = {
       'visitor': { tab: 'visitors', ref: visitorLogRef },
-      'admission': { tab: 'admissions', ref: admissionsListRef },
+      // 'admission': { tab: 'admissions', ref: admissionsListRef },
       'gate-pass': { tab: 'gate-passes', ref: gatePassLogRef },
       'appointment': { tab: 'appointments', ref: appointmentsListRef },
       'feedback': { tab: 'feedbacks', ref: feedbacksListRef },
@@ -193,7 +195,7 @@ export default function FrontDeskDashboard() {
         <div className="min-h-[500px] px-6 py-6">
           {selectedTab === 'overview' && <Overview stats={stats} onTabChange={setSelectedTab} />}
           {selectedTab === 'visitors' && <VisitorLog ref={visitorLogRef} />}
-          {selectedTab === 'admissions' && <AdmissionsList ref={admissionsListRef} />}
+          {/* {selectedTab === 'admissions' && <AdmissionsList ref={admissionsListRef} />} */}
           {selectedTab === 'gate-passes' && <GatePassLog ref={gatePassLogRef} />}
           {selectedTab === 'appointments' && <AppointmentsList ref={appointmentsListRef} />}
           {selectedTab === 'feedbacks' && <FeedbacksList ref={feedbacksListRef} />}

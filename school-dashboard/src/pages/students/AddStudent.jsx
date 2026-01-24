@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Button, Input, Select, SelectItem, Checkbox, Textarea, Chip, Avatar, RadioGroup, Radio, cn, Divider } from "@heroui/react";
+import { Button, Input, Select, SelectItem, Checkbox, Textarea, Chip, Avatar, RadioGroup, Radio, cn, Divider, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 import { ArrowLeft, ArrowRight, Upload, X, Plus, User, FileText, Users, GraduationCap, Check, Heart, Bus } from "lucide-react";
 import { studentsApi, settingsApi, uploadApi } from "../../services/api";
 import toast from "react-hot-toast";
@@ -39,6 +39,8 @@ const emptyForm = {
 export default function AddStudent({ onClose, onSave, classOptions = [], classesWithTeachers = [], initialData = null }) {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isDirtyModalOpen, setIsDirtyModalOpen] = useState(false);
   const [formData, setFormData] = useState(() => {
     if (initialData) {
       // Map initialData (student object) to form structure
@@ -69,7 +71,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
   });
   const [errors, setErrors] = useState({});
   const [documentConfigs, setDocumentConfigs] = useState([]);
+  const [dobValidation, setDobValidation] = useState({ isValid: false, message: '', warning: '' });
   const scrollContainerRef = useRef(null);
+  const initialFormDataRef = useRef(null);
 
   // Photo Editor State
   const [isPhotoEditorOpen, setIsPhotoEditorOpen] = useState(false);
@@ -124,6 +128,37 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     loadConfigurations();
   }, [initialData]);
 
+  // Store initial form data for dirty state detection
+  useEffect(() => {
+    // Store after auto-generated fields are set
+    const timer = setTimeout(() => {
+      initialFormDataRef.current = JSON.stringify(formData);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Detect form changes for dirty state
+  useEffect(() => {
+    if (!initialFormDataRef.current) return;
+
+    const currentData = JSON.stringify(formData);
+    const hasChanges = currentData !== initialFormDataRef.current;
+    setHasUnsavedChanges(hasChanges);
+  }, [formData]);
+
+  // Browser navigation warning
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   // Auto-generate roll number when class is selected
   useEffect(() => {
     const generateRollNumber = async () => {
@@ -147,6 +182,13 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     };
     generateRollNumber();
   }, [formData.class, initialData, classesWithTeachers]);
+
+  // Initialize DOB validation when editing a student with existing DOB
+  useEffect(() => {
+    if (formData.dateOfBirth && formData.dateOfBirth.includes('/')) {
+      validateDOBInRealTime(formData.dateOfBirth);
+    }
+  }, []); // Run once on mount
 
   const updateField = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -248,6 +290,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       if (!formData.fullName.trim()) newErrors.fullName = "Required";
 
       // Validate date of birth (expects DD/MM/YYYY format)
+      // Note: Real-time validation is done via validateDOBInRealTime
+      // This just checks if a valid date has been entered
       if (!formData.dateOfBirth) {
         newErrors.dateOfBirth = "Required";
       } else {
@@ -259,20 +303,22 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           // Additional validation for the date values
           const [day, month, year] = formData.dateOfBirth.split('/').map(Number);
           const currentYear = new Date().getFullYear();
-          if (year >= currentYear || year < 1900) {
-            newErrors.dateOfBirth = `Year must be between 1900 and ${currentYear - 1}`;
+
+          // Check calendar validity first
+          const date = new Date(year, month - 1, day);
+          const isValidDate = date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+
+          if (!isValidDate) {
+            newErrors.dateOfBirth = "Invalid calendar date";
           } else if (month < 1 || month > 12) {
             newErrors.dateOfBirth = "Invalid month";
           } else if (day < 1 || day > 31) {
             newErrors.dateOfBirth = "Invalid day";
-          } else {
-            // Check true calendar validity (e.g., reject Feb 30)
-            const date = new Date(year, month - 1, day);
-            const isValidDate = date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
-            if (!isValidDate) {
-              newErrors.dateOfBirth = "Invalid calendar date";
-            }
+          } else if (year < 1900) {
+            newErrors.dateOfBirth = "Year must be 1900 or later";
           }
+          // Note: We allow future dates and very old dates - warnings are shown via real-time validation
+          // but they don't block submission (more permissive approach)
         }
       }
 
@@ -331,6 +377,119 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
   };
 
   const handlePrev = () => setStep(prev => Math.max(prev - 1, 1));
+
+  const handleClose = () => {
+    if (hasUnsavedChanges) {
+      setIsDirtyModalOpen(true);
+    } else {
+      onClose();
+    }
+  };
+
+  const handleConfirmClose = () => {
+    setIsDirtyModalOpen(false);
+    setHasUnsavedChanges(false);
+    onClose();
+  };
+
+  const handleCancelClose = () => {
+    setIsDirtyModalOpen(false);
+  };
+
+  // Helper function to validate DOB in real-time with better UX
+  const validateDOBInRealTime = (dateStr) => {
+    const digits = dateStr.replace(/\D/g, '');
+    const currentYear = new Date().getFullYear();
+
+    // Reset validation state
+    let validation = { isValid: false, message: '', warning: '' };
+
+    // If empty, clear validation
+    if (!dateStr || dateStr.length === 0) {
+      setDobValidation(validation);
+      setErrors(prev => ({ ...prev, dateOfBirth: null }));
+      return;
+    }
+
+    // Provide progress feedback
+    if (digits.length < 8) {
+      validation.message = `Keep typing... (${digits.length}/8 digits)`;
+      setDobValidation(validation);
+      setErrors(prev => ({ ...prev, dateOfBirth: null }));
+      return;
+    }
+
+    // Full date entered - validate it
+    const day = parseInt(digits.slice(0, 2));
+    const month = parseInt(digits.slice(2, 4));
+    const year = parseInt(digits.slice(4, 8));
+
+    // Basic validation
+    if (day < 1 || day > 31) {
+      validation.message = 'Invalid day (must be 01-31)';
+      setErrors(prev => ({ ...prev, dateOfBirth: 'Invalid day' }));
+      setDobValidation(validation);
+      return;
+    }
+
+    if (month < 1 || month > 12) {
+      validation.message = 'Invalid month (must be 01-12)';
+      setErrors(prev => ({ ...prev, dateOfBirth: 'Invalid month' }));
+      setDobValidation(validation);
+      return;
+    }
+
+    // Check for calendar validity (e.g., Feb 30)
+    const date = new Date(year, month - 1, day);
+    const isValidCalendar = date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+
+    if (!isValidCalendar) {
+      validation.message = 'Invalid date (check calendar)';
+      setErrors(prev => ({ ...prev, dateOfBirth: 'Invalid calendar date' }));
+      setDobValidation(validation);
+      return;
+    }
+
+    // Check for future date - this is a warning, not an error
+    const today = new Date();
+    const inputDate = new Date(year, month - 1, day);
+    if (inputDate > today) {
+      validation.warning = 'Date is in the future';
+      validation.isValid = true; // Still valid, just warn
+      validation.message = `Future date detected`;
+      setErrors(prev => ({ ...prev, dateOfBirth: null })); // Don't block submission
+      setDobValidation(validation);
+      return;
+    }
+
+    // Check for very old date (>100 years) - this is a warning, not an error
+    const ageInYears = today.getFullYear() - year - (today.getMonth() < month || (today.getMonth() === month && today.getDate() < day) ? 1 : 0);
+    if (ageInYears > 100) {
+      validation.warning = 'Person appears to be over 100 years old';
+      validation.isValid = true; // Still valid, just warn
+      validation.message = `Age: ${ageInYears} years`;
+      setErrors(prev => ({ ...prev, dateOfBirth: null })); // Don't block submission
+      setDobValidation(validation);
+      return;
+    }
+
+    // All checks passed - valid date
+    validation.isValid = true;
+    validation.message = `Age: ${ageInYears} years`;
+    setErrors(prev => ({ ...prev, dateOfBirth: null }));
+    setDobValidation(validation);
+  };
+
+  // Helper to show format progress
+  const getFormatProgress = (dateStr) => {
+    const parts = dateStr.split('/');
+    const digits = dateStr.replace(/\D/g, '');
+
+    if (digits.length === 0) return 'Enter day (DD)';
+    if (digits.length <= 2) return 'Enter month (MM)';
+    if (digits.length <= 4) return 'Enter year (YYYY)';
+    return 'Almost there...';
+  };
 
   const handleSubmit = async () => {
     // Validate all steps before submitting
@@ -395,6 +554,143 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         console.log('✅ Using existing photo URL:', photoUrl);
       }
 
+      // Upload documents to Cloudinary
+      const documents = [];
+      const uploadDate = new Date().toISOString();
+
+      // Helper function to generate unique ID
+      const generateUniqueId = () => {
+        return `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      };
+
+      // Show loading toast for document uploads
+      const docsLoadingToast = toast.loading("Uploading documents...");
+
+      try {
+        // Upload Birth Certificate
+        if (formData.birthCertificate instanceof File) {
+          try {
+            console.log('📄 Uploading birth certificate...');
+            const uploadResponse = await uploadApi.uploadFile(formData.birthCertificate);
+            documents.push({
+              id: generateUniqueId(),
+              name: "Birth Certificate",
+              type: formData.birthCertificate.type || "application/pdf",
+              category: "birthCertificate",
+              url: uploadResponse.url,
+              uploadDate: uploadDate,
+              size: formData.birthCertificate.size || 'Unknown',
+              date: new Date().toLocaleDateString()
+            });
+            console.log('✅ Birth certificate uploaded');
+          } catch (error) {
+            console.error('❌ Birth certificate upload failed:', error);
+            // Continue with other documents
+          }
+        }
+
+        // Upload Transfer Certificate
+        if (formData.transferCertificate instanceof File) {
+          try {
+            console.log('📄 Uploading transfer certificate...');
+            const uploadResponse = await uploadApi.uploadFile(formData.transferCertificate);
+            documents.push({
+              id: generateUniqueId(),
+              name: "Transfer Certificate",
+              type: formData.transferCertificate.type || "application/pdf",
+              category: "transferCertificate",
+              url: uploadResponse.url,
+              uploadDate: uploadDate,
+              size: formData.transferCertificate.size || 'Unknown',
+              date: new Date().toLocaleDateString()
+            });
+            console.log('✅ Transfer certificate uploaded');
+          } catch (error) {
+            console.error('❌ Transfer certificate upload failed:', error);
+            // Continue with other documents
+          }
+        }
+
+        // Upload Aadhaar Card (Front & Back as single document)
+        if (formData.aadhaarFront instanceof File || formData.aadhaarBack instanceof File) {
+          try {
+            console.log('📄 Uploading aadhaar card...');
+            const aadhaarDoc = {
+              id: generateUniqueId(),
+              name: "Aadhaar Card",
+              type: "application/pdf",
+              category: "aadhaarCard",
+              uploadDate: uploadDate,
+              size: 'Unknown',
+              date: new Date().toLocaleDateString()
+            };
+
+            // Upload front side
+            if (formData.aadhaarFront instanceof File) {
+              const frontResponse = await uploadApi.uploadFile(formData.aadhaarFront);
+              aadhaarDoc.front = {
+                url: frontResponse.url,
+                uploadDate: uploadDate
+              };
+              console.log('✅ Aadhaar front uploaded');
+            }
+
+            // Upload back side
+            if (formData.aadhaarBack instanceof File) {
+              const backResponse = await uploadApi.uploadFile(formData.aadhaarBack);
+              aadhaarDoc.back = {
+                url: backResponse.url,
+                uploadDate: uploadDate
+              };
+              console.log('✅ Aadhaar back uploaded');
+            }
+
+            documents.push(aadhaarDoc);
+          } catch (error) {
+            console.error('❌ Aadhaar card upload failed:', error);
+            // Continue with other documents
+          }
+        }
+
+        // Upload Other Documents
+        if (Array.isArray(formData.otherDocuments) && formData.otherDocuments.length > 0) {
+          for (let i = 0; i < formData.otherDocuments.length; i++) {
+            const doc = formData.otherDocuments[i];
+            if (doc instanceof File) {
+              try {
+                console.log(`📄 Uploading other document ${i + 1}...`);
+                const uploadResponse = await uploadApi.uploadFile(doc);
+                documents.push({
+                  id: generateUniqueId(),
+                  name: doc.name,
+                  type: doc.type || "application/pdf",
+                  category: "other",
+                  url: uploadResponse.url,
+                  uploadDate: uploadDate,
+                  size: doc.size || 'Unknown',
+                  date: new Date().toLocaleDateString()
+                });
+                console.log(`✅ Other document ${i + 1} uploaded`);
+              } catch (error) {
+                console.error(`❌ Other document ${i + 1} upload failed:`, error);
+                // Continue with next document
+              }
+            }
+          }
+        }
+
+        console.log(`✅ Successfully uploaded ${documents.length} document(s)`);
+        if (documents.length > 0) {
+          toast.success(`${documents.length} document(s) uploaded`, { id: docsLoadingToast });
+        } else {
+          toast.dismiss(docsLoadingToast);
+        }
+      } catch (error) {
+        console.error('❌ Document upload error:', error);
+        toast.dismiss(docsLoadingToast);
+        // Continue even if document uploads fail
+      }
+
       // Transform data for saving
       // Convert date from DD/MM/YYYY to YYYY-MM-DD for database storage
       let formattedDateOfBirth = formData.dateOfBirth;
@@ -437,12 +733,24 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         medicalConditions: formData.medicalConditions,
         // Use the uploaded photo URL (not the File object)
         photo: photoUrl,
-        // Preserve existing documents when editing (don't include documents field to avoid overwriting)
-        // Documents are managed separately via the dedicated documents endpoint
-
-        status: initialData?.status || "active",
-        feeStatus: initialData?.feeStatus || "pending"
       };
+
+      // Add documents array if we have new documents to upload
+      if (documents.length > 0) {
+        studentData.documents = documents;
+      } else if (initialData?.documents && initialData.documents.length > 0) {
+        // Preserve existing documents when editing and no new documents uploaded
+        studentData.documents = initialData.documents;
+      }
+
+      // Add status and feeStatus (only for new students, preserve when editing)
+      if (!initialData) {
+        studentData.status = "active";
+        studentData.feeStatus = "pending";
+      } else {
+        if (initialData.status) studentData.status = initialData.status;
+        if (initialData.feeStatus) studentData.feeStatus = initialData.feeStatus;
+      }
 
       // Remove undefined values and empty objects to prevent MongoDB cast errors
       Object.keys(studentData).forEach(key => {
@@ -464,6 +772,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       console.log('📤 Selected class:', selectedClass);
 
       await onSave(studentData);
+      // Reset dirty state after successful save
+      setHasUnsavedChanges(false);
       // Success toast is shown in parent component
       // Loading state will be reset when drawer closes
     } catch (error) {
@@ -594,86 +904,79 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               return formData.dateOfBirth;
             })()}
             onValueChange={v => {
-              // 1. Keep strictly digits
-              const digits = v.replace(/\D/g, '');
+              // Allow more flexible editing - remove non-digits
+              let cleaned = v.replace(/\D/g, '');
 
-              // Prevent typing more than 8 digits
-              if (digits.length > 8) return;
-
-              // 2. Validate chunks & BLOCK invalid inputs
-              const currentYear = new Date().getFullYear();
-
-              // Check Day
-              if (digits.length >= 2) {
-                const day = parseInt(digits.slice(0, 2));
-                if (day > 31 || day === 0) return;
-              }
-              // Strict check for first digit of day? (Optional, but "32" block is covered above)
-              // If digit[0] > 3, it's impossible for day (unless single digit, but we expect 0X).
-              if (digits.length >= 1) {
-                const d1 = parseInt(digits[0]);
-                if (d1 > 3) return; // Block 4-9 as first digit
+              // Limit to 8 digits
+              if (cleaned.length > 8) {
+                cleaned = cleaned.slice(0, 8);
               }
 
-
-              // Check Month
-              if (digits.length >= 4) {
-                const month = parseInt(digits.slice(2, 4));
-                if (month > 12 || month === 0) return;
-              }
-              // Strict check for first digit of month
-              if (digits.length >= 3) {
-                const m1 = parseInt(digits[2]);
-                if (m1 > 1) return; // Block 2-9 as first digit of month
+              // Auto-format with slashes as user types
+              let formatted = cleaned;
+              if (cleaned.length > 4) {
+                formatted = `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4)}`;
+              } else if (cleaned.length > 2) {
+                formatted = `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
               }
 
-              // Check Year
-              if (digits.length >= 8) {
-                const year = parseInt(digits.slice(4, 8));
-                if (year >= currentYear) return;
-              }
-
-              // 3. Format with slashes
-              let formatted = digits;
-              if (digits.length > 2) {
-                formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
-              }
-              if (digits.length > 4) {
-                formatted = `${formatted.slice(0, 5)}/${digits.slice(4)}`;
-              }
-
-              // Update State
               updateField("dateOfBirth", formatted);
 
-              // 4. Clear errors if potentially valid, or set calendar error if full date is invalid (e.g., Feb 30)
-              if (digits.length === 8) {
-                const day = parseInt(digits.slice(0, 2));
-                const month = parseInt(digits.slice(2, 4));
-                const year = parseInt(digits.slice(4, 8));
-
-                // Check true calendar validity
-                const date = new Date(year, month - 1, day);
-                const isValidDate = date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
-
-                if (!isValidDate) {
-                  setErrors(prev => ({ ...prev, dateOfBirth: "Invalid calendar date" }));
-                } else {
-                  setErrors(prev => ({ ...prev, dateOfBirth: null }));
-                }
-              } else {
-                // Clear error while typing (unless empty/required check happens elsewhere)
-                if (errors.dateOfBirth) setErrors(prev => ({ ...prev, dateOfBirth: null }));
-              }
+              // Real-time validation with helpful feedback
+              validateDOBInRealTime(formatted);
             }}
             isInvalid={!!errors.dateOfBirth}
             errorMessage={errors.dateOfBirth}
             variant="bordered"
             radius="sm"
             isRequired
-            description="Format: DD/MM/YYYY"
-            endContent={<span className="text-default-400 text-xs">DD/MM/YYYY</span>}
-            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            description={
+              <div className="flex items-center gap-2">
+                <span className="text-default-400">Format: DD/MM/YYYY</span>
+                {formData.dateOfBirth && dobValidation.isValid && (
+                  <span className="text-success text-xs flex items-center gap-1">
+                    <Check size={12} />
+                    Valid
+                  </span>
+                )}
+              </div>
+            }
+            endContent={
+              formData.dateOfBirth && dobValidation.isValid ? (
+                <Check size={18} className="text-success" />
+              ) : (
+                <span className="text-default-400 text-xs">DD/MM/YYYY</span>
+              )
+            }
+            classNames={{
+              inputWrapper: cn(
+                "bg-background border-1 h-10 transition-colors",
+                formData.dateOfBirth && dobValidation.isValid
+                  ? "border-success hover:border-success-400"
+                  : "border-default-200 hover:border-default-300",
+                errors.dateOfBirth && "border-danger"
+              )
+            }}
           />
+          {/* Helper text with validation feedback */}
+          {formData.dateOfBirth && formData.dateOfBirth.length > 0 && (
+            <div className="mt-1 space-y-1">
+              {dobValidation.message && (
+                <p className="text-xs text-default-600">{dobValidation.message}</p>
+              )}
+              {dobValidation.warning && (
+                <p className="text-xs text-warning flex items-center gap-1">
+                  <span>⚠️</span> {dobValidation.warning}
+                </p>
+              )}
+              {/* Show format progress */}
+              {formData.dateOfBirth.length < 10 && !errors.dateOfBirth && (
+                <p className="text-xs text-default-400">
+                  {getFormatProgress(formData.dateOfBirth)}
+                </p>
+              )}
+            </div>
+          )}
         </div>
         <div className="space-y-1" ref={genderRef}>
           <label className="text-xs font-medium text-default-600">Gender <span className="text-danger">*</span></label>
@@ -1444,7 +1747,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         {/* Footer with Action Buttons */}
         <div className="flex-none p-4 border-t border-default-200 bg-background z-10">
           <div className="flex items-center justify-end gap-2">
-            <Button variant="light" onPress={onClose}>
+            <Button variant="light" onPress={handleClose}>
               Cancel
             </Button>
             <Button
@@ -1467,6 +1770,41 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           onSave={handlePhotoSave}
         />
       )}
+
+      {/* Unsaved Changes Warning Modal */}
+      <Modal
+        isOpen={isDirtyModalOpen}
+        onClose={handleCancelClose}
+        size="sm"
+        isDismissable={false}
+        hideCloseButton
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            <h3 className="text-lg font-semibold">Unsaved Changes</h3>
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-default-600">
+              You have unsaved changes. Are you sure you want to close? Your changes will be lost.
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="light"
+              onPress={handleCancelClose}
+            >
+              Stay
+            </Button>
+            <Button
+              color="danger"
+              variant="flat"
+              onPress={handleConfirmClose}
+            >
+              Discard Changes
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Chip, Button, Progress, Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
@@ -8,8 +8,10 @@ import { useNavigate } from "react-router-dom";
 import { Eye, MessageSquare, Search, Filter, ArrowUpDown, X, MoreVertical, Settings, UserPlus, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const ITEMS_PER_LOAD = 10;
+const SEARCH_DEBOUNCE_MS = 300;
 
 // Available columns configuration
 const AVAILABLE_COLUMNS = [
@@ -25,8 +27,9 @@ const AVAILABLE_COLUMNS = [
 
 export default function ClassesList() {
   const navigate = useNavigate();
-  const { classesWithTeachers: classesData, feeDefaulters, classesEnhancedApi, classesApi } = useApp();
+  const { classesWithTeachers: classesData, feeDefaulters, classesEnhancedApi, classesApi, staff } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
   const [isLoading, setIsLoading] = useState(false);
   const loaderRef = useRef(null);
@@ -52,10 +55,21 @@ export default function ClassesList() {
   // Assign teacher modal state
   const [assignTeacherModal, setAssignTeacherModal] = useState(false);
   const [selectedClassForTeacher, setSelectedClassForTeacher] = useState(null);
+  const [selectedTeacherId, setSelectedTeacherId] = useState("");
+  const [assigningTeacher, setAssigningTeacher] = useState(false);
 
   // Actions modal state
   const [actionsModal, setActionsModal] = useState(false);
   const [selectedClassForActions, setSelectedClassForActions] = useState(null);
+
+  // Debounced search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Extract class number from name
   const extractClassNum = (name) => {
@@ -108,9 +122,9 @@ export default function ClassesList() {
 
   // Filter grouped classes
   const filteredGroupedClasses = useMemo(() => {
-    if (!searchQuery) return groupedClasses;
+    if (!debouncedSearchQuery) return groupedClasses;
 
-    const search = searchQuery.toLowerCase();
+    const search = debouncedSearchQuery.toLowerCase();
     const keywords = search.split(' ').filter(k => k.length > 0);
 
     return groupedClasses.filter((group) => {
@@ -127,7 +141,7 @@ export default function ClassesList() {
         return keywords.every(keyword => searchableText.includes(keyword));
       });
     });
-  }, [groupedClasses, searchQuery]);
+  }, [groupedClasses, debouncedSearchQuery]);
 
   // Flatten for display - include parent rows and expanded children
   const visibleItems = useMemo(() => {
@@ -260,7 +274,7 @@ export default function ClassesList() {
   // Reset visible count when filters change
   useEffect(() => {
     setVisibleCount(ITEMS_PER_LOAD);
-  }, [searchQuery, sortDescriptor]);
+  }, [debouncedSearchQuery, sortDescriptor]);
 
   // Intersection Observer for lazy loading
   useEffect(() => {
@@ -311,7 +325,30 @@ export default function ClassesList() {
   // Handle assign teacher
   const handleAssignTeacher = (cls) => {
     setSelectedClassForTeacher(cls);
+    setSelectedTeacherId(cls.classTeacherId || "");
     setAssignTeacherModal(true);
+  };
+
+  // Handle teacher assignment submission
+  const handleAssignTeacherSubmit = async () => {
+    if (!selectedClassForTeacher || !selectedTeacherId) {
+      toast.error('Please select a teacher');
+      return;
+    }
+
+    try {
+      setAssigningTeacher(true);
+      await classesApi.updateClassTeacher(selectedClassForTeacher.id, selectedTeacherId);
+      toast.success('Class teacher assigned successfully');
+      setAssignTeacherModal(false);
+      // The classes data will be refreshed automatically from context
+      window.location.reload(); // Quick refresh to see changes
+    } catch (error) {
+      console.error('Error assigning teacher:', error);
+      toast.error('Failed to assign teacher');
+    } finally {
+      setAssigningTeacher(false);
+    }
   };
 
   // Handle class actions
@@ -330,12 +367,6 @@ export default function ClassesList() {
         break;
       case 'settings':
         navigate(`/classes/${cls.id}?tab=settings`);
-        break;
-      case 'promote':
-        navigate(`/classes/${cls.id}/promote`);
-        break;
-      case 'adjust-strength':
-        navigate(`/classes/${cls.id}/strength`);
         break;
       case 'download-report':
         // Implement download report
@@ -628,9 +659,10 @@ export default function ClassesList() {
                     <TableCell>
                       <div className="flex items-center gap-3 py-3">
                         <img
-                          src={`https://i.pravatar.cc/150?u=${cls.id}`}
+                          src={cls.teacherPhoto || '/default-avatar.png'}
                           alt={cls.teacher || "Teacher"}
-                          className="w-8 h-8 rounded-full"
+                          className="w-8 h-8 rounded-full object-cover"
+                          onError={(e) => { e.target.src = '/default-avatar.png'; }}
                         />
                         <div className="flex flex-col">
                           {cls.classTeacherId ? (
@@ -762,18 +794,6 @@ export default function ClassesList() {
                             Class Settings
                           </DropdownItem>
                           <DropdownItem
-                            key="promote"
-                            startContent={"📈"}
-                          >
-                            Promote Class
-                          </DropdownItem>
-                          <DropdownItem
-                            key="adjust-strength"
-                            startContent={"👥"}
-                          >
-                            Adjust Strength Limit
-                          </DropdownItem>
-                          <DropdownItem
                             key="download-report"
                             startContent={"📥"}
                           >
@@ -830,20 +850,41 @@ export default function ClassesList() {
         </ModalContent>
       </Modal>
 
-      {/* Assign Teacher Modal - Placeholder for future implementation */}
+      {/* Assign Teacher Modal */}
       <Modal isOpen={assignTeacherModal} onClose={() => setAssignTeacherModal(false)} size="md">
         <ModalContent>
           <ModalHeader>Assign Class Teacher</ModalHeader>
           <ModalBody>
-            <p>Assign class teacher for {selectedClassForTeacher?.name} - Section {selectedClassForTeacher?.section}</p>
-            <p className="text-default-500 text-sm">This feature will be implemented in the next phase.</p>
+            <p className="mb-4">
+              Assign class teacher for <strong>{selectedClassForTeacher?.name} - Section {selectedClassForTeacher?.section}</strong>
+            </p>
+            <Select
+              label="Select Teacher"
+              placeholder="Choose a teacher"
+              selectedKeys={selectedTeacherId ? [selectedTeacherId] : []}
+              onSelectionChange={(keys) => setSelectedTeacherId(Array.from(keys)[0] || "")}
+              isRequired
+            >
+              {staff
+                .filter(s => s.role === 'Teacher' || s.isClassTeacher)
+                .map(teacher => (
+                  <SelectItem key={teacher.id || teacher._id} textValue={teacher.name}>
+                    {teacher.name} {teacher.department ? `(${teacher.department})` : ''}
+                  </SelectItem>
+                ))}
+            </Select>
           </ModalBody>
           <ModalFooter>
             <Button variant="flat" onPress={() => setAssignTeacherModal(false)}>
               Cancel
             </Button>
-            <Button color="primary" onPress={() => setAssignTeacherModal(false)}>
-              Assign
+            <Button
+              color="primary"
+              onPress={handleAssignTeacherSubmit}
+              isDisabled={!selectedTeacherId || assigningTeacher}
+              isLoading={assigningTeacher}
+            >
+              {assigningTeacher ? 'Assigning...' : 'Assign Teacher'}
             </Button>
           </ModalFooter>
         </ModalContent>

@@ -133,13 +133,13 @@ const GatePassLog = forwardRef((props, ref) => {
   };
 
   const getSelectedStudent = () => {
-    if (!studentId) return null;
-    return students.find(s => s.id === studentId || s._id === studentId);
+    if (!studentId || !students) return null;
+    return students.find(s => (s._id || s.id) === studentId);
   };
 
   const getSelectedStaff = () => {
-    if (!approvedByStaffId) return null;
-    return staff.find(s => s.id === approvedByStaffId || s._id === approvedByStaffId);
+    if (!approvedByStaffId || !staff) return null;
+    return staff.find(s => (s._id || s.id) === approvedByStaffId);
   };
 
   const handleSubmit = async () => {
@@ -188,7 +188,7 @@ const GatePassLog = forwardRef((props, ref) => {
       }
 
       const formData = {
-        studentId: student.id,
+        studentId: student._id || student.id,
         studentName: student.name,
         class: student.class || '',
         section: student.section || '',
@@ -203,7 +203,7 @@ const GatePassLog = forwardRef((props, ref) => {
         escortRelation: leavingWith === 'OTHERS' ? escortRelation : '',
         escortPhone: leavingWith === 'OTHERS' ? escortPhone : '',
         approvedBy,
-        approvedByStaffId: staffMember.id,
+        approvedByStaffId: staffMember._id || staffMember.id,
         approvedByName: staffMember.name,
         notes,
       };
@@ -226,6 +226,7 @@ const GatePassLog = forwardRef((props, ref) => {
   };
 
   const handleEdit = (gatePass) => {
+    if (!gatePass) return; // Null check
     setEditingId(gatePass._id);
     setStudentId(gatePass.studentId || null);
     setReason(gatePass.reason || null);
@@ -389,7 +390,7 @@ const GatePassLog = forwardRef((props, ref) => {
                 className="col-span-2"
               >
                 {students.map((student) => (
-                  <AutocompleteItem key={String(student.id)} textValue={student.name}>
+                  <AutocompleteItem key={String(student._id || student.id)} textValue={student.name}>
                     {student.name} {student.admissionId ? `(${student.admissionId})` : ''} - {student.class || ''}
                   </AutocompleteItem>
                 ))}
@@ -541,7 +542,7 @@ const GatePassLog = forwardRef((props, ref) => {
                       isRequired
                     >
                       {staff.map((member) => (
-                        <AutocompleteItem key={String(member.id)} textValue={member.name}>
+                        <AutocompleteItem key={String(member._id || member.id)} textValue={member.name}>
                           {member.name} ({member.role})
                         </AutocompleteItem>
                       ))}

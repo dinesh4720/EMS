@@ -124,6 +124,8 @@ const FeedbacksList = forwardRef((props, ref) => {
       newErrors.taskTitle = 'Task title is required when assigning as task';
     }
 
+    // CRITICAL FIX: Set errors before returning
+    setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
@@ -167,6 +169,7 @@ const FeedbacksList = forwardRef((props, ref) => {
   };
 
   const handleEdit = (feedback) => {
+    if (!feedback) return; // Null check
     setEditingId(feedback._id);
     // Parse category if it has subcategory
     let category = feedback.category;

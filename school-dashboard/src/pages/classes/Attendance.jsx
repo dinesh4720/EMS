@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardBody, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Select, SelectItem, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Textarea, Spinner } from "@heroui/react";
 import { Download, Check, X, Lock, Bell, AlertTriangle } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { attendanceApi } from "../../services/api";
 
 const ITEMS_PER_LOAD = 10;
 
@@ -13,6 +14,8 @@ export default function Attendance({ classId }) {
   const [selectedClass, setSelectedClass] = useState(classId || "6-A");
   const [attendance, setAttendance] = useState({});
   const [isLocked, setIsLocked] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editReason, setEditReason] = useState("");
 
@@ -82,6 +85,48 @@ export default function Attendance({ classId }) {
       const newAttendance = {};
       classStudents.forEach(s => { newAttendance[s.id] = "present"; });
       setAttendance(prev => ({ ...prev, ...newAttendance }));
+    }
+  };
+
+  const handleSaveAttendance = async () => {
+    if (isLocked || isSaving) return;
+
+    try {
+      setIsSaving(true);
+      setSaveMessage(null);
+
+      // Convert attendance state to API format
+      const attendanceData = classStudents.map(student => ({
+        studentId: student.id,
+        status: attendance[student.id] || "present"
+      }));
+
+      // Call the bulk attendance API
+      const response = await attendanceApi.markBulk({
+        classId: selectedClass,
+        date: date,
+        attendance: attendanceData
+      });
+
+      // Show success message
+      setSaveMessage({
+        type: 'success',
+        text: `Attendance saved for ${response.results?.length || classStudents.length} students`
+      });
+
+      // Auto-hide message after 3 seconds
+      setTimeout(() => setSaveMessage(null), 3000);
+    } catch (error) {
+      console.error('Error saving attendance:', error);
+      setSaveMessage({
+        type: 'error',
+        text: error.message || 'Failed to save attendance'
+      });
+
+      // Auto-hide error message after 5 seconds
+      setTimeout(() => setSaveMessage(null), 5000);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -173,7 +218,21 @@ export default function Attendance({ classId }) {
               <span>Absent: <strong className="text-danger">{absentCount}</strong></span>
               <span>Attendance: <strong className={attendancePercent >= 75 ? "text-success" : "text-danger"}>{attendancePercent}%</strong></span>
             </div>
-            <Button size="sm" color="primary" isDisabled={isLocked}>Save Attendance</Button>
+            <div className="flex items-center gap-2">
+              {saveMessage && (
+                <span className={`text-xs ${saveMessage.type === 'success' ? 'text-success' : 'text-danger'}`}>
+                  {saveMessage.text}
+                </span>
+              )}
+              <Button
+                size="sm"
+                color="primary"
+                onPress={handleSaveAttendance}
+                isDisabled={isLocked || isSaving}
+              >
+                {isSaving ? 'Saving...' : 'Save Attendance'}
+              </Button>
+            </div>
           </div>
         </CardBody>
       </Card>

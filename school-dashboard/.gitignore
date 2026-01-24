@@ -3,6 +3,7 @@
 
 # Dependencies
 node_modules
+test-results
 .pnp
 .pnp.js
 

@@ -180,6 +180,7 @@ const VisitorLog = forwardRef((props, ref) => {
   };
 
   const handleEdit = (visitor) => {
+    if (!visitor) return; // Null check
     setEditingId(visitor._id);
     setFormData({
       visitorName: visitor.visitorName || '',
@@ -224,7 +225,7 @@ const VisitorLog = forwardRef((props, ref) => {
   };
 
   const handleStudentSelect = (studentId) => {
-    const student = students.find(s => s.id === studentId || s._id === studentId);
+    const student = students.find(s => (s._id || s.id) === studentId);
     if (student) {
       setFormData({
         ...formData,
@@ -267,7 +268,7 @@ const VisitorLog = forwardRef((props, ref) => {
     (visitor.visitorName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     (visitor.phoneNumber?.includes(searchTerm)) ||
     (visitor.concernedPerson?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-  );
+  ) || []; // Ensure array is never null
 
   return (
     <>

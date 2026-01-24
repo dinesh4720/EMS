@@ -8,9 +8,10 @@ import { UserCheck, Calendar, Clock, Plus, Search, Filter, X, UserPlus, RefreshC
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import { useApp } from '../../context/AppContext';
+import { DEFAULT_PERIODS } from '../../utils/constants';
 
 export default function Substitution() {
-  const { teachers, classes } = useApp();
+  const { teachers, classes, schoolSettings } = useApp();
   const [substitutions, setSubstitutions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -36,7 +37,24 @@ export default function Substitution() {
   const [selectedSubstitution, setSelectedSubstitution] = useState(null);
   const [selectedTeacher, setSelectedTeacher] = useState("");
 
-  const periods = ['1', '2', '3', '4', '5', '6', '7', '8'];
+  // Fetch periods from school settings or use default
+  const [periods, setPeriods] = useState([]);
+
+  useEffect(() => {
+    // Try to get periods from school settings first
+    if (schoolSettings?.timetable?.periods && schoolSettings.timetable.periods.length > 0) {
+      // Extract period numbers from timetable settings
+      const periodNumbers = schoolSettings.timetable.periods
+        .filter(p => !p.isBreak)
+        .map((p, index) => String(index + 1));
+      setPeriods(periodNumbers);
+    } else if (schoolSettings?.periods && schoolSettings.periods.length > 0) {
+      setPeriods(schoolSettings.periods);
+    } else {
+      // Fallback to default periods
+      setPeriods(DEFAULT_PERIODS);
+    }
+  }, [schoolSettings]);
 
   useEffect(() => {
     loadSubstitutions();
