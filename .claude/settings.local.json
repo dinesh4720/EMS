@@ -24,7 +24,13 @@
       "Bash(ping:*)",
       "Bash(powershell:*)",
       "Bash(npm run)",
-      "Bash(net start:*)"
+      "Bash(net start:*)",
+      "Skill(oh-my-claudecode:hud)",
+      "Skill(oh-my-claudecode:mcp-setup)",
+      "Skill(oh-my-claudecode:analyze)",
+      "Bash(npx eslint:*)",
+      "Bash(npm run lint)",
+      "Bash(npx tsc:*)"
     ]
   }
 }
