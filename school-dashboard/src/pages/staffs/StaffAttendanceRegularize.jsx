@@ -3,6 +3,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 import {
   Card, CardBody, CardHeader,
   Select, SelectItem, Button, Chip,
@@ -15,7 +16,7 @@ import toast from "react-hot-toast";
 
 export default function StaffAttendanceRegularize() {
   const navigate = useNavigate();
-  const { staff, staffAttendance, markStaffAttendance } = useApp();
+  const { staff, staffAttendance, markStaffAttendance, fetchStaffAttendanceByStaff } = useApp();
   const [selectedStaffId, setSelectedStaffId] = useState("");
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -31,6 +32,15 @@ export default function StaffAttendanceRegularize() {
   const selectedStaff = useMemo(() => {
     return staff.find(s => s.id === selectedStaffId);
   }, [staff, selectedStaffId]);
+
+  // Fetch attendance data when selection changes
+  useEffect(() => {
+    if (selectedStaffId) {
+      const start = format(new Date(currentYear, currentMonth, 1), 'yyyy-MM-dd');
+      const end = format(new Date(currentYear, currentMonth + 1, 0), 'yyyy-MM-dd');
+      fetchStaffAttendanceByStaff(selectedStaffId, start, end);
+    }
+  }, [selectedStaffId, currentMonth, currentYear, fetchStaffAttendanceByStaff]);
 
   // Debug logging
   useEffect(() => {
@@ -51,7 +61,7 @@ export default function StaffAttendanceRegularize() {
     const startingDayOfWeek = firstDay.getDay();
 
     const days = [];
-    
+
     // Add empty cells for days before month starts
     for (let i = 0; i < startingDayOfWeek; i++) {
       days.push({ isEmpty: true });
@@ -98,7 +108,7 @@ export default function StaffAttendanceRegularize() {
 
   const handleDayClick = (dayData) => {
     if (dayData.isEmpty || dayData.isFuture) return;
-    
+
     setSelectedDate(dayData);
     setRegularizeData({
       status: dayData.attendance?.status || "present",
@@ -129,9 +139,9 @@ export default function StaffAttendanceRegularize() {
   const getDayStyle = (dayData) => {
     if (dayData.isEmpty) return "";
     if (dayData.isFuture) return "opacity-30 cursor-not-allowed";
-    
+
     const status = dayData.attendance?.status;
-    
+
     if (dayData.isToday) {
       return "ring-2 ring-primary ring-offset-2";
     }
@@ -152,9 +162,9 @@ export default function StaffAttendanceRegularize() {
 
   const getDayIndicator = (dayData) => {
     if (dayData.isEmpty || dayData.isFuture) return null;
-    
+
     const status = dayData.attendance?.status;
-    
+
     switch (status) {
       case "present":
         return <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-success-500" />;
@@ -173,7 +183,7 @@ export default function StaffAttendanceRegularize() {
     if (!selectedStaffId) return { present: 0, absent: 0, leave: 0, halfday: 0, unmarked: 0 };
 
     const stats = { present: 0, absent: 0, leave: 0, halfday: 0, unmarked: 0 };
-    
+
     calendarData.forEach(day => {
       if (!day.isEmpty && !day.isFuture) {
         const status = day.attendance?.status || "unmarked";
