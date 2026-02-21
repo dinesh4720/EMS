@@ -5,8 +5,10 @@ import { ArrowLeft, ArrowRight, Upload, X, Plus, User, FileText, Briefcase, Doll
 import PhotoEditorModal from "../../components/PhotoEditorModal";
 import CameraCaptureModal from "../../components/CameraCaptureModal";
 import TimetableWizardModal from "../classes/components/TimetableWizardModal";
+import ClassSubjectManagementModal from "./components/ClassSubjectManagementModal";
 import { STAFF_ROLES } from "../../constants/roles";
 import { usePermissions } from "../../context/PermissionContext";
+import { useApp } from "../../context/AppContext";
 import { classesApi } from "../../services/api";
 import toast from "react-hot-toast";
 
@@ -57,6 +59,7 @@ const emptyForm = {
 
 const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
   const { hasPermission } = usePermissions();
+  const { staff: allStaff } = useApp();
   const canEdit = editingStaff ? hasPermission('staff', 'edit') : hasPermission('staff', 'create');
 
   const [step, setStep] = useState(1);
@@ -69,7 +72,9 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCameraCaptureOpen, setIsCameraCaptureOpen] = useState(false);
   const [showTimetableModal, setShowTimetableModal] = useState(false);
+  const [showClassSubjectModal, setShowClassSubjectModal] = useState(false);
   const [createdStaffId, setCreatedStaffId] = useState(null);
+  const [createdStaffName, setCreatedStaffName] = useState("");
   const [availableClasses, setAvailableClasses] = useState([]);
   const [loadingClasses, setLoadingClasses] = useState(false);
 
@@ -185,7 +190,21 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         else if (!/^\d{10}$/.test(value)) newError = "Invalid";
         break;
       case "email":
-        if (value.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) newError = "Invalid email";
+        if (value.trim()) {
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+            newError = "Invalid email";
+          } else {
+            // Check for duplicate email among existing staff
+            const editingId = editingStaff?._id || editingStaff?.id;
+            const duplicate = Array.isArray(allStaff) && allStaff.find(s =>
+              s.email && s.email.toLowerCase() === value.trim().toLowerCase() &&
+              (s._id || s.id) !== editingId
+            );
+            if (duplicate) {
+              newError = `Email already used by ${duplicate.name}${duplicate.code ? ` (${duplicate.code})` : ''}`;
+            }
+          }
+        }
         break;
       case "staffType":
         if (!value) newError = "Required";
@@ -295,8 +314,19 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       if (!formData.fatherName.trim()) newErrors.fatherName = "Required";
       if (!formData.mobile.trim()) newErrors.mobile = "Required";
       else if (!/^\d{10}$/.test(formData.mobile)) newErrors.mobile = "Invalid";
-      if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-        newErrors.email = "Invalid email";
+      if (formData.email.trim()) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+          newErrors.email = "Invalid email";
+        } else {
+          const editingId = editingStaff?._id || editingStaff?.id;
+          const duplicate = Array.isArray(allStaff) && allStaff.find(s =>
+            s.email && s.email.toLowerCase() === formData.email.trim().toLowerCase() &&
+            (s._id || s.id) !== editingId
+          );
+          if (duplicate) {
+            newErrors.email = `Email already used by ${duplicate.name}${duplicate.code ? ` (${duplicate.code})` : ''}`;
+          }
+        }
       }
       // Emergency contact phone validation
       formData.emergencyContacts.forEach((contact, i) => {
@@ -460,6 +490,16 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         staffData.salary = totalSalary;
       }
 
+      // Filter out empty emergency contacts (remove contacts with all empty fields)
+      if (staffData.emergencyContacts) {
+        staffData.emergencyContacts = staffData.emergencyContacts.filter(
+          contact => contact.name?.trim() || contact.relationship?.trim() || contact.phone?.trim()
+        );
+        if (staffData.emergencyContacts.length === 0) {
+          delete staffData.emergencyContacts;
+        }
+      }
+
       // Remove undefined values and unwanted fields
       Object.keys(staffData).forEach(key => {
         if (staffData[key] === undefined || staffData[key] === null) {
@@ -477,10 +517,11 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       // Save staff and get the response
       const savedStaff = await onSave(staffData);
 
-      // If it's a new staff creation (not editing), show timetable modal
+      // If it's a new staff creation (not editing), show class/subject management modal
       if (!editingStaff && savedStaff) {
         setCreatedStaffId(savedStaff._id || savedStaff.id);
-        setShowTimetableModal(true);
+        setCreatedStaffName(staffData.fullName);
+        setShowClassSubjectModal(true);
       }
 
       setIsSubmitting(false);
@@ -830,6 +871,8 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             onValueChange={v => updateField("email", v)}
             variant="bordered"
             radius="sm"
+            isInvalid={!!errors.email}
+            errorMessage={errors.email}
             className="col-span-1 md:col-span-2"
             classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
             autoComplete="email"
@@ -1430,12 +1473,6 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
     { number: 5, title: "Payroll", icon: Banknote }
   ], []);
 
-  const handleTimetableModalClose = () => {
-    setShowTimetableModal(false);
-    setCreatedStaffId(null);
-    onClose(); // Close the AddStaff modal after timetable modal
-  };
-
   return (
     <div className="h-full flex flex-col bg-white">
       {/* Permission Warning */}
@@ -1559,36 +1596,16 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         onPhotoCaptured={handleCameraPhotoCapture}
       />
 
-      {/* Timetable Confirmation Modal */}
-      <Modal isOpen={showTimetableModal} onClose={handleTimetableModalClose} size="md">
-        <ModalContent>
-          <ModalHeader className="flex gap-2 items-center">
-            <CheckCircle2 size={24} className="text-success" />
-            <div>
-              <span className="text-lg font-semibold">Staff Created Successfully!</span>
-              <p className="text-sm text-default-500 mt-1">Would you like to create a timetable for this staff member?</p>
-            </div>
-          </ModalHeader>
-          <ModalFooter>
-            <Button variant="light" onPress={handleTimetableModalClose}>
-              No, Maybe Later
-            </Button>
-            <Button
-              color="primary"
-              onPress={() => {
-                // Close this modal and open the timetable wizard
-                setShowTimetableModal(false);
-                // We'll need to handle this in the parent component
-                // For now, just close and let the user handle it manually
-                toast.success('You can create a timetable from the Classes section');
-                setTimeout(() => onClose(), 500);
-              }}
-            >
-              Yes, Create Timetable
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      {/* Class & Subject Management Modal */}
+      <ClassSubjectManagementModal
+        isOpen={showClassSubjectModal}
+        onClose={() => {
+          setShowClassSubjectModal(false);
+          onClose();
+        }}
+        staffId={createdStaffId}
+        staffName={createdStaffName}
+      />
     </div>
   );
 });

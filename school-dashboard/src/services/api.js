@@ -322,6 +322,9 @@ export const classesEnhancedApi = {
 
   // Fees Overview
   getFeesOverview: (id, academicYear) => request(`/classes-enhanced/${id}/fees-overview${academicYear ? `?academicYear=${academicYear}` : ''}`),
+  
+  // Missing Subjects
+  getMissingSubjects: () => request('/classes-enhanced/missing-subjects'),
 };
 
 // Attendance API
@@ -349,6 +352,9 @@ export const staffAttendanceApi = {
 
 // Timetable API
 export const timetableApi = {
+  // Get all timetables at once
+  getAll: (academicYear) => request(`/timetable${academicYear ? `?academicYear=${academicYear}` : ''}`),
+  
   getByClass: (classId, academicYear) => request(`/timetable/${classId}${academicYear ? `?academicYear=${academicYear}` : ''}`),
 
   // Lazy loading: Get timetable with option to skip cache for fresh data
@@ -358,6 +364,9 @@ export const timetableApi = {
   create: (data) => request('/timetable', { method: 'POST', body: JSON.stringify(data) }),
   update: (classId, data) => request(`/timetable/${classId}`, { method: 'PUT', body: JSON.stringify(data) }),
   createOrUpdate: (data) => request('/timetable', { method: 'POST', body: JSON.stringify(data) }),
+  
+  // Generate/regenerate timetables for all classes
+  generateAll: (data) => request('/timetable/generate-all', { method: 'POST', body: JSON.stringify(data) }),
   updateSlot: async (classId, data) => {
     try {
       return await request(`/timetable/${classId}/slot`, { method: 'PUT', body: JSON.stringify(data) });

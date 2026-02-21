@@ -22,6 +22,7 @@ const FormAssignments = lazy(() => import("./pages/intake-forms/FormAssignments"
 const FormSubmissions = lazy(() => import("./pages/intake-forms/FormSubmissions"));
 const AiAssistantPage = lazy(() => import("./pages/AiAssistantPage"));
 const StyleGuide = lazy(() => import("./pages/StyleGuide"));
+const TimetableWizardPage = lazy(() => import("./components/TimetableWizardPage"));
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));
 
@@ -163,6 +164,11 @@ function AuthenticatedApp() {
                     <Route path="/intake-forms/submissions" element={<FormSubmissions />} />
                     <Route path="/ai-assistant" element={<AiAssistantPage />} />
                     <Route path="/style-guide" element={<StyleGuide />} />
+                    <Route path="/timetable-wizard" element={
+                      <PermissionGuard module="timetable">
+                        <TimetableWizardPage />
+                      </PermissionGuard>
+                    } />
                   </Routes>
                 </div>
               </main>

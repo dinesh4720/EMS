@@ -1,13 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Breadcrumbs, BreadcrumbItem, Modal, ModalContent, ModalHeader, ModalBody } from '@heroui/react';
-import { Home, BarChart3, FileText, Plus } from 'lucide-react';
+import { Home, BarChart3, FileText, Plus, BookOpen } from 'lucide-react';
 import { PageLayout, MinimalButton } from '../../components/ui';
 import PerformanceDashboard from './PerformanceDashboard';
 import ExamManagement from './ExamManagement';
 import CreateExamModal from './CreateExamModal';
 import ExamDetailModal from './ExamDetailModal';
 import ResultsEntryModal from './ResultsEntryModal';
+import SubjectAssignment from '../../components/SubjectAssignment';
 
 const AcademicLayout = () => {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ const AcademicLayout = () => {
     const path = location.pathname;
     if (path === '/academics' || path === '/academics/') return 'dashboard';
     if (path.startsWith('/academics/exams')) return 'exams';
+    if (path.startsWith('/academics/subjects')) return 'subjects';
     return 'dashboard';
   };
 
@@ -48,11 +50,21 @@ const AcademicLayout = () => {
         </div>
       ),
     },
+    {
+      key: "subjects",
+      title: (
+        <div className="flex items-center gap-2">
+          <BookOpen size={16} />
+          <span>Subjects</span>
+        </div>
+      ),
+    },
   ];
 
   const handleTabChange = useCallback((key) => {
     if (key === 'dashboard') navigate('/academics', { replace: true });
     else if (key === 'exams') navigate('/academics/exams', { replace: true });
+    else if (key === 'subjects') navigate('/academics/subjects', { replace: true });
   }, [navigate]);
 
   const getHeader = () => {
@@ -60,6 +72,12 @@ const AcademicLayout = () => {
       return {
         title: 'Exam Management',
         description: 'Create, schedule, and manage examinations',
+      };
+    }
+    if (activeTab === 'subjects') {
+      return {
+        title: 'Subject Assignment',
+        description: 'Assign subjects to classes for timetable generation',
       };
     }
     return {
@@ -126,6 +144,7 @@ const AcademicLayout = () => {
           </BreadcrumbItem>
           <BreadcrumbItem>Academics</BreadcrumbItem>
           {activeTab === 'exams' && <BreadcrumbItem>Exams</BreadcrumbItem>}
+          {activeTab === 'subjects' && <BreadcrumbItem>Subjects</BreadcrumbItem>}
         </Breadcrumbs>
       </div>
 
@@ -149,6 +168,9 @@ const AcademicLayout = () => {
               onViewExam={handleViewExam}
               onEnterResults={handleOpenResultsEntry}
             />
+          )}
+          {activeTab === 'subjects' && (
+            <SubjectAssignment />
           )}
         </div>
       </PageLayout>

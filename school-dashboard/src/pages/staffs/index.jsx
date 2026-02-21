@@ -76,15 +76,19 @@ export default function StaffsPage() {
   const isRegularizeView = location.pathname.includes("/attendance/regularize");
 
   const handleSaveStaff = async (staffData) => {
+    // Normalize role: send as array to match Mongoose schema [String]
+    const roleArray = Array.isArray(staffData.staffType) ? staffData.staffType : (staffData.staffType ? [staffData.staffType] : []);
+
     const transformedData = {
       name: staffData.fullName,
-      role: Array.isArray(staffData.staffType) ? staffData.staffType[0] : (staffData.staffType || ''),
+      role: roleArray,
       department: staffData.department || "General",
       phone: staffData.mobile,
       email: staffData.email,
       status: "active",
       address: staffData.address,
-      joinDate: new Date().toISOString().split('T')[0],
+      // Only set joinDate for new staff; preserve original on edit
+      ...(editingStaffId ? {} : { joinDate: new Date().toISOString().split('T')[0] }),
       dob: staffData.dob,
       gender: staffData.gender,
       fatherName: staffData.fatherName,
