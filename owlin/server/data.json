@@ -1,0 +1,3109 @@
+{
+  "events": [
+    {
+      "id": "b4a19263-8cf7-496e-a82c-80258771d1fb",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771429651808,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429331143_rucp4uulu",
+      "page": {
+        "url": "http://localhost:5173/classes/6972605d47f5721444d7afb5",
+        "path": "/classes/6972605d47f5721444d7afb5",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 320664,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Link",
+        "label": "Students",
+        "tagName": "a",
+        "selector": "a:nth-child(1)",
+        "text": "Students",
+        "attributes": {},
+        "href": "http://localhost:5173/students"
+      },
+      "position": {
+        "x": 95,
+        "y": 218,
+        "pageX": 95,
+        "pageY": 218
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771429651809,
+      "index": 0
+    },
+    {
+      "id": "96102d0b-b0d4-4e6e-837f-76448392eced",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771429655243,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429331143_rucp4uulu",
+      "page": {
+        "url": "http://localhost:5173/students",
+        "path": "/students",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 324099,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Element",
+        "label": "ARAarav ReddyADM2024161",
+        "tagName": "td",
+        "selector": "#react-aria2555397200-:r1o0:-6972605d47f5721444d7b10a-name",
+        "text": "ARAarav ReddyADM2024161",
+        "attributes": {
+          "role": "rowheader"
+        }
+      },
+      "position": {
+        "x": 483,
+        "y": 399,
+        "pageX": 483,
+        "pageY": 399
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771429655243,
+      "index": 1
+    },
+    {
+      "id": "d1826b15-e673-4178-b0e9-094b9ee42b97",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771429655699,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429331143_rucp4uulu",
+      "page": {
+        "url": "http://localhost:5173/students",
+        "path": "/students",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 324555,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Element",
+        "label": "ARAarav ReddyADM2024061",
+        "tagName": "td",
+        "selector": "#react-aria2555397200-:r1o0:-6972605d47f5721444d7b042-name",
+        "text": "ARAarav ReddyADM2024061",
+        "attributes": {
+          "role": "rowheader"
+        }
+      },
+      "position": {
+        "x": 490,
+        "y": 486,
+        "pageX": 490,
+        "pageY": 486
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771429655699,
+      "index": 2
+    },
+    {
+      "id": "24e19f83-bec2-4b80-90c6-e9679aed4d9e",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771429657440,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429331143_rucp4uulu",
+      "page": {
+        "url": "http://localhost:5173/students/6972605d47f5721444d7b042",
+        "path": "/students/6972605d47f5721444d7b042",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 326296,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "Academics",
+        "tagName": "button",
+        "selector": "button.px-4.py-3.text-sm.font-medium.transition-colors.relative.whitespace-nowrap.text-gray-400.hover:text-gray-600:nth-child(3)",
+        "text": "Academics",
+        "attributes": {}
+      },
+      "position": {
+        "x": 479,
+        "y": 269,
+        "pageX": 479,
+        "pageY": 269
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771429657440,
+      "index": 3
+    },
+    {
+      "id": "d3c9a779-2d4b-4d4a-afd1-37ea8e7a7ec7",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771429660888,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429331143_rucp4uulu",
+      "page": {
+        "url": "http://localhost:5173/students/6972605d47f5721444d7b042",
+        "path": "/students/6972605d47f5721444d7b042",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 329744,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "Attendance",
+        "tagName": "button",
+        "selector": "button.px-4.py-3.text-sm.font-medium.transition-colors.relative.whitespace-nowrap.text-gray-400.hover:text-gray-600:nth-child(4)",
+        "text": "Attendance",
+        "attributes": {}
+      },
+      "position": {
+        "x": 566,
+        "y": 269,
+        "pageX": 566,
+        "pageY": 269
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771429660888,
+      "index": 4
+    },
+    {
+      "id": "58b6a8f2-b900-41c3-a5fe-e4fa2393a606",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771429661850,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429331143_rucp4uulu",
+      "page": {
+        "url": "http://localhost:5173/students/6972605d47f5721444d7b042",
+        "path": "/students/6972605d47f5721444d7b042",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 330706,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "Fees",
+        "tagName": "button",
+        "selector": "button.px-4.py-3.text-sm.font-medium.transition-colors.relative.whitespace-nowrap.text-gray-400.hover:text-gray-600:nth-child(5)",
+        "text": "Fees",
+        "attributes": {}
+      },
+      "position": {
+        "x": 713,
+        "y": 273,
+        "pageX": 713,
+        "pageY": 273
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771429661850,
+      "index": 5
+    },
+    {
+      "id": "b2af65c5-390e-4e34-9042-bb9fb2da13bf",
+      "type": "page_hide",
+      "category": "interaction",
+      "timestamp": 1771429733076,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429331143_rucp4uulu",
+      "page": {
+        "url": "http://localhost:5173/students/6972605d47f5721444d7b042",
+        "path": "/students/6972605d47f5721444d7b042",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": null,
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 401932,
+        "idleTime": 0
+      },
+      "duration": 401932,
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771429733076,
+      "index": 6
+    },
+    {
+      "id": "9879f6c2-c1ff-4357-af31-9681c99cd8c8",
+      "type": "unload",
+      "category": "interaction",
+      "timestamp": 1771429803666,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429331143_rucp4uulu",
+      "page": {
+        "url": "http://localhost:5173/students/6972605d47f5721444d7b042",
+        "path": "/students/6972605d47f5721444d7b042"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": null,
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 472522,
+        "idleTime": 0
+      },
+      "duration": 472522,
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "index": 7
+    },
+    {
+      "id": "d28259d2-8ee5-4c3b-8407-5a6bb02d180a",
+      "type": "unload",
+      "category": "interaction",
+      "timestamp": 1771429803700,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429331143_rucp4uulu",
+      "page": {
+        "url": "http://localhost:5173/students/6972605d47f5721444d7b042",
+        "path": "/students/6972605d47f5721444d7b042"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": null,
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 472555,
+        "idleTime": 0
+      },
+      "duration": 472555,
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "index": 8
+    },
+    {
+      "id": "f9118e31-8c27-4753-9cc3-c7044095b8c9",
+      "type": "session_end",
+      "category": "interaction",
+      "timestamp": 1771429803700,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429331143_rucp4uulu",
+      "page": {
+        "url": "http://localhost:5173/students/6972605d47f5721444d7b042",
+        "path": "/students/6972605d47f5721444d7b042",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": null,
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 472556,
+        "idleTime": 0
+      },
+      "duration": 472556,
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "index": 9
+    },
+    {
+      "id": "33f237c0-6dd8-4a25-b92d-e180f6b9700e",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771431548560,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429804710_2jm773wzy",
+      "page": {
+        "url": "http://localhost:5173/students/6972605d47f5721444d7b042",
+        "path": "/students/6972605d47f5721444d7b042",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 1743850,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Link",
+        "label": "Staffs",
+        "tagName": "a",
+        "selector": "a:nth-child(2)",
+        "text": "Staffs",
+        "attributes": {},
+        "href": "http://localhost:5173/staffs"
+      },
+      "position": {
+        "x": 125,
+        "y": 249,
+        "pageX": 125,
+        "pageY": 249
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771431548560,
+      "index": 10
+    },
+    {
+      "id": "ccd0c1b9-683f-4e02-98c8-56dfc7ffa949",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771431550051,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429804710_2jm773wzy",
+      "page": {
+        "url": "http://localhost:5173/staffs",
+        "path": "/staffs",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 1745341,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Link",
+        "label": "Academics",
+        "tagName": "a",
+        "selector": "a:nth-child(4)",
+        "text": "Academics",
+        "attributes": {},
+        "href": "http://localhost:5173/academics"
+      },
+      "position": {
+        "x": 118,
+        "y": 299,
+        "pageX": 118,
+        "pageY": 299
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771431550051,
+      "index": 11
+    },
+    {
+      "id": "fdd8d694-c707-4a83-8ffb-9a0b1a97a4c5",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771431550390,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429804710_2jm773wzy",
+      "page": {
+        "url": "http://localhost:5173/academics",
+        "path": "/academics",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 1745680,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Link",
+        "label": "Classes",
+        "tagName": "a",
+        "selector": "a:nth-child(3)",
+        "text": "Classes",
+        "attributes": {},
+        "href": "http://localhost:5173/classes"
+      },
+      "position": {
+        "x": 120,
+        "y": 275,
+        "pageX": 120,
+        "pageY": 275
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771431550390,
+      "index": 12
+    },
+    {
+      "id": "fb384847-24f3-4b95-888e-95166e2f60f1",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771431551124,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429804710_2jm773wzy",
+      "page": {
+        "url": "http://localhost:5173/classes",
+        "path": "/classes",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 1746414,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "Class Teachers",
+        "tagName": "button",
+        "selector": "button.px-5.py-2.text-sm.font-medium.rounded-md.transition-colors.text-gray-500.hover:text-gray-700.hover:bg-gray-50:nth-child(2)",
+        "text": "Class Teachers",
+        "attributes": {}
+      },
+      "position": {
+        "x": 427,
+        "y": 105,
+        "pageX": 427,
+        "pageY": 105
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771431551124,
+      "index": 13
+    },
+    {
+      "id": "b11152c6-fa88-45fb-9cda-40303d2f5dcb",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771431551651,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429804710_2jm773wzy",
+      "page": {
+        "url": "http://localhost:5173/classes/bulk-assignment",
+        "path": "/classes/bulk-assignment",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 1746940,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "All Classes",
+        "tagName": "button",
+        "selector": "button.px-5.py-2.text-sm.font-medium.rounded-md.transition-colors.text-gray-500.hover:text-gray-700.hover:bg-gray-50:nth-child(1)",
+        "text": "All Classes",
+        "attributes": {}
+      },
+      "position": {
+        "x": 345,
+        "y": 97,
+        "pageX": 345,
+        "pageY": 97
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771431551651,
+      "index": 14
+    },
+    {
+      "id": "943b1245-3f89-4f36-9f32-689df9530607",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771431552442,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429804710_2jm773wzy",
+      "page": {
+        "url": "http://localhost:5173/classes",
+        "path": "/classes",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 1747732,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Icon Button",
+        "label": "Icon Button",
+        "tagName": "button",
+        "selector": "button.p-1.hover:bg-default-200.rounded.transition-colors",
+        "text": "",
+        "attributes": {}
+      },
+      "position": {
+        "x": 336,
+        "y": 381,
+        "pageX": 336,
+        "pageY": 381
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771431552442,
+      "index": 15
+    },
+    {
+      "id": "8f3089a8-d2d3-4d06-a6fb-623e54b81ca5",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771431553341,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429804710_2jm773wzy",
+      "page": {
+        "url": "http://localhost:5173/classes",
+        "path": "/classes",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 1748631,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Element",
+        "label": "ASection A8 students",
+        "tagName": "td",
+        "selector": "#react-aria2072950816-:rpa:-6972605d47f5721444d7afb5-class",
+        "text": "ASection A8 students",
+        "attributes": {
+          "role": "rowheader"
+        }
+      },
+      "position": {
+        "x": 339,
+        "y": 451,
+        "pageX": 339,
+        "pageY": 451
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771431553341,
+      "index": 16
+    },
+    {
+      "id": "e8448c92-59ed-4c87-8273-bfabb89248ce",
+      "type": "unload",
+      "category": "interaction",
+      "timestamp": 1771431609638,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429804710_2jm773wzy",
+      "page": {
+        "url": "http://localhost:5173/classes/6972605d47f5721444d7afb5",
+        "path": "/classes/6972605d47f5721444d7afb5"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": null,
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 1804928,
+        "idleTime": 0
+      },
+      "duration": 1804928,
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "index": 17
+    },
+    {
+      "id": "8f5c1e2c-37e1-4c19-851a-ce68e7693aa2",
+      "type": "unload",
+      "category": "interaction",
+      "timestamp": 1771431609674,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429804710_2jm773wzy",
+      "page": {
+        "url": "http://localhost:5173/classes/6972605d47f5721444d7afb5",
+        "path": "/classes/6972605d47f5721444d7afb5"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": null,
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 1804964,
+        "idleTime": 0
+      },
+      "duration": 1804964,
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "index": 18
+    },
+    {
+      "id": "7bac2209-7953-4b4f-b5aa-d08c58276766",
+      "type": "session_end",
+      "category": "interaction",
+      "timestamp": 1771431609676,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771429804710_2jm773wzy",
+      "page": {
+        "url": "http://localhost:5173/classes/6972605d47f5721444d7afb5",
+        "path": "/classes/6972605d47f5721444d7afb5",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": null,
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 1804966,
+        "idleTime": 0
+      },
+      "duration": 1804966,
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "index": 19
+    },
+    {
+      "id": "2a16ce28-de2c-47f1-b7ee-1e5001c957ed",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771431732220,
+      "userId": null,
+      "sessionId": "session_1771431710037_rv17o7xot",
+      "page": {
+        "url": "http://localhost:5173/classes/6972605d47f5721444d7afb5",
+        "path": "/classes/6972605d47f5721444d7afb5",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {}
+      },
+      "session": {
+        "duration": 22182,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "Class Teachers",
+        "tagName": "button",
+        "selector": "button.px-5.py-2.text-sm.font-medium.rounded-md.transition-colors.text-gray-500.hover:text-gray-700.hover:bg-gray-50:nth-child(2)",
+        "text": "Class Teachers",
+        "attributes": {}
+      },
+      "position": {
+        "x": 421,
+        "y": 80,
+        "pageX": 421,
+        "pageY": 80
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {},
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771431732220,
+      "index": 20
+    },
+    {
+      "id": "a76748f2-4a55-4136-b2d4-d162a25ad52e",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771431733954,
+      "userId": null,
+      "sessionId": "session_1771431710037_rv17o7xot",
+      "page": {
+        "url": "http://localhost:5173/classes/bulk-assignment",
+        "path": "/classes/bulk-assignment",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {}
+      },
+      "session": {
+        "duration": 23916,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "All Classes",
+        "tagName": "button",
+        "selector": "button.px-5.py-2.text-sm.font-medium.rounded-md.transition-colors.text-gray-500.hover:text-gray-700.hover:bg-gray-50:nth-child(1)",
+        "text": "All Classes",
+        "attributes": {}
+      },
+      "position": {
+        "x": 355,
+        "y": 83,
+        "pageX": 355,
+        "pageY": 83
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {},
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771431733954,
+      "index": 21
+    },
+    {
+      "id": "bc49aa61-6b0d-4fb9-aeba-3dbba765f24c",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771431734943,
+      "userId": null,
+      "sessionId": "session_1771431710037_rv17o7xot",
+      "page": {
+        "url": "http://localhost:5173/classes",
+        "path": "/classes",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {}
+      },
+      "session": {
+        "duration": 24905,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "Class Teachers",
+        "tagName": "button",
+        "selector": "button.px-5.py-2.text-sm.font-medium.rounded-md.transition-colors.text-gray-500.hover:text-gray-700.hover:bg-gray-50:nth-child(2)",
+        "text": "Class Teachers",
+        "attributes": {}
+      },
+      "position": {
+        "x": 451,
+        "y": 100,
+        "pageX": 451,
+        "pageY": 100
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {},
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771431734943,
+      "index": 22
+    },
+    {
+      "id": "c0d681b6-6fc2-4b7a-9001-fe02828b19ad",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771431735558,
+      "userId": null,
+      "sessionId": "session_1771431710037_rv17o7xot",
+      "page": {
+        "url": "http://localhost:5173/classes/bulk-assignment",
+        "path": "/classes/bulk-assignment",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {}
+      },
+      "session": {
+        "duration": 25520,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "All Classes",
+        "tagName": "button",
+        "selector": "button.px-5.py-2.text-sm.font-medium.rounded-md.transition-colors.text-gray-500.hover:text-gray-700.hover:bg-gray-50:nth-child(1)",
+        "text": "All Classes",
+        "attributes": {}
+      },
+      "position": {
+        "x": 356,
+        "y": 97,
+        "pageX": 356,
+        "pageY": 97
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {},
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771431735558,
+      "index": 23
+    },
+    {
+      "id": "24706f36-0fc4-44ab-9261-3595ae7ae5ad",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771431737232,
+      "userId": null,
+      "sessionId": "session_1771431710037_rv17o7xot",
+      "page": {
+        "url": "http://localhost:5173/classes",
+        "path": "/classes",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {}
+      },
+      "session": {
+        "duration": 27194,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "Class Teachers",
+        "tagName": "button",
+        "selector": "button.px-5.py-2.text-sm.font-medium.rounded-md.transition-colors.text-gray-500.hover:text-gray-700.hover:bg-gray-50:nth-child(2)",
+        "text": "Class Teachers",
+        "attributes": {}
+      },
+      "position": {
+        "x": 442,
+        "y": 99,
+        "pageX": 442,
+        "pageY": 99
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {},
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771431737232,
+      "index": 24
+    },
+    {
+      "id": "706ce4db-73bd-4e8d-bc9b-179da0eb0469",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771431738433,
+      "userId": null,
+      "sessionId": "session_1771431710037_rv17o7xot",
+      "page": {
+        "url": "http://localhost:5173/classes/bulk-assignment",
+        "path": "/classes/bulk-assignment",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {}
+      },
+      "session": {
+        "duration": 28395,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "All Classes",
+        "tagName": "button",
+        "selector": "button.px-5.py-2.text-sm.font-medium.rounded-md.transition-colors.text-gray-500.hover:text-gray-700.hover:bg-gray-50:nth-child(1)",
+        "text": "All Classes",
+        "attributes": {}
+      },
+      "position": {
+        "x": 345,
+        "y": 95,
+        "pageX": 345,
+        "pageY": 95
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {},
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771431738433,
+      "index": 25
+    },
+    {
+      "id": "5683d001-aac1-4573-8adf-2f1e144d3030",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771431739751,
+      "userId": null,
+      "sessionId": "session_1771431710037_rv17o7xot",
+      "page": {
+        "url": "http://localhost:5173/classes",
+        "path": "/classes",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {}
+      },
+      "session": {
+        "duration": 29713,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Icon Button",
+        "label": "Icon Button",
+        "tagName": "button",
+        "selector": "button.p-1.hover:bg-default-200.rounded.transition-colors",
+        "text": "",
+        "attributes": {}
+      },
+      "position": {
+        "x": 340,
+        "y": 361,
+        "pageX": 340,
+        "pageY": 361
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {},
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771431739751,
+      "index": 26
+    },
+    {
+      "id": "27a18758-3b26-4db1-b19c-7a8942650516",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771431740691,
+      "userId": null,
+      "sessionId": "session_1771431710037_rv17o7xot",
+      "page": {
+        "url": "http://localhost:5173/classes",
+        "path": "/classes",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {}
+      },
+      "session": {
+        "duration": 30653,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Element",
+        "label": "ASection A8 students",
+        "tagName": "td",
+        "selector": "#react-aria4908352207-:r1cq:-6972605d47f5721444d7afb5-class",
+        "text": "ASection A8 students",
+        "attributes": {
+          "role": "rowheader"
+        }
+      },
+      "position": {
+        "x": 342,
+        "y": 462,
+        "pageX": 342,
+        "pageY": 462
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {},
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771431740691,
+      "index": 27
+    },
+    {
+      "id": "456b04db-d2b7-48cf-ac31-8a9b08cc921a",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771436547188,
+      "userId": null,
+      "sessionId": "session_1771431710037_rv17o7xot",
+      "page": {
+        "url": "http://localhost:5173/classes/6972605d47f5721444d7afb5",
+        "path": "/classes/6972605d47f5721444d7afb5",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {}
+      },
+      "session": {
+        "duration": 4837150,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "Class Teachers",
+        "tagName": "button",
+        "selector": "button.px-5.py-2.text-sm.font-medium.rounded-md.transition-colors.text-gray-500.hover:text-gray-700.hover:bg-gray-50:nth-child(2)",
+        "text": "Class Teachers",
+        "attributes": {}
+      },
+      "position": {
+        "x": 469,
+        "y": 105,
+        "pageX": 469,
+        "pageY": 105
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {},
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771436547188,
+      "index": 28
+    },
+    {
+      "id": "102b9c41-d274-4819-a086-a59ac23c9c39",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771436548248,
+      "userId": null,
+      "sessionId": "session_1771431710037_rv17o7xot",
+      "page": {
+        "url": "http://localhost:5173/classes/bulk-assignment",
+        "path": "/classes/bulk-assignment",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 1257,
+        "height": 1254,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {}
+      },
+      "session": {
+        "duration": 4838210,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "Attendance",
+        "tagName": "button",
+        "selector": "button.px-5.py-2.text-sm.font-medium.rounded-md.transition-colors.text-gray-500.hover:text-gray-700.hover:bg-gray-50:nth-child(3)",
+        "text": "Attendance",
+        "attributes": {}
+      },
+      "position": {
+        "x": 577,
+        "y": 101,
+        "pageX": 577,
+        "pageY": 101
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {},
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771436548248,
+      "index": 29
+    },
+    {
+      "id": "2187fb60-f62f-41cc-a1d4-fa73e6c4dbac",
+      "type": "unload",
+      "category": "interaction",
+      "timestamp": 1771436550269,
+      "userId": null,
+      "sessionId": "session_1771431710037_rv17o7xot",
+      "page": {
+        "url": "http://localhost:5173/classes/attendance",
+        "path": "/classes/attendance"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": null,
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {}
+      },
+      "session": {
+        "duration": 4840231,
+        "idleTime": 0
+      },
+      "duration": 4840231,
+      "userMetadata": {},
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "index": 30
+    },
+    {
+      "id": "cb257b33-7221-4c40-b727-9e13deae4007",
+      "type": "unload",
+      "category": "interaction",
+      "timestamp": 1771436550420,
+      "userId": null,
+      "sessionId": "session_1771431710037_rv17o7xot",
+      "page": {
+        "url": "http://localhost:5173/classes/attendance",
+        "path": "/classes/attendance"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": null,
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {}
+      },
+      "session": {
+        "duration": 4840382,
+        "idleTime": 0
+      },
+      "duration": 4840382,
+      "userMetadata": {},
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "index": 31
+    },
+    {
+      "id": "5c6e2cad-8ff9-4487-90a7-c4e291ce0ce4",
+      "type": "session_end",
+      "category": "interaction",
+      "timestamp": 1771436550421,
+      "userId": null,
+      "sessionId": "session_1771431710037_rv17o7xot",
+      "page": {
+        "url": "http://localhost:5173/classes/attendance",
+        "path": "/classes/attendance",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": null,
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {}
+      },
+      "session": {
+        "duration": 4840383,
+        "idleTime": 0
+      },
+      "duration": 4840383,
+      "userMetadata": {},
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "index": 32
+    },
+    {
+      "id": "f41ef40e-2395-4aa9-9337-a7f44cf1c1cc",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771436568647,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771436551236_lciw3l7di",
+      "page": {
+        "url": "http://localhost:5173/classes/attendance",
+        "path": "/classes/attendance",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 2560,
+        "height": 1271,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 17410,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Link",
+        "label": "Students",
+        "tagName": "a",
+        "selector": "a:nth-child(1)",
+        "text": "Students",
+        "attributes": {},
+        "href": "http://localhost:5173/students"
+      },
+      "position": {
+        "x": 114,
+        "y": 218,
+        "pageX": 114,
+        "pageY": 218
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771436568647,
+      "index": 33
+    },
+    {
+      "id": "5d66ebbd-2890-4182-bf85-4f20290582d8",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771436570972,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771436551236_lciw3l7di",
+      "page": {
+        "url": "http://localhost:5173/students",
+        "path": "/students",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 2560,
+        "height": 1271,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 19736,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Element",
+        "label": "ARAarav ReddyADM2024161",
+        "tagName": "td",
+        "selector": "#react-aria3436677528-:rp0:-6972605d47f5721444d7b10a-name",
+        "text": "ARAarav ReddyADM2024161",
+        "attributes": {
+          "role": "rowheader"
+        }
+      },
+      "position": {
+        "x": 894,
+        "y": 404,
+        "pageX": 894,
+        "pageY": 404
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771436570972,
+      "index": 34
+    },
+    {
+      "id": "2194774d-9ba9-44de-ac4c-a033f09ec2e2",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771436572878,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771436551236_lciw3l7di",
+      "page": {
+        "url": "http://localhost:5173/students/6972605d47f5721444d7b10a",
+        "path": "/students/6972605d47f5721444d7b10a",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 2560,
+        "height": 1271,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 21641,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "Details",
+        "tagName": "button",
+        "selector": "button.px-4.py-3.text-sm.font-medium.transition-colors.relative.whitespace-nowrap.text-gray-400.hover:text-gray-600:nth-child(2)",
+        "text": "Details",
+        "attributes": {}
+      },
+      "position": {
+        "x": 726,
+        "y": 257,
+        "pageX": 726,
+        "pageY": 257
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771436572878,
+      "index": 35
+    },
+    {
+      "id": "d7a406e3-c777-41d3-accc-f175e8f871f0",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771436573742,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771436551236_lciw3l7di",
+      "page": {
+        "url": "http://localhost:5173/students/6972605d47f5721444d7b10a",
+        "path": "/students/6972605d47f5721444d7b10a",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 2560,
+        "height": 1271,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 22505,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "Academics",
+        "tagName": "button",
+        "selector": "button.px-4.py-3.text-sm.font-medium.transition-colors.relative.whitespace-nowrap.text-gray-400.hover:text-gray-600:nth-child(3)",
+        "text": "Academics",
+        "attributes": {}
+      },
+      "position": {
+        "x": 809,
+        "y": 271,
+        "pageX": 809,
+        "pageY": 271
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771436573742,
+      "index": 36
+    },
+    {
+      "id": "f30d6e2d-34ba-40bd-96a3-af7e84fb3aed",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771436574905,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771436551236_lciw3l7di",
+      "page": {
+        "url": "http://localhost:5173/students/6972605d47f5721444d7b10a",
+        "path": "/students/6972605d47f5721444d7b10a",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 2560,
+        "height": 1271,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 23669,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "Attendance",
+        "tagName": "button",
+        "selector": "button.px-4.py-3.text-sm.font-medium.transition-colors.relative.whitespace-nowrap.text-gray-400.hover:text-gray-600:nth-child(4)",
+        "text": "Attendance",
+        "attributes": {}
+      },
+      "position": {
+        "x": 940,
+        "y": 274,
+        "pageX": 940,
+        "pageY": 274
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771436574905,
+      "index": 37
+    },
+    {
+      "id": "257aa746-d52e-4936-8017-67ecf4f1c2d2",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771436575618,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771436551236_lciw3l7di",
+      "page": {
+        "url": "http://localhost:5173/students/6972605d47f5721444d7b10a",
+        "path": "/students/6972605d47f5721444d7b10a",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 2560,
+        "height": 1271,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 24382,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "Fees",
+        "tagName": "button",
+        "selector": "button.px-4.py-3.text-sm.font-medium.transition-colors.relative.whitespace-nowrap.text-gray-400.hover:text-gray-600:nth-child(5)",
+        "text": "Fees",
+        "attributes": {}
+      },
+      "position": {
+        "x": 1046,
+        "y": 275,
+        "pageX": 1046,
+        "pageY": 275
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771436575618,
+      "index": 38
+    },
+    {
+      "id": "a65d8888-5e94-45b7-9ea6-7e392a1290c8",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771436578234,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771436551236_lciw3l7di",
+      "page": {
+        "url": "http://localhost:5173/students/6972605d47f5721444d7b10a",
+        "path": "/students/6972605d47f5721444d7b10a",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 2560,
+        "height": 1271,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 26998,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Link",
+        "label": "Staffs",
+        "tagName": "a",
+        "selector": "a:nth-child(2)",
+        "text": "Staffs",
+        "attributes": {},
+        "href": "http://localhost:5173/staffs"
+      },
+      "position": {
+        "x": 70,
+        "y": 246,
+        "pageX": 70,
+        "pageY": 246
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771436578234,
+      "index": 39
+    },
+    {
+      "id": "b2247ffa-6714-475d-97ff-3ed9edc33b5c",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771436579159,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771436551236_lciw3l7di",
+      "page": {
+        "url": "http://localhost:5173/staffs",
+        "path": "/staffs",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 2560,
+        "height": 1271,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 27923,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "Attendance",
+        "tagName": "button",
+        "selector": "button.px-5.py-2.text-sm.font-medium.rounded-md.transition-colors.text-gray-500.hover:text-gray-700.hover:bg-gray-50:nth-child(3)",
+        "text": "Attendance",
+        "attributes": {}
+      },
+      "position": {
+        "x": 860,
+        "y": 103,
+        "pageX": 860,
+        "pageY": 103
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771436579159,
+      "index": 40
+    },
+    {
+      "id": "089be929-3150-498f-a4a6-eda69162036e",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771436580137,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771436551236_lciw3l7di",
+      "page": {
+        "url": "http://localhost:5173/staffs/attendance",
+        "path": "/staffs/attendance",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 2560,
+        "height": 1271,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 28901,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "Subjects",
+        "tagName": "button",
+        "selector": "button.px-5.py-2.text-sm.font-medium.rounded-md.transition-colors.text-gray-500.hover:text-gray-700.hover:bg-gray-50:nth-child(2)",
+        "text": "Subjects",
+        "attributes": {}
+      },
+      "position": {
+        "x": 750,
+        "y": 104,
+        "pageX": 750,
+        "pageY": 104
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771436580137,
+      "index": 41
+    },
+    {
+      "id": "0de68ae4-4bf8-437e-93eb-950cf42e192b",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771436631321,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771436551236_lciw3l7di",
+      "page": {
+        "url": "http://localhost:5173/staffs/bulk-subjects",
+        "path": "/staffs/bulk-subjects",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 2560,
+        "height": 1271,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 80085,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Link",
+        "label": "Classes",
+        "tagName": "a",
+        "selector": "a:nth-child(3)",
+        "text": "Classes",
+        "attributes": {},
+        "href": "http://localhost:5173/classes"
+      },
+      "position": {
+        "x": 156,
+        "y": 269,
+        "pageX": 156,
+        "pageY": 269
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771436631321,
+      "index": 42
+    },
+    {
+      "id": "19880bd1-29b2-4c15-97d9-c501c7cbf225",
+      "type": "click",
+      "category": "interaction",
+      "timestamp": 1771436632418,
+      "userId": "6972605d47f5721444d7afb3",
+      "sessionId": "session_1771436551236_lciw3l7di",
+      "page": {
+        "url": "http://localhost:5173/classes",
+        "path": "/classes",
+        "title": "School Dashboard"
+      },
+      "action": null,
+      "metadata": {},
+      "userAgent": null,
+      "viewport": {
+        "width": 2560,
+        "height": 1271,
+        "dpr": 1.5
+      },
+      "app": {
+        "name": "School Dashboard",
+        "version": "1.0.0",
+        "environment": "production",
+        "user": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      },
+      "session": {
+        "duration": 81182,
+        "idleTime": 0
+      },
+      "element": {
+        "kind": "Button",
+        "label": "Timetable",
+        "tagName": "button",
+        "selector": "button.px-5.py-2.text-sm.font-medium.rounded-md.transition-colors.text-gray-500.hover:text-gray-700.hover:bg-gray-50:nth-child(4)",
+        "text": "Timetable",
+        "attributes": {}
+      },
+      "position": {
+        "x": 1030,
+        "y": 99,
+        "pageX": 1030,
+        "pageY": 99
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "meta": {
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "metaKey": false,
+        "button": 0
+      },
+      "userMetadata": {
+        "name": "Vikram Patel",
+        "email": "vikram@school.com",
+        "role": [
+          "Admin"
+        ]
+      },
+      "timezone": "Asia/Calcutta",
+      "screen": {
+        "width": 2560,
+        "height": 1440,
+        "availWidth": 2560,
+        "availHeight": 1392,
+        "colorDepth": 32
+      },
+      "queueTime": 1771436632418,
+      "index": 43
+    }
+  ],
+  "users": [
+    [
+      "6972605d47f5721444d7afb3",
+      {
+        "id": "6972605d47f5721444d7afb3",
+        "firstSeen": "2026-02-18T15:47:32.017Z",
+        "lastSeen": "2026-02-18T17:43:52.951Z",
+        "eventCount": 495,
+        "sessions": [
+          "9cdc56c3-28f2-4e67-a6ed-2df267912764",
+          "2207cb70-7308-4c33-93e6-9ed6cdd75533"
+        ],
+        "metadata": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      }
+    ]
+  ],
+  "sessions": [
+    [
+      "9cdc56c3-28f2-4e67-a6ed-2df267912764",
+      {
+        "id": "9cdc56c3-28f2-4e67-a6ed-2df267912764",
+        "userId": "6972605d47f5721444d7afb3",
+        "startTime": "2026-02-18T15:50:06.672Z",
+        "endTime": null,
+        "duration": null,
+        "eventCount": 0,
+        "pages": [],
+        "metadata": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      }
+    ],
+    [
+      "2207cb70-7308-4c33-93e6-9ed6cdd75533",
+      {
+        "id": "2207cb70-7308-4c33-93e6-9ed6cdd75533",
+        "userId": "6972605d47f5721444d7afb3",
+        "startTime": "2026-02-18T17:42:32.199Z",
+        "endTime": null,
+        "duration": null,
+        "eventCount": 0,
+        "pages": [],
+        "metadata": {
+          "name": "Vikram Patel",
+          "email": "vikram@school.com",
+          "role": [
+            "Admin"
+          ]
+        }
+      }
+    ]
+  ],
+  "savedAt": "2026-02-18T17:43:53.511Z"
+}
