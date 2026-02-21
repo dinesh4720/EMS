@@ -406,8 +406,18 @@ export default function TimetableWizardModal({
         schedule: generatedSchedule
       };
 
-      // Check if timetable exists
-      const existing = await timetableApi.getByClass(selectedClassId, schoolSettings?.academicYear);
+      // Check if timetable exists (handle 404 as "not existing")
+      let existing;
+      try {
+        existing = await timetableApi.getByClass(selectedClassId, schoolSettings?.academicYear);
+      } catch (err) {
+        // 404 means no timetable exists - that's fine, we'll create a new one
+        if (err.message && err.message.includes('not found')) {
+          existing = null;
+        } else {
+          throw err; // Re-throw other errors
+        }
+      }
 
       if (existing) {
         // Update existing

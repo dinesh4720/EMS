@@ -1,8 +1,0 @@
-$env:AWS_ACCESS_KEY_ID="AKIAZIEGFYFRKIHBUTFN"
-$env:AWS_SECRET_ACCESS_KEY="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"
-$env:AWS_REGION="us-east-1"
-$env:ANTHROPIC_MODEL="us.anthropic.claude-opus-4-6-v1"
-
-
-$env:CLAUDE_CODE_USE_BEDROCK=1
-

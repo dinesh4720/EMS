@@ -16,6 +16,7 @@ import { toast } from "react-hot-toast";
 import Attendance from "./Attendance";
 import Timetable from "./Timetable";
 import ClassSettingsPanel from "./ClassSettingsPanel";
+import ClassTeacherAssignmentModal from "./components/ClassTeacherAssignmentModal";
 
 export default function ClassDashboard() {
   const { id } = useParams();
@@ -31,6 +32,7 @@ export default function ClassDashboard() {
   const [classSettings, setClassSettings] = useState(null);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isAssignTeacherModalOpen, setIsAssignTeacherModalOpen] = useState(false);
 
   const cls = classesWithTeachers.find(c => c.id === id || c.id === String(id)) || classesWithTeachers[0] || {};
 
@@ -157,7 +159,13 @@ export default function ClassDashboard() {
                 ) : (
                   <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
                     <AlertCircle size={12} />
-                    <span>No teacher assigned</span>
+                    <span>No class teacher assigned</span>
+                    <button
+                      onClick={() => setIsAssignTeacherModalOpen(true)}
+                      className="ml-2 text-xs font-medium text-blue-600 hover:text-blue-800 underline"
+                    >
+                      Assign class teacher
+                    </button>
                   </div>
                 )}
               </div>
@@ -351,6 +359,18 @@ export default function ClassDashboard() {
             </div>
           )}
         </div>
+
+        {/* Assign Class Teacher Modal */}
+        {cls && (
+          <ClassTeacherAssignmentModal
+            isOpen={isAssignTeacherModalOpen}
+            onClose={() => setIsAssignTeacherModalOpen(false)}
+            classId={id}
+            className={cls.name}
+            section={cls.section}
+            currentTeacherId={cls.classTeacherId || null}
+          />
+        )}
       </div>
     </div>
   );

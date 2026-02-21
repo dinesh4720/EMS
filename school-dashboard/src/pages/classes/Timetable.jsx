@@ -3,7 +3,7 @@ import { Card, CardBody, Button, Select, SelectItem, Modal, ModalContent, ModalH
 import { motion } from "framer-motion";
 import { Settings, Plus, Trash2, Save, X, Clock, AlertTriangle, CheckCircle2, Wand2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { timetableApi, teacherAssignmentsApi } from "../../services/api";
+import { timetableApi, teacherAssignmentsApi, classesEnhancedApi } from "../../services/api";
 import ConflictIndicator from "../../components/ConflictIndicator";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import TimetableWizardModal from "./components/TimetableWizardModal";
@@ -74,6 +74,8 @@ export default function Timetable({ classId }) {
   const { isOpen: isWizardOpen, onOpen: onWizardOpen, onClose: onWizardClose } = useDisclosure();
   const [editingSlot, setEditingSlot] = useState(null);
   const [slotForm, setSlotForm] = useState({ subject: "", teacherId: "", room: "" });
+  const [showMissingSubjectsWarning, setShowMissingSubjectsWarning] = useState(false);
+  const [missingSubjectsClasses, setMissingSubjectsClasses] = useState([]);
 
   // Set first class as default
   useEffect(() => {
@@ -93,7 +95,7 @@ export default function Timetable({ classId }) {
     try {
       setLoading(true);
       const data = await timetableApi.getByClass(selectedClass, schoolSettings?.academicYear);
-      if (data) {
+      if (data && data.schedule) {
         setTimetable(data);
         setPeriods(data.periods || defaultPeriods);
         setSchedule(data.schedule || initializeSchedule());
@@ -106,9 +108,10 @@ export default function Timetable({ classId }) {
       setHasChanges(false);
     } catch (err) {
       console.error('Failed to load timetable:', err);
-      showErrorToast(err, 'Failed to load timetable. Please try again.');
+      // Don't show error toast - just initialize empty state
       setPeriods(defaultPeriods);
       setSchedule(initializeSchedule());
+      setTimetable(null);
     } finally {
       setLoading(false);
     }
@@ -418,6 +421,34 @@ export default function Timetable({ classId }) {
     return teacher?.name || "";
   };
 
+  const handleWizardClick = async () => {
+    try {
+      // Check for missing subjects across all classes
+      const result = await classesEnhancedApi.getMissingSubjects();
+      
+      // Handle different response formats
+      const missingSubjects = result.missingSubjects || [];
+      
+      if (missingSubjects.length > 0) {
+        setMissingSubjectsClasses(missingSubjects);
+        setShowMissingSubjectsWarning(true);
+        return;
+      }
+      
+      // All classes have subjects, open wizard page
+      window.location.href = '/timetable-wizard';
+    } catch (err) {
+      console.error('Error checking missing subjects:', err);
+      // Don't show error - just proceed to wizard and let backend handle validation
+      window.location.href = '/timetable-wizard';
+    }
+  };
+
+  const handleGoToSubjectAssignment = () => {
+    setShowMissingSubjectsWarning(false);
+    window.location.href = '/academics/subjects';
+  };
+
   const selectedClassData = classesWithTeachers.find(c => String(c.id) === String(selectedClass));
 
   if (classesWithTeachers.length === 0) {
@@ -485,9 +516,9 @@ export default function Timetable({ classId }) {
             color="primary"
             variant="flat"
             startContent={<Wand2 size={14} />}
-            onPress={onWizardOpen}
+            onPress={handleWizardClick}
           >
-            <span className="hidden sm:inline">Wizard</span>
+            <span className="hidden sm:inline">Timetable Wizard</span>
             <span className="sm:hidden">Wizard</span>
           </Button>
           <Button
@@ -516,6 +547,39 @@ export default function Timetable({ classId }) {
       {loading && !hasChanges ? (
         <div className="flex items-center justify-center h-64">
           <Spinner size="lg" color="primary" />
+        </div>
+      ) : !timetable ? (
+        /* No timetable set - grayed out state */
+        <div className="flex flex-col items-center justify-center h-full min-h-[400px] bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg">
+          <div className="text-center space-y-4">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+              <Clock size={40} className="text-gray-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">No Timetable Set</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Timetable has not been created for this class yet.
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <Button
+                  size="sm"
+                  color="primary"
+                  variant="solid"
+                  startContent={<Wand2 size={14} />}
+                  onPress={handleWizardClick}
+                >
+                  Generate Timetable
+                </Button>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  onPress={onPeriodsOpen}
+                >
+                  Manage Periods
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
         <>
@@ -889,6 +953,65 @@ export default function Timetable({ classId }) {
         classId={selectedClass}
         onSaved={loadTimetable}
       />
+
+      {/* Missing Subjects Warning Modal */}
+      <Modal isOpen={showMissingSubjectsWarning} onClose={() => setShowMissingSubjectsWarning(false)} size="2xl">
+        <ModalContent>
+          <ModalHeader className="flex items-center gap-2">
+            <AlertTriangle className="text-orange-500" size={24} />
+            <span>Missing Subjects Warning</span>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <p className="text-sm text-orange-800">
+                  <strong>Warning:</strong> The following classes do not have subjects assigned. Timetables cannot be generated without subjects.
+                </p>
+              </div>
+              
+              <div className="max-h-64 overflow-y-auto space-y-2">
+                {missingSubjectsClasses.map(cls => (
+                  <div key={cls._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <AlertTriangle className="text-orange-500" size={18} />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{cls.name} - {cls.section}</p>
+                        <p className="text-xs text-gray-500">{cls.students?.length || 0} students</p>
+                      </div>
+                    </div>
+                    <Chip size="sm" color="danger" variant="flat">
+                      No Subjects
+                    </Chip>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Next Steps:</strong> Please assign subjects to these classes before generating timetables. Go to Academics → Subject Assignment to manage class subjects.
+                </p>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="light"
+              onPress={() => setShowMissingSubjectsWarning(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onPress={handleGoToSubjectAssignment}
+              startContent={<Wand2 size={14} />}
+            >
+              Go to Subject Assignment
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
