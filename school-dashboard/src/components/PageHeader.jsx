@@ -10,8 +10,8 @@ export default function PageHeader({ title, breadcrumbs = [], actions }) {
             variant="light"
             className="p-0"
             itemClasses={{
-              item: "text-default-400 data-[current=true]:text-default-600 font-medium",
-              separator: "text-default-300"
+              item: "text-gray-500 data-[current=true]:text-gray-700 font-medium",
+              separator: "text-gray-300"
             }}
           >
             {breadcrumbs.map((item, index) => (
@@ -19,9 +19,9 @@ export default function PageHeader({ title, breadcrumbs = [], actions }) {
             ))}
           </Breadcrumbs>
         )}
-        <h1 className="text-2xl font-medium tracking-tight text-default-900">{title}</h1>
+        <h1 className="text-xl font-medium tracking-tight text-gray-900">{title}</h1>
       </div>
-      {actions && <div className="flex items-center gap-3">{actions}</div>}
+      {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
   );
 }

@@ -2,10 +2,38 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 class ChatServiceEnhanced {
+  // Helper to get auth headers
+  getAuthHeaders() {
+    // Get token from sessionStorage (same as api.js)
+    const storedUser = sessionStorage.getItem('app_user');
+    let token = null;
+
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        token = userData.token;
+      } catch (err) {
+        console.error('❌ [CHAT] Failed to parse user data from sessionStorage:', err);
+      }
+    }
+
+    console.log('🔑 [CHAT] Token from sessionStorage.app_user:', token ? `Bearer ${token.substring(0, 20)}...` : 'NO TOKEN FOUND');
+
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  }
+
   // Get user's chat permissions
   async getPermissions(userId, userType) {
     try {
-      const response = await fetch(`${API_URL}/messages/permissions?userId=${userId}&userType=${userType}`);
+      const response = await fetch(`${API_URL}/messages/permissions?userId=${userId}&userType=${userType}`, {
+        headers: this.getAuthHeaders()
+      });
       if (!response.ok) throw new Error('Failed to get permissions');
       return await response.json();
     } catch (error) {
@@ -17,7 +45,9 @@ class ChatServiceEnhanced {
   // Get all conversations for a user
   async getConversations(userId, userType) {
     try {
-      const response = await fetch(`${API_URL}/messages/conversations?userId=${userId}&userType=${userType}`);
+      const response = await fetch(`${API_URL}/messages/conversations?userId=${userId}&userType=${userType}`, {
+        headers: this.getAuthHeaders()
+      });
       if (!response.ok) throw new Error('Failed to get conversations');
       return await response.json();
     } catch (error) {
@@ -31,7 +61,7 @@ class ChatServiceEnhanced {
     try {
       const response = await fetch(`${API_URL}/messages/conversations`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAuthHeaders(),
         body: JSON.stringify({ user1Id, user1Type, user2Id, user2Type })
       });
       if (!response.ok) {
@@ -50,8 +80,10 @@ class ChatServiceEnhanced {
     try {
       let url = `${API_URL}/messages/conversations/${conversationId}/messages?limit=${limit}`;
       if (before) url += `&before=${before}`;
-      
-      const response = await fetch(url);
+
+      const response = await fetch(url, {
+        headers: this.getAuthHeaders()
+      });
       if (!response.ok) throw new Error('Failed to get messages');
       return await response.json();
     } catch (error) {
@@ -65,7 +97,7 @@ class ChatServiceEnhanced {
     try {
       const response = await fetch(`${API_URL}/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAuthHeaders(),
         body: JSON.stringify(data)
       });
       if (!response.ok) throw new Error('Failed to send message');
@@ -81,7 +113,7 @@ class ChatServiceEnhanced {
     try {
       const response = await fetch(`${API_URL}/messages/read`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAuthHeaders(),
         body: JSON.stringify({ conversationId, userId })
       });
       if (!response.ok) throw new Error('Failed to mark as read');
@@ -96,7 +128,8 @@ class ChatServiceEnhanced {
   async deleteMessage(messageId, userId) {
     try {
       const response = await fetch(`${API_URL}/messages/${messageId}?userId=${userId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: this.getAuthHeaders()
       });
       if (!response.ok) throw new Error('Failed to delete message');
       return await response.json();
@@ -109,7 +142,9 @@ class ChatServiceEnhanced {
   // Search messages
   async searchMessages(userId, query, limit = 20) {
     try {
-      const response = await fetch(`${API_URL}/messages/search?userId=${userId}&query=${encodeURIComponent(query)}&limit=${limit}`);
+      const response = await fetch(`${API_URL}/messages/search?userId=${userId}&query=${encodeURIComponent(query)}&limit=${limit}`, {
+        headers: this.getAuthHeaders()
+      });
       if (!response.ok) throw new Error('Failed to search messages');
       return await response.json();
     } catch (error) {
@@ -121,7 +156,9 @@ class ChatServiceEnhanced {
   // Get user presence
   async getUserPresence(userId) {
     try {
-      const response = await fetch(`${API_URL}/messages/presence/${userId}`);
+      const response = await fetch(`${API_URL}/messages/presence/${userId}`, {
+        headers: this.getAuthHeaders()
+      });
       if (!response.ok) throw new Error('Failed to get presence');
       return await response.json();
     } catch (error) {
@@ -133,7 +170,9 @@ class ChatServiceEnhanced {
   // Get online users
   async getOnlineUsers() {
     try {
-      const response = await fetch(`${API_URL}/messages/presence/online`);
+      const response = await fetch(`${API_URL}/messages/presence/online`, {
+        headers: this.getAuthHeaders()
+      });
       if (!response.ok) throw new Error('Failed to get online users');
       return await response.json();
     } catch (error) {
@@ -148,9 +187,10 @@ class ChatServiceEnhanced {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Get token from sessionStorage
+      // Get token from sessionStorage (same as other methods)
       const storedUser = sessionStorage.getItem('app_user');
       let token = null;
+
       if (storedUser) {
         try {
           const userData = JSON.parse(storedUser);

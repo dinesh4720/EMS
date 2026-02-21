@@ -1,64 +1,29 @@
-import { Card, CardBody, CardHeader, Button, Divider } from "@heroui/react";
-import { Zap, CheckSquare, IndianRupee, Megaphone, AlertCircle, FileText } from "lucide-react";
+import React from 'react';
+import { Link } from 'react-router-dom';
 
-export default function QuickActions({ onAction }) {
-  const actions = [
-    {
-      icon: <CheckSquare size={20} />,
-      label: "Mark Attendance",
-      color: "primary",
-      action: "attendance"
-    },
-    {
-      icon: <IndianRupee size={20} />,
-      label: "Collect Fee",
-      color: "success",
-      action: "collectFee"
-    },
-    {
-      icon: <Megaphone size={20} />,
-      label: "Send Announcement",
-      color: "secondary",
-      action: "announcement"
-    },
-    {
-      icon: <AlertCircle size={20} />,
-      label: "View Defaulters",
-      color: "danger",
-      action: "defaulters"
-    },
-    {
-      icon: <FileText size={20} />,
-      label: "Generate Report",
-      color: "warning",
-      action: "report"
-    }
-  ];
-
+function QuickActions({ actions }) {
   return (
-    <Card>
-      <CardHeader className="flex gap-2 bg-warning-50 py-2 px-3">
-        <Zap className="text-warning" size={18} />
-        <h3 className="text-sm font-semibold">Quick Actions</h3>
-      </CardHeader>
-      <Divider />
-      <CardBody className="p-3">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-          {actions.map((action, index) => (
-            <Button
-              key={index}
-              color={action.color}
-              variant="flat"
-              size="sm"
-              className="h-auto py-2 flex-col gap-1"
-              onPress={() => onAction?.(action.action)}
-            >
-              {action.icon}
-              <span className="text-[10px]">{action.label}</span>
-            </Button>
-          ))}
-        </div>
-      </CardBody>
-    </Card>
+    <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <h3 className="text-sm font-semibold text-gray-800 mb-3">Quick Actions</h3>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {actions.map((action) => (
+          <Link
+            key={action.label}
+            to={action.href}
+            className="flex items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+          >
+            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
+              <action.icon size={14} strokeWidth={2} />
+            </div>
+            <span className="text-sm font-medium text-gray-700">
+              {action.label}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }
+
+export default React.memo(QuickActions);

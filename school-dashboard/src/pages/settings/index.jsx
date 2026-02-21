@@ -1,6 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
+import { PageLayout, MinimalButton } from "../../components/ui";
+import { isOwlinEnabled, setOwlinEnabled } from "../../hooks/useOwlinTracking";
 import {
   Building,
   Calendar,
@@ -9,7 +11,6 @@ import {
   User,
   Palmtree,
   UserCheck,
-  BookOpen,
   GraduationCap,
   FileText,
   CreditCard,
@@ -18,9 +19,12 @@ import {
   Puzzle,
   Smartphone,
   Mail,
-  Zap
+  Zap,
+  Trash2,
+  Clock,
+  Users,
+  Activity
 } from "lucide-react";
-import { Input, Kbd, Chip } from "@heroui/react";
 
 import InstitutionSettings from "./InstitutionSettings";
 import AcademicSettings from "./AcademicSettings";
@@ -38,12 +42,26 @@ import RolesAccess from "./RolesAccess";
 import AdmissionFormSettings from "./AdmissionFormSettings";
 import StaffIdSettings from "./StaffIdSettings";
 import PermissionRequests from "./PermissionRequests";
+import TrashSettings from "./TrashSettings";
+import TimetableCleanup from "../../components/TimetableCleanup";
+import ParentManagement from "./ParentManagement";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { setShowOnboarding } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
+  const [owlinEnabled, setOwlinState] = useState(() => isOwlinEnabled());
+
+  const handleOwlinToggle = useCallback(() => {
+    const next = !owlinEnabled;
+    setOwlinState(next);
+    setOwlinEnabled(next);
+    if (next) {
+      // Reload to re-initialize the tracker
+      window.location.reload();
+    }
+  }, [owlinEnabled]);
 
   const menuCategories = [
     {
@@ -62,6 +80,7 @@ export default function SettingsPage() {
         { key: "staff-id", label: "Staff ID Configuration", icon: User, path: "/settings/staff-id", isNew: true },
         { key: "roles", label: "Roles & Permissions", icon: Shield, path: "/settings/roles" },
         { key: "permission-requests", label: "Permission Requests", icon: Shield, path: "/settings/permission-requests", isNew: true },
+        { key: "parents", label: "Parent Accounts", icon: Users, path: "/settings/parents", isNew: true },
       ]
     },
     {
@@ -70,6 +89,7 @@ export default function SettingsPage() {
         { key: "attendance", label: "Attendance Rules", icon: Calendar, path: "/settings/attendance-rules" },
         { key: "holidays", label: "Holiday Calendar", icon: Palmtree, path: "/settings/holidays" },
         { key: "leaves", label: "Leave Types", icon: UserCheck, path: "/settings/leaves" },
+        { key: "timetable-cleanup", label: "Timetable Cleanup", icon: Trash2, path: "/settings/timetable-cleanup", isNew: true },
       ]
     },
     {
@@ -97,6 +117,7 @@ export default function SettingsPage() {
       items: [
         { key: "subscription", label: "Subscription", icon: CreditCard, path: "/settings/subscription" },
         { key: "integrations", label: "Apps & Integrations", icon: Puzzle, path: "/settings/integrations" },
+        { key: "trash", label: "Trash", icon: Trash2, path: "/settings/trash", isNew: true },
         { key: "onboarding", label: "Setup Wizard", icon: Zap, isAction: true, onClick: () => setShowOnboarding(true) },
       ]
     }
@@ -124,45 +145,44 @@ export default function SettingsPage() {
   }, [searchQuery, menuCategories]);
 
   return (
-    <div className="flex h-[calc(100vh-3rem)] overflow-hidden bg-background">
+    <div className="flex h-[calc(100vh-3rem)] overflow-hidden bg-gray-50">
       {/* Settings Sidebar */}
-      <div className="w-[280px] flex-shrink-0 border-r border-default-200 bg-default-50/50 flex flex-col">
+      <div className="w-[260px] flex-shrink-0 border-r border-gray-100 bg-white flex flex-col">
         {/* Header & Search */}
-        <div className="p-5 space-y-4 sticky top-0 bg-default-50/50 z-10 backdrop-blur-md">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-default-900">Settings</h1>
-          </div>
+        <div className="p-4 space-y-3 sticky top-0 bg-white z-10">
+          <h1 className="text-lg font-medium text-gray-900">Settings</h1>
 
-          <Input
-            classNames={{
-              base: "h-9",
-              mainWrapper: "h-9",
-              input: "text-small",
-              inputWrapper: "h-9 bg-default-100 hover:bg-default-200/70 dark:bg-default-200/50 shadow-none",
-            }}
-            placeholder="Search settings..."
-            size="sm"
-            startContent={<Search size={14} className="text-default-500" />}
-            endContent={<Kbd keys={["command"]} className="hidden lg:inline-block shadow-none border-none bg-transparent font-sans text-tiny opacity-50">K</Kbd>}
-            type="search"
-            value={searchQuery}
-            onValueChange={setSearchQuery}
-            isClearable
-            onClear={() => setSearchQuery("")}
-          />
+          <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg focus-within:border-gray-300 focus-within:ring-1 focus-within:ring-gray-300 transition-colors">
+            <Search size={16} className="text-gray-400" />
+            <input
+              type="search"
+              placeholder="Search settings..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 bg-transparent outline-none text-gray-900 placeholder:text-gray-400 text-sm"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="text-gray-400 hover:text-gray-600 text-xs"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Scrollable Menu */}
-        <div className="flex-1 overflow-y-auto px-3 pb-8 scrollbar-hide">
-          <div className="space-y-6">
+        <div className="flex-1 overflow-y-auto px-2 pb-6">
+          <div className="space-y-4">
             {filteredCategories.length === 0 ? (
               <div className="text-center py-8 px-3">
-                <p className="text-sm text-default-400">No settings found for "{searchQuery}"</p>
+                <p className="text-sm text-gray-500">No settings found</p>
               </div>
             ) : (
               filteredCategories.map((category) => (
-                <div key={category.title} className="space-y-1">
-                  <h3 className="text-[11px] font-bold text-default-400 uppercase tracking-wider px-3 mb-2">
+                <div key={category.title}>
+                  <h3 className="text-[11px] font-medium text-gray-500 uppercase tracking-wider px-3 mb-1.5">
                     {category.title}
                   </h3>
                   <ul className="space-y-0.5">
@@ -172,16 +192,15 @@ export default function SettingsPage() {
                         <li key={item.key}>
                           <button
                             onClick={() => item.isAction ? item.onClick() : navigate(item.path)}
-                            className={`
-                            w-full flex items-center justify-between px-3 py-1.5 rounded-md text-sm transition-colors duration-200
-                            ${!item.isAction && active
-                                ? "bg-default-200/60 font-medium text-default-900"
-                                : "text-default-600 hover:bg-default-100 placeholder-opacity-0 hover:text-default-900"}
-                          `}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors
+                              ${!item.isAction && active
+                                ? "bg-gray-900 font-medium text-white"
+                                : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"}
+                            `}
                           >
                             <span className="truncate">{item.label}</span>
                             {item.isNew && (
-                              <Chip size="sm" color="primary" variant="solid" className="h-5 text-[10px] px-1 min-w-10">New</Chip>
+                              <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded font-medium">New</span>
                             )}
                           </button>
                         </li>
@@ -193,11 +212,36 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
+
+        {/* Owlin Tracker Toggle */}
+        <div className="border-t border-gray-100 px-4 py-3 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Activity size={14} className="text-gray-400" />
+              <span className="text-xs text-gray-500">Owlin Tracker</span>
+            </div>
+            <button
+              onClick={handleOwlinToggle}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                owlinEnabled ? "bg-green-500" : "bg-gray-300"
+              }`}
+            >
+              <span
+                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                  owlinEnabled ? "translate-x-[18px]" : "translate-x-[3px]"
+                }`}
+              />
+            </button>
+          </div>
+          <p className="text-[10px] text-gray-400 mt-1">
+            {owlinEnabled ? "Tracking active — console logs enabled" : "Tracking disabled — console clean"}
+          </p>
+        </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto bg-background p-8 lg:p-12">
-        <div className="max-w-[1000px] mx-auto animate-fade-in">
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="max-w-[800px] mx-auto">
           <Routes>
             <Route index element={<InstitutionSettings />} />
             <Route path="academics" element={<AcademicSettings />} />
@@ -206,6 +250,7 @@ export default function SettingsPage() {
             <Route path="staff-id" element={<StaffIdSettings />} />
             <Route path="roles" element={<RolesAccess />} />
             <Route path="permission-requests" element={<PermissionRequests />} />
+            <Route path="parents" element={<ParentManagement />} />
             <Route path="intake-forms" element={<IntakeFormsSettings />} />
             <Route path="attendance-rules" element={<AttendanceRules />} />
             <Route path="fees" element={<FeeManagementSettings />} />
@@ -214,10 +259,22 @@ export default function SettingsPage() {
             <Route path="communication" element={<CommunicationSettings />} />
             <Route path="payroll" element={<PayrollSettings />} />
             <Route path="subscription" element={<SubscriptionSettings />} />
-            <Route path="*" element={<div className="flex flex-col items-center justify-center h-[50vh] text-default-400">
+            <Route path="trash" element={<TrashSettings />} />
+            <Route path="timetable-cleanup" element={
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Timetable Data Cleanup</h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Clear all timetable-related data to start fresh
+                  </p>
+                </div>
+                <TimetableCleanup />
+              </div>
+            } />
+            <Route path="*" element={<div className="flex flex-col items-center justify-center h-[50vh] text-gray-400">
               <Puzzle size={48} className="mb-4 opacity-50" />
-              <h3 className="text-lg font-semibold">Setting module under development</h3>
-              <p className="text-sm">This section will be available in the next update.</p>
+              <h3 className="text-base font-medium text-gray-900">Setting module under development</h3>
+              <p className="text-sm text-gray-500">This section will be available in the next update.</p>
             </div>} />
           </Routes>
         </div>

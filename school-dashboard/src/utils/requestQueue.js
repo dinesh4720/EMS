@@ -63,8 +63,8 @@ class RequestQueue {
 
 // Create a global request queue instance
 export const requestQueue = new RequestQueue({
-  maxConcurrent: 5,
-  minDelay: 100, // 100ms between requests
+  maxConcurrent: 15, // Increased from 5 to 15 for better parallelism
+  minDelay: 20, // Reduced from 100ms to 20ms for faster requests
 });
 
 /**
@@ -92,32 +92,32 @@ export async function batchRequests(requests, batchSize = 5, delayMs = 200) {
  */
 export async function retryRequest(requestFn, maxRetries = 3, baseDelay = 1000) {
   let lastError;
-  
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await requestFn();
     } catch (error) {
       lastError = error;
-      
+
       // Don't retry on certain errors
       if (error.message?.includes('401') || error.message?.includes('403')) {
         throw error;
       }
-      
-      // If it's a 429 (rate limit), wait longer
+
+      // If it's a 429 (rate limit), wait MUCH longer
       const isRateLimit = error.message?.includes('429') || error.message?.includes('Too many requests');
-      
+
       if (attempt < maxRetries) {
-        const delay = isRateLimit 
-          ? baseDelay * Math.pow(2, attempt) * 2 // Double the backoff for rate limits
+        const delay = isRateLimit
+          ? baseDelay * Math.pow(3, attempt) * 5 // Much longer backoff for rate limits (5s, 15s, 45s)
           : baseDelay * Math.pow(2, attempt);
-        
+
         console.log(`⏳ Retrying request in ${delay}ms (attempt ${attempt + 1}/${maxRetries})...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
-  
+
   throw lastError;
 }
 

@@ -29,7 +29,7 @@ export default function MessageActionsMenu({ message, currentUserId, onAction })
       show: true
     },
     {
-      key: 'pin',
+      key: message.pinned ? 'unpin' : 'pin',
       icon: <Pin size={16} />,
       label: message.pinned ? 'Unpin' : 'Pin',
       color: 'default',
@@ -69,10 +69,10 @@ export default function MessageActionsMenu({ message, currentUserId, onAction })
 
   return (
     <div className="relative flex items-center gap-1" ref={dropdownRef}>
-      <Dropdown>
+      <Dropdown placement="bottom-end">
         <DropdownTrigger>
           <button
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-default-100 text-default-500 transition-colors opacity-0 group-hover:opacity-100"
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-500 dark:text-gray-400 transition-all duration-150 opacity-0 group-hover:opacity-100 hover:text-gray-700 dark:hover:text-gray-200"
             onClick={(e) => e.stopPropagation()}
           >
             <MoreVertical size={18} />
@@ -82,15 +82,29 @@ export default function MessageActionsMenu({ message, currentUserId, onAction })
         <DropdownMenu
           aria-label="Message actions"
           onAction={(key) => handleAction(key)}
-          className="min-w-48"
+          className="min-w-48 p-1 rounded-xl border border-gray-200 dark:border-zinc-700"
+          itemClasses={{
+            base: "rounded-lg px-3 py-2.5 text-sm data-[hover=true]:bg-gray-100 dark:data-[hover=true]:bg-zinc-700 transition-colors",
+          }}
         >
-          <DropdownSection>
-            {visibleActions.map((action) => (
+          <DropdownSection showDivider className="pb-1">
+            {visibleActions.slice(0, 4).map((action) => (
               <DropdownItem
                 key={action.key}
-                startContent={action.icon}
+                startContent={<span className="text-gray-500 dark:text-gray-400">{action.icon}</span>}
                 color={action.color}
-                className={action.color === 'danger' ? 'text-danger' : ''}
+              >
+                {action.label}
+              </DropdownItem>
+            ))}
+          </DropdownSection>
+          <DropdownSection className="pt-1">
+            {visibleActions.slice(4).map((action) => (
+              <DropdownItem
+                key={action.key}
+                startContent={<span className={action.color === 'danger' ? 'text-rose-500' : 'text-gray-500 dark:text-gray-400'}>{action.icon}</span>}
+                color={action.color}
+                className={action.color === 'danger' ? 'text-rose-500 data-[hover=true]:text-rose-600 data-[hover=true]:bg-rose-50 dark:data-[hover=true]:bg-rose-500/10' : ''}
               >
                 {action.label}
               </DropdownItem>

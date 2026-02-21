@@ -1,21 +1,38 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
-import Dashboard from "./pages/Dashboard";
-import Analytics from "./pages/Analytics";
-import FrontDeskPage from "./pages/front-desk";
-import StaffsPage from "./pages/staffs";
-import StudentsPage from "./pages/students";
-import ClassesPage from "./pages/classes";
-import CalendarPage from "./pages/calendar";
-import MessagingPage from "./pages/messaging";
-import FeesPage from "./pages/fees";
-import SettingsPage from "./pages/settings";
-import FormAssignments from "./pages/intake-forms/FormAssignments";
-import FormSubmissions from "./pages/intake-forms/FormSubmissions";
-import AiAssistantPage from "./pages/AiAssistantPage";
-import StyleGuide from "./pages/StyleGuide";
-import Login from "./pages/Login";
+import PublicFormSubmission from "./pages/PublicFormSubmission";
+import { useOwlinTracking } from "./hooks/useOwlinTracking";
+
+// Lazy load pages for code splitting
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const FrontDeskPage = lazy(() => import("./pages/front-desk"));
+const StaffsPage = lazy(() => import("./pages/staffs"));
+const StudentsPage = lazy(() => import("./pages/students"));
+const ClassesPage = lazy(() => import("./pages/classes"));
+const CalendarPage = lazy(() => import("./pages/calendar"));
+const MessagingPage = lazy(() => import("./pages/messaging"));
+const FeesPage = lazy(() => import("./pages/fees"));
+const AccountsPage = lazy(() => import("./pages/accounts"));
+const SettingsPage = lazy(() => import("./pages/settings"));
+const AcademicLayout = lazy(() => import("./pages/academics"));
+const FormAssignments = lazy(() => import("./pages/intake-forms/FormAssignments"));
+const FormSubmissions = lazy(() => import("./pages/intake-forms/FormSubmissions"));
+const AiAssistantPage = lazy(() => import("./pages/AiAssistantPage"));
+const StyleGuide = lazy(() => import("./pages/StyleGuide"));
+const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
+
+// Loading fallback component
+function PageLoader() {
+  return (
+    <div className="h-screen w-screen flex items-center justify-center bg-background">
+      <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+    </div>
+  );
+}
 import { AppProvider, useApp } from "./context/AppContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ChatNotificationProvider } from "./context/ChatNotificationContext";
@@ -57,6 +74,9 @@ function AuthenticatedApp() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { showOnboarding, setShowOnboarding } = useApp();
 
+  // Initialize Owlin tracking
+  useOwlinTracking();
+
   useEffect(() => {
     // Check if onboarding is completed
     const hasCompleted = localStorage.getItem("hasCompletedOnboarding");
@@ -66,29 +86,22 @@ function AuthenticatedApp() {
   }, [setShowOnboarding]);
 
   const isSettingsPage = location.pathname.startsWith("/settings");
-  // Force collapsed state on settings page, otherwise use user preference
-  const effectiveSidebarOpen = isSettingsPage ? false : isSidebarOpen;
+  // Use user preference for sidebar state
+  const effectiveSidebarOpen = isSidebarOpen;
 
   return (
     <>
-      <div className="flex min-h-screen bg-background font-sans text-foreground relative overflow-x-hidden">
-        {/* Global Ambient Background */}
-        <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0 overflow-hidden">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] animate-blob-bounce mix-blend-multiply dark:mix-blend-normal dark:bg-primary/10"></div>
-          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/5 rounded-full blur-[120px] animate-blob-bounce animation-delay-2000 mix-blend-multiply dark:mix-blend-normal dark:bg-secondary/10"></div>
-          <div className="absolute top-[40%] left-[40%] w-[30%] h-[30%] bg-purple-500/5 rounded-full blur-[100px] animate-float mix-blend-multiply dark:mix-blend-normal dark:bg-purple-500/10"></div>
-        </div>
-
+      <div className="flex min-h-screen bg-background font-sans text-foreground">
         {showOnboarding && <OnboardingFlow onComplete={() => setShowOnboarding(false)} />}
 
         <Sidebar isSidebarOpen={effectiveSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
         <AiAssistantLayout>
-          <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${effectiveSidebarOpen ? 'ml-[260px]' : 'ml-[68px]'} relative z-10 bg-default-100/80 dark:bg-default-100/20`}>
+          <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${effectiveSidebarOpen ? 'ml-[240px]' : 'ml-[64px]'} relative z-10 bg-gray-50 dark:bg-zinc-950`}>
             <Topbar isSidebarOpen={effectiveSidebarOpen} />
-            <div className="mt-14">
+            <div className="mt-14 flex-1 flex flex-col min-h-0">
               <BeforeSchoolAlert />
-              <main className={`flex-1 ${isSettingsPage ? 'p-0' : 'p-2 md:p-3'}`}>
-                <div className={`${isSettingsPage ? 'w-full' : 'max-w-[1600px] mx-auto space-y-6'}`}>
+              <main className={`flex-1 flex flex-col min-h-0 ${isSettingsPage ? 'p-0' : 'p-2 md:p-3'}`}>
+                <div className={`flex-1 flex flex-col min-h-0 ${isSettingsPage ? 'w-full' : 'max-w-[1600px] mx-auto w-full'}`}>
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/analytics" element={
@@ -131,6 +144,16 @@ function AuthenticatedApp() {
                         <FeesPage />
                       </PermissionGuard>
                     } />
+                    <Route path="/accounts/*" element={
+                      <PermissionGuard module="accounts">
+                        <AccountsPage />
+                      </PermissionGuard>
+                    } />
+                    <Route path="/academics/*" element={
+                      <PermissionGuard module="academics">
+                        <AcademicLayout />
+                      </PermissionGuard>
+                    } />
                     <Route path="/settings/*" element={
                       <PermissionGuard module="settings">
                         <SettingsPage />
@@ -170,20 +193,27 @@ function AppRoutes() {
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    );
-  }
-
   return (
-    <Routes>
-      <Route path="/login" element={<Navigate to="/" replace />} />
-      <Route path="/*" element={<AuthenticatedApp />} />
-    </Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        {/* Public route - accessible without authentication */}
+        <Route path="/form/:token" element={<PublicFormSubmission />} />
+
+        {/* Authenticated routes */}
+        {!isAuthenticated ? (
+          <>
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </>
+        ) : (
+          <>
+            <Route path="/login" element={<Navigate to="/" replace />} />
+            <Route path="/*" element={<AuthenticatedApp />} />
+          </>
+        )}
+      </Routes>
+    </Suspense>
   );
 }
 

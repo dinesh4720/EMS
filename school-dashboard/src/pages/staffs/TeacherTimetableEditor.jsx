@@ -8,27 +8,18 @@ import { usePermissions } from "../../context/PermissionContext";
 import { teacherTimetableApi, teacherAssignmentsApi } from "../../services/api";
 import ConflictIndicator from "../../components/ConflictIndicator";
 import ConfirmDialog from "../../components/ConfirmDialog";
-import { 
-  showErrorToast, 
-  showSuccessToast, 
+import {
+  showErrorToast,
+  showSuccessToast,
   showWarningToast,
   executeWithFeedback,
   parseError,
   formatConflictDetails
 } from "../../utils/errorHandling";
+import { DEFAULT_PERIODS, TIMETABLE_DAYS } from "../../utils/constants";
 
-const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-const defaultPeriods = [
-  { name: "Period 1", startTime: "08:00", endTime: "08:45", isBreak: false },
-  { name: "Period 2", startTime: "08:45", endTime: "09:30", isBreak: false },
-  { name: "Break", startTime: "09:30", endTime: "09:45", isBreak: true },
-  { name: "Period 3", startTime: "09:45", endTime: "10:30", isBreak: false },
-  { name: "Period 4", startTime: "10:30", endTime: "11:15", isBreak: false },
-  { name: "Lunch", startTime: "11:15", endTime: "12:00", isBreak: true },
-  { name: "Period 5", startTime: "12:00", endTime: "12:45", isBreak: false },
-  { name: "Period 6", startTime: "12:45", endTime: "13:30", isBreak: false },
-];
+const days = TIMETABLE_DAYS;
+const defaultPeriods = DEFAULT_PERIODS;
 
 const getSubjectColor = (subject) => {
   if (!subject) return "default";
@@ -69,14 +60,22 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
   // Modals
   const { isOpen: isSlotOpen, onOpen: onSlotOpen, onClose: onSlotClose } = useDisclosure();
   const { isOpen: isConfirmClearOpen, onOpen: onConfirmClearOpen, onClose: onConfirmClearClose } = useDisclosure();
+  const { isOpen: isAssignmentsOpen, onOpen: onAssignmentsOpen, onClose: onAssignmentsClose } = useDisclosure();
   const [editingSlot, setEditingSlot] = useState(null);
-  const [slotForm, setSlotForm] = useState({ classId: "", subject: "", room: "" });
+  const [slotForm, setSlotForm] = useState({ classId: "", subject: "" });
   const [availableClasses, setAvailableClasses] = useState([]);
+
+  // Assignments modal state
+  const [newAssignment, setNewAssignment] = useState({ subject: "", classes: [] });
+  const [savingAssignments, setSavingAssignments] = useState(false);
 
   // Check if user can edit this teacher's timetable
   // Only admins can edit teacher timetables, teachers can only view their own
   const isOwnTimetable = user?.id === teacherId;
-  const isAdmin = hasPermission('staff', 'edit') && user?.role?.toLowerCase().includes('admin');
+  const userRole = user?.role;
+  const isAdmin = hasPermission('staff', 'edit') && (
+    (Array.isArray(userRole) ? userRole.some(r => r?.toLowerCase()?.includes('admin')) : userRole?.toLowerCase()?.includes('admin'))
+  );
   const canEdit = isAdmin;
   const canView = isAdmin || isOwnTimetable;
 
@@ -92,7 +91,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
   const loadTimetable = async () => {
     try {
       setLoading(true);
-      const response = await teacherTimetableApi.get(teacherId, schoolSettings.academicYear);
+      const response = await teacherTimetableApi.get(teacherId, schoolSettings?.academicYear);
       
       if (response.success) {
         setTimetable(response.timetable);
@@ -111,7 +110,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
       // Initialize empty schedule
       const emptySchedule = {};
       days.forEach(day => {
-        emptySchedule[day] = periods.map(() => ({ classId: null, subject: "", room: "" }));
+        emptySchedule[day] = periods.map(() => ({ classId: null, subject: "" }));
       });
       setSchedule(emptySchedule);
     } finally {
@@ -123,7 +122,9 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
     try {
       setLoadingAssignments(true);
       const response = await teacherAssignmentsApi.getAll(teacherId);
-      setTeacherAssignments(response.assignments || []);
+      // Handle both response formats: { assignments: [] } or direct array []
+      const assignments = Array.isArray(response) ? response : (response?.assignments || []);
+      setTeacherAssignments(assignments);
     } catch (err) {
       console.error('Failed to load teacher assignments:', err);
       showErrorToast(err, 'Failed to load teacher assignments.');
@@ -136,7 +137,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
   const loadConflicts = async () => {
     try {
       setLoadingConflicts(true);
-      const response = await teacherTimetableApi.getConflicts(teacherId, schoolSettings.academicYear);
+      const response = await teacherTimetableApi.getConflicts(teacherId, schoolSettings?.academicYear);
       setConflicts(response.conflicts || []);
       
       if (response.conflicts?.length > 0) {
@@ -161,14 +162,13 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
       return;
     }
 
-    const slot = schedule[day]?.[periodIndex] || { classId: null, subject: "", room: "" };
+    const slot = schedule[day]?.[periodIndex] || { classId: null, subject: "" };
     setEditingSlot({ day, periodIndex });
-    setSlotForm({ 
-      classId: slot.classId || "", 
-      subject: slot.subject || "", 
-      room: slot.room || "" 
+    setSlotForm({
+      classId: slot.classId || "",
+      subject: slot.subject || ""
     });
-    
+
     // Filter available classes based on teacher assignments
     updateAvailableClasses(slot.subject || "");
     
@@ -188,22 +188,9 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
       return;
     }
 
-    // Find all classes where teacher is assigned to teach this subject
-    const classesForSubject = [];
-    teacherAssignments.forEach(assignment => {
-      if (assignment.subject === subject) {
-        assignment.classes.forEach(classId => {
-          const classData = classesWithTeachers.find(c => 
-            String(c.id) === String(classId) || String(c._id) === String(classId)
-          );
-          if (classData && !classesForSubject.find(c => String(c.id) === String(classData.id))) {
-            classesForSubject.push(classData);
-          }
-        });
-      }
-    });
-
-    setAvailableClasses(classesForSubject);
+    // Always show all classes - assignments are optional and informational only
+    // This allows flexible scheduling without being blocked by assignment requirements
+    setAvailableClasses(classesWithTeachers);
   };
 
   const handleClassSwitch = async () => {
@@ -214,18 +201,9 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
 
     const { day, periodIndex } = editingSlot;
 
-    // Validate that teacher is qualified to teach this subject in this class
-    const isQualified = teacherAssignments.some(assignment => 
-      assignment.subject === slotForm.subject && 
-      assignment.classes.some(classId => 
-        String(classId) === String(slotForm.classId)
-      )
-    );
-
-    if (!isQualified) {
-      showWarningToast(`Teacher is not assigned to teach ${slotForm.subject} in this class. Please update teacher assignments first.`);
-      return;
-    }
+    // Note: Assignments are now optional - any teacher can be scheduled for any subject/class
+    // The assignment system is purely informational and doesn't restrict scheduling
+    // However, the backend still validates - we catch that error and show helpful message
 
     const result = await executeWithFeedback(
       async () => {
@@ -236,8 +214,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
           periodIndex,
           classId: slotForm.classId,
           subject: slotForm.subject,
-          room: slotForm.room,
-          academicYear: schoolSettings.academicYear
+          academicYear: schoolSettings?.academicYear
         };
 
         await teacherTimetableApi.updateSlot(teacherId, slotData);
@@ -245,27 +222,26 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
         // Update local state
         const newSchedule = { ...schedule };
         if (!newSchedule[day]) newSchedule[day] = [];
-        
+
         // Ensure the array is long enough
         while (newSchedule[day].length <= periodIndex) {
-          newSchedule[day].push({ classId: null, subject: "", room: "" });
+          newSchedule[day].push({ classId: null, subject: "" });
         }
-        
+
         newSchedule[day][periodIndex] = {
           classId: slotForm.classId,
-          subject: slotForm.subject,
-          room: slotForm.room
+          subject: slotForm.subject
         };
 
         setSchedule(newSchedule);
         setSyncStatus('success');
-        
+
         return newSchedule;
       },
       {
         loadingMessage: 'Saving and syncing timetable...',
         successMessage: 'Teacher timetable updated and synced successfully!',
-        errorMessage: null,
+        errorMessage: 'Failed to update timetable',
         retries: 2,
         onSuccess: async () => {
           // Clear success status after 2 seconds
@@ -273,7 +249,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
 
           onSlotClose();
           setEditingSlot(null);
-          setSlotForm({ classId: "", subject: "", room: "" });
+          setSlotForm({ classId: "", subject: "" });
 
           // Reload timetable and conflicts to get synced data
           await loadTimetable();
@@ -281,7 +257,17 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
         },
         onError: (error) => {
           setSyncStatus('error');
-          
+
+          // Check if it's the backend qualification validation error
+          if (error.message?.includes('not qualified')) {
+            showErrorToast(
+              error,
+              'Backend validation: Teacher must be assigned to teach this subject in this class. ' +
+              'Please create a staff assignment first, or ask your admin to disable backend validation.'
+            );
+            return;
+          }
+
           // Check if error is a conflict or validation error
           if (error.type === 'ConflictError') {
             showWarningToast(formatConflictDetails(error));
@@ -314,8 +300,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
           periodIndex,
           classId: null,
           subject: "",
-          room: "",
-          academicYear: schoolSettings.academicYear
+          academicYear: schoolSettings?.academicYear
         };
 
         await teacherTimetableApi.updateSlot(teacherId, slotData);
@@ -323,16 +308,15 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
         // Update local state
         const newSchedule = { ...schedule };
         if (!newSchedule[day]) newSchedule[day] = [];
-        
+
         // Ensure the array is long enough
         while (newSchedule[day].length <= periodIndex) {
-          newSchedule[day].push({ classId: null, subject: "", room: "" });
+          newSchedule[day].push({ classId: null, subject: "" });
         }
-        
+
         newSchedule[day][periodIndex] = {
           classId: null,
-          subject: "",
-          room: ""
+          subject: ""
         };
 
         setSchedule(newSchedule);
@@ -352,7 +336,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
           onConfirmClearClose();
           onSlotClose();
           setEditingSlot(null);
-          setSlotForm({ classId: "", subject: "", room: "" });
+          setSlotForm({ classId: "", subject: "" });
 
           // Reload timetable and conflicts to get synced data
           await loadTimetable();
@@ -366,6 +350,55 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
     );
   };
 
+  // Assignment management functions
+  const handleAddAssignment = async () => {
+    if (!newAssignment.subject || newAssignment.classes.length === 0) {
+      showWarningToast('Please select a subject and at least one class');
+      return;
+    }
+
+    setSavingAssignments(true);
+    try {
+      const assignmentData = {
+        teacherId,
+        subject: newAssignment.subject,
+        classIds: newAssignment.classes // Backend expects 'classIds' not 'classes'
+      };
+
+      await teacherAssignmentsApi.create(assignmentData);
+      showSuccessToast('Assignment added successfully');
+
+      // Reload assignments
+      const response = await teacherAssignmentsApi.getAll(teacherId);
+      const updatedAssignments = Array.isArray(response) ? response : (response?.assignments || []);
+      setTeacherAssignments(updatedAssignments);
+
+      // Reset form
+      setNewAssignment({ subject: "", classes: [] });
+    } catch (error) {
+      showErrorToast(error, 'Failed to add assignment');
+    } finally {
+      setSavingAssignments(false);
+    }
+  };
+
+  const handleDeleteAssignment = async (assignmentId) => {
+    setSavingAssignments(true);
+    try {
+      await teacherAssignmentsApi.delete(assignmentId, teacherId);
+      showSuccessToast('Assignment removed successfully');
+
+      // Reload assignments
+      const response = await teacherAssignmentsApi.getAll(teacherId);
+      const updatedAssignments = Array.isArray(response) ? response : (response?.assignments || []);
+      setTeacherAssignments(updatedAssignments);
+    } catch (error) {
+      showErrorToast(error, 'Failed to remove assignment');
+    } finally {
+      setSavingAssignments(false);
+    }
+  };
+
   const getClassName = (classId) => {
     if (!classId) return "";
     const classData = classesWithTeachers.find(c => 
@@ -374,32 +407,58 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
     return classData ? `${classData.name}-${classData.section}` : "";
   };
 
-  // Get unique subjects from teacher assignments
+  // Get unique subjects from teacher assignments, or all school subjects if no assignments
   const getTeacherSubjects = () => {
-    const subjects = new Set();
-    teacherAssignments.forEach(assignment => {
-      subjects.add(assignment.subject);
-    });
-    return Array.from(subjects);
+    // First, try to get subjects from teacher assignments
+    const assignedSubjects = new Set();
+
+    // Defensive check - ensure teacherAssignments is an array
+    if (Array.isArray(teacherAssignments)) {
+      teacherAssignments.forEach(assignment => {
+        if (assignment.subject) {
+          assignedSubjects.add(assignment.subject);
+        }
+      });
+    }
+
+    const assignedArray = Array.from(assignedSubjects);
+
+    // If teacher has assigned subjects, return those first, then add all school subjects
+    // This allows flexible scheduling while highlighting assigned subjects
+    const allSubjects = new Set(assignedArray);
+    
+    if (schoolSettings?.subjects && Array.isArray(schoolSettings.subjects)) {
+      schoolSettings.subjects.forEach(s => {
+        const subjectName = s.name || s.subject;
+        if (subjectName) {
+          allSubjects.add(subjectName);
+        }
+      });
+    }
+
+    return Array.from(allSubjects);
   };
 
   // Get assigned classes for display
   const getAssignedClassesDisplay = () => {
     const classSubjectMap = {};
-    
-    teacherAssignments.forEach(assignment => {
-      assignment.classes.forEach(classId => {
-        const className = getClassName(classId);
-        if (className) {
-          if (!classSubjectMap[className]) {
-            classSubjectMap[className] = [];
+
+    // Defensive check - ensure teacherAssignments is an array
+    if (Array.isArray(teacherAssignments)) {
+      teacherAssignments.forEach(assignment => {
+        assignment.classes.forEach(classId => {
+          const className = getClassName(classId);
+          if (className) {
+            if (!classSubjectMap[className]) {
+              classSubjectMap[className] = [];
+            }
+            if (!classSubjectMap[className].includes(assignment.subject)) {
+              classSubjectMap[className].push(assignment.subject);
+            }
           }
-          if (!classSubjectMap[className].includes(assignment.subject)) {
-            classSubjectMap[className].push(assignment.subject);
-          }
-        }
+        });
       });
-    });
+    }
 
     return classSubjectMap;
   };
@@ -421,7 +480,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
             {teacherName || teacher?.name || 'Teacher'} Timetable
           </h3>
           <Chip size="sm" variant="flat" color="primary" className="h-7">
-            {schoolSettings.academicYear}
+            {schoolSettings?.academicYear || '2024-25'}
           </Chip>
           {/* Sync Status Indicator */}
           {syncStatus === 'syncing' && (
@@ -443,6 +502,17 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
         <div className="flex gap-2">
           <Button
             size="sm"
+            color="primary"
+            variant="flat"
+            radius="md"
+            startContent={<Plus size={14} />}
+            onPress={onAssignmentsOpen}
+            className="h-9"
+          >
+            Manage Subjects & Classes
+          </Button>
+          <Button
+            size="sm"
             variant="flat"
             radius="md"
             startContent={<RefreshCw size={14} />}
@@ -459,7 +529,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
       </div>
 
       {/* Teacher Assignments Display */}
-      {!loadingAssignments && teacherAssignments.length > 0 && (
+      {!loadingAssignments && Array.isArray(teacherAssignments) && teacherAssignments.length > 0 && (
         <Card className="shadow-sm border border-default-200">
           <CardBody className="p-4">
             <h4 className="text-sm font-semibold text-default-700 mb-3">Assigned Classes & Subjects</h4>
@@ -475,6 +545,24 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
                   {className}: {subjects.join(', ')}
                 </Chip>
               ))}
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
+      {/* Helpful Info Panel */}
+      {!loadingAssignments && (!Array.isArray(teacherAssignments) || teacherAssignments.length === 0) && (
+        <Card className="shadow-sm border border-primary-200 bg-primary-50">
+          <CardBody className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle size={20} className="text-primary-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-primary-800">No Subject Assignments Yet</p>
+                <p className="text-xs text-primary-700 mt-1">
+                  Click "Manage Subjects & Classes" to assign which subjects and classes this teacher can teach. 
+                  You can still schedule classes without assignments, but assignments help organize and validate schedules.
+                </p>
+              </div>
             </div>
           </CardBody>
         </Card>
@@ -584,7 +672,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
                       <span className="sm:hidden">{day.slice(0, 3)}</span>
                     </TableCell>
                     {periods.map((period, i) => {
-                      const slot = schedule[day]?.[i] || { classId: null, subject: "", room: "" };
+                      const slot = schedule[day]?.[i] || { classId: null, subject: "" };
 
                       if (period.isBreak) {
                         return (
@@ -629,11 +717,6 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
                                   <span className="text-[9px] text-default-600 text-center line-clamp-1 w-full px-1">
                                     {slot.subject}
                                   </span>
-                                  {slot.room && (
-                                    <Chip size="sm" variant="flat" className="text-[8px] h-3.5 px-1 min-w-0">
-                                      {slot.room}
-                                    </Chip>
-                                  )}
                                 </CardBody>
                               </Card>
                             </motion.div>
@@ -678,29 +761,36 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
                   setSlotForm({ ...slotForm, subject, classId: "" }); // Reset class when subject changes
                 }}
                 variant="bordered"
-                description={`Subjects you teach: ${getTeacherSubjects().join(', ') || 'None assigned'}`}
+                description={
+                  Array.isArray(teacherAssignments) && teacherAssignments.length > 0
+                    ? `Assigned subjects highlighted. All subjects available for scheduling.`
+                    : `All subjects available for scheduling`
+                }
               >
-                {getTeacherSubjects().map(subject => (
-                  <SelectItem key={subject} textValue={subject}>
-                    {subject}
-                  </SelectItem>
-                ))}
+                {getTeacherSubjects().map(subject => {
+                  const isAssigned = Array.isArray(teacherAssignments) && 
+                    teacherAssignments.some(a => a.subject === subject);
+                  return (
+                    <SelectItem 
+                      key={subject} 
+                      textValue={subject}
+                      description={isAssigned ? "✓ Assigned" : undefined}
+                    >
+                      {subject}
+                    </SelectItem>
+                  );
+                })}
               </Select>
 
-              {/* Class Selection - only show classes where teacher is assigned for this subject */}
+              {/* Class Selection - show all classes for flexible scheduling */}
               {slotForm.subject && (
                 <Select
                   label="Class"
-                  placeholder={availableClasses.length > 0 ? "Select class" : "No classes available"}
+                  placeholder="Select class"
                   selectedKeys={slotForm.classId ? [String(slotForm.classId)] : []}
                   onSelectionChange={(keys) => setSlotForm({ ...slotForm, classId: Array.from(keys)[0] || "" })}
                   variant="bordered"
-                  isDisabled={availableClasses.length === 0}
-                  description={
-                    availableClasses.length === 0
-                      ? "You are not assigned to teach this subject in any class"
-                      : `${availableClasses.length} class(es) available`
-                  }
+                  description={`${availableClasses.length} class(es) available`}
                 >
                   {availableClasses.map(classData => (
                     <SelectItem
@@ -712,14 +802,6 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
                   ))}
                 </Select>
               )}
-
-              <Input
-                label="Room"
-                placeholder="e.g., Room 101 (optional)"
-                value={slotForm.room}
-                onValueChange={(v) => setSlotForm({ ...slotForm, room: v })}
-                variant="bordered"
-              />
 
               {slotForm.classId && (
                 <Button
@@ -745,6 +827,138 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
               isLoading={syncStatus === 'syncing'}
             >
               {syncStatus === 'syncing' ? 'Saving & Syncing...' : 'Save'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Manage Assignments Modal */}
+      <Modal isOpen={isAssignmentsOpen} onClose={onAssignmentsClose} size="2xl">
+        <ModalContent>
+          <ModalHeader>
+            <div className="flex items-center justify-between w-full pr-6">
+              <div>
+                <h3 className="text-lg font-bold">Manage Subjects & Classes</h3>
+                <p className="text-sm text-default-500 mt-1">
+                  Assign which subjects and classes {teacherName || 'this teacher'} can teach
+                </p>
+              </div>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-6">
+              {/* Current Assignments */}
+              <div>
+                <h4 className="text-sm font-semibold text-default-700 mb-3">Current Assignments</h4>
+                {!Array.isArray(teacherAssignments) || teacherAssignments.length === 0 ? (
+                  <div className="text-center py-8 bg-default-50 rounded-lg border border-dashed border-default-300">
+                    <p className="text-default-500">No assignments yet. Add one below.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {teacherAssignments.map((assignment) => (
+                      <div
+                        key={assignment._id || assignment.id}
+                        className="flex items-center justify-between p-3 bg-default-50 rounded-lg border border-default-200"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <Chip size="sm" color="primary" variant="flat">
+                              {assignment.subject}
+                            </Chip>
+                            <span className="text-default-600 text-sm">→</span>
+                            <div className="flex flex-wrap gap-1">
+                              {assignment.classes.map((classId) => (
+                                <Chip
+                                  key={classId}
+                                  size="sm"
+                                  variant="bordered"
+                                  className="text-xs"
+                                >
+                                  {getClassName(classId)}
+                                </Chip>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          color="danger"
+                          variant="light"
+                          onPress={() => handleDeleteAssignment(assignment._id || assignment.id)}
+                          isLoading={savingAssignments}
+                        >
+                          <X size={14} />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Add New Assignment */}
+              <div className="border-t border-default-200 pt-4">
+                <h4 className="text-sm font-semibold text-default-700 mb-3">Add New Assignment</h4>
+                <div className="space-y-3">
+                  <Select
+                    label="Subject"
+                    placeholder="Select a subject"
+                    selectedKeys={newAssignment.subject ? [newAssignment.subject] : []}
+                    onSelectionChange={(keys) => {
+                      const subject = Array.from(keys)[0] || "";
+                      setNewAssignment({ ...newAssignment, subject, classes: [] });
+                    }}
+                    variant="bordered"
+                  >
+                    {getTeacherSubjects().map(subject => (
+                      <SelectItem key={subject} value={subject}>
+                        {subject}
+                      </SelectItem>
+                    ))}
+                  </Select>
+
+                  {newAssignment.subject && (
+                    <Select
+                      label="Classes"
+                      placeholder="Select one or more classes"
+                      selectionMode="multiple"
+                      selectedKeys={newAssignment.classes.map(String)}
+                      onSelectionChange={(keys) => {
+                        const selectedClasses = Array.from(keys);
+                        setNewAssignment({ ...newAssignment, classes: selectedClasses });
+                      }}
+                      variant="bordered"
+                    >
+                      {classesWithTeachers.map((classData) => (
+                        <SelectItem
+                          key={String(classData.id || classData._id)}
+                          value={String(classData.id || classData._id)}
+                          textValue={`Class ${classData.name}-${classData.section}`}
+                        >
+                          Class {classData.name}-{classData.section}
+                        </SelectItem>
+                      ))}
+                    </Select>
+                  )}
+
+                  <Button
+                    color="primary"
+                    onPress={handleAddAssignment}
+                    isDisabled={!newAssignment.subject || newAssignment.classes.length === 0}
+                    isLoading={savingAssignments}
+                    startContent={<Plus size={14} />}
+                    className="w-full"
+                  >
+                    Add Assignment
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button color="primary" onPress={onAssignmentsClose}>
+              Done
             </Button>
           </ModalFooter>
         </ModalContent>

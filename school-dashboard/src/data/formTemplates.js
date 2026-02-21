@@ -52,7 +52,7 @@ export const studentAdmissionTemplate = {
     { id: 3, label: "Gender", type: "dropdown", options: ["Male", "Female", "Other"], required: true, mapTo: "gender" },
     { id: 4, label: "Blood Group", type: "dropdown", options: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"], required: false, mapTo: "bloodGroup" },
     { id: 5, label: "Nationality", type: "text", required: true, mapTo: "nationality" },
-    { id: 6, label: "Religion", type: "text", required: false, mapTo: "religion" },
+    { id: 6, label: "Religion", type: "dropdown", options: ["Hinduism", "Islam", "Christianity", "Sikhism", "Buddhism", "Jainism", "Other"], required: false, mapTo: "religion" },
     { id: 7, label: "Category", type: "dropdown", options: ["General", "OBC", "SC", "ST", "Other"], required: false, mapTo: "category" },
     { id: 8, label: "Mother Tongue", type: "text", required: false, mapTo: "motherTongue" },
     

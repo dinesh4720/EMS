@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useMemo, useEffect, useCallback } from "react";
-import { staffApi, studentsApi, classesApi, classesEnhancedApi, settingsApi, teacherAssignmentsApi, teacherTimetableApi } from "../services/api";
+import { staffApi, studentsApi, classesApi, classesEnhancedApi, settingsApi, teacherAssignmentsApi, teacherTimetableApi, staffAttendanceApi, calendarEventsApi } from "../services/api";
 import toast from "react-hot-toast";
 
 // NOTE: These are minimal fallback values only.
@@ -45,17 +45,56 @@ export function AppProvider({ children }) {
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
+  // Fetch staff attendance from API
+  const fetchStaffAttendance = useCallback(async () => {
+    try {
+      console.log('📡 Fetching staff attendance from API...');
+      const attendanceData = await staffAttendanceApi.getAll();
+
+      console.log('📡 Raw attendance data received:', attendanceData?.length || 0, 'records');
+      if (attendanceData && attendanceData.length > 0) {
+        console.log('📡 Sample record:', attendanceData[0]);
+      }
+
+      // Backend returns array: { staffId, date, status, checkInTime, checkOutTime, reason }
+      // Webapp expects nested structure: { staffId: { date: { status, inTime, outTime, reason } } }
+      const transformedData = {};
+      if (Array.isArray(attendanceData)) {
+        attendanceData.forEach(record => {
+          const { staffId, date, status, checkInTime, checkOutTime, reason } = record;
+          if (!transformedData[staffId]) {
+            transformedData[staffId] = {};
+          }
+          transformedData[staffId][date] = {
+            status,
+            inTime: checkInTime || '-',
+            outTime: checkOutTime || '-',
+            reason: reason || ''
+          };
+        });
+      }
+
+      console.log('✅ Staff attendance transformed:', Object.keys(transformedData).length, 'staff members');
+      console.log('✅ Staff attendance keys:', Object.keys(transformedData));
+      setStaffAttendance(transformedData);
+    } catch (err) {
+      console.error('❌ Failed to fetch staff attendance:', err);
+      // Don't show toast for this - it's not critical
+      setStaffAttendance({});
+    }
+  }, []);
+
   // Fetch data from API on mount
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (skipCache = false) => {
     try {
       console.log('🔄 Starting to fetch data...');
       setLoading(true);
 
       console.log('📡 Fetching from API...');
       const [staffData, studentsData, classesData] = await Promise.all([
-        staffApi.getAll(),
-        studentsApi.getAll(),
-        classesApi.getAll(),
+        staffApi.getAll(skipCache),
+        studentsApi.getAll(skipCache),
+        classesApi.getAll(skipCache),
       ]);
 
       // Ensure we always have arrays
@@ -79,11 +118,15 @@ export function AppProvider({ children }) {
         attendance: 0, // FIXED: Use 0 instead of random until real calculation available
         // TODO: Calculate from actual student attendance data
       })));
+
+      // Fetch staff attendance after staff data is loaded
+      await fetchStaffAttendance();
+
       setError(null);
     } catch (err) {
       console.error('❌ Failed to fetch data:', err);
       console.error('Error details:', err.message);
-      
+
       // If unauthorized, clear session and let AuthContext handle redirect
       if (err.message === 'Unauthorized' || err.message === 'Authentication required') {
         console.warn('⚠️ Token expired or invalid, clearing session');
@@ -97,41 +140,48 @@ export function AppProvider({ children }) {
       console.log('✅ Setting loading to false');
       setLoading(false);
     }
-  }, []);
+  }, [fetchStaffAttendance]);
 
   // Fetch all settings from API
   const fetchSettings = useCallback(async () => {
     try {
       setSettingsLoading(true);
-      const [schoolData, holidaysData, leaveTypesData, feeHeadsData, subjectsData] = await Promise.all([
+      const [schoolData, holidaysData, leaveTypesData, feeHeadsData, subjectsData, calendarEventsData] = await Promise.all([
         settingsApi.getSchoolSettings().catch(() => null),
         settingsApi.getHolidays().catch(() => []),
         settingsApi.getLeaveTypes().catch(() => []),
         settingsApi.getFeeHeads().catch(() => []),
         settingsApi.getSubjects().catch(() => []),
+        calendarEventsApi.getAll().catch(() => []),
       ]);
 
       if (schoolData) {
         setSchoolSettings(prev => ({ ...prev, ...schoolData }));
       }
 
-      if (holidaysData.length > 0) {
-        // Merge holidays into events
-        const holidayEvents = holidaysData.map(h => ({
-          id: h.id,
-          title: h.name,
-          date: h.date,
-          type: 'holiday',
-          startTime: '',
-          endTime: '',
-          allDay: true,
-          holidayType: h.type || 'National',
-        }));
-        setEvents(prev => {
-          const nonHolidays = prev.filter(e => e.type !== 'holiday');
-          return [...nonHolidays, ...holidayEvents];
-        });
-      }
+      // Merge holidays and calendar events
+      const holidayEvents = (holidaysData || []).map(h => ({
+        id: h.id,
+        title: h.name,
+        date: h.date,
+        type: 'holiday',
+        startTime: '',
+        endTime: '',
+        allDay: true,
+        holidayType: h.type || 'National',
+      }));
+
+      const calendarEvents = (calendarEventsData || []).map(e => ({
+        id: e.id,
+        title: e.title,
+        date: e.date,
+        type: e.type || 'event',
+        startTime: e.startTime || '',
+        endTime: e.endTime || '',
+        allDay: e.allDay || false,
+      }));
+
+      setEvents([...holidayEvents, ...calendarEvents]);
 
       if (leaveTypesData.length > 0) {
         setLeaveTypes(leaveTypesData);
@@ -191,7 +241,7 @@ export function AppProvider({ children }) {
       // Verify token exists before fetching
       const storedUser = sessionStorage.getItem('app_user');
       console.log('🔍 handleLogin called, checking sessionStorage...');
-      
+
       if (storedUser) {
         try {
           const userData = JSON.parse(storedUser);
@@ -200,7 +250,7 @@ export function AppProvider({ children }) {
             userId: userData.id,
             name: userData.name
           });
-          
+
           if (userData.token) {
             console.log('✅ Token found, fetching data after login');
             fetchData();
@@ -247,26 +297,26 @@ export function AppProvider({ children }) {
     }
 
     console.log('🔌 AppContext: Initializing socket for user:', user.id);
-    
+
     // Import and initialize socket service
-    import('../services/socketService').then(({ default: socketService }) => {
+    import('../services/socketServiceEnhanced').then(({ default: socketService }) => {
       console.log('✅ Socket service imported');
-      
+
       // Make it globally available
       window.socketService = socketService;
-      
+
       // Connect socket
       socketService.connect(user.id, 'staff');
-      
+
       // Test listeners
       socketService.on('authenticated', () => {
         console.log('✅ Socket authenticated successfully');
       });
-      
+
       socketService.on('connect_error', (error) => {
         console.error('❌ Socket connection error:', error);
       });
-      
+
       socketService.on('error', (error) => {
         console.error('❌ Socket error:', error);
       });
@@ -298,29 +348,70 @@ export function AppProvider({ children }) {
 
       socketService.on('class_updated', (data) => {
         console.log('📢 Global: Class updated', data);
-        updateClassLocal(data.classId, {
-          name: data.name,
-          section: data.section,
-          classTeacherId: data.classTeacherId
-        });
+
+        // If class teacher is being updated, fetch teacher details
+        if (data.classTeacherId !== undefined) {
+          const teacher = staff.find(s =>
+            String(s.id) === String(data.classTeacherId) || String(s._id) === String(data.classTeacherId)
+          );
+
+          updateClassLocal(data.classId, {
+            name: data.name,
+            section: data.section,
+            classTeacherId: data.classTeacherId,
+            teacher: teacher?.name,
+            teacherPhoto: teacher?.picture
+          });
+        } else {
+          updateClassLocal(data.classId, {
+            name: data.name,
+            section: data.section,
+            classTeacherId: data.classTeacherId
+          });
+        }
       });
 
       // Attendance events
       socketService.on('attendance_updated', (data) => {
         console.log('📢 Global: Attendance updated', data);
+        console.log('📢 Attendance data - staffId:', data.staffId, 'Date:', data.date, 'Status:', data.status);
+
         if (data.type === 'staff') {
-          setStaffAttendance(prev => ({
-            ...prev,
-            [data.staffId]: {
-              ...prev[data.staffId],
-              [data.date]: {
-                status: data.status,
-                inTime: data.inTime,
-                outTime: data.outTime,
-                reason: data.reason
+          console.log('📢 Processing staff attendance update for staffId:', data.staffId);
+          console.log('📢 Current staff list has', staff.length, 'members');
+
+          setStaffAttendance(prev => {
+            // If status is 'unmarked' or null, remove the record to let the default take over
+            if (!data.status || data.status === 'unmarked') {
+              const updated = { ...prev };
+              if (updated[data.staffId]?.[data.date]) {
+                delete updated[data.staffId][data.date];
+                // If no more dates for this staff, remove the staff entry
+                if (Object.keys(updated[data.staffId] || {}).length === 0) {
+                  delete updated[data.staffId];
+                }
               }
+              console.log('📢 Removed attendance record for', data.staffId, 'on', data.date, '(unmarked)');
+              return updated;
             }
-          }));
+
+            // Otherwise, update with the new status
+            const updated = {
+              ...prev,
+              [data.staffId]: {
+                ...(prev[data.staffId] || {}),
+                [data.date]: {
+                  status: data.status,
+                  inTime: data.inTime,
+                  outTime: data.outTime,
+                  reason: data.reason
+                }
+              }
+            };
+            console.log('📢 Updated staffAttendance for', data.staffId, 'on', data.date);
+            console.log('📢 New attendance state:', updated[data.staffId]?.[data.date]);
+            return updated;
+          });
         } else if (data.type === 'student') {
           setStudentAttendance(prev => ({
             ...prev,
@@ -349,11 +440,25 @@ export function AppProvider({ children }) {
           date: data.paymentDate,
           status: 'paid'
         }]);
-        
+
         // Update student fee status
         updateStudentLocal(data.studentId, {
           feeStatus: 'paid'
         });
+      });
+
+      // Student creation events
+      socketService.on('student_created', (data) => {
+        console.log('📢 Global: Student created', data);
+        setStudents(prev => [...prev, {
+          id: data.id,
+          name: data.name,
+          admissionId: data.admissionId,
+          class: data.class,
+          status: 'active',
+          feeStatus: 'pending',
+          timestamp: data.timestamp
+        }]);
       });
     }).catch(err => {
       console.error('❌ Failed to import socket service:', err);
@@ -363,6 +468,7 @@ export function AppProvider({ children }) {
       // Cleanup socket on unmount
       if (window.socketService) {
         console.log('🔌 Disconnecting socket...');
+        window.socketService.off('student_created');
         window.socketService.disconnect();
       }
     };
@@ -464,8 +570,16 @@ export function AppProvider({ children }) {
   const updateStaff = async (id, updates) => {
     try {
       const updated = await staffApi.update(id, updates);
-      setStaff(prev => prev.map(s => String(s.id) === String(id) ? updated : s));
-      return updated;
+
+      // Ensure picture from updates is always included in state update
+      // This is critical for instant photo reflection after upload
+      const finalUpdates = { ...updated };
+      if (updates.picture) {
+        finalUpdates.picture = updates.picture;
+      }
+
+      setStaff(prev => prev.map(s => String(s.id) === String(id) ? finalUpdates : s));
+      return finalUpdates;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -537,8 +651,16 @@ export function AppProvider({ children }) {
   const updateStudent = async (id, updates) => {
     try {
       const updated = await studentsApi.update(id, updates);
-      setStudents(prev => prev.map(s => String(s.id) === String(id) ? { ...s, ...updated } : s));
-      return updated;
+
+      // Ensure photo from updates is always included in state update
+      // This is critical for instant photo reflection after upload
+      const finalUpdates = { ...updated };
+      if (updates.photo) {
+        finalUpdates.photo = updates.photo;
+      }
+
+      setStudents(prev => prev.map(s => String(s.id) === String(id) ? { ...s, ...finalUpdates } : s));
+      return finalUpdates;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -547,8 +669,10 @@ export function AppProvider({ children }) {
 
   const deleteStudent = async (id) => {
     try {
-      await studentsApi.delete(id);
+      const result = await studentsApi.delete(id);
+      // Soft delete: remove from local state but API returns trash info
       setStudents(prev => prev.filter(s => String(s.id) !== String(id)));
+      return result; // Return result for undo functionality
     } catch (err) {
       setError(err.message);
       throw err;
@@ -556,13 +680,18 @@ export function AppProvider({ children }) {
   };
 
   const getStudentById = (id) => Array.isArray(students) ? students.find(s => String(s.id) === String(id)) : undefined;
-  const getStudentsByClass = (classId) => Array.isArray(students) ? students.filter(s => s.classId === classId) : [];
+  // FIXED: Use String() comparison for ObjectId matching and filter by active status
+  const getStudentsByClass = (classId) => Array.isArray(students) ? students.filter(s =>
+    String(s.classId) === String(classId) &&
+    (s.status || 'active') === 'active' &&
+    s.isDeleted !== true
+  ) : [];
 
   // Class functions - now using API
   const addClass = async (newClass) => {
     try {
       const created = await classesApi.create(newClass);
-      setClasses(prev => [...prev, { ...created, name: created.name.replace('Class ', ''), strength: 0, attendance: 85 }]);
+      setClasses(prev => [...prev, { ...created, name: created.name.replace('Class ', ''), strength: 0, attendance: 0 }]);
       return created;
     } catch (err) {
       setError(err.message);
@@ -593,9 +722,9 @@ export function AppProvider({ children }) {
 
   const getClassById = (id) => Array.isArray(classes) ? classes.find(c => c.id === id) : undefined;
 
-  // Event functions - with API integration for holidays
+  // Event functions - with API integration
   const addEvent = async (newEvent) => {
-    // If it's a holiday, use API
+    // If it's a holiday, use holiday API
     if (newEvent.type === 'holiday') {
       try {
         const holidayData = {
@@ -620,19 +749,44 @@ export function AppProvider({ children }) {
       } catch (err) {
         console.error('Failed to add holiday:', err);
         toast.error('Failed to add holiday');
-        // Fallback to local state
-        const eventWithId = { ...newEvent, id: nextEventId };
-        setEvents(prev => [...prev, eventWithId]);
-        setNextEventId(prev => prev + 1);
-        return eventWithId;
+        throw err;
       }
     } else {
-      // For non-holiday events, use local state
-      const eventWithId = { ...newEvent, id: nextEventId };
-      setEvents(prev => [...prev, eventWithId]);
-      setNextEventId(prev => prev + 1);
-      toast.success('Event added successfully');
-      return eventWithId;
+      // For non-holiday events, use calendar events API
+      // Create a local event first for immediate display
+      const localEvent = {
+        id: `temp-${Date.now()}`,
+        title: newEvent.title,
+        date: newEvent.date,
+        type: newEvent.type || 'event',
+        startTime: newEvent.startTime || '',
+        endTime: newEvent.endTime || '',
+        allDay: newEvent.allDay || false
+      };
+
+      // Optimistically add to local state
+      setEvents(prev => [...prev, localEvent]);
+
+      try {
+        const created = await calendarEventsApi.create({
+          title: newEvent.title,
+          date: newEvent.date,
+          type: newEvent.type || 'event',
+          startTime: newEvent.startTime || '',
+          endTime: newEvent.endTime || '',
+          allDay: newEvent.allDay || false
+        });
+
+        // Replace temp event with the real one from API
+        setEvents(prev => prev.map(e => e.id === localEvent.id ? created : e));
+        toast.success('Event added successfully');
+        return created;
+      } catch (err) {
+        console.error('Failed to save event to server:', err);
+        // Keep the local event but show warning
+        toast.error('Event saved locally (server unavailable)');
+        return localEvent;
+      }
     }
   };
 
@@ -651,12 +805,18 @@ export function AppProvider({ children }) {
       } catch (err) {
         console.error('Failed to update holiday:', err);
         toast.error('Failed to update holiday');
-        // Fallback to local state
-        setEvents(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+        throw err;
       }
     } else {
-      setEvents(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
-      toast.success('Event updated successfully');
+      try {
+        await calendarEventsApi.update(id, updates);
+        setEvents(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+        toast.success('Event updated successfully');
+      } catch (err) {
+        console.error('Failed to update event:', err);
+        toast.error('Failed to update event');
+        throw err;
+      }
     }
   };
 
@@ -673,8 +833,15 @@ export function AppProvider({ children }) {
         throw err;
       }
     } else {
-      setEvents(prev => prev.filter(e => e.id !== id));
-      toast.success('Event deleted successfully');
+      try {
+        await calendarEventsApi.delete(id);
+        setEvents(prev => prev.filter(e => e.id !== id));
+        toast.success('Event deleted successfully');
+      } catch (err) {
+        console.error('Failed to delete event:', err);
+        toast.error('Failed to delete event');
+        throw err;
+      }
     }
   };
 
@@ -731,10 +898,14 @@ export function AppProvider({ children }) {
 
   const updateSubject = async (id, updates) => {
     try {
+      console.log('✏️ Updating subject:', id, 'with:', updates);
       const updated = await settingsApi.updateSubject(id, updates);
       setSchoolSettings(prev => ({
         ...prev,
-        subjects: prev.subjects.map(s => s.id === id ? updated : s)
+        subjects: prev.subjects.map(s => {
+          const subjectId = s.id || s._id;
+          return String(subjectId) === String(id) ? updated : s;
+        })
       }));
       toast.success('Subject updated successfully');
       return updated;
@@ -744,21 +915,31 @@ export function AppProvider({ children }) {
       // Fallback to local state
       setSchoolSettings(prev => ({
         ...prev,
-        subjects: prev.subjects.map(s => s.id === id ? { ...s, ...updates } : s)
+        subjects: prev.subjects.map(s => {
+          const subjectId = s.id || s._id;
+          return String(subjectId) === String(id) ? { ...s, ...updates } : s;
+        })
       }));
     }
   };
 
   const deleteSubject = async (id) => {
     try {
+      console.log('🗑️ Deleting subject:', id, 'Current subjects:', schoolSettings.subjects);
       await settingsApi.deleteSubject(id);
       setSchoolSettings(prev => ({
         ...prev,
-        subjects: prev.subjects.filter(s => s.id !== id)
+        subjects: prev.subjects.filter(s => {
+          const subjectId = s.id || s._id;
+          const match = String(subjectId) !== String(id);
+          console.log(`Filtering subject: ${subjectId} vs ${id} = ${match}`);
+          return match;
+        })
       }));
       toast.success('Subject deleted successfully');
+      console.log('✅ Subject deleted, remaining:', schoolSettings.subjects?.filter(s => String(s.id || s._id) !== String(id)));
     } catch (err) {
-      console.error('Failed to delete subject:', err);
+      console.error('❌ Failed to delete subject:', err);
       toast.error('Failed to delete subject');
       throw err;
     }
@@ -893,11 +1074,85 @@ export function AppProvider({ children }) {
   }, [schoolSettings.schoolStartTime]);
 
   // Attendance functions
-  const markStaffAttendance = (staffId, date, status, inTime = "-", outTime = "-", reason = "") => {
+  const fetchStaffAttendanceForDate = useCallback(async (date) => {
+    try {
+      const data = await staffAttendanceApi.getByDate(date);
+      setStaffAttendance(prev => {
+        const updated = { ...prev };
+        data.forEach(record => {
+          const staffId = record.staffId instanceof Object ? record.staffId._id : record.staffId;
+          if (!updated[staffId]) updated[staffId] = {};
+
+          updated[staffId][record.date] = {
+            status: record.status,
+            inTime: record.inTime || record.checkInTime || '-',
+            outTime: record.outTime || record.checkOutTime || '-',
+            reason: record.reason || '',
+            regularization: record.regularization
+          };
+        });
+        return updated;
+      });
+      return data;
+    } catch (err) {
+      console.error('Failed to fetch staff attendance for date:', err);
+      // Don't throw, just return empty to fail gracefully
+      return [];
+    }
+  }, []);
+
+  const fetchStaffAttendanceByStaff = useCallback(async (staffId, startDate, endDate) => {
+    try {
+      const data = await staffAttendanceApi.getByStaff(staffId, startDate, endDate);
+      setStaffAttendance(prev => {
+        const updated = { ...prev };
+        if (!updated[staffId]) updated[staffId] = {};
+
+        data.forEach(record => {
+          updated[staffId][record.date] = {
+            status: record.status,
+            inTime: record.inTime || record.checkInTime || '-',
+            outTime: record.outTime || record.checkOutTime || '-',
+            reason: record.reason || '',
+            regularization: record.regularization
+          };
+        });
+        return updated;
+      });
+      return data;
+    } catch (err) {
+      console.error('Failed to fetch staff attendance history:', err);
+      return [];
+    }
+  }, []);
+
+  const markStaffAttendance = async (staffId, date, status, inTime = "-", outTime = "-", reason = "") => {
+    // Optimistic update
     setStaffAttendance(prev => ({
       ...prev,
-      [staffId]: { ...prev[staffId], [date]: { status, inTime, outTime, reason } }
+      [staffId]: {
+        ...(prev[staffId] || {}),
+        [date]: { status, inTime, outTime, reason }
+      }
     }));
+
+    try {
+      const user = JSON.parse(sessionStorage.getItem('app_user') || '{}');
+      await staffAttendanceApi.mark({
+        staffId,
+        date,
+        status,
+        checkInTime: inTime,
+        checkOutTime: outTime,
+        reason,
+        markedBy: user.id
+      });
+      toast.success('Attendance marked successfully');
+    } catch (err) {
+      console.error('Failed to mark attendance on server:', err);
+      toast.error('Failed to save attendance');
+      // Ideally revert state here, but for now we keep optimistic update
+    }
   };
 
   const markStudentAttendance = (studentId, date, status) => {
@@ -917,44 +1172,136 @@ export function AppProvider({ children }) {
     return result;
   };
 
-  const markAllStaffAttendance = (date, status) => {
+  const markAllStaffAttendance = async (date, status, specificStaffIds = null, reason = "", inTime = null, outTime = null) => {
+    // Determine target IDs
+    const targetStaffIds = specificStaffIds || (Array.isArray(staff) ? staff.filter(s => s.status === "active").map(s => s.id) : []);
+
+    const checkIn = inTime || (status === "present" ? "09:00" : "-");
+    const checkOut = outTime || "-";
+
+    // Optimistic update
     setStaffAttendance(prev => {
       const newAtt = { ...prev };
-      if (Array.isArray(staff)) {
-        staff.filter(s => s.status === "active").forEach(s => {
-          newAtt[s.id] = {
-            ...newAtt[s.id],
-            [date]: { status, inTime: status === "present" ? "08:30" : "-", outTime: "-" }
-          };
-        });
-      }
+      targetStaffIds.forEach(id => {
+        if (!newAtt[id]) newAtt[id] = {};
+        newAtt[id][date] = {
+          status,
+          inTime: checkIn,
+          outTime: checkOut,
+          reason
+        };
+      });
       return newAtt;
     });
+
+    try {
+      const user = JSON.parse(sessionStorage.getItem('app_user') || '{}');
+
+      await staffAttendanceApi.markBulk({
+        date,
+        staffIds: targetStaffIds,
+        status,
+        checkInTime: checkIn,
+        checkOutTime: checkOut,
+        reason,
+        markedBy: user.id
+      });
+      toast.success('Bulk attendance marked successfully');
+    } catch (err) {
+      console.error('Failed to bulk mark attendance:', err);
+      toast.error('Failed to save bulk attendance');
+    }
+  };
+
+  // Regularization functions
+  const requestRegularization = async (staffId, date, requestedStatus, reason) => {
+    try {
+      const user = JSON.parse(sessionStorage.getItem('app_user') || '{}');
+      
+      // The backend endpoint is PUT /:id/regularize where :id is staffId
+      // It needs date, status, checkInTime, checkOutTime, reason, regularizedBy in body
+      const response = await staffAttendanceApi.regularize(staffId, {
+        date: date,
+        status: requestedStatus,
+        checkInTime: requestedStatus === 'present' ? '09:00' : '-',
+        checkOutTime: '-',
+        reason: reason,
+        regularizedBy: user.id
+      });
+
+      // Update local state
+      setStaffAttendance(prev => ({
+        ...prev,
+        [staffId]: {
+          ...(prev[staffId] || {}),
+          [date]: {
+            status: requestedStatus,
+            inTime: response.checkInTime || '-',
+            outTime: response.checkOutTime || '-',
+            reason: reason,
+            regularization: response.regularization
+          }
+        }
+      }));
+
+      toast.success('Attendance regularized successfully');
+      return response;
+    } catch (err) {
+      console.error('Regularization failed:', err);
+      toast.error('Failed to regularize attendance');
+      throw err;
+    }
+  };
+
+  const approveRegularization = async (staffId, date, data) => {
+    // Since current backend supports direct regularization, this might be redundant or same as above
+    // keeping placeholder for future enhancement
+    return requestRegularization(staffId, date, data.status, data.note);
+  };
+
+  const fetchPendingRegularizations = async () => {
+    // Backend doesn't have this endpoint yet in this project version
+    // returning empty for now
+    return [];
   };
 
   const getMonthlyAttendance = (staffId, year, month) => {
     const staffAtt = staffAttendance[staffId] || {};
-    let present = 0, absent = 0, leave = 0;
+    let present = 0, absent = 0, leave = 0, halfday = 0;
     Object.entries(staffAtt).forEach(([date, data]) => {
       const d = new Date(date);
       if (d.getFullYear() === year && d.getMonth() === month) {
         if (data.status === "present") present++;
         else if (data.status === "absent") absent++;
         else if (data.status === "leave") leave++;
+        else if (data.status === "halfday") halfday++;
       }
     });
-    return { present, absent, leave, total: present + absent + leave };
+    return { present, absent, leave, halfday, total: present + absent + leave + halfday };
   };
 
   // Computed values
-  const teachers = useMemo(() => Array.isArray(staff) ? staff.filter(s => s.role === "Teacher" && s.status === "active") : [], [staff]);
+  const teachers = useMemo(() => Array.isArray(staff) ? staff.filter(s => {
+    const roles = Array.isArray(s.role) ? s.role : [s.role];
+    return roles.includes("Teacher") && s.status === "active";
+  }) : [], [staff]);
 
   const classesWithTeachers = useMemo(() => {
     if (!Array.isArray(classes) || !Array.isArray(staff) || !Array.isArray(students)) return [];
     return classes.map(c => ({
       ...c,
-      teacher: staff.find(s => s.id === c.classTeacherId)?.name || "Unassigned",
-      studentCount: students.filter(s => s.classId === c.id).length,
+      teacher: staff.find(s =>
+        String(s.id) === String(c.classTeacherId) || String(s._id) === String(c.classTeacherId)
+      )?.name || "Unassigned",
+      teacherPhoto: staff.find(s =>
+        String(s.id) === String(c.classTeacherId) || String(s._id) === String(c.classTeacherId)
+      )?.picture || null,
+      // FIXED: Use String() comparison for ObjectId matching and filter by active status
+      studentCount: students.filter(s =>
+        String(s.classId) === String(c.id) &&
+        (s.status || 'active') === 'active' &&
+        s.isDeleted !== true
+      ).length,
     }));
   }, [classes, staff, students]);
 
@@ -1011,7 +1358,7 @@ export function AppProvider({ children }) {
 
   }, [themeSettings]);
 
-  const value = {
+  const value = useMemo(() => ({
     // Data
     staff, students, classes, events, feePayments, announcements,
     staffAttendance, studentAttendance, schoolSettings,
@@ -1034,6 +1381,8 @@ export function AppProvider({ children }) {
     // Attendance actions
     markStaffAttendance, markStudentAttendance, getStaffAttendanceForDate,
     markAllStaffAttendance, getMonthlyAttendance,
+    fetchStaffAttendanceForDate, fetchStaffAttendanceByStaff,
+    requestRegularization, approveRegularization, fetchPendingRegularizations,
     // School Settings actions
     updateSchoolSettings, addSubject, updateSubject, deleteSubject,
     // Leave Types actions
@@ -1052,7 +1401,17 @@ export function AppProvider({ children }) {
     themeSettings, updateThemeSettings, resetThemeSettings,
     // Onboarding
     showOnboarding, setShowOnboarding
-  };
+  }), [
+    staff, students, classes, events, feePayments, announcements,
+    staffAttendance, studentAttendance, schoolSettings,
+    leaveTypes, feeHeads,
+    loading, error, settingsLoading,
+    teachers, classesWithTeachers, feeDefaulters, dashboardStats, isBeforeSchoolHours,
+    salarySettings, staffSalaries, payrollHistory,
+    lessonPlans, documents, remarks,
+    themeSettings,
+    showOnboarding
+  ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

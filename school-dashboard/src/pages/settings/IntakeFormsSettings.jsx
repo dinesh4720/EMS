@@ -41,7 +41,7 @@ import { Reorder, useDragControls } from "framer-motion";
 import toast from "react-hot-toast";
 import { intakeFormsApi } from "../../services/api";
 import { formTemplates } from "../../data/formTemplates";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 // Field types available in form builder
 const FIELD_TYPES = [
@@ -144,6 +144,7 @@ const DraggableFieldItem = ({
 
 export default function IntakeFormsSettings() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
     isOpen: isBuilderOpen,
@@ -166,6 +167,7 @@ export default function IntakeFormsSettings() {
   const [previewForm, setPreviewForm] = useState(null);
   const [forms, setForms] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [builderKey, setBuilderKey] = useState(0); // Key to force remount the modal
 
   const [formData, setFormData] = useState({
     name: "",
@@ -191,12 +193,42 @@ export default function IntakeFormsSettings() {
     fetchForms();
   }, []);
 
+  // Check for navigation state to open builder with pre-filled type
+  useEffect(() => {
+    if (location.state?.openBuilder) {
+      // Force fresh mount
+      setBuilderKey(prev => prev + 1);
+
+      const formType = location.state.formType || 'admission';
+      setFormData({
+        name: "",
+        type: formType,
+        description: "",
+      });
+      setBuilderFields([]);
+      setEditingForm(null);
+      setSelectedField(null);
+      setFieldConfig({
+        label: "",
+        placeholder: "",
+        type: "text",
+        required: false,
+        options: [],
+        validation: {},
+        conditional: null,
+      });
+      onBuilderOpen();
+      // Clear the state to prevent re-opening on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
   const fetchForms = async () => {
     try {
       setLoading(true);
       const data = await intakeFormsApi.getAll();
       setForms(data.map(form => ({
-        id: form.id,
+        id: form._id || form.id,
         name: form.formName,
         type: form.formType,
         status: form.status,
@@ -250,15 +282,62 @@ export default function IntakeFormsSettings() {
   };
 
   const handleOpenBuilder = (form = null) => {
+    // Increment key to force fresh mount
+    setBuilderKey(prev => prev + 1);
+
     if (form) {
       setEditingForm(form);
+      setFormData({
+        name: form.name,
+        type: form.type,
+        description: form.description || "",
+      });
       // Load existing fields if editing
       setBuilderFields(form.fieldData || []);
     } else {
       setEditingForm(null);
+      setFormData({
+        name: "",
+        type: "custom",
+        description: "",
+      });
       setBuilderFields([]);
     }
+    setSelectedField(null);
+    setFieldConfig({
+      label: "",
+      placeholder: "",
+      type: "text",
+      required: false,
+      options: [],
+      validation: {},
+      conditional: null,
+    });
     onBuilderOpen();
+  };
+
+  const handleBuilderClose = () => {
+    // Increment key to force remount on next open
+    setBuilderKey(prev => prev + 1);
+    // Reset all builder state
+    setEditingForm(null);
+    setBuilderFields([]);
+    setSelectedField(null);
+    setFormData({
+      name: "",
+      type: "custom",
+      description: "",
+    });
+    setFieldConfig({
+      label: "",
+      placeholder: "",
+      type: "text",
+      required: false,
+      options: [],
+      validation: {},
+      conditional: null,
+    });
+    onBuilderClose();
   };
 
   const handleAddField = (fieldType) => {
@@ -342,7 +421,7 @@ export default function IntakeFormsSettings() {
       }
 
       fetchForms();
-      onBuilderClose();
+      handleBuilderClose();
       onClose();
     } catch (error) {
       toast.error(error.message || "Failed to save form");
@@ -649,8 +728,9 @@ export default function IntakeFormsSettings() {
 
       {/* Form Builder Modal */}
       <Modal
+        key={builderKey}
         isOpen={isBuilderOpen}
-        onClose={onBuilderClose}
+        onClose={handleBuilderClose}
         size="full"
         scrollBehavior="inside"
       >
@@ -1052,7 +1132,7 @@ export default function IntakeFormsSettings() {
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={onBuilderClose}>
+            <Button variant="light" onPress={handleBuilderClose}>
               Cancel
             </Button>
             <Button

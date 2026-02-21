@@ -23,6 +23,7 @@ import {
     Tab
 } from "@heroui/react";
 import { Shield, Key, Search, Phone, RefreshCw, Copy, AlertTriangle, Users as UsersIcon, Network } from "lucide-react";
+import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
 import { staffApi } from "../../services/api";
 import RolesAccess from "./RolesAccess";
@@ -87,23 +88,23 @@ export default function UserManagement() {
 
     const handleSavePassword = async (onClose) => {
         if (newPassword !== confirmPassword) {
-            alert("Passwords do not match");
+            toast.error("Passwords do not match");
             return;
         }
 
         if (newPassword.length < 5) {
-            alert("Password must be at least 5 characters");
+            toast.error("Password must be at least 5 characters");
             return;
         }
 
         try {
             setSaving(true);
             await staffApi.updateCredentials(selectedUser.id, { password: newPassword });
-            await refetch();
+            await refetch(true); // Skip cache to get fresh data
             onClose();
-            alert(`Password updated for ${selectedUser.name}`);
+            toast.success(`Password updated for ${selectedUser.name}`);
         } catch (err) {
-            alert("Failed to update password: " + err.message);
+            toast.error("Failed to update password: " + err.message);
         } finally {
             setSaving(false);
         }
@@ -124,22 +125,23 @@ export default function UserManagement() {
         try {
             setResetting(true);
             await staffApi.updateCredentials(userData.id, { password: newPassword });
-            await refetch();
+            await refetch(true); // Skip cache to get fresh data
             setResetSuccess(true);
         } catch (err) {
-            alert("Failed to reset password: " + err.message);
+            toast.error("Failed to reset password: " + err.message);
             onResetModalOpenChange();
         } finally {
             setResetting(false);
         }
     };
 
-    // Filter staff based on search
-    const filteredStaff = staff.filter(s =>
+    // Filter staff based on search - ensure staff is always an array
+    const safeStaff = Array.isArray(staff) ? staff : [];
+    const filteredStaff = safeStaff.filter(s =>
         s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.role?.toLowerCase().includes(searchTerm.toLowerCase())
+        String(s.role || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     if (loading) {
@@ -196,6 +198,7 @@ export default function UserManagement() {
                                         onValueChange={setSearchTerm}
                                         isClearable
                                         variant="bordered"
+                                        autoComplete="off"
                                     />
                                 </div>
                             </CardBody>
@@ -338,6 +341,7 @@ export default function UserManagement() {
                                     type="password"
                                     value={newPassword}
                                     onValueChange={setNewPassword}
+                                    autoComplete="new-password"
                                 />
                                 <Input
                                     label="Confirm Password"
@@ -348,6 +352,7 @@ export default function UserManagement() {
                                     onValueChange={setConfirmPassword}
                                     errorMessage={confirmPassword && newPassword !== confirmPassword ? "Passwords do not match" : ""}
                                     isInvalid={confirmPassword && newPassword !== confirmPassword}
+                                    autoComplete="new-password"
                                 />
                             </ModalBody>
                             <ModalFooter>

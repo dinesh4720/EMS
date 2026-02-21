@@ -175,7 +175,10 @@ export default function GlobalSearch({ isOpen, onClose }) {
             <Search size={18} className="text-default-400" />
             <input
               autoFocus
-              type="text"
+              type="search"
+              name="global-search-query"
+              autoComplete="off"
+              data-form-type="other"
               placeholder="Search students, staff, classes, or pages..."
               className="flex-1 bg-transparent outline-none text-sm"
               value={query}

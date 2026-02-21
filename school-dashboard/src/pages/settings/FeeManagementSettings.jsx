@@ -1,47 +1,69 @@
 import { useState } from "react";
 import { Tabs, Tab } from "@heroui/react";
-import { IndianRupee, Calendar, CreditCard, DollarSign, AlertCircle, Settings } from "lucide-react";
+import { IndianRupee, Percent, Clock, CreditCard } from "lucide-react";
 import FeeHeadsUnified from "./FeeHeadsUnified";
 
 // Import individual tab components from FeeRulesSettings
-import { 
-  CollectionPeriodTab, 
-  PaymentMethodsTab, 
-  ConcessionsTab, 
-  LateFeeTab, 
-  GeneralRulesTab 
+import {
+  CollectionPeriodTab,
+  PaymentMethodsTab,
+  ConcessionsTab,
+  LateFeeTab,
+  GeneralRulesTab
 } from "./FeeRulesSettings";
+
+// Combined Payment Settings Component
+function PaymentSettingsTab() {
+  return (
+    <div className="space-y-8">
+      <CollectionPeriodTab />
+      <div className="border-t border-gray-200 pt-8">
+        <PaymentMethodsTab />
+      </div>
+    </div>
+  );
+}
+
+// Combined Concessions & Discounts Component
+function ConcessionsDiscountsTab() {
+  return (
+    <div className="space-y-8">
+      <ConcessionsTab />
+      <div className="border-t border-gray-200 pt-8">
+        <GeneralRulesTab />
+      </div>
+    </div>
+  );
+}
 
 export default function FeeManagementSettings() {
   const [activeTab, setActiveTab] = useState("fee-heads");
 
   return (
-    <div className="max-w-6xl mx-auto pb-10 space-y-8">
+    <div className="max-w-5xl mx-auto pb-10 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-default-200 pb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-default-900">Fee Management</h2>
-          <p className="text-sm text-default-500 mt-1">Complete fee configuration - heads, collection, payments, rules and policies</p>
-        </div>
+      <div className="border-b border-gray-200 pb-4">
+        <h2 className="text-xl font-bold text-gray-900">Fee Management</h2>
+        <p className="text-sm text-gray-500 mt-1">Configure fee structures, payments, and policies</p>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs - Consolidated to 4 */}
       <Tabs
         selectedKey={activeTab}
         onSelectionChange={setActiveTab}
         variant="underlined"
         classNames={{
-          tabList: "gap-4 w-full relative rounded-none p-0 border-b border-divider overflow-x-auto",
-          cursor: "w-full bg-primary",
-          tab: "max-w-fit px-0 h-12",
-          tabContent: "group-data-[selected=true]:text-primary"
+          tabList: "gap-6 w-full border-b border-gray-200",
+          cursor: "w-full bg-gray-900",
+          tab: "max-w-fit px-0 h-11",
+          tabContent: "group-data-[selected=true]:text-gray-900 text-gray-500"
         }}
       >
         <Tab
           key="fee-heads"
           title={
-            <div className="flex items-center space-x-2">
-              <IndianRupee size={18} />
+            <div className="flex items-center gap-2 text-sm">
+              <IndianRupee size={16} />
               <span>Fee Heads</span>
             </div>
           }
@@ -52,53 +74,25 @@ export default function FeeManagementSettings() {
         </Tab>
 
         <Tab
-          key="collection-period"
-          title={
-            <div className="flex items-center space-x-2">
-              <Calendar size={18} />
-              <span>Collection Period</span>
-            </div>
-          }
-        >
-          <div className="mt-6">
-            <CollectionPeriodTab />
-          </div>
-        </Tab>
-
-        <Tab
-          key="payment-methods"
-          title={
-            <div className="flex items-center space-x-2">
-              <CreditCard size={18} />
-              <span>Payment Methods</span>
-            </div>
-          }
-        >
-          <div className="mt-6">
-            <PaymentMethodsTab />
-          </div>
-        </Tab>
-
-        <Tab
           key="concessions"
           title={
-            <div className="flex items-center space-x-2">
-              <DollarSign size={18} />
-              <span>Concessions</span>
+            <div className="flex items-center gap-2 text-sm">
+              <Percent size={16} />
+              <span>Concessions & Rules</span>
             </div>
           }
         >
           <div className="mt-6">
-            <ConcessionsTab />
+            <ConcessionsDiscountsTab />
           </div>
         </Tab>
 
         <Tab
           key="late-fees"
           title={
-            <div className="flex items-center space-x-2">
-              <AlertCircle size={18} />
-              <span>Late Fee Rules</span>
+            <div className="flex items-center gap-2 text-sm">
+              <Clock size={16} />
+              <span>Late Fees</span>
             </div>
           }
         >
@@ -106,18 +100,18 @@ export default function FeeManagementSettings() {
             <LateFeeTab />
           </div>
         </Tab>
-        
+
         <Tab
-          key="general-rules"
+          key="payment-settings"
           title={
-            <div className="flex items-center space-x-2">
-              <Settings size={18} />
-              <span>Fee Rules</span>
+            <div className="flex items-center gap-2 text-sm">
+              <CreditCard size={16} />
+              <span>Payment Settings</span>
             </div>
           }
         >
           <div className="mt-6">
-            <GeneralRulesTab />
+            <PaymentSettingsTab />
           </div>
         </Tab>
       </Tabs>

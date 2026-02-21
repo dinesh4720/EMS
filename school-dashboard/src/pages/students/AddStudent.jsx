@@ -1,24 +1,24 @@
-import { useState, useRef, useEffect } from "react";
-import { Button, Input, Select, SelectItem, Checkbox, Textarea, Chip, Avatar, RadioGroup, Radio, cn, Divider, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
-import { ArrowLeft, ArrowRight, Upload, X, Plus, User, FileText, Users, GraduationCap, Check, Heart, Bus } from "lucide-react";
-import { studentsApi, settingsApi, uploadApi } from "../../services/api";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { parseDate } from "@internationalized/date";
+import { Button, Input, Select, SelectItem, Checkbox, Textarea, Chip, Avatar, RadioGroup, Radio, cn, Divider, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, DatePicker, Popover, PopoverTrigger, PopoverContent, Calendar as CalendarIcon } from "@heroui/react";
+import { ArrowLeft, ArrowRight, Upload, X, Plus, User, FileText, Users, GraduationCap, Check, Heart, Bus, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, getDaysInMonth, isValid, parse } from "date-fns";
+import { studentsApi, settingsApi, uploadApi, lookupPincode, classesApi } from "../../services/api";
 import toast from "react-hot-toast";
 import PhotoEditorModal from "../../components/PhotoEditorModal";
+import CameraCaptureModal from "../../components/CameraCaptureModal";
+import { GENDERS, BLOOD_GROUPS, PARENT_RELATIONSHIPS, GUARDIAN_RELATIONSHIPS, RELIGIONS, CATEGORIES, MOTHER_TONGUES, DEFAULT_STUDENT_FORM } from "../../constants/studentConstants";
+import { INDIAN_STATES, normalizeStateName } from "../../constants/states";
 
-// --- Constants ---
-const genders = ["Male", "Female", "Other"];
-const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-const parentRelationships = ["Father", "Mother"];
-const guardianRelationships = ["Grandparent", "Uncle", "Aunt", "Sibling", "Other"];
-const academicYears = ["2024-25", "2025-26", "2023-24"];
+// Note: Constants now imported from constants/ folder
 
 const emptyForm = {
   // Personal Information
-  fullName: "", admissionId: "", academicYear: "2024-25", dateOfBirth: "", gender: "Male",
+  fullName: "", dateOfBirth: "", gender: "Male",
   picture: null, aadhaarNumber: "", bloodGroup: "", nationality: "", religion: "",
   category: "", motherTongue: "", previousSchool: "", tcNumber: "",
   // Class Info
-  class: "", section: "", rollNumber: "",
+  classGrade: "", section: "", rollNumber: "",
   // Contact
   mobile: "", isWhatsapp: true, whatsappNumber: "", email: "", address: "", city: "", state: "", zipCode: "",
   // Parent/Guardian 1
@@ -36,6 +36,189 @@ const emptyForm = {
   birthCertificate: null, transferCertificate: null, aadhaarFront: null, aadhaarBack: null, studentPhoto: null, otherDocuments: []
 };
 
+// --- Click Away Listener Component ---
+// Simple hook-based click outside detector
+function ClickAwayListener({ children, onClickAway }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handleClick = (event) => {
+      if (ref.current && !ref.current.contains(event.target)) {
+        onClickAway();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClick);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+    };
+  }, [onClickAway]);
+
+  return <div ref={ref}>{children}</div>;
+}
+
+// --- Custom Calendar Component ---
+// Simple calendar that shows only the calendar grid, no nested input
+// Disables future dates to prevent selection
+function CustomCalendar({ selectedDate, onSelect, onClose }) {
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    if (selectedDate) return selectedDate;
+    return new Date();
+  });
+  const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
+
+  const daysInMonth = getDaysInMonth(currentMonth);
+  const firstDayOfMonth = startOfMonth(currentMonth);
+  const lastDayOfMonth = endOfMonth(currentMonth);
+
+  // Get all days to display (including padding from previous/next months)
+  const startOfWeek = new Date(firstDayOfMonth);
+  startOfWeek.setDate(startOfWeek.getDate() - firstDayOfMonth.getDay());
+
+  const endOfWeek = new Date(lastDayOfMonth);
+  endOfWeek.setDate(endOfWeek.getDate() + (6 - lastDayOfMonth.getDay()));
+
+  const allDays = eachDayOfInterval({ start: startOfWeek, end: endOfWeek });
+
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
+
+  // Generate year options from 1900 to current year - 1
+  const currentYear = new Date().getFullYear();
+  const maxYear = currentYear - 1;
+  const years = [];
+  for (let year = maxYear; year >= 1900; year--) {
+    years.push(year);
+  }
+
+  const handleDateClick = (day) => {
+    // Block future dates
+    const clickedDate = new Date(day);
+    clickedDate.setHours(0, 0, 0, 0);
+    if (clickedDate > today) {
+      return; // Don't allow selecting future dates
+    }
+    onSelect(day);
+  };
+
+  const handleYearChange = (year) => {
+    const newDate = new Date(currentMonth);
+    newDate.setFullYear(parseInt(year));
+    setCurrentMonth(newDate);
+    setIsYearDropdownOpen(false);
+  };
+
+  return (
+    <div className="bg-content1 border border-default-200 rounded-lg shadow-xl p-4 min-w-[320px]">
+      {/* Header with month and year navigation */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          type="button"
+          onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+          className="p-1 hover:bg-default-100 rounded transition-colors"
+        >
+          <ChevronLeft size={20} className="text-default-600" />
+        </button>
+
+        <div className="flex items-center gap-2">
+          <div className="font-semibold text-default-700">
+            {format(currentMonth, 'MMMM')}
+          </div>
+
+          {/* Year Dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
+              className="font-semibold text-default-700 hover:text-primary transition-colors px-2 py-1 hover:bg-default-100 rounded flex items-center gap-1"
+            >
+              {format(currentMonth, 'yyyy')}
+              <svg
+                className={`w-4 h-4 transition-transform ${isYearDropdownOpen ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {isYearDropdownOpen && (
+              <ClickAwayListener onClickAway={() => setIsYearDropdownOpen(false)}>
+                <div className="absolute top-full left-0 mt-1 bg-content1 border border-default-200 rounded-lg shadow-xl max-h-60 overflow-y-auto z-50 min-w-[100px]">
+                  {years.map(year => (
+                    <button
+                      key={year}
+                      type="button"
+                      onClick={() => handleYearChange(year)}
+                      className={`w-full px-4 py-2 text-left text-sm hover:bg-default-100 transition-colors ${
+                        year === currentMonth.getFullYear() ? 'bg-primary-50 text-primary font-semibold' : 'text-default-700'
+                      }`}
+                    >
+                      {year}
+                    </button>
+                  ))}
+                </div>
+              </ClickAwayListener>
+            )}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+          className="p-1 hover:bg-default-100 rounded transition-colors"
+        >
+          <ChevronRight size={20} className="text-default-600" />
+        </button>
+      </div>
+
+      {/* Week day headers */}
+      <div className="grid grid-cols-7 gap-1 mb-2">
+        {weekDays.map(day => (
+          <div key={day} className="text-center text-xs font-medium text-default-500 py-1">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {allDays.map((day, index) => {
+          const isCurrentMonth = isSameMonth(day, currentMonth);
+          const isSelected = selectedDate && isSameDay(day, selectedDate);
+          const isToday = isSameDay(day, today);
+
+          // Check if date is in the future
+          const dayDate = new Date(day);
+          dayDate.setHours(0, 0, 0, 0);
+          const isFuture = dayDate > today;
+          const isDisabled = isFuture;
+
+          return (
+            <button
+              key={index}
+              type="button"
+              onClick={() => handleDateClick(day)}
+              disabled={isDisabled}
+              className={`
+                aspect-square flex items-center justify-center text-sm rounded transition-colors
+                ${isDisabled ? 'text-default-300 cursor-not-allowed opacity-50' : !isCurrentMonth ? 'text-default-300' : 'text-default-700'}
+                ${isSelected && !isDisabled ? 'bg-primary text-white font-semibold' : ''}
+                ${isToday && !isSelected && !isDisabled ? 'border-2 border-primary' : ''}
+                ${!isSelected && !isDisabled ? 'hover:bg-default-100' : ''}
+              `}
+            >
+              {format(day, 'd')}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function AddStudent({ onClose, onSave, classOptions = [], classesWithTeachers = [], initialData = null }) {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,6 +226,25 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
   const [isDirtyModalOpen, setIsDirtyModalOpen] = useState(false);
   const [formData, setFormData] = useState(() => {
     if (initialData) {
+      // Parse class field (e.g., "10-A") into classGrade and section
+      let classGrade = "";
+      let section = "";
+      if (initialData.class) {
+        const parts = initialData.class.split('-');
+        if (parts.length === 2) {
+          classGrade = parts[0];
+          section = parts[1];
+        } else {
+          // If class doesn't have the expected format, try to find matching class
+          // FIXED: Use String() comparison for ObjectId matching
+          const matchingClass = classesWithTeachers.find(c => String(c.id) === String(initialData.classId));
+          if (matchingClass) {
+            classGrade = matchingClass.name;
+            section = matchingClass.section;
+          }
+        }
+      }
+
       // Map initialData (student object) to form structure
       return {
         ...emptyForm,
@@ -63,8 +265,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         }],
         // Siblings array
         siblings: initialData.siblings || [],
-        // Class is already in "X-A" format from backend, use it directly
-        class: initialData.class || "",
+        // Parse class and section
+        classGrade,
+        section,
       };
     }
     return emptyForm;
@@ -72,12 +275,15 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
   const [errors, setErrors] = useState({});
   const [documentConfigs, setDocumentConfigs] = useState([]);
   const [dobValidation, setDobValidation] = useState({ isValid: false, message: '', warning: '' });
+  const [isDobCalendarOpen, setIsDobCalendarOpen] = useState(false);
   const scrollContainerRef = useRef(null);
   const initialFormDataRef = useRef(null);
 
   // Photo Editor State
   const [isPhotoEditorOpen, setIsPhotoEditorOpen] = useState(false);
   const [selectedImageForEdit, setSelectedImageForEdit] = useState(null);
+  const [isCameraCaptureOpen, setIsCameraCaptureOpen] = useState(false);
+  const [isZipLookupLoading, setIsZipLookupLoading] = useState(false);
 
   // Refs
   const pictureInputRef = useRef(null);
@@ -87,17 +293,18 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
   const aadhaarBackRef = useRef(null);
   const photoRef = useRef(null);
   const otherDocsRef = useRef(null);
+  const zipLookupTimeoutRef = useRef(null);
+  const manualCityStateEntryRef = useRef(false);
 
   // Error field refs for auto-scroll
   const fullNameRef = useRef(null);
   const dobRef = useRef(null);
   const genderRef = useRef(null);
   const classRef = useRef(null);
-  const admissionIdRef = useRef(null);
   const parentNameRef = useRef(null);
   const parentPhoneRef = useRef(null);
 
-  // Load document configuration and auto-generate admission ID
+  // Load document configuration
   useEffect(() => {
     const loadConfigurations = async () => {
       try {
@@ -105,28 +312,13 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         const docConfigs = await settingsApi.getDocumentConfig();
         setDocumentConfigs(docConfigs);
         console.log('📄 Document configs loaded:', docConfigs);
-
-        // Auto-generate admission ID only for new students
-        if (!initialData) {
-          console.log('🔄 Fetching next admission ID...');
-          const response = await studentsApi.getNextAdmissionId();
-          console.log('✅ Admission ID received:', response);
-
-          if (response && response.admissionId) {
-            updateField("admissionId", response.admissionId);
-            console.log('✅ Admission ID set to:', response.admissionId);
-          } else {
-            console.error('❌ Invalid response format:', response);
-            toast.error('Failed to generate admission ID');
-          }
-        }
       } catch (error) {
         console.error('❌ Error loading configurations:', error);
         toast.error('Failed to load admission settings: ' + error.message);
       }
     };
     loadConfigurations();
-  }, [initialData]);
+  }, []);
 
   // Store initial form data for dirty state detection
   useEffect(() => {
@@ -162,9 +354,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
   // Auto-generate roll number when class is selected
   useEffect(() => {
     const generateRollNumber = async () => {
-      if (formData.class && !initialData) {
+      if (formData.classGrade && formData.section && !initialData) {
         try {
-          const selectedClass = classesWithTeachers.find(c => `${c.name}-${c.section}` === formData.class);
+          const selectedClass = classesWithTeachers.find(c => c.name === formData.classGrade && c.section === formData.section);
           if (selectedClass) {
             // Use optimized API endpoint
             const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -181,18 +373,69 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       }
     };
     generateRollNumber();
-  }, [formData.class, initialData, classesWithTeachers]);
+  }, [formData.classGrade, formData.section, initialData, classesWithTeachers]);
 
   // Initialize DOB validation when editing a student with existing DOB
   useEffect(() => {
-    if (formData.dateOfBirth && formData.dateOfBirth.includes('/')) {
-      validateDOBInRealTime(formData.dateOfBirth);
+    if (formData.dateOfBirth) {
+      // If it's in ISO format (YYYY-MM-DD), convert to DD/MM/YYYY for display
+      if (formData.dateOfBirth.includes('-') && /^\d{4}-\d{2}-\d{2}/.test(formData.dateOfBirth)) {
+        const ddmmyy = isoToDdmmyy(formData.dateOfBirth.split('T')[0]);
+        if (ddmmyy) {
+          updateField("dateOfBirth", ddmmyy);
+          validateDOBInRealTime(ddmmyy);
+        }
+      } else if (formData.dateOfBirth.includes('/')) {
+        validateDOBInRealTime(formData.dateOfBirth);
+      }
     }
   }, []); // Run once on mount
+
+  // Normalize state from initialData on mount
+  useEffect(() => {
+    if (initialData && initialData.state) {
+      const normalizedState = normalizeStateName(initialData.state);
+      if (normalizedState && normalizedState !== initialData.state) {
+        updateField("state", normalizedState);
+      }
+    }
+  }, []); // Run once on mount
+
+  // Cleanup zip lookup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (zipLookupTimeoutRef.current) {
+        clearTimeout(zipLookupTimeoutRef.current);
+      }
+    };
+  }, []);
+
 
   const updateField = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }));
+  };
+
+  // Memoize state selectedKeys to prevent Select component from closing/flickering during PIN lookup
+  const stateSelectedKeys = useMemo(() => {
+    return formData.state ? [formData.state] : [];
+  }, [formData.state]);
+
+  // Helper functions for date format conversion
+  const ddmmyyToIso = (ddmmyy) => {
+    if (!ddmmyy || typeof ddmmyy !== 'string') return '';
+    const parts = ddmmyy.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!parts) return '';
+    const [, day, month, year] = parts;
+    return `${year}-${month}-${day}`;
+  };
+
+  const isoToDdmmyy = (iso) => {
+    if (!iso || typeof iso !== 'string') return '';
+    const parts = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!parts) return '';
+    const [, year, month, day] = parts;
+    return `${day}/${month}/${year}`;
   };
 
   const updateParent = (index, field, value) => {
@@ -254,8 +497,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
+      console.log('📸 File selected:', file.name);
       const reader = new FileReader();
       reader.onloadend = () => {
+        console.log('✅ File loaded, opening photo editor');
         setSelectedImageForEdit(reader.result);
         setIsPhotoEditorOpen(true);
         // Reset so we can select same file again if needed
@@ -266,6 +511,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
   };
 
   const handlePhotoSave = (croppedImage) => {
+    console.log('💾 Saving cropped photo');
     // croppedImage is a data URL (string)
     // We can convert it to a File/Blob if needed, but for now assuming direct usage or handling in submit
     // Ideally convert dataURL to Blob/File to stay consistent with File object structure
@@ -281,6 +527,14 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     }
 
     const file = dataURLtoFile(croppedImage, "profile_photo.jpg");
+    console.log('✅ Photo file created, updating form');
+    updateField("picture", file);
+  };
+
+  const handleCameraPhotoCapture = (file) => {
+    // File is already captured from camera or file picker, no need to edit again
+    // The CameraCaptureModal handles editing internally
+    console.log('📸 Photo captured from camera/upload:', file.name);
     updateField("picture", file);
   };
 
@@ -289,16 +543,14 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     if (stepNum === 1) {
       if (!formData.fullName.trim()) newErrors.fullName = "Required";
 
-      // Validate date of birth (expects DD/MM/YYYY format)
-      // Note: Real-time validation is done via validateDOBInRealTime
-      // This just checks if a valid date has been entered
+      // Validate date of birth (accepts DD/MM/YYYY format)
       if (!formData.dateOfBirth) {
         newErrors.dateOfBirth = "Required";
       } else {
-        // Check if it's in proper DD/MM/YYYY format (user input format)
-        const datePattern = /^\d{2}\/\d{2}\/\d{4}$/;
-        if (!datePattern.test(formData.dateOfBirth)) {
-          newErrors.dateOfBirth = "Please enter a valid date in DD/MM/YYYY format";
+        // Check if it's in proper DD/MM/YYYY format
+        const ddmmyyPattern = /^\d{2}\/\d{2}\/\d{4}$/;
+        if (!ddmmyyPattern.test(formData.dateOfBirth)) {
+          newErrors.dateOfBirth = "Please enter date in DD/MM/YYYY format";
         } else {
           // Additional validation for the date values
           const [day, month, year] = formData.dateOfBirth.split('/').map(Number);
@@ -310,12 +562,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
           if (!isValidDate) {
             newErrors.dateOfBirth = "Invalid calendar date";
-          } else if (month < 1 || month > 12) {
-            newErrors.dateOfBirth = "Invalid month";
-          } else if (day < 1 || day > 31) {
-            newErrors.dateOfBirth = "Invalid day";
           } else if (year < 1900) {
             newErrors.dateOfBirth = "Year must be 1900 or later";
+          } else if (year === currentYear) {
+            newErrors.dateOfBirth = "Year cannot be the current year";
           }
           // Note: We allow future dates and very old dates - warnings are shown via real-time validation
           // but they don't block submission (more permissive approach)
@@ -323,8 +573,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       }
 
       if (!formData.gender) newErrors.gender = "Required";
-      if (!formData.admissionId.trim()) newErrors.admissionId = "Required";
-      if (!formData.class) newErrors.class = "Required";
+      if (!formData.classGrade) newErrors.classGrade = "Required";
+      if (!formData.section) newErrors.section = "Required";
     }
     if (stepNum === 2) {
       if (formData.parents.length === 0 || !formData.parents[0].name.trim()) {
@@ -350,9 +600,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           dobRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else if (errors.gender && genderRef.current) {
           genderRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else if (errors.admissionId && admissionIdRef.current) {
-          admissionIdRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else if (errors.class && classRef.current) {
+        } else if ((errors.classGrade || errors.section) && classRef.current) {
           classRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       } else if (stepNum === 2) {
@@ -396,10 +644,12 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     setIsDirtyModalOpen(false);
   };
 
-  // Helper function to validate DOB in real-time with better UX
+  // Helper function to validate DOB in real-time with strict blocking
   const validateDOBInRealTime = (dateStr) => {
     const digits = dateStr.replace(/\D/g, '');
     const currentYear = new Date().getFullYear();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
 
     // Reset validation state
     let validation = { isValid: false, message: '', warning: '' };
@@ -424,51 +674,68 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     const month = parseInt(digits.slice(2, 4));
     const year = parseInt(digits.slice(4, 8));
 
-    // Basic validation
+    // BLOCK: Invalid day range
     if (day < 1 || day > 31) {
       validation.message = 'Invalid day (must be 01-31)';
-      setErrors(prev => ({ ...prev, dateOfBirth: 'Invalid day' }));
+      setErrors(prev => ({ ...prev, dateOfBirth: 'Day must be between 01 and 31' }));
       setDobValidation(validation);
       return;
     }
 
+    // BLOCK: Invalid month range
     if (month < 1 || month > 12) {
       validation.message = 'Invalid month (must be 01-12)';
-      setErrors(prev => ({ ...prev, dateOfBirth: 'Invalid month' }));
+      setErrors(prev => ({ ...prev, dateOfBirth: 'Month must be between 01 and 12' }));
       setDobValidation(validation);
       return;
     }
 
-    // Check for calendar validity (e.g., Feb 30)
+    // BLOCK: Invalid year range (must be reasonable)
+    if (year < 1900) {
+      validation.message = 'Year too old (must be 1900 or later)';
+      setErrors(prev => ({ ...prev, dateOfBirth: 'Year must be 1900 or later' }));
+      setDobValidation(validation);
+      return;
+    }
+
+    // BLOCK: Current year or future years
+    if (year >= currentYear) {
+      validation.message = 'Future dates not allowed';
+      setErrors(prev => ({ ...prev, dateOfBirth: 'Year cannot be current year or future' }));
+      setDobValidation(validation);
+      return;
+    }
+
+    // BLOCK: Calendar validity (e.g., Feb 30, Apr 31, etc.)
     const date = new Date(year, month - 1, day);
     const isValidCalendar = date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 
     if (!isValidCalendar) {
-      validation.message = 'Invalid date (check calendar)';
+      validation.message = 'Invalid date (does not exist in calendar)';
       setErrors(prev => ({ ...prev, dateOfBirth: 'Invalid calendar date' }));
       setDobValidation(validation);
       return;
     }
 
-    // Check for future date - this is a warning, not an error
-    const today = new Date();
+    // BLOCK: Future date check (compare full dates)
     const inputDate = new Date(year, month - 1, day);
+    inputDate.setHours(0, 0, 0, 0);
     if (inputDate > today) {
-      validation.warning = 'Date is in the future';
-      validation.isValid = true; // Still valid, just warn
-      validation.message = `Future date detected`;
-      setErrors(prev => ({ ...prev, dateOfBirth: null })); // Don't block submission
+      validation.message = 'Future dates not allowed';
+      setErrors(prev => ({ ...prev, dateOfBirth: 'Date cannot be in the future' }));
       setDobValidation(validation);
       return;
     }
 
-    // Check for very old date (>100 years) - this is a warning, not an error
+    // Calculate age
     const ageInYears = today.getFullYear() - year - (today.getMonth() < month || (today.getMonth() === month && today.getDate() < day) ? 1 : 0);
+
+    // WARNING: Very old date (>100 years) - still valid but warn
     if (ageInYears > 100) {
       validation.warning = 'Person appears to be over 100 years old';
-      validation.isValid = true; // Still valid, just warn
+      validation.isValid = true;
       validation.message = `Age: ${ageInYears} years`;
-      setErrors(prev => ({ ...prev, dateOfBirth: null })); // Don't block submission
+      setErrors(prev => ({ ...prev, dateOfBirth: null })); // Clear error, allow submission
       setDobValidation(validation);
       return;
     }
@@ -514,12 +781,12 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
     setIsSubmitting(true);
     try {
-      // Find the classId from the selected class
-      const selectedClass = classesWithTeachers.find(c => `${c.name}-${c.section}` === formData.class);
+      // Find the classId from the selected classGrade and section
+      const selectedClass = classesWithTeachers.find(c => c.name === formData.classGrade && c.section === formData.section);
 
       if (!selectedClass) {
         console.error('❌ Selected class not found!');
-        console.error('❌ Looking for class:', formData.class);
+        console.error('❌ Looking for classGrade:', formData.classGrade, 'section:', formData.section);
         console.error('❌ Available classes:', classesWithTeachers.map(c => ({ id: c.id, name: c.name, section: c.section })));
         toast.error('Selected class not found');
         setIsSubmitting(false);
@@ -531,6 +798,25 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         toast.error('Class ID is missing. Please refresh and try again.');
         setIsSubmitting(false);
         return;
+      }
+
+      // Check if section has reached capacity
+      try {
+        const capacityData = await classesApi.checkCapacity(selectedClass.id);
+
+        if (capacityData.isFull) {
+          toast.error(`Section ${selectedClass.name}-${selectedClass.section} is full (${capacityData.current}/${capacityData.capacity} students). Please create a new section.`, {
+            duration: 5000,
+            icon: '🚫'
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
+        console.log(`✅ Section has capacity: ${capacityData.available} spots available`);
+      } catch (error) {
+        console.error('Failed to check capacity:', error);
+        // Continue anyway - let backend handle it
       }
 
       // Upload photo to Cloudinary if it's a File object
@@ -699,10 +985,32 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         formattedDateOfBirth = `${year}-${month}-${day}`;
       }
 
+      // Get next admission ID from backend (only for new students)
+      let admissionId;
+      if (!initialData) {
+        try {
+          const response = await studentsApi.getNextAdmissionId();
+          admissionId = response.admissionId;
+          console.log('📝 Got admission ID:', admissionId);
+        } catch (error) {
+          console.error('❌ Failed to get admission ID:', error);
+          toast.error('Failed to generate admission ID');
+          setIsSubmitting(false);
+          return;
+        }
+      } else {
+        admissionId = initialData.admissionId;
+      }
+
+      // Calculate academic year (e.g., 2024-25)
+      const currentYear = new Date().getFullYear();
+      const nextYear = (currentYear + 1).toString().slice(-2);
+      const academicYear = `${currentYear}-${nextYear}`;
+
       const studentData = {
         name: formData.fullName,
-        admissionId: formData.admissionId,
-        academicYear: formData.academicYear,
+        admissionId: admissionId,
+        academicYear: academicYear,
         classId: selectedClass?.id,
         rollNo: formData.rollNumber ? parseInt(formData.rollNumber) : null,
         gender: formData.gender,
@@ -772,58 +1080,34 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       console.log('📤 Selected class:', selectedClass);
 
       await onSave(studentData);
+      // Reset submitting state after successful save
+      setIsSubmitting(false);
       // Reset dirty state after successful save
       setHasUnsavedChanges(false);
       // Success toast is shown in parent component
-      // Loading state will be reset when drawer closes
     } catch (error) {
       console.error('Error submitting student:', error);
+
+      // For roll number conflicts, show clear error
+      if (error.message && error.message.toLowerCase().includes('roll number')) {
+        toast.error('This roll number is already taken. Please contact administrator to check roll number settings for this section.', {
+          duration: 5000
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // For other errors, reset submitting state
+      setIsSubmitting(false);
       // Error toast is shown in parent component
-      setIsSubmitting(false); // Reset loading state on error
     }
   };
 
   // --- Render Steps ---
   const renderStep1 = () => (
-    <div className="space-y-6 animate-fade-in text-left">
-      {/* Admission Details - At the top */}
-      <div className="space-y-2">
-        <label className="text-sm font-semibold text-default-900">Admission Details</label>
-        <div className="grid grid-cols-2 gap-4">
-          <div ref={admissionIdRef}>
-            <Input
-              label="Admission ID"
-              labelPlacement="outside"
-              placeholder="e.g., ADM2024001"
-              value={formData.admissionId}
-              onValueChange={v => updateField("admissionId", v)}
-              isInvalid={!!errors.admissionId}
-              errorMessage={errors.admissionId}
-              variant="bordered"
-              radius="sm"
-              isRequired
-              isReadOnly
-              description="Auto-generated from settings"
-              classNames={{ inputWrapper: "bg-default-50 border-1 border-default-200 h-10" }}
-            />
-          </div>
-          <Select
-            label="Academic Year"
-            labelPlacement="outside"
-            placeholder="Select..."
-            selectedKeys={formData.academicYear ? [formData.academicYear] : []}
-            onSelectionChange={keys => updateField("academicYear", Array.from(keys)[0])}
-            variant="bordered"
-            radius="sm"
-            classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
-          >
-            {academicYears.map(y => <SelectItem key={y}>{y}</SelectItem>)}
-          </Select>
-        </div>
-      </div>
-
+    <div className="space-y-5 animate-fade-in text-left">
       {/* Profile Section */}
-      <div className="flex items-center gap-5 pt-2 border-t border-solid border-default-200">
+      <div className="flex items-center gap-5">
         {formData.picture ? (
           <Avatar
             src={formData.picture instanceof File ? URL.createObjectURL(formData.picture) : formData.picture}
@@ -833,7 +1117,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             color="primary"
           />
         ) : (
-          <div className="w-20 h-20 rounded-full border-2 border-default-200 bg-default-50 flex items-center justify-center">
+          <div
+            className="w-20 h-20 rounded-full border-2 border-default-200 bg-default-50 flex items-center justify-center cursor-pointer hover:border-primary-400 transition-colors"
+            onClick={() => pictureInputRef.current?.click()}
+          >
             <User size={32} className="text-default-400" />
           </div>
         )}
@@ -841,9 +1128,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           <div className="flex items-center gap-3">
             <button
               className="text-sm font-semibold text-primary hover:text-primary-600 transition-colors cursor-pointer"
-              onClick={() => pictureInputRef.current?.click()}
+              onClick={() => setIsCameraCaptureOpen(true)}
             >
-              {formData.picture ? "Change Photo" : "Upload Photo"}
+              {formData.picture ? "Change Photo" : "Add Photo"}
             </button>
             {formData.picture && (
               <>
@@ -858,174 +1145,358 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             )}
           </div>
           <p className="text-xs text-default-500 max-w-[250px]">
-            Upload a passport-size photo of the student
+            Take a photo or upload from device
           </p>
-          <input ref={pictureInputRef} type="file" accept="image/*" className="hidden"
-            onChange={handleFileSelect} />
         </div>
       </div>
 
-      {/* Personal Information */}
-      <div className="space-y-2" ref={fullNameRef}>
+      {/* Personal Information - Full Name & Date of Birth in same row */}
+      <div className="space-y-2">
         <label className="text-sm font-semibold text-default-900">Personal Information</label>
-        <Input
-          label="Full Name"
-          labelPlacement="outside"
-          placeholder="Enter student's full name"
-          value={formData.fullName}
-          onValueChange={v => updateField("fullName", v)}
-          isInvalid={!!errors.fullName}
-          errorMessage={errors.fullName}
-          variant="bordered"
-          radius="sm"
-          isRequired
-          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
-        />
-      </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div ref={fullNameRef}>
+            <Input
+              label="Full Name"
+              labelPlacement="outside"
+              placeholder="Enter student's full name"
+              value={formData.fullName}
+              onValueChange={v => updateField("fullName", v.replace(/[0-9]/g, ''))}
+              isInvalid={!!errors.fullName}
+              errorMessage={errors.fullName}
+              variant="bordered"
+              radius="sm"
+              isRequired
+              classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            />
+          </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div ref={dobRef}>
-          <Input
-            type="text"
-            label="Date of Birth"
-            labelPlacement="outside"
-            placeholder="DD/MM/YYYY"
-            value={(() => {
-              if (!formData.dateOfBirth) return '';
-              // Check if it's already in DD/MM/YYYY format (partial input)
-              if (formData.dateOfBirth.includes('/')) {
-                return formData.dateOfBirth;
-              }
-              // Convert from YYYY-MM-DD to DD/MM/YYYY
-              const parts = formData.dateOfBirth.split('-');
-              if (parts.length === 3) {
-                return `${parts[2]}/${parts[1]}/${parts[0]}`;
-              }
-              return formData.dateOfBirth;
-            })()}
-            onValueChange={v => {
-              // Allow more flexible editing - remove non-digits
-              let cleaned = v.replace(/\D/g, '');
+          {/* Date of Birth */}
+          <div ref={dobRef} className="space-y-1">
+            <label className="text-xs font-medium text-default-600">Date of Birth <span className="text-danger">*</span></label>
 
-              // Limit to 8 digits
-              if (cleaned.length > 8) {
-                cleaned = cleaned.slice(0, 8);
-              }
+            <div className="relative">
+              <Input
+                labelPlacement="outside"
+                placeholder="DD/MM/YYYY"
+                value={formData.dateOfBirth || ''}
+                onClick={() => setIsDobCalendarOpen(true)}
+                onFocus={() => setIsDobCalendarOpen(true)}
+                onValueChange={(value) => {
+                  const currentYear = new Date().getFullYear();
+                  const maxYear = currentYear - 1;
 
-              // Auto-format with slashes as user types
-              let formatted = cleaned;
-              if (cleaned.length > 4) {
-                formatted = `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4)}`;
-              } else if (cleaned.length > 2) {
-                formatted = `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
-              }
+                  // Extract digits from input
+                  const digits = value.replace(/\D/g, '');
 
-              updateField("dateOfBirth", formatted);
+                  // Get existing value to determine context
+                  const existingDigits = (formData.dateOfBirth || '').replace(/\D/g, '');
 
-              // Real-time validation with helpful feedback
-              validateDOBInRealTime(formatted);
-            }}
-            isInvalid={!!errors.dateOfBirth}
-            errorMessage={errors.dateOfBirth}
-            variant="bordered"
-            radius="sm"
-            isRequired
-            description={
-              <div className="flex items-center gap-2">
-                <span className="text-default-400">Format: DD/MM/YYYY</span>
-                {formData.dateOfBirth && dobValidation.isValid && (
-                  <span className="text-success text-xs flex items-center gap-1">
-                    <Check size={12} />
-                    Valid
-                  </span>
-                )}
-              </div>
-            }
-            endContent={
-              formData.dateOfBirth && dobValidation.isValid ? (
-                <Check size={18} className="text-success" />
-              ) : (
-                <span className="text-default-400 text-xs">DD/MM/YYYY</span>
-              )
-            }
-            classNames={{
-              inputWrapper: cn(
-                "bg-background border-1 h-10 transition-colors",
-                formData.dateOfBirth && dobValidation.isValid
-                  ? "border-success hover:border-success-400"
-                  : "border-default-200 hover:border-default-300",
-                errors.dateOfBirth && "border-danger"
-              )
-            }}
-          />
-          {/* Helper text with validation feedback */}
-          {formData.dateOfBirth && formData.dateOfBirth.length > 0 && (
-            <div className="mt-1 space-y-1">
-              {dobValidation.message && (
-                <p className="text-xs text-default-600">{dobValidation.message}</p>
-              )}
-              {dobValidation.warning && (
-                <p className="text-xs text-warning flex items-center gap-1">
-                  <span>⚠️</span> {dobValidation.warning}
-                </p>
-              )}
-              {/* Show format progress */}
-              {formData.dateOfBirth.length < 10 && !errors.dateOfBirth && (
-                <p className="text-xs text-default-400">
-                  {getFormatProgress(formData.dateOfBirth)}
-                </p>
+                  // Determine which part we're editing based on cursor position
+                  // If the new value is shorter, we're deleting
+                  const isDeleting = digits.length < existingDigits.length;
+
+                  // Filter and validate digits in real-time
+                  let filteredDigits = '';
+                  let dayPart = '';
+                  let monthPart = '';
+                  let yearPart = '';
+
+                  if (digits.length > 0) {
+                    // DAY VALIDATION (positions 0-1)
+                    const firstDigit = digits[0];
+
+                    // Block invalid first digits (4-9 are invalid for day)
+                    if (firstDigit >= '4') {
+                      // Don't allow this digit at all
+                      filteredDigits = '';
+                    } else {
+                      dayPart = firstDigit;
+
+                      // Second digit of day
+                      if (digits.length >= 2) {
+                        const secondDigit = digits[1];
+
+                        // If first digit is 0-2, any second digit is allowed (00-29)
+                        if (firstDigit <= '2') {
+                          dayPart = firstDigit + secondDigit;
+                        }
+                        // If first digit is 3, only allow 0 or 1 (30, 31)
+                        else if (firstDigit === '3') {
+                          if (secondDigit === '0' || secondDigit === '1') {
+                            dayPart = firstDigit + secondDigit;
+                          } else {
+                            // Block invalid second digit, keep only first
+                            dayPart = firstDigit;
+                          }
+                        }
+                      }
+
+                      filteredDigits = dayPart;
+
+                      // MONTH VALIDATION (positions 2-3)
+                      if (digits.length >= 3 && dayPart.length === 2) {
+                        const monthFirstDigit = digits[2];
+
+                        // Block invalid first month digits (2-9 are invalid)
+                        if (monthFirstDigit >= '2') {
+                          // Don't add this digit
+                          monthPart = '';
+                        } else {
+                          monthPart = monthFirstDigit;
+
+                          // Second digit of month
+                          if (digits.length >= 4) {
+                            const monthSecondDigit = digits[3];
+
+                            // If first digit is 0, any second digit is allowed (01-09)
+                            if (monthFirstDigit === '0') {
+                              monthPart = monthFirstDigit + monthSecondDigit;
+                            }
+                            // If first digit is 1, only allow 0-2 (10, 11, 12)
+                            else if (monthFirstDigit === '1') {
+                              if (monthSecondDigit >= '0' && monthSecondDigit <= '2') {
+                                monthPart = monthFirstDigit + monthSecondDigit;
+                              } else {
+                                // Block invalid second digit, keep only first
+                                monthPart = monthFirstDigit;
+                              }
+                            }
+                          }
+
+                          filteredDigits = dayPart + monthPart;
+                        }
+
+                        // YEAR VALIDATION (positions 4-7)
+                        if (digits.length >= 5 && monthPart.length === 2) {
+                          const yearDigits = digits.slice(4);
+
+                          // Only allow 4 digits for year
+                          if (yearDigits.length <= 4) {
+                            // For each digit being typed, validate the partial year
+                            let yearToCheck = yearDigits;
+
+                            // If we have 4 digits, validate the full year
+                            if (yearDigits.length === 4) {
+                              const fullYear = parseInt(yearDigits);
+
+                              // Block years before 1900
+                              if (fullYear < 1900) {
+                                // Don't allow this year
+                                yearToCheck = '';
+                              }
+                              // Block current year and future years
+                              else if (fullYear > maxYear) {
+                                // Don't allow this year
+                                yearToCheck = '';
+                              } else {
+                                yearToCheck = yearDigits;
+                              }
+                            } else {
+                              // For partial years (1-3 digits), allow typing but be more restrictive
+                              // If first digit is 0 or 1, that's fine (years 1000-1999)
+                              // If first digit is 2, second digit must be 0 (years 2000-2099)
+                              if (yearDigits.length >= 1) {
+                                const firstYearDigit = yearDigits[0];
+
+                                // Block years starting with 0 or 1 (too old)
+                                if (firstYearDigit === '0' || firstYearDigit === '1') {
+                                  yearToCheck = '';
+                                }
+                                // For years starting with 2, ensure second digit is 0
+                                else if (firstYearDigit === '2') {
+                                  if (yearDigits.length >= 2) {
+                                    const secondYearDigit = yearDigits[1];
+                                    if (secondYearDigit !== '0') {
+                                      // Block anything other than 20xx
+                                      yearToCheck = '2';
+                                    } else {
+                                      yearToCheck = yearDigits;
+                                    }
+                                  } else {
+                                    yearToCheck = yearDigits;
+                                  }
+                                }
+                                // Block years starting with 3-9 (future years)
+                                else if (firstYearDigit >= '3') {
+                                  yearToCheck = '';
+                                } else {
+                                  yearToCheck = yearDigits;
+                                }
+                              }
+                            }
+
+                            filteredDigits = dayPart + monthPart + yearToCheck;
+                          }
+                        }
+                      }
+                    }
+                  }
+
+                  // Format with slashes
+                  let formatted = '';
+                  if (filteredDigits.length >= 1) {
+                    formatted += filteredDigits.slice(0, 2);
+                    if (filteredDigits.length >= 3) {
+                      formatted += '/' + filteredDigits.slice(2, 4);
+                      if (filteredDigits.length >= 5) {
+                        formatted += '/' + filteredDigits.slice(4, 8);
+                      }
+                    }
+                  }
+
+                  updateField("dateOfBirth", formatted);
+
+                  // Validate in real-time if we have a complete date
+                  if (/^\d{2}\/\d{2}\/\d{4}$/.test(formatted)) {
+                    validateDOBInRealTime(formatted);
+                  } else {
+                    setDobValidation({ isValid: false, message: '', warning: '' });
+                  }
+                }}
+                isInvalid={!!errors.dateOfBirth}
+                errorMessage={errors.dateOfBirth}
+                variant="bordered"
+                radius="sm"
+                isRequired
+                classNames={{
+                  inputWrapper: "bg-background border-1 border-default-200 hover:border-primary-400 hover:bg-default-50 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 h-10 pr-10 cursor-pointer"
+                }}
+                endContent={
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsDobCalendarOpen(true);
+                    }}
+                    className="flex items-center justify-center"
+                  >
+                    <Calendar
+                      size={18}
+                      className="text-default-500 cursor-pointer hover:text-primary transition-colors"
+                    />
+                  </button>
+                }
+              />
+
+              {/* Calendar dropdown - shows ONLY calendar, no nested input */}
+              {isDobCalendarOpen && (
+                <div className="absolute z-50 mt-1">
+                  <ClickAwayListener onClickAway={() => setIsDobCalendarOpen(false)}>
+                    <CustomCalendar
+                      selectedDate={(() => {
+                        if (!formData.dateOfBirth) return null;
+                        const isoDate = ddmmyyToIso(formData.dateOfBirth);
+                        if (!isoDate) return null;
+                        const parsed = parse(isoDate, 'yyyy-MM-dd', new Date());
+                        return isValid(parsed) ? parsed : null;
+                      })()}
+                      onSelect={(date) => {
+                        const ddmmyy = format(date, 'dd/MM/yyyy');
+                        updateField("dateOfBirth", ddmmyy);
+                        validateDOBInRealTime(ddmmyy);
+                        setIsDobCalendarOpen(false);
+                      }}
+                    />
+                  </ClickAwayListener>
+                </div>
               )}
             </div>
-          )}
+
+            {dobValidation.message && (
+              <p className={`text-xs mt-1 ${dobValidation.isValid ? 'text-success' : dobValidation.warning ? 'text-warning' : 'text-default-500'}`}>
+                {dobValidation.message}
+              </p>
+            )}
+            {dobValidation.warning && (
+              <p className="text-xs text-warning mt-1">⚠️ {dobValidation.warning}</p>
+            )}
+          </div>
         </div>
-        <div className="space-y-1" ref={genderRef}>
-          <label className="text-xs font-medium text-default-600">Gender <span className="text-danger">*</span></label>
-          <RadioGroup
-            orientation="horizontal"
-            value={formData.gender}
-            onValueChange={v => updateField("gender", v)}
-            classNames={{ wrapper: "gap-4" }}
-            isInvalid={!!errors.gender}
-            errorMessage={errors.gender}
-          >
-            {genders.map(g => (
-              <Radio key={g} value={g} size="sm" classNames={{ label: "text-sm" }}>{g}</Radio>
-            ))}
-          </RadioGroup>
-        </div>
+      </div>
+
+      {/* Gender */}
+      <div className="space-y-1" ref={genderRef}>
+        <label className="text-xs font-medium text-default-600">Gender <span className="text-danger">*</span></label>
+        <RadioGroup
+          orientation="horizontal"
+          value={formData.gender}
+          onValueChange={v => updateField("gender", v)}
+          classNames={{ wrapper: "gap-4" }}
+          isInvalid={!!errors.gender}
+          errorMessage={errors.gender}
+        >
+          {GENDERS.map(g => (
+            <Radio key={g} value={g} size="sm" classNames={{ label: "text-sm" }}>{g}</Radio>
+          ))}
+        </RadioGroup>
       </div>
 
       {/* Class Info */}
       <div className="space-y-2 pt-2 border-t border-solid border-default-200">
         <label className="text-sm font-semibold text-default-900 block mt-2">Class Information</label>
         <div className="grid grid-cols-2 gap-4">
+          {/* Class Selection */}
           <div ref={classRef}>
             <Select
               label="Class"
               labelPlacement="outside"
-              placeholder="Select..."
-              selectedKeys={formData.class ? [formData.class] : []}
-              onSelectionChange={keys => updateField("class", Array.from(keys)[0])}
-              isInvalid={!!errors.class}
-              errorMessage={errors.class}
+              placeholder="Select class"
+              selectedKeys={formData.classGrade ? [formData.classGrade] : []}
+              onSelectionChange={keys => {
+                const selectedClass = classesWithTeachers.find(c => c.name === Array.from(keys)[0]);
+                updateField("classGrade", Array.from(keys)[0]);
+                updateField("section", selectedClass?.section || ""); // Auto-select section
+                updateField("rollNumber", ""); // Reset roll number
+              }}
+              isRequired
+              isInvalid={!!errors.classGrade}
+              errorMessage={errors.classGrade}
               variant="bordered"
               radius="sm"
-              isRequired
               classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
             >
-              {classOptions.map(c => <SelectItem key={c}>{c}</SelectItem>)}
+              {Array.from(new Set(classesWithTeachers.map(c => c.name))).sort((a, b) => parseInt(a) - parseInt(b)).map(className => (
+                <SelectItem key={className}>{className}</SelectItem>
+              ))}
             </Select>
           </div>
+
+          {/* Section Selection */}
+          <div>
+            <Select
+              label="Section"
+              labelPlacement="outside"
+              placeholder="Select section"
+              selectedKeys={formData.section ? [formData.section] : []}
+              onSelectionChange={keys => updateField("section", Array.from(keys)[0])}
+              isRequired
+              isDisabled={!formData.classGrade}
+              isInvalid={!!errors.section}
+              errorMessage={errors.section}
+              variant="bordered"
+              radius="sm"
+              classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            >
+              {Array.from(new Set(classesWithTeachers
+                .filter(c => c.name === formData.classGrade)
+                .map(c => c.section)
+              )).sort().map(section => (
+                <SelectItem key={section}>{section}</SelectItem>
+              ))}
+            </Select>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-4 mt-4">
           <Input
             label="Roll Number"
             labelPlacement="outside"
             placeholder="Auto-generated"
             value={formData.rollNumber}
-            onValueChange={v => updateField("rollNumber", v)}
+            // onValueChange={v => updateField("rollNumber", v)} // REMOVED - cannot be edited
             variant="bordered"
             radius="sm"
             isReadOnly
-            description="Auto-generated based on class"
+            description="Auto-generated from roll number settings. Cannot be modified."
             classNames={{ inputWrapper: "bg-default-50 border-1 border-default-200 h-10" }}
           />
         </div>
@@ -1056,6 +1527,16 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               Same for WhatsApp
             </Checkbox>
           </div>
+          <Input
+            label="Email Address"
+            labelPlacement="outside"
+            placeholder="student@email.com"
+            value={formData.email}
+            onValueChange={v => updateField("email", v)}
+            variant="bordered"
+            radius="sm"
+            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          />
           {!formData.isWhatsapp && (
             <Input
               label="WhatsApp Number"
@@ -1070,16 +1551,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             />
           )}
         </div>
-        <Input
-          label="Email Address"
-          labelPlacement="outside"
-          placeholder="student@email.com"
-          value={formData.email}
-          onValueChange={v => updateField("email", v)}
-          variant="bordered"
-          radius="sm"
-          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
-        />
         <Textarea
           label="Address"
           labelPlacement="outside"
@@ -1088,39 +1559,106 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           onValueChange={v => updateField("address", v)}
           variant="bordered"
           radius="sm"
+          isRequired
           minRows={2}
           classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300" }}
         />
-        <Input
-          label="City"
-          labelPlacement="outside"
-          placeholder="City"
-          value={formData.city}
-          onValueChange={v => updateField("city", v)}
-          variant="bordered"
-          radius="sm"
-          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
-        />
-        <Input
-          label="State"
-          labelPlacement="outside"
-          placeholder="State"
-          value={formData.state}
-          onValueChange={v => updateField("state", v)}
-          variant="bordered"
-          radius="sm"
-          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
-        />
-        <Input
-          label="ZIP Code"
-          labelPlacement="outside"
-          placeholder="PIN Code"
-          value={formData.zipCode}
-          onValueChange={v => updateField("zipCode", v)}
-          variant="bordered"
-          radius="sm"
-          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
-        />
+        <div className="grid grid-cols-3 gap-4">
+          <Input
+            label="City"
+            labelPlacement="outside"
+            placeholder="City"
+            value={formData.city}
+            onValueChange={v => {
+              updateField("city", v);
+              manualCityStateEntryRef.current = true;  // Mark as manually entered
+            }}
+            variant="bordered"
+            radius="sm"
+            isRequired
+            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          />
+          <div className="relative">
+            <Select
+              key="state-select"
+              label="State"
+              labelPlacement="outside"
+              placeholder="Select state"
+              selectedKeys={stateSelectedKeys}
+              onSelectionChange={keys => {
+                updateField("state", Array.from(keys)[0]);
+                manualCityStateEntryRef.current = true;  // Mark as manually entered
+              }}
+              variant="bordered"
+              radius="sm"
+              classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            >
+              {INDIAN_STATES.map(s => <SelectItem key={s}>{s}</SelectItem>)}
+            </Select>
+          </div>
+          <div className="relative">
+            <Input
+              label="ZIP Code"
+              labelPlacement="outside"
+              placeholder="PIN Code"
+              value={formData.zipCode}
+              onValueChange={v => {
+                const digitsOnly = v.replace(/\D/g, '').slice(0, 6);
+                updateField("zipCode", digitsOnly);
+
+                // Clear previous timeout
+                if (zipLookupTimeoutRef.current) {
+                  clearTimeout(zipLookupTimeoutRef.current);
+                }
+
+                // Trigger lookup when exactly 6 digits are entered
+                if (digitsOnly.length === 6) {
+                  // Debounce by 500ms
+                  zipLookupTimeoutRef.current = setTimeout(async () => {
+                    setIsZipLookupLoading(true);
+                    try {
+                      const locationData = await lookupPincode(digitsOnly);
+                      if (locationData) {
+                        // Normalize state name to match predefined list
+                        const normalizedState = normalizeStateName(locationData.state);
+
+                        // Autofill city if empty or user hasn't manually entered it
+                        if (!formData.city || formData.city.trim() === '' || !manualCityStateEntryRef.current) {
+                          updateField("city", locationData.city);
+                        }
+
+                        // Autofill state if empty or user hasn't manually entered it
+                        if (!formData.state || formData.state.trim() === '' || !manualCityStateEntryRef.current) {
+                          // Only update if we found a valid normalized state
+                          if (normalizedState) {
+                            updateField("state", normalizedState);
+                          }
+                        }
+                      }
+                    } catch (error) {
+                      console.error('PIN code lookup failed:', error);
+                      // Silent fail - allow manual entry
+                    } finally {
+                      setIsZipLookupLoading(false);
+                    }
+                  }, 500);
+                }
+              }}
+              variant="bordered"
+              radius="sm"
+              isRequired
+              maxLength={6}
+              isLoading={isZipLookupLoading}
+              classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            />
+            {/* Absolute positioned loading indicator to prevent layout shift */}
+            {isZipLookupLoading && (
+              <div className="absolute -bottom-5 left-0 text-xs text-default-500 whitespace-nowrap">
+                Looking up location...
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Optional Fields */}
@@ -1133,9 +1671,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             labelPlacement="outside"
             placeholder="12 digit Aadhaar"
             value={formData.aadhaarNumber}
-            onValueChange={v => updateField("aadhaarNumber", v)}
+            onValueChange={v => updateField("aadhaarNumber", v.replace(/\D/g, '').slice(0, 12))}
             variant="bordered"
             radius="sm"
+            maxLength={12}
             classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           />
           <Select
@@ -1148,7 +1687,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             radius="sm"
             classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           >
-            {bloodGroups.map(b => <SelectItem key={b}>{b}</SelectItem>)}
+            {BLOOD_GROUPS.map(b => <SelectItem key={b}>{b}</SelectItem>)}
           </Select>
           <Input
             label="Nationality"
@@ -1160,36 +1699,42 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             radius="sm"
             classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           />
-          <Input
+          <Select
             label="Religion"
             labelPlacement="outside"
-            placeholder="Optional"
-            value={formData.religion}
-            onValueChange={v => updateField("religion", v)}
+            placeholder="Select..."
+            selectedKeys={formData.religion ? [formData.religion] : []}
+            onSelectionChange={keys => updateField("religion", Array.from(keys)[0])}
             variant="bordered"
             radius="sm"
-            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
-          />
-          <Input
+            classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          >
+            {RELIGIONS.map(r => <SelectItem key={r}>{r}</SelectItem>)}
+          </Select>
+          <Select
             label="Category"
             labelPlacement="outside"
-            placeholder="e.g., General, OBC, SC, ST"
-            value={formData.category}
-            onValueChange={v => updateField("category", v)}
+            placeholder="Select..."
+            selectedKeys={formData.category ? [formData.category] : []}
+            onSelectionChange={keys => updateField("category", Array.from(keys)[0])}
             variant="bordered"
             radius="sm"
-            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
-          />
-          <Input
+            classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          >
+            {CATEGORIES.map(c => <SelectItem key={c}>{c}</SelectItem>)}
+          </Select>
+          <Select
             label="Mother Tongue"
             labelPlacement="outside"
-            placeholder="e.g., Hindi, Tamil"
-            value={formData.motherTongue}
-            onValueChange={v => updateField("motherTongue", v)}
+            placeholder="Select..."
+            selectedKeys={formData.motherTongue ? [formData.motherTongue] : []}
+            onSelectionChange={keys => updateField("motherTongue", Array.from(keys)[0])}
             variant="bordered"
             radius="sm"
-            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
-          />
+            classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          >
+            {MOTHER_TONGUES.map(m => <SelectItem key={m}>{m}</SelectItem>)}
+          </Select>
           <Input
             label="Previous School"
             labelPlacement="outside"
@@ -1206,7 +1751,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             labelPlacement="outside"
             placeholder="TC Number"
             value={formData.tcNumber}
-            onValueChange={v => updateField("tcNumber", v)}
+            onValueChange={v => updateField("tcNumber", v.replace(/\D/g, ''))}
             variant="bordered"
             radius="sm"
             className="col-span-2"
@@ -1222,7 +1767,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     const guardians = formData.parents.filter(p => !p.isParent);
 
     return (
-      <div className="space-y-6 animate-fade-in text-left">
+      <div className="space-y-5 animate-fade-in text-left">
         {/* Parent Details */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
@@ -1269,7 +1814,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                     radius="sm"
                     classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                   >
-                    {parentRelationships.map(r => <SelectItem key={r}>{r}</SelectItem>)}
+                    {PARENT_RELATIONSHIPS.map(r => <SelectItem key={r}>{r}</SelectItem>)}
                   </Select>
                   <div className="space-y-2" ref={index === 0 ? parentPhoneRef : null}>
                     <Input
@@ -1374,7 +1919,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                     radius="sm"
                     classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                   >
-                    {guardianRelationships.map(r => <SelectItem key={r}>{r}</SelectItem>)}
+                    {GUARDIAN_RELATIONSHIPS.map(r => <SelectItem key={r}>{r}</SelectItem>)}
                   </Select>
                   <div className="space-y-2">
                     <Input
@@ -1565,7 +2110,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
   };
 
   const renderStep3 = () => (
-    <div className="space-y-6 animate-fade-in text-left">
+    <div className="space-y-5 animate-fade-in text-left">
       <div className="space-y-2">
         <label className="text-sm font-semibold text-default-900">Document Uploads</label>
         <p className="text-xs text-default-500">Upload required documents. All documents are optional and can be uploaded later.</p>
@@ -1705,57 +2250,75 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     </div>
   );
 
-  const steps = [
+  const steps = useMemo(() => [
     { number: 1, title: "Personal Info", icon: User },
     { number: 2, title: "Parents & Health", icon: Users },
     { number: 3, title: "Documents", icon: FileText }
-  ];
+  ], []);
 
 
 
   return (
     <>
       <div className="h-full flex flex-col bg-background">
-        {/* Header */}
-        <div className="flex-none p-4 border-b border-default-200 flex items-center justify-between bg-background z-10">
-          <div className="flex items-center gap-3">
-            <Button isIconOnly variant="light" onPress={handlePrev} isDisabled={step === 1}>
-              <ArrowLeft size={20} className="text-default-500" />
-            </Button>
-            <div>
-              <h2 className="text-lg font-bold text-default-900 leading-none">
-                {initialData ? "Edit Student" : "Add New Student"}
-              </h2>
-              <p className="text-xs text-default-500 mt-1">
-                Step {step} of 3: {step === 1 ? "Personal Details" : step === 2 ? "Parents & Guardian" : "Documents"}
-              </p>
-            </div>
+        {/* Elegant Stepper */}
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between relative">
+            {steps.map((s, i) => {
+              const isActive = step >= s.number;
+              const isCurrent = step === s.number;
+              return (
+                <div key={s.number} className="flex flex-col items-center relative z-10 bg-background px-2">
+                  <div className={cn(
+                    "w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all",
+                    isCurrent ? "border-primary text-primary bg-primary-50 dark:bg-primary-900/20" :
+                      isActive ? "border-primary text-white bg-primary" :
+                        "border-default-200 text-default-400 bg-white dark:bg-default-50"
+                  )}>
+                    <s.icon size={16} strokeWidth={2} />
+                  </div>
+                  <span className={cn(
+                    "text-[11px] font-semibold mt-2 uppercase tracking-wide hidden sm:block",
+                    isCurrent ? "text-primary" : "text-default-400"
+                  )}>
+                    {s.title}
+                  </span>
+                </div>
+              )
+            })}
           </div>
         </div>
 
         {/* Scrollable Content */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar"
+          className="flex-1 overflow-y-auto px-4 pb-4 custom-scrollbar"
         >
-          <div className="max-w-3xl mx-auto pb-10">
-            {step === 1 && renderStep1()}
-            {step === 2 && renderStep2()}
-          </div>
+          {step === 1 && renderStep1()}
+          {step === 2 && renderStep2()}
         </div>
 
         {/* Footer with Action Buttons */}
-        <div className="flex-none p-4 border-t border-default-200 bg-background z-10">
-          <div className="flex items-center justify-end gap-2">
-            <Button variant="light" onPress={handleClose}>
-              Cancel
-            </Button>
+        <div className="flex-none px-4 py-3 border-t border-default-200 bg-background z-10">
+          <div className="flex items-center justify-between gap-2">
+            {step > 1 && (
+              <Button
+                variant="light"
+                onPress={handlePrev}
+                className="font-medium"
+              >
+                <ArrowLeft size={16} />
+                Back
+              </Button>
+            )}
+            <div className="flex-1" /> {/* Spacer */}
             <Button
               color="primary"
               onPress={step === 2 ? handleSubmit : handleNext}
               isLoading={isSubmitting}
+              className="font-medium"
             >
-              {step === 2 ? "Save Student" : "Next Step"}
+              {step === 2 ? "Add Student" : <>Next Step <ArrowRight size={16} /></>}
             </Button>
           </div>
         </div>
@@ -1770,6 +2333,13 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           onSave={handlePhotoSave}
         />
       )}
+
+      {/* Camera Capture Modal */}
+      <CameraCaptureModal
+        isOpen={isCameraCaptureOpen}
+        onClose={() => setIsCameraCaptureOpen(false)}
+        onPhotoCaptured={handleCameraPhotoCapture}
+      />
 
       {/* Unsaved Changes Warning Modal */}
       <Modal

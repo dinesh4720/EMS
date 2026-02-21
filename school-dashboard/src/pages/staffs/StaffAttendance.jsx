@@ -11,16 +11,23 @@ import {
 import { parseDate } from "@internationalized/date";
 import { Search, Filter, ArrowUpDown, Layers, MoreVertical, Check, X, Clock, ChevronDown, Download, AlertCircle, CalendarDays, ChevronLeft, ChevronRight, UserCheck, UserX, Users } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import PhotoAvatar from "../../components/PhotoAvatar";
 
 const ITEMS_PER_LOAD = 10;
 
 export default function StaffAttendance() {
-    const { staff, staffAttendance: attendance, markStaffAttendance: markAttendance } = useApp();
+    const { staff, staffAttendance: attendance, markStaffAttendance: markAttendance, fetchStaffAttendanceForDate, markAllStaffAttendance: markBulkAttendance } = useApp();
     const navigate = useNavigate();
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [attendancePeriod, setAttendancePeriod] = useState("this_month");
     const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
     const [isLoading, setIsLoading] = useState(false);
+
+    // Fetch attendance when date changes
+    useEffect(() => {
+        fetchStaffAttendanceForDate(selectedDate);
+    }, [selectedDate, fetchStaffAttendanceForDate]);
+
     const loaderRef = useRef(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedKeys, setSelectedKeys] = useState(new Set([]));
@@ -69,8 +76,23 @@ export default function StaffAttendance() {
 
     const dailyAttendance = useMemo(() => {
         const result = {};
+        console.log('📊 [StaffAttendance] Computing dailyAttendance for date:', selectedDate);
+        console.log('📊 [StaffAttendance] Staff count:', staff.length);
+        console.log('📊 [StaffAttendance] Attendance state keys:', Object.keys(attendance));
+
         staff.forEach(s => {
-            result[s.id] = attendance[s.id]?.[selectedDate] || { status: "unmarked", inTime: "-", outTime: "-" };
+            const att = attendance[s.id]?.[selectedDate];
+            const defaultValue = { status: "unmarked", inTime: "-", outTime: "-" };
+            result[s.id] = att || defaultValue;
+
+            if (s.id === '69875624ac6f5423e3141a5c') {
+                console.log('📊 [StaffAttendance] Sooraj (EMP016) attendance:', {
+                    staffId: s.id,
+                    date: selectedDate,
+                    found: !!att,
+                    value: att || defaultValue
+                });
+            }
         });
         return result;
     }, [staff, attendance, selectedDate]);
@@ -84,7 +106,7 @@ export default function StaffAttendance() {
         const halfday = activeStaff.filter(s => dailyAttendance[s.id]?.status === "halfday").length;
         const unmarked = activeStaff.filter(s => dailyAttendance[s.id]?.status === "unmarked").length;
         const attendanceRate = total > 0 ? Math.round((present / total) * 100) : 0;
-        
+
         return { total, present, absent, leave, halfday, unmarked, attendanceRate };
     }, [staff, dailyAttendance]);
 
@@ -184,9 +206,9 @@ export default function StaffAttendance() {
             const now = new Date();
             const inTime = action === "present" ? now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : "-";
             const idsToProcess = selectedKeys === "all" ? filteredStaff.map(s => s.id) : Array.from(selectedKeys);
-            idsToProcess.forEach(id => {
-                markAttendance(id, selectedDate, action, inTime, "-");
-            });
+
+            markBulkAttendance(selectedDate, action, idsToProcess, "", inTime, "-");
+
             setSelectedKeys(new Set([]));
         }
     };
@@ -196,9 +218,9 @@ export default function StaffAttendance() {
         const now = new Date();
         const inTime = pendingStatus.status === "halfday" ? now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : "-";
         const idsToProcess = selectedKeys === "all" ? filteredStaff.map(s => s.id) : Array.from(selectedKeys);
-        idsToProcess.forEach(id => {
-            markAttendance(id, selectedDate, pendingStatus.status, inTime, "-", reason);
-        });
+
+        markBulkAttendance(selectedDate, pendingStatus.status, idsToProcess, reason, inTime, "-");
+
         setSelectedKeys(new Set([]));
         setReasonModalOpen(false);
         setPendingStatus({ staffId: null, status: null });
@@ -216,13 +238,16 @@ export default function StaffAttendance() {
     };
 
     const getStatusLabel = (status) => {
-        if (status === "unmarked") return "Not Marked";
+        if (!status || status === "unmarked" || status === null) return "Not Marked";
         if (status === "halfday") return "Half Day";
         if (status === "leave") return "On Leave";
         return status.charAt(0).toUpperCase() + status.slice(1);
     };
 
     const getStatusStyle = (status) => {
+        if (!status || status === "unmarked" || status === null) {
+            return "bg-default-100 border-default-200 text-default-600";
+        }
         switch (status) {
             case "present": return "bg-success-50 border-success-200 text-success-700";
             case "absent": return "bg-danger-50 border-danger-200 text-danger-700";
@@ -280,7 +305,7 @@ export default function StaffAttendance() {
         filteredStaff.forEach(s => {
             const staffAtt = attendance[s.id] || {};
             const currentDate = new Date(startDate);
-            
+
             while (currentDate <= endDate) {
                 const dateStr = currentDate.toISOString().split('T')[0];
                 const att = staffAtt[dateStr] || { status: "unmarked", inTime: "-", outTime: "-", reason: "" };
@@ -298,10 +323,10 @@ export default function StaffAttendance() {
             }
         });
 
-        const typeLabel = downloadType === "this_week" ? "This Week" : 
-                         downloadType === "monthly" ? `${months[parseInt(selectedMonth)]} ${selectedYear}` :
-                         downloadType === "yearly" ? selectedYear :
-                         `${customStartDate} to ${customEndDate}`;
+        const typeLabel = downloadType === "this_week" ? "This Week" :
+            downloadType === "monthly" ? `${months[parseInt(selectedMonth)]} ${selectedYear}` :
+                downloadType === "yearly" ? selectedYear :
+                    `${customStartDate} to ${customEndDate}`;
 
         const csvContent = [
             `Staff Attendance Report - ${typeLabel}`,
@@ -348,8 +373,8 @@ export default function StaffAttendance() {
                             </ModalBody>
                             <ModalFooter>
                                 <Button variant="light" onPress={onClose}>Cancel</Button>
-                                <Button 
-                                    color="primary" 
+                                <Button
+                                    color="primary"
                                     onPress={pendingStatus.staffId === "bulk" ? handleBulkReasonConfirm : handleConfirmReason}
                                 >
                                     Confirm
@@ -490,7 +515,7 @@ export default function StaffAttendance() {
                         <Popover placement="bottom-start">
                             <PopoverTrigger>
                                 <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
-                                    <div 
+                                    <div
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             const date = new Date(selectedDate);
@@ -503,7 +528,7 @@ export default function StaffAttendance() {
                                     </div>
                                     <CalendarDays size={16} className="text-default-400 flex-shrink-0" />
                                     <span>{new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                                    <div 
+                                    <div
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             if (selectedDate < new Date().toISOString().split('T')[0]) {
@@ -526,7 +551,7 @@ export default function StaffAttendance() {
                                 />
                             </PopoverContent>
                         </Popover>
-                        <button 
+                        <button
                             onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
                             disabled={selectedDate === new Date().toISOString().split('T')[0]}
                             className="px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
@@ -591,7 +616,7 @@ export default function StaffAttendance() {
                         </DropdownMenu>
                     </Dropdown>
 
-                    <button 
+                    <button
                         className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap"
                         onClick={() => setDownloadModalOpen(true)}
                     >
@@ -681,13 +706,14 @@ export default function StaffAttendance() {
                             <TableRow key={s.id}>
                                 <TableCell>
                                     <div className="flex items-center gap-3">
-                                        <img 
-                                            src={`https://i.pravatar.cc/150?u=${s.id}`} 
-                                            alt={s.name}
-                                            className="w-10 h-10 rounded-full"
+                                        <PhotoAvatar
+                                            src={s.picture || s.photo}
+                                            name={s.name}
+                                            size="md"
+                                            type="staff"
                                         />
                                         <div className="flex flex-col">
-                                            <span 
+                                            <span
                                                 className="text-default-900 font-medium text-base hover:text-primary transition-colors cursor-pointer"
                                                 onClick={() => navigate(`/staffs/${s.id}`)}
                                             >
@@ -745,15 +771,15 @@ export default function StaffAttendance() {
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex items-center gap-2">
-                                        <Progress 
-                                            value={overallPercentage} 
+                                        <Progress
+                                            value={overallPercentage}
                                             size="sm"
                                             className="max-w-[150px]"
                                             classNames={{
-                                                indicator: overallPercentage >= 90 
-                                                    ? "bg-emerald-300" 
-                                                    : overallPercentage >= 75 
-                                                        ? "bg-amber-300" 
+                                                indicator: overallPercentage >= 90
+                                                    ? "bg-emerald-300"
+                                                    : overallPercentage >= 75
+                                                        ? "bg-amber-300"
                                                         : "bg-rose-300",
                                                 track: "bg-default-100"
                                             }}

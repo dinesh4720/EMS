@@ -1,17 +1,18 @@
 import { useRef, useEffect, useState } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { Tabs, Tab, Button, Drawer, DrawerContent, DrawerHeader, DrawerBody, Card, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter as ModalFooterUI } from "@heroui/react";
-import { GraduationCap, Plus, X, UserPlus, Send, FileText, CheckCircle2, ChevronDown, Mail, Phone } from "lucide-react";
+import { Drawer, DrawerContent, DrawerHeader, DrawerBody, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter as ModalFooterUI, Chip } from "@heroui/react";
+import { Plus, X, UserPlus, Send, FileText, CheckCircle2, ChevronDown, Mail, Phone, Eye, Check } from "lucide-react";
 import StudentsList from "./StudentsList";
-import StudentOverview from "./StudentOverview";
+import StudentDashboard from "./StudentDashboard";
 import StudentAttendance from "./StudentAttendance";
+import StudentFormSubmissions from "./StudentFormSubmissions";
 import AddStudent from "./AddStudent";
 import FormInput from "../../components/FormInput";
 import { useApp } from "../../context/AppContext";
 import { intakeFormsApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { PageLayout, MinimalButton } from "../../components/ui";
 
-// Helper for modal footer to avoid name collision if needed, or just use ModalFooter from import
 const ModalFooter = ModalFooterUI;
 
 export default function StudentsPage() {
@@ -21,51 +22,91 @@ export default function StudentsPage() {
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [isMethodModalOpen, setIsMethodModalOpen] = useState(false);
   const [isFormSelectModalOpen, setIsFormSelectModalOpen] = useState(false);
+  const [formModalKey, setFormModalKey] = useState(0);
   const [availableForms, setAvailableForms] = useState([]);
   const [selectedForm, setSelectedForm] = useState(null);
-  const [recipientEmail, setRecipientEmail] = useState('');
-  const [recipientPhone, setRecipientPhone] = useState('');
+  const [recipientEmails, setRecipientEmails] = useState([]);
+  const [recipientPhones, setRecipientPhones] = useState([]);
   const [isSendingForm, setIsSendingForm] = useState(false);
   const [isFormDropdownOpen, setIsFormDropdownOpen] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [previewForm, setPreviewForm] = useState(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [newPhone, setNewPhone] = useState('');
   const formDropdownRef = useRef(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (formDropdownRef.current && !formDropdownRef.current.contains(event.target)) {
         setIsFormDropdownOpen(false);
       }
     };
-
     if (isFormDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isFormDropdownOpen]);
 
-  // Update handleOpenAddStudent to show method selection logic
-  const handleOpenAddStudent = () => {
-    setIsMethodModalOpen(true);
+  const handleOpenAddStudent = () => setIsMethodModalOpen(true);
+
+  const handleAddEmail = () => {
+    if (!newEmail || newEmail.trim() === '') {
+      toast.error('Please enter an email address');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    if (recipientEmails.includes(newEmail)) {
+      toast.error('This email has already been added');
+      return;
+    }
+    setRecipientEmails([...recipientEmails, newEmail]);
+    setNewEmail('');
   };
+
+  const handleRemoveEmail = (email) => setRecipientEmails(recipientEmails.filter(e => e !== email));
+
+  const handleAddPhone = () => {
+    if (!newPhone || newPhone.trim() === '') {
+      toast.error('Please enter a phone number');
+      return;
+    }
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phoneRegex.test(newPhone)) {
+      toast.error('Please enter a valid 10-digit mobile number starting with 6-9');
+      return;
+    }
+    if (recipientPhones.includes(newPhone)) {
+      toast.error('This phone number has already been added');
+      return;
+    }
+    setRecipientPhones([...recipientPhones, newPhone]);
+    setNewPhone('');
+  };
+
+  const handleRemovePhone = (phone) => setRecipientPhones(recipientPhones.filter(p => p !== phone));
 
   const handleSelectMethod = (method) => {
     setIsMethodModalOpen(false);
-    if (method === 'full') {
-      setIsAddStudentOpen(true);
-    } else if (method === 'form') {
-      loadAvailableForms();
-    }
+    if (method === 'full') setIsAddStudentOpen(true);
+    else if (method === 'form') loadAvailableForms();
   };
 
   const loadAvailableForms = async () => {
     try {
       const forms = await intakeFormsApi.getAll();
-      // Filter for student forms
-      const studentForms = forms.filter(f => f.formType === 'student' && f.status === 'active');
-      setAvailableForms(studentForms);
+      const admissionForms = forms
+        .filter(f => (f.formType === 'admission' || f.formType === 'student') && f.status === 'active')
+        .map(f => ({ ...f, id: f._id || f.id }));
+      setAvailableForms(admissionForms);
+      setSelectedForm(null);
+      setRecipientEmails([]);
+      setRecipientPhones([]);
+      setFormModalKey(prev => prev + 1);
       setIsFormSelectModalOpen(true);
     } catch (error) {
       toast.error('Failed to load forms');
@@ -78,28 +119,25 @@ export default function StudentsPage() {
       toast.error('Please select a form');
       return;
     }
-    if (!recipientEmail && !recipientPhone) {
-      toast.error('Please enter email or phone number');
+    if (recipientEmails.length === 0 && recipientPhones.length === 0) {
+      toast.error('Please enter at least one email or phone number');
       return;
     }
-
     setIsSendingForm(true);
     try {
-      const emails = recipientEmail ? [recipientEmail] : [];
-      const phones = recipientPhone ? [recipientPhone] : [];
-
       await intakeFormsApi.assign(selectedForm, {
-        emails,
-        phones,
+        emails: recipientEmails,
+        phones: recipientPhones,
         expiresInDays: 30,
         assignedBy: null
       });
-
       toast.success('Form sent successfully!');
       setIsFormSelectModalOpen(false);
       setSelectedForm(null);
-      setRecipientEmail('');
-      setRecipientPhone('');
+      setRecipientEmails([]);
+      setRecipientPhones([]);
+      setFormModalKey(prev => prev + 1);
+      setShowSuccessModal(true);
     } catch (error) {
       console.error('Form send error:', error);
       toast.error(error.message || 'Failed to send form');
@@ -108,32 +146,23 @@ export default function StudentsPage() {
     }
   };
 
-  const handleCloseAddStudent = () => {
-    setIsAddStudentOpen(false);
-  };
+  const handleCloseAddStudent = () => setIsAddStudentOpen(false);
 
   const getActiveTab = () => {
     if (location.pathname === "/students/attendance") return "attendance";
+    if (location.pathname === "/students/submissions") return "submissions";
     return "list";
   };
 
   const handleSaveStudent = async (studentData) => {
     try {
-      console.log('handleSaveStudent called with:', studentData);
-      console.log('Class ID:', studentData.classId);
-      const result = await addStudent(studentData);
-      console.log('Student saved successfully:', result);
+      await addStudent(studentData);
       toast.success('Student added successfully!');
-      // Clear API cache to ensure fresh data on refresh
-      const { clearApiCache } = await import('../../services/api');
-      clearApiCache();
       handleCloseAddStudent();
     } catch (err) {
-      console.error('Failed to add student - Full error:', err);
-      console.error('Error message:', err.message);
-      console.error('Error response:', err.response);
+      console.error('Failed to add student:', err);
       toast.error('Failed to add student: ' + (err.message || 'Unknown error'));
-      throw err; // Re-throw so AddStudent component can handle it
+      throw err;
     }
   };
 
@@ -141,115 +170,79 @@ export default function StudentsPage() {
   const activeTab = getActiveTab();
 
   const tabHeaderInfo = {
-    list: {
-      title: "All Students",
-      description: "Manage students, classes, parent contacts, and fee status"
-    },
-    attendance: {
-      title: "Student Attendance",
-      description: "Track daily attendance and view attendance statistics"
-    }
+    list: { title: "All Students", description: "View and manage student records" },
+    attendance: { title: "Student Attendance", description: "Track daily attendance" },
+    submissions: { title: "Form Submissions", description: "Review admission form submissions" }
   };
 
-  // Check if we're viewing a student profile
-  // Match any path like /students/123 but not /students or /students/attendance
+  const tabs = [
+    { key: "list", title: "All Students" },
+    { key: "attendance", title: "Attendance" },
+    { key: "submissions", title: "Form Submissions" }
+  ];
+
+  const handleTabChange = (key) => {
+    if (key === "list") navigate("/students");
+    else if (key === "attendance") navigate("/students/attendance");
+    else if (key === "submissions") navigate("/students/submissions");
+  };
+
   const pathParts = location.pathname.split('/').filter(Boolean);
   const isProfileView = pathParts.length === 2 &&
     pathParts[0] === 'students' &&
     pathParts[1] !== 'attendance' &&
+    pathParts[1] !== 'submissions' &&
     pathParts[1] !== '';
 
-  // If viewing a profile, render just the routes without the card wrapper
   if (isProfileView) {
     return (
       <Routes>
-        <Route path=":id" element={<StudentOverview />} />
+        <Route path=":id" element={<StudentDashboard />} />
       </Routes>
     );
   }
 
   return (
     <div className="space-y-6 animate-fade-in pb-8">
-      <Card className="shadow-sm border border-default-200 bg-background rounded-md">
-        {/* <div className="px-6 py-3 border-b border-default-200">
-          <Tabs
-            selectedKey={activeTab}
-            onSelectionChange={(key) => {
-              if (key === "list") navigate("/students");
-              else if (key === "attendance") navigate("/students/attendance");
-            }}
-            size="md"
-            color="default"
-            variant="light"
-            classNames={{
-              tabList: "gap-0 p-1.5 bg-gradient-to-r from-default-100 via-default-200/50 to-default-100 rounded-xl",
-              cursor: "bg-white dark:bg-default-50 rounded-lg shadow-lg ring-1 ring-black/5",
-              tab: "px-6 h-10 cursor-pointer",
-              tabContent: "group-data-[selected=true]:text-default-900 group-data-[selected=true]:font-semibold text-default-500 font-medium"
-            }}
+      <PageLayout
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        header={tabHeaderInfo[activeTab]}
+        actions={activeTab === "list" && (
+          <MinimalButton
+            icon={<Plus size={16} />}
+            onClick={handleOpenAddStudent}
           >
-            <Tab key="list" title="All Students" />
-            <Tab key="attendance" title="Attendance" />
-          </Tabs>
-        </div> */}
-
-        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-6 border-b border-default-200 overflow-hidden">
-          {activeTab === "list" && (
-            <div className="absolute right-0 top-0 w-1/2 h-full bg-gradient-to-l from-blue-200/80 to-transparent blur-3xl pointer-events-none" />
-          )}
-          <div className="pl-2 relative z-10">
-            <h1 className="text-2xl font-medium text-default-900">{tabHeaderInfo[activeTab]?.title}</h1>
-            <p className="text-sm text-default-500 mt-1">{tabHeaderInfo[activeTab]?.description}</p>
-          </div>
-          {activeTab === "list" && (
-            <button
-              className="flex items-center gap-2 px-3 py-2 bg-primary text-white rounded-lg border border-primary hover:bg-primary-600 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap relative z-10"
-              onClick={handleOpenAddStudent}
-            >
-              <Plus size={16} />
-              <span>New Student</span>
-            </button>
-          )}
-        </div>
-
-        <div className="min-h-[500px] px-6 py-6">
+            New Student
+          </MinimalButton>
+        )}
+      >
+        <div className="min-h-[500px]">
           <Routes>
             <Route index element={<StudentsList />} />
             <Route path="attendance" element={<StudentAttendance />} />
+            <Route path="submissions" element={<StudentFormSubmissions />} />
           </Routes>
         </div>
-      </Card>
+      </PageLayout>
 
       {/* Add Student Drawer */}
       <Drawer
         isOpen={isAddStudentOpen}
-        onOpenChange={(open) => {
-          if (!open) handleCloseAddStudent();
-        }}
+        onOpenChange={(open) => { if (!open) handleCloseAddStudent(); }}
         placement="right"
         size="xl"
         hideCloseButton
-        classNames={{
-          base: "max-w-[900px]",
-          wrapper: "z-[9999]",
-          backdrop: "z-[9998]"
-        }}
+        classNames={{ base: "max-w-[900px]", wrapper: "z-[9999]", backdrop: "z-[9998]" }}
       >
         <DrawerContent>
           {(onClose) => (
             <>
-              <DrawerHeader className="border-b border-default-200 px-6 py-4 flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-xl">
-                    <GraduationCap size={20} className="text-primary" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-default-900">New Student Admission</h2>
-                    <p className="text-xs text-default-500">Fill in the student details below</p>
-                  </div>
-                </div>
+              <DrawerHeader className="border-b border-gray-100 px-6 py-4 flex justify-between items-center">
+                <h2 className="text-lg font-medium text-gray-900">Manual Student Registration</h2>
                 <Button isIconOnly size="sm" variant="light" onPress={handleCloseAddStudent}>
-                  <X size={20} className="text-default-500" />
+                  <X size={20} className="text-gray-400" />
                 </Button>
               </DrawerHeader>
               <DrawerBody className="p-0 overflow-hidden">
@@ -264,255 +257,201 @@ export default function StudentsPage() {
           )}
         </DrawerContent>
       </Drawer>
+
       {/* Method Selection Modal */}
       <Modal
         isOpen={isMethodModalOpen}
         onClose={() => setIsMethodModalOpen(false)}
         size="2xl"
-        classNames={{
-          backdrop: "bg-black/50",
-          base: "bg-white dark:bg-gray-900"
-        }}
+        classNames={{ backdrop: "bg-black/30", base: "bg-white" }}
       >
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1 border-b border-gray-200 dark:border-gray-800">
-            <h3 className="text-xl font-semibold">Choose Admission Method</h3>
-            <p className="text-sm text-gray-500 font-normal">Select how you want to add the new student</p>
+          <ModalHeader className="border-b border-gray-100 py-4">
+            <h3 className="text-lg font-medium">Choose Admission Method</h3>
+            <p className="text-sm text-gray-500 font-normal mt-1">Select how you want to add the new student</p>
           </ModalHeader>
           <ModalBody className="py-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Send Form Option */}
               <button
                 onClick={() => handleSelectMethod('form')}
-                className="group relative p-6 rounded-xl border-2 border-gray-200 hover:border-primary-500 hover:shadow-lg transition-all duration-200 text-left bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-gray-900"
+                className="group p-6 rounded-lg border border-gray-200 hover:border-gray-400 transition-colors text-left"
               >
                 <div className="flex flex-col items-center text-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Send size={32} className="text-blue-600 dark:text-blue-400" />
+                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                    <Send size={24} className="text-gray-600" />
                   </div>
                   <div>
-                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Send Admission Form</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Send an intake form to the parent's email or phone. They fill it out themselves.
-                    </p>
-                  </div>
-                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    ✓ Less work for admin<br />
-                    ✓ Parents provide details<br />
-                    ✓ Review before approval
+                    <h4 className="text-base font-medium text-gray-900 mb-2">Send Admission Form</h4>
+                    <p className="text-sm text-gray-500">Share a form link with parents via email or SMS</p>
                   </div>
                 </div>
               </button>
-
-              {/* Full Registration Option */}
               <button
                 onClick={() => handleSelectMethod('full')}
-                className="group relative p-6 rounded-xl border-2 border-gray-200 hover:border-primary-500 hover:shadow-lg transition-all duration-200 text-left bg-gradient-to-br from-orange-50 to-white dark:from-orange-900/20 dark:to-gray-900"
+                className="group p-6 rounded-lg border border-gray-200 hover:border-gray-400 transition-colors text-left"
               >
                 <div className="flex flex-col items-center text-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <UserPlus size={32} className="text-orange-600 dark:text-orange-400" />
+                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                    <UserPlus size={24} className="text-gray-600" />
                   </div>
                   <div>
-                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Direct Admission</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Fill out all student details directly in the admin panel. Immediate admission.
-                    </p>
-                  </div>
-                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    ✓ Immediate access<br />
-                    ✓ Complete control<br />
-                    ✓ No waiting for submission
+                    <h4 className="text-base font-medium text-gray-900 mb-2">Manual Registration</h4>
+                    <p className="text-sm text-gray-500">Add student details directly in the admin panel</p>
                   </div>
                 </div>
               </button>
             </div>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-200 dark:border-gray-800">
-            <Button
-              variant="light"
-              onPress={() => setIsMethodModalOpen(false)}
-            >
-              Cancel
-            </Button>
+          <ModalFooter className="border-t border-gray-100">
+            <Button variant="light" onPress={() => setIsMethodModalOpen(false)}>Cancel</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
 
       {/* Form Selection Modal */}
       <Modal
+        key={formModalKey}
         isOpen={isFormSelectModalOpen}
         onClose={() => {
           setIsFormSelectModalOpen(false);
           setSelectedForm(null);
-          setRecipientEmail('');
-          setRecipientPhone('');
+          setRecipientEmails([]);
+          setRecipientPhones([]);
+          setFormModalKey(prev => prev + 1);
         }}
         size="2xl"
-        classNames={{
-          backdrop: "bg-black/50",
-          base: "bg-white dark:bg-gray-900"
-        }}
+        classNames={{ backdrop: "bg-black/30", base: "bg-white" }}
       >
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1 border-b border-gray-200 dark:border-gray-800">
-            <h3 className="text-xl font-semibold">Send Admission Form</h3>
-            <p className="text-sm text-gray-500 font-normal">Select a form and enter recipient details</p>
+          <ModalHeader className="border-b border-gray-100 py-4">
+            <h3 className="text-lg font-medium">Send Admission Form</h3>
+            <p className="text-sm text-gray-500 font-normal mt-1">Choose a form and share it</p>
           </ModalHeader>
           <ModalBody className="py-6">
             <div className="space-y-4">
-              {/* Form Selection - Custom Dropdown with Cards */}
               <div className="relative" ref={formDropdownRef}>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                  Select Form
-                </label>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Select Form</label>
                 <button
                   type="button"
                   onClick={() => setIsFormDropdownOpen(!isFormDropdownOpen)}
-                  className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-default-100 rounded-lg border border-default-200 hover:border-primary hover:bg-default-50 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200"
+                  className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
                 >
                   {selectedForm ? (
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="p-2 rounded-lg bg-primary-100 dark:bg-primary-800">
-                        <FileText size={18} className="text-primary-600 dark:text-primary-400" />
-                      </div>
-                      <div className="flex-1 min-w-0 text-left">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                          {availableForms.find(f => f.id === selectedForm)?.formName}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {availableForms.find(f => f.id === selectedForm)?.fields?.length || 0} fields
-                        </p>
-                      </div>
+                    <div className="flex items-center gap-3">
+                      <FileText size={18} className="text-gray-500" />
+                      <span className="text-sm">{availableForms.find(f => f.id === selectedForm)?.formName}</span>
                     </div>
                   ) : (
                     <span className="text-sm text-gray-500">Choose an admission form</span>
                   )}
                   <ChevronDown size={18} className={`text-gray-400 transition-transform ${isFormDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
-
-                {/* Dropdown Menu with Cards */}
-                {isFormDropdownOpen && availableForms.length > 0 && (
-                  <div className="absolute z-50 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-[320px] overflow-y-auto">
-                    <div className="p-2 space-y-1">
-                      {availableForms.map((form) => (
-                        <button
-                          key={form.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedForm(form.id);
-                            setIsFormDropdownOpen(false);
-                          }}
-                          className={`w-full p-3 rounded-lg transition-all duration-200 text-left ${selectedForm === form.id
-                            ? 'bg-primary-50 dark:bg-primary-900/20'
-                            : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                            }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className={`p-2 rounded-lg ${selectedForm === form.id
-                              ? 'bg-primary-100 dark:bg-primary-800'
-                              : 'bg-gray-100 dark:bg-gray-700'
-                              }`}>
-                              <FileText size={18} className={
-                                selectedForm === form.id
-                                  ? 'text-primary-600 dark:text-primary-400'
-                                  : 'text-gray-600 dark:text-gray-400'
-                              } />
+                {isFormDropdownOpen && (
+                  <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg max-h-[320px] overflow-y-auto">
+                    <div className="p-2">
+                      {availableForms.length > 0 ? (
+                        availableForms.map((form) => (
+                          <button
+                            key={form.id}
+                            type="button"
+                            onClick={() => { setSelectedForm(form.id); setIsFormDropdownOpen(false); }}
+                            className={`w-full p-3 rounded-lg text-left flex items-center gap-3 ${selectedForm === form.id ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                          >
+                            <FileText size={18} className="text-gray-500" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">{form.formName}</p>
+                              <p className="text-xs text-gray-500">{form.fields?.length || 0} fields</p>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2">
-                                <h4 className={`font-semibold text-sm ${selectedForm === form.id
-                                  ? 'text-primary-900 dark:text-primary-100'
-                                  : 'text-gray-900 dark:text-gray-100'
-                                  }`}>
-                                  {form.formName}
-                                </h4>
-                                {selectedForm === form.id && (
-                                  <CheckCircle2 size={16} className="text-primary-600 dark:text-primary-400 flex-shrink-0" />
-                                )}
-                              </div>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                {form.fields?.length || 0} fields
-                              </p>
-                            </div>
-                          </div>
-                        </button>
-                      ))}
+                            {selectedForm === form.id && <CheckCircle2 size={16} className="text-gray-600" />}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="text-center py-8 text-gray-500">
+                          <p>No active admission forms available.</p>
+                          <Button size="sm" variant="flat" className="mt-2" onPress={() => { setIsFormDropdownOpen(false); setIsFormSelectModalOpen(false); navigate('/settings/intake-forms'); }}>Create a Form</Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
               </div>
 
-              {availableForms.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <FileText size={48} className="mx-auto mb-3 text-gray-300" />
-                  <p className="mb-2">No active student admission forms available.</p>
-                  <Button
-                    size="sm"
-                    color="primary"
-                    variant="flat"
-                    className="mt-2"
-                    onPress={() => {
-                      setIsFormSelectModalOpen(false);
-                      navigate('/settings/intake-forms');
-                    }}
-                  >
-                    Create a Form
-                  </Button>
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Parent Email</label>
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="email"
+                    placeholder="Enter email address"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddEmail(); }}}
+                    className="flex-1 px-4 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-gray-400"
+                  />
+                  <Button variant="flat" size="sm" onPress={handleAddEmail} isDisabled={!newEmail} startContent={<Mail size={14} />}>Add</Button>
                 </div>
-              )}
+                {recipientEmails.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {recipientEmails.map((email) => (
+                      <Chip key={email} onClose={() => handleRemoveEmail(email)} variant="flat" size="md">{email}</Chip>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-              {/* Recipient Email */}
-              <FormInput
-                label="Parent's Email"
-                type="email"
-                placeholder="Enter email address"
-                value={recipientEmail}
-                onChange={(e) => setRecipientEmail(e.target.value)}
-                startContent={<Mail size={18} />}
-              />
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Parent Mobile Number</label>
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="tel"
+                    placeholder="Enter 10-digit mobile number"
+                    value={newPhone}
+                    onChange={(e) => setNewPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddPhone(); }}}
+                    className="flex-1 px-4 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-gray-400"
+                  />
+                  <Button variant="flat" size="sm" onPress={handleAddPhone} isDisabled={!newPhone || newPhone.length !== 10} startContent={<Phone size={14} />}>Add</Button>
+                </div>
+                {recipientPhones.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {recipientPhones.map((phone) => (
+                      <Chip key={phone} onClose={() => handleRemovePhone(phone)} variant="flat" size="md">{phone}</Chip>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-              {/* Recipient Phone */}
-              <FormInput
-                label="Parent's Phone Number"
-                type="tel"
-                placeholder="Enter phone number"
-                value={recipientPhone}
-                onChange={(e) => setRecipientPhone(e.target.value)}
-                startContent={<Phone size={18} />}
-              />
-
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <p className="text-sm text-blue-800 dark:text-blue-200">
-                  <strong>Note:</strong> The parent will receive a link to fill out the admission form. You can review and approve their submission in the Submissions section.
-                </p>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <p className="text-sm text-gray-600">A form link will be sent to the parent. Review submissions in the Submissions tab.</p>
               </div>
             </div>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-200 dark:border-gray-800">
-            <Button
-              variant="light"
-              onPress={() => {
-                setIsFormSelectModalOpen(false);
-                setSelectedForm(null);
-                setRecipientEmail('');
-                setRecipientPhone('');
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              color="primary"
-              onPress={handleSendForm}
-              isLoading={isSendingForm}
-              isDisabled={!selectedForm || (!recipientEmail && !recipientPhone)}
-              startContent={!isSendingForm && <Send size={16} />}
-            >
-              Send Form
-            </Button>
+          <ModalFooter className="border-t border-gray-100">
+            <Button variant="light" onPress={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmails([]); setRecipientPhones([]); }}>Cancel</Button>
+            <Button color="primary" onPress={handleSendForm} isLoading={isSendingForm} isDisabled={!selectedForm || (recipientEmails.length === 0 && recipientPhones.length === 0)} startContent={!isSendingForm && <Send size={16} />}>Send Form</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </div >
+
+      {/* Success Modal */}
+      <Modal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} size="md" classNames={{ backdrop: "bg-black/30", base: "bg-white" }}>
+        <ModalContent>
+          <ModalHeader className="border-b border-gray-100 py-4">
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center">
+                <Check size={24} className="text-white" />
+              </div>
+              <h3 className="text-lg font-medium">Form Sent Successfully!</h3>
+            </div>
+          </ModalHeader>
+          <ModalBody className="py-6">
+            <p className="text-sm text-gray-500 text-center">The admission form has been sent. You can review the submission in the Form Submissions tab.</p>
+          </ModalBody>
+          <ModalFooter className="border-t border-gray-100 gap-3">
+            <Button variant="flat" onPress={() => { setShowSuccessModal(false); setIsFormSelectModalOpen(true); }} className="flex-1">Send Another</Button>
+            <Button color="primary" onPress={() => { setShowSuccessModal(false); setIsMethodModalOpen(true); }} className="flex-1" startContent={<UserPlus size={16} />}>Manual Registration</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </div>
   );
 }

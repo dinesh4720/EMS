@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useContext } from "react";
 import { Avatar, ScrollShadow, Spinner } from "@heroui/react";
 import { Send, Search, Phone, Video, MoreVertical, X, Paperclip, Image as ImageIcon } from "lucide-react";
 import { AppContext } from "../../context/AppContext";
-import socketService from "../../services/socketService";
+import socketService from "../../services/socketServiceEnhanced";
 import chatService from "../../services/chatService";
 
 export default function ChatRealtime() {
@@ -18,6 +18,12 @@ export default function ChatRealtime() {
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const selectedConversationRef = useRef(null);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    selectedConversationRef.current = selectedConversation;
+  }, [selectedConversation]);
 
   // Initialize socket connection
   useEffect(() => {
@@ -42,14 +48,18 @@ export default function ChatRealtime() {
     });
 
     socketService.on('user_typing', (data) => {
-      if (data.isTyping) {
-        setTypingUsers(prev => new Set([...prev, data.userId]));
-      } else {
-        setTypingUsers(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(data.userId);
-          return newSet;
-        });
+      // Only show typing indicator for the currently open conversation
+      const currentConversation = selectedConversationRef.current;
+      if (data.conversationId === currentConversation?.id) {
+        if (data.isTyping) {
+          setTypingUsers(prev => new Set([...prev, data.userId]));
+        } else {
+          setTypingUsers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(data.userId);
+            return newSet;
+          });
+        }
       }
     });
 
@@ -346,7 +356,7 @@ export default function ChatRealtime() {
           {/* Messages */}
           <ScrollShadow className="flex-1 min-h-0 p-6 space-y-4 overflow-y-auto">
             {messages.map((msg) => {
-              const isMe = msg.senderId === user.id;
+              const isMe = String(msg.senderId) === String(user.id);
               return (
                 <div
                   key={msg.id}

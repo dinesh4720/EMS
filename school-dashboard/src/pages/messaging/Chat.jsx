@@ -1,13 +1,12 @@
 import { useState } from "react";
-import { Avatar, ScrollShadow } from "@heroui/react";
-import { Send, Search, Phone, Video, MoreVertical, X } from "lucide-react";
+import { Send, Search, Phone, Video, MoreVertical, X, Plus } from "lucide-react";
 
 const contacts = [
-  { id: 1, name: "Rajesh Kumar", role: "Math Teacher", avatar: "https://i.pravatar.cc/150?u=1", online: true, lastMessage: "Sure, I'll send the report", time: "2m" },
-  { id: 2, name: "Priya Singh", role: "English Teacher", avatar: "https://i.pravatar.cc/150?u=2", online: true, lastMessage: "The meeting is confirmed", time: "15m" },
-  { id: 3, name: "Mr. Sharma", role: "Parent - Rahul", avatar: "https://i.pravatar.cc/150?u=3", online: false, lastMessage: "Thank you for the update", time: "1h" },
-  { id: 4, name: "Amit Verma", role: "Admin", avatar: "https://i.pravatar.cc/150?u=4", online: true, lastMessage: "Documents are ready", time: "2h" },
-  { id: 5, name: "Mrs. Patel", role: "Parent - Priya", avatar: "https://i.pravatar.cc/150?u=5", online: false, lastMessage: "When is the PTM?", time: "1d" },
+  { id: 1, name: "Rajesh Kumar", role: "Math Teacher", avatar: "https://i.pravatar.cc/150?u=1", online: true, lastMessage: "Sure, I'll send the report", time: "2m", unread: 0 },
+  { id: 2, name: "Priya Singh", role: "English Teacher", avatar: "https://i.pravatar.cc/150?u=2", online: true, lastMessage: "The meeting is confirmed", time: "15m", unread: 2 },
+  { id: 3, name: "Mr. Sharma", role: "Parent - Rahul", avatar: "https://i.pravatar.cc/150?u=3", online: false, lastMessage: "Thank you for the update", time: "1h", unread: 0 },
+  { id: 4, name: "Amit Verma", role: "Admin", avatar: "https://i.pravatar.cc/150?u=4", online: true, lastMessage: "Documents are ready", time: "2h", unread: 0 },
+  { id: 5, name: "Mrs. Patel", role: "Parent - Priya", avatar: "https://i.pravatar.cc/150?u=5", online: false, lastMessage: "When is the PTM?", time: "1d", unread: 1 },
 ];
 
 const initialMessages = [
@@ -31,155 +30,176 @@ export default function Chat() {
 
   const handleSend = () => {
     if (!newMessage.trim()) return;
-    setMessages([...messages, { id: Date.now(), sender: "me", text: newMessage, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
+    setMessages([...messages, {
+      id: Date.now(),
+      sender: "me",
+      text: newMessage,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }]);
     setNewMessage("");
   };
 
   return (
-    <div className="flex gap-0 h-full w-full">
+    <div className="flex h-full w-full bg-white rounded-lg border border-gray-200 overflow-hidden">
       {/* Contacts List */}
-      <div className="w-80 shrink-0 border-r border-default-200 bg-background h-full flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-default-200 shrink-0">
-          {/* Search Input */}
-          <div className="flex items-center gap-2 w-full px-4 py-2.5 bg-default-100 rounded-lg border border-default-200 hover:border-primary hover:bg-default-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
-            <Search size={18} className="text-default-400" />
-            <input
-              type="text"
-              placeholder="Search conversations..."
-              className="flex-1 bg-transparent outline-none text-base text-default-900 placeholder:text-default-400"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="p-0.5 hover:bg-default-200 rounded cursor-pointer"
-              >
-                <X size={16} className="text-default-400" />
-              </button>
-            )}
+      <div className="w-72 shrink-0 border-r border-gray-200 h-full flex flex-col overflow-hidden">
+        {/* Search */}
+        <div className="p-3 border-b border-gray-200">
+          <div className="flex items-center gap-2">
+            <div className="flex-1 flex items-center gap-2 px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-colors">
+              <Search size={14} className="text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="flex-1 bg-transparent outline-none text-sm text-gray-800 placeholder:text-gray-400"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-gray-200 rounded">
+                  <X size={12} className="text-gray-400" />
+                </button>
+              )}
+            </div>
+            <button className="p-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
+              <Plus size={16} />
+            </button>
           </div>
         </div>
-        <ScrollShadow className="flex-1 min-h-0">
-          {filteredContacts.map((contact) => (
-            <div
-              key={contact.id}
-              onClick={() => setSelectedContact(contact)}
-              className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-default-100 transition-colors border-l-2 ${
-                selectedContact?.id === contact.id
-                  ? "bg-primary-50 border-primary"
-                  : "border-transparent"
-              }`}
-            >
-              <div className="relative">
-                <Avatar src={contact.avatar} size="md" />
-                {contact.online && (
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-white" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-base font-medium text-default-900 truncate">
-                    {contact.name}
-                  </span>
-                  <span className="text-xs text-default-400">{contact.time}</span>
+
+        {/* Contacts */}
+        <div className="flex-1 overflow-y-auto">
+          {filteredContacts.map((contact) => {
+            const isSelected = selectedContact?.id === contact.id;
+            return (
+              <div
+                key={contact.id}
+                onClick={() => setSelectedContact(contact)}
+                className={`flex items-center gap-3 p-3 cursor-pointer transition-colors border-l-2 ${
+                  isSelected
+                    ? "bg-teal-50 border-teal-600"
+                    : "hover:bg-gray-50 border-transparent"
+                }`}
+              >
+                <div className="relative shrink-0">
+                  <img src={contact.avatar} alt="" className="w-9 h-9 rounded-full object-cover" />
+                  {contact.online && (
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-teal-500 rounded-full border-2 border-white" />
+                  )}
                 </div>
-                <p className="text-sm text-default-500 truncate">{contact.lastMessage}</p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-800 truncate">
+                      {contact.name}
+                    </span>
+                    <span className="text-xs text-gray-400">{contact.time}</span>
+                  </div>
+                  <div className="flex items-center justify-between mt-0.5">
+                    <p className="text-xs text-gray-500 truncate">{contact.lastMessage}</p>
+                    {contact.unread > 0 && (
+                      <span className="min-w-[18px] h-[18px] px-1 bg-teal-600 text-white text-[10px] font-medium rounded-full flex items-center justify-center">
+                        {contact.unread}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
-        </ScrollShadow>
+            );
+          })}
+        </div>
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 bg-background h-full flex flex-col overflow-hidden">
-        {/* Chat Header */}
-        <div className="flex items-center justify-between p-5 border-b border-default-200 shrink-0 bg-default-50/50">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Avatar src={selectedContact?.avatar} size="md" />
-              {selectedContact?.online && (
-                <span className="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-white" />
-              )}
-            </div>
-            <div>
-              <p className="text-base font-medium text-default-900">{selectedContact?.name}</p>
-              <p className="text-sm text-default-500">
-                {selectedContact?.online ? "Online" : "Offline"}
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button
-              className="p-2.5 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-primary-50 transition-all duration-200 cursor-pointer text-default-400 hover:text-primary"
-              title="Voice Call"
-            >
-              <Phone size={18} />
-            </button>
-            <button
-              className="p-2.5 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-primary-50 transition-all duration-200 cursor-pointer text-default-400 hover:text-primary"
-              title="Video Call"
-            >
-              <Video size={18} />
-            </button>
-            <button
-              className="p-2.5 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-primary-50 transition-all duration-200 cursor-pointer text-default-400 hover:text-primary"
-              title="More Options"
-            >
-              <MoreVertical size={18} />
-            </button>
-          </div>
-        </div>
-
-        {/* Messages */}
-        <ScrollShadow className="flex-1 min-h-0 p-6 space-y-4 overflow-y-auto">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.sender === "me" ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-[70%] px-4 py-3 rounded-2xl ${
-                  msg.sender === "me"
-                    ? "bg-primary text-white rounded-br-sm"
-                    : "bg-default-100 text-default-900 rounded-bl-sm"
-                }`}
-              >
-                <p className="text-base leading-relaxed">{msg.text}</p>
-                <p
-                  className={`text-xs mt-1.5 ${
-                    msg.sender === "me" ? "text-white/70" : "text-default-400"
-                  }`}
-                >
-                  {msg.time}
-                </p>
+      <div className="flex-1 h-full flex flex-col overflow-hidden">
+        {selectedContact ? (
+          <>
+            {/* Chat Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <img src={selectedContact?.avatar} alt="" className="w-9 h-9 rounded-full object-cover" />
+                  {selectedContact?.online && (
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-teal-500 rounded-full border-2 border-white" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-800">{selectedContact?.name}</p>
+                  <p className="text-xs text-gray-500">
+                    {selectedContact?.online ? "Online" : "Offline"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                  <Phone size={16} />
+                </button>
+                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                  <Video size={16} />
+                </button>
+                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                  <MoreVertical size={16} />
+                </button>
               </div>
             </div>
-          ))}
-        </ScrollShadow>
 
-        {/* Input - Always at bottom */}
-        <div className="p-5 border-t border-default-200 shrink-0 bg-default-50/30">
-          <div className="flex gap-3">
-            <div className="flex items-center gap-2 flex-1 px-4 py-3 bg-white rounded-lg border border-default-200 hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
-              <input
-                type="text"
-                placeholder="Type a message..."
-                className="flex-1 bg-transparent outline-none text-base text-default-900 placeholder:text-default-400"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              />
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {messages.map((msg) => {
+                const isMe = msg.sender === "me";
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[70%] px-3 py-2 rounded-lg ${
+                        isMe
+                          ? "bg-teal-600 text-white rounded-br-sm"
+                          : "bg-gray-100 text-gray-800 rounded-bl-sm"
+                      }`}
+                    >
+                      <p className="text-sm leading-relaxed">{msg.text}</p>
+                      <p className={`text-[10px] mt-1 ${isMe ? "text-white/70" : "text-gray-400"}`}>
+                        {msg.time}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <button
-              onClick={handleSend}
-              className="flex items-center justify-center w-12 h-12 bg-primary text-white rounded-lg border border-primary hover:bg-primary-600 transition-all duration-200 cursor-pointer"
-              title="Send Message"
-            >
-              <Send size={18} />
-            </button>
+
+            {/* Input */}
+            <div className="p-3 border-t border-gray-200">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 flex items-center px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all">
+                  <input
+                    type="text"
+                    placeholder="Type a message..."
+                    className="flex-1 bg-transparent outline-none text-sm text-gray-800 placeholder:text-gray-400"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                  />
+                </div>
+                <button
+                  onClick={handleSend}
+                  className="p-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors"
+                >
+                  <Send size={16} />
+                </button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center bg-gray-50">
+            <div className="text-center">
+              <div className="w-12 h-12 mx-auto mb-3 bg-gray-200 rounded-full flex items-center justify-center">
+                <span className="text-2xl">💬</span>
+              </div>
+              <p className="text-sm text-gray-500">Select a conversation</p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -31,7 +31,32 @@ export const PermissionProvider = ({ children }) => {
 
       if (response.ok) {
         const data = await response.json();
-        setPermissions(data.permissions || []);
+        const apiPermissions = data.permissions || [];
+
+        // If API returns empty or incomplete permissions, merge with role defaults
+        if (apiPermissions.length === 0) {
+          grantDefaultPermissions();
+        } else {
+          // Check if academics is included, if not add it based on role
+          const roleStr = typeof user?.role === 'string' ? user.role :
+                          user?.role?.toString?.() || '';
+          const normalizedRole = roleStr.toLowerCase().trim();
+          const hasAcademicsPermission = apiPermissions.some(p => p.module === 'academics');
+
+          // For teachers and above, always include academics if missing
+          if (!hasAcademicsPermission && ['teacher', 'principal', 'vice principal', 'vice-principal', 'admin', 'super admin', 'superadmin'].includes(normalizedRole)) {
+            // Merge role-based academics permission with API permissions
+            const academicsPermission = {
+              module: 'academics',
+              actions: normalizedRole === 'teacher'
+                ? ['view', 'create', 'edit']
+                : ['view', 'create', 'edit', 'publish']
+            };
+            setPermissions([...apiPermissions, academicsPermission]);
+          } else {
+            setPermissions(apiPermissions);
+          }
+        }
       } else {
         // If fetch fails, grant all permissions for Admin roles
         console.warn('Permissions API not available, using role-based fallback');
@@ -47,18 +72,83 @@ export const PermissionProvider = ({ children }) => {
   };
 
   const grantDefaultPermissions = () => {
+    // Normalize role for case-insensitive comparison - handle various types safely
+    const roleStr = typeof user?.role === 'string' ? user.role :
+                    user?.role?.toString?.() || '';
+    const normalizedRole = roleStr.toLowerCase().trim();
+
     // Grant all permissions for Admin roles
-    if (user.role === 'Super Admin' || user.role === 'Admin') {
-      setPermissions([{ module: '*', actions: ['view', 'create', 'edit', 'delete'] }]);
+    if (normalizedRole === 'super admin' || normalizedRole === 'admin' || normalizedRole === 'superadmin') {
+      setPermissions([{ module: '*', actions: ['view', 'create', 'edit', 'delete', 'publish'] }]);
+    } else if (normalizedRole === 'principal') {
+      // Principal has full access except settings delete
+      setPermissions([
+        { module: '*', actions: ['view', 'create', 'edit', 'delete', 'publish'] },
+        { module: 'settings', actions: ['view', 'create', 'edit'] }
+      ]);
+    } else if (normalizedRole === 'vice principal' || normalizedRole === 'vice-principal') {
+      // Vice Principal has access without delete
+      setPermissions([
+        { module: 'dashboard', actions: ['view'] },
+        { module: 'staff', actions: ['view', 'create', 'edit'] },
+        { module: 'students', actions: ['view', 'create', 'edit'] },
+        { module: 'classes', actions: ['view', 'create', 'edit'] },
+        { module: 'academics', actions: ['view', 'create', 'edit', 'publish'] },
+        { module: 'attendance', actions: ['view', 'create', 'edit'] },
+        { module: 'timetable', actions: ['view', 'create', 'edit'] },
+        { module: 'fees', actions: ['view'] },
+        { module: 'payroll', actions: ['view'] },
+        { module: 'communication', actions: ['view', 'create', 'edit'] },
+        { module: 'reports', actions: ['view', 'create'] },
+      ]);
+    } else if (normalizedRole === 'teacher') {
+      // Teacher has access to classes, attendance, academics
+      setPermissions([
+        { module: 'dashboard', actions: ['view'] },
+        { module: 'staff', actions: ['view'] },
+        { module: 'students', actions: ['view', 'edit'] },
+        { module: 'classes', actions: ['view'] },
+        { module: 'academics', actions: ['view', 'create', 'edit'] },
+        { module: 'attendance', actions: ['view', 'create', 'edit'] },
+        { module: 'timetable', actions: ['view'] },
+        { module: 'fees', actions: ['view'] },
+        { module: 'communication', actions: ['view', 'create'] },
+        { module: 'reports', actions: ['view'] },
+      ]);
+    } else if (normalizedRole === 'accountant') {
+      // Accountant has access to fees and payroll
+      setPermissions([
+        { module: 'dashboard', actions: ['view'] },
+        { module: 'staff', actions: ['view'] },
+        { module: 'students', actions: ['view'] },
+        { module: 'academics', actions: ['view'] },
+        { module: 'fees', actions: ['view', 'create', 'edit', 'delete'] },
+        { module: 'payroll', actions: ['view', 'create', 'edit'] },
+        { module: 'reports', actions: ['view'] },
+      ]);
     } else {
       // Grant basic view permissions for other roles
-      setPermissions([{ module: '*', actions: ['view'] }]);
+      setPermissions([
+        { module: 'dashboard', actions: ['view'] },
+        { module: 'staff', actions: ['view'] },
+        { module: 'students', actions: ['view'] },
+        { module: 'classes', actions: ['view'] },
+        { module: 'academics', actions: ['view'] },
+        { module: 'attendance', actions: ['view'] },
+        { module: 'timetable', actions: ['view'] },
+        { module: 'communication', actions: ['view', 'create'] },
+      ]);
     }
   };
 
   const hasPermission = (module, action = 'view') => {
+    // Normalize role for case-insensitive comparison - handle various types safely
+    const roleStr = typeof user?.role === 'string' ? user.role :
+                    user?.role?.toString?.() || '';
+    const normalizedRole = roleStr.toLowerCase().trim();
+
     // Super Admin has all permissions
-    if (user?.role === 'Super Admin' || user?.role === 'Admin') {
+    if (normalizedRole === 'super admin' || normalizedRole === 'admin' || normalizedRole === 'superadmin') {
       return true;
     }
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Card,
   CardBody,
@@ -24,12 +24,17 @@ import {
 import { Plus, Edit2, Trash2, Users, DoorOpen, Building2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 export default function ClassSectionsSettings() {
-  const { classes, staff, students, addClass, updateClass, deleteClass } = useApp();
+  const { classes, staff, students, addClass, updateClass, deleteClass, loading } = useApp();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingSection, setEditingSection] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, section: null });
+  const [deleting, setDeleting] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -44,12 +49,30 @@ export default function ClassSectionsSettings() {
 
   const teachers = staff.filter(s => s.role === "Teacher" && s.status === "active");
 
+  // Sort classes alphabetically by name
+  const sortedClasses = useMemo(() => {
+    return [...classes].sort((a, b) => {
+      const nameA = a.name || '';
+      const nameB = b.name || '';
+      // Extract class number for numeric sorting
+      const numA = parseInt(nameA.split('-')[0]) || 0;
+      const numB = parseInt(nameB.split('-')[0]) || 0;
+      if (numA !== numB) return numA - numB;
+      // If same class number, sort by section
+      const sectionA = a.section || nameA.split('-')[1] || '';
+      const sectionB = b.section || nameB.split('-')[1] || '';
+      return sectionA.localeCompare(sectionB);
+    });
+  }, [classes]);
+
   const handleOpenModal = (section = null) => {
     if (section) {
       setEditingSection(section);
+      // Extract class name from full name (e.g., "10-A" -> "10")
+      const className = section.name ? section.name.split('-')[0] : '';
       setFormData({
-        name: section.name,
-        section: section.section || "",
+        name: className,
+        section: section.section || section.name.split('-')[1] || "",
         strengthLimit: section.strengthLimit || "",
         roomNo: section.roomNo || "",
         blockNo: section.blockNo || "",
@@ -79,7 +102,7 @@ export default function ClassSectionsSettings() {
       return;
     }
 
-    setLoading(true);
+    setSaving(true);
     try {
       const sectionData = {
         name: `${formData.name}-${formData.section}`,
@@ -94,33 +117,48 @@ export default function ClassSectionsSettings() {
 
       if (editingSection) {
         await updateClass(editingSection.id, sectionData);
+        toast.success("Section updated successfully");
       } else {
         await addClass(sectionData);
+        toast.success("Section added successfully");
       }
 
       onClose();
     } catch (error) {
       console.error("Failed to save section:", error);
+      toast.error("Failed to save section");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this section?")) return;
+  const handleDeleteClick = (section) => {
+    setDeleteConfirm({ isOpen: true, section });
+  };
 
-    setLoading(true);
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm.section) return;
+
+    setDeleting(true);
     try {
-      await deleteClass(id);
+      await deleteClass(deleteConfirm.section.id);
+      toast.success("Section deleted successfully");
+      setDeleteConfirm({ isOpen: false, section: null });
     } catch (error) {
       console.error("Failed to delete section:", error);
+      toast.error("Failed to delete section");
     } finally {
-      setLoading(false);
+      setDeleting(false);
     }
   };
 
+  // FIXED: Use String() comparison for ObjectId matching and filter by active status
   const getStudentCount = (classId) => {
-    return students.filter(s => s.classId === classId).length;
+    return students.filter(s =>
+      String(s.classId) === String(classId) &&
+      (s.status || 'active') === 'active' &&
+      s.isDeleted !== true
+    ).length;
   };
 
   const getTeacherName = (teacherId) => {
@@ -164,8 +202,8 @@ export default function ClassSectionsSettings() {
             <TableColumn>ACTIONS</TableColumn>
           </TableHeader>
           <TableBody
-            items={classes}
-            emptyContent="No sections found"
+            items={sortedClasses}
+            emptyContent={loading ? "Loading..." : "No sections found"}
             loadingContent={<Spinner />}
           >
             {(section) => {
@@ -251,7 +289,7 @@ export default function ClassSectionsSettings() {
                         size="sm"
                         variant="light"
                         color="danger"
-                        onPress={() => handleDelete(section.id)}
+                        onPress={() => handleDeleteClick(section)}
                         className="transition-all duration-200"
                       >
                         <Trash2 size={16} />
@@ -278,7 +316,7 @@ export default function ClassSectionsSettings() {
                   label="Class Name"
                   placeholder="e.g., 10, 11, 12"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onValueChange={(v) => setFormData({ ...formData, name: v })}
                   variant="bordered"
                   isRequired
                 />
@@ -286,7 +324,7 @@ export default function ClassSectionsSettings() {
                   label="Section"
                   placeholder="e.g., A, B, C"
                   value={formData.section}
-                  onChange={(e) => setFormData({ ...formData, section: e.target.value })}
+                  onValueChange={(v) => setFormData({ ...formData, section: v })}
                   variant="bordered"
                   isRequired
                 />
@@ -298,14 +336,14 @@ export default function ClassSectionsSettings() {
                   placeholder="Maximum students"
                   type="number"
                   value={formData.strengthLimit}
-                  onChange={(e) => setFormData({ ...formData, strengthLimit: e.target.value })}
+                  onValueChange={(v) => setFormData({ ...formData, strengthLimit: v })}
                   variant="bordered"
                 />
                 <Select
                   label="Class Teacher"
                   placeholder="Select teacher"
                   selectedKeys={formData.classTeacherId ? [formData.classTeacherId] : []}
-                  onChange={(e) => setFormData({ ...formData, classTeacherId: e.target.value })}
+                  onSelectionChange={(keys) => setFormData({ ...formData, classTeacherId: Array.from(keys)[0] || "" })}
                   variant="bordered"
                 >
                   {teachers.map((teacher) => (
@@ -321,14 +359,14 @@ export default function ClassSectionsSettings() {
                   label="Room Number"
                   placeholder="e.g., 101, 202"
                   value={formData.roomNo}
-                  onChange={(e) => setFormData({ ...formData, roomNo: e.target.value })}
+                  onValueChange={(v) => setFormData({ ...formData, roomNo: v })}
                   variant="bordered"
                 />
                 <Input
                   label="Block"
                   placeholder="e.g., A Block, B Block"
                   value={formData.blockNo}
-                  onChange={(e) => setFormData({ ...formData, blockNo: e.target.value })}
+                  onValueChange={(v) => setFormData({ ...formData, blockNo: v })}
                   variant="bordered"
                 />
               </div>
@@ -338,7 +376,7 @@ export default function ClassSectionsSettings() {
                   label="HOD (Head of Department)"
                   placeholder="Select HOD"
                   selectedKeys={formData.hodId ? [formData.hodId] : []}
-                  onChange={(e) => setFormData({ ...formData, hodId: e.target.value })}
+                  onSelectionChange={(keys) => setFormData({ ...formData, hodId: Array.from(keys)[0] || "" })}
                   variant="bordered"
                 >
                   {teachers.map((teacher) => (
@@ -351,7 +389,7 @@ export default function ClassSectionsSettings() {
                   label="Group (Higher Secondary)"
                   placeholder="Select group"
                   selectedKeys={formData.group ? [formData.group] : []}
-                  onChange={(e) => setFormData({ ...formData, group: e.target.value })}
+                  onSelectionChange={(keys) => setFormData({ ...formData, group: Array.from(keys)[0] || "" })}
                   variant="bordered"
                 >
                   <SelectItem key="Science" value="Science">Science</SelectItem>
@@ -368,7 +406,7 @@ export default function ClassSectionsSettings() {
             <Button
               color="primary"
               onPress={handleSubmit}
-              isLoading={loading}
+              isLoading={saving}
               className="transition-all duration-200"
             >
               {editingSection ? "Update" : "Add"} Section
@@ -376,6 +414,19 @@ export default function ClassSectionsSettings() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, section: null })}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Section"
+        message={`Are you sure you want to delete section "${deleteConfirm.section?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={deleting}
+      />
     </div>
   );
 }

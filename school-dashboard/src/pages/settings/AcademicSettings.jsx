@@ -1,374 +1,1159 @@
-import { useState } from "react";
-import { Tabs, Tab, Card, CardBody, Input, Button, Chip, Divider, Switch, Select, SelectItem, Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/react";
-import { BookOpen, Calendar, Clock, GraduationCap, Plus, Save, Trash2, AlertCircle } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  Tabs, Tab, Card, CardBody, Input, Button, Chip, Divider, Switch,
+  Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Tooltip
+} from "@heroui/react";
+import {
+  BookOpen, Calendar, Clock, GraduationCap, Plus, Save, Trash2,
+  Edit2, AlertCircle, Check, Users, Layers
+} from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import ClassSectionsSettings from "./ClassSectionsSettings";
+import toast from "react-hot-toast";
 
-export default function AcademicSettings() {
-    const { schoolSettings, updateSchoolSettings, addSubject, deleteSubject, loading } = useApp();
-    const [activeTab, setActiveTab] = useState("schedule");
-    const [editingSection, setEditingSection] = useState(null);
-    const { isOpen, onOpen, onClose } = useDisclosure();
-    const [newSubject, setNewSubject] = useState({ name: "", code: "" });
-    const [localSettings, setLocalSettings] = useState(schoolSettings);
-    const [saving, setSaving] = useState(false);
+// Validation functions
+const validateSettings = (settings) => {
+  const errors = [];
 
-    // Sync local settings when context updates
-    // This ensures we have data if the page loads before context is fully ready
-    if (schoolSettings && (!localSettings || (localSettings.academicYear !== schoolSettings.academicYear && !editingSection))) {
-        if (schoolSettings && !localSettings) setLocalSettings(schoolSettings);
+  // Working days validation
+  if (!settings.workingDays || settings.workingDays.length === 0) {
+    errors.push("At least one working day must be selected");
+  }
+
+  // Academic year date validation
+  if (settings.academicYearStart && settings.academicYearEnd) {
+    const startDate = new Date(settings.academicYearStart);
+    const endDate = new Date(settings.academicYearEnd);
+    if (endDate <= startDate) {
+      errors.push("Academic year end date must be after start date");
+    }
+  }
+
+  // School timing validation
+  if (settings.schoolStartTime && settings.schoolEndTime) {
+    const start = settings.schoolStartTime.split(':').map(Number);
+    const end = settings.schoolEndTime.split(':').map(Number);
+    const startMinutes = start[0] * 60 + start[1];
+    const endMinutes = end[0] * 60 + end[1];
+    if (endMinutes <= startMinutes) {
+      errors.push("School end time must be after start time");
     }
 
-    const handleSave = async () => {
-        setSaving(true);
-        try {
-            await updateSchoolSettings(localSettings);
-            setEditingSection(null);
-            // Success toast would go here
-        } catch (error) {
-            console.error('Failed to save settings:', error);
-        } finally {
-            setSaving(false);
-        }
-    };
+    // Period validation against school hours
+    if (settings.periodDuration && settings.periodsPerDay) {
+      const totalPeriodMinutes = settings.periodsPerDay * settings.periodDuration;
+      const availableMinutes = endMinutes - startMinutes;
+      if (totalPeriodMinutes > availableMinutes) {
+        errors.push(`Total period time (${Math.floor(totalPeriodMinutes / 60)}h ${totalPeriodMinutes % 60}m) exceeds school hours (${Math.floor(availableMinutes / 60)}h ${availableMinutes % 60}m)`);
+      }
+    }
+  }
 
-    const handleCancel = () => {
-        setLocalSettings(schoolSettings);
-        setEditingSection(null);
-    };
+  // Period validation
+  if (settings.periodDuration && settings.periodDuration <= 0) {
+    errors.push("Period duration must be greater than 0");
+  }
+  if (settings.periodsPerDay && settings.periodsPerDay <= 0) {
+    errors.push("Number of periods per day must be greater than 0");
+  }
 
-    const handleAddSubject = async () => {
-        if (!newSubject.name.trim() || !newSubject.code.trim()) return;
-        try {
-            await addSubject(newSubject);
-            setNewSubject({ name: "", code: "" });
-            onClose();
-        } catch (error) {
-            console.error('Failed to add subject:', error);
-        }
-    };
+  return errors;
+};
 
-    const toggleWorkingDay = (day) => {
-        if (editingSection !== 'workingDays') return;
-        const days = localSettings.workingDays.includes(day)
-            ? localSettings.workingDays.filter(d => d !== day)
-            : [...localSettings.workingDays, day];
-        setLocalSettings({ ...localSettings, workingDays: days });
-    };
+// Data display field component
+const DataField = ({ label, value }) => (
+  <div className="space-y-1">
+    <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{label}</span>
+    <p className="font-medium text-default-900">{value || "—"}</p>
+  </div>
+);
 
-    if (loading) return <div className="flex justify-center p-10"><Spinner size="lg" /></div>;
+export default function AcademicSettings() {
+  const { schoolSettings, updateSchoolSettings, addSubject, updateSubject, deleteSubject, classes, addClass, updateClass, deleteClass, loading } = useApp();
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('academicSettingsTab') || "schedule";
+  });
+  const [localSettings, setLocalSettings] = useState(schoolSettings);
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
-    const SectionHeader = ({ title, icon: Icon, section, colorClass = "bg-primary" }) => (
-        <div className="flex justify-between items-start mb-6 relative z-10">
-            <h3 className="text-lg font-bold text-default-900 flex items-center gap-2">
-                <span className={`w-1 h-6 ${colorClass} rounded-full`}></span>
-                {title}
-            </h3>
-            {editingSection === section ? (
-                <div className="flex items-center gap-2">
-                    <Button size="sm" variant="light" color="danger" onPress={handleCancel} disabled={saving}>Cancel</Button>
-                    <Button size="sm" color="primary" onPress={handleSave} isLoading={saving} startContent={<Save size={14} />}>
-                        Save
-                    </Button>
-                </div>
-            ) : (
-                <Button size="sm" variant="light" color="primary" onPress={() => setEditingSection(section)} isDisabled={editingSection !== null} startContent={<Plus size={16} className="rotate-45" />}>
-                    Edit
-                </Button>
-            )}
-        </div>
-    );
+  // Modal states
+  const academicYearModal = useDisclosure();
+  const schoolTimingsModal = useDisclosure();
+  const periodConfigModal = useDisclosure();
+  const workingDaysModal = useDisclosure();
+  const subjectModal = useDisclosure();
+  const classModal = useDisclosure();
 
+  const [newSubject, setNewSubject] = useState({ name: "", code: "", assignedClasses: [] });
+  const [editingSubject, setEditingSubject] = useState(null);
+  const [selectedClassNum, setSelectedClassNum] = useState(null); // For adding sections
+  const [newSection, setNewSection] = useState("");
+  const [editingSection, setEditingSection] = useState(null); // { classNum, section, classId }
+
+  // Sync local settings when context updates
+  useEffect(() => {
+    if (schoolSettings) {
+      setLocalSettings(schoolSettings);
+    }
+  }, [schoolSettings]);
+
+  // Tab persistence
+  useEffect(() => {
+    localStorage.setItem('academicSettingsTab', activeTab);
+  }, [activeTab]);
+
+  // Generic save handler for modals
+  const handleSaveSection = async (sectionData, closeModal) => {
+    const errors = validateSettings({ ...localSettings, ...sectionData });
+    if (errors.length > 0) {
+      errors.forEach(error => toast.error(error));
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const updated = { ...localSettings, ...sectionData };
+      await updateSchoolSettings(updated);
+      setLocalSettings(updated);
+      setSaveSuccess(true);
+      toast.success('Settings saved successfully');
+      setTimeout(() => setSaveSuccess(false), 2000);
+      closeModal();
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      toast.error('Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Subject handlers
+  const handleAddSubject = async () => {
+    if (!newSubject.name.trim() || !newSubject.code.trim()) {
+      toast.error('Subject name and code are required');
+      return;
+    }
+    try {
+      await addSubject(newSubject);
+      setNewSubject({ name: "", code: "", assignedClasses: [] });
+      subjectModal.onClose();
+      toast.success('Subject added successfully');
+    } catch (error) {
+      console.error('Failed to add subject:', error);
+      toast.error('Failed to add subject');
+    }
+  };
+
+  const handleEditSubject = (subject) => {
+    setEditingSubject(subject);
+    setNewSubject({
+      name: subject.name,
+      code: subject.code,
+      assignedClasses: subject.assignedClasses || []
+    });
+    subjectModal.onOpen();
+  };
+
+  const handleUpdateSubject = async () => {
+    if (!editingSubject || !newSubject.name.trim() || !newSubject.code.trim()) {
+      toast.error('Subject name and code are required');
+      return;
+    }
+    try {
+      await updateSubject(editingSubject.id || editingSubject._id, newSubject);
+      setEditingSubject(null);
+      setNewSubject({ name: "", code: "", assignedClasses: [] });
+      subjectModal.onClose();
+      toast.success('Subject updated successfully');
+    } catch (error) {
+      console.error('Failed to update subject:', error);
+      toast.error('Failed to update subject');
+    }
+  };
+
+  const handleDeleteSubject = async (subject) => {
+    const subjectId = subject.id || subject._id;
+    if (!subjectId) {
+      toast.error('Cannot delete subject: missing ID');
+      return;
+    }
+    if (!confirm(`Delete "${subject.name}"? This action cannot be undone.`)) return;
+    try {
+      await deleteSubject(subjectId);
+      toast.success('Subject deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete subject:', error);
+      toast.error('Failed to delete subject');
+    }
+  };
+
+  const handleSubjectModalClose = () => {
+    setEditingSubject(null);
+    setNewSubject({ name: "", code: "", assignedClasses: [] });
+    subjectModal.onClose();
+  };
+
+  // Section handlers
+  const handleAddSection = async () => {
+    if (!selectedClassNum || !newSection.trim()) {
+      toast.error('Please enter a section letter');
+      return;
+    }
+    try {
+      await addClass({
+        name: `Class ${selectedClassNum}`,
+        section: newSection.toUpperCase()
+      });
+      setNewSection("");
+      classModal.onClose();
+      toast.success(`Section ${newSection.toUpperCase()} added to Class ${selectedClassNum}`);
+    } catch (error) {
+      console.error('Failed to add section:', error);
+      toast.error('Failed to add section');
+    }
+  };
+
+  const handleEditSection = (classNum, section, classId) => {
+    setEditingSection({ classNum, section, classId });
+    setNewSection(section);
+    classModal.onOpen();
+  };
+
+  const handleUpdateSection = async () => {
+    if (!editingSection || !newSection.trim()) {
+      toast.error('Please enter a section letter');
+      return;
+    }
+    try {
+      await updateClass(editingSection.classId, {
+        name: `Class ${editingSection.classNum}`,
+        section: newSection.toUpperCase()
+      });
+      setEditingSection(null);
+      setNewSection("");
+      classModal.onClose();
+      toast.success('Section updated successfully');
+    } catch (error) {
+      console.error('Failed to update section:', error);
+      toast.error('Failed to update section');
+    }
+  };
+
+  const handleDeleteSection = async (cls) => {
+    const classId = cls.id || cls._id;
+    if (!classId) {
+      toast.error('Cannot delete section: missing ID');
+      return;
+    }
+    const classNum = cls.name?.replace(/\D/g, '') || '?';
+    if (!confirm(`Delete Class ${classNum} - Section ${cls.section}? This action cannot be undone.`)) return;
+    try {
+      await deleteClass(classId);
+      toast.success('Section deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete section:', error);
+      // Check for specific error message
+      if (error.message?.includes('students')) {
+        toast.error('Cannot delete: Students are enrolled in this section');
+      } else {
+        toast.error('Failed to delete section');
+      }
+    }
+  };
+
+  // Disable a class (delete all sections) - with error handling
+  const handleDisableClass = async (classNum) => {
+    const config = classConfig[classNum];
+    if (!config || !config.sectionDetails.length) return;
+
+    // Check if any section has students
+    const hasStudents = config.sectionDetails.some(cls => cls.strength > 0);
+    if (hasStudents) {
+      toast.error(`Cannot disable Class ${classNum}: Students are enrolled. Transfer students first.`);
+      return;
+    }
+
+    if (!confirm(`Disable Class ${classNum}? This will remove all sections.`)) return;
+
+    try {
+      // Delete sections one by one
+      for (const cls of config.sectionDetails) {
+        await deleteClass(cls.id || cls._id);
+      }
+      toast.success(`Class ${classNum} disabled`);
+    } catch (error) {
+      console.error('Failed to disable class:', error);
+      if (error.message?.includes('students')) {
+        toast.error('Cannot disable: Students are enrolled in this class');
+      } else {
+        toast.error('Failed to disable class');
+      }
+    }
+  };
+
+  const handleClassModalClose = () => {
+    setEditingSection(null);
+    setNewSection("");
+    setSelectedClassNum(null);
+    classModal.onClose();
+  };
+
+  // Open modal to add section to a specific class
+  const openAddSectionModal = (classNum) => {
+    setSelectedClassNum(classNum);
+    setEditingSection(null);
+    setNewSection("");
+    classModal.onOpen();
+  };
+
+  // Working days toggle
+  const toggleWorkingDay = (day, currentDays, setDays) => {
+    const days = currentDays?.includes(day)
+      ? currentDays.filter(d => d !== day)
+      : [...(currentDays || []), day];
+    setDays(days);
+  };
+
+  if (loading || !localSettings) {
     return (
-        <div className="max-w-4xl mx-auto pb-10 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-default-200 pb-6">
-                <div>
-                    <h2 className="text-2xl font-bold text-default-900">Academic Configuration</h2>
-                    <p className="text-sm text-default-500 mt-1">Manage academic sessions, timings, subjects, and class structures.</p>
+      <div className="flex justify-center p-10">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  // Calculate instructional time
+  const instructionalMinutes = (localSettings.periodsPerDay || 0) * (localSettings.periodDuration || 0);
+  const instructionalHours = Math.floor(instructionalMinutes / 60);
+  const instructionalMins = instructionalMinutes % 60;
+
+  // Calculate total school hours
+  const getSchoolHours = () => {
+    if (!localSettings.schoolStartTime || !localSettings.schoolEndTime) return "—";
+    const [sh, sm] = localSettings.schoolStartTime.split(':').map(Number);
+    const [eh, em] = localSettings.schoolEndTime.split(':').map(Number);
+    const total = (eh * 60 + em) - (sh * 60 + sm);
+    return `${Math.floor(total / 60)}h ${total % 60}m`;
+  };
+
+  // Fixed classes 1-12
+  const ALL_CLASSES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+  // Group classes by class number and calculate enabled status
+  const classConfig = useMemo(() => {
+    const grouped = {};
+
+    // Initialize all classes
+    ALL_CLASSES.forEach(num => {
+      grouped[num] = {
+        classNum: num,
+        enabled: false,
+        sections: [],
+        sectionDetails: [],
+        totalStrength: 0
+      };
+    });
+
+    // Populate with existing class data
+    if (classes && classes.length > 0) {
+      classes.forEach(cls => {
+        const classNum = parseInt(cls.name?.replace(/\D/g, '') || cls.class?.replace(/\D/g, '') || '0');
+        if (classNum >= 1 && classNum <= 12) {
+          grouped[classNum].enabled = true;
+          if (cls.section) {
+            grouped[classNum].sections.push(cls.section);
+          }
+          grouped[classNum].sectionDetails.push(cls);
+          grouped[classNum].totalStrength += cls.strength || 0;
+        }
+      });
+    }
+
+    // Sort sections alphabetically
+    Object.values(grouped).forEach(g => {
+      g.sections = [...new Set(g.sections)].sort();
+      g.sectionDetails = g.sectionDetails.sort((a, b) => (a.section || '').localeCompare(b.section || ''));
+    });
+
+    return grouped;
+  }, [classes]);
+
+  // Get enabled classes for display
+  const enabledClasses = useMemo(() => {
+    return ALL_CLASSES.filter(num => classConfig[num]?.enabled).map(num => classConfig[num]);
+  }, [classConfig]);
+
+  return (
+    <div className="max-w-4xl mx-auto pb-10 space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-default-200 pb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-default-900">Academic Configuration</h2>
+          <p className="text-sm text-default-500 mt-1">Manage academic sessions, timings, subjects, and class structures.</p>
+        </div>
+      </div>
+
+      <Tabs
+        selectedKey={activeTab}
+        onSelectionChange={setActiveTab}
+        variant="underlined"
+        classNames={{
+          tabList: "gap-6 border-b border-default-200 w-full p-0",
+          cursor: "w-full bg-primary",
+          tab: "max-w-fit px-0 h-10 pb-2",
+          tabContent: "group-data-[selected=true]:text-primary group-data-[selected=true]:font-semibold font-medium text-default-500"
+        }}
+      >
+        {/* Schedule & Timings Tab */}
+        <Tab key="schedule" title={
+          <div className="flex items-center gap-2">
+            <Calendar size={18} />
+            <span>Schedule & Timings</span>
+          </div>
+        }>
+          <div className="pt-6 space-y-8 animate-fade-in">
+
+            {/* Academic Session Card */}
+            <div className="rounded-xl border border-default-200 bg-white hover:border-default-300 transition-colors">
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                      <Calendar size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-default-900">Academic Session</h3>
+                      <p className="text-xs text-default-500">Current academic year configuration</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    color="primary"
+                    startContent={<Edit2 size={16} />}
+                    onPress={academicYearModal.onOpen}
+                  >
+                    Edit
+                  </Button>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <DataField label="Session Name" value={localSettings.academicYear} />
+                  <DataField label="Start Date" value={localSettings.academicYearStart} />
+                  <DataField label="End Date" value={localSettings.academicYearEnd} />
+                </div>
+              </div>
             </div>
 
-            <Tabs
-                selectedKey={activeTab}
-                onSelectionChange={setActiveTab}
-                variant="underlined"
-                classNames={{
-                    tabList: "gap-6 border-b border-default-200 w-full p-0",
-                    cursor: "w-full bg-primary",
-                    tab: "max-w-fit px-0 h-10 pb-2",
-                    tabContent: "group-data-[selected=true]:text-primary group-data-[selected=true]:font-semibold font-medium text-default-500"
-                }}
-            >
-                <Tab key="schedule" title={
-                    <div className="flex items-center gap-2">
-                        <Calendar size={18} />
-                        <span>Schedule & Timings</span>
+            {/* School Timings Card */}
+            <div className="rounded-xl border border-default-200 bg-white hover:border-default-300 transition-colors">
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-secondary/10 text-secondary">
+                      <Clock size={24} />
                     </div>
-                }>
-                    <div className="pt-4 space-y-8 animate-fade-in">
-
-                        {/* Academic Year Card */}
-                        <div className={`border rounded-xl p-6 lg:p-8 relative overflow-hidden transition-colors ${editingSection === 'academicYear' ? 'border-primary ring-1 ring-primary bg-white' : 'border-default-200 bg-white'}`}>
-                            <div className="absolute top-0 right-0 p-4 opacity-5">
-                                <Calendar size={120} />
-                            </div>
-
-                            <SectionHeader title="Academic Session" icon={Calendar} section="academicYear" />
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
-                                <div className="space-y-4">
-                                    <label className="text-sm font-medium text-default-600 block">Current Session Name</label>
-                                    {editingSection === 'academicYear' ? (
-                                        <Input
-                                            value={localSettings.academicYear}
-                                            onValueChange={(v) => setLocalSettings({ ...localSettings, academicYear: v })}
-                                            placeholder="e.g. 2024-2025"
-                                            size="lg"
-                                            variant="bordered"
-                                            classNames={{ inputWrapper: "bg-white" }}
-                                            startContent={<Calendar size={18} className="text-default-400" />}
-                                        />
-                                    ) : (
-                                        <div className="h-12 flex items-center text-lg font-semibold text-default-900 px-1">{localSettings.academicYear}</div>
-                                    )}
-                                    <p className="text-xs text-default-400">This label will appear on all reports and documents.</p>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-default-600 block">Start Date</label>
-                                        {editingSection === 'academicYear' ? (
-                                            <Input
-                                                type="date"
-                                                value={localSettings.academicYearStart}
-                                                onValueChange={(v) => setLocalSettings({ ...localSettings, academicYearStart: v })}
-                                                variant="bordered"
-                                                size="lg"
-                                                classNames={{ inputWrapper: "bg-white" }}
-                                            />
-                                        ) : (
-                                            <div className="h-12 flex items-center font-medium text-default-900 px-1">{localSettings.academicYearStart}</div>
-                                        )}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-default-600 block">End Date</label>
-                                        {editingSection === 'academicYear' ? (
-                                            <Input
-                                                type="date"
-                                                value={localSettings.academicYearEnd}
-                                                onValueChange={(v) => setLocalSettings({ ...localSettings, academicYearEnd: v })}
-                                                variant="bordered"
-                                                size="lg"
-                                                classNames={{ inputWrapper: "bg-white" }}
-                                            />
-                                        ) : (
-                                            <div className="h-12 flex items-center font-medium text-default-900 px-1">{localSettings.academicYearEnd}</div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Day Structure Card */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <div className={`col-span-1 lg:col-span-2 border rounded-xl p-6 lg:p-8 transition-colors ${editingSection === 'timings' ? 'border-primary ring-1 ring-primary bg-white' : 'border-default-200 bg-white'}`}>
-                                <SectionHeader title="School Timings" icon={Clock} section="timings" colorClass="bg-secondary" />
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div>
-                                        <h4 className="text-sm font-medium text-default-500 uppercase tracking-wider mb-4">Daily Schedule</h4>
-                                        <div className="space-y-4">
-                                            <div className="flex items-center justify-between p-3 border border-default-200 rounded-lg hover:border-primary/50 transition-colors">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-success-50 text-success-600 rounded-lg"><Clock size={16} /></div>
-                                                    <span className="font-medium text-default-700">School Starts</span>
-                                                </div>
-                                                {editingSection === 'timings' ? (
-                                                    <input
-                                                        type="time"
-                                                        value={localSettings.schoolStartTime}
-                                                        onChange={(e) => setLocalSettings({ ...localSettings, schoolStartTime: e.target.value })}
-                                                        className="bg-transparent font-bold text-default-900 focus:outline-none text-right"
-                                                    />
-                                                ) : (
-                                                    <span className="font-bold text-default-900">{localSettings.schoolStartTime}</span>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center justify-between p-3 border border-default-200 rounded-lg hover:border-primary/50 transition-colors">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-danger-50 text-danger-600 rounded-lg"><Clock size={16} /></div>
-                                                    <span className="font-medium text-default-700">School Ends</span>
-                                                </div>
-                                                {editingSection === 'timings' ? (
-                                                    <input
-                                                        type="time"
-                                                        value={localSettings.schoolEndTime}
-                                                        onChange={(e) => setLocalSettings({ ...localSettings, schoolEndTime: e.target.value })}
-                                                        className="bg-transparent font-bold text-default-900 focus:outline-none text-right"
-                                                    />
-                                                ) : (
-                                                    <span className="font-bold text-default-900">{localSettings.schoolEndTime}</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h4 className="text-sm font-medium text-default-500 uppercase tracking-wider mb-4">Period Structure</h4>
-                                        <div className="space-y-4">
-                                            <div className="flex items-center justify-between gap-4">
-                                                {editingSection === 'timings' ? (
-                                                    <Input
-                                                        type="number"
-                                                        label="Period (mins)"
-                                                        value={localSettings.periodDuration}
-                                                        onValueChange={(v) => setLocalSettings({ ...localSettings, periodDuration: parseInt(v) })}
-                                                        variant="bordered"
-                                                        labelPlacement="outside"
-                                                    />
-                                                ) : (
-                                                    <div className="flex-1 space-y-1">
-                                                        <span className="text-xs text-default-500 block">Period (mins)</span>
-                                                        <p className="font-semibold text-lg">{localSettings.periodDuration}</p>
-                                                    </div>
-                                                )}
-                                                {editingSection === 'timings' ? (
-                                                    <Input
-                                                        type="number"
-                                                        label="Periods/Day"
-                                                        value={localSettings.periodsPerDay}
-                                                        onValueChange={(v) => setLocalSettings({ ...localSettings, periodsPerDay: parseInt(v) })}
-                                                        variant="bordered"
-                                                        labelPlacement="outside"
-                                                    />
-                                                ) : (
-                                                    <div className="flex-1 space-y-1">
-                                                        <span className="text-xs text-default-500 block">Periods/Day</span>
-                                                        <p className="font-semibold text-lg">{localSettings.periodsPerDay}</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="p-4 bg-default-50 rounded-lg mt-4 flex items-start gap-3">
-                                                <AlertCircle size={16} className="text-default-500 mt-1 shrink-0" />
-                                                <p className="text-xs text-default-500 leading-relaxed">
-                                                    Total instructional time: <span className="font-bold text-default-700">{Math.floor((localSettings.periodsPerDay * localSettings.periodDuration) / 60)}h {(localSettings.periodsPerDay * localSettings.periodDuration) % 60}m</span>.
-                                                    Ensure this fits within the school start and end times, including breaks.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className={`col-span-1 border rounded-xl p-6 lg:p-8 flex flex-col transition-colors ${editingSection === 'workingDays' ? 'border-primary ring-1 ring-primary bg-white' : 'border-default-200 bg-white'}`}>
-                                <SectionHeader title="Working Days" icon={Calendar} section="workingDays" colorClass="bg-warning" />
-
-                                <div className="flex-1 flex flex-col gap-2">
-                                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => {
-                                        const isActive = localSettings.workingDays.includes(day);
-                                        return (
-                                            <button
-                                                key={day}
-                                                onClick={() => toggleWorkingDay(day)}
-                                                disabled={editingSection !== 'workingDays'}
-                                                className={`w-full p-3 rounded-lg flex items-center justify-between text-sm transition-all duration-200 border ${isActive
-                                                    ? 'bg-primary/5 border-primary text-primary font-bold'
-                                                    : 'bg-white border-transparent hover:bg-default-50 text-default-500'
-                                                    } ${editingSection !== 'workingDays' ? 'cursor-default opacity-80' : 'cursor-pointer'}`}
-                                            >
-                                                <span>{day === "Mon" ? "Monday" : day === "Tue" ? "Tuesday" : day === "Wed" ? "Wednesday" : day === "Thu" ? "Thursday" : day === "Fri" ? "Friday" : day === "Sat" ? "Saturday" : "Sunday"}</span>
-                                                {isActive && <div className="w-2 h-2 rounded-full bg-primary shadow-sm" />}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-default-900">School Timings</h3>
+                      <p className="text-xs text-default-500">Daily school start and end times</p>
                     </div>
-                </Tab>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    color="primary"
+                    startContent={<Edit2 size={16} />}
+                    onPress={schoolTimingsModal.onOpen}
+                  >
+                    Edit
+                  </Button>
+                </div>
 
-                <Tab key="subjects" title={
-                    <div className="flex items-center gap-2">
-                        <BookOpen size={18} />
-                        <span>Subjects</span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <DataField label="School Starts" value={localSettings.schoolStartTime} />
+                  <DataField label="School Ends" value={localSettings.schoolEndTime} />
+                  <DataField label="Total School Hours" value={getSchoolHours()} />
+                </div>
+              </div>
+            </div>
+
+            {/* Period Configuration Card */}
+            <div className="rounded-xl border border-default-200 bg-white hover:border-default-300 transition-colors">
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-warning/10 text-warning">
+                      <Clock size={24} />
                     </div>
-                }>
-                    <div className="pt-4 space-y-6 animate-fade-in">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold text-default-900">Subject Repository</h3>
-                            <Button color="primary" radius="full" startContent={<Plus size={16} />} onPress={onOpen} className="shadow-md">
-                                Add Subject
+                    <div>
+                      <h3 className="text-lg font-bold text-default-900">Period Configuration</h3>
+                      <p className="text-xs text-default-500">Period duration and count per day</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    color="primary"
+                    startContent={<Edit2 size={16} />}
+                    onPress={periodConfigModal.onOpen}
+                  >
+                    Edit
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <DataField label="Period Duration" value={localSettings.periodDuration ? `${localSettings.periodDuration} minutes` : null} />
+                  <DataField label="Periods per Day" value={localSettings.periodsPerDay} />
+                  <DataField label="Instructional Time" value={`${instructionalHours}h ${instructionalMins}m`} />
+                </div>
+
+                <div className="mt-4 p-4 bg-default-50 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle size={16} className="text-default-500 mt-0.5 shrink-0" />
+                    <p className="text-xs text-default-500 leading-relaxed">
+                      Total instructional time: <span className="font-bold text-default-700">{instructionalHours}h {instructionalMins}m</span>.
+                      Ensure this fits within school hours, including breaks.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Working Days Card */}
+            <div className="rounded-xl border border-default-200 bg-white hover:border-default-300 transition-colors">
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-success/10 text-success">
+                      <Calendar size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-default-900">Working Days</h3>
+                      <p className="text-xs text-default-500">Days the school operates</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    color="primary"
+                    startContent={<Edit2 size={16} />}
+                    onPress={workingDaysModal.onOpen}
+                  >
+                    Edit
+                  </Button>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => {
+                    const isActive = localSettings.workingDays?.includes(day);
+                    const fullDay = day === "Mon" ? "Monday" : day === "Tue" ? "Tuesday" : day === "Wed" ? "Wednesday" : day === "Thu" ? "Thursday" : day === "Fri" ? "Friday" : day === "Sat" ? "Saturday" : "Sunday";
+                    return (
+                      <Chip
+                        key={day}
+                        color={isActive ? "primary" : "default"}
+                        variant={isActive ? "solid" : "flat"}
+                        size="lg"
+                      >
+                        {fullDay}
+                      </Chip>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </Tab>
+
+        {/* Subjects Tab */}
+        <Tab key="subjects" title={
+          <div className="flex items-center gap-2">
+            <BookOpen size={18} />
+            <span>Subjects</span>
+          </div>
+        }>
+          <div className="pt-6 space-y-6 animate-fade-in">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-default-900">Subject Repository</h3>
+                <p className="text-sm text-default-500">{localSettings.subjects?.length || 0} subjects configured</p>
+              </div>
+              <Button
+                color="primary"
+                radius="full"
+                startContent={<Plus size={16} />}
+                onPress={() => { setEditingSubject(null); setNewSubject({ name: "", code: "", assignedClasses: [] }); subjectModal.onOpen(); }}
+                className="shadow-md"
+              >
+                Add Subject
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {localSettings.subjects && localSettings.subjects.length > 0 ? (
+                [...localSettings.subjects]
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((subject, index) => {
+                    const subjectId = subject.id || subject._id;
+                    return (
+                      <div key={subjectId || `subject-${index}`} className="group p-4 bg-white border border-default-200 rounded-xl hover:border-primary transition-all duration-200 shadow-sm">
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">
+                              {subject.name.charAt(0)}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-default-900">{subject.name}</h4>
+                              <p className="text-xs text-default-500 font-mono bg-default-100 px-1.5 py-0.5 rounded inline-block mt-1">{subject.code}</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button isIconOnly variant="light" color="primary" size="sm" onPress={() => handleEditSubject(subject)}>
+                              <Edit2 size={14} />
                             </Button>
+                            <Button isIconOnly variant="light" color="danger" size="sm" onPress={() => handleDeleteSubject(subject)}>
+                              <Trash2 size={14} />
+                            </Button>
+                          </div>
                         </div>
+                        {/* Assigned Classes */}
+                        {subject.assignedClasses && subject.assignedClasses.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-default-100">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Layers size={12} className="text-default-400" />
+                              <span className="text-xs font-medium text-default-500">Assigned to Classes:</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {subject.assignedClasses.sort((a, b) => a - b).map(cls => (
+                                <Chip key={cls} size="sm" color="primary" variant="flat" className="text-xs">
+                                  {cls}
+                                </Chip>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+              ) : (
+                <div className="col-span-full py-12 flex flex-col items-center justify-center text-default-400 bg-white border border-default-200 rounded-xl border-dashed">
+                  <BookOpen size={32} className="mb-3 opacity-50" />
+                  <p>No subjects defined yet.</p>
+                  <Button
+                    color="primary"
+                    variant="light"
+                    size="sm"
+                    className="mt-3"
+                    onPress={() => subjectModal.onOpen()}
+                  >
+                    Add your first subject
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </Tab>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {schoolSettings.subjects.length > 0 ? (
-                                schoolSettings.subjects.map((subject) => (
-                                    <div key={subject.id} className="group p-4 bg-white border border-default-200 rounded-xl hover:border-primary transition-all duration-200 shadow-sm flex justify-between items-center">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">
-                                                {subject.name.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-default-900">{subject.name}</h4>
-                                                <p className="text-xs text-default-500 font-mono bg-default-100 px-1.5 py-0.5 rounded inline-block mt-1">{subject.code}</p>
-                                            </div>
-                                        </div>
-                                        <Button isIconOnly variant="light" color="danger" size="sm" onPress={() => deleteSubject(subject.id)} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Trash2 size={16} />
-                                        </Button>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="col-span-full py-12 flex flex-col items-center justify-center text-default-400 bg-white border border-default-200 rounded-xl border-dashed">
-                                    <BookOpen size={32} className="mb-3 opacity-50" />
-                                    <p>No subjects defined yet.</p>
+        {/* Classes Tab */}
+        <Tab key="classes" title={
+          <div className="flex items-center gap-2">
+            <GraduationCap size={18} />
+            <span>Classes & Sections</span>
+          </div>
+        }>
+          <div className="pt-6 space-y-4 animate-fade-in">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-default-900">Classes & Sections</h3>
+                <p className="text-sm text-default-500">Enable classes and manage sections</p>
+              </div>
+            </div>
+
+            {/* List View */}
+            <div className="rounded-xl border border-default-200 bg-white overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-default-200 bg-default-50">
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider w-16">Class</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider">Sections</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider w-24">Students</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider w-20">Enabled</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ALL_CLASSES.map((classNum) => {
+                    const config = classConfig[classNum];
+                    const hasStudents = config.totalStrength > 0;
+                    return (
+                      <tr key={classNum} className={`border-b border-default-100 last:border-b-0 ${config.enabled ? 'bg-primary/5' : ''}`}>
+                        <td className="px-4 py-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
+                            config.enabled ? 'bg-primary text-white' : 'bg-default-100 text-default-500'
+                          }`}>
+                            {classNum}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {config.enabled ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                              {config.sectionDetails.map((cls) => (
+                                <div key={cls.id || cls._id} className="group flex items-center gap-1">
+                                  <Chip size="sm" color="primary" variant="flat">
+                                    {cls.section}
+                                  </Chip>
+                                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button
+                                      isIconOnly
+                                      size="sm"
+                                      variant="light"
+                                      className="h-6 w-6 min-w-6"
+                                      onPress={() => handleEditSection(classNum, cls.section, cls.id || cls._id)}
+                                    >
+                                      <Edit2 size={10} />
+                                    </Button>
+                                    <Button
+                                      isIconOnly
+                                      size="sm"
+                                      variant="light"
+                                      color="danger"
+                                      className="h-6 w-6 min-w-6"
+                                      onPress={() => handleDeleteSection(cls)}
+                                    >
+                                      <Trash2 size={10} />
+                                    </Button>
+                                  </div>
                                 </div>
-                            )}
-                        </div>
-                    </div>
-                </Tab>
+                              ))}
+                              <Button
+                                isIconOnly
+                                size="sm"
+                                variant="light"
+                                color="primary"
+                                className="h-7 w-7 min-w-7"
+                                onPress={() => openAddSectionModal(classNum)}
+                              >
+                                <Plus size={14} />
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-default-400 text-sm">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-sm ${config.totalStrength > 0 ? 'text-default-700 font-medium' : 'text-default-400'}`}>
+                            {config.totalStrength || 0}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <Tooltip
+                            content={hasStudents ? "Cannot disable: Students enrolled" : config.enabled ? "Click to disable" : "Click to enable"}
+                            placement="top"
+                          >
+                            <div className="flex justify-center">
+                              <Switch
+                                size="sm"
+                                color="primary"
+                                isSelected={config.enabled}
+                                isDisabled={hasStudents && config.enabled}
+                                onValueChange={(enabled) => {
+                                  if (enabled) {
+                                    setSelectedClassNum(classNum);
+                                    setEditingSection(null);
+                                    setNewSection("");
+                                    classModal.onOpen();
+                                  } else {
+                                    handleDisableClass(classNum);
+                                  }
+                                }}
+                              />
+                            </div>
+                          </Tooltip>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </Tab>
+      </Tabs>
 
-                <Tab key="classes" title={
-                    <div className="flex items-center gap-2">
-                        <GraduationCap size={18} />
-                        <span>Classes & Sections</span>
-                    </div>
-                }>
-                    <div className="pt-4 animate-fade-in">
-                        <ClassSectionsSettings />
-                    </div>
-                </Tab>
-            </Tabs>
+      {/* ==================== MODALS ==================== */}
 
-            {/* Add Subject Modal */}
-            <Modal isOpen={isOpen} onClose={onClose} size="sm">
-                <ModalContent>
-                    <ModalHeader>Add New Subject</ModalHeader>
-                    <ModalBody>
-                        <div className="space-y-4 py-2">
-                            <Input
-                                label="Subject Name"
-                                placeholder="e.g., Mathematics"
-                                value={newSubject.name}
-                                onValueChange={(v) => setNewSubject({ ...newSubject, name: v })}
-                                variant="bordered"
-                                labelPlacement="outside"
-                            />
-                            <Input
-                                label="Subject Code"
-                                placeholder="e.g., MATH"
-                                value={newSubject.code}
-                                onValueChange={(v) => setNewSubject({ ...newSubject, code: v.toUpperCase() })}
-                                variant="bordered"
-                                labelPlacement="outside"
-                            />
-                        </div>
-                    </ModalBody>
-                    <ModalFooter>
-                        <Button variant="light" onPress={onClose}>Cancel</Button>
-                        <Button color="primary" onPress={handleAddSubject} isDisabled={!newSubject.name.trim() || !newSubject.code.trim()}>Add Subject</Button>
-                    </ModalFooter>
-                </ModalContent>
-            </Modal>
-        </div>
-    );
+      {/* Academic Session Modal */}
+      <Modal isOpen={academicYearModal.isOpen} onClose={academicYearModal.onClose} size="2xl">
+        <ModalContent>
+          <ModalHeader>Edit Academic Session</ModalHeader>
+          <ModalBody>
+            <AcademicYearForm
+              settings={localSettings}
+              onSave={(data) => handleSaveSection(data, academicYearModal.onClose)}
+              onCancel={academicYearModal.onClose}
+              saving={saving}
+            />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      {/* School Timings Modal */}
+      <Modal isOpen={schoolTimingsModal.isOpen} onClose={schoolTimingsModal.onClose} size="2xl">
+        <ModalContent>
+          <ModalHeader>Edit School Timings</ModalHeader>
+          <ModalBody>
+            <SchoolTimingsForm
+              settings={localSettings}
+              onSave={(data) => handleSaveSection(data, schoolTimingsModal.onClose)}
+              onCancel={schoolTimingsModal.onClose}
+              saving={saving}
+            />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      {/* Period Configuration Modal */}
+      <Modal isOpen={periodConfigModal.isOpen} onClose={periodConfigModal.onClose} size="2xl">
+        <ModalContent>
+          <ModalHeader>Edit Period Configuration</ModalHeader>
+          <ModalBody>
+            <PeriodConfigForm
+              settings={localSettings}
+              onSave={(data) => handleSaveSection(data, periodConfigModal.onClose)}
+              onCancel={periodConfigModal.onClose}
+              saving={saving}
+            />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      {/* Working Days Modal */}
+      <Modal isOpen={workingDaysModal.isOpen} onClose={workingDaysModal.onClose} size="2xl">
+        <ModalContent>
+          <ModalHeader>Edit Working Days</ModalHeader>
+          <ModalBody>
+            <WorkingDaysForm
+              settings={localSettings}
+              onSave={(data) => handleSaveSection(data, workingDaysModal.onClose)}
+              onCancel={workingDaysModal.onClose}
+              saving={saving}
+            />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      {/* Subject Modal */}
+      <Modal isOpen={subjectModal.isOpen} onClose={handleSubjectModalClose} size="lg">
+        <ModalContent>
+          <ModalHeader>{editingSubject ? 'Edit Subject' : 'Add New Subject'}</ModalHeader>
+          <ModalBody>
+            <div className="space-y-4 py-2">
+              <Input
+                label="Subject Name"
+                placeholder="e.g., Mathematics"
+                value={newSubject.name}
+                onValueChange={(v) => setNewSubject({ ...newSubject, name: v })}
+                variant="bordered"
+                labelPlacement="outside"
+              />
+              <Input
+                label="Subject Code"
+                placeholder="e.g., MATH"
+                value={newSubject.code}
+                onValueChange={(v) => setNewSubject({ ...newSubject, code: v.toUpperCase() })}
+                variant="bordered"
+                labelPlacement="outside"
+              />
+
+              {/* Class Assignment */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-default-700">Assign to Classes</label>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="primary"
+                      onPress={() => setNewSubject(prev => ({ ...prev, assignedClasses: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] }))}
+                    >
+                      Select All
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="default"
+                      onPress={() => setNewSubject(prev => ({ ...prev, assignedClasses: [] }))}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-6 gap-2">
+                  {ALL_CLASSES.map(classNum => {
+                    const isSelected = newSubject.assignedClasses?.includes(classNum);
+                    return (
+                      <div
+                        key={classNum}
+                        className={`flex items-center justify-center p-2 rounded-lg border-2 cursor-pointer transition-all ${
+                          isSelected
+                            ? 'border-primary bg-primary/10 text-primary font-semibold'
+                            : 'border-default-200 hover:border-default-300 text-default-600'
+                        }`}
+                        onClick={() => {
+                          const currentClasses = newSubject.assignedClasses || [];
+                          const newClasses = isSelected
+                            ? currentClasses.filter(c => c !== classNum)
+                            : [...currentClasses, classNum];
+                          setNewSubject(prev => ({ ...prev, assignedClasses: newClasses }));
+                        }}
+                      >
+                        {classNum}
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-default-400">
+                  {newSubject.assignedClasses?.length || 0} class{(newSubject.assignedClasses?.length || 0) !== 1 ? 'es' : ''} selected
+                </p>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={handleSubjectModalClose}>Cancel</Button>
+            <Button
+              color="primary"
+              onPress={editingSubject ? handleUpdateSubject : handleAddSubject}
+              isDisabled={!newSubject.name.trim() || !newSubject.code.trim()}
+            >
+              {editingSubject ? 'Update Subject' : 'Add Subject'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Section Modal */}
+      <Modal isOpen={classModal.isOpen} onClose={handleClassModalClose} size="sm">
+        <ModalContent>
+          <ModalHeader>
+            {editingSection
+              ? `Edit Section - Class ${editingSection.classNum}`
+              : selectedClassNum
+                ? `Add Section - Class ${selectedClassNum}`
+                : 'Add Section'
+            }
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4 py-2">
+              <Input
+                label="Section"
+                placeholder="e.g., A"
+                value={newSection}
+                onValueChange={(v) => setNewSection(v.toUpperCase().slice(0, 1))}
+                variant="bordered"
+                labelPlacement="outside"
+                description="Enter section letter (A-Z)"
+                autoFocus
+              />
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={handleClassModalClose}>Cancel</Button>
+            <Button
+              color="primary"
+              onPress={editingSection ? handleUpdateSection : handleAddSection}
+              isDisabled={!newSection.trim()}
+            >
+              {editingSection ? 'Update' : 'Add'} Section
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </div>
+  );
+}
+
+// ==================== FORM COMPONENTS ====================
+
+function AcademicYearForm({ settings, onSave, onCancel, saving }) {
+  const [formData, setFormData] = useState({
+    academicYear: settings.academicYear || "",
+    academicYearStart: settings.academicYearStart || "",
+    academicYearEnd: settings.academicYearEnd || "",
+  });
+
+  return (
+    <div className="space-y-6 py-4">
+      <Input
+        label="Session Name"
+        labelPlacement="outside"
+        placeholder="e.g., 2024-2025"
+        value={formData.academicYear}
+        onValueChange={(v) => setFormData({ ...formData, academicYear: v })}
+        variant="bordered"
+        description="This label will appear on all reports and documents."
+      />
+      <div className="grid grid-cols-2 gap-4">
+        <Input
+          type="date"
+          label="Start Date"
+          labelPlacement="outside"
+          value={formData.academicYearStart}
+          onValueChange={(v) => setFormData({ ...formData, academicYearStart: v })}
+          variant="bordered"
+        />
+        <Input
+          type="date"
+          label="End Date"
+          labelPlacement="outside"
+          value={formData.academicYearEnd}
+          onValueChange={(v) => setFormData({ ...formData, academicYearEnd: v })}
+          variant="bordered"
+        />
+      </div>
+      <div className="flex justify-end gap-2 pt-4">
+        <Button variant="light" onPress={onCancel} disabled={saving}>Cancel</Button>
+        <Button color="primary" onPress={() => onSave(formData)} isLoading={saving}>
+          Save Changes
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function SchoolTimingsForm({ settings, onSave, onCancel, saving }) {
+  const [formData, setFormData] = useState({
+    schoolStartTime: settings.schoolStartTime || "",
+    schoolEndTime: settings.schoolEndTime || "",
+  });
+
+  return (
+    <div className="space-y-6 py-4">
+      <div className="grid grid-cols-2 gap-4">
+        <Input
+          type="time"
+          label="School Starts"
+          labelPlacement="outside"
+          value={formData.schoolStartTime}
+          onValueChange={(v) => setFormData({ ...formData, schoolStartTime: v })}
+          variant="bordered"
+        />
+        <Input
+          type="time"
+          label="School Ends"
+          labelPlacement="outside"
+          value={formData.schoolEndTime}
+          onValueChange={(v) => setFormData({ ...formData, schoolEndTime: v })}
+          variant="bordered"
+        />
+      </div>
+      <div className="flex justify-end gap-2 pt-4">
+        <Button variant="light" onPress={onCancel} disabled={saving}>Cancel</Button>
+        <Button color="primary" onPress={() => onSave(formData)} isLoading={saving}>
+          Save Changes
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function PeriodConfigForm({ settings, onSave, onCancel, saving }) {
+  const [formData, setFormData] = useState({
+    periodDuration: settings.periodDuration || 45,
+    periodsPerDay: settings.periodsPerDay || 8,
+  });
+
+  // Calculate instructional time
+  const totalMinutes = (formData.periodsPerDay || 0) * (formData.periodDuration || 0);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  return (
+    <div className="space-y-6 py-4">
+      <div className="grid grid-cols-2 gap-4">
+        <Input
+          type="number"
+          label="Period Duration (minutes)"
+          labelPlacement="outside"
+          value={String(formData.periodDuration)}
+          onValueChange={(v) => setFormData({ ...formData, periodDuration: parseInt(v) || 0 })}
+          variant="bordered"
+          min={1}
+          max={120}
+        />
+        <Input
+          type="number"
+          label="Periods per Day"
+          labelPlacement="outside"
+          value={String(formData.periodsPerDay)}
+          onValueChange={(v) => setFormData({ ...formData, periodsPerDay: parseInt(v) || 0 })}
+          variant="bordered"
+          min={1}
+          max={15}
+        />
+      </div>
+      <div className="p-4 bg-default-50 rounded-lg">
+        <p className="text-sm text-default-600">
+          <span className="font-medium">Instructional Time:</span> {hours}h {minutes}m
+          <span className="text-default-400 ml-2">({formData.periodsPerDay} periods × {formData.periodDuration} minutes)</span>
+        </p>
+      </div>
+      <div className="flex justify-end gap-2 pt-4">
+        <Button variant="light" onPress={onCancel} disabled={saving}>Cancel</Button>
+        <Button color="primary" onPress={() => onSave(formData)} isLoading={saving}>
+          Save Changes
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function WorkingDaysForm({ settings, onSave, onCancel, saving }) {
+  const [workingDays, setWorkingDays] = useState(settings.workingDays || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
+
+  const days = [
+    { key: "Mon", label: "Monday" },
+    { key: "Tue", label: "Tuesday" },
+    { key: "Wed", label: "Wednesday" },
+    { key: "Thu", label: "Thursday" },
+    { key: "Fri", label: "Friday" },
+    { key: "Sat", label: "Saturday" },
+    { key: "Sun", label: "Sunday" },
+  ];
+
+  const toggleDay = (dayKey) => {
+    const newDays = workingDays.includes(dayKey)
+      ? workingDays.filter(d => d !== dayKey)
+      : [...workingDays, dayKey];
+    setWorkingDays(newDays);
+  };
+
+  return (
+    <div className="space-y-6 py-4">
+      <div className="space-y-3">
+        {days.map((day) => {
+          const isActive = workingDays.includes(day.key);
+          return (
+            <div
+              key={day.key}
+              className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-all ${
+                isActive ? 'bg-primary/5 border-primary' : 'bg-white border-default-200 hover:border-default-300'
+              }`}
+              onClick={() => toggleDay(day.key)}
+            >
+              <span className={`font-medium ${isActive ? 'text-primary' : 'text-default-700'}`}>{day.label}</span>
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                isActive ? 'bg-primary border-primary' : 'border-default-300'
+              }`}>
+                {isActive && <Check size={12} className="text-white" />}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex justify-end gap-2 pt-4">
+        <Button variant="light" onPress={onCancel} disabled={saving}>Cancel</Button>
+        <Button color="primary" onPress={() => onSave({ workingDays })} isLoading={saving}>
+          Save Changes
+        </Button>
+      </div>
+    </div>
+  );
 }

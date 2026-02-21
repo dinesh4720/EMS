@@ -24,6 +24,7 @@ const MODULE_LABELS = {
   staff: "Staff Management",
   students: "Students Management",
   classes: "Classes Management",
+  academics: "Academics & Exams",
   attendance: "Attendance",
   timetable: "Timetable",
   fees: "Fee Management",

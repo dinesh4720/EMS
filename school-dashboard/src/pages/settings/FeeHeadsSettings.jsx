@@ -12,6 +12,7 @@ export default function FeeHeadsSettings({ embedded = false }) {
   const [editingFeeHead, setEditingFeeHead] = useState(null);
   const [feeHeads, setFeeHeads] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     category: "Academic",
@@ -164,20 +165,32 @@ export default function FeeHeadsSettings({ embedded = false }) {
   };
 
   const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this fee head? It will be removed from all students.")) {
-      try {
-        const response = await fetch(`${API_URL}/fee-heads/${id}`, {
-          method: 'DELETE'
-        });
-        
-        if (!response.ok) throw new Error('Failed to delete fee head');
-        
-        toast.success('Fee head deleted successfully');
-        await fetchFeeHeads();
-      } catch (error) {
-        console.error('Failed to delete fee head:', error);
-        toast.error('Failed to delete fee head');
+    if (!confirm("Are you sure you want to delete this fee head? It will be removed from all students.")) return;
+
+    // Optimistically remove from UI immediately
+    const feeHeadToDelete = feeHeads.find(fh => fh._id === id);
+    setFeeHeads(prev => prev.filter(fh => fh._id !== id));
+    setDeletingId(id);
+
+    try {
+      const response = await fetch(`${API_URL}/fee-heads/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) throw new Error('Failed to delete fee head');
+
+      toast.success('Fee head deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete fee head:', error);
+      toast.error('Failed to delete fee head');
+      // Restore the deleted item on error
+      if (feeHeadToDelete) {
+        setFeeHeads(prev => [...prev, feeHeadToDelete].sort((a, b) =>
+          new Date(b.createdAt) - new Date(a.createdAt)
+        ));
       }
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -384,6 +397,8 @@ export default function FeeHeadsSettings({ embedded = false }) {
                           variant="light"
                           color="danger"
                           onPress={() => handleDelete(feeHead._id)}
+                          isLoading={deletingId === feeHead._id}
+                          isDisabled={deletingId === feeHead._id}
                           className="text-default-400 hover:text-danger"
                         >
                           <Trash2 size={16} />
@@ -613,7 +628,7 @@ export default function FeeHeadsSettings({ embedded = false }) {
             <Button
               color="primary"
               onPress={handleSave}
-              isDisabled={!formData.name.trim() || formData.applicableClasses.length === 0}
+              isDisabled={!formData.name.trim() || formData.applicableClasses.length === 0 || saving}
               isLoading={saving}
               className="font-medium shadow-md"
             >

@@ -13,6 +13,7 @@ import {
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
+  Tooltip,
 } from '@heroui/react';
 import {
   Search,
@@ -23,6 +24,13 @@ import {
   Send,
   MoreVertical,
   Calendar,
+  Megaphone,
+  Sparkles,
+  Filter,
+  X,
+  CheckCircle,
+  Clock,
+  FileText,
 } from 'lucide-react';
 import { announcementsApi } from '../../../../services/api';
 import toast from 'react-hot-toast';
@@ -32,6 +40,7 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [channelFilter, setChannelFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
@@ -44,13 +53,13 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
     setLoading(true);
     setError(null);
     try {
-      console.log('📢 Loading announcements...');
+      console.log('Loading announcements...');
       const params = {};
       if (statusFilter !== 'all') {
         params.status = statusFilter;
       }
       const response = await announcementsApi.getAll(params);
-      console.log('📢 Announcements loaded:', response);
+      console.log('Announcements loaded:', response);
       // Backend returns { announcements: [], ... }
       setAnnouncements(response.announcements || response || []);
     } catch (error) {
@@ -151,16 +160,42 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
     });
   };
 
-  const getStatusColor = (status) => {
+  const getStatusConfig = (status) => {
     switch (status) {
       case 'sent':
-        return 'success';
+        return {
+          color: 'success',
+          icon: CheckCircle,
+          label: 'Sent',
+          gradient: 'from-emerald-500 to-teal-600',
+          bgLight: 'bg-emerald-50',
+          bgDark: 'dark:bg-emerald-500/10',
+          textLight: 'text-emerald-700',
+          textDark: 'dark:text-emerald-400',
+        };
       case 'scheduled':
-        return 'warning';
+        return {
+          color: 'warning',
+          icon: Clock,
+          label: 'Scheduled',
+          gradient: 'from-amber-500 to-orange-600',
+          bgLight: 'bg-amber-50',
+          bgDark: 'dark:bg-amber-500/10',
+          textLight: 'text-amber-700',
+          textDark: 'dark:text-amber-400',
+        };
       case 'draft':
-        return 'default';
       default:
-        return 'default';
+        return {
+          color: 'default',
+          icon: FileText,
+          label: 'Draft',
+          gradient: 'from-gray-400 to-gray-500',
+          bgLight: 'bg-gray-100',
+          bgDark: 'dark:bg-zinc-700',
+          textLight: 'text-gray-600',
+          textDark: 'dark:text-zinc-400',
+        };
     }
   };
 
@@ -174,274 +209,414 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
     return channels.join(', ').toUpperCase();
   };
 
+  const clearFilters = () => {
+    setStatusFilter('all');
+    setChannelFilter('all');
+    setDateFilter('all');
+    setSearchQuery('');
+  };
+
+  const hasActiveFilters = statusFilter !== 'all' || channelFilter !== 'all' || dateFilter !== 'all' || searchQuery;
+
+  // Modern pill-style filter button component
+  const FilterPill = ({ label, icon: Icon, active, onClick, options, value, onChange }) => (
+    <Dropdown>
+      <DropdownTrigger>
+        <button
+          className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200
+            ${active
+              ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30'
+              : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700 border border-transparent'
+            }`}
+        >
+          {Icon && <Icon size={14} />}
+          <span>{label}</span>
+          <svg className={`w-4 h-4 transition-transform ${active ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </DropdownTrigger>
+      <DropdownMenu
+        selectedKeys={[value]}
+        onSelectionChange={(keys) => onChange(Array.from(keys)[0])}
+        classNames={{
+          base: "min-w-[180px]",
+          list: "py-1",
+        }}
+      >
+        {options.map((option) => (
+          <DropdownItem
+            key={option.value}
+            classNames={{
+              base: `px-3 py-2 ${value === option.value ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''}`,
+            }}
+          >
+            {option.label}
+          </DropdownItem>
+        ))}
+      </DropdownMenu>
+    </Dropdown>
+  );
+
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 gap-4">
-        <Spinner size="lg" color="primary" />
-        <p className="text-default-500">Loading announcements...</p>
-        <p className="text-xs text-default-400">If this takes too long, the backend server might not be running</p>
+      <div className="flex flex-col items-center justify-center py-16 gap-4">
+        <div className="relative">
+          <div className="w-16 h-16 rounded-full border-4 border-gray-200 dark:border-zinc-700" />
+          <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin" />
+        </div>
+        <div className="text-center">
+          <p className="text-gray-600 dark:text-zinc-300 font-medium">Loading announcements...</p>
+          <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">This should only take a moment</p>
+        </div>
       </div>
     );
   }
 
   if (error && announcements.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 gap-4">
-        <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center">
-          <svg className="w-8 h-8 text-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      <div className="flex flex-col items-center justify-center py-16 gap-4">
+        <div className="w-20 h-20 rounded-2xl bg-red-100 dark:bg-red-500/10 flex items-center justify-center">
+          <svg className="w-10 h-10 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </div>
-        <p className="text-lg font-medium text-danger">Failed to load announcements</p>
-        <p className="text-sm text-default-500 max-w-md text-center">{error}</p>
+        <div className="text-center">
+          <p className="text-lg font-semibold text-red-600 dark:text-red-400">Failed to load announcements</p>
+          <p className="text-sm text-gray-500 dark:text-zinc-400 max-w-md text-center mt-2">{error}</p>
+        </div>
         <Button
           color="primary"
           size="sm"
           onPress={() => loadAnnouncements()}
-          startContent={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>}
+          className="mt-2 bg-gradient-to-r from-indigo-500 to-indigo-600"
+          startContent={
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          }
         >
-          Retry
+          Try Again
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 w-full">
-      {/* Debug Info */}
-      <div className="text-xs text-default-400">
-        Found {announcements.length} total announcements, {filteredAnnouncements.length} after filters
-      </div>
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex items-center gap-2 flex-1 max-w-md">
-          <div className="flex items-center gap-2 flex-1 px-3 py-2 bg-default-100 rounded-lg border border-default-200">
-            <Search size={16} className="text-default-400" />
-            <input
-              type="text"
-              placeholder="Search announcements..."
-              className="flex-1 bg-transparent outline-none text-sm"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+    <div className="space-y-5 w-full">
+      {/* Filter Section */}
+      <div className="flex flex-col gap-4">
+        {/* Search and Filters Row */}
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+          {/* Enhanced Search Input */}
+          <div className="relative w-full sm:w-80">
+            <div
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all duration-200
+                ${searchFocused
+                  ? 'bg-white dark:bg-zinc-800 border-indigo-300 dark:border-indigo-500/50 shadow-sm ring-2 ring-indigo-500/10'
+                  : 'bg-gray-50 dark:bg-zinc-800/50 border-gray-200 dark:border-zinc-700'
+                }`}
+            >
+              <Search
+                size={18}
+                className={`transition-colors duration-200 ${searchFocused ? 'text-indigo-500' : 'text-gray-400 dark:text-zinc-500'}`}
+              />
+              <input
+                type="text"
+                placeholder="Search announcements..."
+                className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors"
+                >
+                  <X size={14} className="text-gray-400 dark:text-zinc-500" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Modern Pill-style Filters */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <FilterPill
+              label={`Status: ${statusFilter === 'all' ? 'All' : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}`}
+              active={statusFilter !== 'all'}
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'draft', label: 'Draft' },
+                { value: 'scheduled', label: 'Scheduled' },
+                { value: 'sent', label: 'Sent' },
+              ]}
             />
+
+            <FilterPill
+              label={`Channel: ${channelFilter === 'all' ? 'All' : channelFilter.toUpperCase()}`}
+              active={channelFilter !== 'all'}
+              value={channelFilter}
+              onChange={setChannelFilter}
+              options={[
+                { value: 'all', label: 'All Channels' },
+                { value: 'inapp', label: 'In-App' },
+                { value: 'email', label: 'Email' },
+                { value: 'sms', label: 'SMS' },
+                { value: 'whatsapp', label: 'WhatsApp' },
+              ]}
+            />
+
+            <FilterPill
+              label={`Date: ${dateFilter === 'all' ? 'All' : dateFilter === 'today' ? 'Today' : dateFilter === 'week' ? 'This Week' : 'This Month'}`}
+              icon={Calendar}
+              active={dateFilter !== 'all'}
+              value={dateFilter}
+              onChange={setDateFilter}
+              options={[
+                { value: 'all', label: 'All Time' },
+                { value: 'today', label: 'Today' },
+                { value: 'week', label: 'This Week' },
+                { value: 'month', label: 'This Month' },
+              ]}
+            />
+
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+              >
+                <X size={14} />
+                <span>Clear</span>
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="flex gap-2 flex-wrap">
-          {/* Status Filter */}
-          <Dropdown>
-            <DropdownTrigger>
-              <Button size="sm" variant="flat" endContent={<Calendar size={14} />}>
-                Status: {statusFilter === 'all' ? 'All' : statusFilter}
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu
-              selectedKeys={[statusFilter]}
-              onSelectionChange={(keys) => setStatusFilter(Array.from(keys)[0])}
-            >
-              <DropdownItem key="all">All Status</DropdownItem>
-              <DropdownItem key="draft">Draft</DropdownItem>
-              <DropdownItem key="scheduled">Scheduled</DropdownItem>
-              <DropdownItem key="sent">Sent</DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
-
-          {/* Channel Filter */}
-          <Dropdown>
-            <DropdownTrigger>
-              <Button size="sm" variant="flat">
-                Channel: {channelFilter === 'all' ? 'All' : channelFilter.toUpperCase()}
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu
-              selectedKeys={[channelFilter]}
-              onSelectionChange={(keys) => setChannelFilter(Array.from(keys)[0])}
-            >
-              <DropdownItem key="all">All Channels</DropdownItem>
-              <DropdownItem key="inapp">In-App</DropdownItem>
-              <DropdownItem key="email">Email</DropdownItem>
-              <DropdownItem key="sms">SMS</DropdownItem>
-              <DropdownItem key="whatsapp">WhatsApp</DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
-
-          {/* Date Filter */}
-          <Dropdown>
-            <DropdownTrigger>
-              <Button size="sm" variant="flat">
-                Date: {dateFilter === 'all' ? 'All' : dateFilter}
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu
-              selectedKeys={[dateFilter]}
-              onSelectionChange={(keys) => setDateFilter(Array.from(keys)[0])}
-            >
-              <DropdownItem key="all">All Time</DropdownItem>
-              <DropdownItem key="today">Today</DropdownItem>
-              <DropdownItem key="week">This Week</DropdownItem>
-              <DropdownItem key="month">This Month</DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
+        {/* Results Count */}
+        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-zinc-400">
+          <Filter size={12} />
+          <span>
+            {filteredAnnouncements.length} of {announcements.length} announcements
+            {hasActiveFilters && ' (filtered)'}
+          </span>
         </div>
       </div>
 
       {/* Table */}
-      <div className="w-full overflow-x-auto">
+      <div className="w-full overflow-x-auto rounded-xl border border-gray-100 dark:border-zinc-800">
         <Table
           aria-label="Announcements"
+          removeWrapper
           classNames={{
-            th: "bg-default-100 text-default-600",
+            th: "bg-gray-50 dark:bg-zinc-800/50 text-gray-600 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider",
+            tr: "hover:bg-gray-50 dark:hover:bg-zinc-800/30 transition-colors border-b border-gray-100 dark:border-zinc-800/50 last:border-0",
+            td: "py-4",
           }}
         >
-        <TableHeader>
-          <TableColumn>TITLE & CONTENT</TableColumn>
-          <TableColumn>RECIPIENTS</TableColumn>
-          <TableColumn>CHANNELS</TableColumn>
-          <TableColumn>STATUS</TableColumn>
-          <TableColumn>DATE</TableColumn>
-          <TableColumn align="end">ACTIONS</TableColumn>
-        </TableHeader>
-        <TableBody
-          emptyContent={
-            <div className="text-center py-8">
-              <p className="text-default-400">No announcements found</p>
-            </div>
-          }
-        >
-          {filteredAnnouncements.map((announcement) => (
-            <TableRow key={announcement._id}>
-              <TableCell>
-                <div className="max-w-md">
-                  <p className="font-medium text-sm">{announcement.title}</p>
-                  <p className="text-xs text-default-500 truncate">
-                    {announcement.content}
-                  </p>
-                </div>
-              </TableCell>
-              <TableCell>
-                <Chip size="sm" variant="flat">
-                  {getRecipientsLabel(announcement.recipients)}
-                </Chip>
-              </TableCell>
-              <TableCell>
-                <p className="text-xs">{getChannelsLabel(announcement.channels)}</p>
-              </TableCell>
-              <TableCell>
-                <Chip
-                  size="sm"
-                  color={getStatusColor(announcement.status)}
-                  variant="dot"
+          <TableHeader>
+            <TableColumn>ANNOUNCEMENT</TableColumn>
+            <TableColumn>RECIPIENTS</TableColumn>
+            <TableColumn>CHANNELS</TableColumn>
+            <TableColumn>STATUS</TableColumn>
+            <TableColumn>DATE</TableColumn>
+            <TableColumn align="end">ACTIONS</TableColumn>
+          </TableHeader>
+          <TableBody
+            emptyContent={
+              <div className="text-center py-16">
+                <Megaphone size={48} className="mx-auto mb-4 text-gray-300 dark:text-zinc-600" />
+                <p className="text-gray-500 dark:text-zinc-400 font-medium">No announcements found</p>
+                <p className="text-sm text-gray-400 dark:text-zinc-500 mt-1">Try adjusting your filters</p>
+              </div>
+            }
+          >
+            {filteredAnnouncements.map((announcement, index) => {
+              const statusConfig = getStatusConfig(announcement.status);
+              const StatusIcon = statusConfig.icon;
+
+              return (
+                <TableRow
+                  key={announcement._id}
+                  className="group animate-in fade-in slide-in-from-bottom-2 duration-200"
+                  style={{ animationDelay: `${index * 30}ms` }}
                 >
-                  {announcement.status.toUpperCase()}
-                </Chip>
-              </TableCell>
-              <TableCell>
-                <p className="text-xs text-default-500">
-                  {formatDate(announcement.createdAt)}
-                </p>
-                {announcement.scheduledFor && (
-                  <p className="text-xs text-default-400">
-                    Scheduled: {formatDate(announcement.scheduledFor)}
-                  </p>
-                )}
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1 justify-end">
-                  <Button
-                    isIconOnly
-                    size="sm"
-                    variant="light"
-                    onPress={() => onView(announcement)}
-                  >
-                    <Eye size={16} />
-                  </Button>
+                  <TableCell>
+                    <div className="max-w-md">
+                      <p className="font-medium text-gray-900 dark:text-white text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        {announcement.title}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400 truncate mt-0.5">
+                        {announcement.content}
+                      </p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-zinc-800 text-xs font-medium text-gray-600 dark:text-zinc-300">
+                      {getRecipientsLabel(announcement.recipients)}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-xs text-gray-600 dark:text-zinc-300 font-medium">
+                      {getChannelsLabel(announcement.channels)}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${statusConfig.bgLight} ${statusConfig.bgDark}`}>
+                      <StatusIcon size={12} className={`${statusConfig.textLight} ${statusConfig.textDark}`} />
+                      <span className={`text-xs font-medium ${statusConfig.textLight} ${statusConfig.textDark}`}>
+                        {statusConfig.label}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-xs">
+                      <p className="text-gray-600 dark:text-zinc-300">
+                        {formatDate(announcement.createdAt)}
+                      </p>
+                      {announcement.scheduledFor && (
+                        <p className="text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-0.5">
+                          <Clock size={10} />
+                          Scheduled: {formatDate(announcement.scheduledFor)}
+                        </p>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-0.5 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Tooltip content="View Details" placement="top">
+                        <button
+                          onClick={() => onView(announcement)}
+                          className="p-2 rounded-lg text-gray-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
+                        >
+                          <Eye size={16} />
+                        </button>
+                      </Tooltip>
 
-                  {announcement.status === 'draft' && (
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="light"
-                      onPress={() => onEdit(announcement)}
-                    >
-                      <Edit size={16} />
-                    </Button>
-                  )}
-
-                  {announcement.status === 'sent' && (
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="light"
-                      onPress={() => handleResend(announcement._id)}
-                    >
-                      <Send size={16} />
-                    </Button>
-                  )}
-
-                  <Dropdown>
-                    <DropdownTrigger>
-                      <Button isIconOnly size="sm" variant="light">
-                        <MoreVertical size={16} />
-                      </Button>
-                    </DropdownTrigger>
-                    <DropdownMenu>
-                      <DropdownItem
-                        key="view"
-                        startContent={<Eye size={16} />}
-                        onPress={() => onView(announcement)}
-                      >
-                        View Details
-                      </DropdownItem>
                       {announcement.status === 'draft' && (
-                        <DropdownItem
-                          key="edit"
-                          startContent={<Edit size={16} />}
-                          onPress={() => onEdit(announcement)}
-                        >
-                          Edit
-                        </DropdownItem>
+                        <Tooltip content="Edit" placement="top">
+                          <button
+                            onClick={() => onEdit(announcement)}
+                            className="p-2 rounded-lg text-gray-500 dark:text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                          >
+                            <Edit size={16} />
+                          </button>
+                        </Tooltip>
                       )}
-                      <DropdownItem
-                        key="duplicate"
-                        startContent={<Copy size={16} />}
-                        onPress={() => handleDuplicate(announcement)}
-                      >
-                        Duplicate
-                      </DropdownItem>
+
                       {announcement.status === 'sent' && (
-                        <DropdownItem
-                          key="resend"
-                          startContent={<Send size={16} />}
-                          onPress={() => handleResend(announcement._id)}
-                        >
-                          Resend
-                        </DropdownItem>
+                        <Tooltip content="Resend" placement="top">
+                          <button
+                            onClick={() => handleResend(announcement._id)}
+                            className="p-2 rounded-lg text-gray-500 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+                          >
+                            <Send size={16} />
+                          </button>
+                        </Tooltip>
                       )}
-                      <DropdownItem
-                        key="delete"
-                        startContent={<Trash2 size={16} />}
-                        className="text-danger"
-                        onPress={() => handleDelete(announcement._id)}
-                      >
-                        Delete
-                      </DropdownItem>
-                    </DropdownMenu>
-                  </Dropdown>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+
+                      <Dropdown>
+                        <DropdownTrigger>
+                          <button className="p-2 rounded-lg text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors">
+                            <MoreVertical size={16} />
+                          </button>
+                        </DropdownTrigger>
+                        <DropdownMenu
+                          classNames={{
+                            list: "py-1 min-w-[160px]",
+                          }}
+                        >
+                          <DropdownItem
+                            key="view"
+                            startContent={<Eye size={16} className="text-gray-500 dark:text-zinc-400" />}
+                            onPress={() => onView(announcement)}
+                            className="hover:bg-gray-50 dark:hover:bg-zinc-700"
+                          >
+                            View Details
+                          </DropdownItem>
+                          {announcement.status === 'draft' && (
+                            <DropdownItem
+                              key="edit"
+                              startContent={<Edit size={16} className="text-gray-500 dark:text-zinc-400" />}
+                              onPress={() => onEdit(announcement)}
+                              className="hover:bg-gray-50 dark:hover:bg-zinc-700"
+                            >
+                              Edit
+                            </DropdownItem>
+                          )}
+                          <DropdownItem
+                            key="duplicate"
+                            startContent={<Copy size={16} className="text-gray-500 dark:text-zinc-400" />}
+                            onPress={() => handleDuplicate(announcement)}
+                            className="hover:bg-gray-50 dark:hover:bg-zinc-700"
+                          >
+                            Duplicate
+                          </DropdownItem>
+                          {announcement.status === 'sent' && (
+                            <DropdownItem
+                              key="resend"
+                              startContent={<Send size={16} className="text-gray-500 dark:text-zinc-400" />}
+                              onPress={() => handleResend(announcement._id)}
+                              className="hover:bg-gray-50 dark:hover:bg-zinc-700"
+                            >
+                              Resend
+                            </DropdownItem>
+                          )}
+                          <DropdownItem
+                            key="delete"
+                            startContent={<Trash2 size={16} className="text-red-500" />}
+                            onPress={() => handleDelete(announcement._id)}
+                            className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10"
+                          >
+                            Delete
+                          </DropdownItem>
+                        </DropdownMenu>
+                      </Dropdown>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       </div>
 
-      {filteredAnnouncements.length === 0 && !loading && (
-        <div className="text-center py-12 text-default-400">
-          <Calendar size={48} className="mx-auto mb-4 opacity-50" />
-          <p>No announcements found</p>
-          <p className="text-sm">Create your first announcement to get started</p>
+      {/* Empty State */}
+      {filteredAnnouncements.length === 0 && !loading && announcements.length > 0 && (
+        <div className="text-center py-16 px-4">
+          <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center">
+            <Search size={32} className="text-gray-400 dark:text-zinc-500" />
+          </div>
+          <p className="text-gray-600 dark:text-zinc-300 font-medium text-lg">No matching announcements</p>
+          <p className="text-sm text-gray-400 dark:text-zinc-500 mt-2 max-w-sm mx-auto">
+            We couldn't find any announcements matching your current filters. Try adjusting your search criteria.
+          </p>
+          <button
+            onClick={clearFilters}
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
+          >
+            <X size={14} />
+            Clear all filters
+          </button>
+        </div>
+      )}
+
+      {/* Empty State - No Announcements at all */}
+      {announcements.length === 0 && !loading && (
+        <div className="text-center py-16 px-4">
+          <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-500/20 dark:to-purple-500/20 flex items-center justify-center">
+            <Megaphone size={40} className="text-indigo-500 dark:text-indigo-400" />
+          </div>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Sparkles size={16} className="text-amber-500" />
+            <p className="text-gray-700 dark:text-zinc-200 font-semibold text-lg">No announcements yet</p>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-2 max-w-sm mx-auto">
+            Create your first announcement to start communicating with your school community.
+          </p>
         </div>
       )}
     </div>
