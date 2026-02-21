@@ -490,7 +490,7 @@ const AdmissionsList = forwardRef((props, ref) => {
                     type="date"
                     value={formData.dateOfBirth}
                     onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-                    max={new Date().toLocaleDateString('en-CA')}
+                    max={`${new Date().getFullYear() - 1}-12-31`}
                   />
                   <FormInput
                     label="Parent/Guardian Name"

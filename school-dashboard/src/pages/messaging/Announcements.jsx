@@ -1,17 +1,23 @@
-import { useState } from "react";
-import { Button, Card } from "@heroui/react";
-import { Plus, Megaphone } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Send, Clock, Check } from "lucide-react";
 import AnnouncementForm from "./components/announcements/AnnouncementForm";
 import AnnouncementsList from "./components/announcements/AnnouncementsList";
 import AnnouncementAnalyticsModal from "./components/announcements/AnnouncementAnalyticsModal";
 import toast from "react-hot-toast";
 
-export default function Announcements() {
+export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [editAnnouncement, setEditAnnouncement] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Sync with parent drawer state
+  useEffect(() => {
+    if (isDrawerOpen) {
+      setShowCreateModal(true);
+    }
+  }, [isDrawerOpen]);
 
   const handleView = (announcement) => {
     setSelectedAnnouncement(announcement);
@@ -26,8 +32,9 @@ export default function Announcements() {
   const handleSave = () => {
     setRefreshKey(prev => prev + 1);
     setShowCreateModal(false);
+    setIsDrawerOpen(false);
     setEditAnnouncement(null);
-    toast.success('Announcements refreshed');
+    toast.success('Announcement saved');
   };
 
   const handleCreateNew = () => {
@@ -35,81 +42,83 @@ export default function Announcements() {
     setShowCreateModal(true);
   };
 
+  const stats = [
+    {
+      label: "Sent",
+      value: "24",
+      description: "This month",
+      icon: Send,
+      color: "bg-teal-100 text-teal-600"
+    },
+    {
+      label: "Delivered",
+      value: "1,234",
+      description: "Total recipients",
+      icon: Check,
+      color: "bg-gray-100 text-gray-600"
+    },
+    {
+      label: "Scheduled",
+      value: "3",
+      description: "Pending",
+      icon: Clock,
+      color: "bg-amber-100 text-amber-600"
+    },
+  ];
+
   return (
-    <div className="w-full">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Megaphone className="text-primary" size={28} />
-            Announcements
-          </h1>
-          <p className="text-default-500 mt-1">
-            Create and manage school-wide announcements
-          </p>
-        </div>
-        <Button
-          color="primary"
-          onPress={handleCreateNew}
-          startContent={<Plus size={18} />}
-          size="lg"
-        >
-          Create Announcement
-        </Button>
-      </div>
-
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card className="border border-default-200">
-          <div className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Megaphone size={24} className="text-primary" />
+    <div className="space-y-6 bg-white">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            className="bg-white rounded-lg border border-gray-200 p-5"
+          >
+            <div className="flex items-start gap-4">
+              {/* Icon Container */}
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${stat.color}`}>
+                <stat.icon size={18} />
               </div>
-              <div>
-                <p className="text-sm text-default-500">Total Sent</p>
-                <p className="text-2xl font-bold">24</p>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {stat.label}
+                </p>
+                <p className="text-2xl font-semibold text-gray-800 mt-1">
+                  {stat.value}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {stat.description}
+                </p>
               </div>
             </div>
           </div>
-        </Card>
-
-        <Card className="border border-default-200">
-          <div className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
-                <svg className="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm text-default-500">Delivered</p>
-                <p className="text-2xl font-bold">1,234</p>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="border border-default-200">
-          <div className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-warning/10 flex items-center justify-center">
-                <svg className="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm text-default-500">Scheduled</p>
-                <p className="text-2xl font-bold">3</p>
-              </div>
-            </div>
-          </div>
-        </Card>
+        ))}
       </div>
 
       {/* Announcements List */}
-      <Card className="border border-default-200">
-        <div className="p-6">
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+              <Send size={16} className="text-gray-600" />
+            </div>
+            <div>
+              <h3 className="font-medium text-gray-800 text-sm">All Announcements</h3>
+              <p className="text-xs text-gray-500">Manage your announcements</p>
+            </div>
+          </div>
+          <button
+            onClick={handleCreateNew}
+            className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors text-sm font-medium"
+          >
+            <Plus size={16} />
+            <span>New Announcement</span>
+          </button>
+        </div>
+        <div className="p-5">
           <AnnouncementsList
             key={refreshKey}
             onView={handleView}
@@ -117,13 +126,14 @@ export default function Announcements() {
             onRefresh={() => setRefreshKey(prev => prev + 1)}
           />
         </div>
-      </Card>
+      </div>
 
       {/* Create/Edit Modal */}
       <AnnouncementForm
         isOpen={showCreateModal}
         onClose={() => {
           setShowCreateModal(false);
+          setIsDrawerOpen(false);
           setEditAnnouncement(null);
         }}
         onSave={handleSave}

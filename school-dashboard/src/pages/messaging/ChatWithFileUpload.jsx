@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Avatar, ScrollShadow, Spinner, Button, Modal, ModalContent, ModalHeader, ModalBody, Input, Progress, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
 import { Send, Search, Phone, Video, MoreVertical, X, Plus, Users, Paperclip, Image as ImageIcon, File, Download, PushPin } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import socketService from "../../services/socketService";
+import socketService from "../../services/socketServiceEnhanced";
 import chatServiceEnhanced from "../../services/chatServiceEnhanced";
 import api from "../../services/api";
 import toast from "react-hot-toast";
@@ -15,6 +15,7 @@ import ForwardModal from "./components/ForwardModal";
 import PinnedMessages from "./components/PinnedMessages";
 import ChatSearch from "./components/ChatSearch";
 import VoiceMessageRecorder from "./components/VoiceMessageRecorder";
+import VoiceWaveform from "./components/VoiceWaveform";
 import VideoCallModal from "./components/VideoCallModal";
 import { videoCallService } from "../../services/videoCallService";
 import { callsApi } from "../../services/api";
@@ -51,10 +52,19 @@ export default function ChatWithFileUpload() {
   const [pinnedMessages, setPinnedMessages] = useState([]);
   const [editingMessage, setEditingMessage] = useState(null);
   const [editText, setEditText] = useState("");
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [newMessagesCount, setNewMessagesCount] = useState(0);
 
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const fileInputRef = useRef(null);
+  const selectedConversationRef = useRef(null);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    selectedConversationRef.current = selectedConversation;
+  }, [selectedConversation]);
 
   // Initialize socket connection
   useEffect(() => {
@@ -84,6 +94,7 @@ export default function ChatWithFileUpload() {
     });
 
     socketService.on('new_message', (data) => {
+      console.log('📨 New message received via socket:', data.message);
       handleNewMessage(data.message);
     });
 
@@ -92,14 +103,18 @@ export default function ChatWithFileUpload() {
     });
 
     socketService.on('user_typing', (data) => {
-      if (data.isTyping) {
-        setTypingUsers(prev => new Set([...prev, data.userId]));
-      } else {
-        setTypingUsers(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(data.userId);
-          return newSet;
-        });
+      // Only show typing indicator for the currently open conversation
+      const currentConversation = selectedConversationRef.current;
+      if (data.conversationId === currentConversation?.id) {
+        if (data.isTyping) {
+          setTypingUsers(prev => new Set([...prev, data.userId]));
+        } else {
+          setTypingUsers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(data.userId);
+            return newSet;
+          });
+        }
       }
     });
 
@@ -268,11 +283,14 @@ export default function ChatWithFileUpload() {
     try {
       const data = await chatServiceEnhanced.getMessages(conversationId);
       setMessages(data);
-      scrollToBottom();
+      setNewMessagesCount(0);
+      setIsAtBottom(true);
+      setTimeout(() => scrollToBottom(true), 100);
       
       // Mark as read
       if (data.length > 0) {
         await chatServiceEnhanced.markAsRead(conversationId, user.id);
+        loadConversations(); // Refresh to update unread count
       }
     } catch (error) {
       console.error('Error loading messages:', error);
@@ -283,8 +301,21 @@ export default function ChatWithFileUpload() {
   const handleNewMessage = (message) => {
     if (selectedConversation && message.conversationId === selectedConversation.id) {
       setMessages(prev => [...prev, message]);
-      scrollToBottom();
-      chatServiceEnhanced.markAsRead(selectedConversation.id, user.id);
+      
+      // If user sent the message, always scroll to bottom
+      if (String(message.senderId) === String(user.id)) {
+        setTimeout(() => scrollToBottom(true), 100);
+      } else {
+        // If receiving a message
+        if (isAtBottom) {
+          // User is at bottom, scroll and mark as read
+          setTimeout(() => scrollToBottom(true), 100);
+          chatServiceEnhanced.markAsRead(selectedConversation.id, user.id);
+        } else {
+          // User is scrolled up, show new message indicator
+          setNewMessagesCount(prev => prev + 1);
+        }
+      }
     }
     loadConversations();
   };
@@ -357,6 +388,9 @@ export default function ChatWithFileUpload() {
         type: 'text'
       });
       socketService.sendTyping(selectedConversation.id, false);
+      
+      // Always scroll to bottom when user sends a message
+      setTimeout(() => scrollToBottom(true), 100);
     } catch (error) {
       console.error('Error sending message:', error);
       setNewMessage(messageContent);
@@ -433,7 +467,7 @@ export default function ChatWithFileUpload() {
         type: messageType,
         fileUrl: uploadData.url,
         fileName: selectedFile.name,
-        fileSize: (selectedFile.size / 1024).toFixed(2) + ' KB',
+        fileSize: selectedFile.size || undefined, // Send size in bytes as a number
         fileType: selectedFile.type
       });
 
@@ -443,6 +477,9 @@ export default function ChatWithFileUpload() {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+
+      // Always scroll to bottom when user sends a file
+      setTimeout(() => scrollToBottom(true), 100);
 
       toast.success('File sent successfully');
     } catch (error) {
@@ -634,30 +671,73 @@ export default function ChatWithFileUpload() {
   };
 
   const handleVoiceMessageSend = async (audioData) => {
+    if (!selectedConversation) {
+      toast.error('No conversation selected');
+      return;
+    }
+
     try {
-      const formData = new FormData();
-      formData.append('file', audioData.blob, 'voice-message.webm');
-      formData.append('type', 'audio');
-      formData.append('duration', audioData.duration);
-      formData.append('waveform', JSON.stringify(audioData.waveform));
+      setUploadingFile(true);
+      console.log('🎤 Sending voice message...');
 
       const uploadData = await chatServiceEnhanced.uploadFile(audioData.blob);
+      console.log('✅ Voice file uploaded:', uploadData.url);
 
-      socketService.sendMessage({
+      const sampledWaveform = audioData.waveform.length > 50
+        ? audioData.waveform.filter((_, i) => i % Math.ceil(audioData.waveform.length / 50) === 0)
+        : audioData.waveform;
+
+      const messageData = {
         conversationId: selectedConversation.id,
+        senderId: user.id,
+        senderModel: 'Staff',
         receiverId: selectedConversation.otherParticipant.userId,
         receiverModel: selectedConversation.otherParticipant.userType === 'staff' ? 'Staff' : 'Student',
         content: '🎤 Voice message',
         type: 'audio',
         fileUrl: uploadData.url,
+        fileName: uploadData.name || 'voice-message.webm',
+        fileSize: uploadData.size || audioData.blob.size,
+        fileType: 'audio/webm',
         duration: audioData.duration,
-        waveform: audioData.waveform
-      });
+        waveform: sampledWaveform
+      };
 
-      toast.success('Voice message sent');
+      if (socketService.isConnected()) {
+        console.log('📤 Sending voice message via socket');
+        socketService.sendMessage(messageData);
+        toast.success('Voice message sent');
+      } else {
+        console.log('⚠️ Socket not connected, using REST fallback');
+        const response = await chatServiceEnhanced.sendMessage({
+          ...messageData,
+          senderId: user.id,
+          senderModel: 'Staff'
+        });
+        setMessages(prev => [...prev, {
+          id: response.id,
+          conversationId: response.conversationId,
+          senderId: user.id,
+          senderName: user.name,
+          senderAvatar: user.photo,
+          content: response.content,
+          type: response.type,
+          fileUrl: response.fileUrl,
+          duration: response.duration,
+          waveform: response.waveform,
+          status: 'sent',
+          createdAt: response.createdAt
+        }]);
+        toast.success('Voice message sent');
+      }
+
+      setTimeout(() => scrollToBottom(true), 100);
+      loadConversations();
     } catch (error) {
-      console.error('Error sending voice message:', error);
-      toast.error('Failed to send voice message');
+      console.error('❌ Error sending voice message:', error);
+      toast.error('Failed to send voice message: ' + (error.message || 'Unknown error'));
+    } finally {
+      setUploadingFile(false);
     }
   };
 
@@ -718,8 +798,35 @@ export default function ChatWithFileUpload() {
   }, [selectedConversation]);
 
   // Scroll to bottom
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = (force = false) => {
+    if (force || isAtBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      setNewMessagesCount(0);
+    }
+  };
+
+  // Check if user is at bottom of messages
+  const handleScroll = (e) => {
+    const container = e.target;
+    const threshold = 100; // pixels from bottom
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+    setIsAtBottom(isNearBottom);
+    
+    // Mark as read if scrolled to bottom
+    if (isNearBottom && selectedConversation && newMessagesCount > 0) {
+      chatServiceEnhanced.markAsRead(selectedConversation.id, user.id);
+      setNewMessagesCount(0);
+      loadConversations(); // Refresh conversation list to update unread count
+    }
+  };
+
+  // Scroll to bottom when new message indicator is clicked
+  const handleScrollToNew = () => {
+    scrollToBottom(true);
+    if (selectedConversation) {
+      chatServiceEnhanced.markAsRead(selectedConversation.id, user.id);
+      loadConversations();
+    }
   };
 
   // Filter conversations
@@ -741,20 +848,29 @@ export default function ChatWithFileUpload() {
 
   // Render message content based on type
   const renderMessageContent = (msg) => {
-    const isMe = msg.senderId === user.id;
+    const isMe = String(msg.senderId) === String(user.id);
 
-    if (msg.type === 'audio' && msg.fileUrl) {
+    // Debug: Log message data for audio/voice types
+    if (msg.type === 'audio' || msg.type === 'voice') {
+      console.log('🎵 Audio/Voice message render:', {
+        type: msg.type,
+        fileUrl: msg.fileUrl,
+        duration: msg.duration,
+        waveform: msg.waveform?.length,
+        content: msg.content
+      });
+    }
+
+    if ((msg.type === 'audio' || msg.type === 'voice') && msg.fileUrl) {
       return (
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-            <span className="text-lg">🎤</span>
-          </div>
-          <div className="flex-1">
-            <audio src={msg.fileUrl} controls className="h-8" />
-            {msg.duration && (
-              <p className="text-xs opacity-70 mt-1">{Math.floor(msg.duration / 60)}:{(msg.duration % 60).toString().padStart(2, '0')}</p>
-            )}
-          </div>
+        <div className="flex items-center gap-3 min-w-[200px]">
+          <VoiceWaveform
+            audioUrl={msg.fileUrl}
+            waveformData={msg.waveform || []}
+            duration={msg.duration || 0}
+            isOwn={isMe}
+            size="small"
+          />
         </div>
       );
     }
@@ -1003,7 +1119,12 @@ export default function ChatWithFileUpload() {
             </div>
 
             {/* Messages */}
-            <ScrollShadow className="flex-1 min-h-0 p-6 space-y-4 overflow-y-auto">
+            <div className="flex-1 min-h-0 relative">
+              <ScrollShadow 
+                ref={messagesContainerRef}
+                className="flex-1 min-h-0 p-6 space-y-4 overflow-y-auto h-full"
+                onScroll={handleScroll}
+              >
               {/* Reply Preview */}
               {replyToMessage && (
                 <div className="mb-4">
@@ -1015,7 +1136,7 @@ export default function ChatWithFileUpload() {
               )}
 
               {messages.map((msg) => {
-                const isMe = msg.senderId === user.id;
+                const isMe = String(msg.senderId) === String(user.id);
                 const isEditing = editingMessage?.id === msg.id;
 
                 return (
@@ -1126,6 +1247,22 @@ export default function ChatWithFileUpload() {
               
               <div ref={messagesEndRef} />
             </ScrollShadow>
+
+            {/* New Messages Indicator */}
+            {!isAtBottom && newMessagesCount > 0 && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+                <Button
+                  size="sm"
+                  color="primary"
+                  variant="shadow"
+                  onPress={handleScrollToNew}
+                  className="shadow-lg"
+                >
+                  {newMessagesCount} new message{newMessagesCount > 1 ? 's' : ''}
+                </Button>
+              </div>
+            )}
+          </div>
 
             {/* File Preview */}
             {selectedFile && (

@@ -79,10 +79,10 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    // Check periodically
-    const interval = setInterval(checkAuth, 1000);
+    // Listen for storage events instead of polling
+    window.addEventListener('storage', checkAuth);
     
-    return () => clearInterval(interval);
+    return () => window.removeEventListener('storage', checkAuth);
   }, [isAuthenticated, navigate]);
 
   const login = async (emailOrPhone, password) => {

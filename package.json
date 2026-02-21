@@ -1,9 +1,12 @@
 {
   "dependencies": {
     "bufferutil": "^4.1.0",
+    "expo": "^54.0.33",
     "utf-8-validate": "^6.0.6"
   },
   "devDependencies": {
-    "puppeteer": "^24.35.0"
+    "@types/react": "~19.1.10",
+    "puppeteer": "^24.35.0",
+    "typescript": "~5.9.2"
   }
 }

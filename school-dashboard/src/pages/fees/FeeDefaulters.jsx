@@ -1,17 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Chip,
-  User,
-  Spinner,
-} from "@heroui/react";
-import { Search, X, Download, Bell, AlertTriangle } from "lucide-react";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner, Select, SelectItem, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@heroui/react";
+import { Search, X, Download, Bell, MoreVertical, CreditCard } from "lucide-react";
 import { feesApi } from "../../services/api";
 
 const ITEMS_PER_LOAD = 10;
@@ -23,18 +13,19 @@ export default function FeeDefaulters() {
   const [defaulters, setDefaulters] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch defaulters from API
+  // Lazy loading state
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const loaderRef = useRef(null);
+
   useEffect(() => {
     const fetchDefaulters = async () => {
       try {
         setLoading(true);
         const data = await feesApi.getDefaulters({});
-        console.log('Defaulters loaded:', data.length);
         setDefaulters(data);
       } catch (error) {
         console.error('Error fetching defaulters:', error);
-        console.error('Error details:', error.message);
-        alert(`Failed to load defaulters: ${error.message}`);
       } finally {
         setLoading(false);
       }
@@ -54,24 +45,11 @@ export default function FeeDefaulters() {
     });
   }, [defaulters, search, filter]);
 
-  const visibleDefaulters = useMemo(
-    () => filteredDefaulters.slice(0, visibleCount),
-    [filteredDefaulters, visibleCount]
-  );
-
+  const visibleDefaulters = useMemo(() => filteredDefaulters.slice(0, visibleCount), [filteredDefaulters, visibleCount]);
   const hasMore = visibleCount < filteredDefaulters.length;
 
-  // Lazy loading state
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loaderRef = useRef(null);
+  useEffect(() => { setVisibleCount(ITEMS_PER_LOAD); }, [search, filter]);
 
-  // Reset visible count when filters change
-  useEffect(() => {
-    setVisibleCount(ITEMS_PER_LOAD);
-  }, [search, filter]);
-
-  // Lazy loading intersection observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -85,41 +63,20 @@ export default function FeeDefaulters() {
       },
       { threshold: 0.1 }
     );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
+    if (loaderRef.current) observer.observe(loaderRef.current);
     return () => observer.disconnect();
   }, [hasMore, isLoadingMore]);
 
   const totalPending = filteredDefaulters.reduce((sum, d) => sum + d.pending, 0);
 
   const handleSendReminders = () => {
-    // TODO: Implement bulk SMS/Email reminder functionality
-    const count = filteredDefaulters.length;
-    alert(`Sending reminders to ${count} defaulters...`);
+    alert(`Sending reminders to ${filteredDefaulters.length} defaulters...`);
   };
 
   const handleExportDefaulters = () => {
-    // Create CSV content
     const headers = ['Student', 'Class', 'Roll No', 'Pending Amount', 'Due Date', 'Days Overdue', 'Phone'];
-    const rows = filteredDefaulters.map(d => [
-      d.student,
-      d.class,
-      d.rollNo,
-      d.pending,
-      d.dueDate,
-      d.days,
-      d.phone || 'N/A'
-    ]);
-    
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
-    
-    // Create download link
+    const rows = filteredDefaulters.map(d => [d.student, d.class, d.rollNo, d.pending, d.dueDate, d.days, d.phone || 'N/A']);
+    const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -132,259 +89,154 @@ export default function FeeDefaulters() {
   };
 
   const handleSendReminder = (defaulter) => {
-    // TODO: Implement individual SMS/Email reminder
-    alert(`Reminder will be sent to ${defaulter.student} at ${defaulter.phone || 'N/A'}`);
+    alert(`Reminder will be sent to ${defaulter.student}`);
   };
 
   const handleCollectFee = (defaulter) => {
-    // Navigate to payments page with student pre-selected
     navigate('/fees', { state: { selectedStudentId: defaulter.id } });
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <Spinner size="lg" color="primary" />
-      </div>
-    );
+    return <div className="flex justify-center items-center min-h-[400px]"><Spinner size="lg" /></div>;
   }
 
   return (
     <div className="w-full flex flex-col">
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 -mx-6 -mt-6 px-6 pt-6">
-        <div className="p-4 bg-danger-50 rounded-lg border border-danger-200">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle size={18} className="text-danger-600" />
-            <span className="text-xs text-danger-700 uppercase tracking-wider">Total Defaulters</span>
-          </div>
-          <p className="text-2xl font-semibold text-danger-700">{defaulters.length}</p>
+      {/* Stats Row */}
+      <div className="grid grid-cols-3 gap-4 mb-6 -mx-6 -mt-6 px-6 pt-6">
+        <div className="p-4 border border-gray-200 rounded-lg bg-white">
+          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Total Defaulters</p>
+          <p className="text-2xl font-bold text-gray-900">{filteredDefaulters.length}</p>
         </div>
-
-        <div className="p-4 bg-warning-50 rounded-lg border border-warning-200">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle size={18} className="text-warning-600" />
-            <span className="text-xs text-warning-700 uppercase tracking-wider">&gt;7 Days</span>
-          </div>
-          <p className="text-2xl font-semibold text-warning-700">
-            {defaulters.filter((d) => d.days >= 7 && d.days < 15).length}
-          </p>
+        <div className="p-4 border border-gray-200 rounded-lg bg-white">
+          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Total Pending</p>
+          <p className="text-2xl font-bold text-gray-900">₹{totalPending.toLocaleString()}</p>
         </div>
-
-        <div className="p-4 bg-danger-50 rounded-lg border border-danger-200">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle size={18} className="text-danger-600" />
-            <span className="text-xs text-danger-700 uppercase tracking-wider">&gt;15 Days</span>
-          </div>
-          <p className="text-2xl font-semibold text-danger-700">
-            {defaulters.filter((d) => d.days >= 15 && d.days < 30).length}
-          </p>
-        </div>
-
-        <div className="p-4 bg-danger-50 rounded-lg border border-danger-200">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle size={18} className="text-danger-600" />
-            <span className="text-xs text-danger-700 uppercase tracking-wider">&gt;30 Days</span>
-          </div>
-          <p className="text-2xl font-semibold text-danger-700">
-            {defaulters.filter((d) => d.days >= 30).length}
-          </p>
+        <div className="p-4 border border-gray-200 rounded-lg bg-white">
+          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">30+ Days Overdue</p>
+          <p className="text-2xl font-bold text-gray-900">{defaulters.filter((d) => d.days >= 30).length}</p>
         </div>
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-background border-b border-default-200 py-4 -mx-6 -mt-6 px-6 mb-6">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          {/* Search Input */}
-          <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-default-100 rounded-lg border border-default-200 hover:border-primary hover:bg-default-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
-            <Search size={16} className="text-default-400" />
+      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-gray-200 py-4 -mx-6 px-6 mb-6">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          {/* Search */}
+          <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-white rounded-lg border border-gray-200 hover:border-gray-300 focus-within:border-gray-400 transition-all">
+            <Search size={16} className="text-gray-400" />
             <input
-              type="text"
+              type="search"
               placeholder="Search student..."
-              className="flex-1 bg-transparent outline-none text-sm text-default-900 placeholder:text-default-400"
+              className="flex-1 bg-transparent outline-none text-sm text-gray-900 placeholder:text-gray-400"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
             {search && (
-              <button
-                onClick={() => setSearch("")}
-                className="p-0.5 hover:bg-default-200 rounded cursor-pointer"
-              >
-                <X size={14} className="text-default-400" />
+              <button onClick={() => setSearch("")} className="p-0.5 hover:bg-gray-100 rounded">
+                <X size={14} className="text-gray-400" />
               </button>
             )}
           </div>
+
+          {/* Filter Dropdown */}
+          <Select
+            size="sm"
+            placeholder="Filter by days"
+            selectedKeys={new Set([filter])}
+            onSelectionChange={(keys) => setFilter(Array.from(keys)[0])}
+            className="w-36"
+            classNames={{ trigger: "h-9 bg-white border-gray-200 hover:border-gray-300" }}
+          >
+            <SelectItem key="all">All</SelectItem>
+            <SelectItem key="7">7+ Days</SelectItem>
+            <SelectItem key="15">15+ Days</SelectItem>
+            <SelectItem key="30">30+ Days</SelectItem>
+          </Select>
         </div>
 
-        <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap items-center">
-          {/* Filter Buttons */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setFilter("all")}
-              className={`px-3 py-2 rounded-lg border transition-all duration-200 text-sm cursor-pointer whitespace-nowrap ${
-                filter === "all"
-                  ? "bg-primary text-white border-primary"
-                  : "bg-transparent text-default-600 border-default-300 hover:border-primary"
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setFilter("7")}
-              className={`px-3 py-2 rounded-lg border transition-all duration-200 text-sm cursor-pointer whitespace-nowrap ${
-                filter === "7"
-                  ? "bg-warning text-white border-warning"
-                  : "bg-transparent text-default-600 border-default-300 hover:border-warning"
-              }`}
-            >
-              &gt;7 Days
-            </button>
-            <button
-              onClick={() => setFilter("15")}
-              className={`px-3 py-2 rounded-lg border transition-all duration-200 text-sm cursor-pointer whitespace-nowrap ${
-                filter === "15"
-                  ? "bg-danger text-white border-danger"
-                  : "bg-transparent text-default-600 border-default-300 hover:border-danger"
-              }`}
-            >
-              &gt;15 Days
-            </button>
-            <button
-              onClick={() => setFilter("30")}
-              className={`px-3 py-2 rounded-lg border transition-all duration-200 text-sm cursor-pointer whitespace-nowrap ${
-                filter === "30"
-                  ? "bg-danger text-white border-danger"
-                  : "bg-transparent text-default-600 border-default-300 hover:border-danger"
-              }`}
-            >
-              &gt;30 Days
-            </button>
-          </div>
-
-          <div className="h-6 w-px bg-default-200"></div>
-
-          {/* Total Pending */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-danger-50 rounded-lg border border-danger-200">
-            <span className="text-xs text-danger-700 font-medium">Total Pending:</span>
-            <span className="text-sm font-semibold text-danger-700">
-              ₹{totalPending.toLocaleString()}
-            </span>
-          </div>
-
-          <button 
-            onClick={handleSendReminders}
-            className="flex items-center gap-2 px-3 py-2 bg-transparent text-default-600 rounded-lg border border-default-300 hover:border-warning hover:bg-warning-50 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
-            <Bell size={16} />
-            <span>Send Reminders</span>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <button onClick={handleSendReminders} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all">
+            <Bell size={14} />
+            <span>Remind All</span>
           </button>
-
-          <button 
-            onClick={handleExportDefaulters}
-            className="flex items-center gap-2 px-3 py-2 bg-transparent text-default-600 rounded-lg border border-default-300 hover:border-primary hover:bg-primary-50 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
-            <Download size={16} />
+          <button onClick={handleExportDefaulters} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all">
+            <Download size={14} />
             <span>Export</span>
           </button>
         </div>
       </div>
 
       {/* Table */}
-      <Table
-        aria-label="Fee defaulters"
-        removeWrapper
-        radius="none"
-        classNames={{
-          base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0",
-          thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6",
-          th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6 hover:bg-default-100 transition-colors",
-          td: "py-5 border-b border-default-200 last:pr-6",
-          tbody: "[&>tr>td:first-child]:pl-6 [&>tr:last-child>td]:border-none",
-        }}
-      >
-        <TableHeader>
-          <TableColumn>STUDENT</TableColumn>
-          <TableColumn>PENDING AMOUNT</TableColumn>
-          <TableColumn>DUE DATE</TableColumn>
-          <TableColumn>STATUS</TableColumn>
-          <TableColumn align="end">ACTIONS</TableColumn>
-        </TableHeader>
-        <TableBody
-          emptyContent={
-            <div className="text-center py-8">
-              <p className="text-default-400 text-sm">No defaulters found</p>
-            </div>
-          }
+      <div className="border border-gray-200 rounded-lg overflow-hidden -mx-6 sm:mx-0">
+        <Table
+          aria-label="Fee defaulters"
+          removeWrapper
+          classNames={{
+            th: "bg-gray-50 text-gray-500 font-medium text-xs uppercase tracking-wider h-11 border-b border-gray-200",
+            td: "py-4 border-b border-gray-100",
+          }}
         >
-          {visibleDefaulters.map((item) => (
-            <TableRow key={item.id} className="hover:bg-default-50 transition-colors">
-              <TableCell>
-                <User
-                  avatarProps={{
-                    radius: "full",
-                    size: "sm",
-                    src: `https://i.pravatar.cc/150?u=${item.id}`,
-                  }}
-                  description={<span className="text-xs text-default-500">Class {item.class}</span>}
-                  name={
-                    <span
-                      className="text-sm font-medium text-default-900 hover:text-primary transition-colors cursor-pointer"
-                      onClick={() => navigate(`/students/${item.id}`)}
-                    >
-                      {item.student}
-                    </span>
-                  }
-                />
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-danger-600">
-                    ₹{item.pending.toLocaleString()}
+          <TableHeader>
+            <TableColumn>STUDENT</TableColumn>
+            <TableColumn>PENDING</TableColumn>
+            <TableColumn>DUE DATE</TableColumn>
+            <TableColumn>OVERDUE</TableColumn>
+            <TableColumn align="end">ACTIONS</TableColumn>
+          </TableHeader>
+          <TableBody emptyContent={<div className="text-center py-8"><p className="text-gray-400 text-sm">No defaulters found</p></div>}>
+            {visibleDefaulters.map((item) => (
+              <TableRow key={item.id} className="hover:bg-gray-50">
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                      <span className="text-xs font-medium text-gray-600">{item.student?.charAt(0) || '?'}</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 hover:text-gray-600 cursor-pointer" onClick={() => navigate(`/students/${item.id}`)}>
+                        {item.student}
+                      </p>
+                      <p className="text-xs text-gray-500">Class {item.class}</p>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm font-mono text-gray-900">₹{item.pending?.toLocaleString() || 0}</span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm text-gray-600">{item.dueDate || '—'}</span>
+                </TableCell>
+                <TableCell>
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border border-gray-200 rounded bg-gray-50">
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      item.days >= 30 ? "bg-gray-400" :
+                      item.days >= 15 ? "bg-gray-400" :
+                      "bg-gray-300"
+                    }`}></span>
+                    {item.days} days
                   </span>
-                  <span className="text-xs text-default-400">Include late fees</span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <span className="text-sm text-default-600">{item.dueDate}</span>
-              </TableCell>
-              <TableCell>
-                <Chip
-                  size="sm"
-                  color={item.days >= 30 ? "danger" : item.days >= 15 ? "warning" : "default"}
-                  variant="dot"
-                  classNames={{
-                    base: "h-6 border border-default-200",
-                    content: "text-xs font-medium",
-                  }}
-                >
-                  {item.days} days overdue
-                </Chip>
-              </TableCell>
-              <TableCell>
-                <div className="flex justify-end gap-2">
-                  <button 
-                    onClick={() => handleCollectFee(item)}
-                    className="px-3 py-1.5 bg-primary text-white rounded-lg border border-primary hover:bg-primary-600 transition-all duration-200 text-xs font-medium cursor-pointer">
-                    Collect
-                  </button>
-                  <button 
-                    onClick={() => handleSendReminder(item)}
-                    className="p-1.5 bg-transparent rounded-lg border border-transparent hover:border-warning hover:bg-warning-50 transition-all duration-200 cursor-pointer text-default-400 hover:text-warning">
-                    <Bell size={16} />
-                  </button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+                </TableCell>
+                <TableCell>
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => handleCollectFee(item)} className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 border border-gray-900 rounded-lg hover:bg-gray-800 transition-all">
+                      Collect
+                    </button>
+                    <button onClick={() => handleSendReminder(item)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all">
+                      <Bell size={14} />
+                    </button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
 
-      {/* Lazy loading indicator */}
-      <div ref={loaderRef} className="flex justify-center py-4 -mx-6">
-        {isLoadingMore && <Spinner size="sm" color="primary" />}
-        {!hasMore && filteredDefaulters.length > ITEMS_PER_LOAD && (
-          <span className="text-default-400 text-sm">
-            All {filteredDefaulters.length} defaulters loaded
-          </span>
-        )}
+        {/* Load more */}
+        <div ref={loaderRef} className="flex justify-center py-4 bg-gray-50 border-t border-gray-200">
+          {isLoadingMore && <Spinner size="sm" />}
+          {!hasMore && filteredDefaulters.length > ITEMS_PER_LOAD && (
+            <span className="text-gray-400 text-xs">All defaulters loaded</span>
+          )}
+        </div>
       </div>
     </div>
   );

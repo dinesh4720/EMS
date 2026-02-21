@@ -10,14 +10,13 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, BookOpen, MessageSquare, IndianRupee, Settings,
   ChevronsLeft, GraduationCap, Calendar, BarChart3, FileText, DoorOpen,
-  Bell, Sun, Moon, LogOut, ChevronDown, ChevronRight,
+  Sun, Moon, LogOut, ChevronRight,
   Briefcase, FileSpreadsheet,
-  PieChart, TrendingUp, Activity, Layers
+  PieChart, Layers, Award
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "../context/AuthContext";
 import { useChatNotifications } from "../context/ChatNotificationContext";
-import MetallicLogo from "./MetallicLogo";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Module Definitions
@@ -34,6 +33,12 @@ const modules = {
         { icon: GraduationCap, label: "Students", href: "/students" },
         { icon: Users, label: "Staffs", href: "/staffs" },
         { icon: BookOpen, label: "Classes", href: "/classes" },
+      ]
+    },
+    {
+      title: "Academics",
+      items: [
+        { icon: Award, label: "Academics", href: "/academics" },
       ]
     },
     {
@@ -64,66 +69,26 @@ const modules = {
   Analytics: []
 };
 
-
-
 const moduleInfo = {
   EMS: {
     label: "School EMS",
-    color: "text-blue-500 fill-current",
     icon: Layers,
-    activeContainer: "bg-blue-50/50 dark:bg-blue-900/10",
-    headerActiveText: "text-blue-600 dark:text-blue-400",
-    subItemActive: "bg-white dark:bg-zinc-800 shadow-sm text-black dark:text-foreground"
   },
   FrontDesk: {
     label: "Front Desk",
-    color: "text-emerald-500 fill-current",
     icon: DoorOpen,
-    activeContainer: "bg-emerald-50/50 dark:bg-emerald-900/10",
-    headerActiveText: "text-emerald-600 dark:text-emerald-400",
-    subItemActive: "bg-white dark:bg-zinc-800 shadow-sm text-black dark:text-foreground"
   },
   Accounts: {
     label: "Accounts",
-    color: "text-purple-500 fill-current",
     icon: IndianRupee,
-    activeContainer: "bg-purple-50/50 dark:bg-purple-900/10",
-    headerActiveText: "text-purple-600 dark:text-purple-400",
-    subItemActive: "bg-white dark:bg-zinc-800 shadow-sm text-black dark:text-foreground"
   },
   Analytics: {
     label: "Analytics",
-    color: "text-orange-500 fill-current",
-    icon: PieChart,
-    activeContainer: "bg-orange-50/50 dark:bg-orange-900/10",
-    headerActiveText: "text-orange-600 dark:text-orange-400",
-    subItemActive: "bg-white dark:bg-zinc-800 shadow-sm text-black dark:text-foreground"
+    icon: BarChart3,
   },
 };
 
-// Animation Variants
-const listVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.05,
-      delayChildren: 0.1
-    }
-  },
-  exit: {
-    opacity: 0,
-    transition: { staggerChildren: 0.03, staggerDirection: -1 }
-  }
-};
-
-const itemVariants = {
-  hidden: { x: -10, opacity: 0 },
-  visible: { x: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 24 } },
-  exit: { x: -10, opacity: 0 }
-};
-
-export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
+function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
@@ -136,46 +101,42 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
   return (
     <aside
       className={`
-        fixed left-0 top-0 h-screen 
-        bg-white dark:bg-[#09090b] 
-        border-r border-default-200 dark:border-default-100/50 
-        flex flex-col z-50 
-        transition-all duration-300 ease-spring-s
-        ${isSidebarOpen ? 'w-[260px]' : 'w-[68px]'}
+        fixed left-0 top-0 h-screen
+        bg-white
+        border-r border-gray-200
+        flex flex-col z-50
+        transition-all duration-300
+        ${isSidebarOpen ? 'w-[240px]' : 'w-[64px]'}
       `}
     >
       {/* Brand */}
-      <div className={`flex flex-col gap-4 pt-5 pb-2 ${isSidebarOpen ? 'px-4' : 'px-3 items-center'}`}>
-        {/* Logo Row */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className="shrink-0 scale-90 origin-left">
-              <MetallicLogo />
-            </div>
-            {isSidebarOpen && (
-              <span className="font-semibold text-base tracking-tight text-foreground whitespace-nowrap">
-                EduMaster
-              </span>
-            )}
+      <div className={`flex items-center h-14 border-b border-gray-100 ${isSidebarOpen ? 'px-4 justify-between' : 'justify-center'}`}>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
+            <span className="text-white font-bold text-sm">S</span>
           </div>
-
           {isSidebarOpen && (
-            <button
-              onClick={() => setIsSidebarOpen(false)}
-              className="text-default-400 hover:text-foreground transition-colors p-1"
-            >
-              <ChevronsLeft size={16} />
-            </button>
+            <span className="font-semibold text-sm text-gray-900">
+              SchoolSync
+            </span>
           )}
         </div>
+
+        {isSidebarOpen && (
+          <button
+            onClick={() => setIsSidebarOpen(false)}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          >
+            <ChevronsLeft size={16} />
+          </button>
+        )}
       </div>
 
-      {/* Navigation Groups - Animated */}
-      <div className="flex-1 overflow-y-auto scrollbar-hide py-2 space-y-4 overflow-x-hidden">
-
-        {/* GLOBAL ITEMS (Dashboard / Schedule) */}
-        <div className={`space-y-0.5 ${isSidebarOpen ? "px-3" : "px-3"}`}>
-          {globalItems.map((item, itemIndex) => {
+      {/* Navigation */}
+      <div className="flex-1 overflow-y-auto py-3 space-y-0.5">
+        {/* Global Items */}
+        <div className={`space-y-0.5 ${isSidebarOpen ? "px-3" : "px-2"}`}>
+          {globalItems.map((item) => {
             const isActive = location.pathname === item.href;
             return (
               <Tooltip
@@ -183,22 +144,20 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                 content={item.label}
                 placement="right"
                 isDisabled={isSidebarOpen}
-                classNames={{ content: "bg-foreground text-background text-xs font-medium px-2 py-1" }}
+                classNames={{ content: "bg-gray-800 text-white text-xs font-medium px-2 py-1" }}
               >
                 <NavLink to={item.href}>
                   <div className={`
-                                flex items-center cursor-pointer
-                                ${isSidebarOpen ? 'h-9 px-3 gap-3' : 'h-10 justify-center w-10 mx-auto'}
-                                rounded-lg transition-all duration-200 group
-                                ${isActive
-                      ? "bg-default-100 dark:bg-default-50/10 text-foreground font-medium"
-                      : "text-default-500 hover:text-foreground hover:bg-default-50 dark:hover:bg-default-50/5"}
-                            `}>
-                    <span className={`transition-colors ${isActive ? "text-foreground" : "text-default-500 group-hover:text-foreground"}`}>
-                      <item.icon size={18} />
-                    </span>
+                    flex items-center cursor-pointer
+                    ${isSidebarOpen ? 'py-2 px-3 gap-3' : 'h-10 justify-center w-10 mx-auto py-0'}
+                    rounded-lg transition-colors
+                    ${isActive
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-50"}
+                  `}>
+                    <item.icon size={18} strokeWidth={isActive ? 2.5 : 1.5} />
                     {isSidebarOpen && (
-                      <span className="text-[13.5px] whitespace-nowrap truncate">{item.label}</span>
+                      <span className="text-sm font-medium">{item.label}</span>
                     )}
                   </div>
                 </NavLink>
@@ -207,11 +166,11 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
           })}
         </div>
 
-        {/* DIVIDER */}
-        <div className={`border-t border-default-200 dark:border-default-800 mx-5 my-2 ${!isSidebarOpen && 'mx-4'}`} />
+        {/* Divider */}
+        <div className={`border-t border-gray-200 mx-3 my-2`} />
 
-        {/* MODULES ACCORDION */}
-        <div className={`space-y-1 ${isSidebarOpen ? "px-3" : "px-3"}`}>
+        {/* Modules */}
+        <div className={`space-y-0.5 ${isSidebarOpen ? "px-3" : "px-2"}`}>
           {Object.entries(modules).map(([key, groups]) => {
             const info = moduleInfo[key];
             const isActive = key === 'FrontDesk' || key === 'Analytics'
@@ -219,7 +178,6 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
               : expandedModules.includes(key);
 
             const handleModuleClick = () => {
-              // FrontDesk and Analytics are now direct links, not expandable
               if (key === 'FrontDesk') {
                 navigate('/front-desk');
                 return;
@@ -244,92 +202,78 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
             };
 
             return (
-              <div
-                key={key}
-                className={`
-                    transition-all duration-300 ease-in-out overflow-hidden
-                    ${isActive
-                    ? `${info.activeContainer} rounded-xl mb-2`
-                    : 'mb-1'}
-                `}
-              >
+              <div key={key}>
                 {/* Module Header */}
                 <Tooltip
                   content={info.label}
                   placement="right"
                   isDisabled={isSidebarOpen}
-                  classNames={{ content: "bg-foreground text-background text-xs font-medium px-2 py-1" }}
+                  classNames={{ content: "bg-gray-800 text-white text-xs font-medium px-2 py-1" }}
                 >
                   <button
                     onClick={handleModuleClick}
                     className={`
-                              w-full flex items-center cursor-pointer transition-all duration-200 group
-                              ${isSidebarOpen ? 'h-9 px-3 gap-3 justify-between' : 'h-10 justify-center w-10 mx-auto'}
-                              ${!isActive && "rounded-lg"} 
-                              ${isActive
-                        ? info.headerActiveText
-                        : "text-default-500 hover:text-foreground hover:bg-default-50 dark:hover:bg-default-50/5"}
-                           `}
+                      w-full flex items-center cursor-pointer transition-colors
+                      ${isSidebarOpen ? 'py-2 px-3 gap-3 justify-between' : 'h-10 justify-center w-10 mx-auto py-0'}
+                      rounded-lg
+                      ${isActive
+                        ? "bg-gray-100 text-gray-900"
+                        : "text-gray-600 hover:bg-gray-50"}
+                    `}
                   >
                     <div className="flex items-center gap-3">
-                      <motion.div
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={`transition-colors ${info.color}`}
-                      >
-                        <info.icon size={18} />
-                      </motion.div>
+                      <info.icon size={18} strokeWidth={isActive ? 2.5 : 1.5} />
                       {isSidebarOpen && (
-                        <span className={`text-[13.5px] font-medium ${isActive ? 'font-semibold' : ''}`}>{info.label}</span>
+                        <span className="text-sm font-medium">{info.label}</span>
                       )}
                     </div>
                     {isSidebarOpen && key !== 'FrontDesk' && key !== 'Analytics' && (
-                      <ChevronRight size={14} className={`text-default-400 transition-transform duration-300 ${isActive ? 'rotate-90' : ''}`} />
+                      <ChevronRight
+                        size={14}
+                        className={`text-gray-400 transition-transform ${isActive ? 'rotate-90' : ''}`}
+                      />
                     )}
                   </button>
                 </Tooltip>
 
-                {/* Module Content (Expanded) */}
+                {/* Module Content */}
                 <AnimatePresence>
                   {isSidebarOpen && isActive && groups.length > 0 && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.15 }}
                       className="overflow-hidden"
                     >
-                      <div className="pb-3 pl-3">
-                        <div className="relative pl-3 border-l border-default-200 dark:border-default-800/50 ml-2.5">
-                          <ul className="space-y-1">
-                            {groups.map((group) =>
-                              group.items.map((item, itemIndex) => {
-                                const isItemActive = location.pathname === item.href || (item.href !== "/" && location.pathname.startsWith(item.href));
-                                const isMessaging = item.href === '/messaging';
-                                const showBadge = isMessaging && unreadCount > 0;
-                                
-                                return (
-                                  <li key={`${group.title}-${itemIndex}`}>
-                                    <NavLink to={item.href}>
-                                      <div className={`
-                                                                flex items-center h-8 px-2 gap-2.5 rounded-md transition-colors mx-2 relative
-                                                                ${isItemActive
-                                          ? `${info.subItemActive} font-medium`
-                                          : "text-default-500 hover:text-foreground hover:bg-white/50 dark:hover:bg-white/5"}
-                                                            `}>
-                                        <span className={isItemActive ? info.color : "opacity-70"}><item.icon size={15} /></span>
-                                        <span className="text-[13px] truncate flex-1">{item.label}</span>
-                                        {showBadge && (
-                                          <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full">
-                                            {unreadCount > 99 ? '99+' : unreadCount}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </NavLink>
-                                  </li>
-                                )
-                              })
-                            )}
-                          </ul>
+                      <div className="pt-1 pb-1">
+                        <div className="border-l border-gray-200 ml-4 pl-3 space-y-0.5">
+                          {groups.map((group) =>
+                            group.items.map((item) => {
+                              const isItemActive = location.pathname === item.href || (item.href !== "/" && location.pathname.startsWith(item.href));
+                              const isMessaging = item.href === '/messaging';
+                              const showBadge = isMessaging && unreadCount > 0;
+
+                              return (
+                                <NavLink key={item.href} to={item.href}>
+                                  <div className={`
+                                    flex items-center py-2 px-2 gap-2 rounded-md transition-colors relative
+                                    ${isItemActive
+                                      ? "bg-gray-100 text-gray-900"
+                                      : "text-gray-600 hover:bg-gray-50"}
+                                  `}>
+                                    <item.icon size={15} strokeWidth={isItemActive ? 2.5 : 1.5} />
+                                    <span className="text-sm flex-1">{item.label}</span>
+                                    {showBadge && (
+                                      <span className="min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                                        {unreadCount > 99 ? '99+' : unreadCount}
+                                      </span>
+                                    )}
+                                  </div>
+                                </NavLink>
+                              )
+                            })
+                          )}
                         </div>
                       </div>
                     </motion.div>
@@ -341,20 +285,17 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
         </div>
       </div>
 
-      {/* Bottom Actions Area */}
-      <div className={`
-        mt-auto pt-2 pb-4 space-y-1 
-        ${isSidebarOpen ? 'px-3' : 'px-3 items-center flex flex-col'}
-      `}>
-        {/* Developers / Settings Link */}
+      {/* Bottom Actions */}
+      <div className={`border-t border-gray-200 py-3 space-y-0.5 ${isSidebarOpen ? 'px-3' : 'px-2 flex flex-col items-center'}`}>
+        {/* Settings */}
         <NavLink to="/settings">
           <div className={`
-              flex items-center cursor-pointer
-              ${isSidebarOpen ? 'h-9 px-3 gap-3' : 'h-10 justify-center w-10 mx-auto'}
-              rounded-lg transition-all duration-200 text-default-500 hover:text-foreground hover:bg-default-50 dark:hover:bg-default-50/5
-            `}>
-            <Settings size={18} />
-            {isSidebarOpen && <span className="text-[13.5px] font-medium">Settings</span>}
+            flex items-center cursor-pointer
+            ${isSidebarOpen ? 'py-2 px-3 gap-3' : 'h-10 justify-center w-10 mx-auto py-0'}
+            rounded-lg transition-colors text-gray-600 hover:bg-gray-100
+          `}>
+            <Settings size={18} strokeWidth={1.5} />
+            {isSidebarOpen && <span className="text-sm font-medium">Settings</span>}
           </div>
         </NavLink>
 
@@ -363,81 +304,54 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           className={`
             flex items-center cursor-pointer
-            ${isSidebarOpen ? 'h-9 px-3 gap-3' : 'h-10 justify-center w-10 mx-auto'}
-            rounded-lg transition-all duration-200 text-default-500 hover:text-foreground hover:bg-default-50 dark:hover:bg-default-50/5
+            ${isSidebarOpen ? 'py-2 px-3 gap-3' : 'h-10 justify-center w-10 mx-auto py-0'}
+            rounded-lg transition-colors text-gray-600 hover:bg-gray-100
           `}
         >
-          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          {isSidebarOpen && <span className="text-[13.5px] font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
+          {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
+          {isSidebarOpen && <span className="text-sm font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
         </div>
-
-        {/* Divider */}
-        {isSidebarOpen && <div className="h-px w-full bg-default-200 dark:bg-default-800 my-2" />}
-
 
         {/* User Profile */}
         <Popover
           placement={isSidebarOpen ? "top-start" : "right"}
           isOpen={isUserMenuOpen}
-          onOpenChange={(open) => {
-            console.log('🟢 Popover onOpenChange called with:', open);
-            setIsUserMenuOpen(open);
-          }}
-          offset={12}
-          shouldBlockScroll={false}
+          onOpenChange={setIsUserMenuOpen}
+          offset={8}
           showArrow
-          portalContainer={document.body}
         >
           <PopoverTrigger>
             <button
               type="button"
-              onClick={() => {
-                console.log('🔵 Profile clicked, toggling menu. Current state:', isUserMenuOpen);
-                setIsUserMenuOpen((v) => {
-                  console.log('🔵 New menu state will be:', !v);
-                  return !v;
-                });
-              }}
               className={`
-                flex items-center group
-                ${isSidebarOpen ? 'w-full px-2 py-2 gap-3 hover:bg-default-100 rounded-xl' : 'justify-center w-10 h-10 rounded-full hover:ring-2 ring-default-200'}
-                transition-all
-                focus:outline-none
+                flex items-center w-full
+                ${isSidebarOpen ? 'py-2 px-2 gap-3 hover:bg-gray-100 rounded-lg mt-1' : 'h-10 justify-center w-10 mx-auto rounded-lg hover:bg-gray-100'}
+                transition-all focus:outline-none
               `}
             >
               <Avatar
                 src={`https://i.pravatar.cc/150?u=${user?.id || 'admin'}`}
                 name={user?.name?.[0] || "A"}
                 size="sm"
-                className="w-8 h-8 text-[10px]"
-                isBordered
+                className="w-7 h-7 text-[10px]"
               />
               {isSidebarOpen && (
                 <div className="flex-1 flex flex-col items-start overflow-hidden">
-                  <span className="text-[13px] font-semibold text-foreground truncate w-full leading-tight">
+                  <span className="text-sm font-medium text-gray-800 truncate">
                     {user?.name || "Julia"}
                   </span>
-                  <span className="text-[11px] text-default-400 truncate w-full leading-tight">
-                    My Workspace
+                  <span className="text-xs text-gray-500 truncate">
+                    Admin
                   </span>
                 </div>
               )}
-              {isSidebarOpen && (
-                <ChevronRight
-                  size={14}
-                  className="text-default-400 group-hover:translate-x-0.5 transition-transform"
-                />
-              )}
             </button>
           </PopoverTrigger>
-          <PopoverContent 
-            className="p-0"
-            style={{ zIndex: 99999 }}
-          >
-            <div className="min-w-[220px] rounded-xl border border-default-200 bg-background shadow-xl">
-              <div className="px-3 py-2 border-b border-default-200">
-                <p className="text-xs text-default-500">Signed in as</p>
-                <p className="text-sm font-semibold text-foreground truncate">{user?.email}</p>
+          <PopoverContent className="p-0">
+            <div className="min-w-[200px] rounded-lg border border-gray-200 bg-white shadow-sm">
+              <div className="px-4 py-3 border-b border-gray-200">
+                <p className="text-xs text-gray-500">Signed in as</p>
+                <p className="text-sm font-medium text-gray-800 truncate">{user?.email}</p>
               </div>
               <div className="py-1">
                 <button
@@ -446,25 +360,18 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                     setIsUserMenuOpen(false);
                     navigate('/settings');
                   }}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-default-100 transition-colors"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   My Settings
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setIsUserMenuOpen(false)}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-default-100 transition-colors"
-                >
-                  Help & Feedback
-                </button>
-                <div className="h-px bg-default-200 my-1" />
+                <div className="h-px bg-gray-200 my-1" />
                 <button
                   type="button"
                   onClick={() => {
                     setIsUserMenuOpen(false);
                     logout();
                   }}
-                  className="w-full text-left px-3 py-2 text-sm text-danger-600 hover:bg-danger-50 transition-colors flex items-center gap-2"
+                  className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 transition-colors flex items-center gap-2"
                 >
                   <LogOut size={14} />
                   Log Out
@@ -475,10 +382,11 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
         </Popover>
       </div>
 
+      {/* Expand Button (when collapsed) */}
       {!isSidebarOpen && (
         <div
           onClick={() => setIsSidebarOpen(true)}
-          className="absolute -right-3 top-20 w-6 h-6 bg-white dark:bg-zinc-800 border border-default-200 rounded-full shadow-md flex items-center justify-center cursor-pointer hover:scale-105 transition-transform z-50 text-default-500"
+          className="absolute -right-3 top-20 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform z-50 text-gray-400 hover:text-gray-600"
         >
           <ChevronsLeft size={12} className="rotate-180" />
         </div>
@@ -486,3 +394,5 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
     </aside>
   );
 }
+
+export default React.memo(Sidebar);

@@ -1,0 +1,30 @@
+[
+  {
+    "session_id": "b2a2110f-dbbb-4b65-ba92-3369c9c267b3",
+    "transcript_path": "/home/bdk47/.claude/projects/-mnt-c-Users-bdk47-Desktop-Projects-kiro-bp-EMS/b2a2110f-dbbb-4b65-ba92-3369c9c267b3.jsonl",
+    "cwd": "/mnt/c/Users/bdk47/Desktop/Projects/kiro_bp/EMS",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "PostToolUseFailure",
+    "tool_name": "Glob",
+    "tool_input": {
+      "pattern": "staff-app/jest.config.*"
+    },
+    "tool_use_id": "call_f30c306c5a3a4222a1720288",
+    "error": "Ripgrep search timed out after 60 seconds. The search may have matched files but did not complete in time. Try searching a more specific path or pattern.",
+    "is_interrupt": false
+  },
+  {
+    "session_id": "b2a2110f-dbbb-4b65-ba92-3369c9c267b3",
+    "transcript_path": "/home/bdk47/.claude/projects/-mnt-c-Users-bdk47-Desktop-Projects-kiro-bp-EMS/b2a2110f-dbbb-4b65-ba92-3369c9c267b3.jsonl",
+    "cwd": "/mnt/c/Users/bdk47/Desktop/Projects/kiro_bp/EMS",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "PostToolUseFailure",
+    "tool_name": "Glob",
+    "tool_input": {
+      "pattern": "staff-app/playwright.config.*"
+    },
+    "tool_use_id": "call_4a37aaafdb5c4ebfb29ff3eb",
+    "error": "Ripgrep search timed out after 60 seconds. The search may have matched files but did not complete in time. Try searching a more specific path or pattern.",
+    "is_interrupt": false
+  }
+]

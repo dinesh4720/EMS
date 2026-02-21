@@ -26,5 +26,20 @@ export default defineConfig({
       include: [/node_modules/],
       transformMixedEsModules: true,
     },
+    // Performance optimizations
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['framer-motion', '@heroui/react', '@heroui/theme'],
+        },
+      },
+    },
+    // Increase chunk size warning limit
+    chunkSizeWarningLimit: 1000,
+  },
+  // Performance optimizations for dev server
+  esbuild: {
+    logOverride: { 'this-is-undefined-in-esm': 'silent' }
   },
 })

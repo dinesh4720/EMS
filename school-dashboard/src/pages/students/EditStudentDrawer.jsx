@@ -100,7 +100,7 @@ export default function EditStudentDrawer({
                 isIconOnly
                 size="sm"
                 variant="light"
-                onPress={handleCloseDrawer}
+                onPress={handleClose}
               >
                 <X size={20} className="text-default-500" />
               </Button>

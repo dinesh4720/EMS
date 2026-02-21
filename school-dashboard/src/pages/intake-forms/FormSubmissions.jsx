@@ -87,8 +87,8 @@ export default function FormSubmissions() {
     try {
       setLoading(true);
       await intakeFormsApi.reviewSubmission(selectedSubmission.id, {
-        status,
-        notes: reviewNotes,
+        reviewStatus: status,
+        reviewNotes: reviewNotes,
         reviewedBy: "admin", // TODO: Get from auth context
       });
 

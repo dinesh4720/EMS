@@ -1,13 +1,8 @@
-import React, { useMemo, useState } from "react";
+import React, { useState, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Eye, EyeOff, Lock, Mail } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
-import {
-  fieldLabelClass,
-  inputShellClass,
-  primaryButtonClass,
-  textInputClass,
-} from "../components/login/loginUi";
+import { Eye, EyeOff, Lock, Mail, CheckCircle } from "lucide-react";
+import SchoolBuilding3D from "../components/SchoolBuilding3D";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -16,12 +11,15 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
+  const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
-  const prefersReducedMotion = useReducedMotion();
 
-  const toggleVisibility = () => setIsVisible((v) => !v);
+  const successMessage = location.state?.message;
 
-  const handleSubmit = async (e) => {
+  const toggleVisibility = useCallback(() => setIsVisible((v) => !v), []);
+
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -33,260 +31,183 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const motionSafe = (anim) => (prefersReducedMotion ? {} : anim);
-
-  const containerVariants = useMemo(
-    () => ({
-      hidden: { opacity: 0 },
-      show: {
-        opacity: 1,
-        transition: { staggerChildren: 0.08, delayChildren: 0.1 },
-      },
-    }),
-    []
-  );
-
-  const itemVariants = useMemo(
-    () => ({
-      hidden: { opacity: 0, y: 10, filter: "blur(6px)" },
-      show: {
-        opacity: 1,
-        y: 0,
-        filter: "blur(0px)",
-        transition: { type: "spring", stiffness: 220, damping: 22 },
-      },
-    }),
-    []
-  );
+  }, [email, password, login]);
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-background">
-      {/* Background */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Subtle dot grid */}
-        <div
-          className="absolute inset-0 opacity-[0.25] dark:opacity-[0.18]"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 1px 1px, rgba(120,120,120,0.25) 1px, transparent 0)",
-            backgroundSize: "24px 24px",
-          }}
-        />
-
-        {/* Aurora gradient blobs */}
-        <motion.div
-          className="absolute -top-40 -left-40 h-[520px] w-[520px] rounded-full blur-[90px]"
-          style={{
-            background:
-              "radial-gradient(circle at 30% 30%, rgba(147,51,234,0.30), transparent 65%), radial-gradient(circle at 60% 60%, rgba(59,130,246,0.26), transparent 60%)",
-          }}
-          {...motionSafe({
-            animate: { x: [0, 30, -10, 0], y: [0, -10, 20, 0] },
-            transition: { duration: 10, ease: "easeInOut", repeat: Infinity },
-          })}
-        />
-
-        <motion.div
-          className="absolute -bottom-44 -right-44 h-[560px] w-[560px] rounded-full blur-[110px]"
-          style={{
-            background:
-              "radial-gradient(circle at 30% 30%, rgba(34,211,238,0.22), transparent 60%), radial-gradient(circle at 70% 70%, rgba(99,102,241,0.22), transparent 62%)",
-          }}
-          {...motionSafe({
-            animate: { x: [0, -25, 15, 0], y: [0, 20, -12, 0] },
-            transition: { duration: 12, ease: "easeInOut", repeat: Infinity },
-          })}
-        />
-
-        {/* Existing utility animation for organic motion */}
-        <div className="absolute top-[-18%] right-[-12%] h-[520px] w-[520px] rounded-full bg-purple-500/10 blur-[120px] animate-blob-bounce" />
+    <div className="h-screen w-screen flex flex-col lg:flex-row overflow-hidden">
+      {/* Left Side - 3D School Building - Hidden on mobile */}
+      <div className="hidden lg:flex flex-1 relative overflow-hidden h-full">
+        <SchoolBuilding3D />
       </div>
 
-      <div className="relative z-10 min-h-screen grid lg:grid-cols-2">
-        {/* Left / Brand */}
-        <div className="hidden lg:flex flex-col justify-between p-12">
-          <motion.div
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
-            animate={prefersReducedMotion ? false : { opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="max-w-xl"
-          >
-            <div className="flex items-center gap-3 mb-10">
-              <div className="relative">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-purple-600 to-blue-600 flex items-center justify-center font-black text-xl text-white shadow-xl shadow-blue-500/20">
-                  S
-                </div>
-                <div className="absolute inset-0 rounded-2xl blur-md bg-gradient-to-tr from-purple-600/25 to-blue-600/25 -z-10" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold tracking-tight">SchoolSync</div>
-                <div className="text-sm text-default-500">Secure access portal</div>
-              </div>
+      {/* Right Side - Login Form */}
+      <div className="w-full lg:w-[45%] flex flex-col items-center justify-center bg-white p-6 lg:p-0 h-full overflow-y-auto">
+        <div className="w-full max-w-xs flex-shrink-0">
+          {/* Logo */}
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <div className="w-9 h-9 rounded-lg bg-teal-600 flex items-center justify-center">
+              <span className="text-white font-bold text-lg">S</span>
             </div>
-
-            <h1 className="text-4xl font-bold leading-tight">
-              Your school,
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-400">
-                beautifully organized.
-              </span>
-            </h1>
-            <p className="mt-5 text-default-500 text-lg leading-relaxed">
-              Fast workflows, clearer insights, and a calmer day-to-day  all in one dashboard.
-            </p>
-
-            <div className="mt-10 grid grid-cols-2 gap-4 max-w-md">
-              {["Attendance", "Fees", "Messaging", "Payroll"].map((t) => (
-                <div
-                  key={t}
-                  className="rounded-2xl border border-default-200/70 bg-background/40 backdrop-blur-md px-4 py-3 shadow-sm"
-                >
-                  <div className="text-sm font-semibold">{t}</div>
-                  <div className="text-xs text-default-500 mt-0.5">Realtime & reliable</div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          <div className="text-xs text-default-500">
-            © {new Date().getFullYear()} SchoolSync. All rights reserved.
+            <span className="text-xl font-semibold text-gray-800">SchoolSync</span>
           </div>
-        </div>
 
-        {/* Right / Form */}
-        <div className="flex items-center justify-center p-6 lg:p-10">
-          <motion.div
-            className="w-full max-w-md"
-            variants={containerVariants}
-            initial={prefersReducedMotion ? false : "hidden"}
-            animate={prefersReducedMotion ? false : "show"}
-          >
-            <motion.div variants={itemVariants} className="mb-7">
-              {/* Mobile brand header */}
-              <div className="lg:hidden flex items-center gap-3 mb-8">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-purple-600 to-blue-600 flex items-center justify-center font-black text-xl text-white shadow-xl shadow-blue-500/20">
-                  S
-                </div>
-                <div>
-                  <div className="text-xl font-bold tracking-tight">SchoolSync</div>
-                  <div className="text-sm text-default-500">Secure access portal</div>
-                </div>
+          {/* Welcome Text */}
+          <div className="mb-6 text-center">
+            <h1 className="text-xl font-bold text-gray-800 mb-2">Welcome to SchoolSync</h1>
+            <p className="text-gray-500 text-sm">Sign in to access your dashboard</p>
+          </div>
+
+          {/* Success Message from Signup */}
+          {successMessage && (
+            <div className="mb-4 p-2.5 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm text-center flex items-center justify-center gap-2">
+              <CheckCircle size={16} />
+              {successMessage}
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="flex flex-col" autoComplete="off">
+            {/* Email */}
+            <div className="mb-3">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Email Address <span className="text-red-500">*</span>
+              </label>
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-colors autofill-fix">
+                <Mail size={16} className="text-gray-400" />
+                <input
+                  id="login-email"
+                  type="email"
+                  placeholder="Enter your email"
+                  className="flex-1 bg-transparent outline-none text-gray-800 placeholder:text-gray-400 text-sm autofill:bg-white autofill:text-gray-800"
+                  autoComplete="off"
+                  data-form-type="other"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
+            </div>
 
-              <h2 className="text-3xl font-bold tracking-tight">Welcome back</h2>
-              <p className="mt-2 text-default-500">Sign in to continue to your dashboard.</p>
-            </motion.div>
-
-            <motion.div
-              variants={itemVariants}
-              className="rounded-3xl border border-default-200 bg-background/70 backdrop-blur-xl shadow-xl shadow-default-200/20"
-            >
-              <div className="p-6 sm:p-7">
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <div className="space-y-4">
-                    <div>
-                      <label className={fieldLabelClass} htmlFor="login-email">
-                        Email
-                      </label>
-                      <div className={inputShellClass}>
-                        <Mail size={16} className="text-default-400" />
-                        <input
-                          id="login-email"
-                          type="email"
-                          placeholder="name@school.com"
-                          className={textInputClass}
-                          autoComplete="email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className={fieldLabelClass} htmlFor="login-password">
-                        Password
-                      </label>
-                      <div className={inputShellClass}>
-                        <Lock size={16} className="text-default-400" />
-                        <input
-                          id="login-password"
-                          type={isVisible ? "text" : "password"}
-                          placeholder="Enter your password"
-                          className={textInputClass}
-                          autoComplete="current-password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required
-                        />
-                        <button
-                          type="button"
-                          className="p-0.5 hover:bg-default-200 rounded cursor-pointer"
-                          onClick={toggleVisibility}
-                          aria-label={isVisible ? "Hide password" : "Show password"}
-                        >
-                          {isVisible ? (
-                            <EyeOff size={14} className="text-default-400" />
-                          ) : (
-                            <Eye size={14} className="text-default-400" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {error && (
-                    <motion.div
-                      {...motionSafe({
-                        initial: { opacity: 0, y: -6 },
-                        animate: { opacity: 1, y: 0 },
-                        transition: { duration: 0.25 },
-                      })}
-                      className="p-3 rounded-lg bg-danger-50 text-danger-600 text-sm font-medium border border-danger-200"
-                    >
-                      {error}
-                    </motion.div>
+            {/* Password */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Password <span className="text-red-500">*</span>
+              </label>
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-colors autofill-fix">
+                <Lock size={16} className="text-gray-400" />
+                <input
+                  id="login-password"
+                  type={isVisible ? "text" : "password"}
+                  placeholder="Enter your password"
+                  className="flex-1 bg-transparent outline-none text-gray-800 placeholder:text-gray-400 text-sm autofill:bg-white autofill:text-gray-800"
+                  autoComplete="new-password"
+                  data-form-type="other"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="p-1 hover:bg-gray-100 rounded transition-colors"
+                  onClick={toggleVisibility}
+                  aria-label={isVisible ? "Hide password" : "Show password"}
+                >
+                  {isVisible ? (
+                    <EyeOff size={16} className="text-gray-400" />
+                  ) : (
+                    <Eye size={16} className="text-gray-400" />
                   )}
-
-                  <motion.button
-                    type="submit"
-                    disabled={loading}
-                    className={`${primaryButtonClass} ${loading ? "opacity-80 cursor-not-allowed" : ""}`}
-                    {...motionSafe({ whileHover: { y: -1 }, whileTap: { scale: 0.99 } })}
-                  >
-                    {loading ? "Signing In..." : "Sign In"}
-                  </motion.button>
-
-                  <div className="text-center text-sm text-default-500">
-                    Forgot your password?{" "}
-                    <a href="#" className="text-primary hover:underline">
-                      Contact Admin
-                    </a>
-                  </div>
-                </form>
+                </button>
               </div>
+            </div>
 
-              <div className="px-6 sm:px-7 pb-6 sm:pb-7">
-                <div className="rounded-lg border border-default-200 bg-default-50 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-mono text-default-500">DEMO</p>
-                      <p className="text-sm font-semibold mt-1">superid@test.com</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-mono text-default-500">PASSWORD</p>
-                      <p className="text-sm font-semibold mt-1">12345</p>
-                    </div>
-                  </div>
-                </div>
+            {/* Error */}
+            {error && (
+              <div className="mb-3 p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm text-center">
+                {error}
               </div>
-            </motion.div>
+            )}
 
-            <motion.div variants={itemVariants} className="mt-6 text-center text-xs text-default-500">
-              Tip: For best performance, use Chrome or Edge.
-            </motion.div>
-          </motion.div>
+            {/* Buttons */}
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-colors mb-2 ${
+                loading ? "opacity-70 cursor-not-allowed" : ""
+              }`}
+            >
+              {loading ? "Signing in..." : "Sign In"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/signup")}
+              className="w-full py-2.5 rounded-lg text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+              Sign Up
+            </button>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 my-5">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400">Or continue with</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+
+            {/* Social Login */}
+            <div className="flex justify-center gap-3 mb-5">
+              <button type="button" className="w-9 h-9 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors">
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+              </button>
+              <button type="button" className="w-9 h-9 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                </svg>
+              </button>
+              <button type="button" className="w-9 h-9 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="#1877F2">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+              </button>
+              <button type="button" className="w-9 h-9 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Demo credentials */}
+            <div className="pt-3 border-t border-gray-100">
+              <p className="text-xs text-gray-400 mb-1.5 text-center">Demo credentials:</p>
+              <div className="flex items-center justify-center gap-2 text-xs">
+                <span className="text-gray-600">superid@test.com</span>
+                <span className="text-gray-300">•</span>
+                <span className="text-gray-600">12345</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail("superid@test.com");
+                    setPassword("12345");
+                  }}
+                  className="text-teal-600 hover:text-teal-700 font-medium ml-1"
+                >
+                  Auto-fill
+                </button>
+              </div>
+            </div>
+          </form>
+
+          {/* Footer */}
+          <div className="flex items-center justify-center gap-4 text-xs text-gray-400 mt-5 pt-3 border-t border-gray-100">
+            <p>© {new Date().getFullYear()} SchoolSync</p>
+            <a href="#" className="hover:text-gray-600">Terms</a>
+            <a href="#" className="hover:text-gray-600">Privacy</a>
+          </div>
         </div>
       </div>
     </div>

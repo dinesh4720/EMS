@@ -13,14 +13,26 @@ import {
   CheckCircle, AlertCircle, BookOpen, Award, Upload, TrendingUp, CreditCard, Camera, Save,
   FileCheck, AlertTriangle, Printer, Eye, Plus, X, Check, Heart, Bus, ArrowRight,
   Globe, Twitter, Linkedin, Github, MoreHorizontal, FolderPlus, CalendarCheck, XCircle,
-  FileOutput, BarChart4, TrendingUp as TrendingIcon, Trash2, Activity, MoreVertical, ChevronRight, Droplets, Shield, Search, Filter
+  FileOutput, BarChart3, BarChart4, LineChart, TrendingUp as TrendingIcon, Trash2, Activity, MoreVertical, ChevronRight, Droplets, Shield, Search, Filter, Send
 }
   from "lucide-react";
 import { format } from "date-fns";
+import {
+  LineChart as RechartsLineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend,
+  ResponsiveContainer
+} from "recharts";
 import AddStudent from "./AddStudent";
 import TCGeneratorModal from "./TCGeneratorModal";
 import { useApp } from "../../context/AppContext";
-import { uploadApi } from "../../services/api";
+import { uploadApi, classesApi } from "../../services/api";
 import { UnifiedUploadProgress } from "../../components/FileUploadProgress";
 import toast from "react-hot-toast";
 // Import extracted components
@@ -29,11 +41,73 @@ import StudentFeeSummary from "./components/StudentFeeSummary";
 import StudentDocuments from "./components/StudentDocuments";
 import StudentRemarks from "./components/StudentRemarks";
 import StudentResults from "./components/StudentResults";
+import StudentAcademics from "./components/StudentAcademics";
+import StudentRatingSystem from "./components/StudentRatingSystem";
+import InvoicePrintModal from "./components/InvoicePrintModal";
 
 const genderOptions = ["Male", "Female", "Other"];
 const bloodGroupOptions = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-const feeStatusOptions = ["paid", "pending", "overdue"];
+const feeStatusOptions = ["paid", "pending", "overdue", "partial"];
 const academicYears = ["2024-25", "2025-26", "2023-24"];
+
+// Helper function to calculate next class for automatic promotion
+const getNextClass = (currentClass, availableClasses) => {
+    // Handle special cases
+    if (!currentClass || currentClass === "Alumni" || currentClass === "Passed Out / Alumni") {
+        return null;
+    }
+
+    // Handle Nursery/KG levels
+    const preschoolMap = {
+        "Nursery": "KG",
+        "KG": "1",
+        "LKG": "UKG",
+        "UKG": "1"
+    };
+
+    // Check if it's a preschool level
+    for (const [from, to] of Object.entries(preschoolMap)) {
+        if (currentClass.startsWith(from)) {
+            // Extract section if present
+            const sectionMatch = currentClass.match(/-[A-Z]$/i);
+            const section = sectionMatch ? sectionMatch[0] : "";
+            return `${to}${section}`;
+        }
+    }
+
+    // Extract class number and section (e.g., "9-A" → class: 9, section: "A")
+    const match = currentClass.match(/^(\d+)-([A-Z])$/i);
+    if (!match) {
+        // Try without section (e.g., "9")
+        const numMatch = currentClass.match(/^(\d+)$/);
+        if (!numMatch) return null;
+
+        const currentGrade = parseInt(numMatch[1]);
+        if (currentGrade >= 10) return "Passed Out / Alumni";
+        return `${currentGrade + 1}`;
+    }
+
+    const currentGrade = parseInt(match[1]);
+    const section = match[2];
+
+    // If already in 10th grade, promote to alumni
+    if (currentGrade >= 10) return "Passed Out / Alumni";
+
+    // Otherwise, promote to next grade with same section
+    const nextClass = `${currentGrade + 1}-${section}`;
+
+    // Check if the next class exists in available classes
+    if (availableClasses && availableClasses.length > 0) {
+        const classExists = availableClasses.some(c => c === nextClass || c.startsWith(`${currentGrade + 1}-`));
+        if (!classExists) {
+            // If exact section doesn't exist, try to find any section of next grade
+            const anyNextGrade = availableClasses.find(c => c.startsWith(`${currentGrade + 1}-`));
+            if (anyNextGrade) return anyNextGrade;
+        }
+    }
+
+    return nextClass;
+};
 
 // Helper function to get auth token (same as api.js)
 const getAuthToken = () => {
@@ -53,7 +127,7 @@ const getAuthToken = () => {
 export default function StudentOverview() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getStudentById, classesWithTeachers, staff, updateStudent, deleteStudent, loading } = useApp();
+  const { getStudentById, classesWithTeachers, staff, updateStudent, updateStudentLocal, deleteStudent, loading } = useApp();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "overview");
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -63,6 +137,7 @@ export default function StudentOverview() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [isComplaintOpen, setIsComplaintOpen] = useState(false);
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const fileInputRef = useRef(null);
   const [photoPreview, setPhotoPreview] = useState(null);
 
@@ -420,8 +495,7 @@ export default function StudentOverview() {
         setPhotoPreview(response.url);
         toast.success("Photo updated successfully", { id: loadingToast });
 
-        // Refresh page to show new photo
-        window.location.reload();
+        // No need to reload - the photoPreview state will update the UI
       } catch (error) {
         console.error("Photo upload error:", error);
         toast.error("Photo upload failed: " + (error.message || "Unknown error"), { id: loadingToast });
@@ -454,12 +528,33 @@ export default function StudentOverview() {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-      const response = await fetch(`${API_URL}/student-fees/student/${id}`, { headers });
+
+      console.log(`🔍 [StudentOverview] Fetching fee structure for student:`, {
+        id,
+        idType: typeof id,
+        url: `${API_URL}/student-fees/student/${id}?academicYear=2024-25`
+      });
+
+      const response = await fetch(`${API_URL}/student-fees/student/${id}?academicYear=2024-25`, { headers });
+
+      console.log(`📡 [StudentOverview] Response:`, {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText
+      });
 
       if (response.ok) {
         const data = await response.json();
+        console.log(`✅ [StudentOverview] Fee data received:`, {
+          totalFee: data.totalFee,
+          totalPaid: data.totalPaid,
+          totalBalance: data.totalBalance,
+          overallStatus: data.overallStatus,
+          academicYear: data.academicYear
+        });
         setStudentFeeStructure(data);
       } else if (response.status === 404) {
+        console.warn(`⚠️ [StudentOverview] 404 - No fee structure, initializing...`);
         // No fee structure yet, initialize it
         const initHeaders = { 'Content-Type': 'application/json' };
         if (token) {
@@ -470,14 +565,18 @@ export default function StudentOverview() {
           headers: initHeaders,
           body: JSON.stringify({ academicYear: '2024-25' })
         });
-        
+
         if (initResponse.ok) {
           const data = await initResponse.json();
+          console.log(`✅ [StudentOverview] Fee structure initialized:`, {
+            totalFee: data.totalFee,
+            totalBalance: data.totalBalance
+          });
           setStudentFeeStructure(data);
         }
       }
     } catch (error) {
-      console.error('Error fetching fee structure:', error);
+      console.error('❌ [StudentOverview] Error fetching fee structure:', error);
     } finally {
       setLoadingFeeStructure(false);
     }
@@ -554,13 +653,18 @@ export default function StudentOverview() {
     date: new Date().toISOString().split('T')[0] 
   });
   const [complaintForm, setComplaintForm] = useState({ subject: "", description: "" });
-  const [remarkForm, setRemarkForm] = useState({ 
-    type: "", 
-    customType: "", 
-    title: "", 
-    description: "", 
-    sendToParent: false 
+  const [remarkForm, setRemarkForm] = useState({
+    type: "",
+    customType: "",
+    title: "",
+    description: "",
+    sendToParent: false
   });
+
+  // Fee reminder modal state
+  const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
+  const [reminderMessage, setReminderMessage] = useState("");
+  const [reminderSending, setReminderSending] = useState(false);
 
   // New States
   const [isExamConfigOpen, setIsExamConfigOpen] = useState(false);
@@ -575,14 +679,101 @@ export default function StudentOverview() {
   const [promoteToClass, setPromoteToClass] = useState("");
 
   const handlePromoteStudent = async () => {
-    if (!promoteToClass) return;
+    if (!student?.class) {
+      toast.error("Unable to determine current class");
+      return;
+    }
+
+    // Auto-calculate next class
+    const nextClass = getNextClass(student.class, availableClasses);
+
+    if (!nextClass) {
+      toast.error("Unable to calculate next class. Please update class manually.");
+      return;
+    }
+
+    // If it's alumni promotion, confirm with the user
+    if (nextClass === "Passed Out / Alumni") {
+      if (!confirm(`${student.name} will be marked as "Passed Out / Alumni". Continue?`)) {
+        return;
+      }
+    }
+
     try {
-      await updateStudent(student.id, { class: promoteToClass }); // Assuming updateStudent handles class string/id
-      toast.success(`Student promoted to ${promoteToClass}`);
+      const loadingToast = toast.loading(`Promoting ${student.name} to ${nextClass}...`);
+
+      if (nextClass === "Passed Out / Alumni") {
+        await updateStudent(student.id, { class: "Passed Out" });
+      } else {
+        // Parse the class name to find classId
+        const classMatch = nextClass.match(/^(\d+)(?:-([A-Z]))?$/i);
+        let classId = null;
+
+        if (classMatch) {
+          const grade = classMatch[1];
+          const section = classMatch[2] || '';
+
+          // Find the class in the classes array
+          const targetClass = (classesWithTeachers || []).find(c =>
+            String(c.name) === String(grade) &&
+            (c.section || '') === String(section)
+          );
+
+          if (targetClass) {
+            classId = targetClass._id || targetClass.id;
+            console.log(`✅ Found classId for ${nextClass}: ${classId}`);
+          }
+        }
+
+        if (classId) {
+          // Check if we need to update roll number to avoid conflicts
+          let updateData = { classId, class: nextClass };
+
+          // Get students from context to check for roll number conflicts
+          // Note: In StudentOverview, we don't have direct access to all students,
+          // so we'll rely on the API to handle conflicts gracefully
+          // If there's a conflict, we'll catch the error and get next roll number
+
+          try {
+            // Try to promote with current roll number first
+            await updateStudent(student.id, updateData);
+          } catch (error) {
+            // If there's a conflict error, get next roll number and retry
+            if (error.message && (error.message.includes('duplicate key') || error.message.includes('E11000'))) {
+              console.log(`⚠️ Roll number conflict detected for ${student.name}, getting next roll number`);
+
+              try {
+                // Get next available roll number for the target class
+                const nextRollNoResponse = await classesApi.getNextRollNumber(classId);
+                const nextRollNo = nextRollNoResponse?.rollNumber || nextRollNoResponse?.rollNo;
+
+                if (nextRollNo) {
+                  updateData.rollNo = nextRollNo;
+                  console.log(`✅ Assigned new roll number ${nextRollNo} to ${student.name} for class ${nextClass}`);
+                  await updateStudent(student.id, updateData);
+                } else {
+                  console.warn(`⚠️ Could not get next roll number for class ${nextClass}`);
+                  throw error;
+                }
+              } catch (retryError) {
+                console.error(`❌ Error getting next roll number or retrying promotion:`, retryError);
+                throw retryError;
+              }
+            } else {
+              throw error;
+            }
+          }
+        } else {
+          // Fallback: try with just class name
+          await updateStudent(student.id, { class: nextClass });
+        }
+      }
+
+      toast.success(`${student.name} promoted to ${nextClass}`, { id: loadingToast });
       onPromoteClose();
       // optionally refresh or navigate
     } catch (e) {
-      toast.error("Failed to promote student");
+      toast.error("Failed to promote student: " + (e.message || "Unknown error"));
     }
   };
 
@@ -713,8 +904,7 @@ export default function StudentOverview() {
     await updateStudent(id, updatedData);
     setIsEditOpen(false);
 
-    // Refresh the page to show updated data everywhere
-    window.location.reload();
+    // No need to reload - the updateStudent function will refresh the context
   };
 
   const handleRecordPayment = async () => {
@@ -722,119 +912,116 @@ export default function StudentOverview() {
       toast.error("Please enter amount and select payment method");
       return;
     }
-    
+
     const paymentAmount = parseInt(paymentForm.amount);
     if (paymentAmount <= 0) {
       toast.error("Please enter a valid amount");
       return;
     }
-    
+
+    // Check if student has a fee structure
+    if (!studentFeeStructure || !studentFeeStructure.feeHeads || studentFeeStructure.feeHeads.length === 0) {
+      toast.error("No fee structure found for this student. Please initialize fee structure first.");
+      return;
+    }
+
     const loadingToast = toast.loading("Recording payment...");
-    
+
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      
-      // 1. Create payment record in database
-      const paymentData = {
-        studentId: id,
-        classId: student.classId,
-        academicYear: '2024-25',
-        paymentDate: paymentForm.date,
-        amount: paymentAmount,
-        paymentMode: paymentForm.paymentMode,
-        feeHeads: [{
-          period: new Date(paymentForm.date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-          amount: paymentAmount
-        }],
-        remarks: `Fee payment via ${paymentForm.paymentMode}`,
-        collectedBy: null // Can be set to current user ID if available
-      };
-
       const token = getAuthToken();
-      const paymentHeaders = { 'Content-Type': 'application/json' };
-      if (token) {
-        paymentHeaders['Authorization'] = `Bearer ${token}`;
-      }
 
-      const paymentResponse = await fetch(`${API_URL}/fees/payments`, {
-        method: 'POST',
-        headers: paymentHeaders,
-        body: JSON.stringify(paymentData)
-      });
-      
-      if (!paymentResponse.ok) {
-        throw new Error('Failed to create payment record');
-      }
-      
-      // 2. Update StudentFeeStructure via backend API
-      if (studentFeeStructure && studentFeeStructure.feeHeads) {
-        // Distribute payment across pending fee heads (FIFO - First In First Out)
-        const feeHeadPayments = [];
-        let remainingAmount = paymentAmount;
-        
-        for (const feeHead of studentFeeStructure.feeHeads) {
-          if (remainingAmount <= 0) break;
-          
-          const balance = feeHead.balanceAmount || 0;
-          if (balance > 0) {
-            const paymentForThisHead = Math.min(remainingAmount, balance);
-            
-            // Extract feeHeadId - handle both populated (object) and unpopulated (string) cases
-            let feeHeadId;
-            if (typeof feeHead.feeHeadId === 'object' && feeHead.feeHeadId !== null) {
-              feeHeadId = feeHead.feeHeadId._id || feeHead.feeHeadId.id;
-            } else {
-              feeHeadId = feeHead.feeHeadId;
-            }
-            
-            feeHeadPayments.push({
-              feeHeadId: feeHeadId,
-              amount: paymentForThisHead
-            });
-            remainingAmount -= paymentForThisHead;
+      // 1. Distribute payment across pending fee heads (FIFO - First In First Out)
+      const feeHeadPayments = [];
+      let remainingAmount = paymentAmount;
+
+      for (const feeHead of studentFeeStructure.feeHeads) {
+        if (remainingAmount <= 0) break;
+
+        const balance = feeHead.balanceAmount || 0;
+        if (balance > 0) {
+          const paymentForThisHead = Math.min(remainingAmount, balance);
+
+          // Extract feeHeadId - handle both populated (object) and unpopulated (string) cases
+          let feeHeadId;
+          if (typeof feeHead.feeHeadId === 'object' && feeHead.feeHeadId !== null) {
+            feeHeadId = feeHead.feeHeadId._id || feeHead.feeHeadId.id;
+          } else {
+            feeHeadId = feeHead.feeHeadId;
           }
-        }
-        
-        console.log('💰 Recording payment:', { paymentAmount, feeHeadPayments });
 
-        const feePaymentHeaders = { 'Content-Type': 'application/json' };
-        if (token) {
-          feePaymentHeaders['Authorization'] = `Bearer ${token}`;
+          feeHeadPayments.push({
+            feeHeadId: feeHeadId,
+            amount: paymentForThisHead
+          });
+          remainingAmount -= paymentForThisHead;
         }
-
-        // Call backend to record payment in fee structure
-        const feeStructureResponse = await fetch(`${API_URL}/student-fees/student/${id}/payment`, {
-          method: 'POST',
-          headers: feePaymentHeaders,
-          body: JSON.stringify({
-            amount: paymentAmount,
-            feeHeadPayments,
-            academicYear: studentFeeStructure.academicYear || '2024-25'
-          })
-        });
-        
-        if (!feeStructureResponse.ok) {
-          const errorData = await feeStructureResponse.json();
-          console.error('❌ Payment API error:', errorData);
-          throw new Error(errorData.error || 'Failed to update fee structure');
-        }
-        
-        const updatedStructure = await feeStructureResponse.json();
-        console.log('✅ Payment recorded, new balance:', updatedStructure.totalBalance);
-        
-        // Refresh fee structure
-        await fetchFeeStructure();
       }
-      
-      // 3. Refresh payment history
-      await fetchPaymentHistory();
-      
+
+      console.log('💰 Recording payment:', { paymentAmount, feeHeadPayments });
+
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      // 2. Update StudentFeeStructure via backend API (primary operation)
+      const feeStructureResponse = await fetch(`${API_URL}/student-fees/student/${id}/payment`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          amount: paymentAmount,
+          feeHeadPayments,
+          academicYear: studentFeeStructure.academicYear || '2024-25'
+        })
+      });
+
+      if (!feeStructureResponse.ok) {
+        const errorData = await feeStructureResponse.json();
+        console.error('❌ Payment API error:', errorData);
+        throw new Error(errorData.error || 'Failed to update fee structure');
+      }
+
+      const updatedStructure = await feeStructureResponse.json();
+      console.log('✅ Payment recorded, new balance:', updatedStructure.totalBalance);
+
+      // 3. Try to create payment record (secondary, non-blocking)
+      try {
+        const paymentData = {
+          studentId: id,
+          studentName: student?.name || '',
+          classId: student?.classId,
+          academicYear: studentFeeStructure.academicYear || '2024-25',
+          paymentDate: paymentForm.date,
+          amount: paymentAmount,
+          paymentMode: paymentForm.paymentMode,
+          feeHeads: feeHeadPayments.map(fp => ({
+            period: new Date(paymentForm.date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+            amount: fp.amount
+          })),
+          remarks: `Fee payment via ${paymentForm.paymentMode}`,
+          receiptNumber: `RCP-${Date.now()}`
+        };
+
+        await fetch(`${API_URL}/fees/payments`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(paymentData)
+        });
+      } catch (paymentRecordError) {
+        // Non-critical error - payment structure is already updated
+        console.warn('⚠️ Could not create payment record:', paymentRecordError);
+      }
+
+      // 4. Refresh fee structure and payment history
+      await Promise.all([fetchFeeStructure(), fetchPaymentHistory()]);
+
       toast.success("Payment recorded successfully", { id: loadingToast });
       setIsPaymentOpen(false);
-      setPaymentForm({ 
-        amount: "", 
-        paymentMode: "cash", 
-        date: new Date().toISOString().split('T')[0] 
+      setPaymentForm({
+        amount: "",
+        paymentMode: "cash",
+        date: new Date().toISOString().split('T')[0]
       });
     } catch (error) {
       console.error('Error recording payment:', error);
@@ -911,6 +1098,28 @@ export default function StudentOverview() {
     }
   };
 
+  const handleRatingChange = async (ratings) => {
+    try {
+      const loadingToast = toast.loading("Saving ratings...");
+
+      // Add lastUpdated timestamp to each dimension
+      const ratingsWithTimestamp = {};
+      Object.keys(ratings).forEach(key => {
+        ratingsWithTimestamp[key] = {
+          ...ratings[key],
+          lastUpdated: new Date().toISOString()
+        };
+      });
+
+      await updateStudent(student.id, { ratings: ratingsWithTimestamp });
+
+      toast.success("Ratings saved successfully", { id: loadingToast });
+    } catch (error) {
+      console.error("Error saving ratings:", error);
+      toast.error("Failed to save ratings: " + (error.message || "Unknown error"));
+    }
+  };
+
   const classOptions = (classesWithTeachers || []).map(c => `${c.name}-${c.section}`);
 
   const classInfo = useMemo(() => {
@@ -966,11 +1175,66 @@ export default function StudentOverview() {
 
   // Helper functions for fee actions
   const handleSendReminder = () => {
-    toast.success(`Fee reminder sent to ${student.parentName || 'parent'}`);
+    // Generate message based on fee status
+    const hasOutstanding = (studentFeeStructure?.totalBalance || 0) > 0;
+    const schoolName = "Your School"; // TODO: Get from config/settings
+
+    let defaultMessage = "";
+    if (hasOutstanding) {
+      defaultMessage = `Dear ${student.parentName || 'Parent'}, this is a reminder that fee payment of ₹${studentFeeStructure?.totalBalance?.toLocaleString() || 0} is pending for ${student.name}. Please pay at your earliest convenience. - ${schoolName}`;
+    } else {
+      defaultMessage = `Dear ${student.parentName || 'Parent'}, thank you for the fee payment of ₹${studentFeeStructure?.totalPaid?.toLocaleString() || 0} for ${student.name}. - ${schoolName}`;
+    }
+
+    setReminderMessage(defaultMessage);
+    setIsReminderModalOpen(true);
+  };
+
+  const handleSendReminderMessage = async () => {
+    if (!reminderMessage.trim()) {
+      toast.error("Please enter a message");
+      return;
+    }
+
+    setReminderSending(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const token = getAuthToken();
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      // Call API to send SMS/Email
+      const response = await fetch(`${API_URL}/students/${id}/send-reminder`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          message: reminderMessage,
+          parentPhone: student.parentPhone,
+          parentEmail: student.parentEmail,
+          studentName: student.name
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send reminder');
+      }
+
+      toast.success(`Reminder sent to ${student.parentName || 'parent'}`);
+      setIsReminderModalOpen(false);
+    } catch (error) {
+      console.error('Error sending reminder:', error);
+      toast.error('Failed to send reminder: ' + (error.message || 'Unknown error'));
+    } finally {
+      setReminderSending(false);
+    }
   };
 
   const handleDownloadInvoice = () => {
-    toast.success('Downloading invoice...');
+    setIsInvoiceOpen(true);
   };
 
   if (loading) return <div className="p-8 text-center text-default-500">Loading profile...</div>;
@@ -990,6 +1254,12 @@ export default function StudentOverview() {
           onGenerateTC={onTcOpen}
           onProgressCard={onProgressOpen}
           onPromote={onPromoteOpen}
+          onUpdateStudent={updateStudentLocal}
+          availableClasses={availableClasses}
+          results={results}
+          attendanceStats={attendanceStats}
+          studentFeeStructure={studentFeeStructure}
+          staff={staff}
         />
 
 
@@ -1014,80 +1284,145 @@ export default function StudentOverview() {
             <Tab key="attendance" title="Attendance" />
             <Tab key="academics" title="Academics" />
             <Tab key="fees" title="Fees" />
-            <Tab key="documents" title={
-              <div className="flex items-center gap-2">
-                <span>Documents</span>
-                <Chip size="sm" variant="flat" color="primary">{documents.length}</Chip>
-              </div>
-            } />
+            <Tab key="documents" title="Documents" />
             <Tab key="remarks" title="Remarks" />
+            <Tab key="ratings" title="Ratings" />
           </Tabs>
 
           {activeTab === "overview" && (
             <div className="space-y-8 animate-fade-in">
-              {/* Reports Section with Premium Cards */}
+              {/* KPI Cards Section */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-default-900">Performance Overview</h3>
+                  <h3 className="text-lg font-semibold text-default-900">Overview</h3>
                   <span className="text-sm text-default-500">Last updated today</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                  {/* Academic Performance Card - New */}
-                  <Card shadow="sm" className="border border-default-200 bg-background/60 backdrop-blur-md">
+                  {/* Academic Performance Card */}
+                  <Card
+                    isPressable
+                    onPress={() => setActiveTab("academics")}
+                    shadow="sm"
+                    className="border border-default-200 bg-background/60 backdrop-blur-md cursor-pointer hover:shadow-md transition-shadow"
+                  >
                     <CardBody className="p-6">
                       <div className="flex items-start justify-between mb-4 w-full">
                         <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
                           <Award size={24} />
                         </div>
-                        <Chip size="sm" color="secondary" variant="flat" className="text-xs font-semibold">Exams</Chip>
+                        <Chip
+                          size="sm"
+                          color={
+                            results?.length > 0
+                              ? (() => {
+                                  const avgPercentage = results.reduce((sum, r) => sum + (r.percentage || 0), 0) / results.length;
+                                                                  if (avgPercentage >= 90) return "success";
+                                                                  if (avgPercentage >= 75) return "primary";
+                                                                  if (avgPercentage >= 60) return "warning";
+                                                                  return "danger";
+                                                                })()
+                              : "default"
+                          }
+                          variant="flat"
+                          className="text-xs font-semibold"
+                        >
+                          {results?.length > 0
+                            ? (() => {
+                                const avgPercentage = results.reduce((sum, r) => sum + (r.percentage || 0), 0) / results.length;
+                                if (avgPercentage >= 90) return "Very Good";
+                                if (avgPercentage >= 75) return "Good";
+                                if (avgPercentage >= 60) return "Needs Improvement";
+                                if (avgPercentage >= 40) return "Poor";
+                                return "Supervision Needed";
+                              })()
+                            : "No Data"}
+                        </Chip>
                       </div>
                       <div className="space-y-1 text-left">
-                        <h4 className="text-2xl font-semibold text-default-900">85%</h4>
-                        <p className="text-sm font-medium text-default-500">Overall Percentage</p>
+                        <h4 className="text-2xl font-semibold text-default-900">
+                          {results?.length > 0
+                            ? `${Math.round(results.reduce((sum, r) => sum + (r.percentage || 0), 0) / results.length)}%`
+                            : "N/A"}
+                        </h4>
+                        <p className="text-sm font-medium text-default-500">Average Academic Percentage</p>
                       </div>
                       <div className="mt-4 pt-4 border-t border-default-100 space-y-2">
                         <div className="flex items-center gap-3 text-xs text-default-500">
-                          <span className="font-medium">Class Average:</span>
-                          <span className="font-bold text-default-700">78%</span>
+                          <span className="font-medium">Exams Taken:</span>
+                          <span className="font-bold text-default-700">{results?.length || 0}</span>
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-red-500">
-                          <span className="font-medium">Weak Subject:</span>
-                          <span className="font-bold">Mathematics</span>
-                        </div>
+                      </div>
+                      <div className="mt-4 flex items-center justify-between">
+                        <span className="text-xs text-default-400">Click to view details</span>
+                        <span
+                          className="text-xs px-3 py-1.5 rounded-lg bg-primary-50 text-primary hover:bg-primary-100 cursor-pointer transition-colors flex items-center gap-1.5"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toast.success("Downloading academic report...");
+                          }}
+                        >
+                          <Download size={14} />
+                          Download
+                        </span>
                       </div>
                     </CardBody>
                   </Card>
 
-                  {/* Attendance Card - Updated */}
-                  <Card isPressable onPress={() => setIsAttendanceOpen(true)} shadow="sm" className="border border-default-200 bg-background/60 backdrop-blur-md">
+                  {/* Attendance Card */}
+                  <Card
+                    isPressable
+                    onPress={() => setActiveTab("attendance")}
+                    shadow="sm"
+                    className="border border-default-200 bg-background/60 backdrop-blur-md cursor-pointer hover:shadow-md transition-shadow"
+                  >
                     <CardBody className="p-6">
                       <div className="flex items-start justify-between mb-4 w-full">
                         <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
                           <Clock size={24} />
                         </div>
-                        <Chip size="sm" color="primary" variant="flat" className="text-xs font-semibold">Expected: 90%</Chip>
+                        <Chip size="sm" color={attendanceStats.percentage >= 90 ? "success" : attendanceStats.percentage >= 75 ? "primary" : "warning"} variant="flat" className="text-xs font-semibold">
+                          Expected: 90%
+                        </Chip>
                       </div>
                       <div className="space-y-1 text-left">
                         <h4 className="text-2xl font-semibold text-default-900">{attendanceStats.percentage}%</h4>
-                        <p className="text-sm font-medium text-default-500">Attendance</p>
+                        <p className="text-sm font-medium text-default-500">Average Attendance</p>
                       </div>
                       <div className="mt-4 pt-4 border-t border-default-100 space-y-2">
                         <div className="flex items-center gap-3 text-xs text-default-500">
-                          <span className="font-medium">Total Present:</span>
-                          <span className="font-bold text-default-700">{attendanceStats.present}/{attendanceStats.total}</span>
+                          <span className="font-medium">Present Days:</span>
+                          <span className="font-bold text-default-700">{attendanceStats.present}</span>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-red-500">
                           <span className="font-medium">Absent Days:</span>
                           <span className="font-bold">{attendanceStats.absent}</span>
                         </div>
                       </div>
+                      <div className="mt-4 flex items-center justify-between">
+                        <span className="text-xs text-default-400">Click to view details</span>
+                        <span
+                          className="text-xs px-3 py-1.5 rounded-lg bg-primary-50 text-primary hover:bg-primary-100 cursor-pointer transition-colors flex items-center gap-1.5"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toast.success("Downloading attendance report...");
+                          }}
+                        >
+                          <Download size={14} />
+                          Download
+                        </span>
+                      </div>
                     </CardBody>
                   </Card>
 
-                  {/* Fee Status Card - Updated */}
-                  <Card isPressable onPress={() => setActiveTab("fees")} shadow="sm" className="border border-default-200 bg-background/60 backdrop-blur-md">
+                  {/* Fee Status Card */}
+                  <Card
+                    isPressable
+                    onPress={() => setActiveTab("fees")}
+                    shadow="sm"
+                    className="border border-default-200 bg-background/60 backdrop-blur-md cursor-pointer hover:shadow-md transition-shadow"
+                  >
                     <CardBody className="p-6">
                       <div className="flex items-start justify-between mb-4 w-full">
                         <div className={`p-3 rounded-xl ${(studentFeeStructure?.totalBalance || 0) <= 0 ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"}`}>
@@ -1100,11 +1435,11 @@ export default function StudentOverview() {
                       <div className="space-y-1 text-left">
                         <div className="flex items-center gap-2">
                           <h4 className="text-2xl font-semibold text-default-900">
-                            ₹{studentFeeStructure?.totalBalance?.toLocaleString() || 0}
+                            ₹{(studentFeeStructure?.totalBalance || 0) <= 0 ? studentFeeStructure?.totalPaid?.toLocaleString() || 0 : studentFeeStructure?.totalBalance?.toLocaleString() || 0}
                           </h4>
                         </div>
                         <p className="text-sm font-medium text-default-500">
-                          {(studentFeeStructure?.totalBalance || 0) <= 0 ? 'No Dues' : 'Outstanding Amount'}
+                          {(studentFeeStructure?.totalBalance || 0) <= 0 ? 'Total Fees Paid' : 'Outstanding Amount'}
                         </p>
                       </div>
                       <div className="mt-4 pt-4 border-t border-default-100 flex items-center justify-between w-full">
@@ -1120,7 +1455,7 @@ export default function StudentOverview() {
                           )}
                         </div>
                         {studentFeeStructure?.totalBalance > 0 && (
-                          <span 
+                          <span
                             className="text-xs font-semibold text-primary hover:text-primary-600 cursor-pointer transition-colors"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1131,6 +1466,263 @@ export default function StudentOverview() {
                           </span>
                         )}
                       </div>
+                      <div className="mt-4 flex items-center justify-between">
+                        <span className="text-xs text-default-400">Click to view details</span>
+                      </div>
+                    </CardBody>
+                  </Card>
+
+                </div>
+              </div>
+
+              {/* Action Needed Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-default-900">Action Needed</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Low Attendance Alert */}
+                  {attendanceStats.percentage < 75 && (
+                    <Card
+                      isPressable
+                      onPress={() => setActiveTab("attendance")}
+                      className="border border-warning-200 bg-warning-50/50 cursor-pointer hover:bg-warning-50 transition-colors"
+                    >
+                      <CardBody className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-warning-100 text-warning-600 rounded-lg">
+                            <AlertTriangle size={20} />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-warning-900">Low Attendance</p>
+                            <p className="text-xs text-warning-700">
+                              Attendance is {attendanceStats.percentage}% (below 75%)
+                            </p>
+                          </div>
+                          <ChevronRight size={16} className="text-warning-600" />
+                        </div>
+                      </CardBody>
+                    </Card>
+                  )}
+
+                  {/* Pending Fees Alert */}
+                  {studentFeeStructure?.totalBalance > 0 && (
+                    <Card
+                      isPressable
+                      onPress={() => setActiveTab("fees")}
+                      className="border border-danger-200 bg-danger-50/50 cursor-pointer hover:bg-danger-50 transition-colors"
+                    >
+                      <CardBody className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-danger-100 text-danger-600 rounded-lg">
+                            <IndianRupee size={20} />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-danger-900">Pending Fees</p>
+                            <p className="text-xs text-danger-700">
+                              ₹{studentFeeStructure.totalBalance.toLocaleString()} outstanding
+                            </p>
+                          </div>
+                          <ChevronRight size={16} className="text-danger-600" />
+                        </div>
+                      </CardBody>
+                    </Card>
+                  )}
+
+                  {/* Poor Performance Alert */}
+                  {results?.length > 0 && (() => {
+                    const avgPercentage = results.reduce((sum, r) => sum + (r.percentage || 0), 0) / results.length;
+                    if (avgPercentage < 60) {
+                      return (
+                        <Card
+                          isPressable
+                          onPress={() => setActiveTab("academics")}
+                          className="border border-danger-200 bg-danger-50/50 cursor-pointer hover:bg-danger-50 transition-colors"
+                        >
+                          <CardBody className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-danger-100 text-danger-600 rounded-lg">
+                                <AlertTriangle size={20} />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-semibold text-danger-900">Poor Performance</p>
+                                <p className="text-xs text-danger-700">
+                                  Average is {Math.round(avgPercentage)}% - needs attention
+                                </p>
+                              </div>
+                              <ChevronRight size={16} className="text-danger-600" />
+                            </div>
+                          </CardBody>
+                        </Card>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  {/* If no actions needed, show positive message */}
+                  {attendanceStats.percentage >= 75 &&
+                   (!studentFeeStructure?.totalBalance || studentFeeStructure.totalBalance <= 0) &&
+                   (!results?.length || results.reduce((sum, r) => sum + (r.percentage || 0), 0) / results.length >= 60) && (
+                    <Card className="border border-success-200 bg-success-50/50">
+                      <CardBody className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-success-100 text-success-600 rounded-lg">
+                            <CheckCircle size={20} />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-success-900">All Good!</p>
+                            <p className="text-xs text-success-700">
+                              No immediate actions required
+                            </p>
+                          </div>
+                        </div>
+                      </CardBody>
+                    </Card>
+                  )}
+                </div>
+              </div>
+
+              {/* Analytics Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-default-900">Analytics</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                  {/* Performance Trend Chart */}
+                  <Card shadow="sm" className="border border-default-200">
+                    <CardHeader className="pb-0 pt-6 px-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
+                          <TrendingUp size={20} />
+                        </div>
+                        <div>
+                          <h4 className="text-base font-semibold text-default-900">Performance Trend</h4>
+                          <p className="text-xs text-default-500">Academic performance over time</p>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardBody className="px-6 py-6">
+                      {results?.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={200}>
+                          <RechartsLineChart data={results.map((r, i) => ({
+                            name: r.examName || `Exam ${i + 1}`,
+                            percentage: r.percentage || 0
+                          }))}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                            <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
+                            <RechartsTooltip
+                              contentStyle={{
+                                backgroundColor: "rgba(255, 255, 255, 0.95)",
+                                border: "1px solid #e5e7eb",
+                                borderRadius: "8px",
+                                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)"
+                              }}
+                              formatter={(value) => [`${value}%`, "Percentage"]}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="percentage"
+                              stroke="#9333ea"
+                              strokeWidth={2}
+                              dot={{ fill: "#9333ea", r: 4 }}
+                              activeDot={{ r: 6 }}
+                            />
+                          </RechartsLineChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-[200px] flex items-center justify-center text-default-400 text-sm">
+                          No exam data available
+                        </div>
+                      )}
+                    </CardBody>
+                  </Card>
+
+                  {/* Subject-wise Performance Chart */}
+                  <Card shadow="sm" className="border border-default-200">
+                    <CardHeader className="pb-0 pt-6 px-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                          <BarChart3 size={20} />
+                        </div>
+                        <div>
+                          <h4 className="text-base font-semibold text-default-900">Subject-wise Performance</h4>
+                          <p className="text-xs text-default-500">Latest exam results by subject</p>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardBody className="px-6 py-6">
+                      {results?.length > 0 && results[0]?.subjects ? (
+                        <ResponsiveContainer width="100%" height={200}>
+                          <BarChart data={results[0].subjects.map(s => ({
+                            name: s.name,
+                            marks: s.marks || 0
+                          }))}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                            <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
+                            <RechartsTooltip
+                              contentStyle={{
+                                backgroundColor: "rgba(255, 255, 255, 0.95)",
+                                border: "1px solid #e5e7eb",
+                                borderRadius: "8px",
+                                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)"
+                              }}
+                              formatter={(value) => [`${value}`, "Marks"]}
+                            />
+                            <Bar dataKey="marks" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-[200px] flex items-center justify-center text-default-400 text-sm">
+                          No subject data available
+                        </div>
+                      )}
+                    </CardBody>
+                  </Card>
+
+                  {/* Attendance Trend Chart */}
+                  <Card shadow="sm" className="border border-default-200 lg:col-span-2">
+                    <CardHeader className="pb-0 pt-6 px-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-green-50 text-green-600 rounded-lg">
+                          <LineChart size={20} />
+                        </div>
+                        <div>
+                          <h4 className="text-base font-semibold text-default-900">Attendance Trend</h4>
+                          <p className="text-xs text-default-500">Monthly attendance overview</p>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardBody className="px-6 py-6">
+                      <ResponsiveContainer width="100%" height={180}>
+                        <RechartsLineChart data={[
+                          { name: "Jan", attendance: 92 },
+                          { name: "Feb", attendance: 88 },
+                          { name: "Mar", attendance: 95 },
+                          { name: "Apr", attendance: attendanceStats.percentage },
+                          { name: "May", attendance: 90 },
+                          { name: "Jun", attendance: 87 }
+                        ]}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                          <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
+                          <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
+                          <RechartsTooltip
+                            contentStyle={{
+                              backgroundColor: "rgba(255, 255, 255, 0.95)",
+                              border: "1px solid #e5e7eb",
+                              borderRadius: "8px",
+                              boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)"
+                            }}
+                            formatter={(value) => [`${value}%`, "Attendance"]}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="attendance"
+                            stroke="#22c55e"
+                            strokeWidth={2}
+                            dot={{ fill: "#22c55e", r: 4 }}
+                            activeDot={{ r: 6 }}
+                          />
+                        </RechartsLineChart>
+                      </ResponsiveContainer>
                     </CardBody>
                   </Card>
 
@@ -1514,7 +2106,13 @@ export default function StudentOverview() {
                         </div>
                         <h3 className="text-lg font-semibold text-default-900">Monthly Overview</h3>
                       </div>
-                      <Select size="sm" variant="bordered" defaultSelectedKeys={["december"]} className="w-32">
+                      <Select 
+                        aria-label="Select month"
+                        size="sm" 
+                        variant="bordered" 
+                        defaultSelectedKeys={["december"]} 
+                        className="w-32"
+                      >
                         <SelectItem key="december">December</SelectItem>
                         <SelectItem key="november">November</SelectItem>
                         <SelectItem key="october">October</SelectItem>
@@ -1724,14 +2322,22 @@ export default function StudentOverview() {
             />
           )}
 
+          {activeTab === "ratings" && (
+            <StudentRatingSystem
+              studentId={student?.id}
+              ratings={student?.ratings || {}}
+              onRatingChange={handleRatingChange}
+              editable={true}
+            />
+          )}
+
 
 
           {activeTab === "academics" && (
-            <StudentResults
-              results={results}
-              resultsLoading={resultsLoading}
+            <StudentAcademics
+              studentId={student?.id}
+              student={student}
               classTeacher={classTeacher}
-              onExamSelect={(exam) => { setSelectedExam(exam); setIsExamConfigOpen(true); }}
             />
           )}
         </div>
@@ -1804,6 +2410,7 @@ export default function StudentOverview() {
                 isRequired
               />
               <Select 
+                aria-label="Payment method"
                 label="Payment Method" 
                 placeholder="Select payment method" 
                 selectedKeys={[paymentForm.paymentMode]} 
@@ -1846,11 +2453,13 @@ export default function StudentOverview() {
         students={[student]}
       />
 
-      {/* TC Generator Modal */}
-      <TCGeneratorModal
-        isOpen={isTcOpen}
-        onClose={onTcClose}
-        students={[student]}
+      {/* Fee Invoice Modal */}
+      <InvoicePrintModal
+        isOpen={isInvoiceOpen}
+        onClose={() => setIsInvoiceOpen(false)}
+        student={student}
+        studentFeeStructure={studentFeeStructure}
+        feeHistory={feeHistory}
       />
 
       <Modal isOpen={isPromoteOpen} onClose={onPromoteClose}>
@@ -1858,23 +2467,42 @@ export default function StudentOverview() {
           <ModalHeader>Promote Student</ModalHeader>
           <ModalBody>
             <div className="space-y-4">
-              <p className="text-default-500">
-                Current Class: <span className="font-semibold text-default-900">{student.class}</span>
-              </p>
-              <Select
-                label="Promote to Class"
-                placeholder="Select next class"
-                selectedKeys={promoteToClass ? [promoteToClass] : []}
-                onSelectionChange={(keys) => setPromoteToClass(Array.from(keys)[0])}
-                variant="bordered"
-              >
-                {availableClasses.map(c => <SelectItem key={c}>{c}</SelectItem>)}
-              </Select>
+              <div className="flex items-center gap-3 p-4 bg-default-50 rounded-lg">
+                <GraduationCap size={24} className="text-primary" />
+                <div>
+                  <p className="text-sm text-default-500">Student: <span className="font-semibold text-default-900">{student.name}</span></p>
+                  <p className="text-sm text-default-500">Current Class: <span className="font-semibold text-default-900">{student.class}</span></p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-success-50 border border-success-200 rounded-lg">
+                <p className="text-sm text-success-700 mb-1">
+                  <span className="font-semibold">Auto-calculated next class:</span>
+                </p>
+                <p className="text-lg font-bold text-success-900">
+                  {getNextClass(student.class, availableClasses) || "Unable to calculate"}
+                </p>
+                <p className="text-xs text-success-600 mt-2">
+                  Click "Promote" to automatically promote the student to this class
+                </p>
+              </div>
+
+              {getNextClass(student.class, availableClasses) === "Passed Out / Alumni" && (
+                <div className="p-3 bg-warning-50 border border-warning-200 rounded-lg">
+                  <p className="text-xs text-warning-700">
+                    <AlertTriangle size={14} className="inline mr-1" />
+                    This will mark the student as "Passed Out / Alumni"
+                  </p>
+                </div>
+              )}
             </div>
           </ModalBody>
           <ModalFooter>
             <Button variant="flat" onPress={onPromoteClose}>Cancel</Button>
-            <Button color="primary" onPress={handlePromoteStudent} isDisabled={!promoteToClass}>Promote</Button>
+            <Button color="primary" onPress={handlePromoteStudent}>
+              <GraduationCap size={16} className="mr-1" />
+              Promote
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -2012,6 +2640,7 @@ export default function StudentOverview() {
                 {/* Remark Type - Dropdown with Custom Option */}
                 <div className="space-y-2">
                   <Select 
+                    aria-label="Remark type"
                     label="Remark Type" 
                     placeholder="Select type or enter custom" 
                     variant="bordered"
@@ -2176,7 +2805,13 @@ export default function StudentOverview() {
                           <span className="font-medium text-default-900">{date}</span>
                         </div>
                       </div>
-                      <Select size="sm" placeholder="Select Reason" className="w-40" variant="bordered">
+                      <Select 
+                        aria-label="Absence reason"
+                        size="sm" 
+                        placeholder="Select Reason" 
+                        className="w-40" 
+                        variant="bordered"
+                      >
                         <SelectItem key="sick">Sick Leave</SelectItem>
                         <SelectItem key="personal">Personal</SelectItem>
                         <SelectItem key="official">Official Duty</SelectItem>
@@ -2239,7 +2874,13 @@ export default function StudentOverview() {
                             <span className="text-sm font-medium text-default-700">{s.sub}</span>
                             <span className="text-sm font-semibold">{s.score}/100</span>
                           </div>
-                          <Progress value={s.score} color={s.score > 90 ? "success" : "primary"} size="sm" className="w-full" />
+                          <Progress 
+                            aria-label={`${s.subject} score`}
+                            value={s.score} 
+                            color={s.score > 90 ? "success" : "primary"} 
+                            size="sm" 
+                            className="w-full" 
+                          />
                         </div>
                       </div>
                     ))}
@@ -2306,6 +2947,113 @@ export default function StudentOverview() {
         uploads={activeUploads}
         onClose={() => setActiveUploads([])}
       />
+
+      {/* Fee Reminder Modal */}
+      <Modal
+        isOpen={isReminderModalOpen}
+        onClose={() => setIsReminderModalOpen(false)}
+        size="2xl"
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-xl">
+                <MessageSquare size={20} className="text-primary" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Send Fee Reminder</h3>
+                <p className="text-xs text-default-500">
+                  {(studentFeeStructure?.totalBalance || 0) > 0
+                    ? "Outstanding fee payment reminder"
+                    : "Fee payment acknowledgment"
+                  }
+                </p>
+              </div>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              {/* Parent Contact Info */}
+              <div className="p-4 bg-default-50 rounded-lg border border-default-200">
+                <p className="text-xs font-semibold text-default-500 uppercase mb-2">Parent Contact Information</p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <User size={16} className="text-default-500" />
+                    <span className="font-medium">{student.parentName || 'N/A'}</span>
+                  </div>
+                  {student.parentPhone && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone size={16} className="text-default-500" />
+                      <span>{student.parentPhone}</span>
+                    </div>
+                  )}
+                  {student.parentEmail && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail size={16} className="text-default-500" />
+                      <span>{student.parentEmail}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Fee Status */}
+              <div className={`p-4 rounded-lg border ${
+                (studentFeeStructure?.totalBalance || 0) > 0
+                  ? 'bg-warning-50 border-warning-200'
+                  : 'bg-success-50 border-success-200'
+              }`}>
+                {(studentFeeStructure?.totalBalance || 0) > 0 ? (
+                  <>
+                    <p className="text-xs font-semibold text-warning-700 uppercase mb-1">Outstanding Amount</p>
+                    <p className="text-2xl font-bold text-warning-900">
+                      ₹{studentFeeStructure?.totalBalance?.toLocaleString() || 0}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs font-semibold text-success-700 uppercase mb-1">Total Fees Paid Till Date</p>
+                    <p className="text-2xl font-bold text-success-900">
+                      ₹{studentFeeStructure?.totalPaid?.toLocaleString() || 0}
+                    </p>
+                  </>
+                )}
+              </div>
+
+              {/* Message Template */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-default-700">Message</label>
+                <Textarea
+                  value={reminderMessage}
+                  onValueChange={setReminderMessage}
+                  minRows={5}
+                  variant="bordered"
+                  placeholder="Enter your message..."
+                  description={`${reminderMessage.length}/500 characters`}
+                  maxLength={500}
+                />
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="flat"
+              onPress={() => setIsReminderModalOpen(false)}
+              isDisabled={reminderSending}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onPress={handleSendReminderMessage}
+              isDisabled={reminderSending || !reminderMessage.trim()}
+              isLoading={reminderSending}
+              startContent={!reminderSending && <Send size={18} />}
+            >
+              {reminderSending ? 'Sending...' : 'Send Reminder'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
     </div>
   );

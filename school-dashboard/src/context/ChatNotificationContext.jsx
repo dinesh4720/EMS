@@ -57,17 +57,16 @@ export function ChatNotificationProvider({ children }) {
           const isOnMessagingPage = locationRef.current.includes('/messaging');
           console.log('💬 Is on messaging page?', isOnMessagingPage);
           
-          // Only show notification if not on chat page
+          // Only show notification and increment count if not on chat page
           if (!isOnMessagingPage) {
             console.log('✅ Showing notification and playing sound');
             showNotification(data);
             playNotificationSound();
+            // Increment unread count only when not on messaging page
+            setUnreadCount(prev => prev + 1);
           } else {
             console.log('⏭️ Skipping notification - user is on messaging page');
           }
-          
-          // Always increment unread count
-          setUnreadCount(prev => prev + 1);
         };
 
         // Listen for message notifications
@@ -96,6 +95,23 @@ export function ChatNotificationProvider({ children }) {
       if (cleanup) cleanup();
     };
   }, [isAuthenticated, user?.id]); // Removed location.pathname from dependencies
+
+  // Fetch actual unread count from conversations
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
+
+    const fetchUnreadCount = async () => {
+      try {
+        const conversations = await chatService.getConversations(user.id, 'staff');
+        const totalUnread = conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
+        setUnreadCount(totalUnread);
+      } catch (error) {
+        console.error('❌ Failed to fetch unread count:', error);
+      }
+    };
+
+    fetchUnreadCount();
+  }, [isAuthenticated, user?.id]);
 
   // Reset unread count when user visits chat page
   useEffect(() => {

@@ -255,7 +255,7 @@ export default function StudentDocuments({
 
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-default-500">{documents.length} documents</span>
+          <span className="text-sm text-gray-500">{documents.length} documents</span>
         </div>
         <div className="flex gap-2">
           {documents.some(doc => !doc.url || !doc.name || !doc.id) && (
@@ -274,13 +274,13 @@ export default function StudentDocuments({
       </div>
 
       {documents.length === 0 ? (
-        <div className="text-center py-16 border-2 border-dashed border-default-200 rounded-xl bg-default-50/50 hover:bg-default-100/50 transition-colors cursor-pointer group" onClick={() => documentInputRef.current?.click()}>
-          <div className="inline-flex p-4 bg-white rounded-full mb-4 ring-1 ring-default-200 shadow-sm group-hover:scale-110 transition-transform">
-            <FolderPlus size={32} className="text-primary" />
+        <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer group" onClick={() => documentInputRef.current?.click()}>
+          <div className="inline-flex p-4 bg-white rounded-full mb-4 ring-1 ring-gray-200 shadow-sm group-hover:scale-110 transition-transform">
+            <FolderPlus size={32} className="text-gray-600" />
           </div>
-          <h4 className="font-semibold text-default-900 mb-1">No documents uploaded yet</h4>
-          <p className="text-sm text-default-500 max-w-xs mx-auto">Upload birth certificate, transfer certificate, or other essential documents.</p>
-          <Button className="mt-4" size="sm" color="primary" variant="ghost" onPress={() => documentInputRef.current?.click()}>Browse Files</Button>
+          <h4 className="font-semibold text-gray-900 mb-1">No documents uploaded yet</h4>
+          <p className="text-sm text-gray-500 max-w-xs mx-auto">Upload birth certificate, transfer certificate, or other essential documents.</p>
+          <Button className="mt-4" size="sm" variant="bordered" onPress={() => documentInputRef.current?.click()}>Browse Files</Button>
         </div>
       ) : (
         <div className="space-y-3">
@@ -291,17 +291,17 @@ export default function StudentDocuments({
             const docId = doc.id || `doc-${index}`;
 
             return (
-              <div key={docId} className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${isCorrupted ? 'border-danger-200 bg-danger-50/30' : 'border-default-200 hover:bg-default-50'}`}>
+              <div key={docId} className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${isCorrupted ? 'border-red-200 bg-red-50/30' : 'border-gray-200 hover:bg-gray-50'}`}>
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${isCorrupted ? 'bg-danger-50 text-danger' : 'bg-primary-50 text-primary'}`}>
+                  <div className={`p-2 rounded-lg ${isCorrupted ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-600'}`}>
                     {isCorrupted ? <AlertTriangle size={20} /> : <FileText size={20} />}
                   </div>
                   <div>
-                    <p className={`text-sm font-medium ${isCorrupted ? 'text-danger-700' : 'text-default-900'}`}>
+                    <p className={`text-sm font-medium ${isCorrupted ? 'text-red-700' : 'text-gray-900'}`}>
                       {doc.name || 'Corrupted Document'}
-                      {isFrontBack && <span className="ml-2 text-xs bg-primary-100 text-primary px-2 py-0.5 rounded">Front & Back</span>}
+                      {isFrontBack && <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Front & Back</span>}
                     </p>
-                    <p className="text-xs text-default-500">
+                    <p className="text-xs text-gray-500">
                       {isCorrupted ? 'Invalid file - please delete' : `${doc.date || 'Unknown date'} • ${doc.size || 'Unknown size'}`}
                     </p>
                   </div>
@@ -320,7 +320,7 @@ export default function StudentDocuments({
                             window.open(doc.front.url, '_blank', 'noopener,noreferrer');
                           }}
                         >
-                          <Eye size={16} className="text-default-500" />
+                          <Eye size={16} className="text-gray-500" />
                         </Button>
                       </Tooltip>
                       <Tooltip content="View back">
@@ -333,7 +333,7 @@ export default function StudentDocuments({
                             window.open(doc.back.url, '_blank', 'noopener,noreferrer');
                           }}
                         >
-                          <Eye size={16} className="text-default-500" />
+                          <Eye size={16} className="text-gray-500" />
                         </Button>
                       </Tooltip>
                     </>
@@ -373,7 +373,7 @@ export default function StudentDocuments({
                             }
                           }}
                         >
-                          <Eye size={16} className="text-default-500" />
+                          <Eye size={16} className="text-gray-500" />
                         </Button>
                       </Tooltip>
                       <Tooltip content="Download document">
@@ -386,7 +386,7 @@ export default function StudentDocuments({
                           download={doc.name}
                           target="_blank"
                         >
-                          <Download size={16} className="text-default-500" />
+                          <Download size={16} className="text-gray-500" />
                         </Button>
                       </Tooltip>
                     </>

@@ -5,15 +5,20 @@ import {
     Button, Chip, Spinner, Avatar,
     Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection
 } from "@heroui/react";
-import { Search, Filter, ArrowUpDown, Edit, Trash2, X, ChevronDown, Check, Download, Users, ChevronRight } from "lucide-react";
+import { Search, Filter, ArrowUpDown, Edit, Trash2, X, ChevronDown, Check, Download, Users, ChevronRight, SlidersHorizontal } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
+import PhotoAvatar from "../../components/PhotoAvatar";
+import FiltersDropdown from "../../components/FiltersDropdown";
+import { STAFF_ROLES } from "../../constants/roles";
+import ScrollToTopButton from "../../components/ui/ScrollToTopButton";
+
 
 const ITEMS_PER_LOAD = 10;
 
 export default function StaffList({ onStaffClick, onStaffEdit }) {
-    const { staff, deleteStaff, updateStaff, updateStaffLocal, staffAttendance } = useApp();
+    const { staff, deleteStaff, updateStaff, updateStaffLocal, staffAttendance, classesWithTeachers } = useApp();
     const [searchQuery, setSearchQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState("all");
     const [deptFilter, setDeptFilter] = useState("all");
@@ -29,21 +34,52 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
     const [showDeptSubmenu, setShowDeptSubmenu] = useState(false);
     const deptItemRef = useRef(null);
 
+    // Track open states for all dropdowns
+    const [openDropdowns, setOpenDropdowns] = useState({
+        status: false,
+        bulk: false,
+        export: false,
+        role: false,
+        department: false,
+        sort: false
+    });
+
     const [columnWidths] = useState({
         name: 260,
         role: 140,
         department: 130,
+        classes: 150,
         contact: 140,
-        attendance: 120,
+        attendance: 100,
         status: 120,
         actions: 80
     });
 
-    const roles = ["Teacher", "Admin", "Principal", "Vice Principal", "Accountant", "Librarian", "Lab Assistant"];
+    const roles = STAFF_ROLES; // Use centralized roles
     const departments = [...new Set(staff.map(s => s.department))];
     const statusOptions = ["active", "inactive"];
 
-    // Get counts for each status
+    // Calculate counts for filters
+    const getRoleCounts = () => {
+        const counts = { all: staff.length };
+        roles.forEach(role => {
+            counts[role] = staff.filter(s => {
+                const staffRoles = Array.isArray(s.role) ? s.role : [s.role];
+                return staffRoles.includes(role);
+            }).length;
+        });
+        return counts;
+    };
+
+    const getDepartmentCounts = () => {
+        const counts = { all: staff.length };
+        departments.forEach(dept => {
+            counts[dept] = staff.filter(s => s.department === dept).length;
+        });
+        return counts;
+    };
+
+    // Get counts for each status (moved here to be used in filtersConfig)
     const statusCounts = useMemo(() => {
         return {
             all: staff.length,
@@ -52,15 +88,97 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
         };
     }, [staff]);
 
+    const activeFiltersCount = useMemo(() => {
+        let count = 0;
+        if (roleFilter !== "all") count++;
+        if (deptFilter !== "all") count++;
+        if (statusFilter !== "active") count++;
+        if (searchQuery) count++;
+        return count;
+    }, [roleFilter, deptFilter, statusFilter, searchQuery]);
+
+    // Filters configuration for FiltersPanel
+    const filtersConfig = useMemo(() => ({
+        role: {
+            label: "Role",
+            value: roleFilter,
+            options: ["all", ...roles],
+            counts: getRoleCounts(),
+            displayLabels: {
+                all: "All Roles",
+                teacher: "Teacher",
+                admin: "Admin",
+                principal: "Principal",
+                "vice principal": "Vice Principal",
+                accountant: "Accountant",
+                librarian: "Librarian",
+                "lab assistant": "Lab Assistant"
+            }
+        },
+        department: {
+            label: "Department",
+            value: deptFilter,
+            options: ["all", ...departments],
+            counts: getDepartmentCounts(),
+            displayLabels: {
+                all: "All Departments"
+            }
+        },
+        status: {
+            label: "Status",
+            value: statusFilter,
+            options: ["all", ...statusOptions],
+            counts: statusCounts,
+            displayLabels: {
+                all: "All Status",
+                active: "Active",
+                inactive: "Inactive"
+            }
+        }
+    }), [roleFilter, deptFilter, statusFilter, staff, roles, departments, statusOptions, statusCounts]);
+
+    // Quick presets for common filter combinations
+    const filterPresets = [
+        {
+            id: "active-teachers",
+            label: "Active Teachers",
+            filters: { role: "Teacher", status: "active", department: "all" },
+            applied: roleFilter === "Teacher" && statusFilter === "active"
+        },
+        {
+            id: "all-active",
+            label: "All Active Staff",
+            filters: { role: "all", status: "active", department: "all" },
+            applied: statusFilter === "active" && roleFilter === "all" && deptFilter === "all"
+        },
+        {
+            id: "admins",
+            label: "Admin Staff",
+            filters: { role: "Admin", status: "all", department: "all" },
+            applied: roleFilter === "Admin"
+        }
+    ];
+
     // Calculate attendance percentage for each staff
     const getAttendancePercentage = (staffId) => {
         // Get attendance records for this staff member
-        const attendanceRecords = staffAttendance && staffAttendance[staffId] ? staffAttendance[staffId] : [];
+        const attendanceRecordsObj = staffAttendance && staffAttendance[staffId] ? staffAttendance[staffId] : {};
+
+        // Convert object to array of records
+        const attendanceRecords = Object.values(attendanceRecordsObj);
 
         if (attendanceRecords.length === 0) return 0;
 
         const presentDays = attendanceRecords.filter(r => r.status === 'present' || r.status === 'Present').length;
         return Math.round((presentDays / attendanceRecords.length) * 100);
+    };
+
+    // Get class teacher assignments for a staff member
+    const getClassTeacherAssignments = (staffId) => {
+        if (!classesWithTeachers || !staffId) return [];
+        return classesWithTeachers.filter(cls =>
+            cls.classTeacherId && String(cls.classTeacherId) === String(staffId)
+        );
     };
 
     const filteredItems = useMemo(() => {
@@ -77,7 +195,10 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
         }
 
         if (roleFilter !== "all") {
-            filtered = filtered.filter((s) => s.role === roleFilter);
+            filtered = filtered.filter((s) => {
+                const staffRoles = Array.isArray(s.role) ? s.role : [s.role];
+                return staffRoles.includes(roleFilter);
+            });
         }
 
         if (deptFilter !== "all") {
@@ -141,7 +262,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
 
         const handleStaffUpdate = (data) => {
             console.log('📢 Received staff update:', data);
-            
+
             // Directly update the staff member in state without API call
             updateStaffLocal(data.staffId, {
                 name: data.name,
@@ -152,7 +273,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                 email: data.email,
                 picture: data.picture
             });
-            
+
             toast.success(`${data.name}'s profile was updated`, {
                 duration: 3000,
                 icon: '🔄'
@@ -195,13 +316,48 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
         }
     };
 
+    // Clear all filters
+    const clearAllFilters = () => {
+        setRoleFilter("all");
+        setDeptFilter("all");
+        setStatusFilter("active");
+        setSearchQuery("");
+        toast.success("All filters cleared");
+    };
+
+    // Handle filter changes from FiltersPanel
+    const handleFilterChange = (filterKey, value) => {
+        switch (filterKey) {
+            case "role":
+                setRoleFilter(value);
+                break;
+            case "department":
+                setDeptFilter(value);
+                break;
+            case "status":
+                setStatusFilter(value);
+                break;
+            default:
+                break;
+        }
+    };
+
+    // Handle preset click
+    const handlePresetClick = (preset) => {
+        const { filters } = preset;
+        setRoleFilter(filters.role);
+        setDeptFilter(filters.department);
+        setStatusFilter(filters.status);
+        toast.success(`Applied preset: ${preset.label}`);
+    };
+
     // Export functions
     const exportToCSV = () => {
         const headers = ["Staff Name", "Employee ID", "Role", "Department", "Contact", "Email", "Status", "Attendance %"];
         const rows = filteredItems.map(s => [
             s.name,
             s.code,
-            s.role,
+            Array.isArray(s.role) ? s.role.join(', ') : s.role,
             s.department,
             s.phone || "N/A",
             s.email,
@@ -323,23 +479,31 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
     return (
         <div className="w-full flex flex-col">
             {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-background border-b border-default-200 py-4 -mx-6 -mt-6 px-6">
+            <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-white border-b border-gray-200 py-4 -mx-6 -mt-6 px-6">
                 {/* Left Side - Status Filter & Search */}
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     {/* Status Filter */}
-                    <Dropdown placement="bottom-start">
+                    <Dropdown
+                        placement="bottom-start"
+                        isOpen={openDropdowns.status}
+                        onOpenChange={(isOpen) => {
+                            setOpenDropdowns(prev => ({ ...prev, status: isOpen }));
+                        }}
+                    >
                         <DropdownTrigger>
-                            <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap capitalize">
+                            <button className="flex items-center gap-2 px-3 py-2.5 bg-white rounded-lg border border-gray-200 hover:border-teal-500 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap capitalize">
                                 <span className={`w-2 h-2 rounded-full ${getStatusDotColor(statusFilter)}`}></span>
-                                <span>{statusFilter}</span>
-                                <span className="text-default-500">{statusCounts[statusFilter]}</span>
-                                <ChevronDown size={14} className="text-default-400" />
+                                <span className="text-gray-700">{statusFilter}</span>
+                                <span className="text-gray-500">{statusCounts[statusFilter]}</span>
+                                <ChevronDown size={14} className="text-gray-400" />
                             </button>
                         </DropdownTrigger>
                         <DropdownMenu
                             aria-label="Filter by status"
+                            className="max-h-[400px] overflow-y-auto"
                             onAction={(key) => {
                                 setStatusFilter(key);
+                                setOpenDropdowns(prev => ({ ...prev, status: false }));
                                 toast.info(`Filter applied: ${key === 'all' ? 'All status' : key}`);
                             }}
                         >
@@ -375,21 +539,21 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                         </DropdownMenu>
                     </Dropdown>
 
-                    <div className="flex items-center gap-2 w-full sm:max-w-[280px] px-3 py-2 bg-default-100 rounded-lg border border-default-200 hover:border-primary hover:bg-default-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
-                        <Search size={16} className="text-default-400" />
+                    <div className="flex items-center gap-2 w-full sm:max-w-[280px] px-3 py-2.5 bg-white rounded-lg border border-gray-200 hover:border-teal-500 hover:bg-gray-50 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all duration-200">
+                        <Search size={16} className="text-gray-400" />
                         <input
                             type="search"
                             name="staff-search-query"
                             placeholder="Search by name, email, or ID..."
-                            className="flex-1 bg-transparent outline-none text-sm"
+                            className="flex-1 bg-transparent outline-none text-sm text-gray-800 placeholder:text-gray-400"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             autoComplete="off"
                             data-form-type="other"
                         />
                         {searchQuery && (
-                            <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-default-200 rounded cursor-pointer">
-                                <X size={14} className="text-default-400" />
+                            <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-gray-200 rounded cursor-pointer">
+                                <X size={14} className="text-gray-400" />
                             </button>
                         )}
                     </div>
@@ -397,18 +561,37 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
 
                 {/* Right Side - Filters & Actions */}
                 <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+                    {/* Filters Dropdown */}
+                    <FiltersDropdown
+                        filters={filtersConfig}
+                        onFilterChange={handleFilterChange}
+                        onClearAll={clearAllFilters}
+                        onApply={() => { }}
+                        searchQuery={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        activeFiltersCount={activeFiltersCount}
+                        presets={filterPresets}
+                        onPresetClick={handlePresetClick}
+                    />
+
                     {/* Bulk Actions */}
                     {selectedCount > 0 && (
                         <div className="relative">
-                            <Dropdown>
+                            <Dropdown
+                                isOpen={openDropdowns.bulk}
+                                onOpenChange={(isOpen) => {
+                                    setOpenDropdowns(prev => ({ ...prev, bulk: isOpen }));
+                                }}
+                            >
                                 <DropdownTrigger>
                                     <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap text-default-900">
                                         <Users size={16} className="text-default-400" />
-                                        <span>Bulk Actions ({selectedCount})</span>
+                                        <span>Bulk Actions</span>
+                                        <span className="text-default-500">({selectedCount})</span>
                                         <ChevronDown size={14} className="text-default-400" />
                                     </button>
                                 </DropdownTrigger>
-                                <DropdownMenu aria-label="Bulk actions" className="relative">
+                                <DropdownMenu aria-label="Bulk actions" className="max-h-[400px] overflow-y-auto relative">
                                     <DropdownSection title="Change Status" showDivider>
                                         <DropdownItem
                                             key="status-active"
@@ -511,7 +694,12 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                     )}
 
                     {/* Export */}
-                    <Dropdown>
+                    <Dropdown
+                        isOpen={openDropdowns.export}
+                        onOpenChange={(isOpen) => {
+                            setOpenDropdowns(prev => ({ ...prev, export: isOpen }));
+                        }}
+                    >
                         <DropdownTrigger>
                             <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
                                 <Download size={16} className="text-default-400" />
@@ -519,7 +707,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                                 <ChevronDown size={14} className="text-default-400" />
                             </button>
                         </DropdownTrigger>
-                        <DropdownMenu aria-label="Export options">
+                        <DropdownMenu aria-label="Export options" className="max-h-[400px] overflow-y-auto">
                             <DropdownItem key="csv" onPress={exportToCSV}>
                                 Export as CSV
                             </DropdownItem>
@@ -529,72 +717,39 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                         </DropdownMenu>
                     </Dropdown>
 
-                    {/* Role Filter */}
-                    <Dropdown>
-                        <DropdownTrigger>
-                            <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
-                                <Filter size={16} className="text-default-400" />
-                                <span>{roleFilter === "all" ? "Role" : roleFilter}</span>
-                                <ChevronDown size={14} className="text-default-400" />
-                            </button>
-                        </DropdownTrigger>
-                        <DropdownMenu
-                            aria-label="Filter by role"
-                            disallowEmptySelection
-                            selectionMode="single"
-                            selectedKeys={new Set([roleFilter])}
-                            onSelectionChange={(keys) => {
-                                const role = Array.from(keys)[0];
-                                setRoleFilter(role);
-                                toast.info(`Filter applied: ${role === 'all' ? 'All roles' : role}`);
-                            }}
+                    {/* Clear Filters Button */}
+                    {(roleFilter !== "all" || deptFilter !== "all" || statusFilter !== "active" || searchQuery) && (
+                        <button
+                            onClick={clearAllFilters}
+                            className="p-2 bg-transparent rounded-lg border border-default-300 hover:border-danger hover:bg-danger-50 transition-all duration-200 cursor-pointer group"
+                            title="Clear all filters"
                         >
-                            <DropdownItem key="all">All Roles</DropdownItem>
-                            {roles.map((role) => (
-                                <DropdownItem key={role}>{role}</DropdownItem>
-                            ))}
-                        </DropdownMenu>
-                    </Dropdown>
-
-                    {/* Department Filter */}
-                    <Dropdown>
-                        <DropdownTrigger>
-                            <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
-                                <span>{deptFilter === "all" ? "Department" : deptFilter}</span>
-                                <ChevronDown size={14} className="text-default-400" />
-                            </button>
-                        </DropdownTrigger>
-                        <DropdownMenu
-                            aria-label="Filter by department"
-                            disallowEmptySelection
-                            selectionMode="single"
-                            selectedKeys={new Set([deptFilter])}
-                            onSelectionChange={(keys) => {
-                                const dept = Array.from(keys)[0];
-                                setDeptFilter(dept);
-                                toast.info(`Filter applied: ${dept === 'all' ? 'All departments' : dept}`);
-                            }}
-                        >
-                            <DropdownItem key="all">All Departments</DropdownItem>
-                            {departments.map((dept) => (
-                                <DropdownItem key={dept}>{dept}</DropdownItem>
-                            ))}
-                        </DropdownMenu>
-                    </Dropdown>
+                            <X size={16} className="text-default-400 group-hover:text-danger" />
+                        </button>
+                    )}
 
                     {/* Sort */}
-                    <Dropdown>
+                    <Dropdown
+                        isOpen={openDropdowns.sort}
+                        onOpenChange={(isOpen) => {
+                            setOpenDropdowns(prev => ({ ...prev, sort: isOpen }));
+                        }}
+                    >
                         <DropdownTrigger>
-                            <button className="p-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 cursor-pointer">
+                            <button className="p-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 cursor-pointer" aria-label="Sort">
                                 <ArrowUpDown size={16} className="text-default-400" />
                             </button>
                         </DropdownTrigger>
                         <DropdownMenu
                             aria-label="Sort options"
+                            className="max-h-[400px] overflow-y-auto"
                             disallowEmptySelection
                             selectionMode="single"
                             selectedKeys={new Set([sortDescriptor.column])}
-                            onSelectionChange={(keys) => setSortDescriptor({ column: Array.from(keys)[0], direction: sortDescriptor.direction })}
+                            onSelectionChange={(keys) => {
+                                setSortDescriptor({ column: Array.from(keys)[0], direction: sortDescriptor.direction });
+                                setOpenDropdowns(prev => ({ ...prev, sort: false }));
+                            }}
                         >
                             <DropdownItem key="name">Name</DropdownItem>
                             <DropdownItem key="role">Role</DropdownItem>
@@ -615,12 +770,25 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                 onRowAction={(key) => onStaffClick(key)} // Don't convert to number - MongoDB IDs are strings
                 removeWrapper
                 radius="none"
+                disableRowSelection
+                disableAnimation
+                onClick={() => {
+                    // Close all dropdowns when clicking on the table
+                    setOpenDropdowns({
+                        status: false,
+                        bulk: false,
+                        export: false,
+                        role: false,
+                        department: false,
+                        sort: false
+                    });
+                }}
                 classNames={{
-                    base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0",
-                    thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12 [&>tr>th:first-child]:sticky [&>tr>th:first-child]:left-0 [&>tr>th:first-child]:z-20 [&>tr>th:first-child]:bg-background [&>tr>th:nth-child(2)]:sticky [&>tr>th:nth-child(2)]:left-12 [&>tr>th:nth-child(2)]:z-20 [&>tr>th:nth-child(2)]:bg-background",
-                    th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6 hover:bg-default-100 transition-colors first:hover:bg-transparent",
-                    td: "py-5 border-b border-default-200 group-data-[last=true]:border-none last:pr-6",
-                    tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr>td:first-child]:sticky [&>tr>td:first-child]:left-0 [&>tr>td:first-child]:z-20 [&>tr>td:first-child]:bg-background [&>tr>td:nth-child(2)]:sticky [&>tr>td:nth-child(2)]:left-12 [&>tr>td:nth-child(2)]:z-20 [&>tr>td:nth-child(2)]:bg-background group-hover:[&>tr>td:first-child]:bg-default-50 group-hover:[&>tr>td:nth-child(2)]:bg-default-50",
+                    base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0 [&_table]:select-text",
+                    thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12 [&>tr>th:first-child]:sticky [&>tr>th:first-child]:left-0 [&>tr>th:first-child]:z-20 [&>tr>th:first-child]:bg-white [&>tr>th:nth-child(2)]:sticky [&>tr>th:nth-child(2)]:left-12 [&>tr>th:nth-child(2)]:z-20 [&>tr>th:nth-child(2)]:bg-white",
+                    th: "bg-transparent text-gray-500 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 last:pr-6 hover:bg-gray-50 transition-colors first:hover:bg-transparent select-none",
+                    td: "py-5 border-b border-gray-200 group-data-[last=true]:border-none last:pr-6 select-text",
+                    tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr>td:first-child]:sticky [&>tr>td:first-child]:left-0 [&>tr>td:first-child]:z-20 [&>tr>td:first-child]:bg-white [&>tr>td:nth-child(2)]:sticky [&>tr>td:nth-child(2)]:left-12 [&>tr>td:nth-child(2)]:z-20 [&>tr>td:nth-child(2)]:bg-white group-hover:[&>tr>td:first-child]:bg-gray-50 group-hover:[&>tr>td:nth-child(2)]:bg-gray-50",
                     tr: "group"
                 }}
             >
@@ -628,6 +796,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                     <TableColumn key="name" allowsSorting style={{ width: columnWidths.name }}>STAFF NAME</TableColumn>
                     <TableColumn key="role" allowsSorting style={{ width: columnWidths.role }}>ROLE</TableColumn>
                     <TableColumn key="department" allowsSorting style={{ width: columnWidths.department }}>DEPARTMENT</TableColumn>
+                    <TableColumn key="classes" style={{ width: columnWidths.classes }}>CLASSES</TableColumn>
                     <TableColumn key="contact" style={{ width: columnWidths.contact }}>CONTACT INFO</TableColumn>
                     <TableColumn key="attendance" style={{ width: columnWidths.attendance }}>ATTENDANCE %</TableColumn>
                     <TableColumn key="status" style={{ width: columnWidths.status }}>STATUS</TableColumn>
@@ -638,50 +807,100 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                         <TableRow
                             key={s.id}
                             className="cursor-pointer transition-colors hover:bg-default-50"
+                            onClick={(e) => {
+                                // Don't navigate if clicking on interactive elements
+                                if (e.target.closest("button") || e.target.closest("label") || e.target.closest("input") || e.target.closest("a")) return;
+
+                                // Don't navigate if text is being selected
+                                const selection = window.getSelection();
+                                if (selection && selection.toString().length > 0) return;
+
+                                onStaffClick(s.id);
+                            }}
                         >
                             <TableCell key="name">
                                 <div className="flex items-center gap-3">
-                                    <Avatar
-                                        src={s.picture || s.photo}
-                                        name={s.name}
-                                        className="w-10 h-10"
-                                        showFallback
-                                    />
+                                    <div onClick={(e) => e.stopPropagation()}>
+                                        <PhotoAvatar
+                                            src={s.picture || s.photo}
+                                            alt={s.name}
+                                            name={s.name}
+                                            size="md"
+                                            type="staff"
+                                        />
+                                    </div>
                                     <div className="flex flex-col">
                                         <Link
                                             to={`/staffs/${s.id}`}
                                             onClick={(e) => e.stopPropagation()}
-                                            className="text-default-900 font-medium text-base hover:text-primary transition-colors cursor-pointer"
+                                            className="text-gray-800 font-medium text-base hover:text-teal-600 transition-colors cursor-pointer"
                                         >
                                             {s.name}
                                         </Link>
-                                        <span className="text-default-500 text-xs">{s.code}</span>
+                                        <span className="text-gray-500 text-xs">{s.code}</span>
                                     </div>
                                 </div>
                             </TableCell>
                             <TableCell key="role">
-                                <span className="text-default-900 text-sm">{s.role}</span>
+                                <div className="flex flex-wrap gap-1">
+                                    {Array.isArray(s.role) ? (
+                                        s.role.map((r, idx) => (
+                                            <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md capitalize">
+                                                {r}
+                                            </span>
+                                        ))
+                                    ) : (
+                                        <span className="text-gray-800 text-sm">{s.role}</span>
+                                    )}
+                                </div>
                             </TableCell>
                             <TableCell key="department">
-                                <Chip size="sm" variant="flat" color="secondary" className="capitalize">
+                                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md capitalize">
                                     {s.department}
-                                </Chip>
+                                </span>
+                            </TableCell>
+                            <TableCell key="classes">
+                                {(Array.isArray(s.role) ? s.role.includes('Teacher') : s.role === 'Teacher') ? (
+                                    getClassTeacherAssignments(s.id).length > 0 ? (
+                                        <div className="flex flex-col gap-1">
+                                            {getClassTeacherAssignments(s.id).slice(0, 2).map((cls, idx) => (
+                                                <Link
+                                                    key={idx}
+                                                    to={`/classes/${cls.id || cls._id}`}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="text-xs text-default-700 hover:text-primary transition-colors"
+                                                >
+                                                    {cls.name} - {cls.section}
+                                                </Link>
+                                            ))}
+                                            {getClassTeacherAssignments(s.id).length > 2 && (
+                                                <span className="text-xs text-default-500">
+                                                    +{getClassTeacherAssignments(s.id).length - 2} more
+                                                </span>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <span className="text-xs text-default-400">No classes</span>
+                                    )
+                                ) : (
+                                    <span className="text-xs text-default-400">-</span>
+                                )}
                             </TableCell>
                             <TableCell key="contact">
                                 <div className="flex flex-col gap-1">
-                                    <span className="text-default-900 text-xs">{s.phone || "N/A"}</span>
-                                    <span className="text-default-500 text-xs">{s.email}</span>
+                                    <span className="text-gray-800 text-xs">{s.phone || "N/A"}</span>
+                                    <span className="text-gray-500 text-xs">{s.email}</span>
                                 </div>
                             </TableCell>
                             <TableCell key="attendance">
                                 <div className="flex items-center gap-2">
-                                    <div className="flex-1 bg-default-200 rounded-full h-1.5 w-16">
+                                    <div className="flex-1 bg-gray-200 rounded-full h-1.5 w-16">
                                         <div
-                                            className="bg-success-500 h-1.5 rounded-full transition-all"
+                                            className="bg-teal-500 h-1.5 rounded-full transition-all"
                                             style={{ width: `${getAttendancePercentage(s.id)}%` }}
                                         />
                                     </div>
-                                    <span className="text-default-900 text-xs font-medium min-w-[35px]">
+                                    <span className="text-gray-800 text-xs font-medium min-w-[35px]">
                                         {getAttendancePercentage(s.id)}%
                                     </span>
                                 </div>
@@ -701,13 +920,13 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                                         >
                                             <DropdownItem key="active">
                                                 <span className="flex items-center gap-2">
-                                                    <span className="w-2 h-2 rounded-full bg-success-500"></span>
+                                                    <span className="w-2 h-2 rounded-full bg-teal-500"></span>
                                                     Active
                                                 </span>
                                             </DropdownItem>
                                             <DropdownItem key="inactive">
                                                 <span className="flex items-center gap-2">
-                                                    <span className="w-2 h-2 rounded-full bg-danger-500"></span>
+                                                    <span className="w-2 h-2 rounded-full bg-red-500"></span>
                                                     Inactive
                                                 </span>
                                             </DropdownItem>
@@ -721,7 +940,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                                         isIconOnly
                                         size="sm"
                                         variant="light"
-                                        className="text-default-400 hover:text-primary"
+                                        className="text-gray-400 hover:text-teal-600"
                                         onPress={() => onStaffEdit ? onStaffEdit(s.id) : onStaffClick(s.id)}
                                     >
                                         <Edit size={16} />
@@ -730,7 +949,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                                         isIconOnly
                                         size="sm"
                                         variant="light"
-                                        className="text-default-400 hover:text-danger"
+                                        className="text-gray-400 hover:text-red-600"
                                         onPress={async () => {
                                             try {
                                                 await deleteStaff(s.id);
@@ -757,6 +976,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                     <span className="text-default-400 text-sm">All {filteredItems.length} staff members loaded</span>
                 )}
             </div>
+            <ScrollToTopButton />
         </div>
     );
 }

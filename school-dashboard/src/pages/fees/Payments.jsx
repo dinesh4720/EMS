@@ -7,8 +7,6 @@ import {
   TableBody,
   TableRow,
   TableCell,
-  Chip,
-  User,
   Spinner,
   Select,
   SelectItem,
@@ -18,8 +16,12 @@ import {
   ModalBody,
   ModalFooter,
   Checkbox,
+  Input,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
 } from "@heroui/react";
-import { Search, X, IndianRupee, Download, Printer, Bell } from "lucide-react";
+import { Search, X, IndianRupee, Download, Printer, Bell, ChevronDown, Calendar, SlidersHorizontal } from "lucide-react";
 import { feesApi, studentsApi } from "../../services/api";
 
 export default function Payments() {
@@ -31,7 +33,14 @@ export default function Payments() {
   const [paymentMode, setPaymentMode] = useState("cash");
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
-  
+
+  // Advanced filters
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [amountMin, setAmountMin] = useState("");
+  const [amountMax, setAmountMax] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+
   // Data from API
   const [students, setStudents] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -46,15 +55,10 @@ export default function Payments() {
           studentsApi.getAll(),
           feesApi.getPayments({})
         ]);
-        console.log('Students loaded:', studentsData.length);
-        console.log('Payments loaded:', paymentsData.length);
         setStudents(studentsData);
         setPayments(paymentsData);
       } catch (error) {
         console.error('Error fetching data:', error);
-        console.error('Error details:', error.message);
-        // Show user-friendly error
-        alert(`Failed to load data: ${error.message}. Please check if the backend is running.`);
       } finally {
         setLoading(false);
       }
@@ -65,14 +69,11 @@ export default function Payments() {
   // Transform students to payment format
   const feePayments = useMemo(() => {
     return students.map((s) => {
-      // Get all payments for this student
       const studentPayments = payments.filter(p => p.studentId?._id === s.id || p.studentId === s.id);
       const totalPaid = studentPayments.reduce((sum, p) => sum + p.amount, 0);
-      
-      // Calculate pending (simplified - 60000 annual fee)
       const totalAnnualFee = 60000;
       const pending = totalAnnualFee - totalPaid;
-      
+
       return {
         id: s.id,
         student: s.name,
@@ -92,9 +93,28 @@ export default function Payments() {
         p.student.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.rollNo?.toString().includes(searchQuery);
       const matchesStatus = statusFilter === "all" || p.status === statusFilter;
-      return matchesSearch && matchesStatus;
+
+      // Date range filter
+      let matchesDate = true;
+      if (dateFrom && p.lastPayment) {
+        matchesDate = new Date(p.lastPayment) >= new Date(dateFrom);
+      }
+      if (dateTo && p.lastPayment) {
+        matchesDate = matchesDate && new Date(p.lastPayment) <= new Date(dateTo);
+      }
+
+      // Amount range filter
+      let matchesAmount = true;
+      if (amountMin) {
+        matchesAmount = p.pending >= parseInt(amountMin);
+      }
+      if (amountMax) {
+        matchesAmount = matchesAmount && p.pending <= parseInt(amountMax);
+      }
+
+      return matchesSearch && matchesStatus && matchesDate && matchesAmount;
     });
-  }, [feePayments, searchQuery, statusFilter]);
+  }, [feePayments, searchQuery, statusFilter, dateFrom, dateTo, amountMin, amountMax]);
 
   // Lazy loading state
   const ITEMS_PER_LOAD = 10;
@@ -112,7 +132,7 @@ export default function Payments() {
   // Reset visible count when filters change
   useEffect(() => {
     setVisibleCount(ITEMS_PER_LOAD);
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, dateFrom, dateTo, amountMin, amountMax]);
 
   // Lazy loading intersection observer
   useEffect(() => {
@@ -139,27 +159,24 @@ export default function Payments() {
   // Calculate fee heads dynamically based on selected student's pending amount
   const getStudentFees = (student) => {
     if (!student) return [];
-    
+
     const pending = student.pending;
     if (pending <= 0) return [];
-    
-    const monthlyTuition = 5000; // Tuition fee per month
-    const monthlyTransport = 2000; // Transport fee per month
+
+    const monthlyTuition = 5000;
+    const monthlyTransport = 2000;
     const totalMonthlyFee = monthlyTuition + monthlyTransport;
-    
-    // Calculate how many complete months are pending
+
     const completeMonths = Math.floor(pending / totalMonthlyFee);
     const remainingAmount = pending % totalMonthlyFee;
-    
+
     const fees = [];
     const currentDate = new Date();
-    
-    // Generate fee heads for complete pending months (most recent first)
+
     for (let i = 0; i < completeMonths; i++) {
       const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
       const monthName = monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-      
-      // Add tuition fee
+
       fees.push({
         id: `tuition-${i}`,
         head: "Tuition Fee",
@@ -167,8 +184,7 @@ export default function Payments() {
         amount: monthlyTuition,
         status: i === 0 ? "pending" : "overdue"
       });
-      
-      // Add transport fee
+
       fees.push({
         id: `transport-${i}`,
         head: "Transport Fee",
@@ -177,14 +193,12 @@ export default function Payments() {
         status: i === 0 ? "pending" : "overdue"
       });
     }
-    
-    // Add remaining amount as partial fees for the next month
+
     if (remainingAmount > 0) {
       const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - completeMonths, 1);
       const monthName = monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-      
+
       if (remainingAmount >= monthlyTuition) {
-        // Add full tuition
         fees.push({
           id: `tuition-${completeMonths}`,
           head: "Tuition Fee",
@@ -192,8 +206,7 @@ export default function Payments() {
           amount: monthlyTuition,
           status: "overdue"
         });
-        
-        // Add partial transport
+
         const partialTransport = remainingAmount - monthlyTuition;
         if (partialTransport > 0) {
           fees.push({
@@ -205,7 +218,6 @@ export default function Payments() {
           });
         }
       } else {
-        // Add partial tuition only
         fees.push({
           id: `tuition-${completeMonths}`,
           head: "Tuition Fee (Partial)",
@@ -215,11 +227,18 @@ export default function Payments() {
         });
       }
     }
-    
+
     return fees;
   };
 
   const studentFees = getStudentFees(selectedStudent);
+
+  // Auto-select all pending fees by default
+  useEffect(() => {
+    if (selectedStudent && studentFees.length > 0) {
+      setSelectedFees(studentFees.map(f => f.id.toString()));
+    }
+  }, [selectedStudent, studentFees.length]);
 
   const totalSelected = studentFees
     .filter((f) => selectedFees.includes(f.id.toString()))
@@ -228,9 +247,8 @@ export default function Payments() {
   const handleCollect = async () => {
     if (selectedStudent && totalSelected > 0) {
       try {
-        // Find the student's full data
         const student = students.find(s => s.id === selectedStudent.id);
-        
+
         const paymentData = {
           studentId: selectedStudent.id,
           classId: student.classId,
@@ -244,20 +262,16 @@ export default function Payments() {
               amount: f.amount,
               month: f.month
             })),
-          collectedBy: null, // In production, get from logged-in user
+          collectedBy: null,
           remarks: "Payment collected via dashboard"
         };
-        
+
         const newPayment = await feesApi.createPayment(paymentData);
-        
-        // Update local state
         setPayments([newPayment, ...payments]);
-        
-        // Refresh students data to get updated fee status
+
         const updatedStudents = await studentsApi.getAll();
         setStudents(updatedStudents);
-        
-        // Set receipt data
+
         setReceiptData({
           receiptNumber: newPayment.receiptNumber,
           amount: totalSelected,
@@ -266,30 +280,25 @@ export default function Payments() {
           paymentMode,
           date: new Date().toLocaleDateString()
         });
-        
-        // Close collection modal and open receipt modal
+
         setSelectedStudent(null);
         setSelectedFees([]);
         setReceiptModalOpen(true);
       } catch (error) {
         console.error('Error creating payment:', error);
-        alert('Failed to process payment. Please try again.');
       }
     }
   };
 
   const handleSendReminder = (payment) => {
-    // TODO: Implement SMS/Email reminder functionality
-    alert(`Reminder will be sent to ${payment.student} at ${payment.phone || 'N/A'}`);
+    alert(`Reminder will be sent to ${payment.student}`);
   };
 
   const handleDownloadReceipt = (payment) => {
-    // TODO: Implement receipt download functionality
     alert(`Downloading receipt for ${payment.student}`);
   };
 
   const handleExportData = () => {
-    // Create CSV content
     const headers = ['Student', 'Class', 'Roll No', 'Paid', 'Pending', 'Status', 'Last Payment'];
     const rows = filteredPayments.map(p => [
       p.student,
@@ -300,13 +309,12 @@ export default function Payments() {
       p.status,
       p.lastPayment || 'N/A'
     ]);
-    
+
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.join(','))
     ].join('\n');
-    
-    // Create download link
+
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -318,87 +326,145 @@ export default function Payments() {
     window.URL.revokeObjectURL(url);
   };
 
+  const handleCollectAllPending = () => {
+    const firstPending = filteredPayments.find(p => p.status === "pending");
+    if (firstPending) {
+      setSelectedStudent(firstPending);
+    }
+  };
+
+  const clearFilters = () => {
+    setDateFrom("");
+    setDateTo("");
+    setAmountMin("");
+    setAmountMax("");
+  };
+
   const totalPending = filteredPayments
     .filter((p) => p.status === "pending")
     .reduce((sum, p) => sum + p.pending, 0);
   const totalCollected = filteredPayments.reduce((sum, p) => sum + p.paid, 0);
+  const pendingCount = filteredPayments.filter((p) => p.status === "pending").length;
 
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <Spinner size="lg" color="primary" />
+        <Spinner size="lg" />
       </div>
     );
   }
 
   return (
     <div className="w-full flex flex-col">
-      {/* KPI Cards */}
+      {/* Minimal Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 -mx-6 -mt-6 px-6 pt-6">
-        <div className="p-4 bg-success-50 rounded-lg border border-success-200">
-          <div className="flex items-center gap-2 mb-2">
-            <IndianRupee size={18} className="text-success-600" />
-            <span className="text-xs text-success-700 uppercase tracking-wider">Collected</span>
-          </div>
-          <p className="text-2xl font-semibold text-success-700">
-            ₹{totalCollected.toLocaleString()}
-          </p>
+        <div className="p-4 border border-gray-200 rounded-lg bg-white">
+          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Collected</p>
+          <p className="text-2xl font-bold text-gray-900">₹{totalCollected.toLocaleString()}</p>
         </div>
-
-        <div className="p-4 bg-danger-50 rounded-lg border border-danger-200">
-          <div className="flex items-center gap-2 mb-2">
-            <IndianRupee size={18} className="text-danger-600" />
-            <span className="text-xs text-danger-700 uppercase tracking-wider">Pending</span>
-          </div>
-          <p className="text-2xl font-semibold text-danger-700">
-            ₹{totalPending.toLocaleString()}
-          </p>
+        <div className="p-4 border border-gray-200 rounded-lg bg-white">
+          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Pending</p>
+          <p className="text-2xl font-bold text-gray-900">₹{totalPending.toLocaleString()}</p>
         </div>
-
-        <div className="p-4 bg-warning-50 rounded-lg border border-warning-200">
-          <div className="flex items-center gap-2 mb-2">
-            <Bell size={18} className="text-warning-600" />
-            <span className="text-xs text-warning-700 uppercase tracking-wider">Defaulters</span>
-          </div>
-          <p className="text-2xl font-semibold text-warning-700">
-            {filteredPayments.filter((p) => p.status === "pending").length}
-          </p>
+        <div className="p-4 border border-gray-200 rounded-lg bg-white">
+          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Defaulters</p>
+          <p className="text-2xl font-bold text-gray-900">{pendingCount}</p>
         </div>
-
-        <div className="p-4 bg-default-50 rounded-lg border border-default-200">
-          <div className="flex items-center gap-2 mb-2">
-            <IndianRupee size={18} className="text-default-500" />
-            <span className="text-xs text-default-500 uppercase tracking-wider">Total Students</span>
-          </div>
-          <p className="text-2xl font-semibold text-default-900">{feePayments.length}</p>
+        <div className="p-4 border border-gray-200 rounded-lg bg-white">
+          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Total Students</p>
+          <p className="text-2xl font-bold text-gray-900">{feePayments.length}</p>
         </div>
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-background border-b border-default-200 py-4 -mx-6 -mt-6 px-6 mb-6">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center border-b border-gray-200 py-4 -mx-6 px-6 mb-6">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           {/* Search Input */}
-          <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-default-100 rounded-lg border border-default-200 hover:border-primary hover:bg-default-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
-            <Search size={16} className="text-default-400" />
+          <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-white rounded-lg border border-gray-200 hover:border-gray-300 focus-within:border-gray-400 transition-all duration-200">
+            <Search size={16} className="text-gray-400" />
             <input
-              type="text"
+              type="search"
+              name="payments-search"
+              autoComplete="off"
+              data-form-type="other"
               placeholder="Search student..."
-              className="flex-1 bg-transparent outline-none text-sm text-default-900 placeholder:text-default-400"
+              className="flex-1 bg-transparent outline-none text-sm text-gray-900 placeholder:text-gray-400"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="p-0.5 hover:bg-default-200 rounded cursor-pointer"
-              >
-                <X size={14} className="text-default-400" />
+              <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-gray-100 rounded">
+                <X size={14} className="text-gray-400" />
               </button>
             )}
           </div>
+
+          {/* Advanced Filters */}
+          <Popover isOpen={showFilters} onOpenChange={setShowFilters}>
+            <PopoverTrigger>
+              <button className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-all text-sm">
+                <SlidersHorizontal size={16} className="text-gray-500" />
+                <span className="text-gray-600">Filters</span>
+                {(dateFrom || dateTo || amountMin || amountMax) && (
+                  <span className="w-2 h-2 rounded-full bg-gray-800"></span>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="p-4">
+              <div className="space-y-4 w-72">
+                <p className="text-sm font-medium text-gray-900">Advanced Filters</p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Date Range</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="date"
+                        value={dateFrom}
+                        onChange={(e) => setDateFrom(e.target.value)}
+                        className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-md"
+                        placeholder="From"
+                      />
+                      <input
+                        type="date"
+                        value={dateTo}
+                        onChange={(e) => setDateTo(e.target.value)}
+                        className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-md"
+                        placeholder="To"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Amount Range (Pending)</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        value={amountMin}
+                        onChange={(e) => setAmountMin(e.target.value)}
+                        className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-md"
+                        placeholder="Min"
+                      />
+                      <input
+                        type="number"
+                        value={amountMax}
+                        onChange={(e) => setAmountMax(e.target.value)}
+                        className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-md"
+                        placeholder="Max"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={clearFilters}
+                  className="w-full py-2 text-sm text-gray-600 hover:text-gray-900"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
-        <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+        <div className="flex gap-2 w-full sm:w-auto">
           {/* Filter by Status */}
           <Select
             size="sm"
@@ -407,8 +473,7 @@ export default function Payments() {
             onSelectionChange={(keys) => setStatusFilter(Array.from(keys)[0])}
             className="w-full sm:w-[140px]"
             classNames={{
-              trigger:
-                "h-9 min-h-9 bg-transparent border-default-300 hover:border-primary transition-all duration-200",
+              trigger: "h-9 min-h-9 bg-white border-gray-200 hover:border-gray-300",
               value: "text-sm",
             }}
           >
@@ -417,218 +482,220 @@ export default function Payments() {
             <SelectItem key="pending">Pending</SelectItem>
           </Select>
 
-          <button 
+          {pendingCount > 0 && (
+            <button
+              onClick={handleCollectAllPending}
+              className="flex items-center gap-2 px-3 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all text-sm"
+            >
+              <IndianRupee size={14} />
+              <span>Collect All</span>
+            </button>
+          )}
+
+          <button
             onClick={handleExportData}
-            className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
-            <Download size={16} className="text-default-400" />
-            <span>Export</span>
+            className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-all text-sm"
+          >
+            <Download size={14} className="text-gray-500" />
+            <span className="text-gray-700">Export</span>
           </button>
         </div>
       </div>
 
       {/* Table */}
-      <Table
-        aria-label="Fee payments"
-        removeWrapper
-        radius="none"
-        classNames={{
-          base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0",
-          thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6",
-          th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6 hover:bg-default-100 transition-colors",
-          td: "py-5 border-b border-default-200 last:pr-6",
-          tbody: "[&>tr>td:first-child]:pl-6 [&>tr:last-child>td]:border-none",
-        }}
-      >
-        <TableHeader>
-          <TableColumn>STUDENT</TableColumn>
-          <TableColumn>PAID</TableColumn>
-          <TableColumn>PENDING</TableColumn>
-          <TableColumn>STATUS</TableColumn>
-          <TableColumn>LAST PAYMENT</TableColumn>
-          <TableColumn align="end">ACTIONS</TableColumn>
-        </TableHeader>
-        <TableBody
-          emptyContent={
-            <div className="text-center py-8">
-              <p className="text-default-400 text-sm">No payment records found</p>
-            </div>
-          }
+      <div className="border border-gray-200 rounded-lg overflow-hidden -mx-6 sm:mx-0">
+        <Table
+          aria-label="Fee payments"
+          removeWrapper
+          classNames={{
+            base: "overflow-visible [&_table]:w-full",
+            th: "bg-gray-50 text-gray-500 font-medium text-xs uppercase tracking-wider h-11 border-b border-gray-200",
+            td: "py-4 border-b border-gray-100",
+          }}
         >
-          {visiblePayments.map((payment) => (
-            <TableRow key={payment.id} className="hover:bg-default-50 transition-colors">
-              <TableCell>
-                <User
-                  avatarProps={{
-                    radius: "full",
-                    size: "sm",
-                    src: `https://i.pravatar.cc/150?u=${payment.id}`,
-                  }}
-                  description={<span className="text-xs text-default-500">Class {payment.class}</span>}
-                  name={
-                    <span
-                      className="text-sm font-medium text-default-900 hover:text-primary transition-colors cursor-pointer"
-                      onClick={() => navigate(`/students/${payment.id}`)}
-                    >
-                      {payment.student}
-                    </span>
-                  }
-                />
-              </TableCell>
-              <TableCell>
-                <span className="text-sm font-medium text-success-600">
-                  ₹{payment.paid.toLocaleString()}
-                </span>
-              </TableCell>
-              <TableCell>
-                <span className="text-sm font-medium text-danger-600">
-                  ₹{payment.pending.toLocaleString()}
-                </span>
-              </TableCell>
-              <TableCell>
-                <Chip
-                  size="sm"
-                  color={payment.status === "paid" ? "success" : "danger"}
-                  variant="dot"
-                  classNames={{
-                    base: "h-6 border border-default-200",
-                    content: "text-xs font-medium capitalize",
-                  }}
-                >
-                  {payment.status}
-                </Chip>
-              </TableCell>
-              <TableCell>
-                <span className="text-xs text-default-600">{payment.lastPayment || 'N/A'}</span>
-              </TableCell>
-              <TableCell>
-                <div className="flex justify-end gap-2">
-                  {payment.status === "pending" && (
-                    <>
+          <TableHeader>
+            <TableColumn>STUDENT</TableColumn>
+            <TableColumn>PAID</TableColumn>
+            <TableColumn>PENDING</TableColumn>
+            <TableColumn>STATUS</TableColumn>
+            <TableColumn>LAST PAYMENT</TableColumn>
+            <TableColumn align="end">ACTIONS</TableColumn>
+          </TableHeader>
+          <TableBody
+            emptyContent={
+              <div className="text-center py-8">
+                <p className="text-gray-400 text-sm">No payment records found</p>
+              </div>
+            }
+          >
+            {visiblePayments.map((payment) => (
+              <TableRow key={payment.id} className="hover:bg-gray-50 transition-colors">
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                      <span className="text-xs font-medium text-gray-600">
+                        {payment.student.charAt(0)}
+                      </span>
+                    </div>
+                    <div>
+                      <p
+                        className="text-sm font-medium text-gray-900 hover:text-gray-600 cursor-pointer"
+                        onClick={() => navigate(`/students/${payment.id}`)}
+                      >
+                        {payment.student}
+                      </p>
+                      <p className="text-xs text-gray-500">Class {payment.class}</p>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm font-mono text-gray-700">
+                    ₹{payment.paid.toLocaleString()}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm font-mono text-gray-700">
+                    ₹{payment.pending.toLocaleString()}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border border-gray-200 rounded bg-gray-50">
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      payment.status === "paid" ? "bg-gray-400" : "bg-gray-300"
+                    }`}></span>
+                    {payment.status}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-xs text-gray-500">
+                    {payment.lastPayment || '—'}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <div className="flex justify-end gap-2">
+                    {payment.status === "pending" && (
+                      <>
+                        <button
+                          onClick={() => setSelectedStudent(payment)}
+                          className="px-3 py-1.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all text-xs font-medium"
+                        >
+                          Collect
+                        </button>
+                        <button
+                          onClick={() => handleSendReminder(payment)}
+                          className="p-1.5 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all"
+                        >
+                          <Bell size={14} className="text-gray-500" />
+                        </button>
+                      </>
+                    )}
+                    {payment.status === "paid" && (
                       <button
-                        onClick={() => setSelectedStudent(payment)}
-                        className="px-3 py-1.5 bg-primary text-white rounded-lg border border-primary hover:bg-primary-600 transition-all duration-200 text-xs font-medium cursor-pointer"
+                        onClick={() => handleDownloadReceipt(payment)}
+                        className="p-1.5 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all"
                       >
-                        Collect
+                        <Download size={14} className="text-gray-500" />
                       </button>
-                      <button 
-                        onClick={() => handleSendReminder(payment)}
-                        className="p-1.5 bg-transparent rounded-lg border border-transparent hover:border-warning hover:bg-warning-50 transition-all duration-200 cursor-pointer text-default-400 hover:text-warning"
-                      >
-                        <Bell size={16} />
-                      </button>
-                    </>
-                  )}
-                  {payment.status === "paid" && (
-                    <button 
-                      onClick={() => handleDownloadReceipt(payment)}
-                      className="p-1.5 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-primary-50 transition-all duration-200 cursor-pointer text-default-400 hover:text-primary"
-                    >
-                      <Download size={16} />
-                    </button>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
 
       {/* Lazy loading indicator */}
-      <div ref={loaderRef} className="flex justify-center py-4 -mx-6">
-        {isLoadingMore && <Spinner size="sm" color="primary" />}
+      <div ref={loaderRef} className="flex justify-center py-4">
+        {isLoadingMore && <Spinner size="sm" />}
         {!hasMore && filteredPayments.length > ITEMS_PER_LOAD && (
-          <span className="text-default-400 text-sm">
+          <span className="text-gray-400 text-sm">
             All {filteredPayments.length} payments loaded
           </span>
         )}
       </div>
 
-      {/* Collection Modal */}
-      <Modal isOpen={selectedStudent !== null} onClose={() => setSelectedStudent(null)} size="2xl">
+      {/* Collection Modal - Simplified */}
+      <Modal isOpen={selectedStudent !== null} onClose={() => setSelectedStudent(null)} size="xl">
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="border-b border-default-200">
-                <h3 className="text-lg font-semibold text-default-900">
-                  Collect Fee - {selectedStudent?.student}
-                </h3>
+              <ModalHeader className="border-b border-gray-200 px-6 py-4">
+                <div className="flex justify-between items-center w-full">
+                  <h3 className="text-base font-semibold text-gray-900">
+                    Collect Fee — {selectedStudent?.student}
+                  </h3>
+                  <span className="text-sm text-gray-500">Class {selectedStudent?.class}</span>
+                </div>
               </ModalHeader>
-              <ModalBody className="py-4">
-                <Table
-                  aria-label="Student fees"
-                  removeWrapper
-                  radius="none"
-                  classNames={{
-                    base: "overflow-visible",
-                    th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-10 border-b border-default-200",
-                    td: "py-3 border-b border-default-200",
-                    tbody: "[&>tr:last-child>td]:border-none",
-                  }}
-                >
-                  <TableHeader>
-                    <TableColumn width={40}></TableColumn>
-                    <TableColumn>FEE HEAD</TableColumn>
-                    <TableColumn>PERIOD</TableColumn>
-                    <TableColumn>AMOUNT</TableColumn>
-                  </TableHeader>
-                  <TableBody>
-                    {studentFees.map((fee) => (
-                      <TableRow key={fee.id}>
-                        <TableCell>
-                          <Checkbox
-                            size="sm"
-                            isSelected={selectedFees.includes(fee.id.toString())}
-                            onValueChange={(v) => {
-                              if (v) setSelectedFees([...selectedFees, fee.id.toString()]);
-                              else setSelectedFees(selectedFees.filter((f) => f !== fee.id.toString()));
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell className="text-sm">{fee.head}</TableCell>
-                        <TableCell className="text-sm">{fee.month}</TableCell>
-                        <TableCell className="text-sm font-medium">
-                          ₹{fee.amount.toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <ModalBody className="p-0">
+                {/* Fee Selection with inline total */}
+                <div className="divide-y divide-gray-100 max-h-[300px] overflow-y-auto">
+                  {studentFees.map((fee) => (
+                    <label
+                      key={fee.id}
+                      className="flex items-center justify-between p-4 hover:bg-gray-50 cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          size="sm"
+                          isSelected={selectedFees.includes(fee.id.toString())}
+                          onValueChange={(v) => {
+                            if (v) setSelectedFees([...selectedFees, fee.id.toString()]);
+                            else setSelectedFees(selectedFees.filter((f) => f !== fee.id.toString()));
+                          }}
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{fee.head}</p>
+                          <p className="text-xs text-gray-500">{fee.month}</p>
+                        </div>
+                      </div>
+                      <span className="text-sm font-mono text-gray-700">₹{fee.amount.toLocaleString()}</span>
+                    </label>
+                  ))}
+                </div>
 
-                <div className="mt-4 space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-default-50 rounded-lg">
-                    <span className="text-sm font-medium text-default-700">Total Selected:</span>
-                    <span className="text-xl font-semibold text-primary">
-                      ₹{totalSelected.toLocaleString()}
-                    </span>
+                {/* Combined Payment Mode and Total */}
+                <div className="p-4 bg-gray-50 border-t border-gray-200">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-gray-500">Mode:</span>
+                      <div className="flex gap-2">
+                        {["cash", "online", "card", "cheque"].map((mode) => (
+                          <button
+                            key={mode}
+                            onClick={() => setPaymentMode(mode)}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-all ${
+                              paymentMode === mode
+                                ? "bg-gray-900 text-white border-gray-900"
+                                : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                            }`}
+                          >
+                            {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">Total:</span>
+                      <span className="text-xl font-bold text-gray-900">₹{totalSelected.toLocaleString()}</span>
+                    </div>
                   </div>
-                  <Select
-                    size="sm"
-                    label="Payment Mode"
-                    variant="bordered"
-                    selectedKeys={[paymentMode]}
-                    onChange={(e) => setPaymentMode(e.target.value)}
-                  >
-                    <SelectItem key="cash">Cash</SelectItem>
-                    <SelectItem key="cheque">Cheque</SelectItem>
-                    <SelectItem key="online">Online Transfer</SelectItem>
-                    <SelectItem key="card">Card</SelectItem>
-                  </Select>
                 </div>
               </ModalBody>
-              <ModalFooter className="border-t border-default-200">
+              <ModalFooter className="border-t border-gray-200 px-6 py-4 gap-3">
                 <button
                   onClick={onClose}
-                  className="px-3 py-2 bg-transparent text-default-600 rounded-lg border border-default-300 hover:bg-default-100 transition-all duration-200 text-sm cursor-pointer"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleCollect}
                   disabled={selectedFees.length === 0}
-                  className="flex items-center gap-2 px-3 py-2 bg-primary text-white rounded-lg border border-primary hover:bg-primary-600 transition-all duration-200 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-sm font-medium text-white bg-gray-900 border border-gray-900 rounded-lg hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <IndianRupee size={16} />
-                  <span>Collect ₹{totalSelected.toLocaleString()}</span>
+                  Collect ₹{totalSelected.toLocaleString()}
                 </button>
               </ModalFooter>
             </>
@@ -641,46 +708,50 @@ export default function Payments() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="border-b border-default-200">Payment Receipt</ModalHeader>
+              <ModalHeader className="border-b border-gray-200">Payment Receipt</ModalHeader>
               <ModalBody className="py-6">
                 <div className="text-center space-y-3">
-                  <div className="w-16 h-16 bg-success-100 rounded-full flex items-center justify-center mx-auto">
-                    <span className="text-3xl text-success-600">✓</span>
+                  <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto">
+                    <span className="text-2xl text-gray-600">✓</span>
                   </div>
-                  <p className="text-success-600 text-lg font-medium">Payment Successful</p>
-                  <p className="text-3xl font-bold text-default-900">
+                  <p className="text-gray-600 text-sm font-medium">Payment Successful</p>
+                  <p className="text-3xl font-bold text-gray-900">
                     ₹{receiptData?.amount.toLocaleString()}
                   </p>
-                  <p className="text-xs text-default-500">Receipt No: {receiptData?.receiptNumber}</p>
-                  <div className="border-t border-default-200 my-4"></div>
-                  <div className="text-left space-y-2 bg-default-50 p-4 rounded-lg">
-                    <p className="text-sm">
-                      <strong>Student:</strong> {receiptData?.student}
-                    </p>
-                    <p className="text-sm">
-                      <strong>Class:</strong> {receiptData?.class}
-                    </p>
-                    <p className="text-sm">
-                      <strong>Mode:</strong> {receiptData?.paymentMode}
-                    </p>
-                    <p className="text-sm">
-                      <strong>Date:</strong> {receiptData?.date}
-                    </p>
+                  <p className="text-xs text-gray-400">Receipt No: {receiptData?.receiptNumber}</p>
+                  <div className="border-t border-gray-200 my-4"></div>
+                  <div className="text-left space-y-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Student</span>
+                      <span className="text-gray-900">{receiptData?.student}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Class</span>
+                      <span className="text-gray-900">{receiptData?.class}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Mode</span>
+                      <span className="text-gray-900 capitalize">{receiptData?.paymentMode}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Date</span>
+                      <span className="text-gray-900">{receiptData?.date}</span>
+                    </div>
                   </div>
                 </div>
               </ModalBody>
-              <ModalFooter className="border-t border-default-200">
-                <button className="flex items-center gap-2 px-3 py-2 bg-transparent text-default-600 rounded-lg border border-default-300 hover:bg-default-100 transition-all duration-200 text-sm cursor-pointer">
-                  <Printer size={16} />
+              <ModalFooter className="border-t border-gray-200 gap-3">
+                <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all">
+                  <Printer size={14} />
                   <span>Print</span>
                 </button>
-                <button className="flex items-center gap-2 px-3 py-2 bg-transparent text-default-600 rounded-lg border border-default-300 hover:bg-default-100 transition-all duration-200 text-sm cursor-pointer">
-                  <Download size={16} />
+                <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all">
+                  <Download size={14} />
                   <span>Download</span>
                 </button>
                 <button
                   onClick={onClose}
-                  className="px-3 py-2 bg-primary text-white rounded-lg border border-primary hover:bg-primary-600 transition-all duration-200 text-sm cursor-pointer"
+                  className="px-4 py-2 text-sm font-medium text-white bg-gray-900 border border-gray-900 rounded-lg hover:bg-gray-800 transition-all"
                 >
                   Done
                 </button>

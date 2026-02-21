@@ -1,0 +1,16 @@
+[
+  {
+    "session_id": "6e9b48f8-76ce-4d21-8d9c-484049dccc86",
+    "transcript_path": "/home/bdk47/.claude/projects/-mnt-c-Users-bdk47-Desktop-Projects-kiro-bp-EMS/6e9b48f8-76ce-4d21-8d9c-484049dccc86.jsonl",
+    "cwd": "/mnt/c/Users/bdk47/Desktop/Projects/kiro_bp/EMS",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "PostToolUseFailure",
+    "tool_name": "Glob",
+    "tool_input": {
+      "pattern": "staff-app/**/*.{js,jsx,ts,tsx,json}"
+    },
+    "tool_use_id": "call_d21f486c28a346efb18247f3",
+    "error": "Ripgrep search timed out after 60 seconds. The search may have matched files but did not complete in time. Try searching a more specific path or pattern.",
+    "is_interrupt": false
+  }
+]

@@ -1,11 +1,18 @@
 import { useState, useEffect } from "react";
-import { Button, Card, Tabs, Tab } from "@heroui/react";
-import { Plus, Bell, DollarSign, Calendar, BookOpen, Users } from "lucide-react";
+import { Plus, Bell, DollarSign, Calendar, BookOpen, Check, Users } from "lucide-react";
 import ReminderForm from "./components/reminders/ReminderForm";
 import RemindersList from "./components/reminders/RemindersList";
 import ReminderTemplates from "./components/reminders/ReminderTemplates";
 import { remindersApi } from "../../services/api";
 import toast from "react-hot-toast";
+
+const typeTabs = [
+  { id: "all", label: "All" },
+  { id: "fee", label: "Fee", icon: DollarSign },
+  { id: "attendance", label: "Attendance", icon: Users },
+  { id: "academic", label: "Academic", icon: BookOpen },
+  { id: "event", label: "Events", icon: Calendar },
+];
 
 export default function Reminders() {
   const [reminders, setReminders] = useState([]);
@@ -25,16 +32,12 @@ export default function Reminders() {
     setLoading(true);
     setError(null);
     try {
-      console.log('🔔 Loading reminders...');
       const response = await remindersApi.getAll();
-      console.log('🔔 Reminders loaded:', response);
-      // Backend returns { reminders: [], ... }
       setReminders(response.reminders || response || []);
     } catch (error) {
       console.error('Error loading reminders:', error);
-      const errorMsg = error.message || 'Unknown error';
-      setError(errorMsg);
-      toast.error(`Failed to load reminders: ${errorMsg}`);
+      setError(error.message || 'Unknown error');
+      toast.error(`Failed to load reminders`);
     } finally {
       setLoading(false);
     }
@@ -44,16 +47,15 @@ export default function Reminders() {
     try {
       if (editReminder) {
         await remindersApi.update(editReminder._id, formData);
-        toast.success('Reminder updated successfully');
+        toast.success('Reminder updated');
       } else {
         await remindersApi.create(formData);
-        toast.success('Reminder created successfully');
+        toast.success('Reminder created');
       }
       setRefreshKey(prev => prev + 1);
       setShowCreateModal(false);
       setEditReminder(null);
     } catch (error) {
-      console.error('Error saving reminder:', error);
       toast.error('Failed to save reminder');
     }
   };
@@ -68,7 +70,6 @@ export default function Reminders() {
       await remindersApi.delete(reminderId);
       setRefreshKey(prev => prev + 1);
     } catch (error) {
-      console.error('Error deleting reminder:', error);
       throw error;
     }
   };
@@ -78,7 +79,6 @@ export default function Reminders() {
       await remindersApi.toggle(reminderId, active);
       setRefreshKey(prev => prev + 1);
     } catch (error) {
-      console.error('Error toggling reminder:', error);
       throw error;
     }
   };
@@ -88,7 +88,6 @@ export default function Reminders() {
       await remindersApi.duplicate(reminder._id);
       setRefreshKey(prev => prev + 1);
     } catch (error) {
-      console.error('Error duplicating reminder:', error);
       throw error;
     }
   };
@@ -115,155 +114,137 @@ export default function Reminders() {
     attendance: reminders.filter(r => r.type === 'attendance').length,
   };
 
+  const statsData = [
+    {
+      label: "Total",
+      value: stats.total,
+      icon: Bell,
+      gradient: "bg-gradient-to-br from-indigo-500 to-indigo-600",
+      shadowColor: "shadow-indigo-500/20",
+      textColor: "text-white"
+    },
+    {
+      label: "Active",
+      value: stats.active,
+      icon: Check,
+      gradient: "bg-gradient-to-br from-emerald-500 to-green-600",
+      shadowColor: "shadow-emerald-500/20",
+      textColor: "text-white"
+    },
+    {
+      label: "Fee",
+      value: stats.fee,
+      icon: DollarSign,
+      gradient: "bg-gradient-to-br from-amber-500 to-orange-600",
+      shadowColor: "shadow-amber-500/20",
+      textColor: "text-white"
+    },
+    {
+      label: "Attendance",
+      value: stats.attendance,
+      icon: Users,
+      gradient: "bg-gradient-to-br from-rose-500 to-pink-600",
+      shadowColor: "shadow-rose-500/20",
+      textColor: "text-white"
+    },
+  ];
+
   return (
-    <div className="w-full">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Bell className="text-primary" size={28} />
-            Reminders
-          </h1>
-          <p className="text-default-500 mt-1">
-            Automated reminders for fees, attendance, and events
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="flat"
-            onPress={() => setShowTemplatesModal(true)}
-            startContent={<BookOpen size={18} />}
+    <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {statsData.map((stat) => (
+          <div
+            key={stat.label}
+            className="group relative bg-white dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-800 p-4 overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
           >
-            Templates
-          </Button>
-          <Button
-            color="primary"
-            onPress={() => {
+            <div className="flex items-center gap-3">
+              <div className={`w-11 h-11 rounded-xl ${stat.gradient} ${stat.shadowColor} shadow-lg flex items-center justify-center transition-transform duration-200 group-hover:scale-110`}>
+                <stat.icon size={20} className={stat.textColor} strokeWidth={2} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{stat.value}</p>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{stat.label}</p>
+              </div>
+            </div>
+            {/* Subtle gradient accent */}
+            <div className={`absolute top-0 right-0 w-20 h-20 ${stat.gradient} opacity-5 rounded-full -translate-y-1/2 translate-x-1/2`} />
+          </div>
+        ))}
+      </div>
+
+      {/* Type Tabs - Modern Pill Style */}
+      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-800 p-1.5">
+        <div className="flex items-center gap-1 overflow-x-auto">
+          {typeTabs.map((tab) => {
+            const isActive = selectedType === tab.id;
+            const IconComponent = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setSelectedType(tab.id)}
+                className={`relative flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                  isActive
+                    ? "text-indigo-600 dark:text-indigo-400"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-800/50"
+                }`}
+              >
+                {IconComponent && (
+                  <IconComponent
+                    size={15}
+                    className={`transition-colors duration-200 ${
+                      isActive ? "text-indigo-500 dark:text-indigo-400" : ""
+                    }`}
+                  />
+                )}
+                <span>{tab.label}</span>
+                {isActive && (
+                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-indigo-500 dark:bg-indigo-400 rounded-full" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          {selectedType === 'all' ? 'All Reminders' : `${selectedType.charAt(0).toUpperCase() + selectedType.slice(1)} Reminders`}
+        </h3>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowTemplatesModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-all duration-200 text-sm font-medium border border-gray-200 dark:border-zinc-700"
+          >
+            <BookOpen size={16} />
+            <span>Templates</span>
+          </button>
+          <button
+            onClick={() => {
               setEditReminder(null);
               setShowCreateModal(true);
             }}
-            startContent={<Plus size={18} />}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-lg transition-all duration-200 text-sm font-medium shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
           >
-            Create Reminder
-          </Button>
+            <Plus size={16} />
+            <span>New Reminder</span>
+          </button>
         </div>
       </div>
-
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card className="border border-default-200">
-          <div className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Bell size={24} className="text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-default-500">Total Reminders</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="border border-default-200">
-          <div className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
-                <svg className="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm text-default-500">Active</p>
-                <p className="text-2xl font-bold">{stats.active}</p>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="border border-default-200">
-          <div className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-warning/10 flex items-center justify-center">
-                <DollarSign size={24} className="text-warning" />
-              </div>
-              <div>
-                <p className="text-sm text-default-500">Fee Reminders</p>
-                <p className="text-2xl font-bold">{stats.fee}</p>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="border border-default-200">
-          <div className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-danger/10 flex items-center justify-center">
-                <Users size={24} className="text-danger" />
-              </div>
-              <div>
-                <p className="text-sm text-default-500">Attendance Alerts</p>
-                <p className="text-2xl font-bold">{stats.attendance}</p>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Type Tabs */}
-      <Tabs
-        selectedKey={selectedType}
-        onSelectionChange={(key) => setSelectedType(key)}
-        className="mb-4"
-      >
-        <Tab key="all" title="All Reminders" />
-        <Tab key="fee" title={<div className="flex items-center gap-1"><DollarSign size={16} /> Fee</div>} />
-        <Tab key="attendance" title={<div className="flex items-center gap-1"><Users size={16} /> Attendance</div>} />
-        <Tab key="academic" title={<div className="flex items-center gap-1"><BookOpen size={16} /> Academic</div>} />
-        <Tab key="event" title={<div className="flex items-center gap-1"><Calendar size={16} /> Events</div>} />
-      </Tabs>
-
-      {/* Error State */}
-      {error && reminders.length === 0 && (
-        <Card className="border border-default-200">
-          <div className="p-12">
-            <div className="flex flex-col items-center justify-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center">
-                <svg className="w-8 h-8 text-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <p className="text-lg font-medium text-danger">Failed to load reminders</p>
-              <p className="text-sm text-default-500 max-w-md text-center">{error}</p>
-              <Button
-                color="primary"
-                size="sm"
-                onPress={() => setRefreshKey(prev => prev + 1)}
-                startContent={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>}
-              >
-                Retry
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
 
       {/* Reminders List */}
-      <Card className="border border-default-200">
-        <div className="p-6">
-          <RemindersList
-            key={refreshKey}
-            reminders={filteredReminders}
-            loading={loading}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onToggle={handleToggle}
-            onDuplicate={handleDuplicate}
-          />
-        </div>
-      </Card>
+      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-800 overflow-hidden">
+        <RemindersList
+          key={refreshKey}
+          reminders={filteredReminders}
+          loading={loading}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onToggle={handleToggle}
+          onDuplicate={handleDuplicate}
+        />
+      </div>
 
       {/* Create/Edit Modal */}
       <ReminderForm

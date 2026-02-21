@@ -1,0 +1,254 @@
+[
+  {
+    "tool_name": "TaskCreate",
+    "tool_use_id": "call_d6c2e34c573c4e058d683e5f",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "TaskList",
+    "tool_use_id": "call_a7a327dbb8f6400a978b4d56",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "TaskUpdate",
+    "tool_use_id": "call_e8ae6bf6cfec49569d01452b",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "TaskUpdate",
+    "tool_use_id": "call_e165dcd7fb5848f296c908aa",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "TaskList",
+    "tool_use_id": "call_aca4b7358ebb443c9c481e71",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "TaskList",
+    "tool_use_id": "call_abea0ac63d254c23a28e5a7d",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "TaskList",
+    "tool_use_id": "call_0f97acc576454ab8944db477",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "TaskList",
+    "tool_use_id": "call_52deec83e39d40e3bae60b71",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "TaskList",
+    "tool_use_id": "call_cb0a690c29d94ff48c44be64",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "TaskList",
+    "tool_use_id": "call_920fe5635ac54865baa4cbdc",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "TaskList",
+    "tool_use_id": "call_94a1b04f52a349a79fc0d82e",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "TaskList",
+    "tool_use_id": "call_534183fe6a6c4d8d94ef06a0",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "TaskList",
+    "tool_use_id": "call_b6d35d683e2f4d9398df3352",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "SendMessage",
+    "tool_use_id": "call_d1f89fdc6a5549d7a6200473",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "SendMessage",
+    "tool_use_id": "call_7e0481288cfa453caa2b3502",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "SendMessage",
+    "tool_use_id": "call_2cbd8107dc134d9faf7cab43",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "SendMessage",
+    "tool_use_id": "call_c44b0802495345f49dcdae93",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "SendMessage",
+    "tool_use_id": "call_27c9cb5b1a024dcdb35c2b5a",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "SendMessage",
+    "tool_use_id": "call_9ae5622c5e9f47d8aba66000",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "TeamDelete",
+    "tool_use_id": "call_7d768a9c6e3b40a58dc5960d",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "Glob",
+    "tool_use_id": "call_a289c7f6fd194d68a11e6640",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "Glob",
+    "tool_use_id": "call_0e854a1ce6b5483eb09d8500",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "Read",
+    "tool_use_id": "call_0f97d7e5cd6f4a13a4a32505",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "Read",
+    "tool_use_id": "call_17f7a22016354d0c901413df",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "Read",
+    "tool_use_id": "call_437af84327a8475bb3d53f94",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "Glob",
+    "tool_use_id": "call_0a14ab5fc5ab4402869aa6e6",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "Glob",
+    "tool_use_id": "call_47d78e6652ba4f6d95f2cccc",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "Glob",
+    "tool_use_id": "call_6714b74694a34a7aba15172a",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "Read",
+    "tool_use_id": "call_d51c49db453f4ae7ad08f664",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "Bash",
+    "tool_use_id": "call_0927ca08b6484b3daba6dd76",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "Bash",
+    "tool_use_id": "call_34b6a1b974c746b3bc3965eb",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "Bash",
+    "tool_use_id": "call_6a703babe948497086582b5a",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "Bash",
+    "tool_use_id": "call_697f358d56254224b15fcba6",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "Edit",
+    "tool_use_id": "call_499e24333dfc4a1fb4bbb8fe",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "Edit",
+    "tool_use_id": "call_11516ac5458c4cffaebde201",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  },
+  {
+    "tool_name": "Bash",
+    "tool_use_id": "call_4d47f7604b544b4c9c362a2f",
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "hook_event_name": "PostToolUse",
+    "is_mcp_tool": false
+  }
+]

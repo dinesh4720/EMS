@@ -1,8 +1,20 @@
-import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useMemo } from "react";
 import { parseDate } from "@internationalized/date";
-import { Button, Input, Select, SelectItem, Checkbox, Switch, Textarea, Chip, Divider, Avatar, RadioGroup, Radio, cn, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, DatePicker, Autocomplete, AutocompleteItem } from "@heroui/react";
-import { ArrowLeft, ArrowRight, Upload, X, Plus, User, FileText, Briefcase, DollarSign, Trash2, Check, Banknote, GraduationCap, MapPin, Phone, Mail, BadgeCheck, FileBadge, Calendar as CalendarIcon, Clock, HeartPulse, MoreHorizontal, AlertTriangle, PenLine, FileScan } from "lucide-react";
+import { Button, Input, Select, SelectItem, Checkbox, Switch, Textarea, Chip, Divider, Avatar, RadioGroup, Radio, cn, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, DatePicker, Autocomplete, AutocompleteItem, Spinner } from "@heroui/react";
+import { ArrowLeft, ArrowRight, Upload, X, Plus, User, FileText, Briefcase, DollarSign, Trash2, Check, Banknote, GraduationCap, MapPin, Phone, Mail, BadgeCheck, FileBadge, Calendar as CalendarIcon, Clock, HeartPulse, MoreHorizontal, AlertTriangle, PenLine, FileScan, CheckCircle2 } from "lucide-react";
 import PhotoEditorModal from "../../components/PhotoEditorModal";
+import CameraCaptureModal from "../../components/CameraCaptureModal";
+import TimetableWizardModal from "../classes/components/TimetableWizardModal";
+import { STAFF_ROLES } from "../../constants/roles";
+import { usePermissions } from "../../context/PermissionContext";
+import { classesApi } from "../../services/api";
+import toast from "react-hot-toast";
+
+// Minimal design constants matching login page style
+const minimalInputClasses = "bg-white border border-gray-200 hover:border-teal-500 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all duration-200";
+const minimalLabelClasses = "text-xs font-medium text-gray-700 mb-1";
+const minimalButtonPrimary = "bg-teal-600 hover:bg-teal-700 text-white transition-colors";
+const minimalButtonSecondary = "bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors";
 
 // --- Constants ---
 const employmentTypes = [
@@ -13,7 +25,7 @@ const employmentTypes = [
 const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const genders = ["Male", "Female", "Other"];
 const maritalStatuses = ["Single", "Married", "Divorced", "Widowed"];
-const staffTypes = ["Teacher", "Admin", "Principal", "Vice Principal", "Accountant", "Librarian", "Lab Assistant"];
+const staffTypes = STAFF_ROLES; // Use centralized roles
 const idProofTypes = ["Aadhar Card", "PAN Card", "Driving License", "Passport", "Voter ID", "Other"];
 const degreeOptions = [
   { label: "B.Ed", value: "B.Ed" }, { label: "M.Ed", value: "M.Ed" },
@@ -26,7 +38,8 @@ const degreeOptions = [
 ];
 const departments = ["Science", "Mathematics", "Languages", "Social Studies", "Arts", "Sports", "Admin", "Others"];
 
-const classOptions = Array.from({ length: 12 }, (_, i) => i + 1).flatMap(num => ["A", "B", "C", "D"].map(sec => `${num}-${sec}`));
+// Fallback class options - will be replaced by actual API data
+const fallbackClassOptions = Array.from({ length: 12 }, (_, i) => i + 1).flatMap(num => ["A", "B", "C", "D"].map(sec => `${num}-${sec}`));
 
 const emptyForm = {
   // Personal Details
@@ -37,12 +50,15 @@ const emptyForm = {
   // Qualifications
   professionalQualifications: [], totalExperience: "", previousOrganization: "", roleInOrganization: "", qualificationDocs: [],
   // Staff Info
-  staffNumber: "", staffType: "", department: "", assignedClasses: [], isClassTeacher: false, classTeacherOf: "",
+  staffNumber: "", staffType: [], department: "", assignedClasses: [], isClassTeacher: false, classTeacherOf: "",
   // Salary Details
   accountNumber: "", ifscCode: "", bankName: "", branchName: "", salaryTemplate: "", salaryBreakdown: []
 };
 
 const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
+  const { hasPermission } = usePermissions();
+  const canEdit = editingStaff ? hasPermission('staff', 'edit') : hasPermission('staff', 'create');
+
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState(emptyForm);
   const [errors, setErrors] = useState({});
@@ -51,6 +67,11 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [tempImage, setTempImage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCameraCaptureOpen, setIsCameraCaptureOpen] = useState(false);
+  const [showTimetableModal, setShowTimetableModal] = useState(false);
+  const [createdStaffId, setCreatedStaffId] = useState(null);
+  const [availableClasses, setAvailableClasses] = useState([]);
+  const [loadingClasses, setLoadingClasses] = useState(false);
 
   // Refs
   const pictureInputRef = useRef(null);
@@ -90,7 +111,9 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         qualificationDocs: editingStaff.qualificationDocs || [],
         // Staff Info
         staffNumber: editingStaff.staffNumber || editingStaff.code || "",
-        staffType: editingStaff.staffType || editingStaff.role || "",
+        staffType: Array.isArray(editingStaff.staffType)
+          ? editingStaff.staffType
+          : (editingStaff.staffType ? [editingStaff.staffType] : (editingStaff.role ? (Array.isArray(editingStaff.role) ? editingStaff.role : [editingStaff.role]) : [])),
         department: editingStaff.department || "",
         assignedClasses: editingStaff.assignedClasses || [],
         isClassTeacher: editingStaff.isClassTeacher || false,
@@ -111,6 +134,24 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       setFormData(prev => ({ ...prev, staffNumber: staffId }));
     }
   }, [editingStaff]);
+
+  // Fetch available classes from the API
+  useEffect(() => {
+    const fetchClasses = async () => {
+      setLoadingClasses(true);
+      try {
+        const classes = await classesApi.getPublic();
+        setAvailableClasses(classes || []);
+      } catch (error) {
+        console.error('Failed to fetch classes:', error);
+        // Fallback to static options
+        setAvailableClasses(fallbackClassOptions.map(c => ({ id: c, displayName: c })));
+      } finally {
+        setLoadingClasses(false);
+      }
+    };
+    fetchClasses();
+  }, []);
 
   const handleClose = () => {
     if (hasChanges) {
@@ -150,7 +191,15 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         if (!value) newError = "Required";
         break;
       case "dob":
-        if (!value) newError = "Required";
+        if (!value) {
+          newError = "Required";
+        } else {
+          const dobYear = new Date(value).getFullYear();
+          const currentYear = new Date().getFullYear();
+          if (dobYear === currentYear) {
+            newError = "Year cannot be current year";
+          }
+        }
         break;
       case "gender":
         if (!value) newError = "Required";
@@ -233,17 +282,39 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
     if (stepNum === 1) {
       // Personal Info validation
       if (!formData.fullName.trim()) newErrors.fullName = "Required";
-      if (!formData.dob) newErrors.dob = "Required";
+      if (!formData.dob) {
+        newErrors.dob = "Required";
+      } else {
+        const dobYear = new Date(formData.dob).getFullYear();
+        const currentYear = new Date().getFullYear();
+        if (dobYear === currentYear) {
+          newErrors.dob = "Year cannot be current year";
+        }
+      }
       if (!formData.gender) newErrors.gender = "Required";
+      if (!formData.fatherName.trim()) newErrors.fatherName = "Required";
       if (!formData.mobile.trim()) newErrors.mobile = "Required";
       else if (!/^\d{10}$/.test(formData.mobile)) newErrors.mobile = "Invalid";
       if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
         newErrors.email = "Invalid email";
       }
+      // Emergency contact phone validation
+      formData.emergencyContacts.forEach((contact, i) => {
+        if (contact.phone && !/^\d{10}$/.test(contact.phone)) {
+          newErrors[`emergencyPhone_${i}`] = "Invalid phone number";
+        }
+      });
     }
     if (stepNum === 2) {
-      // Education validation - At least one degree is mandatory for all staff
-      if (formData.professionalQualifications.length === 0) {
+      // Job Details validation
+      if (!formData.staffType || (Array.isArray(formData.staffType) && formData.staffType.length === 0)) {
+        newErrors.staffType = "At least one role is required";
+      }
+      if (!formData.department) newErrors.department = "Required";
+    }
+    if (stepNum === 3) {
+      // Education validation - At least one degree is required for NEW staff only
+      if (!editingStaff && formData.professionalQualifications.length === 0) {
         newErrors.qualifications = "At least one degree is required";
       }
       formData.professionalQualifications.forEach((q, i) => {
@@ -254,12 +325,12 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         }
       });
     }
-    // Step 3 (Documents) has no required validations
-    if (stepNum === 4) {
-      // Role validation
-      if (!formData.staffType) newErrors.staffType = "Required";
-      // staffNumber is auto-generated, no validation needed
-      if (!formData.department) newErrors.department = "Required";
+    // Step 4 (Documents) has no required validations
+    if (stepNum === 5) {
+      // Salary details validation (optional, but IFSC should be validated if provided)
+      if (formData.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifscCode.toUpperCase())) {
+        newErrors.ifscCode = "Invalid IFSC format (e.g., SBIN0001234)";
+      }
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -273,12 +344,12 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
 
   const handleSubmit = async () => {
     if (!validateStep(step)) return;
-    
+
     setIsSubmitting(true);
     try {
       // Import uploadApi
       const { uploadApi } = await import("../../services/api");
-      
+
       // Upload profile picture to Cloudinary if it's a File object
       let pictureUrl = null;
       if (formData.picture instanceof File) {
@@ -387,20 +458,35 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
           return sum + (parseFloat(item.amount) || 0);
         }, 0);
         staffData.salary = totalSalary;
-        console.log('💰 Total salary calculated:', totalSalary, 'from breakdown:', formData.salaryBreakdown);
       }
 
-      // Remove undefined values
+      // Remove undefined values and unwanted fields
       Object.keys(staffData).forEach(key => {
         if (staffData[key] === undefined || staffData[key] === null) {
           delete staffData[key];
         }
       });
 
+      // Remove staffId if it exists (not a valid field in schema)
+      delete staffData.staffId;
+
       console.log('Submitting staff data:', staffData);
-      await onSave(staffData);
+      console.log('staffId in data?', 'staffId' in staffData);
+      console.log('Keys:', Object.keys(staffData));
+
+      // Save staff and get the response
+      const savedStaff = await onSave(staffData);
+
+      // If it's a new staff creation (not editing), show timetable modal
+      if (!editingStaff && savedStaff) {
+        setCreatedStaffId(savedStaff._id || savedStaff.id);
+        setShowTimetableModal(true);
+      }
+
+      setIsSubmitting(false);
     } catch (error) {
       console.error('Error submitting staff:', error);
+      toast.error(error?.message || (editingStaff ? 'Failed to update staff member' : 'Failed to create staff member'));
       setIsSubmitting(false);
     }
   };
@@ -435,10 +521,33 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       });
   };
 
+  const handleCameraPhotoCapture = (file) => {
+    // File is already captured from camera or file picker, no need to edit again
+    // The CameraCaptureModal handles editing internally
+    console.log('📸 Photo captured from camera/upload:', file.name);
+    updateField("picture", file);
+  };
+
   const handleEmergencyContactChange = (index, field, value) => {
+    // For phone field, restrict to digits only and max 10 characters
+    if (field === "phone") {
+      if (!/^\d*$/.test(value)) return; // Only allow digits
+      if (value.length > 10) return; // Max 10 digits
+    }
     const updated = [...formData.emergencyContacts];
     updated[index][field] = value;
     updateField("emergencyContacts", updated);
+
+    // Real-time validation for emergency contact phone
+    if (field === "phone") {
+      let phoneError = null;
+      if (value && value.length > 0 && value.length < 10) {
+        phoneError = `${10 - value.length} more digits needed`;
+      } else if (value && !/^\d{10}$/.test(value)) {
+        phoneError = "Must be 10 digits";
+      }
+      setErrors(prev => ({ ...prev, [`emergencyPhone_${index}`]: phoneError }));
+    }
   };
 
   const addEmergencyContact = () => {
@@ -470,7 +579,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       <div className="flex items-center gap-5">
         <div className="relative group">
           <Avatar
-            src={formData.picture ? URL.createObjectURL(formData.picture) : undefined}
+            src={formData.picture ? (formData.picture instanceof File ? URL.createObjectURL(formData.picture) : formData.picture) : undefined}
             name={!formData.picture ? (formData.fullName?.[0] || "") : undefined}
             className="w-24 h-24 text-3xl"
             isBordered
@@ -478,7 +587,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
           />
           {formData.picture && (
             <button
-              className="absolute bottom-0 right-0 p-1.5 bg-primary text-white rounded-full shadow-lg hover:bg-primary-600 transition-colors"
+              className="absolute bottom-0 right-0 p-1.5 bg-teal-600 text-white rounded-full shadow-lg hover:bg-teal-700 transition-colors"
               onClick={() => pictureInputRef.current?.click()}
             >
               <PenLine size={14} />
@@ -488,26 +597,24 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         <div className="flex flex-col gap-1.5 text-left">
           <div className="flex items-center gap-3">
             <button
-              className="px-4 py-2 bg-primary-50 text-primary font-medium rounded-lg text-sm hover:bg-primary-100 transition-colors flex items-center gap-2"
-              onClick={() => pictureInputRef.current?.click()}
+              className="px-4 py-2 bg-teal-50 text-teal-600 font-medium rounded-lg text-sm hover:bg-teal-100 transition-colors flex items-center gap-2"
+              onClick={() => setIsCameraCaptureOpen(true)}
             >
               <Upload size={16} />
-              {formData.picture ? "Change Photo" : "Upload Photo"}
+              {formData.picture ? "Change Photo" : "Add Photo"}
             </button>
             {formData.picture && (
               <button
-                className="px-3 py-2 text-sm font-medium text-danger hover:bg-danger-50 transition-colors rounded-lg"
+                className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors rounded-lg"
                 onClick={() => updateField("picture", null)}
               >
                 Delete
               </button>
             )}
           </div>
-          <p className="text-xs text-default-500 max-w-[280px]">
-            Upload a professional photo. You can crop, rotate and adjust it after uploading.
+          <p className="text-xs text-gray-500 max-w-[280px]">
+            Take a photo or upload from device. You can crop, rotate and adjust it.
           </p>
-          <input ref={pictureInputRef} type="file" accept="image/*" className="hidden"
-            onChange={handleImageSelect} />
         </div>
       </div>
 
@@ -554,6 +661,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             variant="bordered"
             radius="sm"
             isRequired
+            className="max-w-md"
             classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
           />
         </div>
@@ -563,15 +671,51 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             aria-label="Date of Birth"
             label="Date of Birth"
             labelPlacement="outside"
-            value={formData.dob ? parseDate(formData.dob.split('T')[0]) : null}
-            onChange={(date) => updateField("dob", date ? date.toString() : "")}
+            value={(() => {
+              if (!formData.dob) return null;
+              try {
+                const dateStr = formData.dob.split('T')[0];
+                // Validate the date string format (YYYY-MM-DD)
+                if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                  return parseDate(dateStr);
+                }
+                return null;
+              } catch (e) {
+                console.warn('Invalid DOB value:', formData.dob, e);
+                return null;
+              }
+            })()}
+            onChange={(date) => {
+              if (!date) {
+                updateField("dob", "");
+                return;
+              }
+              try {
+                // CalendarDate has .toString() which returns YYYY-MM-DD format
+                const dateStr = date.toString();
+                updateField("dob", dateStr);
+              } catch (e) {
+                console.warn('Error converting date:', e);
+                updateField("dob", "");
+              }
+            }}
             variant="bordered"
             radius="sm"
             showMonthAndYearPickers
             isRequired
             isInvalid={!!errors.dob}
             errorMessage={errors.dob}
-            classNames={{ label: "text-xs font-medium text-default-600 mb-1" }}
+            portalContainer={document.body}
+            className="w-full"
+            classNames={{
+              label: "text-xs font-medium text-default-600 mb-1",
+              input: "cursor-pointer",
+              inputWrapper: "cursor-pointer hover:border-primary-400 transition-colors data-[hover=true]:border-primary-400",
+              group: "cursor-pointer"
+            }}
+            style={{
+              pointerEvents: "auto"
+            }}
           />
 
           <Select
@@ -597,6 +741,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             variant="bordered"
             radius="sm"
             isRequired
+            isInvalid={!!errors.fatherName}
             errorMessage={errors.fatherName}
             classNames={{ label: "text-xs font-medium text-default-600 mb-1", inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
           />
@@ -612,6 +757,19 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             classNames={{ label: "text-xs font-medium text-default-600 mb-1", trigger: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
           >
             {maritalStatuses.map(ms => <SelectItem key={ms}>{ms}</SelectItem>)}
+          </Select>
+          <Select
+            aria-label="Blood Group"
+            label="Blood Group"
+            labelPlacement="outside"
+            placeholder="Select..."
+            selectedKeys={formData.bloodGroup ? [formData.bloodGroup] : []}
+            onSelectionChange={keys => updateField("bloodGroup", Array.from(keys)[0])}
+            variant="bordered"
+            radius="sm"
+            classNames={{ label: "text-xs font-medium text-default-600 mb-1", trigger: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+          >
+            {bloodGroups.map(bg => <SelectItem key={bg}>{bg}</SelectItem>)}
           </Select>
         </div>
       </div>
@@ -740,6 +898,9 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
                 size="sm"
                 radius="sm"
                 variant="bordered"
+                isInvalid={!!errors[`emergencyPhone_${index}`]}
+                errorMessage={errors[`emergencyPhone_${index}`]}
+                startContent={<span className="text-default-400 text-xs">+91</span>}
                 classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-9" }}
               />
             </div>
@@ -764,15 +925,19 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       <div className="space-y-4">
         <label className="text-sm font-semibold text-default-900 block">Job Details</label>
 
-        {/* Role Selection */}
-        <div className="space-y-1.5">
+        {/* Role Selection - Multiple */}
+        <div className="space-y-2">
           <Select
-            aria-label="Staff Role"
-            label="Staff Role"
+            aria-label="Staff Roles"
+            label="Staff Roles"
             labelPlacement="outside"
-            placeholder="Select Role"
-            selectedKeys={formData.staffType ? [formData.staffType] : []}
-            onSelectionChange={(keys) => updateField("staffType", Array.from(keys)[0])}
+            placeholder="Select one or more roles"
+            selectedKeys={new Set(formData.staffType ? (Array.isArray(formData.staffType) ? formData.staffType : [formData.staffType]) : [])}
+            onSelectionChange={(keys) => {
+              const selectedRoles = Array.from(keys);
+              updateField("staffType", selectedRoles.length > 0 ? selectedRoles : []);
+            }}
+            selectionMode="multiple"
             variant="bordered"
             radius="sm"
             isRequired
@@ -784,6 +949,27 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
               <SelectItem key={role}>{role}</SelectItem>
             ))}
           </Select>
+
+          {/* Selected Roles Display */}
+          {formData.staffType && formData.staffType.length > 0 && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {formData.staffType.map((role, idx) => (
+                <Chip
+                  key={idx}
+                  size="sm"
+                  variant="flat"
+                  color="primary"
+                  onClose={() => {
+                    const updatedRoles = formData.staffType.filter((_, i) => i !== idx);
+                    updateField("staffType", updatedRoles);
+                  }}
+                >
+                  {role}
+                </Chip>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-default-500">Select all applicable roles for this staff member</p>
         </div>
 
         <div className="space-y-4">
@@ -819,29 +1005,13 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
           </Select>
         </div>
 
-        {formData.staffType === "Teaching" && (
+        {(Array.isArray(formData.staffType) ? formData.staffType.includes("Teacher") : formData.staffType === "Teaching") && (
           <div className="space-y-4 pt-4 border-t border-dashed border-default-200">
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-default-900">Assign Classes</label>
-              <Select
-                selectionMode="multiple"
-                placeholder="Select classes"
-                selectedKeys={new Set(formData.assignedClasses)}
-                onSelectionChange={(keys) => updateField("assignedClasses", Array.from(keys))}
-                variant="bordered"
-                radius="sm"
-                classNames={{ trigger: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 min-h-unit-10" }}
-              >
-                {classOptions.map((cls) => (
-                  <SelectItem key={cls}>{cls}</SelectItem>
-                ))}
-              </Select>
-            </div>
-
+            {/* Show Class Teacher First */}
             <div className="flex flex-col gap-2 p-4 border border-default-200 rounded-xl bg-default-50/50">
               <div className="flex justify-between items-center">
                 <div className="flex flex-col">
-                  <span className="text-sm font-semibold text-default-900">Class Teacher Responsibility</span>
+                  <span className="text-sm font-semibold text-default-900">As Class Teacher</span>
                   <span className="text-xs text-default-500">Is this staff member a class teacher?</span>
                 </div>
                 <Switch
@@ -855,19 +1025,39 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
                 <Select
                   className="mt-2"
                   label="Select Class"
-                  placeholder="Select class"
+                  placeholder={loadingClasses ? "Loading classes..." : "Select class"}
                   selectedKeys={formData.classTeacherOf ? [formData.classTeacherOf] : []}
                   onSelectionChange={(keys) => updateField("classTeacherOf", Array.from(keys)[0])}
                   variant="bordered"
                   radius="sm"
                   size="sm"
+                  isDisabled={loadingClasses}
                   classNames={{ trigger: "bg-white dark:bg-default-100 border-1 border-default-200" }}
                 >
-                  {classOptions.map((cls) => (
-                    <SelectItem key={cls}>{cls}</SelectItem>
+                  {availableClasses.map((cls) => (
+                    <SelectItem key={cls.id}>{cls.displayName}</SelectItem>
                   ))}
                 </Select>
               )}
+            </div>
+
+            {/* Then Show Assign Classes for subject teaching */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-default-900">Assign Classes for Subject Teaching</label>
+              <Select
+                selectionMode="multiple"
+                placeholder={loadingClasses ? "Loading classes..." : "Select classes"}
+                selectedKeys={new Set(formData.assignedClasses)}
+                onSelectionChange={(keys) => updateField("assignedClasses", Array.from(keys))}
+                variant="bordered"
+                radius="sm"
+                isDisabled={loadingClasses}
+                classNames={{ trigger: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 min-h-unit-10" }}
+              >
+                {availableClasses.map((cls) => (
+                  <SelectItem key={cls.id}>{cls.displayName}</SelectItem>
+                ))}
+              </Select>
             </div>
           </div>
         )}
@@ -1077,69 +1267,69 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
     const findDocByType = (type) => formData.idDocuments.find(doc => doc.type === type);
 
     return (
-    <div className="space-y-6 animate-fade-in text-left">
-      {/* Identity Docs & Proofs */}
-      <div className="space-y-3">
-        <label className="text-sm font-semibold text-default-900">Documents & Proofs</label>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {idProofTypes.map((type) => {
-            const doc = findDocByType(type);
-            return (
-              <div key={type} className="flex items-center justify-between p-3 border border-default-200 rounded-lg bg-default-50/50 hover:bg-default-100 transition-colors">
-                <div className="flex items-center gap-2">
-                  <FileBadge size={16} className="text-default-500" />
-                  <span className="text-sm font-medium text-default-700">{type}</span>
-                </div>
-                {doc ? (
+      <div className="space-y-6 animate-fade-in text-left">
+        {/* Identity Docs & Proofs */}
+        <div className="space-y-3">
+          <label className="text-sm font-semibold text-default-900">Documents & Proofs</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {idProofTypes.map((type) => {
+              const doc = findDocByType(type);
+              return (
+                <div key={type} className="flex items-center justify-between p-3 border border-default-200 rounded-lg bg-default-50/50 hover:bg-default-100 transition-colors">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-success-600 font-medium truncate max-w-[100px]">{doc.name}</span>
-                    <button onClick={() => removeIDProof(type)} className="text-default-400 hover:text-danger p-1 rounded-full hover:bg-default-200">
-                      <X size={14} />
-                    </button>
+                    <FileBadge size={16} className="text-default-500" />
+                    <span className="text-sm font-medium text-default-700">{type}</span>
                   </div>
-                ) : (
-                  <div className="relative">
-                    <button className="text-xs font-semibold text-primary hover:text-primary-600 transition-colors px-2 py-1">
-                      Upload
-                    </button>
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                      onChange={(e) => handleIDProofUpload(type, e.target.files)}
-                    />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="space-y-2 pt-2">
-          <label className="text-sm font-semibold text-default-900">Other Certificates</label>
-          <div
-            className="border border-dashed border-default-300 rounded-xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-default-50 transition-colors text-center"
-            onClick={() => qualDocsInputRef.current?.click()}
-          >
-            <div className="w-8 h-8 rounded-full bg-default-100 flex items-center justify-center text-default-500">
-              <Upload size={16} />
-            </div>
-            <span className="text-xs text-default-600">Click to upload scanned documents</span>
-            <input ref={qualDocsInputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden"
-              onChange={(e) => handleFileUpload("qualificationDocs", e.target.files)} />
+                  {doc ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-success-600 font-medium truncate max-w-[100px]">{doc.name}</span>
+                      <button onClick={() => removeIDProof(type)} className="text-default-400 hover:text-danger p-1 rounded-full hover:bg-default-200">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <button className="text-xs font-semibold text-primary hover:text-primary-600 transition-colors px-2 py-1">
+                        Upload
+                      </button>
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={(e) => handleIDProofUpload(type, e.target.files)}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-          {formData.qualificationDocs.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {formData.qualificationDocs.map((file, i) => (
-                <Chip key={i} onClose={() => removeFile("qualificationDocs", i)} size="sm" variant="flat" className="text-xs h-7 bg-default-100">
-                  {file.name}
-                </Chip>
-              ))}
+
+          <div className="space-y-2 pt-2">
+            <label className="text-sm font-semibold text-default-900">Other Certificates</label>
+            <div
+              className="border border-dashed border-default-300 rounded-xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-default-50 transition-colors text-center"
+              onClick={() => qualDocsInputRef.current?.click()}
+            >
+              <div className="w-8 h-8 rounded-full bg-default-100 flex items-center justify-center text-default-500">
+                <Upload size={16} />
+              </div>
+              <span className="text-xs text-default-600">Click to upload scanned documents</span>
+              <input ref={qualDocsInputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden"
+                onChange={(e) => handleFileUpload("qualificationDocs", e.target.files)} />
             </div>
-          )}
+            {formData.qualificationDocs.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {formData.qualificationDocs.map((file, i) => (
+                  <Chip key={i} onClose={() => removeFile("qualificationDocs", i)} size="sm" variant="flat" className="text-xs h-7 bg-default-100">
+                    {file.name}
+                  </Chip>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
     );
   };
 
@@ -1175,7 +1365,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             <Input label="Account Number" labelPlacement="outside" placeholder="Account No" value={formData.accountNumber} onValueChange={v => updateField("accountNumber", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
             <Input label="IFSC Code" labelPlacement="outside" placeholder="IFSC (e.g., SBIN0001234)" value={formData.ifscCode} onValueChange={v => updateField("ifscCode", v)} variant="bordered" radius="sm" errorMessage={errors.ifscCode} classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
             <Input label="Bank Name" labelPlacement="outside" placeholder="Bank Name" value={formData.bankName} onValueChange={v => updateField("bankName", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
-            <Input label="Branch Name" labelPlacement="outside" placeholder="Branch" value={formData.branchName} onValueChange={v => updateField("branchName", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
+            <Input label="Branch Name" labelPlacement="outside" placeholder="Branch" value={formData.branchName} onValueChange={v => updateField("branchName", v)} variant="bordered" radius="sm" classNames={{ label: "text-xs font-medium text-default-600 mb-1", inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
           </div>
         </div>
 
@@ -1199,23 +1389,23 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
           <div className="border border-default-200 rounded-lg overflow-hidden">
             {formData.salaryBreakdown.map((item, i) => (
               <div key={i} className="flex items-center gap-2 p-2 border-b border-default-100 last:border-0 hover:bg-default-50">
-                <Input 
-                  size="sm" 
-                  value={item.component} 
-                  onValueChange={v => updateBreakdownItem(i, "component", v)} 
-                  variant="flat" 
+                <Input
+                  size="sm"
+                  value={item.component}
+                  onValueChange={v => updateBreakdownItem(i, "component", v)}
+                  variant="flat"
                   placeholder="Enter component name"
-                  classNames={{ inputWrapper: "bg-transparent shadow-none" }} 
+                  classNames={{ inputWrapper: "bg-transparent shadow-none" }}
                 />
-                <Input 
-                  size="sm" 
-                  type="number" 
-                  value={item.amount} 
-                  onValueChange={v => updateBreakdownItem(i, "amount", v)} 
-                  variant="flat" 
+                <Input
+                  size="sm"
+                  type="number"
+                  value={item.amount}
+                  onValueChange={v => updateBreakdownItem(i, "amount", v)}
+                  variant="flat"
                   placeholder="0"
-                  startContent="₹" 
-                  classNames={{ inputWrapper: "bg-transparent shadow-none w-24" }} 
+                  startContent="₹"
+                  classNames={{ inputWrapper: "bg-transparent shadow-none w-24" }}
                 />
                 <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => updateField("salaryBreakdown", formData.salaryBreakdown.filter((_, idx) => idx !== i))}><X size={14} /></Button>
               </div>
@@ -1232,16 +1422,36 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
     );
   };
 
-  const steps = [
+  const steps = useMemo(() => [
     { number: 1, title: "Personal Info", icon: User },
-    { number: 2, title: "Education", icon: GraduationCap },
-    { number: 3, title: "Documents", icon: FileText },
-    { number: 4, title: "Role", icon: Briefcase },
+    { number: 2, title: "Job Details", icon: Briefcase },
+    { number: 3, title: "Education", icon: GraduationCap },
+    { number: 4, title: "Documents", icon: FileText },
     { number: 5, title: "Payroll", icon: Banknote }
-  ];
+  ], []);
+
+  const handleTimetableModalClose = () => {
+    setShowTimetableModal(false);
+    setCreatedStaffId(null);
+    onClose(); // Close the AddStaff modal after timetable modal
+  };
 
   return (
     <div className="h-full flex flex-col bg-white">
+      {/* Permission Warning */}
+      {!canEdit && (
+        <div className="px-8 py-3 bg-warning-50 border-b border-warning-200">
+          <div className="flex items-center gap-2 text-warning-700">
+            <AlertTriangle size={16} />
+            <span className="text-sm font-medium">
+              {editingStaff
+                ? "You don't have permission to edit staff members. All fields are read-only."
+                : "You don't have permission to create staff members."}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Elegant Stepper */}
       <div className="px-8 py-6">
         <div className="flex items-center justify-between relative">
@@ -1277,9 +1487,9 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       <div className="flex-1 overflow-y-auto px-8 py-2 custom-scrollbar">
         <div className="max-w-2xl mx-auto">
           {step === 1 && renderStep1()}
-          {step === 2 && renderStep3()}
-          {step === 3 && renderStep4()}
-          {step === 4 && renderStep2()}
+          {step === 2 && renderStep2()}
+          {step === 3 && renderStep3()}
+          {step === 4 && renderStep4()}
           {step === 5 && renderStep5()}
         </div>
       </div>
@@ -1306,15 +1516,15 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
           className="w-32 font-medium shadow-lg shadow-primary/20"
           color="primary"
           onPress={step === 5 ? handleSubmit : handleNext}
-          isDisabled={isSubmitting}
+          isDisabled={isSubmitting || !canEdit}
         >
           {isSubmitting ? (
             <span className="flex items-center gap-2">
               <Spinner size="sm" color="white" />
-              {step === 5 ? "Creating..." : "Processing..."}
+              {step === 5 ? (editingStaff ? "Updating..." : "Creating...") : "Processing..."}
             </span>
           ) : (
-            step === 5 ? "Create Staff" : "Next"
+            step === 5 ? (editingStaff ? "Update Staff" : "Create Staff") : "Next"
           )}
         </Button>
       </div>
@@ -1337,6 +1547,44 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             </Button>
             <Button color="danger" onPress={confirmClose}>
               Discard Changes
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Camera Capture Modal */}
+      <CameraCaptureModal
+        isOpen={isCameraCaptureOpen}
+        onClose={() => setIsCameraCaptureOpen(false)}
+        onPhotoCaptured={handleCameraPhotoCapture}
+      />
+
+      {/* Timetable Confirmation Modal */}
+      <Modal isOpen={showTimetableModal} onClose={handleTimetableModalClose} size="md">
+        <ModalContent>
+          <ModalHeader className="flex gap-2 items-center">
+            <CheckCircle2 size={24} className="text-success" />
+            <div>
+              <span className="text-lg font-semibold">Staff Created Successfully!</span>
+              <p className="text-sm text-default-500 mt-1">Would you like to create a timetable for this staff member?</p>
+            </div>
+          </ModalHeader>
+          <ModalFooter>
+            <Button variant="light" onPress={handleTimetableModalClose}>
+              No, Maybe Later
+            </Button>
+            <Button
+              color="primary"
+              onPress={() => {
+                // Close this modal and open the timetable wizard
+                setShowTimetableModal(false);
+                // We'll need to handle this in the parent component
+                // For now, just close and let the user handle it manually
+                toast.success('You can create a timetable from the Classes section');
+                setTimeout(() => onClose(), 500);
+              }}
+            >
+              Yes, Create Timetable
             </Button>
           </ModalFooter>
         </ModalContent>

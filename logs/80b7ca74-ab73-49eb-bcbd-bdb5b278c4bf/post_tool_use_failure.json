@@ -1,0 +1,32 @@
+[
+  {
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "transcript_path": "/home/bdk47/.claude/projects/-mnt-c-Users-bdk47-Desktop-Projects-kiro-bp-EMS/80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf.jsonl",
+    "cwd": "/mnt/c/Users/bdk47/Desktop/Projects/kiro_bp/EMS",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "PostToolUseFailure",
+    "tool_name": "TeamCreate",
+    "tool_input": {
+      "team_name": "staff-app-fixes",
+      "description": "Implement all 3 phases of staff app fixes: critical issues, high priority, and test coverage"
+    },
+    "tool_use_id": "call_6e8cc74b798e40239549d002",
+    "error": "Already leading team \"staff-app-review\". A leader can only manage one team at a time. Use TeamDelete to end the current team before creating a new one.",
+    "is_interrupt": false
+  },
+  {
+    "session_id": "80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf",
+    "transcript_path": "/home/bdk47/.claude/projects/-mnt-c-Users-bdk47-Desktop-Projects-kiro-bp-EMS/80b7ca74-ab73-49eb-bcbd-bdb5b278c4bf.jsonl",
+    "cwd": "/mnt/c/Users/bdk47/Desktop/Projects/kiro_bp/EMS",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "PostToolUseFailure",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "powershell.exe \"Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.InterfaceAlias -notlike '*Loopback*' -and $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '172.*'} | Select-Object -First 1 -ExpandProperty IPAddress\"",
+      "description": "Get Windows LAN IP for physical device"
+    },
+    "tool_use_id": "call_a7c4b773ce8b4938b2628fc5",
+    "error": "Exit code 1\nWhere-Object : The term 'extglob.InterfaceAlias' is not recognized as the name of a cmdlet, function, script file, or \r\noperable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try \r\nagain.\r\nAt line:1 char:40\r\n+ ... mily IPv4 | Where-Object {extglob.InterfaceAlias -notlike '*Loopback* ...\r\n+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\r\n    + CategoryInfo          : ObjectNotFound: (extglob.InterfaceAlias:String) [Where-Object], CommandNotFoundException\r\n    + FullyQualifiedErrorId : CommandNotFoundException,Microsoft.PowerShell.Commands.WhereObjectCommand",
+    "is_interrupt": false
+  }
+]

@@ -14,23 +14,32 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
     const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
     const [loading, setLoading] = useState(false);
 
+    // Debug: Log when modal opens/closes
+    React.useEffect(() => {
+        console.log('🖼️ PhotoEditorModal isOpen:', isOpen, 'imageSrc:', imageSrc ? 'present' : 'missing');
+    }, [isOpen, imageSrc]);
+
     const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
         setCroppedAreaPixels(croppedAreaPixels);
     }, []);
 
     const handleSave = async () => {
+        console.log('💾 PhotoEditorModal handleSave called');
         try {
             setLoading(true);
+            console.log('✂️ Cropping image...');
             const croppedImage = await getCroppedImg(
                 imageSrc,
                 croppedAreaPixels,
                 rotation,
                 flip
             );
+            console.log('✅ Image cropped, calling onSave');
             onSave(croppedImage);
+            console.log('🔒 Calling onClose');
             onClose();
         } catch (e) {
-            console.error(e);
+            console.error('❌ Error saving photo:', e);
         } finally {
             setLoading(false);
         }
@@ -41,12 +50,13 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
             isOpen={isOpen}
             onClose={onClose}
             size="2xl"
-            zIndex={99999}
+            zIndex={999999}
+            portalContainer={document.body}
             classNames={{
                 body: "p-0",
-                base: "bg-background border border-default-200 z-[99999]",
-                wrapper: "z-[99999]",
-                backdrop: "z-[99999]",
+                base: "bg-background border border-default-200 z-[999999]",
+                wrapper: "z-[999999]",
+                backdrop: "z-[999999]",
             }}
         >
             <ModalContent>
@@ -114,8 +124,8 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
                                         <Slider
                                             size="sm"
                                             step={1}
-                                            minValue={0}
-                                            maxValue={360}
+                                            minValue={-180}
+                                            maxValue={180}
                                             aria-label="Rotation"
                                             value={rotation}
                                             onChange={setRotation}
@@ -140,8 +150,8 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
                                     <Tooltip content="Flip Horizontal">
                                         <Button
                                             isIconOnly
-                                            variant={flip.horizontal ? "solid" : "flat"}
-                                            color={flip.horizontal ? "primary" : "default"}
+                                            variant={flip.horizontal ? "flat" : "flat"}
+                                            className={flip.horizontal ? "bg-primary-100 text-primary" : ""}
                                             onPress={() => setFlip(prev => ({ ...prev, horizontal: !prev.horizontal }))}
                                         >
                                             <FlipHorizontal size={20} />
@@ -150,8 +160,8 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
                                     <Tooltip content="Flip Vertical">
                                         <Button
                                             isIconOnly
-                                            variant={flip.vertical ? "solid" : "flat"}
-                                            color={flip.vertical ? "primary" : "default"}
+                                            variant={flip.vertical ? "flat" : "flat"}
+                                            className={flip.vertical ? "bg-primary-100 text-primary" : ""}
                                             onPress={() => setFlip(prev => ({ ...prev, vertical: !prev.vertical }))}
                                         >
                                             <FlipVertical size={20} />
@@ -179,7 +189,7 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
                                 Cancel
                             </Button>
                             <Button color="primary" onPress={handleSave} isLoading={loading} startContent={!loading && <Check size={18} />}>
-                                Save Photo
+                                Upload Photo
                             </Button>
                         </ModalFooter>
                     </>

@@ -29,6 +29,7 @@ import {
 import { Plus, Edit, Shield, Lock, Unlock, Copy, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
+import { STAFF_ROLES } from "../../constants/roles";
 
 // Define all modules and their actions
 const MODULES = [
@@ -36,6 +37,7 @@ const MODULES = [
   { key: "staff", label: "Staff Management", actions: ["view", "create", "edit", "delete"] },
   { key: "students", label: "Students Management", actions: ["view", "create", "edit", "delete"] },
   { key: "classes", label: "Classes Management", actions: ["view", "create", "edit", "delete"] },
+  { key: "academics", label: "Academics & Exams", actions: ["view", "create", "edit", "delete", "publish"] },
   { key: "attendance", label: "Attendance", actions: ["view", "create", "edit", "delete"] },
   { key: "timetable", label: "Timetable", actions: ["view", "create", "edit", "delete"] },
   { key: "fees", label: "Fee Management", actions: ["view", "create", "edit", "delete"] },
@@ -50,17 +52,47 @@ const ACTION_LABELS = {
   create: "Create",
   edit: "Edit",
   delete: "Delete",
+  publish: "Publish",
 };
 
-// Default permission templates
+// Default permission templates - matching backend UserPermission.js
 const PERMISSION_TEMPLATES = {
   admin: {
-    name: "Administrator",
+    name: "Admin",
     description: "Full access to all modules",
     permissions: MODULES.reduce((acc, module) => {
       acc[module.key] = module.actions.reduce((a, action) => ({ ...a, [action]: true }), {});
       return acc;
     }, {}),
+  },
+  principal: {
+    name: "Principal",
+    description: "Full administrative access except settings deletion",
+    permissions: MODULES.reduce((acc, module) => {
+      if (module.key === 'settings') {
+        acc[module.key] = { view: true, create: true, edit: true, delete: false };
+      } else {
+        acc[module.key] = module.actions.reduce((a, action) => ({ ...a, [action]: true }), {});
+      }
+      return acc;
+    }, {}),
+  },
+  "vice-principal": {
+    name: "Vice Principal",
+    description: "Administrative access without delete permissions",
+    permissions: {
+      dashboard: { view: true },
+      staff: { view: true, create: true, edit: true },
+      students: { view: true, create: true, edit: true },
+      classes: { view: true, create: true, edit: true },
+      academics: { view: true, create: true, edit: true, publish: true },
+      attendance: { view: true, create: true, edit: true },
+      timetable: { view: true, create: true, edit: true },
+      fees: { view: true },
+      payroll: { view: true },
+      communication: { view: true, create: true, edit: true },
+      reports: { view: true, create: true },
+    },
   },
   teacher: {
     name: "Teacher",
@@ -70,6 +102,7 @@ const PERMISSION_TEMPLATES = {
       staff: { view: true },
       students: { view: true, edit: true },
       classes: { view: true },
+      academics: { view: true, create: true, edit: true },
       attendance: { view: true, create: true, edit: true },
       timetable: { view: true },
       fees: { view: true },
@@ -84,9 +117,38 @@ const PERMISSION_TEMPLATES = {
       dashboard: { view: true },
       staff: { view: true },
       students: { view: true },
+      academics: { view: true },
       fees: { view: true, create: true, edit: true, delete: true },
       payroll: { view: true, create: true, edit: true },
       reports: { view: true },
+    },
+  },
+  librarian: {
+    name: "Librarian",
+    description: "Limited access for library management",
+    permissions: {
+      dashboard: { view: true },
+      staff: { view: true },
+      students: { view: true },
+      classes: { view: true },
+      academics: { view: true },
+      attendance: { view: true },
+      timetable: { view: true },
+      communication: { view: true, create: true },
+    },
+  },
+  "lab-assistant": {
+    name: "Lab Assistant",
+    description: "Limited access for lab management",
+    permissions: {
+      dashboard: { view: true },
+      staff: { view: true },
+      students: { view: true },
+      classes: { view: true },
+      academics: { view: true },
+      attendance: { view: true },
+      timetable: { view: true },
+      communication: { view: true, create: true },
     },
   },
   receptionist: {
@@ -97,6 +159,7 @@ const PERMISSION_TEMPLATES = {
       staff: { view: true },
       students: { view: true, create: true, edit: true },
       classes: { view: true },
+      academics: { view: true },
       communication: { view: true, create: true },
     },
   },
@@ -114,24 +177,59 @@ export default function RolesAccess() {
   const [roles, setRoles] = useState([
     {
       id: 1,
-      name: "Administrator",
+      name: "Admin",
       permissions: PERMISSION_TEMPLATES.admin.permissions,
-      locked: { settings: { delete: true } }, // Some permissions are locked
+      locked: { settings: { delete: true } },
       userCount: 2,
     },
     {
       id: 2,
+      name: "Principal",
+      permissions: PERMISSION_TEMPLATES.principal.permissions,
+      locked: {},
+      userCount: 1,
+    },
+    {
+      id: 3,
+      name: "Vice Principal",
+      permissions: PERMISSION_TEMPLATES["vice-principal"].permissions,
+      locked: {},
+      userCount: 1,
+    },
+    {
+      id: 4,
       name: "Teacher",
       permissions: PERMISSION_TEMPLATES.teacher.permissions,
       locked: {},
       userCount: 15,
     },
     {
-      id: 3,
+      id: 5,
       name: "Accountant",
       permissions: PERMISSION_TEMPLATES.accountant.permissions,
       locked: {},
       userCount: 3,
+    },
+    {
+      id: 6,
+      name: "Librarian",
+      permissions: PERMISSION_TEMPLATES.librarian.permissions,
+      locked: {},
+      userCount: 1,
+    },
+    {
+      id: 7,
+      name: "Lab Assistant",
+      permissions: PERMISSION_TEMPLATES["lab-assistant"].permissions,
+      locked: {},
+      userCount: 2,
+    },
+    {
+      id: 8,
+      name: "Receptionist",
+      permissions: PERMISSION_TEMPLATES.receptionist.permissions,
+      locked: {},
+      userCount: 1,
     },
   ]);
 
@@ -433,6 +531,7 @@ export default function RolesAccess() {
                       <TableColumn align="center">CREATE</TableColumn>
                       <TableColumn align="center">EDIT</TableColumn>
                       <TableColumn align="center">DELETE</TableColumn>
+                      <TableColumn align="center">PUBLISH</TableColumn>
                     </TableHeader>
                     <TableBody>
                       {MODULES.map((module) => (
@@ -442,7 +541,7 @@ export default function RolesAccess() {
                               {module.label}
                             </span>
                           </TableCell>
-                          {["view", "create", "edit", "delete"].map((action) => {
+                          {["view", "create", "edit", "delete", "publish"].map((action) => {
                             const hasAction = module.actions.includes(action);
                             const isChecked = formData.permissions[module.key]?.[action] || false;
                             const isLocked = isPermissionLocked(module.key, action);

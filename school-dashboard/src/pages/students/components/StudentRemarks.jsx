@@ -105,14 +105,8 @@ export default function StudentRemarks({
   };
 
   const getCategoryColor = (category) => {
-    switch (category) {
-      case 'academic': return 'primary';
-      case 'behavioral': return 'warning';
-      case 'achievement': return 'success';
-      case 'attendance': return 'secondary';
-      case 'health': return 'danger';
-      default: return 'default';
-    }
+    // All categories now use gray styling
+    return 'default';
   };
 
   const getCategoryIcon = (category) => {
@@ -131,12 +125,12 @@ export default function StudentRemarks({
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
+            <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg">
               <MessageSquare size={20} />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-default-900">Student Remarks</h3>
-              <p className="text-xs text-default-500">Notes and observations about the student</p>
+              <h3 className="text-lg font-semibold text-gray-900">Student Remarks</h3>
+              <p className="text-xs text-gray-500">Notes and observations about the student</p>
             </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -166,10 +160,10 @@ export default function StudentRemarks({
               <p className="text-default-500">Loading remarks...</p>
             </div>
           ) : remarks.length === 0 ? (
-            <div className="text-center py-12 border-2 border-dashed border-default-200 rounded-xl">
-              <MessageSquare size={48} className="mx-auto text-default-300 mb-3" />
-              <h4 className="font-semibold text-default-700 mb-1">No remarks yet</h4>
-              <p className="text-sm text-default-500 mb-4">Add your first remark or observation about this student</p>
+            <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-lg">
+              <MessageSquare size={48} className="mx-auto text-gray-300 mb-3" />
+              <h4 className="font-semibold text-gray-700 mb-1">No remarks yet</h4>
+              <p className="text-sm text-gray-500 mb-4">Add your first remark or observation about this student</p>
               <Button color="primary" variant="flat" startContent={<Plus size={16} />} onPress={() => setIsRemarkOpen(true)}>
                 Add First Remark
               </Button>
@@ -179,24 +173,24 @@ export default function StudentRemarks({
               const CategoryIcon = getCategoryIcon(remark.category);
 
               return (
-                <div key={remark._id} className="group flex flex-col sm:flex-row gap-4 p-5 rounded-2xl border border-default-200 bg-white hover:border-primary/30 hover:shadow-md transition-all">
+                <div key={remark._id} className="group flex flex-col sm:flex-row gap-4 p-5 rounded-lg border border-gray-200 bg-white hover:border-gray-300 transition-all">
                   <div className="flex-shrink-0 mt-1">
-                    <div className={`w-10 h-10 rounded-full bg-${getCategoryColor(remark.category)}-50 flex items-center justify-center text-${getCategoryColor(remark.category)}-600`}>
+                    <div className={`w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600`}>
                       <CategoryIcon size={20} />
                     </div>
                   </div>
                   <div className="flex-1 space-y-3">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                       <div className="flex-1">
-                        <h4 className="font-semibold text-default-900 mb-1">{remark.title}</h4>
+                        <h4 className="font-semibold text-gray-900 mb-1">{remark.title}</h4>
                         <div className="flex flex-wrap items-center gap-2">
-                          <Chip size="sm" variant="flat" color={getCategoryColor(remark.category)} className="capitalize">{remark.category}</Chip>
+                          <Chip size="sm" variant="flat" className="bg-gray-100 text-gray-600 capitalize">{remark.category}</Chip>
                           {remark.sentToParent ? (
-                            <Chip size="sm" variant="flat" color="success" startContent={<Mail size={12} />}>Sent to Parent</Chip>
+                            <Chip size="sm" variant="flat" className="bg-gray-100 text-gray-600" startContent={<Mail size={12} />}>Sent to Parent</Chip>
                           ) : (
-                            <Chip size="sm" variant="flat" color="default">Staff Only</Chip>
+                            <Chip size="sm" variant="flat" className="bg-gray-100 text-gray-600">Staff Only</Chip>
                           )}
-                          <span className="text-xs text-default-400">
+                          <span className="text-xs text-gray-400">
                             • {remark.authorName || 'System'} • {new Date(remark.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                           </span>
                         </div>
@@ -214,7 +208,7 @@ export default function StudentRemarks({
                         </DropdownMenu>
                       </Dropdown>
                     </div>
-                    <p className="text-sm text-default-600 leading-relaxed">
+                    <p className="text-sm text-gray-600 leading-relaxed">
                       {remark.description}
                     </p>
                   </div>
@@ -240,14 +234,14 @@ export default function StudentRemarks({
         <DrawerContent>
           {(onClose) => (
             <>
-              <DrawerHeader className="border-b border-default-100">
+              <DrawerHeader className="border-b border-gray-100">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-50 rounded-xl">
-                    <MessageSquare size={20} className="text-blue-600" />
+                  <div className="p-2 bg-gray-100 rounded-lg">
+                    <MessageSquare size={20} className="text-gray-600" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">Add Remark</h3>
-                    <p className="text-xs text-default-500">Add a note or observation about the student</p>
+                    <p className="text-xs text-gray-500">Add a note or observation about the student</p>
                   </div>
                 </div>
               </DrawerHeader>
@@ -313,14 +307,14 @@ export default function StudentRemarks({
                 />
 
                 {/* Send to Parent */}
-                <div className="p-4 rounded-lg border border-default-200 bg-default-50">
+                <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
                   <Checkbox
                     isSelected={remarkForm.sendToParent}
                     onValueChange={(checked) => setRemarkForm({ ...remarkForm, sendToParent: checked })}
                   >
                     <div className="flex flex-col">
-                      <span className="font-medium text-default-900">Send to Parent</span>
-                      <span className="text-xs text-default-500">
+                      <span className="font-medium text-gray-900">Send to Parent</span>
+                      <span className="text-xs text-gray-500">
                         {remarkForm.sendToParent
                           ? `Will be sent to ${student.parentEmail || student.parentPhone || 'parent'}`
                           : 'Remark will only be visible to staff'
@@ -332,20 +326,20 @@ export default function StudentRemarks({
 
                 {/* Preview */}
                 {(remarkForm.title || remarkForm.description) && (
-                  <div className="p-4 rounded-lg border border-primary-200 bg-primary-50/30">
-                    <p className="text-xs font-semibold text-primary-600 uppercase mb-2">Preview</p>
+                  <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+                    <p className="text-xs font-semibold text-gray-600 uppercase mb-2">Preview</p>
                     {remarkForm.title && (
-                      <h4 className="font-semibold text-default-900 mb-1">{remarkForm.title}</h4>
+                      <h4 className="font-semibold text-gray-900 mb-1">{remarkForm.title}</h4>
                     )}
                     {remarkForm.description && (
-                      <p className="text-sm text-default-600">{remarkForm.description}</p>
+                      <p className="text-sm text-gray-600">{remarkForm.description}</p>
                     )}
                     <div className="flex items-center gap-2 mt-2">
-                      <Chip size="sm" variant="flat" color="primary" className="capitalize">
+                      <Chip size="sm" variant="flat" className="bg-gray-100 text-gray-600 capitalize">
                         {remarkForm.customType || remarkForm.type || "No Type"}
                       </Chip>
                       {remarkForm.sendToParent && (
-                        <Chip size="sm" variant="flat" color="success" startContent={<Mail size={12} />}>
+                        <Chip size="sm" variant="flat" className="bg-gray-100 text-gray-600" startContent={<Mail size={12} />}>
                           Will Send
                         </Chip>
                       )}
@@ -353,7 +347,7 @@ export default function StudentRemarks({
                   </div>
                 )}
               </DrawerBody>
-              <DrawerFooter className="border-t border-default-100">
+              <DrawerFooter className="border-t border-gray-100">
                 <Button
                   variant="flat"
                   onPress={() => {

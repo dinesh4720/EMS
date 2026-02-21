@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import {
-  Card, CardBody, CardHeader, Button, Progress, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Input, Textarea, Select, SelectItem, Checkbox, Spinner, Chip
+  Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
+  Card, CardBody, Button, Progress, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
+  Input, Select, SelectItem, Checkbox, Spinner, Chip, User
 } from "@heroui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  BookOpen, Users, MessageSquare, Plus, TrendingUp, AlertCircle, Edit, Trash2, Clock
+  BookOpen, Plus, AlertCircle, Clock
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 
@@ -45,7 +46,6 @@ export default function Subjects() {
   const [addSubjectModal, setAddSubjectModal] = useState(false);
   const [editChapterModal, setEditChapterModal] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState(null);
-  const [selectedChapter, setSelectedChapter] = useState(null);
 
   // New subject form state
   const [newSubject, setNewSubject] = useState({
@@ -84,8 +84,11 @@ export default function Subjects() {
     }
   };
 
-  // Get teachers for dropdown
-  const teachers = staff.filter(s => s.role === 'Teacher' || s.status === 'active');
+  // Get teachers for dropdown - Filter for active staff with Teacher role
+  const teachers = staff.filter(s => {
+    const roles = Array.isArray(s.role) ? s.role : [s.role];
+    return roles.includes('Teacher') && s.status === 'active';
+  });
 
   // Handle add subject
   const handleAddSubject = async () => {
@@ -115,6 +118,7 @@ export default function Subjects() {
   // Handle chapter progress update
   const handleUpdateChapter = async () => {
     try {
+      if (!selectedSubject) return;
       await classesEnhancedApi.updateChapter(selectedSubject._id, {
         chapters: selectedSubject.chapters
       });
@@ -152,159 +156,135 @@ export default function Subjects() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-default-800">Subjects & Teachers</h2>
-          <p className="text-default-500 mt-1">Manage subjects, chapter progress, and teacher assignments</p>
+    <div className="w-full flex flex-col">
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-background border-b border-default-200 py-4 -mx-6 -mt-6 px-6 mb-4">
+        {/* Left Side */}
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-default-800">Subjects & Teachers</h2>
+          <Chip size="sm" variant="flat">{subjects.length} Subjects</Chip>
         </div>
-        <Button
-          color="primary"
-          startContent={<Plus size={16} />}
-          onPress={() => setAddSubjectModal(true)}
-        >
-          Add Subject
-        </Button>
+
+        {/* Right Side - Actions */}
+        <div className="flex gap-2 w-full sm:w-auto justify-end">
+          <Button
+            size="sm"
+            color="primary"
+            startContent={<Plus size={16} />}
+            onPress={() => setAddSubjectModal(true)}
+          >
+            Add Subject
+          </Button>
+        </div>
       </div>
 
-      {/* Subjects Grid */}
+      {/* Subjects Table */}
       {subjects.length === 0 ? (
-        <Card className="border-default-200">
-          <CardBody className="py-12 text-center">
-            <BookOpen size={48} className="mx-auto text-default-300 mb-4" />
-            <p className="text-default-500">No subjects assigned yet</p>
-            <Button
-              color="primary"
-              variant="flat"
-              className="mt-4"
-              onPress={() => setAddSubjectModal(true)}
-            >
-              Add First Subject
-            </Button>
-          </CardBody>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {subjects.map((subject, index) => (
-            <Card key={index} className="border-default-200 hover:border-primary transition-colors">
-              <CardHeader className="flex justify-between items-start pb-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <BookOpen size={20} className="text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg text-default-800">{subject.subjectName}</h3>
-                      {subject.teacherName || subject.teacherId?.name ? (
-                        <div className="flex items-center gap-2 mt-1">
-                          <Users size={12} className="text-default-400" />
-                          <span className="text-sm text-default-600">
-                            {subject.teacherName || (subject.teacherId?.name)}
-                          </span>
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="light"
-                            className="ml-auto h-6 w-6 min-w-6"
-                            onPress={() => {/* Handle message */}}
-                          >
-                            <MessageSquare size={12} className="text-default-400" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <Chip size="sm" color="warning" variant="flat" className="mt-1">
-                          No Teacher Assigned
-                        </Chip>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-
-              <CardBody className="pt-0 space-y-4">
-                {/* Overall Progress */}
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-default-600">Overall Progress</span>
-                    <span className="font-semibold">{subject.overallProgress || 0}%</span>
-                  </div>
-                  <Progress
-                    value={subject.overallProgress || 0}
-                    color={getProgressColor(subject.overallProgress || 0)}
-                    size="md"
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Chapters */}
-                {subject.chapters && subject.chapters.length > 0 ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-default-700">Chapters</span>
-                      <span className="text-xs text-default-500">
-                        {subject.chapters.filter(c => c.status === 'completed').length} / {subject.chapters.length} completed
-                      </span>
-                    </div>
-                    <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                      {subject.chapters.slice(0, 3).map((chapter, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-xs">
-                          <Chip size="sm" color={getStatusBadge(chapter.status)} variant="flat">
-                            {chapter.status === 'not_started' && 'Not Started'}
-                            {chapter.status === 'in_progress' && 'In Progress'}
-                            {chapter.status === 'completed' && 'Done'}
-                          </Chip>
-                          <span className="flex-1 truncate">{chapter.chapterName}</span>
-                          <span className="text-default-400">{chapter.progressPercentage || 0}%</span>
-                        </div>
-                      ))}
-                      {subject.chapters.length > 3 && (
-                        <div className="text-xs text-default-400 text-center pt-1">
-                          +{subject.chapters.length - 3} more chapters
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-4 bg-default-50 rounded-lg">
-                    <AlertCircle size={16} className="mx-auto text-default-400 mb-1" />
-                    <p className="text-xs text-default-500">No chapters added yet</p>
-                  </div>
-                )}
-
-                {/* Upcoming Chapter */}
-                {subject.upcomingChapters && subject.upcomingChapters.length > 0 && (
-                  <div className="bg-default-50 rounded-lg p-3">
-                    <div className="flex items-center gap-2 text-xs text-default-600">
-                      <Clock size={12} />
-                      <span className="font-medium">Upcoming:</span>
-                    </div>
-                    <p className="text-sm text-default-700 mt-1 truncate">
-                      {subject.upcomingChapters[0]}
-                    </p>
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    size="sm"
-                    variant="flat"
-                    color="primary"
-                    className="flex-1"
-                    onPress={() => {
-                      setSelectedSubject(subject);
-                      setEditChapterModal(true);
-                    }}
-                  >
-                    <Edit size={14} />
-                    Edit Progress
-                  </Button>
-                </div>
-              </CardBody>
-            </Card>
-          ))}
+        <div className="flex flex-col items-center justify-center py-12 text-center bg-default-50/50 rounded-lg border border-dashed border-default-200">
+          <BookOpen size={48} className="text-default-300 mb-4" />
+          <p className="text-default-500 font-medium">No subjects assigned yet</p>
+          <Button
+            color="primary"
+            variant="flat"
+            size="sm"
+            className="mt-4"
+            onPress={() => setAddSubjectModal(true)}
+          >
+            Add First Subject
+          </Button>
         </div>
+      ) : (
+        <Table
+          aria-label="Subjects table"
+          removeWrapper
+          radius="none"
+          classNames={{
+            base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0 [&_table]:select-text",
+            thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12",
+            th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6 hover:bg-default-100 transition-colors cursor-pointer [&_svg]:text-default-300 [&:hover_svg]:text-default-500 [&_svg]:opacity-100 first:hover:bg-transparent first:cursor-default select-none",
+            td: "py-0 border-b border-default-200 group-data-[last=true]:border-none last:pr-6 select-text",
+            tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-0",
+            tr: "hover:bg-default-50/50 transition-colors",
+          }}
+        >
+          <TableHeader>
+            <TableColumn>SUBJECT</TableColumn>
+            <TableColumn>TEACHER</TableColumn>
+            <TableColumn>PROGRESS</TableColumn>
+            <TableColumn>CHAPTERS</TableColumn>
+            <TableColumn align="center">ACTIONS</TableColumn>
+          </TableHeader>
+          <TableBody items={subjects}>
+            {(subject) => (
+              <TableRow key={subject._id || subject.subjectName}>
+                <TableCell>
+                  <div className="py-4 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                      <BookOpen size={16} />
+                    </div>
+                    <span className="font-semibold text-default-900">{subject.subjectName}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="py-4">
+                    {subject.teacherName || subject.teacherId?.name ? (
+                      <User
+                        name={subject.teacherName || subject.teacherId?.name}
+                        description="Teacher"
+                        avatarProps={{
+                          size: "sm",
+                          className: "bg-default-100 text-default-500",
+                          radius: "md"
+                        }}
+                      />
+                    ) : (
+                      <Chip size="sm" color="warning" variant="flat">Unassigned</Chip>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="py-4 w-full max-w-[140px]">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-default-500">Completed</span>
+                      <span className="font-medium">{subject.overallProgress || 0}%</span>
+                    </div>
+                    <Progress
+                      size="sm"
+                      value={subject.overallProgress || 0}
+                      color={getProgressColor(subject.overallProgress)}
+                      className="h-1.5"
+                    />
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="py-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-small text-default-700">{subject.chapters?.length || 0} Chapters</span>
+                      {subject.upcomingChapters?.length > 0 && (
+                        <div className="flex items-center gap-1 text-xs text-default-400 max-w-[180px]">
+                          <Clock size={10} />
+                          <span className="truncate">Next: {subject.upcomingChapters[0]}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="py-4 flex justify-center">
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="primary"
+                      onPress={() => { setSelectedSubject(subject); setEditChapterModal(true); }}
+                    >
+                      Manage
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       )}
 
       {/* Add Subject Modal */}
@@ -318,6 +298,7 @@ export default function Subjects() {
               value={newSubject.subjectName}
               onValueChange={(val) => setNewSubject(prev => ({ ...prev, subjectName: val }))}
               isRequired
+              variant="bordered"
             />
 
             <Select
@@ -325,6 +306,7 @@ export default function Subjects() {
               placeholder="Select a teacher"
               selectedKeys={newSubject.teacherId ? [newSubject.teacherId] : []}
               onSelectionChange={(keys) => setNewSubject(prev => ({ ...prev, teacherId: Array.from(keys)[0] }))}
+              variant="bordered"
             >
               {teachers.map(teacher => (
                 <SelectItem key={teacher._id} value={teacher._id}>
@@ -391,42 +373,53 @@ export default function Subjects() {
                   </p>
                 </div>
 
-                {selectedSubject.chapters && selectedSubject.chapters.map((chapter, idx) => (
-                  <Card key={idx} className="border-default-200">
-                    <CardBody className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-medium">Chapter {chapter.chapterNumber}: {chapter.chapterName}</p>
-                          <Chip
-                            size="sm"
-                            color={getStatusBadge(chapter.status)}
-                            variant="flat"
-                            className="mt-1"
-                          >
-                            {chapter.status.replace('_', ' ')}
-                          </Chip>
-                        </div>
-                        <div className="text-right">
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            label="Progress %"
-                            value={chapter.progressPercentage}
-                            onValueChange={(val) => {
-                              const newChapters = [...selectedSubject.chapters];
-                              newChapters[idx].progressPercentage = parseInt(val);
-                              setSelectedSubject(prev => ({ ...prev, chapters: newChapters }));
-                            }}
-                            className="w-24"
-                            size="sm"
-                          />
-                        </div>
-                      </div>
-                      <Progress value={chapter.progressPercentage || 0} size="sm" />
-                    </CardBody>
-                  </Card>
-                ))}
+                {selectedSubject.chapters && selectedSubject.chapters.length > 0 ? (
+                  <div className="space-y-3 max-h-[60vh] overflow-y-auto px-1">
+                    {selectedSubject.chapters.map((chapter, idx) => (
+                      <Card key={idx} className="border-default-200" shadow="none">
+                        <CardBody className="space-y-3 p-3">
+                          <div className="flex justify-between items-center gap-4">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium truncate">Ch {chapter.chapterNumber}: {chapter.chapterName}</p>
+                              <Chip
+                                size="sm"
+                                color={getStatusBadge(chapter.status)}
+                                variant="flat"
+                                className="mt-1 h-5 text-[10px]"
+                              >
+                                {chapter.status?.replace('_', ' ') || 'Not Started'}
+                              </Chip>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                label="Progress"
+                                value={chapter.progressPercentage}
+                                onValueChange={(val) => {
+                                  const newChapters = [...selectedSubject.chapters];
+                                  newChapters[idx].progressPercentage = parseInt(val) || 0;
+                                  setSelectedSubject(prev => ({ ...prev, chapters: newChapters }));
+                                }}
+                                className="w-20"
+                                size="sm"
+                                variant="bordered"
+                                endContent={<span className="text-default-400 text-xs">%</span>}
+                              />
+                            </div>
+                          </div>
+                          <Progress value={chapter.progressPercentage || 0} size="sm" color={getProgressColor(chapter.progressPercentage)} />
+                        </CardBody>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 bg-default-50 rounded-lg">
+                    <AlertCircle size={24} className="mx-auto text-default-300 mb-2" />
+                    <p className="text-default-500">No chapters found</p>
+                  </div>
+                )}
               </div>
             )}
           </ModalBody>

@@ -29,6 +29,7 @@ export default function StaffPayroll() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [employmentFilter, setEmploymentFilter] = useState("all");
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
 
   // Helper function to check if staff is active (case-insensitive, handles undefined)
   const isActiveStaff = (s) => {
@@ -767,20 +768,37 @@ export default function StaffPayroll() {
             </div>
 
             {/* Unified Filter Dropdown */}
-            <Dropdown>
+            <Dropdown isOpen={isFilterDropdownOpen} onOpenChange={setIsFilterDropdownOpen}>
               <DropdownTrigger>
-                <button className="flex items-center gap-2 px-3 py-2 bg-default-100 rounded-lg border border-default-300 hover:border-primary transition-all duration-200 cursor-pointer text-sm">
-                  <Filter size={16} className="text-default-400" />
-                  <span className="text-default-600">Filters</span>
+                <div className="flex items-center gap-2">
+                  <button className="flex items-center gap-2 px-3 py-2 bg-default-100 rounded-lg border border-default-300 hover:border-primary transition-all duration-200 cursor-pointer text-sm">
+                    <Filter size={16} className="text-default-400" />
+                    <span className="text-default-600">Filters</span>
+                    {(statusFilter !== 'all' || employmentFilter !== 'all') && (
+                      <Chip size="sm" color="primary" variant="solid" className="h-5 min-w-5 px-1">
+                        {(statusFilter !== 'all' ? 1 : 0) + (employmentFilter !== 'all' ? 1 : 0)}
+                      </Chip>
+                    )}
+                    <ChevronDown size={14} className="text-default-400" />
+                  </button>
                   {(statusFilter !== 'all' || employmentFilter !== 'all') && (
-                    <Chip size="sm" color="primary" variant="solid" className="h-5 min-w-5 px-1">
-                      {(statusFilter !== 'all' ? 1 : 0) + (employmentFilter !== 'all' ? 1 : 0)}
-                    </Chip>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setStatusFilter('all');
+                        setEmploymentFilter('all');
+                        setSearchQuery('');
+                        toast.success('Filters cleared');
+                      }}
+                      className="flex items-center justify-center w-8 h-8 bg-danger-100 text-danger-600 rounded-lg border border-danger-200 hover:bg-danger-200 transition-all duration-200 cursor-pointer"
+                      title="Clear all filters"
+                    >
+                      <X size={14} />
+                    </button>
                   )}
-                  <ChevronDown size={14} className="text-default-400" />
-                </button>
+                </div>
               </DropdownTrigger>
-              <DropdownMenu aria-label="Filters" className="w-64">
+              <DropdownMenu aria-label="Filters" className="w-64 max-h-[400px] overflow-y-auto">
                 <DropdownItem key="status-header" isReadOnly className="opacity-100 font-semibold text-default-500 text-xs uppercase">
                   Status
                 </DropdownItem>
@@ -928,6 +946,7 @@ export default function StaffPayroll() {
               onSelectionChange={setSelectedKeys}
               removeWrapper
               radius="none"
+              onClick={() => setIsFilterDropdownOpen(false)}
               classNames={{
                 base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0",
                 thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12",

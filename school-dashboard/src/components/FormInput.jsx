@@ -11,6 +11,17 @@ export default function FormInput({ label, startContent, endContent, className, 
                 {startContent && <span className="text-default-400 group-focus-within:text-primary transition-colors">{startContent}</span>}
                 <input
                     {...props}
+                    onClick={(e) => {
+                        if (props.type === "date" && typeof e.target.showPicker === "function") {
+                            // Prevent default only if necessary, but showPicker usually needs user activation which click is.
+                            try {
+                                e.target.showPicker();
+                            } catch (error) {
+                                // Ignore if constrained
+                            }
+                        }
+                        if (props.onClick) props.onClick(e);
+                    }}
                     className="flex-1 bg-transparent outline-none text-sm placeholder:text-default-400 w-full text-default-900 [&:-webkit-autofill]:transition-colors [&:-webkit-autofill]:duration-[99999s]"
                 />
                 {endContent}

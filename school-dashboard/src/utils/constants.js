@@ -13,8 +13,23 @@ export const CURRENT_ACADEMIC_YEAR = '2024-25';
 /**
  * Default periods for timetable
  * Used as fallback when school settings are not available
+ * Shared between TeacherTimetableEditor and class Timetable components
  */
-export const DEFAULT_PERIODS = ['1', '2', '3', '4', '5', '6', '7', '8'];
+export const DEFAULT_PERIODS = [
+  { name: "Period 1", startTime: "08:00", endTime: "08:45", isBreak: false },
+  { name: "Period 2", startTime: "08:45", endTime: "09:30", isBreak: false },
+  { name: "Break", startTime: "09:30", endTime: "09:45", isBreak: true },
+  { name: "Period 3", startTime: "09:45", endTime: "10:30", isBreak: false },
+  { name: "Period 4", startTime: "10:30", endTime: "11:15", isBreak: false },
+  { name: "Lunch", startTime: "11:15", endTime: "12:00", isBreak: true },
+  { name: "Period 5", startTime: "12:00", endTime: "12:45", isBreak: false },
+  { name: "Period 6", startTime: "12:45", endTime: "13:30", isBreak: false },
+];
+
+/**
+ * Days of the week for timetable
+ */
+export const TIMETABLE_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 /**
  * API Response Constants

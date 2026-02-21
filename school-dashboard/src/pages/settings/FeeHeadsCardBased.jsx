@@ -32,6 +32,7 @@ export default function FeeHeadsCardBased({ embedded = false }) {
   const [feeHeadData, setFeeHeadData] = useState({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   // All class options (1-12)
   const allClasses = Array.from({ length: 12 }, (_, i) => String(i + 1));
@@ -184,18 +185,28 @@ export default function FeeHeadsCardBased({ embedded = false }) {
 
     if (!confirm(`Are you sure you want to delete ${data.name}?`)) return;
 
+    // Optimistically remove from UI
+    const previousData = { ...feeHeadData[typeValue] };
+    const previousTypes = [...selectedTypes];
+    handleTypeToggle(typeValue);
+    setDeletingId(data.id);
+
     try {
       const response = await fetch(`${API_URL}/fee-heads/${data.id}`, {
         method: 'DELETE'
       });
-      
+
       if (!response.ok) throw new Error('Failed to delete fee head');
-      
+
       toast.success('Fee head deleted successfully');
-      handleTypeToggle(typeValue);
     } catch (error) {
       console.error('Failed to delete fee head:', error);
       toast.error('Failed to delete fee head');
+      // Restore on error
+      setSelectedTypes(previousTypes);
+      setFeeHeadData(prev => ({ ...prev, [typeValue]: previousData }));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -216,12 +227,12 @@ export default function FeeHeadsCardBased({ embedded = false }) {
             <h3 className="text-xl font-bold text-default-900">Configure Fee Heads</h3>
             <p className="text-sm text-default-500 mt-1">Select fee types and configure amounts</p>
           </div>
-          <Button 
-            color="primary" 
+          <Button
+            color="primary"
             startContent={<Save size={18} />}
             onPress={handleSaveAll}
             isLoading={saving}
-            isDisabled={selectedTypes.length === 0}
+            isDisabled={selectedTypes.length === 0 || saving}
           >
             Save All Changes
           </Button>
@@ -230,12 +241,12 @@ export default function FeeHeadsCardBased({ embedded = false }) {
 
       {embedded && (
         <div className="flex justify-end">
-          <Button 
-            color="primary" 
+          <Button
+            color="primary"
             startContent={<Save size={18} />}
             onPress={handleSaveAll}
             isLoading={saving}
-            isDisabled={selectedTypes.length === 0}
+            isDisabled={selectedTypes.length === 0 || saving}
           >
             Save All Changes
           </Button>
@@ -310,6 +321,8 @@ export default function FeeHeadsCardBased({ embedded = false }) {
                     color="danger"
                     variant="light"
                     onPress={() => handleDelete(typeValue)}
+                    isLoading={deletingId === data?.id}
+                    isDisabled={deletingId === data?.id}
                   >
                     <Trash2 size={16} />
                   </Button>

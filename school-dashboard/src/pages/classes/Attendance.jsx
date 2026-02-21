@@ -136,113 +136,189 @@ export default function Attendance({ classId }) {
   const defaulters = classStudents.filter(s => attendance[s.id] === "absent");
 
   return (
-    <div className="w-full space-y-3">
-      <Card className="shadow-sm border border-default-200 rounded-2xl">
-        <CardBody className="p-4">
-          <div className="flex gap-2 mb-3 flex-wrap shrink-0">
-            {!classId && (
-              <Select size="sm" selectedKeys={[selectedClass]} onChange={(e) => { setSelectedClass(e.target.value); }} className="max-w-[150px]" label="Class" aria-label="Class">
-                {classesWithTeachers.map(c => <SelectItem key={`${c.name}-${c.section}`} textValue={`Class ${c.name} - ${c.section}`}>Class {c.name} - {c.section}</SelectItem>)}
-              </Select>
-            )}
-            <Input type="date" size="sm" value={date} onChange={(e) => setDate(e.target.value)} className="max-w-[180px]" />
-            <Button size="sm" color="success" startContent={<Check size={14} />} onPress={markAllPresent} isDisabled={isLocked}>Mark All Present</Button>
-            {absentCount > 0 && <Button size="sm" color="warning" startContent={<Bell size={14} />}>Notify Parents ({absentCount})</Button>}
-          </div>
-
-          {isLocked && (
-            <div className="flex items-center gap-2 p-2 bg-warning-50 rounded-md mb-3">
-              <Lock size={14} className="text-warning" />
-              <span className="text-xs text-warning">Attendance is locked. Unlock to make changes.</span>
-            </div>
+    <div className="w-full flex flex-col">
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-background border-b border-default-200 py-4 -mx-6 -mt-6 px-6 mb-4">
+        {/* Left Side - Filters */}
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+          {!classId && (
+            <Select
+              size="sm"
+              selectedKeys={[selectedClass]}
+              onChange={(e) => { setSelectedClass(e.target.value); }}
+              className="w-[180px]"
+              aria-label="Class"
+              variant="flat"
+              classNames={{
+                trigger: "bg-default-100 data-[hover=true]:bg-default-200",
+              }}
+            >
+              {classesWithTeachers.map(c => <SelectItem key={`${c.name}-${c.section}`} textValue={`Class ${c.name} - ${c.section}`}>Class {c.name} - {c.section}</SelectItem>)}
+            </Select>
           )}
-
-          <Table
-            aria-label="Student attendance"
-            shadow="none"
-            radius="none"
-            isStriped={false}
-            removeWrapper
+          <Input
+            type="date"
+            size="sm"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-[150px]"
+            variant="flat"
             classNames={{
-              table: "w-full",
-              th: "bg-transparent text-default-500 font-semibold text-xs uppercase tracking-wider h-12 border-b border-default-200",
-              td: "py-4 border-b border-default-100",
-              tr: "transition-opacity hover:bg-default-50/30",
-              wrapper: "p-0"
+              inputWrapper: "bg-default-100 data-[hover=true]:bg-default-200 group-data-[focus=true]:bg-default-100",
             }}
+          />
+        </div>
+
+        {/* Right Side - Actions */}
+        <div className="flex gap-2 w-full sm:w-auto justify-end">
+          <Button size="sm" color="success" variant="flat" startContent={<Check size={14} />} onPress={markAllPresent} isDisabled={isLocked}>Mark All Present</Button>
+          {absentCount > 0 && <Button size="sm" color="warning" variant="flat" startContent={<Bell size={14} />}>Notify Parents ({absentCount})</Button>}
+        </div>
+      </div>
+
+      {isLocked && (
+        <div className="flex items-center gap-2 p-3 bg-warning-50 text-warning-700 rounded-lg mb-4 mx-1">
+          <Lock size={16} />
+          <span className="text-sm font-medium">Attendance is locked. Unlock in settings to make changes.</span>
+        </div>
+      )}
+
+      {/* Main Table */}
+      <Table
+        aria-label="Student attendance"
+        radius="none"
+        removeWrapper
+        classNames={{
+          base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0 [&_table]:select-text",
+          thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12",
+          th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6 hover:bg-default-100 transition-colors cursor-pointer [&_svg]:text-default-300 [&:hover_svg]:text-default-500 [&_svg]:opacity-100 first:hover:bg-transparent first:cursor-default select-none",
+          td: "py-0 border-b border-default-200 group-data-[last=true]:border-none last:pr-6 select-text",
+          tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-0",
+          tr: "",
+        }}
+      >
+        <TableHeader>
+          <TableColumn>ROLL</TableColumn>
+          <TableColumn>NAME</TableColumn>
+          <TableColumn>STATUS</TableColumn>
+          <TableColumn>ACTIONS</TableColumn>
+        </TableHeader>
+        <TableBody>
+          {visibleStudents.map((student) => (
+            <TableRow key={student.id} className="hover:bg-default-50">
+              <TableCell>
+                <div className="py-4 text-default-600 text-sm">
+                  {student.rollNo}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="py-4">
+                  <span
+                    className="font-medium text-default-900 hover:text-primary cursor-pointer transition-colors"
+                    onClick={() => navigate(`/students/${student.id}`)}
+                  >
+                    {student.name}
+                  </span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="py-4">
+                  <Chip
+                    size="sm"
+                    color={attendance[student.id] === "present" ? "success" : "danger"}
+                    variant="flat"
+                    className="capitalize"
+                  >
+                    {attendance[student.id] || "present"}
+                  </Chip>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="py-4 flex gap-2">
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    className={attendance[student.id] === "present" ? "bg-success text-white" : "bg-transparent text-default-400 hover:text-success"}
+                    variant={attendance[student.id] === "present" ? "solid" : "light"}
+                    onPress={() => markAttendance(student.id, "present")}
+                    isDisabled={isLocked}
+                  >
+                    <Check size={16} />
+                  </Button>
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    className={attendance[student.id] === "absent" ? "bg-danger text-white" : "bg-transparent text-default-400 hover:text-danger"}
+                    variant={attendance[student.id] === "absent" ? "solid" : "light"}
+                    onPress={() => markAttendance(student.id, "absent")}
+                    isDisabled={isLocked}
+                  >
+                    <X size={16} />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      {/* Lazy loading indicator */}
+      <div ref={loaderRef} className="flex justify-center py-4">
+        {isLoadingMore && <Spinner size="sm" color="primary" />}
+        {!hasMore && classStudents.length > ITEMS_PER_LOAD && (
+          <span className="text-default-400 text-sm">All {classStudents.length} students loaded</span>
+        )}
+      </div>
+
+      {/* Footer Actions */}
+      <div className="flexflex-col sm:flex-row justify-between items-center mt-6 pt-6 border-t border-default-200 gap-4">
+        <div className="flex gap-6 text-sm">
+          <div className="flex flex-col">
+            <span className="text-default-500 text-xs uppercase tracking-wider">Total</span>
+            <span className="font-semibold text-default-900 text-lg">{classStudents.length}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-default-500 text-xs uppercase tracking-wider">Present</span>
+            <span className="font-semibold text-success-600 text-lg">{presentCount}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-default-500 text-xs uppercase tracking-wider">Absent</span>
+            <span className="font-semibold text-danger-600 text-lg">{absentCount}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-default-500 text-xs uppercase tracking-wider">Rate</span>
+            <span className={`font-semibold text-lg ${attendancePercent >= 75 ? "text-success-600" : "text-danger-600"}`}>
+              {attendancePercent}%
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {saveMessage && (
+            <span className={`text-sm font-medium ${saveMessage.type === 'success' ? 'text-success-600' : 'text-danger-600'}`}>
+              {saveMessage.text}
+            </span>
+          )}
+          <Button
+            size="md"
+            color="primary"
+            onPress={handleSaveAttendance}
+            isDisabled={isLocked || isSaving}
+            isLoading={isSaving}
+            className="font-medium px-8"
           >
-            <TableHeader>
-              <TableColumn>ROLL</TableColumn>
-              <TableColumn>NAME</TableColumn>
-              <TableColumn>STATUS</TableColumn>
-              <TableColumn>ACTIONS</TableColumn>
-            </TableHeader>
-            <TableBody>
-              {visibleStudents.map((student) => (
-                <TableRow key={student.id}>
-                  <TableCell className="text-xs">{student.rollNo}</TableCell>
-                  <TableCell>
-                    <span
-                      className="text-xs font-medium text-foreground hover:text-primary hover:underline cursor-pointer"
-                      onClick={() => navigate(`/students/${student.id}`)}
-                    >
-                      {student.name}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Chip size="sm" color={attendance[student.id] === "present" ? "success" : "danger"} variant="flat">{attendance[student.id]}</Chip>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button isIconOnly size="sm" color="success" variant={attendance[student.id] === "present" ? "solid" : "flat"} onPress={() => markAttendance(student.id, "present")} isDisabled={isLocked}><Check size={12} /></Button>
-                      <Button isIconOnly size="sm" color="danger" variant={attendance[student.id] === "absent" ? "solid" : "flat"} onPress={() => markAttendance(student.id, "absent")} isDisabled={isLocked}><X size={12} /></Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          {/* Lazy loading indicator */}
-          <div ref={loaderRef} className="flex justify-center py-4">
-            {isLoadingMore && <Spinner size="sm" color="primary" />}
-            {!hasMore && classStudents.length > ITEMS_PER_LOAD && (
-              <span className="text-default-400 text-sm">All {classStudents.length} students loaded</span>
-            )}
-          </div>
-
-          <div className="flex justify-between items-center mt-3 pt-3 border-t">
-            <div className="flex gap-4 text-xs">
-              <span>Total: <strong>{classStudents.length}</strong></span>
-              <span>Present: <strong className="text-success">{presentCount}</strong></span>
-              <span>Absent: <strong className="text-danger">{absentCount}</strong></span>
-              <span>Attendance: <strong className={attendancePercent >= 75 ? "text-success" : "text-danger"}>{attendancePercent}%</strong></span>
-            </div>
-            <div className="flex items-center gap-2">
-              {saveMessage && (
-                <span className={`text-xs ${saveMessage.type === 'success' ? 'text-success' : 'text-danger'}`}>
-                  {saveMessage.text}
-                </span>
-              )}
-              <Button
-                size="sm"
-                color="primary"
-                onPress={handleSaveAttendance}
-                isDisabled={isLocked || isSaving}
-              >
-                {isSaving ? 'Saving...' : 'Save Attendance'}
-              </Button>
-            </div>
-          </div>
-        </CardBody>
-      </Card>
+            {isSaving ? 'Saving...' : 'Save Attendance'}
+          </Button>
+        </div>
+      </div>
 
       {defaulters.length > 0 && (
-        <Card className="shadow-none border-danger-200 border">
-          <CardBody className="p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle size={16} className="text-danger" />
-              <span className="text-sm font-semibold text-danger">Absentees Today</span>
+        <Card className="mt-6 shadow-sm border border-danger-200 bg-danger-50/20">
+          <CardBody className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-1.5 bg-danger-100 rounded-md">
+                <AlertTriangle size={16} className="text-danger-600" />
+              </div>
+              <span className="text-sm font-semibold text-danger-700">Absentees Today</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {defaulters.map(s => (
@@ -251,7 +327,7 @@ export default function Attendance({ classId }) {
                   size="sm"
                   variant="flat"
                   color="danger"
-                  className="cursor-pointer hover:opacity-80"
+                  className="cursor-pointer hover:bg-danger-200/50 transition-colors border border-danger-100"
                   onClick={() => navigate(`/students/${s.id}`)}
                 >
                   {s.name}

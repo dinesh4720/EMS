@@ -18,14 +18,14 @@ export async function request(endpoint, options = {}) {
   if (method === 'GET' && !options.skipCache) {
     const cached = requestCache.get(url);
     if (cached) {
-      console.log(`💾 Cache hit: ${url}`);
+      // console.log(`💾 Cache hit: ${url}`);
       return cached;
     }
   }
 
   // Create the actual request function
   const makeRequest = async () => {
-    console.log(`📡 API Request: ${method} ${url}`);
+    // console.log(`📡 API Request: ${method} ${url}`);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
@@ -62,7 +62,7 @@ export async function request(endpoint, options = {}) {
 
       clearTimeout(timeoutId);
 
-      console.log(`✅ API Response: ${response.status} ${url}`);
+      // console.log(`✅ API Response: ${response.status} ${url}`);
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: 'Request failed' }));
@@ -87,6 +87,10 @@ export async function request(endpoint, options = {}) {
           throw conflictError;
         }
         
+        // Log validation details if available
+        if (error.details) {
+          console.error('Validation details:', JSON.stringify(error.details, null, 2));
+        }
         throw new Error(error.error || error.message || `Request failed with status ${response.status}`);
       }
 
@@ -111,14 +115,17 @@ export async function request(endpoint, options = {}) {
   try {
     return await requestQueue.add(() => retryRequest(makeRequest, 2, 1000));
   } catch (error) {
-    console.error(`❌ API Error: ${url}`, error);
+    // Only log errors that aren't rate limiting or 404s (reduce console spam)
+    if (!error.message?.includes('rate limit') && !error.message?.includes('Too many requests')) {
+      console.error(`❌ API Error: ${url}`, error);
+    }
     throw error;
   }
 }
 
 // Staff API
 export const staffApi = {
-  getAll: () => request('/staff'),
+  getAll: (skipCache = false) => request('/staff', { skipCache }),
   getById: (id) => request(`/staff/${id}`),
   create: (data) => request('/staff', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/staff/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -128,8 +135,12 @@ export const staffApi = {
 
 // Students API
 export const studentsApi = {
-  getAll: async (classId) => {
-    const response = await request(`/students${classId ? `?classId=${classId}` : ''}`);
+  getAll: async (classIdOrSkipCache) => {
+    // Handle both old API (classId as string) and new API (skipCache as boolean)
+    const skipCache = typeof classIdOrSkipCache === 'boolean' ? classIdOrSkipCache : false;
+    const classId = typeof classIdOrSkipCache === 'string' ? classIdOrSkipCache : null;
+    // FIXED: Increase limit to 1000 to fetch all students (pagination was causing missing students)
+    const response = await request(`/students${classId ? `?classId=${classId}&limit=1000` : '?limit=1000'}`, { skipCache });
     // Backend returns paginated response with data property
     return response.data || response;
   },
@@ -143,6 +154,29 @@ export const studentsApi = {
   getResults: (id, academicYear) => request(`/students/${id}/results${academicYear ? `?academicYear=${academicYear}` : ''}`),
 };
 
+// Trash API
+export const trashApi = {
+  getAll: async (params = {}) => {
+    const queryString = params ? new URLSearchParams(params).toString() : '';
+    return request(`/trash${queryString ? `?${queryString}` : ''}`);
+  },
+  getStats: async () => request('/trash/stats'),
+  restore: (trashItemId) => request(`/trash/${trashItemId}/restore`, {
+    method: 'POST'
+  }),
+  permanentDelete: (trashItemId) => request(`/trash/${trashItemId}`, {
+    method: 'DELETE'
+  }),
+  bulkRestore: (trashItemIds) => request('/trash/bulk-restore', {
+    method: 'POST',
+    body: JSON.stringify({ trashItemIds })
+  }),
+  bulkDelete: (trashItemIds) => request('/trash/bulk-delete', {
+    method: 'DELETE',
+    body: JSON.stringify({ trashItemIds })
+  }),
+};
+
 // Exams API
 export const examsApi = {
   getAll: (params) => {
@@ -153,6 +187,9 @@ export const examsApi = {
   create: (data) => request('/exams', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/exams/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => request(`/exams/${id}`, { method: 'DELETE' }),
+  getByClass: (classId) => request(`/exams/class/${classId}`),
+  getByStaff: (staffId) => request(`/exams/staff/${staffId}`),
+  publish: (id) => request(`/exams/${id}/publish`, { method: 'POST' }),
   getResults: (id) => request(`/exams/${id}/results`),
   publishResults: (id, publish) => request(`/exams/${id}/publish-results`, { method: 'PUT', body: JSON.stringify({ publish }) }),
 };
@@ -160,18 +197,50 @@ export const examsApi = {
 // Results API
 export const resultsApi = {
   create: (data) => request('/results', { method: 'POST', body: JSON.stringify(data) }),
-  bulkCreate: (results) => request('/results/bulk', { method: 'POST', body: JSON.stringify({ results }) }),
+  bulkCreate: (results, examId, classId) => request('/results/bulk', { method: 'POST', body: JSON.stringify({ results, examId, classId }) }),
+  update: (id, data) => request(`/results/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  getByStudent: (studentId) => request(`/results/student/${studentId}`),
+  getByClassExam: (classId, examId) => request(`/results/class/${classId}/exam/${examId}`),
+};
+
+// Academic Performance API
+export const academicPerformanceApi = {
+  getStudent: (studentId, params) => {
+    const query = params ? `?${new URLSearchParams(params)}` : '';
+    return request(`/academic-performance/student/${studentId}${query}`);
+  },
+  getClass: (classId, params) => {
+    const query = params ? `?${new URLSearchParams(params)}` : '';
+    return request(`/academic-performance/class/${classId}${query}`);
+  },
+  getReportCard: (studentId, params) => {
+    const query = params ? `?${new URLSearchParams(params)}` : '';
+    return request(`/academic-performance/report-card/${studentId}${query}`);
+  },
+  getTrends: (studentId) => request(`/academic-performance/trends/${studentId}`),
+  recalculate: (studentId, data) => request(`/academic-performance/recalculate/${studentId}`, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+};
+
+// Subjects API
+export const subjectsApi = {
+  getAll: () => request('/subjects'),
+  create: (data) => request('/subjects', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // Classes API
 export const classesApi = {
-  getAll: () => request('/classes'),
+  getAll: (skipCache = false) => request('/classes', { skipCache }),
+  getPublic: () => request('/classes/public'),
   getById: (id) => request(`/classes/${id}`),
   create: (data) => request('/classes', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/classes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => request(`/classes/${id}`, { method: 'DELETE' }),
   getStudents: (id) => request(`/classes/${id}/students`),
   getNextRollNumber: (classId) => request(`/classes/${classId}/next-roll-number`),
+  checkCapacity: (id) => request(`/classes/${id}/capacity`),
   
   // Class Settings
   getSettings: (id) => request(`/class-settings/${id}`),
@@ -194,9 +263,9 @@ export const classesApi = {
   },
   updateSubjects: async (id, subjects) => {
     try {
-      return await request(`/class-settings/${id}/subjects`, { 
-        method: 'PUT', 
-        body: JSON.stringify({ subjects: subjects }) 
+      return await request(`/class-settings/${id}/subjects`, {
+        method: 'PUT',
+        body: JSON.stringify({ subjects: subjects })
       });
     } catch (error) {
       // Re-throw validation errors with enhanced information
@@ -209,6 +278,7 @@ export const classesApi = {
       throw error;
     }
   },
+  updateClassTeacher: (id, teacherId) => request(`/classes/${id}/class-teacher`, { method: 'PUT', body: JSON.stringify({ classTeacherId: teacherId }) }),
 };
 
 // Classes Enhanced API
@@ -261,14 +331,32 @@ export const attendanceApi = {
   getByClassDate: (classId, date) => request(`/attendance/${classId}/${date}`),
 };
 
+// Staff Attendance API
+export const staffAttendanceApi = {
+  getAll: () => request('/staff-attendance'),
+  getByDate: (date) => request(`/staff-attendance/date/${date}`),
+  getByStaff: (staffId, startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const queryString = params.toString();
+    return request(`/staff-attendance/staff/${staffId}${queryString ? `?${queryString}` : ''}`);
+  },
+  mark: (data) => request('/staff-attendance', { method: 'POST', body: JSON.stringify(data) }),
+  markBulk: (data) => request('/staff-attendance/bulk', { method: 'POST', body: JSON.stringify(data) }),
+  regularize: (id, data) => request(`/staff-attendance/${id}/regularize`, { method: 'PUT', body: JSON.stringify(data) }),
+};
+
 // Timetable API
 export const timetableApi = {
   getByClass: (classId, academicYear) => request(`/timetable/${classId}${academicYear ? `?academicYear=${academicYear}` : ''}`),
-  
+
   // Lazy loading: Get timetable with option to skip cache for fresh data
-  getByClassLazy: (classId, academicYear, skipCache = false) => 
+  getByClassLazy: (classId, academicYear, skipCache = false) =>
     request(`/timetable/${classId}${academicYear ? `?academicYear=${academicYear}` : ''}`, { skipCache }),
-  
+
+  create: (data) => request('/timetable', { method: 'POST', body: JSON.stringify(data) }),
+  update: (classId, data) => request(`/timetable/${classId}`, { method: 'PUT', body: JSON.stringify(data) }),
   createOrUpdate: (data) => request('/timetable', { method: 'POST', body: JSON.stringify(data) }),
   updateSlot: async (classId, data) => {
     try {
@@ -431,6 +519,14 @@ export const settingsApi = {
   deleteDocumentConfig: (id) => request(`/settings/document-config/${id}`, { method: 'DELETE' }),
 };
 
+// Calendar Events API
+export const calendarEventsApi = {
+  getAll: () => request('/calendar/events'),
+  create: (data) => request('/calendar/events', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/calendar/events/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/calendar/events/${id}`, { method: 'DELETE' }),
+};
+
 // Intake Forms API
 export const intakeFormsApi = {
   // Forms CRUD
@@ -452,6 +548,10 @@ export const intakeFormsApi = {
   getSubmissions: (formId, reviewStatus) => request(`/form-submissions${formId || reviewStatus ? `?${formId ? `formId=${formId}` : ''}${reviewStatus ? `&reviewStatus=${reviewStatus}` : ''}` : ''}`),
   getSubmission: (id) => request(`/form-submissions/${id}`),
   reviewSubmission: (id, data) => request(`/form-submissions/${id}/review`, { method: 'PUT', body: JSON.stringify(data) }),
+  requestEdit: (id, data) => request(`/form-submissions/${id}/request-edit`, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
   deleteSubmission: (id) => request(`/form-submissions/${id}`, { method: 'DELETE' }),
 };
 
@@ -543,14 +643,41 @@ export const uploadApi = {
     const formData = new FormData();
     formData.append('file', file);
 
+    // Get token from sessionStorage for authentication
+    const storedUser = sessionStorage.getItem('app_user');
+    let token = null;
+
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        token = userData.token;
+      } catch (err) {
+        console.error('❌ Failed to parse user data from sessionStorage:', err);
+      }
+    }
+
+    const headers = {};
+    // Add Authorization header if token exists
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_URL}/upload`, {
       method: 'POST',
+      headers,
       body: formData,
       // Content-Type header is skipped so browser can set boundary
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+
+      // If unauthorized, clear session storage
+      if (response.status === 401) {
+        console.warn('⚠️ 401 Unauthorized - clearing session');
+        sessionStorage.removeItem('app_user');
+      }
+
       throw new Error(errorData.error || `Upload failed with status ${response.status}`);
     }
     return await response.json();
@@ -690,28 +817,104 @@ export const frontDeskApi = {
   deleteCallLog: (id) => request(`/front-desk/call-logs/${id}`, { method: 'DELETE' }),
 };
 
-export default { 
-  staffApi, 
-  studentsApi, 
-  classesApi, 
-  classesEnhancedApi, 
-  attendanceApi, 
-  timetableApi, 
+// PIN Code Lookup API (External - No Auth Required)
+export const lookupPincode = async (pincode) => {
+  try {
+    const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+    if (!response.ok) {
+      return null;
+    }
+    const data = await response.json();
+
+    // Check if response is valid and has data
+    if (data && data[0] && data[0].Status === 'Success' && data[0].PostOffice && data[0].PostOffice.length > 0) {
+      const postOffice = data[0].PostOffice[0];
+      return {
+        city: postOffice.Name,
+        state: postOffice.State
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('PIN code lookup failed:', error);
+    return null;
+  }
+};
+
+// Substitution Alerts API
+export const substitutionAlertsApi = {
+  getAlerts: (date) => request(`/substitution-alerts?date=${date}`),
+  getAvailableTeachers: (params) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/substitution-alerts/available-teachers?${query}`);
+  },
+  createFromAbsence: (teacherId, date, reason) => request('/substitution-alerts/from-absence', {
+    method: 'POST',
+    body: JSON.stringify({ teacherId, date, reason })
+  }),
+  assignSubstitute: (substitutionId, substituteTeacherId) => request(`/substitution-alerts/${substitutionId}/assign`, {
+    method: 'POST',
+    body: JSON.stringify({ substituteTeacherId })
+  }),
+  notifySubstitute: (substitutionId, method = 'push') => request(`/substitution-alerts/${substitutionId}/notify`, {
+    method: 'POST',
+    body: JSON.stringify({ method })
+  }),
+  getStats: (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    return request(`/substitution-alerts/stats?${params.toString()}`);
+  },
+  bulkAssign: (assignments) => request('/substitution-alerts/bulk-assign', {
+    method: 'POST',
+    body: JSON.stringify({ assignments })
+  })
+};
+
+// Parent Management API
+export const parentApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/parents${query ? `?${query}` : ''}`);
+  },
+  getById: (id) => request(`/parents/${id}`),
+  resetPassword: (id) => request(`/parents/${id}/reset-password`, { method: 'POST' }),
+  updateStatus: (id, status) => request(`/parents/${id}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ status })
+  }),
+  bulkCreate: () => request('/parents/bulk-create', { method: 'POST' }),
+};
+
+export default {
+  staffApi,
+  studentsApi,
+  trashApi,
+  classesApi,
+  classesEnhancedApi,
+  attendanceApi,
+  staffAttendanceApi,
+  timetableApi,
   teacherAssignmentsApi,
   teacherTimetableApi,
-  settingsApi, 
-  intakeFormsApi, 
-  publicApi, 
-  notificationsApi, 
-  feesApi, 
-  payrollApi, 
-  uploadApi, 
-  announcementsApi, 
-  remindersApi, 
-  callsApi, 
-  visitorsApi, 
-  gatePassesApi, 
-  frontDeskApi, 
-  examsApi, 
-  resultsApi 
+  settingsApi,
+  intakeFormsApi,
+  publicApi,
+  notificationsApi,
+  feesApi,
+  payrollApi,
+  uploadApi,
+  announcementsApi,
+  remindersApi,
+  callsApi,
+  visitorsApi,
+  gatePassesApi,
+  frontDeskApi,
+  examsApi,
+  resultsApi,
+  academicPerformanceApi,
+  subjectsApi,
+  substitutionAlertsApi,
+  lookupPincode
 };

@@ -18,29 +18,24 @@ export default function MessageReactions({ reactions, currentUserId, onReact }) 
   };
 
   return (
-    <div className="flex items-center gap-1">
-      {/* Existing Reactions - Displayed as circular buttons */}
+    <div className="flex items-center gap-1 flex-wrap">
+      {/* Existing Reactions - Displayed as modern pill buttons */}
       {Object.entries(groupedReactions).map(([emoji, reactorList]) => {
         const userHasReacted = hasReactedWithEmoji(emoji);
         return (
           <button
             key={emoji}
             onClick={() => handleReactionClick(emoji)}
-            style={{
-              borderColor: userHasReacted ? '' : '#9CA3AF',
-              color: userHasReacted ? '' : '#6B7280'
-            }}
-            className={`relative w-7 h-7 flex items-center justify-center rounded-full text-base transition-all bg-transparent border-2 hover:scale-110 ${
-              userHasReacted ? 'border-primary text-primary scale-110' : ''
+            className={`relative flex items-center gap-1 px-1.5 py-0.5 rounded-full text-sm transition-all duration-150 hover:scale-105 active:scale-95 ${
+              userHasReacted
+                ? 'bg-indigo-100 dark:bg-indigo-500/20 ring-1 ring-indigo-300 dark:ring-indigo-500/40'
+                : 'bg-gray-100 dark:bg-zinc-700 hover:bg-gray-200 dark:hover:bg-zinc-600'
             }`}
-            title={`${reactorList.length} ${reactorList.length === 1 ? 'reaction' : 'reactions'} - Click to ${userHasReacted ? 'remove' : 'add'}`}
+            title={`${reactorList.length} ${reactorList.length === 1 ? 'person' : 'people'} reacted${userHasReacted ? ' (you)' : ''} - Click to ${userHasReacted ? 'remove' : 'add'}`}
           >
-            <span>{emoji}</span>
+            <span className="text-base">{emoji}</span>
             {reactorList.length > 1 && (
-              <span
-                style={{ backgroundColor: '#9CA3AF' }}
-                className="absolute -top-1 -right-1 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold"
-              >
+              <span className="text-[10px] font-semibold text-gray-600 dark:text-gray-300 pr-0.5">
                 {reactorList.length}
               </span>
             )}

@@ -65,6 +65,16 @@ class SocketServiceEnhanced {
         this.connected = true;
         this.reconnectAttempts = 0;
 
+        // Register any pending listeners that were added before connection
+        this.listeners.forEach((callbacks, event) => {
+          if (!this.socket.listeners(event).length) {
+            this.socket.on(event, (data) => {
+              this.emit(event, data);
+            });
+            console.log(`🔌 [SOCKET] Registered pending listener for '${event}'`);
+          }
+        });
+
         // Authenticate
         this.socket.emit('authenticate', { userId, userType });
       });
@@ -134,6 +144,18 @@ class SocketServiceEnhanced {
         console.log('✅ Joined conversation:', data);
         this.emit('joined_conversation', data);
       });
+
+      // Attendance events
+      this.socket.on('attendance_updated', (data) => {
+        console.log('📋 Attendance updated:', data);
+        this.emit('attendance_updated', data);
+      });
+
+      // Substitution alert events
+      this.socket.on('substitution_alert', (data) => {
+        console.log('🔔 Substitution alert received:', data);
+        this.emit('substitution_alert', data);
+      });
     });
   }
 
@@ -190,15 +212,25 @@ class SocketServiceEnhanced {
   on(event, callback) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
+
+      // Register with socket.io if this is the first listener for this event
+      if (this.socket && this.socket.connected) {
+        this.socket.on(event, (data) => {
+          this.emit(event, data);
+        });
+        console.log(`🔌 [SOCKET] Registered '${event}' with socket.io (already connected)`);
+      } else {
+        console.log(`📝 [LISTENERS] Storing '${event}' listener for later registration (socket not connected yet)`);
+      }
     }
-    
+
     // Check if this exact callback already exists to prevent duplicates
     const callbacks = this.listeners.get(event);
     if (callbacks.includes(callback)) {
       console.log(`⚠️ [LISTENERS] Callback for '${event}' already exists, skipping duplicate`);
       return;
     }
-    
+
     callbacks.push(callback);
     console.log(`📝 [LISTENERS] Added listener for '${event}', total count: ${callbacks.length}`);
   }

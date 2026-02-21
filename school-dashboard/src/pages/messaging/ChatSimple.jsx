@@ -266,7 +266,7 @@ export default function ChatSimple() {
                 </div>
               ) : (
                 messages.map((msg) => {
-                  const isMe = msg.senderId === user?.id;
+                  const isMe = String(msg.senderId) === String(user?.id);
                   return (
                     <div
                       key={msg.id}
