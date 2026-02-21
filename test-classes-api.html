@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Classes API</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        .error { color: #f00; background: #fee; padding: 10px; border-radius: 4px; }
+        .success { color: #0a0; background: #efe; padding: 10px; border-radius: 4px; }
+        .warning { color: #f80; background: #ffe; padding: 10px; border-radius: 4px; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; }
+        button:hover { background: #0056b3; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; border-radius: 4px; }
+        input { padding: 8px; width: 300px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Classes API Tester</h1>
+    
+    <div class="section">
+        <h2>Configuration</h2>
+        <label>API URL:</label>
+        <input type="text" id="apiUrl" value="http://localhost:3001/api" />
+        
+        <label>Auth Token (from localStorage or sessionStorage):</label>
+        <input type="text" id="authToken" placeholder="Will auto-detect" />
+        <button onclick="detectToken()">Auto-Detect Token</button>
+    </div>
+
+    <div class="section">
+        <h2>Test API</h2>
+        <button onclick="testClassesAPI()">Test GET /api/classes</button>
+        <button onclick="testPublicClassesAPI()">Test GET /api/classes/public</button>
+        <div id="result" style="margin-top: 15px;"></div>
+    </div>
+
+    <script>
+        function detectToken() {
+            try {
+                // Try localStorage first
+                let user = localStorage.getItem('user');
+                if (!user) {
+                    // Try sessionStorage
+                    user = sessionStorage.getItem('app_user');
+                }
+                
+                if (user) {
+                    const userData = JSON.parse(user);
+                    const token = userData.token || userData.accessToken;
+                    document.getElementById('authToken').value = token || 'No token found';
+                    
+                    if (token) {
+                        showResult('success', `Token detected: ${token.substring(0, 20)}...`);
+                    } else {
+                        showResult('warning', 'User data found but no token property');
+                    }
+                } else {
+                    showResult('error', 'No user data found in localStorage or sessionStorage. Please log in first.');
+                }
+            } catch (error) {
+                showResult('error', `Error detecting token: ${error.message}`);
+            }
+        }
+
+        async function testClassesAPI() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const token = document.getElementById('authToken').value;
+            
+            if (!token) {
+                showResult('error', 'Please provide an auth token or click Auto-Detect Token');
+                return;
+            }
+            
+            showResult('warning', 'Testing /api/classes...');
+            
+            try {
+                const response = await fetch(`${apiUrl}/classes`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('success', `
+                        <strong>✓ API Working!</strong><br>
+                        Status: ${response.status}<br>
+                        Classes found: ${Array.isArray(data) ? data.length : 'Invalid format'}<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `);
+                } else {
+                    showResult('error', `
+                        <strong>✗ API Error</strong><br>
+                        Status: ${response.status}<br>
+                        Error: ${data.error || data.message || 'Unknown error'}<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `);
+                }
+            } catch (error) {
+                showResult('error', `
+                    <strong>✗ Request Failed</strong><br>
+                    ${error.message}<br>
+                    <p class="warning">Is the backend running on port 3001?</p>
+                `);
+            }
+        }
+
+        async function testPublicClassesAPI() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            
+            showResult('warning', 'Testing /api/classes/public (no auth required)...');
+            
+            try {
+                const response = await fetch(`${apiUrl}/classes/public`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('success', `
+                        <strong>✓ Public API Working!</strong><br>
+                        Status: ${response.status}<br>
+                        Classes found: ${Array.isArray(data) ? data.length : 'Invalid format'}<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `);
+                } else {
+                    showResult('error', `
+                        <strong>✗ API Error</strong><br>
+                        Status: ${response.status}<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `);
+                }
+            } catch (error) {
+                showResult('error', `
+                    <strong>✗ Request Failed</strong><br>
+                    ${error.message}
+                `);
+            }
+        }
+
+        function showResult(type, message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = type;
+            resultDiv.innerHTML = message;
+        }
+
+        // Auto-detect token on page load
+        window.onload = detectToken;
+    </script>
+</body>
+</html>

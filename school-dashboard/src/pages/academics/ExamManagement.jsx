@@ -1,0 +1,557 @@
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import {
+  Card,
+  CardBody,
+  Chip,
+  Spinner,
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+} from '@heroui/react';
+import { FileText, Calendar, Eye, Pencil, Trash2, AlertTriangle, Plus, Clock, Users, BookOpen } from 'lucide-react';
+import { examsApi, classesApi } from '../../services/api';
+import FiltersDropdown from '../../components/FiltersDropdown';
+import { MinimalButton } from '../../components/ui';
+import toast from 'react-hot-toast';
+
+const STATUS_OPTIONS = ['all', 'scheduled', 'ongoing', 'completed', 'results_published'];
+
+// Simple cache
+const examsCache = {
+  data: null,
+  timestamp: 0,
+  duration: 30000 // 30 seconds
+};
+
+const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
+  const [exams, setExams] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, examId: null, examName: '' });
+  const [activeView, setActiveView] = useState('list');
+  const [filters, setFilters] = useState({
+    classId: 'all',
+    status: 'all',
+    academicYear: 'all'
+  });
+
+  const initialFetchDone = useRef(false);
+
+  // Get unique values for filter options
+  const uniqueClasses = useMemo(() => {
+    const classSet = new Set(exams.map(e => e.className || e.classId).filter(Boolean));
+    return Array.from(classSet);
+  }, [exams]);
+
+  const uniqueYears = useMemo(() => {
+    const yearSet = new Set(exams.map(e => e.academicYear).filter(Boolean));
+    return Array.from(yearSet);
+  }, [exams]);
+
+  const filterConfig = {
+    classId: {
+      label: 'Class',
+      value: filters.classId,
+      options: ['all', ...uniqueClasses],
+      displayLabels: { all: 'All Classes' },
+      counts: {}
+    },
+    status: {
+      label: 'Status',
+      value: filters.status,
+      options: STATUS_OPTIONS,
+      displayLabels: {
+        all: 'All Status',
+        scheduled: 'Scheduled',
+        ongoing: 'Ongoing',
+        completed: 'Completed',
+        results_published: 'Published'
+      },
+      counts: {}
+    },
+    academicYear: {
+      label: 'Academic Year',
+      value: filters.academicYear,
+      options: ['all', ...uniqueYears],
+      displayLabels: { all: 'All Years' },
+      counts: {}
+    }
+  };
+
+  // Calculate active filters count
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (filters.classId !== 'all') count++;
+    if (filters.status !== 'all') count++;
+    if (filters.academicYear !== 'all') count++;
+    if (searchQuery) count++;
+    return count;
+  }, [filters, searchQuery]);
+
+  useEffect(() => {
+    if (!initialFetchDone.current) {
+      fetchExams();
+      fetchClasses();
+      initialFetchDone.current = true;
+    }
+  }, []);
+
+  // Expose refresh method
+  const refreshExams = useCallback(() => {
+    examsCache.data = null;
+    fetchExams();
+  }, []);
+
+  const fetchExams = async (forceRefresh = false) => {
+    // Check cache first
+    const now = Date.now();
+    if (!forceRefresh && examsCache.data && (now - examsCache.timestamp) < examsCache.duration) {
+      setExams(examsCache.data);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await examsApi.getAll();
+      setExams(data || []);
+      examsCache.data = data || [];
+      examsCache.timestamp = now;
+    } catch (error) {
+      console.error('Error fetching exams:', error);
+      toast.error('Failed to load exams');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchClasses = async () => {
+    try {
+      const data = await classesApi.getAll ? classesApi.getAll() : Promise.resolve([]);
+      setClasses(data || []);
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+    }
+  };
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleClearFilters = () => {
+    setFilters({ classId: 'all', status: 'all', academicYear: 'all' });
+    setSearchQuery('');
+  };
+
+  const handleApplyFilters = () => {
+    // Filters are already applied reactively
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      scheduled: 'primary',
+      ongoing: 'warning',
+      completed: 'success',
+      results_published: 'success'
+    };
+    return colors[status] || 'default';
+  };
+
+  const handleDeleteClick = (examId, examName) => {
+    setDeleteModal({ isOpen: true, examId, examName });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.examId) return;
+
+    try {
+      await examsApi.delete(deleteModal.examId);
+      toast.success('Exam deleted successfully');
+      refreshExams();
+    } catch (error) {
+      console.error('Error deleting exam:', error);
+      toast.error('Failed to delete exam');
+    } finally {
+      setDeleteModal({ isOpen: false, examId: null, examName: '' });
+    }
+  };
+
+  // Filter exams
+  const filteredExams = useMemo(() => {
+    return exams.filter(exam => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch =
+          exam.name?.toLowerCase().includes(query) ||
+          exam.classId?.toLowerCase().includes(query) ||
+          exam.subjectName?.toLowerCase().includes(query);
+        if (!matchesSearch) return false;
+      }
+
+      // Class filter
+      if (filters.classId !== 'all' && exam.classId !== filters.classId) {
+        return false;
+      }
+
+      // Status filter
+      if (filters.status !== 'all' && exam.status !== filters.status) {
+        return false;
+      }
+
+      // Academic year filter
+      if (filters.academicYear !== 'all' && exam.academicYear !== filters.academicYear) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [exams, searchQuery, filters]);
+
+  // Group exams by status for schedule view
+  const examsByStatus = useMemo(() => {
+    return {
+      scheduled: filteredExams.filter(e => e.status === 'scheduled'),
+      ongoing: filteredExams.filter(e => e.status === 'ongoing'),
+      completed: filteredExams.filter(e => e.status === 'completed'),
+      results_published: filteredExams.filter(e => e.status === 'results_published'),
+    };
+  }, [filteredExams]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-20">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* View Tabs */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActiveView('list')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              activeView === 'list'
+                ? 'bg-gray-900 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            List View
+          </button>
+          <button
+            onClick={() => setActiveView('schedule')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              activeView === 'schedule'
+                ? 'bg-gray-900 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            Schedule View
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <FiltersDropdown
+            filters={filterConfig}
+            onFilterChange={handleFilterChange}
+            onClearAll={handleClearFilters}
+            onApply={handleApplyFilters}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            activeFiltersCount={activeFiltersCount}
+          />
+          <MinimalButton icon={<Plus size={16} />} onClick={onCreateExam}>
+            Create Exam
+          </MinimalButton>
+        </div>
+      </div>
+
+      {/* Stats Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+          <p className="text-xs text-gray-500">Total Exams</p>
+          <p className="text-xl font-semibold text-gray-900">{exams.length}</p>
+        </div>
+        <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+          <p className="text-xs text-blue-600">Scheduled</p>
+          <p className="text-xl font-semibold text-blue-700">{exams.filter(e => e.status === 'scheduled').length}</p>
+        </div>
+        <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
+          <p className="text-xs text-amber-600">Ongoing</p>
+          <p className="text-xl font-semibold text-amber-700">{exams.filter(e => e.status === 'ongoing').length}</p>
+        </div>
+        <div className="bg-green-50 rounded-lg p-3 border border-green-100">
+          <p className="text-xs text-green-600">Completed</p>
+          <p className="text-xl font-semibold text-green-700">{exams.filter(e => e.status === 'completed' || e.status === 'results_published').length}</p>
+        </div>
+      </div>
+
+      {/* Content based on view */}
+      {activeView === 'list' ? (
+        // List View
+        <Card shadow="none" className="border border-gray-100">
+          <CardBody className="p-0">
+            {filteredExams.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText size={40} className="mx-auto mb-3 text-gray-300" />
+                <p className="text-gray-500 mb-4">No exams found</p>
+                {activeFiltersCount > 0 ? (
+                  <Button variant="flat" size="sm" onClick={handleClearFilters}>
+                    Clear Filters
+                  </Button>
+                ) : (
+                  <MinimalButton icon={<Plus size={16} />} onClick={onCreateExam}>
+                    Create First Exam
+                  </MinimalButton>
+                )}
+              </div>
+            ) : (
+              <Table aria-label="Exams table" removeWrapper>
+                <TableHeader>
+                  <TableColumn>EXAM</TableColumn>
+                  <TableColumn>TYPE</TableColumn>
+                  <TableColumn>CLASS</TableColumn>
+                  <TableColumn>SUBJECT</TableColumn>
+                  <TableColumn>DATE</TableColumn>
+                  <TableColumn>STATUS</TableColumn>
+                  <TableColumn>ACTIONS</TableColumn>
+                </TableHeader>
+                <TableBody emptyContent="No exams found">
+                  {filteredExams.map((exam) => (
+                    <TableRow key={exam.id || exam._id} className="hover:bg-gray-50">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-gray-100 rounded-lg">
+                            <FileText size={16} className="text-gray-500" />
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-900">{exam.name}</span>
+                            {exam.academicYear && (
+                              <p className="text-xs text-gray-400">{exam.academicYear}</p>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-600 capitalize">
+                          {exam.type?.replace('_', ' ')}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-600">{exam.className || exam.classId}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-600">{exam.subjectName}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                          <Calendar size={14} />
+                          {exam.startDate || 'Not scheduled'}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          size="sm"
+                          color={getStatusColor(exam.status)}
+                          variant="flat"
+                          className="capitalize"
+                        >
+                          {exam.status?.replace('_', ' ')}
+                        </Chip>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <button
+                            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                            onClick={() => onViewExam?.(exam.id || exam._id)}
+                            title="View Details"
+                          >
+                            <Eye size={16} className="text-gray-500" />
+                          </button>
+                          <button
+                            className="p-2 rounded-lg hover:bg-blue-50 transition-colors"
+                            onClick={() => onEnterResults?.(exam.id || exam._id)}
+                            title="Enter Results"
+                          >
+                            <Pencil size={16} className="text-blue-500" />
+                          </button>
+                          <button
+                            className="p-2 rounded-lg hover:bg-red-50 transition-colors"
+                            onClick={() => handleDeleteClick(exam.id || exam._id, exam.name)}
+                            title="Delete"
+                          >
+                            <Trash2 size={16} className="text-red-400" />
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardBody>
+        </Card>
+      ) : (
+        // Schedule View
+        <div className="space-y-4">
+          {/* Scheduled */}
+          {examsByStatus.scheduled.length > 0 && (
+            <Card shadow="none" className="border border-blue-100">
+              <CardBody className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock size={16} className="text-blue-500" />
+                  <h3 className="text-sm font-medium text-blue-700">Scheduled ({examsByStatus.scheduled.length})</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {examsByStatus.scheduled.map(exam => (
+                    <div
+                      key={exam.id || exam._id}
+                      className="p-3 bg-blue-50 rounded-lg border border-blue-100 hover:shadow-sm cursor-pointer transition-shadow"
+                      onClick={() => onViewExam?.(exam.id || exam._id)}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-medium text-gray-900 text-sm">{exam.name}</span>
+                        <Chip size="sm" color="primary" variant="flat">Scheduled</Chip>
+                      </div>
+                      <p className="text-xs text-gray-500">{exam.className || exam.classId} - {exam.subjectName}</p>
+                      <p className="text-xs text-blue-600 mt-1">{exam.startDate}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
+          )}
+
+          {/* Ongoing */}
+          {examsByStatus.ongoing.length > 0 && (
+            <Card shadow="none" className="border border-amber-100">
+              <CardBody className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock size={16} className="text-amber-500" />
+                  <h3 className="text-sm font-medium text-amber-700">Ongoing ({examsByStatus.ongoing.length})</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {examsByStatus.ongoing.map(exam => (
+                    <div
+                      key={exam.id || exam._id}
+                      className="p-3 bg-amber-50 rounded-lg border border-amber-100 hover:shadow-sm cursor-pointer transition-shadow"
+                      onClick={() => onViewExam?.(exam.id || exam._id)}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-medium text-gray-900 text-sm">{exam.name}</span>
+                        <Chip size="sm" color="warning" variant="flat">Ongoing</Chip>
+                      </div>
+                      <p className="text-xs text-gray-500">{exam.className || exam.classId} - {exam.subjectName}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
+          )}
+
+          {/* Completed */}
+          {(examsByStatus.completed.length > 0 || examsByStatus.results_published.length > 0) && (
+            <Card shadow="none" className="border border-green-100">
+              <CardBody className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText size={16} className="text-green-500" />
+                  <h3 className="text-sm font-medium text-green-700">Completed ({examsByStatus.completed.length + examsByStatus.results_published.length})</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {[...examsByStatus.completed, ...examsByStatus.results_published].map(exam => (
+                    <div
+                      key={exam.id || exam._id}
+                      className="p-3 bg-green-50 rounded-lg border border-green-100 hover:shadow-sm cursor-pointer transition-shadow"
+                      onClick={() => onViewExam?.(exam.id || exam._id)}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-medium text-gray-900 text-sm">{exam.name}</span>
+                        <Chip size="sm" color="success" variant="flat">
+                          {exam.status === 'results_published' ? 'Published' : 'Completed'}
+                        </Chip>
+                      </div>
+                      <p className="text-xs text-gray-500">{exam.className || exam.classId} - {exam.subjectName}</p>
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          className="text-xs text-blue-600 hover:underline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEnterResults?.(exam.id || exam._id);
+                          }}
+                        >
+                          Enter Results
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
+          )}
+
+          {/* Empty state for schedule view */}
+          {filteredExams.length === 0 && (
+            <div className="text-center py-12">
+              <FileText size={40} className="mx-auto mb-3 text-gray-300" />
+              <p className="text-gray-500 mb-4">No exams to display</p>
+              <MinimalButton icon={<Plus size={16} />} onClick={onCreateExam}>
+                Create First Exam
+              </MinimalButton>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, examId: null, examName: '' })}
+        size="sm"
+        classNames={{ backdrop: 'bg-black/30', base: 'bg-white' }}
+      >
+        <ModalContent>
+          <ModalHeader className="border-b border-gray-100 py-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <AlertTriangle size={20} className="text-red-500" />
+              </div>
+              <div>
+                <h3 className="text-lg font-medium">Delete Exam</h3>
+                <p className="text-sm text-gray-500 font-normal">This action cannot be undone</p>
+              </div>
+            </div>
+          </ModalHeader>
+          <ModalBody className="py-4">
+            <p className="text-sm text-gray-600">
+              Are you sure you want to delete <span className="font-medium">{deleteModal.examName}</span>?
+              All associated results will also be removed.
+            </p>
+          </ModalBody>
+          <ModalFooter className="border-t border-gray-100">
+            <Button variant="light" onPress={() => setDeleteModal({ isOpen: false, examId: null, examName: '' })}>
+              Cancel
+            </Button>
+            <Button color="danger" onPress={handleConfirmDelete}>
+              Delete Exam
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </div>
+  );
+};
+
+export default ExamManagement;

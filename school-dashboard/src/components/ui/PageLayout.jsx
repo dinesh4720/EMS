@@ -1,0 +1,62 @@
+/**
+ * PageLayout - Minimal page layout component
+ * Provides consistent structure with optional tabs and header
+ */
+import { cn } from "../../utils/cn";
+
+export default function PageLayout({
+  children,
+  className,
+  tabs,
+  activeTab,
+  onTabChange,
+  header,
+  actions,
+  noPadding = false,
+}) {
+  const hasTabs = tabs && tabs.length > 0;
+
+  return (
+    <div className={cn("bg-white border border-gray-100 rounded-lg h-full flex flex-col", className)}>
+      {/* Tabs */}
+      {hasTabs && (
+        <div className="px-6 py-3 border-b border-gray-100 shrink-0">
+          <nav className="flex gap-1">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => onTabChange?.(tab.key)}
+                className={cn(
+                  "px-5 py-2 text-sm font-medium rounded-md transition-colors",
+                  activeTab === tab.key
+                    ? "bg-gray-900 text-white"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                )}
+              >
+                {tab.title}
+              </button>
+            ))}
+          </nav>
+        </div>
+      )}
+
+      {/* Header */}
+      {header && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-5 border-b border-gray-100 shrink-0">
+          <div>
+            <h1 className="text-xl font-medium text-gray-900">{header.title}</h1>
+            {header.description && (
+              <p className="text-sm text-gray-500 mt-1">{header.description}</p>
+            )}
+          </div>
+          {actions && <div className="flex items-center gap-2">{actions}</div>}
+        </div>
+      )}
+
+      {/* Content */}
+      <div className={cn("min-h-0", !noPadding && "p-6", noPadding && "flex-1 flex flex-col")}>
+        {children}
+      </div>
+    </div>
+  );
+}

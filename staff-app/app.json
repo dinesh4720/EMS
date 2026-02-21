@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Staff App",
+    "slug": "staff-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#007AFF"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ems.staffapp"
+    },
+    "android": {
+      "package": "com.ems.staffapp"
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}
