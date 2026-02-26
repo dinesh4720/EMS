@@ -13,7 +13,7 @@ export function clearApiCache() {
 export async function request(endpoint, options = {}) {
   const url = `${API_URL}${endpoint}`;
   const method = options.method || 'GET';
-  
+
   // Check cache for GET requests
   if (method === 'GET' && !options.skipCache) {
     const cached = requestCache.get(url);
@@ -34,7 +34,7 @@ export async function request(endpoint, options = {}) {
       // Get token from sessionStorage
       const storedUser = sessionStorage.getItem('app_user');
       let token = null;
-      
+
       if (storedUser) {
         try {
           const userData = JSON.parse(storedUser);
@@ -66,18 +66,18 @@ export async function request(endpoint, options = {}) {
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: 'Request failed' }));
-        
+
         // If unauthorized, clear session storage
         if (response.status === 401) {
           console.warn('⚠️ 401 Unauthorized - clearing session');
           sessionStorage.removeItem('app_user');
         }
-        
+
         // If rate limited, throw specific error
         if (response.status === 429) {
           throw new Error('Too many requests - rate limit exceeded');
         }
-        
+
         // If conflict error (409), throw with detailed information
         if (response.status === 409) {
           const conflictError = new Error(error.message || error.error || 'Conflict detected');
@@ -86,21 +86,24 @@ export async function request(endpoint, options = {}) {
           conflictError.status = 409;
           throw conflictError;
         }
-        
+
         // Log validation details if available
         if (error.details) {
           console.error('Validation details:', JSON.stringify(error.details, null, 2));
         }
-        throw new Error(error.error || error.message || `Request failed with status ${response.status}`);
+
+        const finalError = new Error(error.error || error.message || `Request failed with status ${response.status}`);
+        finalError.status = response.status;
+        throw finalError;
       }
 
       const data = await response.json();
-      
+
       // Cache GET requests
       if (method === 'GET' && !options.skipCache) {
         requestCache.set(url, data);
       }
-      
+
       return data;
     } catch (error) {
       if (error.name === 'AbortError') {
@@ -116,7 +119,12 @@ export async function request(endpoint, options = {}) {
     return await requestQueue.add(() => retryRequest(makeRequest, 2, 1000));
   } catch (error) {
     // Only log errors that aren't rate limiting or 404s (reduce console spam)
-    if (!error.message?.includes('rate limit') && !error.message?.includes('Too many requests')) {
+    if (
+      !error.message?.includes('rate limit') &&
+      !error.message?.includes('Too many requests') &&
+      error.status !== 404 &&
+      !error.message?.includes('not found')
+    ) {
       console.error(`❌ API Error: ${url}`, error);
     }
     throw error;
@@ -241,14 +249,14 @@ export const classesApi = {
   getStudents: (id) => request(`/classes/${id}/students`),
   getNextRollNumber: (classId) => request(`/classes/${classId}/next-roll-number`),
   checkCapacity: (id) => request(`/classes/${id}/capacity`),
-  
+
   // Class Settings
   getSettings: (id) => request(`/class-settings/${id}`),
   updateTag: async (id, tag) => {
     try {
-      return await request(`/class-settings/${id}/tag`, { 
-        method: 'PUT', 
-        body: JSON.stringify({ classTag: tag }) 
+      return await request(`/class-settings/${id}/tag`, {
+        method: 'PUT',
+        body: JSON.stringify({ classTag: tag })
       });
     } catch (error) {
       // Re-throw validation errors with enhanced information
@@ -322,7 +330,7 @@ export const classesEnhancedApi = {
 
   // Fees Overview
   getFeesOverview: (id, academicYear) => request(`/classes-enhanced/${id}/fees-overview${academicYear ? `?academicYear=${academicYear}` : ''}`),
-  
+
   // Missing Subjects
   getMissingSubjects: () => request('/classes-enhanced/missing-subjects'),
 };
@@ -354,7 +362,7 @@ export const staffAttendanceApi = {
 export const timetableApi = {
   // Get all timetables at once
   getAll: (academicYear) => request(`/timetable${academicYear ? `?academicYear=${academicYear}` : ''}`),
-  
+
   getByClass: (classId, academicYear) => request(`/timetable/${classId}${academicYear ? `?academicYear=${academicYear}` : ''}`),
 
   // Lazy loading: Get timetable with option to skip cache for fresh data
@@ -364,7 +372,7 @@ export const timetableApi = {
   create: (data) => request('/timetable', { method: 'POST', body: JSON.stringify(data) }),
   update: (classId, data) => request(`/timetable/${classId}`, { method: 'PUT', body: JSON.stringify(data) }),
   createOrUpdate: (data) => request('/timetable', { method: 'POST', body: JSON.stringify(data) }),
-  
+
   // Generate/regenerate timetables for all classes
   generateAll: (data) => request('/timetable/generate-all', { method: 'POST', body: JSON.stringify(data) }),
   updateSlot: async (classId, data) => {
@@ -378,7 +386,7 @@ export const timetableApi = {
       throw error;
     }
   },
-  
+
   // Batch update multiple slots
   batchUpdateSlots: async (classId, slots, academicYear) => {
     try {
@@ -394,10 +402,10 @@ export const timetableApi = {
       throw error;
     }
   },
-  
+
   updatePeriods: (classId, data) => request(`/timetable/${classId}/periods`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (classId, academicYear) => request(`/timetable/${classId}${academicYear ? `?academicYear=${academicYear}` : ''}`, { method: 'DELETE' }),
-  
+
   // Cache management
   clearCache: (pattern) => request('/timetable/cache/clear', { method: 'POST', body: JSON.stringify({ pattern }) }),
   getCacheStats: () => request('/timetable/cache/stats'),

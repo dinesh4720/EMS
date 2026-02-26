@@ -85,10 +85,15 @@ export function AppProvider({ children }) {
   }, []);
 
   // Fetch data from API on mount
-  const fetchData = useCallback(async (skipCache = false) => {
+  const fetchData = useCallback(async (skipCache = false, retryCount = 0) => {
+    const MAX_RETRIES = 3;
+    
     try {
       console.log('🔄 Starting to fetch data...');
-      setLoading(true);
+      // Only set loading to true if this is not a background refresh
+      if (retryCount === 0) {
+        setLoading(true);
+      }
 
       console.log('📡 Fetching from API...');
       const [staffData, studentsData, classesData] = await Promise.all([
@@ -133,6 +138,13 @@ export function AppProvider({ children }) {
         sessionStorage.removeItem('app_user');
         // Don't show error toast for auth issues, let login page handle it
       } else {
+        // Retry logic for network errors
+        if (retryCount < MAX_RETRIES && (err.message?.includes('network') || err.message?.includes('fetch'))) {
+          console.log(`🔄 Retrying fetch (${retryCount + 1}/${MAX_RETRIES})...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+          return fetchData(skipCache, retryCount + 1);
+        }
+        
         setError(err.message);
         toast.error('Failed to load data: ' + err.message);
       }
@@ -143,7 +155,9 @@ export function AppProvider({ children }) {
   }, [fetchStaffAttendance]);
 
   // Fetch all settings from API
-  const fetchSettings = useCallback(async () => {
+  const fetchSettings = useCallback(async (retryCount = 0) => {
+    const MAX_RETRIES = 3;
+    
     try {
       setSettingsLoading(true);
       const [schoolData, holidaysData, leaveTypesData, feeHeadsData, subjectsData, calendarEventsData] = await Promise.all([
@@ -196,6 +210,14 @@ export function AppProvider({ children }) {
       }
     } catch (err) {
       console.error('Failed to fetch settings:', err);
+      
+      // Retry logic for network errors
+      if (retryCount < MAX_RETRIES && (err.message?.includes('network') || err.message?.includes('fetch'))) {
+        console.log(`🔄 Retrying fetchSettings (${retryCount + 1}/${MAX_RETRIES})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+        return fetchSettings(retryCount + 1);
+      }
+      
       toast.error('Failed to load settings');
     } finally {
       setSettingsLoading(false);

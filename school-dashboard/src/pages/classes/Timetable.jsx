@@ -76,6 +76,8 @@ export default function Timetable({ classId }) {
   const [slotForm, setSlotForm] = useState({ subject: "", teacherId: "", room: "" });
   const [showMissingSubjectsWarning, setShowMissingSubjectsWarning] = useState(false);
   const [missingSubjectsClasses, setMissingSubjectsClasses] = useState([]);
+  const [classSubjectSelections, setClassSubjectSelections] = useState({});
+  const [assigningSubjects, setAssigningSubjects] = useState(false);
 
   // Set first class as default
   useEffect(() => {
@@ -107,7 +109,9 @@ export default function Timetable({ classId }) {
       }
       setHasChanges(false);
     } catch (err) {
-      console.error('Failed to load timetable:', err);
+      if (err.status !== 404 && !err.message?.includes('not found')) {
+        console.error('Failed to load timetable:', err);
+      }
       // Don't show error toast - just initialize empty state
       setPeriods(defaultPeriods);
       setSchedule(initializeSchedule());
@@ -421,32 +425,8 @@ export default function Timetable({ classId }) {
     return teacher?.name || "";
   };
 
-  const handleWizardClick = async () => {
-    try {
-      // Check for missing subjects across all classes
-      const result = await classesEnhancedApi.getMissingSubjects();
-      
-      // Handle different response formats
-      const missingSubjects = result.missingSubjects || [];
-      
-      if (missingSubjects.length > 0) {
-        setMissingSubjectsClasses(missingSubjects);
-        setShowMissingSubjectsWarning(true);
-        return;
-      }
-      
-      // All classes have subjects, open wizard page
-      window.location.href = '/timetable-wizard';
-    } catch (err) {
-      console.error('Error checking missing subjects:', err);
-      // Don't show error - just proceed to wizard and let backend handle validation
-      window.location.href = '/timetable-wizard';
-    }
-  };
-
-  const handleGoToSubjectAssignment = () => {
-    setShowMissingSubjectsWarning(false);
-    window.location.href = '/academics/subjects';
+  const handleWizardClick = () => {
+    window.location.href = '/timetable-wizard';
   };
 
   const selectedClassData = classesWithTeachers.find(c => String(c.id) === String(selectedClass));
@@ -954,64 +934,6 @@ export default function Timetable({ classId }) {
         onSaved={loadTimetable}
       />
 
-      {/* Missing Subjects Warning Modal */}
-      <Modal isOpen={showMissingSubjectsWarning} onClose={() => setShowMissingSubjectsWarning(false)} size="2xl">
-        <ModalContent>
-          <ModalHeader className="flex items-center gap-2">
-            <AlertTriangle className="text-orange-500" size={24} />
-            <span>Missing Subjects Warning</span>
-          </ModalHeader>
-          <ModalBody>
-            <div className="space-y-4">
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <p className="text-sm text-orange-800">
-                  <strong>Warning:</strong> The following classes do not have subjects assigned. Timetables cannot be generated without subjects.
-                </p>
-              </div>
-              
-              <div className="max-h-64 overflow-y-auto space-y-2">
-                {missingSubjectsClasses.map(cls => (
-                  <div key={cls._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                        <AlertTriangle className="text-orange-500" size={18} />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{cls.name} - {cls.section}</p>
-                        <p className="text-xs text-gray-500">{cls.students?.length || 0} students</p>
-                      </div>
-                    </div>
-                    <Chip size="sm" color="danger" variant="flat">
-                      No Subjects
-                    </Chip>
-                  </div>
-                ))}
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
-                  <strong>Next Steps:</strong> Please assign subjects to these classes before generating timetables. Go to Academics → Subject Assignment to manage class subjects.
-                </p>
-              </div>
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              variant="light"
-              onPress={() => setShowMissingSubjectsWarning(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              color="primary"
-              onPress={handleGoToSubjectAssignment}
-              startContent={<Wand2 size={14} />}
-            >
-              Go to Subject Assignment
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </div>
   );
 }

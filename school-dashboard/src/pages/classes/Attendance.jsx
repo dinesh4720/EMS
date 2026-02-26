@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardBody, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Select, SelectItem, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Textarea, Spinner } from "@heroui/react";
-import { Download, Check, X, Lock, Bell, AlertTriangle } from "lucide-react";
+import { Download, Check, X, Lock, Bell, AlertTriangle, Users, Clock, TrendingUp } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { attendanceApi } from "../../services/api";
 
@@ -11,38 +11,104 @@ export default function Attendance({ classId }) {
   const navigate = useNavigate();
   const { students, classesWithTeachers } = useApp();
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedClass, setSelectedClass] = useState(classId || "6-A");
+  const [selectedClass, setSelectedClass] = useState(classId || "");
   const [attendance, setAttendance] = useState({});
   const [isLocked, setIsLocked] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
   const [saveMessage, setSaveMessage] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editReason, setEditReason] = useState("");
+
+  // Determine if we're embedded inside ClassDashboard (classId prop is an ObjectId)
+  const isEmbedded = !!classId;
 
   // Lazy loading state
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const loaderRef = useRef(null);
 
+  // Set default selected class when classesWithTeachers loads (for standalone mode)
+  useEffect(() => {
+    if (!classId && !selectedClass && classesWithTeachers.length > 0) {
+      const first = classesWithTeachers[0];
+      setSelectedClass(`${first.name}-${first.section}`);
+    }
+  }, [classId, selectedClass, classesWithTeachers]);
+
+  // Resolve the actual class ID for API calls
+  const resolvedClassId = useMemo(() => {
+    if (classId) return classId; // ObjectId from ClassDashboard
+    // Find the class object matching the selected "name-section" string
+    const parts = selectedClass.split('-');
+    if (parts.length >= 2) {
+      const cls = classesWithTeachers.find(c => c.name === parts[0] && c.section === parts[1]);
+      return cls?.id || null;
+    }
+    return null;
+  }, [classId, selectedClass, classesWithTeachers]);
+
   // Filter students by selected class
   const classStudents = useMemo(() => {
-    return students.filter(s => s.class === selectedClass);
-  }, [students, selectedClass]);
-
-  // Initialize attendance for class students
-  useMemo(() => {
-    const newAttendance = {};
-    classStudents.forEach(s => {
-      if (!(s.id in attendance)) {
-        newAttendance[s.id] = "present";
-      }
-    });
-    if (Object.keys(newAttendance).length > 0) {
-      setAttendance(prev => ({ ...prev, ...newAttendance }));
+    if (classId) {
+      // When classId is an ObjectId (embedded in ClassDashboard), filter by classId
+      return students.filter(s =>
+        String(s.classId) === String(classId) &&
+        (s.status || 'active') === 'active' &&
+        s.isDeleted !== true
+      );
     }
-  }, [classStudents]);
+    // When in standalone mode, filter by class name-section string
+    return students.filter(s => s.class === selectedClass);
+  }, [students, selectedClass, classId]);
 
-  const totalPages = Math.ceil(classStudents.length / ITEMS_PER_LOAD);
+  // Fetch existing attendance from API when date or class changes
+  const fetchAttendance = useCallback(async () => {
+    if (!resolvedClassId || !date) return;
+
+    try {
+      setIsLoadingAttendance(true);
+      const data = await attendanceApi.getByClassDate(resolvedClassId, date);
+
+      if (data && Array.isArray(data) && data.length > 0) {
+        const existingAttendance = {};
+        data.forEach(record => {
+          const studentId = record.studentId?._id || record.studentId;
+          existingAttendance[studentId] = record.status || "present";
+        });
+        // Merge: set fetched data, default remaining students to "unmarked"
+        const merged = {};
+        classStudents.forEach(s => {
+          merged[s.id] = existingAttendance[s.id] || "unmarked";
+        });
+        setAttendance(prev => ({ ...prev, ...merged }));
+      } else {
+        // No existing data - initialize all as unmarked
+        const newAttendance = {};
+        classStudents.forEach(s => {
+          newAttendance[s.id] = "unmarked";
+        });
+        setAttendance(prev => ({ ...prev, ...newAttendance }));
+      }
+    } catch (error) {
+      // If 404 or no data, initialize all as unmarked
+      console.warn('No existing attendance found, initializing defaults:', error.message);
+      const newAttendance = {};
+      classStudents.forEach(s => {
+        newAttendance[s.id] = "unmarked";
+      });
+      setAttendance(prev => ({ ...prev, ...newAttendance }));
+    } finally {
+      setIsLoadingAttendance(false);
+    }
+  }, [resolvedClassId, date, classStudents]);
+
+  useEffect(() => {
+    if (classStudents.length > 0) {
+      fetchAttendance();
+    }
+  }, [resolvedClassId, date, classStudents.length]);
+
   const visibleStudents = useMemo(() => {
     return classStudents.slice(0, visibleCount);
   }, [classStudents, visibleCount]);
@@ -52,7 +118,7 @@ export default function Attendance({ classId }) {
   // Reset visible count when class changes
   useEffect(() => {
     setVisibleCount(ITEMS_PER_LOAD);
-  }, [selectedClass]);
+  }, [selectedClass, classId]);
 
   // Lazy loading intersection observer
   useEffect(() => {
@@ -91,27 +157,42 @@ export default function Attendance({ classId }) {
   const handleSaveAttendance = async () => {
     if (isLocked || isSaving) return;
 
+    // Only send students who have been explicitly marked (present or absent)
+    const markedStudents = classStudents.filter(s =>
+      attendance[s.id] === "present" || attendance[s.id] === "absent"
+    );
+
+    if (markedStudents.length === 0) {
+      setSaveMessage({
+        type: 'error',
+        text: 'Please mark attendance for at least one student before saving'
+      });
+      setTimeout(() => setSaveMessage(null), 3000);
+      return;
+    }
+
     try {
       setIsSaving(true);
       setSaveMessage(null);
 
-      // Convert attendance state to API format
-      const attendanceData = classStudents.map(student => ({
+      // Convert attendance state to API format - only marked students
+      const attendanceData = markedStudents.map(student => ({
         studentId: student.id,
-        status: attendance[student.id] || "present"
+        status: attendance[student.id]
       }));
 
-      // Call the bulk attendance API
+      // Use the resolved class ID (ObjectId) for the API call
       const response = await attendanceApi.markBulk({
-        classId: selectedClass,
+        classId: resolvedClassId || selectedClass,
         date: date,
         attendance: attendanceData
       });
 
-      // Show success message
+      // Show success message with unmarked warning if applicable
+      const unmarkedWarning = unmarkedCount > 0 ? ` (${unmarkedCount} still unmarked)` : '';
       setSaveMessage({
         type: 'success',
-        text: `Attendance saved for ${response.results?.length || classStudents.length} students`
+        text: `Attendance saved for ${response.results?.length || markedStudents.length} students${unmarkedWarning}`
       });
 
       // Auto-hide message after 3 seconds
@@ -132,19 +213,21 @@ export default function Attendance({ classId }) {
 
   const presentCount = classStudents.filter(s => attendance[s.id] === "present").length;
   const absentCount = classStudents.filter(s => attendance[s.id] === "absent").length;
-  const attendancePercent = classStudents.length > 0 ? Math.round((presentCount / classStudents.length) * 100) : 0;
+  const unmarkedCount = classStudents.filter(s => !attendance[s.id] || attendance[s.id] === "unmarked").length;
+  const markedCount = presentCount + absentCount;
+  const attendancePercent = markedCount > 0 ? Math.round((presentCount / markedCount) * 100) : 0;
   const defaulters = classStudents.filter(s => attendance[s.id] === "absent");
 
   return (
-    <div className="w-full flex flex-col">
+    <div className={`w-full flex flex-col ${isEmbedded ? 'bg-white rounded-lg border border-gray-100 p-5' : ''}`}>
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-background border-b border-default-200 py-4 -mx-6 -mt-6 px-6 mb-4">
+      <div className={`flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-default-200 py-4 ${isEmbedded ? 'mb-0' : '-mx-6 -mt-6 px-6 mb-0'}`}>
         {/* Left Side - Filters */}
         <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
           {!classId && (
             <Select
               size="sm"
-              selectedKeys={[selectedClass]}
+              selectedKeys={selectedClass ? [selectedClass] : []}
               onChange={(e) => { setSelectedClass(e.target.value); }}
               className="w-[180px]"
               aria-label="Class"
@@ -167,6 +250,7 @@ export default function Attendance({ classId }) {
               inputWrapper: "bg-default-100 data-[hover=true]:bg-default-200 group-data-[focus=true]:bg-default-100",
             }}
           />
+          {isLoadingAttendance && <Spinner size="sm" color="primary" />}
         </div>
 
         {/* Right Side - Actions */}
@@ -183,17 +267,98 @@ export default function Attendance({ classId }) {
         </div>
       )}
 
+      {/* KPI Stats - Card Grid Style */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+        {/* Total */}
+        <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+              <Users size={16} className="text-gray-600" />
+            </div>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-800">{classStudents.length}</h3>
+          <p className="text-xs font-medium text-gray-500 mt-0.5">Total</p>
+        </div>
+
+        {/* Present */}
+        <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center">
+              <Check size={16} className="text-green-600" />
+            </div>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-800">{presentCount}</h3>
+          <p className="text-xs font-medium text-gray-500 mt-0.5">Present</p>
+        </div>
+
+        {/* Absent */}
+        <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center">
+              <X size={16} className="text-red-600" />
+            </div>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-800">{absentCount}</h3>
+          <p className="text-xs font-medium text-gray-500 mt-0.5">Absent</p>
+        </div>
+
+        {/* Unmarked */}
+        {unmarkedCount > 0 && (
+          <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+                <Clock size={16} className="text-gray-600" />
+              </div>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800">{unmarkedCount}</h3>
+            <p className="text-xs font-medium text-gray-500 mt-0.5">Unmarked</p>
+          </div>
+        )}
+
+        {/* Attendance Rate */}
+        <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+          <div className="flex items-start justify-between mb-3">
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${markedCount === 0 ? 'bg-gray-100' : attendancePercent >= 75 ? 'bg-green-100' : 'bg-red-100'}`}>
+              <TrendingUp size={16} className={markedCount === 0 ? 'text-gray-600' : attendancePercent >= 75 ? 'text-green-600' : 'text-red-600'} />
+            </div>
+          </div>
+          <h3 className={`text-xl font-semibold ${markedCount === 0 ? "text-gray-400" : attendancePercent >= 75 ? "text-green-600" : "text-red-600"}`}>
+            {markedCount === 0 ? "—" : `${attendancePercent}%`}
+          </h3>
+          <p className="text-xs font-medium text-gray-500 mt-0.5">Attendance Rate</p>
+        </div>
+      </div>
+
+      {/* Save Button */}
+      <div className="flex items-center justify-end gap-3 mb-4 pb-4 border-b border-default-200">
+        {saveMessage && (
+          <span className={`text-sm font-medium ${saveMessage.type === 'success' ? 'text-success-600' : 'text-danger-600'}`}>
+            {saveMessage.text}
+          </span>
+        )}
+        <Button
+          size="md"
+          color="primary"
+          onPress={handleSaveAttendance}
+          isDisabled={isLocked || isSaving}
+          isLoading={isSaving}
+          className="font-medium px-8"
+        >
+          {isSaving ? 'Saving...' : 'Save Attendance'}
+        </Button>
+      </div>
+
       {/* Main Table */}
       <Table
         aria-label="Student attendance"
         radius="none"
         removeWrapper
         classNames={{
-          base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0 [&_table]:select-text",
-          thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12",
+          base: `${isEmbedded ? '' : '-mx-6'} overflow-visible [&_table]:border-spacing-0 [&_table]:select-text ${isEmbedded ? '' : '[&_table]:w-[calc(100%+3rem)]'}`,
+          thead: `[&>tr]:first:shadow-none [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12 ${isEmbedded ? '' : '[&_tr>th:first-child]:pl-6'}`,
           th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6 hover:bg-default-100 transition-colors cursor-pointer [&_svg]:text-default-300 [&:hover_svg]:text-default-500 [&_svg]:opacity-100 first:hover:bg-transparent first:cursor-default select-none",
           td: "py-0 border-b border-default-200 group-data-[last=true]:border-none last:pr-6 select-text",
-          tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-0",
+          tbody: `[&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-0 ${isEmbedded ? '' : '[&>tr>td:first-child]:pl-6'}`,
           tr: "",
         }}
       >
@@ -203,7 +368,13 @@ export default function Attendance({ classId }) {
           <TableColumn>STATUS</TableColumn>
           <TableColumn>ACTIONS</TableColumn>
         </TableHeader>
-        <TableBody>
+        <TableBody emptyContent={
+          isLoadingAttendance
+            ? "Loading attendance..."
+            : classStudents.length === 0
+              ? "No students found in this class"
+              : "No data"
+        }>
           {visibleStudents.map((student) => (
             <TableRow key={student.id} className="hover:bg-default-50">
               <TableCell>
@@ -225,11 +396,11 @@ export default function Attendance({ classId }) {
                 <div className="py-4">
                   <Chip
                     size="sm"
-                    color={attendance[student.id] === "present" ? "success" : "danger"}
+                    color={attendance[student.id] === "present" ? "success" : attendance[student.id] === "absent" ? "danger" : "default"}
                     variant="flat"
                     className="capitalize"
                   >
-                    {attendance[student.id] || "present"}
+                    {attendance[student.id] === "present" ? "Present" : attendance[student.id] === "absent" ? "Absent" : "Not Marked"}
                   </Chip>
                 </div>
               </TableCell>
@@ -268,47 +439,6 @@ export default function Attendance({ classId }) {
         {!hasMore && classStudents.length > ITEMS_PER_LOAD && (
           <span className="text-default-400 text-sm">All {classStudents.length} students loaded</span>
         )}
-      </div>
-
-      {/* Footer Actions */}
-      <div className="flexflex-col sm:flex-row justify-between items-center mt-6 pt-6 border-t border-default-200 gap-4">
-        <div className="flex gap-6 text-sm">
-          <div className="flex flex-col">
-            <span className="text-default-500 text-xs uppercase tracking-wider">Total</span>
-            <span className="font-semibold text-default-900 text-lg">{classStudents.length}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-default-500 text-xs uppercase tracking-wider">Present</span>
-            <span className="font-semibold text-success-600 text-lg">{presentCount}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-default-500 text-xs uppercase tracking-wider">Absent</span>
-            <span className="font-semibold text-danger-600 text-lg">{absentCount}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-default-500 text-xs uppercase tracking-wider">Rate</span>
-            <span className={`font-semibold text-lg ${attendancePercent >= 75 ? "text-success-600" : "text-danger-600"}`}>
-              {attendancePercent}%
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          {saveMessage && (
-            <span className={`text-sm font-medium ${saveMessage.type === 'success' ? 'text-success-600' : 'text-danger-600'}`}>
-              {saveMessage.text}
-            </span>
-          )}
-          <Button
-            size="md"
-            color="primary"
-            onPress={handleSaveAttendance}
-            isDisabled={isLocked || isSaving}
-            isLoading={isSaving}
-            className="font-medium px-8"
-          >
-            {isSaving ? 'Saving...' : 'Save Attendance'}
-          </Button>
-        </div>
       </div>
 
       {defaulters.length > 0 && (

@@ -152,8 +152,31 @@ export default function StudentDashboard() {
     ? Math.round(results.reduce((sum, r) => sum + (r.percentage || 0), 0) / results.length)
     : null;
 
-  // Fetch results
+  // OPTIMIZATION: Track previous tab to avoid unnecessary re-fetches
+  const prevActiveTab = useRef(activeTab);
+
+  // Memoized tab key to prevent unnecessary renders
+  const activeTabKey = useMemo(() => activeTab, [activeTab]);
+  
+  // Cache for fetched data to prevent re-fetching on same tab
+  const dataCache = useRef({
+    results: null,
+    feeStructure: null,
+    feeHistory: null,
+    documents: null,
+    remarks: null
+  });
+
+  // OPTIMIZATION: Lazy load data only when tab is selected
+  // Results - only fetch when on academics tab
   useEffect(() => {
+    if (activeTab !== 'academics' || !id) return;
+    
+    // Skip if we already have data for this tab
+    if (dataCache.current.results !== null && prevActiveTab.current === 'academics') {
+      return;
+    }
+    
     const fetchResults = async () => {
       setResultsLoading(true);
       try {
@@ -162,15 +185,22 @@ export default function StudentDashboard() {
         const response = await fetch(`${API_URL}/students/${id}/results`, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
-        if (response.ok) setResults(await response.json());
+        if (response.ok) {
+          const data = await response.json();
+          setResults(data);
+          dataCache.current.results = data;
+        }
       } catch (error) { console.error('Error fetching results:', error); }
       finally { setResultsLoading(false); }
     };
-    if (id) fetchResults();
-  }, [id]);
+    fetchResults();
+    prevActiveTab.current = 'academics';
+  }, [id, activeTab]);
 
-  // Fetch fee structure
+  // Fee structure - only fetch when on fees tab
   useEffect(() => {
+    if (activeTab !== 'fees' || !id) return;
+    
     const fetchFeeStructure = async () => {
       setLoadingFeeStructure(true);
       try {
@@ -183,11 +213,13 @@ export default function StudentDashboard() {
       } catch (error) { console.error('Error fetching fee structure:', error); }
       finally { setLoadingFeeStructure(false); }
     };
-    if (id) fetchFeeStructure();
-  }, [id]);
+    fetchFeeStructure();
+  }, [id, activeTab]);
 
-  // Fetch payment history
+  // Payment history - only fetch when on fees tab
   useEffect(() => {
+    if (activeTab !== 'fees' || !id) return;
+    
     const fetchFeeHistory = async () => {
       try {
         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -198,11 +230,13 @@ export default function StudentDashboard() {
         if (response.ok) setFeeHistory(await response.json());
       } catch (error) { console.error('Error fetching payment history:', error); }
     };
-    if (id) fetchFeeHistory();
-  }, [id]);
+    fetchFeeHistory();
+  }, [id, activeTab]);
 
-  // Fetch documents
+  // Documents - only fetch when on documents tab
   useEffect(() => {
+    if (activeTab !== 'documents' || !id) return;
+    
     const fetchDocuments = async () => {
       try {
         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -216,13 +250,14 @@ export default function StudentDashboard() {
         }
       } catch (error) { console.error('Error fetching documents:', error); }
     };
-    if (id) fetchDocuments();
-  }, [id]);
+    fetchDocuments();
+  }, [id, activeTab]);
 
-  // Fetch remarks
+  // Remarks - only fetch when on remarks tab
   useEffect(() => {
+    if (activeTab !== 'remarks' || !id) return;
+    
     const fetchRemarks = async () => {
-      if (activeTab !== 'remarks') return;
       setRemarksLoading(true);
       try {
         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -234,8 +269,8 @@ export default function StudentDashboard() {
       } catch (error) { console.error('Error fetching remarks:', error); }
       finally { setRemarksLoading(false); }
     };
-    if (id) fetchRemarks();
-  }, [activeTab, remarksCategoryFilter, id]);
+    fetchRemarks();
+  }, [id, activeTab, remarksCategoryFilter]);
 
   // Photo handlers
   const handleFileSelect = (e) => {

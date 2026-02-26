@@ -72,18 +72,18 @@ export const requestQueue = new RequestQueue({
  */
 export async function batchRequests(requests, batchSize = 5, delayMs = 200) {
   const results = [];
-  
+
   for (let i = 0; i < requests.length; i += batchSize) {
     const batch = requests.slice(i, i + batchSize);
     const batchResults = await Promise.allSettled(batch);
     results.push(...batchResults);
-    
+
     // Add delay between batches (except for the last batch)
     if (i + batchSize < requests.length) {
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
   }
-  
+
   return results;
 }
 
@@ -99,8 +99,14 @@ export async function retryRequest(requestFn, maxRetries = 3, baseDelay = 1000) 
     } catch (error) {
       lastError = error;
 
-      // Don't retry on certain errors
-      if (error.message?.includes('401') || error.message?.includes('403')) {
+      // Don't retry on certain errors (client errors except rate limits)
+      if (
+        (error.status && error.status >= 400 && error.status < 500 && error.status !== 429) ||
+        error.message?.includes('401') ||
+        error.message?.includes('403') ||
+        error.message?.includes('404') ||
+        error.message?.includes('not found')
+      ) {
         throw error;
       }
 
@@ -148,12 +154,12 @@ class RequestCache {
   get(key) {
     const item = this.cache.get(key);
     if (!item) return null;
-    
+
     if (Date.now() > item.expiry) {
       this.cache.delete(key);
       return null;
     }
-    
+
     return item.value;
   }
 

@@ -23,6 +23,7 @@ import PhotoAvatar from "../../components/PhotoAvatar";
 import FiltersDropdown from "../../components/FiltersDropdown";
 import EditStudentDrawer from "./EditStudentDrawer";
 import ScrollToTopButton from "../../components/ui/ScrollToTopButton";
+import SkeletonTable from "../../components/SkeletonTable";
 
 
 const ITEMS_PER_LOAD = 15;
@@ -182,7 +183,7 @@ const getNextClass = (currentClass, availableClasses) => {
     // Otherwise, promote to next grade with same section
     const nextClass = `${currentGrade + 1}-${section}`;
 
-    // Check if the next class exists in available classes
+    // Check if next class exists in available classes
     if (availableClasses && availableClasses.length > 0) {
         const classExists = availableClasses.some(c => c === nextClass || c.startsWith(`${currentGrade + 1}-`));
         if (!classExists) {
@@ -429,7 +430,7 @@ const checkForDuplicates = (validatedStudents, existingStudents) => {
                 isDuplicate: true,
                 errors: {
                     ...student.errors,
-                    duplicate: `Student with admission ID "${student.data.admissionId}" already exists in the system`
+                    duplicate: `Student with admission ID "${student.data.admissionId}" already exists in system`
                 }
             };
         }
@@ -747,7 +748,6 @@ export default function StudentsList() {
         all: students.length,
         active: students.filter(s => (s.status || 'active') === "active").length,
         inactive: students.filter(s => s.status === "inactive").length,
-        transferred: students.filter(s => s.status === "transferred").length,
         alumni: students.filter(s => s.status === "alumni").length,
     }), [students]);
 
@@ -1101,7 +1101,6 @@ export default function StudentsList() {
         switch (status) {
             case "active": return "bg-success-500";
             case "inactive": return "bg-danger-500";
-            case "transferred": return "bg-warning-500";
             case "alumni": return "bg-purple-500";
             default: return "bg-default-400";
         }
@@ -1218,8 +1217,7 @@ export default function StudentsList() {
         try {
             for (const id of selectedIds) {
                 if (bulkAction === "deactivate") await updateStudent(id, { status: "inactive" });
-                else if (bulkAction === "transfer") await updateStudent(id, { status: "transferred" });
-                else if (bulkAction === "tc") await updateStudent(id, { status: "transferred", tcIssued: true });
+                else if (bulkAction === "tc") await updateStudent(id, { tcIssued: true });
                 else if (bulkAction === "alumni") await updateStudent(id, { status: "alumni" });
             }
             toast.success(`${count} student${count > 1 ? 's' : ''} updated successfully`);
@@ -2024,14 +2022,21 @@ export default function StudentsList() {
         );
     };
 
-    // Show loading spinner while context is loading data
+    // Show skeleton loader while context is loading data
     if (contextLoading) {
         return (
-            <div className="w-full h-[60vh] flex items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <Spinner size="lg" color="default" />
-                    <p className="text-gray-500 text-sm">Loading students...</p>
-                </div>
+            <div className="w-full">
+                <SkeletonTable 
+                    rows={10} 
+                    columns={[
+                        { key: "student", label: "STUDENT", width: 240 },
+                        { key: "class", label: "CLASS", width: 100 },
+                        { key: "parent", label: "PARENT INFO", width: 180 },
+                        { key: "attendance", label: "ATTENDANCE", width: 110 },
+                        { key: "fee", label: "FEE STATUS", width: 100 },
+                        { key: "actions", label: "ACTIONS", width: 60 },
+                    ]}
+                />
             </div>
         );
     }
@@ -2120,9 +2125,6 @@ export default function StudentsList() {
                                         <DropdownSection title="Status Updates">
                                             <DropdownItem key="deactivate" startContent={<UserX size={14} />} onPress={() => handleBulkAction("deactivate")}>
                                                 Mark Inactive
-                                            </DropdownItem>
-                                            <DropdownItem key="transfer" startContent={<ArrowUpCircle size={14} className="rotate-90" />} onPress={() => handleBulkAction("transfer")}>
-                                                Mark Transferred
                                             </DropdownItem>
                                             <DropdownItem key="alumni" startContent={<GraduationCap size={14} />} onPress={() => handleBulkAction("alumni")}>
                                                 Mark as Alumni
@@ -2570,20 +2572,6 @@ export default function StudentsList() {
                                                             Mark as Inactive
                                                         </DropdownItem>
                                                         <DropdownItem
-                                                            key="transferred"
-                                                            startContent={<ArrowUpCircle size={14} />}
-                                                            onPress={() => {
-                                                                setStatusChangeData({
-                                                                    student,
-                                                                    newStatus: 'transferred',
-                                                                    action: 'Mark as Transferred'
-                                                                });
-                                                                onStatusChangeOpen();
-                                                            }}
-                                                        >
-                                                            Mark as Transferred
-                                                        </DropdownItem>
-                                                        <DropdownItem
                                                             key="alumni"
                                                             startContent={<GraduationCap size={14} />}
                                                             onPress={() => {
@@ -2680,18 +2668,12 @@ export default function StudentsList() {
                                     Are you sure you want to <span className="font-semibold">
                                         {bulkAction === "tc" ? "generate TC for" :
                                             bulkAction === "deactivate" ? "mark as inactive" :
-                                                bulkAction === "alumni" ? "mark as alumni" :
-                                                    "mark as transferred"}
+                                                "mark as alumni"}
                                     </span> <span className="font-semibold text-default-900">{selectedCount}</span> student(s)?
                                 </p>
                                 {bulkAction === "deactivate" && (
                                     <p className="text-sm text-default-500 mt-2">
                                         These students will no longer appear in active lists and reports.
-                                    </p>
-                                )}
-                                {bulkAction === "transfer" && (
-                                    <p className="text-sm text-default-500 mt-2">
-                                        These students will be marked as transferred to another institution.
                                     </p>
                                 )}
                                 {bulkAction === "alumni" && (
@@ -2915,11 +2897,6 @@ export default function StudentsList() {
                                         The student will no longer appear in active lists and reports.
                                     </p>
                                 )}
-                                {statusChangeData.newStatus === 'transferred' && (
-                                    <p className="text-sm text-default-500 mt-2">
-                                        The student will be marked as transferred to another institution.
-                                    </p>
-                                )}
                                 {statusChangeData.newStatus === 'alumni' && (
                                     <p className="text-sm text-default-500 mt-2">
                                         The student will be moved to the alumni list.
@@ -3127,7 +3104,7 @@ export default function StudentsList() {
                                         <li>• Phone numbers should be 10 digits</li>
                                         <li>• Class name formats: <span className="font-mono">Class 3</span>, <span className="font-mono">3</span>, <span className="font-mono">class 3</span> all work</li>
                                         <li>• Section is required if the class has multiple sections (A, B, C, etc.)</li>
-                                        <li>• If class has no sections, leave the section column empty</li>
+                                        <li>• If the class has no sections, leave the section column empty</li>
                                         <li>• Duplicate admission IDs will be skipped</li>
                                         <li>• Empty cells will be treated as null values</li>
                                         <li>• Maximum file size: 5 MB</li>
@@ -3193,14 +3170,14 @@ export default function StudentsList() {
                                         </div>
                                         <p className="text-2xl font-bold text-success">{getPreviewSummary().valid}</p>
                                     </div>
-                                    <div className="bg-warning-50 rounded-lg p-4 border border-warning-200">
+                                    <div className="bg-warning-50 rounded-lg p-4 border-warning-200">
                                         <div className="flex items-center gap-2 mb-2">
                                             <AlertTriangle size={18} className="text-warning" />
                                             <span className="text-sm text-warning-700">Duplicates</span>
                                         </div>
                                         <p className="text-2xl font-bold text-warning">{getPreviewSummary().duplicates}</p>
                                     </div>
-                                    <div className="bg-danger-50 rounded-lg p-4 border border-danger-200">
+                                    <div className="bg-danger-50 rounded-lg p-4 border-danger-200">
                                         <div className="flex items-center gap-2 mb-2">
                                             <XCircle size={18} className="text-danger" />
                                             <span className="text-sm text-danger-700">Invalid</span>
@@ -3255,7 +3232,7 @@ export default function StudentsList() {
 
                                 {/* Progress indicator during import */}
                                 {csvProcessing && importProgress.total > 0 && (
-                                    <div className="bg-primary-50 rounded-lg p-4 border border-primary-200">
+                                    <div className="bg-primary-50 rounded-lg p-4 border-primary-200">
                                         <div className="flex items-center justify-between mb-2">
                                             <span className="text-sm font-medium text-primary-900">
                                                 Importing students...

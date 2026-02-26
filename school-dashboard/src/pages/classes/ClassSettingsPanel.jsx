@@ -24,8 +24,10 @@ export default function ClassSettingsPanel({ classId }) {
   // Check if user has edit permission
   const canEdit = hasPermission('classes', 'edit');
 
-  // Available subjects from school settings
-  const availableSubjects = schoolSettings?.subjects || [
+  // Available subjects from school settings - extract names from objects
+  const availableSubjects = schoolSettings?.subjects?.map(s => 
+    typeof s === 'string' ? s : s.name
+  ) || [
     "Mathematics",
     "Science",
     "English",
@@ -51,7 +53,11 @@ export default function ClassSettingsPanel({ classId }) {
       
       if (settings) {
         setClassTag(settings.classTag || "");
-        setSelectedSubjects(new Set(settings.assignedSubjects || []));
+        // Normalize subjects to strings (handle both string and object formats)
+        const normalizedSubjects = (settings.assignedSubjects || []).map(s => 
+          typeof s === 'string' ? s : s.name
+        );
+        setSelectedSubjects(new Set(normalizedSubjects));
       }
     } catch (error) {
       console.error("Error loading class settings:", error);

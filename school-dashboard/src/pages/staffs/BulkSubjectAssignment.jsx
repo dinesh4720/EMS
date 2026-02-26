@@ -1,17 +1,14 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Card, CardBody, Button, Input, Select, SelectItem, Chip, Spinner, Badge,
-  Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Checkbox
+  Button, Input, Select, SelectItem, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter
 } from "@heroui/react";
 import {
-  Search, BookOpen, Plus, Trash2, Check, X, AlertCircle, Users, Save
+  Search, BookOpen, Plus, Trash2, Check, X, AlertCircle, Users, Save, ArrowLeft
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
 import { usePermissions } from "../../context/PermissionContext";
-import { MinimalButton } from "../../components/ui";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
 /**
@@ -37,8 +34,8 @@ export default function BulkSubjectAssignment() {
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [teacherAssignments, setTeacherAssignments] = useState({}); // { teacherId: [{ subject, classes }] }
-  const [pendingChanges, setPendingChanges] = useState({}); // { teacherId: { added: [], removed: [] } }
+  const [teacherAssignments, setTeacherAssignments] = useState({});
+  const [pendingChanges, setPendingChanges] = useState({});
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [newAssignment, setNewAssignment] = useState({
@@ -70,7 +67,6 @@ export default function BulkSubjectAssignment() {
       const isTeacher = roles.includes('Teacher') || staffTypes.includes('Teacher') || s.isClassTeacher;
       if (!isTeacher) return false;
 
-      // Search filter
       if (searchQuery) {
         const searchLower = searchQuery.toLowerCase();
         if (!s.name?.toLowerCase().includes(searchLower) &&
@@ -79,7 +75,6 @@ export default function BulkSubjectAssignment() {
         }
       }
 
-      // Department filter
       if (departmentFilter !== 'all' && s.department !== departmentFilter) {
         return false;
       }
@@ -97,7 +92,6 @@ export default function BulkSubjectAssignment() {
     try {
       setLoading(true);
 
-      // Load assignments for all teachers
       const assignmentPromises = teachers.map(async (teacher) => {
         try {
           const data = await teacherAssignmentsApi.getAll(teacher.id || teacher._id);
@@ -116,7 +110,6 @@ export default function BulkSubjectAssignment() {
 
       const results = await Promise.all(assignmentPromises);
 
-      // Convert to object
       const assignmentsMap = {};
       results.forEach(r => {
         assignmentsMap[r.teacherId] = r.assignments;
@@ -180,15 +173,9 @@ export default function BulkSubjectAssignment() {
     const subject = newAssignment.subject;
     const classIds = Array.from(newAssignment.classIds);
 
-    // Check if this subject already has an assignment with overlapping classes
-    const currentAssignments = getTeacherAssignments(teacherId);
-    const existingSubject = currentAssignments.find(a => a.subject === subject);
-
-    // Add to pending changes
     setPendingChanges(prev => {
       const teacherChanges = prev[teacherId] || { added: [], removed: [] };
 
-      // Check if already pending to add
       const alreadyPending = teacherChanges.added.some(a => a.subject === subject);
       if (alreadyPending) {
         toast.error('This subject is already pending to be added');
@@ -214,7 +201,7 @@ export default function BulkSubjectAssignment() {
     setIsAssignModalOpen(false);
     setNewAssignment({ subject: "", classIds: new Set() });
     toast.success(`Added ${subject} to pending changes`);
-  }, [selectedTeacher, newAssignment, getTeacherAssignments, classesWithTeachers]);
+  }, [selectedTeacher, newAssignment, classesWithTeachers]);
 
   // Handle removing assignment
   const handleRemoveAssignment = useCallback((teacherId, assignmentId, subject) => {
@@ -228,7 +215,6 @@ export default function BulkSubjectAssignment() {
     setPendingChanges(prev => {
       const teacherChanges = prev[id] || { added: [], removed: [] };
 
-      // Check if it's a pending addition - just remove from added
       const pendingAddIndex = teacherChanges.added.findIndex(a => a.subject === subject);
       if (pendingAddIndex >= 0) {
         const newAdded = [...teacherChanges.added];
@@ -243,7 +229,6 @@ export default function BulkSubjectAssignment() {
         };
       }
 
-      // Otherwise add to removed
       return {
         ...prev,
         [id]: {
@@ -291,9 +276,7 @@ export default function BulkSubjectAssignment() {
 
           const promises = [];
 
-          // Process each teacher's changes
           Object.entries(pendingChanges).forEach(([teacherId, changes]) => {
-            // Add new assignments
             changes.added.forEach(assignment => {
               promises.push(
                 teacherAssignmentsApi.create({
@@ -304,7 +287,6 @@ export default function BulkSubjectAssignment() {
               );
             });
 
-            // Remove assignments
             changes.removed.forEach(removal => {
               if (removal.assignmentId) {
                 promises.push(
@@ -316,7 +298,6 @@ export default function BulkSubjectAssignment() {
 
           const results = await Promise.allSettled(promises);
 
-          // Check for failures
           const failures = results.filter(r => r.status === 'rejected');
           if (failures.length > 0) {
             console.error('Some operations failed:', failures);
@@ -328,14 +309,11 @@ export default function BulkSubjectAssignment() {
             toast.success(`${successCount} change(s) saved successfully`);
           }
 
-          // Clear pending and reload
           setPendingChanges({});
           setConfirmDialog(prev => ({ ...prev, isOpen: false }));
 
-          // Reload assignments
           await loadAssignments();
 
-          // Refetch data
           if (refetch) await refetch();
         } catch (error) {
           console.error('Error saving changes:', error);
@@ -360,11 +338,9 @@ export default function BulkSubjectAssignment() {
     const current = [...(teacherAssignments[id] || [])];
     const changes = pendingChanges[id] || { added: [], removed: [] };
 
-    // Remove assignments marked for removal
     const removedSubjects = new Set(changes.removed.map(r => r.subject));
     const filtered = current.filter(a => !removedSubjects.has(a.subject));
 
-    // Add pending additions
     const combined = [...filtered, ...changes.added];
 
     return combined;
@@ -383,254 +359,300 @@ export default function BulkSubjectAssignment() {
   }, [classesWithTeachers]);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-medium text-gray-900">Bulk Subject Assignment</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Assign subjects and classes to teachers. Teachers can then be selected when creating timetables.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <MinimalButton onClick={() => navigate("/staffs")}>
-            Back to Staff
-          </MinimalButton>
+    <div className="w-full flex-1 bg-gray-50 p-6 min-h-screen">
+      {/* ═══════════════════════════════════════════════════════════════════
+          HEADER SECTION
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="mb-6">
+        <button
+          onClick={() => navigate('/staffs')}
+          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors mb-2"
+        >
+          <ArrowLeft size={16} />
+          <span>Back to Staff</span>
+        </button>
+
+        <div className="bg-white rounded-lg border border-gray-100 p-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4">
+            <div className="flex items-center gap-5">
+              {/* Avatar */}
+              <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center">
+                <BookOpen size={24} className="text-gray-600" />
+              </div>
+
+              {/* Info */}
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">Bulk Subject Assignment</h1>
+                <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                  <span>{teachers.length} Teachers</span>
+                  <span className="text-gray-300">|</span>
+                  <span>{availableSubjects.length} Subjects</span>
+                </div>
+                <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                  <Users size={12} />
+                  <span>Assign subjects and classes to teachers in bulk</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => navigate('/staffs/new')}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center gap-2"
+              >
+                <Plus size={16} />
+                Add Staff
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Info Banner */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
-        <AlertCircle size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="text-sm text-blue-800">
-            <strong>Note:</strong> Subject assignments determine which teachers can be selected when creating timetables for specific subjects and classes.
-            This is separate from "Class Teacher" assignment.
-          </p>
+      {/* ═══════════════════════════════════════════════════════════════════
+          CONTENT AREA
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="space-y-4">
+        {/* Info Banner */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <AlertCircle size={16} className="text-gray-600" />
+            </div>
+            <p className="text-sm text-gray-600">
+              <strong>Note:</strong> Subject assignments determine which teachers can be selected when creating timetables for specific subjects and classes.
+              This is separate from "Class Teacher" assignment.
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* Pending Changes Bar */}
-      {totalPendingChanges > 0 && (
-        <Card className="bg-primary-50 border border-primary-200">
-          <CardBody className="p-4">
+        {/* Pending Changes Bar */}
+        {totalPendingChanges > 0 && (
+          <div className="bg-white rounded-lg border border-gray-300 p-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
-                <Save size={18} className="text-primary-600" />
+                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <Save size={16} className="text-gray-600" />
+                </div>
                 <div>
-                  <p className="font-medium text-primary-800">
+                  <p className="text-sm font-medium text-gray-900">
                     {totalPendingChanges} Pending Change(s)
                   </p>
-                  <p className="text-xs text-primary-600">
+                  <p className="text-xs text-gray-500">
                     Changes will not be saved until you click "Save All"
                   </p>
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="light"
-                  onPress={handleClearAll}
-                  isDisabled={saving}
+                <button
+                  onClick={handleClearAll}
+                  disabled={saving}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
                 >
                   Clear All
-                </Button>
-                <Button
-                  size="sm"
-                  color="primary"
-                  onPress={handleSaveAll}
-                  isLoading={saving}
-                  startContent={!saving && <Check size={16} />}
+                </button>
+                <button
+                  onClick={handleSaveAll}
+                  disabled={saving}
+                  className="px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
-                  Save All
-                </Button>
+                  {saving ? (
+                    <>
+                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Check size={14} />
+                      Save All
+                    </>
+                  )}
+                </button>
               </div>
             </div>
-          </CardBody>
-        </Card>
-      )}
+          </div>
+        )}
 
-      {/* Search and Filter */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Input
-          placeholder="Search teachers..."
-          value={searchQuery}
-          onValueChange={setSearchQuery}
-          startContent={<Search size={16} className="text-gray-400" />}
-          isClearable
-          onClear={() => setSearchQuery("")}
-          variant="bordered"
-          size="sm"
-          className="flex-1"
-        />
-        <Select
-          placeholder="Filter by department"
-          selectedKeys={departmentFilter !== 'all' ? [departmentFilter] : []}
-          onSelectionChange={(keys) => setDepartmentFilter(Array.from(keys)[0] || 'all')}
-          variant="bordered"
-          size="sm"
-          className="w-full sm:w-48"
-        >
-          <SelectItem key="all">All Departments</SelectItem>
-          {departments.map(dept => (
-            <SelectItem key={dept}>{dept}</SelectItem>
-          ))}
-        </Select>
-      </div>
-
-      {/* Teachers Table */}
-      <Card className="shadow-sm border border-gray-200">
-        <CardBody className="p-0">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Spinner size="lg" />
-              <p className="text-gray-500 ml-3">Loading assignments...</p>
+        {/* Search and Filter */}
+        <div className="bg-white rounded-lg border border-gray-100 p-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search teachers..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400"
+              />
             </div>
-          ) : (
-            <Table
-              removeWrapper
-              aria-label="Teacher subject assignments"
+            <Select
+              placeholder="Filter by department"
+              selectedKeys={departmentFilter !== 'all' ? [departmentFilter] : []}
+              onSelectionChange={(keys) => setDepartmentFilter(Array.from(keys)[0] || 'all')}
+              variant="bordered"
+              size="sm"
+              className="w-full sm:w-48"
               classNames={{
-                th: "bg-gray-50 text-gray-600 font-medium",
-                td: "py-3"
+                trigger: "border-gray-200 hover:border-gray-300"
               }}
             >
-              <TableHeader>
-                <TableColumn>TEACHER</TableColumn>
-                <TableColumn>DEPARTMENT</TableColumn>
-                <TableColumn>SUBJECT ASSIGNMENTS</TableColumn>
-                <TableColumn>ACTIONS</TableColumn>
-              </TableHeader>
-              <TableBody emptyContent="No teachers found">
-                {teachers.map(teacher => {
-                  const teacherId = String(teacher.id || teacher._id);
-                  const assignments = getEffectiveAssignments(teacherId);
-                  const changes = getPendingChanges(teacherId);
-                  const hasChanges = hasPendingChanges(teacherId);
+              <SelectItem key="all">All Departments</SelectItem>
+              {departments.map(dept => (
+                <SelectItem key={dept}>{dept}</SelectItem>
+              ))}
+            </Select>
+          </div>
+        </div>
 
-                  return (
-                    <TableRow key={teacherId}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                            {teacher.picture ? (
-                              <img src={teacher.picture} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="text-xs font-medium text-gray-600">
-                                {teacher.name?.charAt(0)}
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{teacher.name}</p>
-                            {hasChanges && (
-                              <Badge color="primary" variant="flat" size="sm">
-                                Pending
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-600">
-                          {teacher.department || 'No department'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-2">
-                          {assignments.length === 0 ? (
-                            <p className="text-sm text-gray-400 italic">No subjects assigned</p>
+        {/* Teachers List */}
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          {/* Table Header */}
+          <div className="grid grid-cols-12 gap-4 px-5 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <div className="col-span-3">Teacher</div>
+            <div className="col-span-2">Department</div>
+            <div className="col-span-5">Subject Assignments</div>
+            <div className="col-span-2 text-right">Actions</div>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex flex-col items-center gap-3">
+                <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full"></div>
+                <p className="text-sm text-gray-500">Loading assignments...</p>
+              </div>
+            </div>
+          ) : teachers.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <Users size={20} className="text-gray-400" />
+              </div>
+              <p className="text-sm text-gray-500">No teachers found</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {teachers.map(teacher => {
+                const teacherId = String(teacher.id || teacher._id);
+                const assignments = getEffectiveAssignments(teacherId);
+                const changes = getPendingChanges(teacherId);
+                const hasChanges = hasPendingChanges(teacherId);
+
+                return (
+                  <div key={teacherId} className="grid grid-cols-12 gap-4 px-5 py-4 items-start hover:bg-gray-50/50">
+                    {/* Teacher Info */}
+                    <div className="col-span-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {teacher.picture ? (
+                            <img src={teacher.picture} alt="" className="w-full h-full object-cover" />
                           ) : (
-                            assignments.map((assignment, index) => {
-                              const isPendingAdd = changes.added.some(a => a.subject === assignment.subject);
-                              const isPendingRemove = changes.removed.some(r => r.subject === assignment.subject);
-
-                              if (isPendingRemove) {
-                                return (
-                                  <div key={index} className="flex items-center gap-2 p-2 rounded bg-red-50 border border-red-200">
-                                    <span className="text-sm text-red-600 line-through flex-1">
-                                      {assignment.subject}
-                                    </span>
-                                    <Button
-                                      size="sm"
-                                      variant="light"
-                                      color="primary"
-                                      onPress={() => handleUndoRemoval(teacherId, assignment.subject)}
-                                    >
-                                      Undo
-                                    </Button>
-                                  </div>
-                                );
-                              }
-
-                              return (
-                                <div key={index} className={`p-2 rounded border ${
-                                  isPendingAdd ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
-                                }`}>
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <BookOpen size={14} className="text-gray-500" />
-                                      <span className="font-medium text-sm">{assignment.subject}</span>
-                                      {isPendingAdd && (
-                                        <Badge color="success" variant="flat" size="sm">
-                                          New
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    {canEdit && (
-                                      <Button
-                                        isIconOnly
-                                        size="sm"
-                                        variant="light"
-                                        color="danger"
-                                        onPress={() => handleRemoveAssignment(
-                                          teacherId,
-                                          assignment._id || assignment.id,
-                                          assignment.subject
-                                        )}
-                                      >
-                                        <X size={14} />
-                                      </Button>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-wrap gap-1 mt-2">
-                                    {assignment.classes?.map((cls, idx) => (
-                                      <Chip
-                                        key={idx}
-                                        size="sm"
-                                        variant="flat"
-                                        color="secondary"
-                                      >
-                                        {getClassDisplay(cls)}
-                                      </Chip>
-                                    ))}
-                                  </div>
-                                </div>
-                              );
-                            })
+                            <span className="text-sm font-medium text-gray-600">
+                              {teacher.name?.charAt(0)}
+                            </span>
                           )}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          color="primary"
-                          variant="flat"
-                          startContent={<Plus size={14} />}
-                          onPress={() => handleOpenAssignModal(teacher)}
-                          isDisabled={!canEdit}
-                        >
-                          Add Subject
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{teacher.name}</p>
+                          {hasChanges && (
+                            <span className="text-xs text-gray-500">Pending changes</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Department */}
+                    <div className="col-span-2">
+                      <span className="text-sm text-gray-600">
+                        {teacher.department || '—'}
+                      </span>
+                    </div>
+
+                    {/* Subject Assignments */}
+                    <div className="col-span-5">
+                      <div className="space-y-2">
+                        {assignments.length === 0 ? (
+                          <p className="text-sm text-gray-400 italic">No subjects assigned</p>
+                        ) : (
+                          assignments.map((assignment, index) => {
+                            const isPendingAdd = changes.added.some(a => a.subject === assignment.subject);
+                            const isPendingRemove = changes.removed.some(r => r.subject === assignment.subject);
+
+                            if (isPendingRemove) {
+                              return (
+                                <div key={index} className="flex items-center gap-2 p-2 rounded-lg bg-red-50 border border-red-200">
+                                  <span className="text-sm text-red-600 line-through flex-1">
+                                    {assignment.subject}
+                                  </span>
+                                  <button
+                                    onClick={() => handleUndoRemoval(teacherId, assignment.subject)}
+                                    className="text-xs text-gray-600 hover:text-gray-900 font-medium"
+                                  >
+                                    Undo
+                                  </button>
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div key={index} className={`p-3 rounded-lg border ${
+                                isPendingAdd ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+                              }`}>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <BookOpen size={14} className="text-gray-500" />
+                                    <span className="text-sm font-medium text-gray-900">{assignment.subject}</span>
+                                    {isPendingAdd && (
+                                      <span className="text-xs text-green-600 font-medium">New</span>
+                                    )}
+                                  </div>
+                                  {canEdit && (
+                                    <button
+                                      onClick={() => handleRemoveAssignment(
+                                        teacherId,
+                                        assignment._id || assignment.id,
+                                        assignment.subject
+                                      )}
+                                      className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {assignment.classes?.map((cls, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded"
+                                    >
+                                      {getClassDisplay(cls)}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="col-span-2 text-right">
+                      <button
+                        onClick={() => handleOpenAssignModal(teacher)}
+                        disabled={!canEdit}
+                        className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
+                      >
+                        <Plus size={14} />
+                        Add Subject
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
-        </CardBody>
-      </Card>
+        </div>
+      </div>
 
       {/* Add Assignment Modal */}
       <Modal
@@ -638,18 +660,23 @@ export default function BulkSubjectAssignment() {
         onClose={() => setIsAssignModalOpen(false)}
         size="2xl"
         classNames={{
-          backdrop: "bg-black/50",
+          backdrop: "bg-black/30",
           base: "bg-white"
         }}
       >
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1 border-b border-gray-200">
-            <h3 className="text-lg font-semibold">Add Subject Assignment</h3>
-            <p className="text-sm text-gray-500 font-normal">
-              For: {selectedTeacher?.name}
-            </p>
+          <ModalHeader className="flex flex-col gap-1 border-b border-gray-100 px-6 py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+                <BookOpen size={16} className="text-gray-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Add Subject Assignment</h3>
+                <p className="text-sm text-gray-500 font-normal">For: {selectedTeacher?.name}</p>
+              </div>
+            </div>
           </ModalHeader>
-          <ModalBody className="py-6">
+          <ModalBody className="py-6 px-6">
             <div className="space-y-4">
               {/* Subject Selection */}
               <div className="space-y-2">
@@ -665,6 +692,10 @@ export default function BulkSubjectAssignment() {
                   variant="bordered"
                   radius="lg"
                   size="md"
+                  classNames={{
+                    trigger: "border-gray-200 hover:border-gray-300",
+                    value: "text-sm text-gray-900"
+                  }}
                 >
                   {availableSubjects.map((subject) => (
                     <SelectItem key={subject} value={subject}>
@@ -689,6 +720,10 @@ export default function BulkSubjectAssignment() {
                   variant="bordered"
                   radius="lg"
                   size="md"
+                  classNames={{
+                    trigger: "border-gray-200 hover:border-gray-300",
+                    value: "text-sm text-gray-900"
+                  }}
                 >
                   {classesWithTeachers.map((cls) => (
                     <SelectItem key={cls.id} value={cls.id}>
@@ -700,22 +735,24 @@ export default function BulkSubjectAssignment() {
                 {newAssignment.classIds.size > 0 && (
                   <div className="flex flex-wrap gap-2 mt-3">
                     {Array.from(newAssignment.classIds).map((classId) => {
-                      // FIXED: Use String() comparison for ObjectId matching
                       const cls = classesWithTeachers.find(c => String(c.id) === String(classId));
                       return cls ? (
-                        <Chip
+                        <span
                           key={classId}
-                          size="sm"
-                          variant="flat"
-                          color="secondary"
-                          onClose={() => {
-                            const newSelection = new Set(newAssignment.classIds);
-                            newSelection.delete(classId);
-                            setNewAssignment(prev => ({ ...prev, classIds: newSelection }));
-                          }}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm font-medium"
                         >
                           {`${cls.name}-${cls.section}`}
-                        </Chip>
+                          <button
+                            onClick={() => {
+                              const newSelection = new Set(newAssignment.classIds);
+                              newSelection.delete(classId);
+                              setNewAssignment(prev => ({ ...prev, classIds: newSelection }));
+                            }}
+                            className="hover:bg-gray-200 rounded-full p-0.5 transition-colors"
+                          >
+                            <X size={12} className="text-gray-500" />
+                          </button>
+                        </span>
                       ) : null;
                     })}
                   </div>
@@ -723,30 +760,30 @@ export default function BulkSubjectAssignment() {
               </div>
 
               {/* Info */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
-                <AlertCircle size={18} className="text-blue-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-blue-800">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex gap-3">
+                <AlertCircle size={18} className="text-gray-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-gray-600">
                   This assignment will allow {selectedTeacher?.name} to be selected when creating timetables
                   for the chosen classes and subject.
                 </p>
               </div>
             </div>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-200">
-            <Button
-              variant="light"
-              onPress={() => setIsAssignModalOpen(false)}
+          <ModalFooter className="border-t border-gray-100 px-6 py-4">
+            <button
+              onClick={() => setIsAssignModalOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
               Cancel
-            </Button>
-            <Button
-              color="primary"
-              onPress={handleAddAssignment}
-              isDisabled={!newAssignment.subject || newAssignment.classIds.size === 0}
-              startContent={<Plus size={16} />}
+            </button>
+            <button
+              onClick={handleAddAssignment}
+              disabled={!newAssignment.subject || newAssignment.classIds.size === 0}
+              className="px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
             >
+              <Plus size={14} />
               Add to Pending
-            </Button>
+            </button>
           </ModalFooter>
         </ModalContent>
       </Modal>

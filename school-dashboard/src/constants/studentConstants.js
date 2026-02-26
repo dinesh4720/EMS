@@ -21,7 +21,6 @@ export const MOTHER_TONGUES = [
 export const STUDENT_STATUSES = {
   ACTIVE: 'active',
   INACTIVE: 'inactive',
-  TRANSFERRED: 'transferred',
   ALUMNI: 'alumni'
 };
 
