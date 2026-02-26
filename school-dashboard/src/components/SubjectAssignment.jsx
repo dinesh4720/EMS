@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { classesApi, classesEnhancedApi } from '../services/api';
-import { ChevronLeft, Plus, X, Save, AlertTriangle, CheckCircle } from 'lucide-react';
+import { classesApi } from '../services/api';
+import { ArrowLeft, Plus, X, Save, AlertTriangle, CheckCircle, BookOpen, Search, Settings, Users } from 'lucide-react';
 
 const SubjectAssignment = () => {
   const navigate = useNavigate();
@@ -13,6 +13,7 @@ const SubjectAssignment = () => {
   const [editingClass, setEditingClass] = useState(null);
   const [newSubject, setNewSubject] = useState('');
   const [editingClassSubjects, setEditingClassSubjects] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchClasses();
@@ -59,16 +60,16 @@ const SubjectAssignment = () => {
     try {
       setSaving(true);
       setError(null);
-      
+
       await classesApi.updateSubjects(classId, editingClassSubjects);
-      
+
       setSuccessMessage('Subjects updated successfully');
-      
+
       // Refresh classes
       await fetchClasses();
-      
+
       handleCancelEdit();
-      
+
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       setError('Failed to update subjects. Please try again.');
@@ -89,249 +90,430 @@ const SubjectAssignment = () => {
     return classes.filter(c => !c.subjects || c.subjects.length === 0);
   };
 
+  // Filter classes based on search
+  const filteredClasses = classes.filter(cls => {
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      cls.name?.toLowerCase().includes(searchLower) ||
+      cls.section?.toLowerCase().includes(searchLower)
+    );
+  });
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="w-full flex-1 bg-gray-50 p-6 min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full"></div>
+          <p className="text-sm text-gray-500">Loading classes...</p>
+        </div>
       </div>
     );
   }
 
   const missingSubjectsClasses = getMissingSubjectsClasses();
 
+  // Calculate stats
+  const totalClasses = classes.length;
+  const classesWithSubjects = classes.filter(c => c.subjects && c.subjects.length > 0).length;
+  const totalSubjects = classes.reduce((sum, c) => sum + (c.subjects?.length || 0), 0);
+
+  const stats = [
+    { label: "Total Classes", value: totalClasses, icon: Users, subtext: "registered" },
+    { label: "Configured", value: classesWithSubjects, icon: CheckCircle, subtext: `${totalClasses - classesWithSubjects} pending` },
+    { label: "Total Subjects", value: totalSubjects, icon: BookOpen, subtext: "across all classes" },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigate(-1)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Subject Assignment</h1>
-                <p className="text-sm text-gray-500">Assign subjects to classes</p>
+    <div className="w-full flex-1 bg-gray-50 p-6 min-h-screen">
+      {/* ═══════════════════════════════════════════════════════════════════
+          HEADER SECTION
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="mb-6">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors mb-2"
+        >
+          <ArrowLeft size={16} />
+          <span>Back</span>
+        </button>
+
+        <div className="bg-white rounded-lg border border-gray-100 p-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4">
+            <div className="flex items-center gap-5">
+              {/* Avatar */}
+              <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center">
+                <BookOpen size={24} className="text-gray-600" />
               </div>
+
+              {/* Info */}
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">Subject Assignment</h1>
+                <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                  <span>{totalClasses} Classes</span>
+                  <span className="text-gray-300">|</span>
+                  <span>{totalSubjects} Subjects</span>
+                </div>
+                <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                  <Settings size={12} />
+                  <span>Configure subjects for each class</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => navigate('/classes/new')}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center gap-2"
+              >
+                <Plus size={16} />
+                Add Class
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Error/Success Messages */}
-      {error && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-start">
-              <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5" />
-              <p className="ml-3 text-sm text-red-700">{error}</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ═══════════════════════════════════════════════════════════════════
+          CONTENT AREA
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* MAIN CONTENT - 2/3 */}
+        <div className="lg:col-span-2 space-y-4">
 
-      {successMessage && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <CheckCircle className="w-5 h-5 text-green-500" />
-              <p className="ml-3 text-sm text-green-800">{successMessage}</p>
+          {/* Error Message */}
+          {error && (
+            <div className="bg-white rounded-lg border border-red-200 p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle size={16} className="text-red-600" />
+                </div>
+                <p className="text-sm text-red-700">{error}</p>
+                <button
+                  onClick={() => setError(null)}
+                  className="ml-auto p-1 hover:bg-red-50 rounded"
+                >
+                  <X size={16} className="text-red-400" />
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* Missing Subjects Warning */}
-      {missingSubjectsClasses.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-            <div className="flex items-start">
-              <AlertTriangle className="w-5 h-5 text-orange-500 mt-0.5" />
-              <div className="ml-3 flex-1">
-                <h3 className="text-sm font-medium text-orange-800">
-                  {missingSubjectsClasses.length} class{missingSubjectsClasses.length > 1 ? 'es have' : ' has'} no subjects assigned
-                </h3>
-                <p className="mt-1 text-sm text-orange-700">
+          {/* Success Message */}
+          {successMessage && (
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle size={16} className="text-gray-600" />
+                </div>
+                <p className="text-sm text-gray-700">{successMessage}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Warning - Missing Subjects */}
+          {missingSubjectsClasses.length > 0 && (
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className="p-5 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <AlertTriangle size={16} className="text-gray-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900 text-sm">Attention Required</h3>
+                    <p className="text-xs text-gray-500">
+                      {missingSubjectsClasses.length} class{missingSubjectsClasses.length > 1 ? 'es have' : ' has'} no subjects assigned
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-5">
+                <p className="text-sm text-gray-600 mb-3">
                   Timetables cannot be generated for classes without subjects.
                 </p>
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2">
                   {missingSubjectsClasses.slice(0, 5).map(cls => (
                     <span
                       key={cls._id}
-                      className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-orange-100 text-orange-800"
+                      className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-md"
                     >
                       {cls.name} - {cls.section}
                     </span>
                   ))}
                   {missingSubjectsClasses.length > 5 && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-orange-100 text-orange-800">
+                    <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-md">
                       +{missingSubjectsClasses.length - 5} more
                     </span>
                   )}
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {classes.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg shadow">
-            <AlertTriangle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No classes found</h3>
-            <p className="text-gray-500">Create classes first to assign subjects.</p>
+          {/* Search */}
+          <div className="bg-white rounded-lg border border-gray-100 p-4">
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search classes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400"
+              />
+            </div>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {classes.map((cls) => {
-              const isEditing = editingClass === cls._id;
-              const hasSubjects = cls.subjects && cls.subjects.length > 0;
 
-              return (
-                <div
-                  key={cls._id}
-                  className={`bg-white rounded-lg shadow transition-all ${
-                    isEditing ? 'ring-2 ring-blue-500' : 'hover:shadow-md'
-                  }`}
-                >
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {cls.name} - {cls.section}
-                        </h3>
-                        <div className="flex items-center space-x-4 mt-1">
-                          <span className="text-sm text-gray-500">
-                            {cls.students?.length || 0} students
-                          </span>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                            hasSubjects
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-orange-100 text-orange-700'
-                          }`}>
-                            {hasSubjects ? (
-                              <>
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                {cls.subjects.length} subject{cls.subjects.length > 1 ? 's' : ''}
-                              </>
-                            ) : (
-                              <>
-                                <AlertTriangle className="w-3 h-3 mr-1" />
-                                No subjects
-                              </>
-                            )}
-                          </span>
+          {/* Classes List */}
+          {filteredClasses.length === 0 ? (
+            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <BookOpen size={20} className="text-gray-400" />
+              </div>
+              <h3 className="text-sm font-medium text-gray-900 mb-2">No classes found</h3>
+              <p className="text-sm text-gray-500">Create classes first to assign subjects.</p>
+              <button
+                onClick={() => navigate('/classes/new')}
+                className="mt-4 px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                Add Class
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredClasses.map((cls) => {
+                const isEditing = editingClass === cls._id;
+                const hasSubjects = cls.subjects && cls.subjects.length > 0;
+
+                return (
+                  <div
+                    key={cls._id}
+                    className={`bg-white rounded-lg border transition-all ${
+                      isEditing ? 'border-gray-400 ring-1 ring-gray-400' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {/* Class Header */}
+                    <div className="p-5 border-b border-gray-100">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                            <span className="text-sm font-semibold text-gray-600">
+                              {cls.name?.replace("Class ", "")}{cls.section}
+                            </span>
+                          </div>
+                          <div>
+                            <h3 className="text-base font-semibold text-gray-900">
+                              Grade {cls.name} - Section {cls.section}
+                            </h3>
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="text-xs text-gray-500">
+                                {cls.students?.length || 0} students
+                              </span>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                hasSubjects
+                                  ? 'bg-gray-100 text-gray-600'
+                                  : 'bg-orange-50 text-orange-600'
+                              }`}>
+                                {hasSubjects ? (
+                                  <>
+                                    <CheckCircle size={10} className="mr-1" />
+                                    {cls.subjects.length} subject{cls.subjects.length > 1 ? 's' : ''}
+                                  </>
+                                ) : (
+                                  <>
+                                    <AlertTriangle size={10} className="mr-1" />
+                                    No subjects
+                                  </>
+                                )}
+                              </span>
+                            </div>
+                          </div>
                         </div>
+
+                        {!isEditing ? (
+                          <button
+                            onClick={() => handleStartEdit(cls)}
+                            className="px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors flex items-center gap-2"
+                          >
+                            <Plus size={14} />
+                            Manage
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={handleCancelEdit}
+                              disabled={saving}
+                              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                            >
+                              <X size={14} />
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => handleSaveSubjects(cls._id)}
+                              disabled={saving || editingClassSubjects.length === 0}
+                              className="px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                            >
+                              <Save size={14} />
+                              {saving ? 'Saving...' : 'Save'}
+                            </button>
+                          </div>
+                        )}
                       </div>
-                      
-                      {!isEditing ? (
-                        <button
-                          onClick={() => handleStartEdit(cls)}
-                          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span>Manage</span>
-                        </button>
+                    </div>
+
+                    {/* Class Content */}
+                    <div className="p-5">
+                      {isEditing ? (
+                        <div className="space-y-4">
+                          {/* Add Subject Input */}
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={newSubject}
+                              onChange={(e) => setNewSubject(e.target.value)}
+                              onKeyPress={handleKeyPress}
+                              placeholder="Add subject (e.g., Mathematics, English)"
+                              className="flex-1 px-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400"
+                              disabled={saving}
+                            />
+                            <button
+                              onClick={handleAddSubject}
+                              disabled={saving || !newSubject.trim()}
+                              className="px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              <Plus size={16} />
+                            </button>
+                          </div>
+
+                          {/* Subjects List */}
+                          {editingClassSubjects.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {editingClassSubjects.map((subject, idx) => (
+                                <div
+                                  key={idx}
+                                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md"
+                                >
+                                  <span className="text-sm font-medium">{subject}</span>
+                                  <button
+                                    onClick={() => handleRemoveSubject(subject)}
+                                    disabled={saving}
+                                    className="hover:bg-gray-200 rounded-full p-0.5 transition-colors"
+                                  >
+                                    <X size={14} className="text-gray-500" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-400 italic">No subjects added yet</p>
+                          )}
+
+                          {/* Helper Text */}
+                          <p className="text-xs text-gray-400">
+                            Press Enter or click the + button to add a subject. Click Save to apply changes.
+                          </p>
+                        </div>
                       ) : (
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={handleCancelEdit}
-                            disabled={saving}
-                            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                            <span>Cancel</span>
-                          </button>
-                          <button
-                            onClick={() => handleSaveSubjects(cls._id)}
-                            disabled={saving || editingClassSubjects.length === 0}
-                            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
-                          >
-                            <Save className="w-4 h-4" />
-                            <span>{saving ? 'Saving...' : 'Save'}</span>
-                          </button>
+                        /* Display Subjects */
+                        <div className="flex flex-wrap gap-2">
+                          {hasSubjects ? (
+                            cls.subjects.map((subject, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm font-medium"
+                              >
+                                {subject}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-gray-400 italic">No subjects assigned</span>
+                          )}
                         </div>
                       )}
                     </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
-                    {isEditing ? (
-                      <div className="space-y-4">
-                        {/* Add Subject Input */}
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="text"
-                            value={newSubject}
-                            onChange={(e) => setNewSubject(e.target.value)}
-                            onKeyPress={handleKeyPress}
-                            placeholder="Add subject (e.g., Mathematics, English)"
-                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            disabled={saving}
-                          />
-                          <button
-                            onClick={handleAddSubject}
-                            disabled={saving || !newSubject.trim()}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
+        {/* RIGHT SIDEBAR - 1/3 */}
+        <div className="lg:col-span-1 space-y-4">
 
-                        {/* Subjects List */}
-                        {editingClassSubjects.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {editingClassSubjects.map((subject, idx) => (
-                              <div
-                                key={idx}
-                                className="inline-flex items-center space-x-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-md"
-                              >
-                                <span className="text-sm font-medium">{subject}</span>
-                                <button
-                                  onClick={() => handleRemoveSubject(subject)}
-                                  disabled={saving}
-                                  className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-gray-500 italic">No subjects added yet</p>
-                        )}
-
-                        {/* Helper Text */}
-                        <p className="text-xs text-gray-500">
-                          Press Enter or click the + button to add a subject. Click Save to apply changes.
-                        </p>
-                      </div>
-                    ) : (
-                      /* Display Subjects */
-                      <div className="flex flex-wrap gap-2">
-                        {hasSubjects ? (
-                          cls.subjects.map((subject, idx) => (
-                            <span
-                              key={idx}
-                              className="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-700 rounded-md text-sm font-medium"
-                            >
-                              {subject}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-sm text-gray-500 italic">No subjects assigned</span>
-                        )}
-                      </div>
-                    )}
+          {/* Stats Cards */}
+          <div className="bg-white rounded-lg border border-gray-100 p-5">
+            <h3 className="text-sm font-medium text-gray-900 mb-4">Overview</h3>
+            <div className="space-y-4">
+              {stats.map((stat, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                      <stat.icon size={14} className="text-gray-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{stat.value}</p>
+                      <p className="text-xs text-gray-500">{stat.label}</p>
+                    </div>
                   </div>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
-        )}
+
+          {/* Progress */}
+          <div className="bg-white rounded-lg border border-gray-100 p-5">
+            <h3 className="text-sm font-medium text-gray-900 mb-4">Configuration Progress</h3>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between text-xs mb-2">
+                  <span className="text-gray-500">Classes with subjects</span>
+                  <span className="font-medium text-gray-900">{Math.round((classesWithSubjects / totalClasses) * 100) || 0}%</span>
+                </div>
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      classesWithSubjects === totalClasses ? 'bg-gray-800' : 'bg-gray-500'
+                    }`}
+                    style={{ width: `${(classesWithSubjects / totalClasses) * 100 || 0}%` }}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-gray-400">
+                {classesWithSubjects} of {totalClasses} classes have subjects assigned
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="bg-white rounded-lg border border-gray-100 p-5">
+            <h3 className="text-sm font-medium text-gray-900 mb-4">Quick Actions</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => navigate('/classes')}
+                className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <Users size={18} className="text-gray-600" />
+                <span className="text-xs text-gray-600">Classes</span>
+              </button>
+              <button
+                onClick={() => navigate('/timetable')}
+                className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <BookOpen size={18} className="text-gray-600" />
+                <span className="text-xs text-gray-600">Timetable</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Help Card */}
+          <div className="bg-white rounded-lg border border-gray-100 p-5">
+            <h3 className="text-sm font-medium text-gray-900 mb-2">How it works</h3>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Assign subjects to each class to enable timetable generation. Click "Manage" on a class to add or remove subjects.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

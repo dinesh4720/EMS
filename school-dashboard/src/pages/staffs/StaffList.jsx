@@ -18,10 +18,9 @@ import ScrollToTopButton from "../../components/ui/ScrollToTopButton";
 const ITEMS_PER_LOAD = 10;
 
 export default function StaffList({ onStaffClick, onStaffEdit }) {
-    const { staff, deleteStaff, updateStaff, updateStaffLocal, staffAttendance, classesWithTeachers } = useApp();
+    const { staff, deleteStaff, updateStaff, updateStaffLocal, staffAttendance } = useApp();
     const [searchQuery, setSearchQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState("all");
-    const [deptFilter, setDeptFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("active");
     const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
     const [isLoading, setIsLoading] = useState(false);
@@ -31,24 +30,17 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
         direction: "ascending",
     });
     const [selectedStaff, setSelectedStaff] = useState(new Set());
-    const [showDeptSubmenu, setShowDeptSubmenu] = useState(false);
-    const deptItemRef = useRef(null);
-
-    // Track open states for all dropdowns
     const [openDropdowns, setOpenDropdowns] = useState({
         status: false,
         bulk: false,
         export: false,
         role: false,
-        department: false,
         sort: false
     });
 
     const [columnWidths] = useState({
         name: 260,
         role: 140,
-        department: 130,
-        classes: 150,
         contact: 140,
         attendance: 100,
         status: 120,
@@ -56,7 +48,6 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
     });
 
     const roles = STAFF_ROLES; // Use centralized roles
-    const departments = [...new Set(staff.map(s => s.department))];
     const statusOptions = ["active", "inactive"];
 
     // Calculate counts for filters
@@ -67,14 +58,6 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                 const staffRoles = Array.isArray(s.role) ? s.role : [s.role];
                 return staffRoles.includes(role);
             }).length;
-        });
-        return counts;
-    };
-
-    const getDepartmentCounts = () => {
-        const counts = { all: staff.length };
-        departments.forEach(dept => {
-            counts[dept] = staff.filter(s => s.department === dept).length;
         });
         return counts;
     };
@@ -91,11 +74,10 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
     const activeFiltersCount = useMemo(() => {
         let count = 0;
         if (roleFilter !== "all") count++;
-        if (deptFilter !== "all") count++;
         if (statusFilter !== "active") count++;
         if (searchQuery) count++;
         return count;
-    }, [roleFilter, deptFilter, statusFilter, searchQuery]);
+    }, [roleFilter, statusFilter, searchQuery]);
 
     // Filters configuration for FiltersPanel
     const filtersConfig = useMemo(() => ({
@@ -115,15 +97,6 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                 "lab assistant": "Lab Assistant"
             }
         },
-        department: {
-            label: "Department",
-            value: deptFilter,
-            options: ["all", ...departments],
-            counts: getDepartmentCounts(),
-            displayLabels: {
-                all: "All Departments"
-            }
-        },
         status: {
             label: "Status",
             value: statusFilter,
@@ -135,26 +108,26 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                 inactive: "Inactive"
             }
         }
-    }), [roleFilter, deptFilter, statusFilter, staff, roles, departments, statusOptions, statusCounts]);
+    }), [roleFilter, statusFilter, staff, roles, statusOptions, statusCounts]);
 
     // Quick presets for common filter combinations
     const filterPresets = [
         {
             id: "active-teachers",
             label: "Active Teachers",
-            filters: { role: "Teacher", status: "active", department: "all" },
+            filters: { role: "Teacher", status: "active" },
             applied: roleFilter === "Teacher" && statusFilter === "active"
         },
         {
             id: "all-active",
             label: "All Active Staff",
-            filters: { role: "all", status: "active", department: "all" },
-            applied: statusFilter === "active" && roleFilter === "all" && deptFilter === "all"
+            filters: { role: "all", status: "active" },
+            applied: statusFilter === "active" && roleFilter === "all"
         },
         {
             id: "admins",
             label: "Admin Staff",
-            filters: { role: "Admin", status: "all", department: "all" },
+            filters: { role: "Admin", status: "all" },
             applied: roleFilter === "Admin"
         }
     ];
@@ -171,14 +144,6 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
 
         const presentDays = attendanceRecords.filter(r => r.status === 'present' || r.status === 'Present').length;
         return Math.round((presentDays / attendanceRecords.length) * 100);
-    };
-
-    // Get class teacher assignments for a staff member
-    const getClassTeacherAssignments = (staffId) => {
-        if (!classesWithTeachers || !staffId) return [];
-        return classesWithTeachers.filter(cls =>
-            cls.classTeacherId && String(cls.classTeacherId) === String(staffId)
-        );
     };
 
     const filteredItems = useMemo(() => {
@@ -201,10 +166,6 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
             });
         }
 
-        if (deptFilter !== "all") {
-            filtered = filtered.filter((s) => s.department === deptFilter);
-        }
-
         if (statusFilter !== "all") {
             filtered = filtered.filter((s) => s.status === statusFilter);
         }
@@ -215,7 +176,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
             const cmp = first < second ? -1 : first > second ? 1 : 0;
             return sortDescriptor.direction === "descending" ? -cmp : cmp;
         });
-    }, [staff, searchQuery, roleFilter, deptFilter, statusFilter, sortDescriptor]);
+    }, [staff, searchQuery, roleFilter, statusFilter, sortDescriptor]);
 
     const visibleItems = useMemo(() => {
         return filteredItems.slice(0, visibleCount);
@@ -228,7 +189,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
     // Reset visible count when filters change
     useEffect(() => {
         setVisibleCount(ITEMS_PER_LOAD);
-    }, [searchQuery, roleFilter, deptFilter, statusFilter, sortDescriptor]);
+    }, [searchQuery, roleFilter, statusFilter, sortDescriptor]);
 
     // Intersection Observer for lazy loading
     useEffect(() => {
@@ -267,7 +228,6 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
             updateStaffLocal(data.staffId, {
                 name: data.name,
                 role: data.role,
-                department: data.department,
                 status: data.status,
                 phone: data.phone,
                 email: data.email,
@@ -319,7 +279,6 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
     // Clear all filters
     const clearAllFilters = () => {
         setRoleFilter("all");
-        setDeptFilter("all");
         setStatusFilter("active");
         setSearchQuery("");
         toast.success("All filters cleared");
@@ -330,9 +289,6 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
         switch (filterKey) {
             case "role":
                 setRoleFilter(value);
-                break;
-            case "department":
-                setDeptFilter(value);
                 break;
             case "status":
                 setStatusFilter(value);
@@ -346,19 +302,17 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
     const handlePresetClick = (preset) => {
         const { filters } = preset;
         setRoleFilter(filters.role);
-        setDeptFilter(filters.department);
         setStatusFilter(filters.status);
         toast.success(`Applied preset: ${preset.label}`);
     };
 
     // Export functions
     const exportToCSV = () => {
-        const headers = ["Staff Name", "Employee ID", "Role", "Department", "Contact", "Email", "Status", "Attendance %"];
+        const headers = ["Staff Name", "Employee ID", "Role", "Contact", "Email", "Status", "Attendance %"];
         const rows = filteredItems.map(s => [
             s.name,
             s.code,
             Array.isArray(s.role) ? s.role.join(', ') : s.role,
-            s.department,
             s.phone || "N/A",
             s.email,
             s.status,
@@ -431,27 +385,6 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
             setSelectedStaff(new Set());
         } catch (err) {
             toast.error("Failed to update role");
-        }
-    };
-
-    const handleBulkDepartmentChange = async (newDept) => {
-        if (selectedCount === 0) return;
-
-        try {
-            const ids = getSelectedIds();
-            const updates = ids.map(async (staffId) => {
-                const numericId = Number(staffId);
-                const staffMember = staff.find(s => s.id === numericId);
-                if (staffMember) {
-                    await updateStaff(numericId, { ...staffMember, department: newDept });
-                }
-            });
-
-            await Promise.all(updates);
-            toast.success(`Department updated to ${newDept} for ${selectedCount} staff members`);
-            setSelectedStaff(new Set());
-        } catch (err) {
-            toast.error("Failed to update department");
         }
     };
 
@@ -618,31 +551,6 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                                             </DropdownItem>
                                         ))}
                                     </DropdownSection>
-                                    <DropdownSection title="Change Department" showDivider>
-                                        <DropdownItem
-                                            key="dept-submenu"
-                                            textValue="Move to Department"
-                                            className="relative [&>span]:w-full"
-                                        >
-                                            <div
-                                                ref={deptItemRef}
-                                                className={`flex items-center justify-between w-full cursor-pointer group/dept ${showDeptSubmenu ? "bg-default-100 text-default-900" : "text-default-700"}`}
-                                                onPointerEnter={() => setShowDeptSubmenu(true)}
-                                                onPointerLeave={() => {
-                                                    // Small delay to allow moving to submenu
-                                                    setTimeout(() => {
-                                                        const submenu = document.querySelector('.dept-submenu');
-                                                        if (submenu && !submenu.matches(':hover')) {
-                                                            setShowDeptSubmenu(false);
-                                                        }
-                                                    }, 100);
-                                                }}
-                                            >
-                                                <span>Move to Department</span>
-                                                <ChevronRight size={14} className="text-default-400" />
-                                            </div>
-                                        </DropdownItem>
-                                    </DropdownSection>
                                     <DropdownSection title="Actions">
                                         <DropdownItem
                                             key="delete"
@@ -656,40 +564,6 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                                     </DropdownSection>
                                 </DropdownMenu>
                             </Dropdown>
-
-                            {/* Department Submenu Portal */}
-                            {showDeptSubmenu && deptItemRef.current && createPortal(
-                                <div
-                                    className="dept-submenu fixed bg-content1 border border-default-200 rounded-lg shadow-xl p-1 min-w-[200px] max-h-[300px] overflow-y-auto"
-                                    style={{
-                                        left: `${deptItemRef.current.getBoundingClientRect().right + 8}px`,
-                                        top: `${deptItemRef.current.getBoundingClientRect().top}px`,
-                                        zIndex: 2147483647
-                                    }}
-                                    onPointerEnter={() => {
-                                        console.log('Pointer entered submenu');
-                                        setShowDeptSubmenu(true);
-                                    }}
-                                    onPointerLeave={() => {
-                                        console.log('Pointer left submenu');
-                                        setShowDeptSubmenu(false);
-                                    }}
-                                >
-                                    {departments.map((dept) => (
-                                        <button
-                                            key={`dept-${dept}`}
-                                            onClick={() => {
-                                                handleBulkDepartmentChange(dept);
-                                                setShowDeptSubmenu(false);
-                                            }}
-                                            className="w-full text-left px-2 py-1.5 text-sm font-normal text-default-700 rounded-md hover:bg-default-100 hover:text-default-900 transition-colors"
-                                        >
-                                            {dept}
-                                        </button>
-                                    ))}
-                                </div>,
-                                document.body
-                            )}
                         </div>
                     )}
 
@@ -718,7 +592,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                     </Dropdown>
 
                     {/* Clear Filters Button */}
-                    {(roleFilter !== "all" || deptFilter !== "all" || statusFilter !== "active" || searchQuery) && (
+                    {(roleFilter !== "all" || statusFilter !== "active" || searchQuery) && (
                         <button
                             onClick={clearAllFilters}
                             className="p-2 bg-transparent rounded-lg border border-default-300 hover:border-danger hover:bg-danger-50 transition-all duration-200 cursor-pointer group"
@@ -753,7 +627,6 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                         >
                             <DropdownItem key="name">Name</DropdownItem>
                             <DropdownItem key="role">Role</DropdownItem>
-                            <DropdownItem key="department">Department</DropdownItem>
                         </DropdownMenu>
                     </Dropdown>
                 </div>
@@ -779,7 +652,6 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                         bulk: false,
                         export: false,
                         role: false,
-                        department: false,
                         sort: false
                     });
                 }}
@@ -795,8 +667,6 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                 <TableHeader>
                     <TableColumn key="name" allowsSorting style={{ width: columnWidths.name }}>STAFF NAME</TableColumn>
                     <TableColumn key="role" allowsSorting style={{ width: columnWidths.role }}>ROLE</TableColumn>
-                    <TableColumn key="department" allowsSorting style={{ width: columnWidths.department }}>DEPARTMENT</TableColumn>
-                    <TableColumn key="classes" style={{ width: columnWidths.classes }}>CLASSES</TableColumn>
                     <TableColumn key="contact" style={{ width: columnWidths.contact }}>CONTACT INFO</TableColumn>
                     <TableColumn key="attendance" style={{ width: columnWidths.attendance }}>ATTENDANCE %</TableColumn>
                     <TableColumn key="status" style={{ width: columnWidths.status }}>STATUS</TableColumn>
@@ -853,38 +723,6 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                                         <span className="text-gray-800 text-sm">{s.role}</span>
                                     )}
                                 </div>
-                            </TableCell>
-                            <TableCell key="department">
-                                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md capitalize">
-                                    {s.department}
-                                </span>
-                            </TableCell>
-                            <TableCell key="classes">
-                                {(Array.isArray(s.role) ? s.role.includes('Teacher') : s.role === 'Teacher') ? (
-                                    getClassTeacherAssignments(s.id).length > 0 ? (
-                                        <div className="flex flex-col gap-1">
-                                            {getClassTeacherAssignments(s.id).slice(0, 2).map((cls, idx) => (
-                                                <Link
-                                                    key={idx}
-                                                    to={`/classes/${cls.id || cls._id}`}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="text-xs text-default-700 hover:text-primary transition-colors"
-                                                >
-                                                    {cls.name} - {cls.section}
-                                                </Link>
-                                            ))}
-                                            {getClassTeacherAssignments(s.id).length > 2 && (
-                                                <span className="text-xs text-default-500">
-                                                    +{getClassTeacherAssignments(s.id).length - 2} more
-                                                </span>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <span className="text-xs text-default-400">No classes</span>
-                                    )
-                                ) : (
-                                    <span className="text-xs text-default-400">-</span>
-                                )}
                             </TableCell>
                             <TableCell key="contact">
                                 <div className="flex flex-col gap-1">

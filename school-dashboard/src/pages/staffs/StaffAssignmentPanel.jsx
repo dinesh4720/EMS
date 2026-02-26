@@ -1,16 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
-import {
-  Card, CardBody, CardHeader, Button, Select, SelectItem,
-  Spinner, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure
-} from "@heroui/react";
-import { BookOpen, Plus, Trash2, Users, AlertCircle, GraduationCap } from "lucide-react";
+import { Button, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem } from "@heroui/react";
+import { BookOpen, Plus, Trash2, Users, AlertCircle, GraduationCap, ArrowLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import { usePermissions } from "../../context/PermissionContext";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import {
   showErrorToast,
-  showSuccessToast,
   executeWithFeedback
 } from "../../utils/errorHandling";
 
@@ -38,7 +34,6 @@ export default function StaffAssignmentPanel({ staffId }) {
   const classTeacherAssignments = useMemo(() => {
     if (!staff || !classesWithTeachers) return [];
     return classesWithTeachers.filter(cls => {
-      // Guard: skip classes without a classTeacherId to avoid String(undefined) === String(undefined) false matches
       if (!cls.classTeacherId) return false;
       return String(cls.classTeacherId) === String(staff.id) || (staff._id && String(cls.classTeacherId) === String(staff._id));
     });
@@ -47,8 +42,10 @@ export default function StaffAssignmentPanel({ staffId }) {
   // Check if user has edit permission
   const canEdit = hasPermission('staff', 'edit');
 
-  // Available subjects from school settings
-  const availableSubjects = schoolSettings?.subjects || [
+  // Available subjects from school settings - extract names from objects
+  const availableSubjects = schoolSettings?.subjects?.map(s => 
+    typeof s === 'string' ? s : s.name
+  ) || [
     "Mathematics",
     "Science",
     "English",
@@ -71,7 +68,6 @@ export default function StaffAssignmentPanel({ staffId }) {
     try {
       setLoading(true);
 
-      // Load assignments and classes in parallel
       const [assignmentsData, classesData] = await Promise.all([
         teacherAssignmentsApi.getAll(staffId),
         classesApi.getAll()
@@ -98,13 +94,11 @@ export default function StaffAssignmentPanel({ staffId }) {
       newErrors.classes = "Please select at least one class";
     }
 
-    // Check if this subject already has an assignment
     const existingAssignment = assignments.find(
       a => a.subject === newAssignment.subject
     );
 
     if (existingAssignment) {
-      // Check if any of the selected classes are already assigned
       const selectedClassIds = Array.from(newAssignment.classIds);
       const existingClassIds = existingAssignment.classes.map(c => c._id || c);
       const duplicates = selectedClassIds.filter(id =>
@@ -136,12 +130,10 @@ export default function StaffAssignmentPanel({ staffId }) {
           classIds
         });
 
-        // Reset form and close modal
         setNewAssignment({ subject: "", classIds: new Set() });
         setIsAddModalOpen(false);
         setErrors({});
 
-        // Reload assignments
         await loadData();
       },
       {
@@ -170,8 +162,6 @@ export default function StaffAssignmentPanel({ staffId }) {
       async () => {
         setSaving(true);
         await teacherAssignmentsApi.delete(assignmentToDelete, staffId);
-
-        // Reload assignments
         await loadData();
       },
       {
@@ -212,217 +202,224 @@ export default function StaffAssignmentPanel({ staffId }) {
     return `${classObj.name} ${classObj.section}`;
   };
 
+  // Calculate summary stats
+  const totalClassesAssigned = assignments.reduce((sum, a) => sum + (a.classes?.length || 0), 0);
+
   if (loading) {
     return (
-      <Card className="shadow-sm border border-default-200">
-        <CardBody className="flex items-center justify-center py-12">
-          <Spinner size="lg" />
-          <p className="text-default-500 mt-4">Loading assignments...</p>
-        </CardBody>
-      </Card>
+      <div className="flex items-center justify-center py-12">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full"></div>
+          <p className="text-sm text-gray-500">Loading assignments...</p>
+        </div>
+      </div>
     );
   }
 
   return (
     <>
-      <div className="space-y-6">
-        {/* Class Teacher Assignments Section - Always visible */}
-        <Card className="shadow-sm border border-default-200">
-          <CardHeader className="flex justify-between items-center px-6 py-4 border-b border-default-100">
+      <div className="space-y-4">
+
+        {/* Class Teacher Assignments Section */}
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="p-5 border-b border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <GraduationCap size={20} className="text-primary" />
+              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+                <GraduationCap size={16} className="text-gray-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-default-800">Class Teacher Assignment</h3>
-                <p className="text-xs text-default-500">
+                <h3 className="font-medium text-gray-900 text-sm">Class Teacher Assignment</h3>
+                <p className="text-xs text-gray-500">
                   {classTeacherAssignments.length > 0 ? 'Class assigned as class teacher (homeroom)' : 'Not assigned to any class'}
                 </p>
               </div>
             </div>
-          </CardHeader>
-          <CardBody className="p-6">
+          </div>
+          <div className="p-5">
             {classTeacherAssignments.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {classTeacherAssignments.map((cls) => (
                   <div
                     key={cls.id || cls._id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-default-200 hover:border-primary-200 hover:bg-primary-50/30 transition-colors cursor-pointer"
+                    className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
                     onClick={() => navigate(`/classes/${cls.id || cls._id}`)}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
+                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-600">
                         {cls.name}-{cls.section}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-default-800">{cls.name} - {cls.section}</p>
-                        <p className="text-xs text-default-500">{cls.studentCount || cls.strength || 0} students</p>
+                        <p className="text-sm font-medium text-gray-900">{cls.name} - {cls.section}</p>
+                        <p className="text-xs text-gray-500">{cls.studentCount || cls.strength || 0} students</p>
                       </div>
                     </div>
-                    <Chip size="sm" variant="flat" color="primary">Class Teacher</Chip>
+                    <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
+                      Class Teacher
+                    </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center text-center py-4">
-                <div className="w-12 h-12 rounded-full bg-default-100 flex items-center justify-center mb-3">
-                  <GraduationCap size={20} className="text-default-300" />
+              <div className="flex flex-col items-center justify-center text-center py-6">
+                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                  <GraduationCap size={20} className="text-gray-400" />
                 </div>
-                <p className="text-sm text-default-500 mb-1">No class has been assigned yet</p>
-                <p className="text-xs text-default-400 mb-4">This staff member is not a class teacher for any class.</p>
-                <Link to="/classes" className="text-xs font-medium text-primary hover:text-primary-600 bg-primary-50 hover:bg-primary-100 px-4 py-2 rounded-lg transition-colors no-underline">
-                  Assign a Class →
+                <p className="text-sm text-gray-500 mb-1">No class has been assigned yet</p>
+                <p className="text-xs text-gray-400 mb-4">This staff member is not a class teacher for any class.</p>
+                <Link
+                  to="/classes"
+                  className="text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors no-underline"
+                >
+                  Assign a Class
                 </Link>
               </div>
             )}
-          </CardBody>
-        </Card>
+          </div>
+        </div>
 
-        {/* Info Banner - Clarify Class Teacher vs Subject Teacher */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex gap-3">
-          <AlertCircle size={20} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm text-blue-800 dark:text-blue-200">
+        {/* Info Banner */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <AlertCircle size={16} className="text-gray-600" />
+            </div>
+            <p className="text-sm text-gray-600">
               <strong>Note:</strong> The section below manages <strong>subject assignments</strong> (which subjects and classes this teacher can teach in the timetable).
               {classTeacherAssignments.length > 0 ? ' The class teacher assignments shown above are managed from the ' : ' To assign a class teacher, go to the '}
-              <Link to="/classes" className="underline hover:text-blue-900">Classes section</Link>.
+              <Link to="/classes" className="text-gray-900 hover:underline">Classes section</Link>.
             </p>
           </div>
         </div>
 
-        <Card className="shadow-sm border border-default-200">
-          <CardHeader className="flex justify-between items-center px-6 py-4 border-b border-default-100">
+        {/* Subject Assignments Section */}
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="p-5 border-b border-gray-200 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-secondary/10 rounded-lg">
-                <BookOpen size={20} className="text-secondary" />
+              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+                <BookOpen size={16} className="text-gray-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-default-800">Subject Assignments</h3>
-                <p className="text-xs text-default-500">Manage which subjects and classes this teacher can teach</p>
+                <h3 className="font-medium text-gray-900 text-sm">Subject Assignments</h3>
+                <p className="text-xs text-gray-500">Manage which subjects and classes this teacher can teach</p>
               </div>
             </div>
-            <Button
-              color="secondary"
-              startContent={<Plus size={16} />}
-              onPress={handleOpenAddModal}
-              isDisabled={saving || !canEdit}
-              size="sm"
+            <button
+              onClick={handleOpenAddModal}
+              disabled={saving || !canEdit}
+              className="px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
             >
+              <Plus size={14} />
               Add Assignment
-            </Button>
-          </CardHeader>
-          <CardBody className="p-6">
+            </button>
+          </div>
+
+          <div className="p-5">
             {!canEdit && (
-              <div className="bg-warning-50 border border-warning-200 rounded-lg p-3 flex items-center gap-2 mb-4">
-                <span className="text-sm text-warning-700">
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex items-center gap-2 mb-4">
+                <AlertCircle size={16} className="text-orange-500" />
+                <span className="text-sm text-orange-700">
                   You don't have permission to edit teacher assignments. Contact an administrator for access.
                 </span>
               </div>
             )}
+
             {assignments.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="p-4 bg-default-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <BookOpen size={32} className="text-default-400" />
+              <div className="text-center py-10">
+                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                  <BookOpen size={20} className="text-gray-400" />
                 </div>
-                <h4 className="text-lg font-medium text-default-700 mb-2">No Assignments Yet</h4>
-                <p className="text-sm text-default-500 mb-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-2">No Assignments Yet</h4>
+                <p className="text-sm text-gray-500 mb-4">
                   This teacher hasn't been assigned any subjects or classes yet.
                 </p>
-                <Button
-                  color="secondary"
-                  variant="flat"
-                  startContent={<Plus size={16} />}
-                  onPress={handleOpenAddModal}
-                  isDisabled={!canEdit}
+                <button
+                  onClick={handleOpenAddModal}
+                  disabled={!canEdit}
+                  className="px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 mx-auto"
                 >
+                  <Plus size={14} />
                   Add First Assignment
-                </Button>
+                </button>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {assignments.map((assignment) => (
-                  <Card
+                  <div
                     key={assignment._id}
-                    className="shadow-sm border border-default-200 hover:border-secondary-200 transition-colors"
+                    className="border border-gray-100 rounded-lg p-4 hover:border-gray-200 transition-colors"
                   >
-                    <CardBody className="p-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-3">
-                            <BookOpen size={18} className="text-secondary" />
-                            <h4 className="text-base font-semibold text-default-800">
-                              {assignment.subject}
-                            </h4>
-                          </div>
-
-                          <div className="flex items-start gap-2">
-                            <Users size={16} className="text-default-400 mt-1 flex-shrink-0" />
-                            <div className="flex flex-wrap gap-2">
-                              {assignment.classes && assignment.classes.length > 0 ? (
-                                assignment.classes.map((classObj, idx) => (
-                                  <Chip
-                                    key={idx}
-                                    size="sm"
-                                    variant="flat"
-                                    color="secondary"
-                                  >
-                                    {getClassDisplay(classObj)}
-                                  </Chip>
-                                ))
-                              ) : (
-                                <span className="text-sm text-default-500">No classes assigned</span>
-                              )}
-                            </div>
-                          </div>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-3">
+                          <BookOpen size={16} className="text-gray-500" />
+                          <h4 className="text-sm font-semibold text-gray-900">
+                            {assignment.subject}
+                          </h4>
                         </div>
 
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          color="danger"
-                          onPress={() => handleRemoveAssignment(assignment._id)}
-                          isDisabled={saving || !canEdit}
-                        >
-                          <Trash2 size={16} />
-                        </Button>
+                        <div className="flex items-start gap-2">
+                          <Users size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                          <div className="flex flex-wrap gap-2">
+                            {assignment.classes && assignment.classes.length > 0 ? (
+                              assignment.classes.map((classObj, idx) => (
+                                <span
+                                  key={idx}
+                                  className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-md"
+                                >
+                                  {getClassDisplay(classObj)}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-sm text-gray-500">No classes assigned</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </CardBody>
-                  </Card>
+
+                      <button
+                        onClick={() => handleRemoveAssignment(assignment._id)}
+                        disabled={saving || !canEdit}
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
-          </CardBody>
-        </Card>
+          </div>
+        </div>
 
         {/* Summary Card */}
         {(assignments.length > 0 || classTeacherAssignments.length > 0) && (
-          <Card className="shadow-sm border border-default-200 bg-gradient-to-br from-secondary-50 to-white">
-            <CardBody className="p-4">
-              <div className="flex items-center justify-between">
-                {classTeacherAssignments.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium text-default-700">Class Teacher</p>
-                    <p className="text-2xl font-bold text-primary mt-1">
-                      {classTeacherAssignments.length} {classTeacherAssignments.length === 1 ? 'class' : 'classes'}
-                    </p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-sm font-medium text-default-700">Subject Assignments</p>
-                  <p className="text-2xl font-bold text-secondary mt-1">
-                    {assignments.length}
+          <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <div className="flex items-center justify-between">
+              {classTeacherAssignments.length > 0 && (
+                <div className="text-center">
+                  <p className="text-xs font-medium text-gray-500 mb-1">Class Teacher</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {classTeacherAssignments.length}
                   </p>
+                  <p className="text-xs text-gray-500">{classTeacherAssignments.length === 1 ? 'class' : 'classes'}</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-default-700">Total Classes</p>
-                  <p className="text-2xl font-bold text-secondary mt-1">
-                    {assignments.reduce((sum, a) => sum + (a.classes?.length || 0), 0) + classTeacherAssignments.length}
-                  </p>
-                </div>
+              )}
+              <div className="text-center">
+                <p className="text-xs font-medium text-gray-500 mb-1">Subject Assignments</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {assignments.length}
+                </p>
+                <p className="text-xs text-gray-500">subjects</p>
               </div>
-            </CardBody>
-          </Card>
+              <div className="text-center">
+                <p className="text-xs font-medium text-gray-500 mb-1">Total Classes</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {totalClassesAssigned + classTeacherAssignments.length}
+                </p>
+                <p className="text-xs text-gray-500">teaching</p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
@@ -432,21 +429,28 @@ export default function StaffAssignmentPanel({ staffId }) {
         onClose={handleCloseAddModal}
         size="2xl"
         classNames={{
-          backdrop: "bg-black/50",
-          base: "bg-white dark:bg-gray-900"
+          backdrop: "bg-black/30",
+          base: "bg-white"
         }}
       >
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1 border-b border-gray-200 dark:border-gray-800">
-            <h3 className="text-xl font-semibold">Add Subject Assignment</h3>
-            <p className="text-sm text-gray-500 font-normal">Assign subjects and classes to this teacher</p>
+          <ModalHeader className="flex flex-col gap-1 border-b border-gray-100 px-6 py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+                <BookOpen size={16} className="text-gray-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Add Subject Assignment</h3>
+                <p className="text-sm text-gray-500 font-normal">Assign subjects and classes to this teacher</p>
+              </div>
+            </div>
           </ModalHeader>
-          <ModalBody className="py-6">
+          <ModalBody className="py-6 px-6">
             <div className="space-y-4">
               {/* Subject Selection */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-default-700">
-                  Subject <span className="text-danger">*</span>
+                <label className="text-sm font-medium text-gray-700">
+                  Subject <span className="text-red-500">*</span>
                 </label>
                 <Select
                   placeholder="Select a subject"
@@ -464,8 +468,8 @@ export default function StaffAssignmentPanel({ staffId }) {
                   radius="lg"
                   size="md"
                   classNames={{
-                    trigger: "border-default-200",
-                    value: "text-sm"
+                    trigger: "border-gray-200 hover:border-gray-300",
+                    value: "text-sm text-gray-900"
                   }}
                 >
                   {availableSubjects.map((subject) => (
@@ -478,8 +482,8 @@ export default function StaffAssignmentPanel({ staffId }) {
 
               {/* Class Selection */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-default-700">
-                  Classes <span className="text-danger">*</span>
+                <label className="text-sm font-medium text-gray-700">
+                  Classes <span className="text-red-500">*</span>
                 </label>
                 <Select
                   label="Select classes"
@@ -498,8 +502,8 @@ export default function StaffAssignmentPanel({ staffId }) {
                   radius="lg"
                   size="md"
                   classNames={{
-                    trigger: "border-default-200",
-                    value: "text-sm"
+                    trigger: "border-gray-200 hover:border-gray-300",
+                    value: "text-sm text-gray-900"
                   }}
                 >
                   {availableClasses.map((classObj) => (
@@ -512,22 +516,27 @@ export default function StaffAssignmentPanel({ staffId }) {
                 {newAssignment.classIds.size > 0 && (
                   <div className="flex flex-wrap gap-2 mt-3">
                     {Array.from(newAssignment.classIds).map((classId) => {
-                      // FIXED: Use String() comparison for ObjectId matching
                       const classObj = availableClasses.find(c => String(c._id || c.id) === String(classId));
                       return classObj ? (
-                        <Chip
+                        <span
                           key={classId}
-                          size="sm"
-                          variant="flat"
-                          color="secondary"
-                          onClose={() => {
-                            const newSelection = new Set(newAssignment.classIds);
-                            newSelection.delete(classId);
-                            setNewAssignment(prev => ({ ...prev, classIds: newSelection }));
-                          }}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm font-medium"
                         >
                           {`${classObj.name} ${classObj.section}`}
-                        </Chip>
+                          <button
+                            onClick={() => {
+                              const newSelection = new Set(newAssignment.classIds);
+                              newSelection.delete(classId);
+                              setNewAssignment(prev => ({ ...prev, classIds: newSelection }));
+                            }}
+                            className="hover:bg-gray-200 rounded-full p-0.5 transition-colors"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <line x1="18" y1="6" x2="6" y2="18"></line>
+                              <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                          </button>
+                        </span>
                       ) : null;
                     })}
                   </div>
@@ -535,32 +544,39 @@ export default function StaffAssignmentPanel({ staffId }) {
               </div>
 
               {/* Info Message */}
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex gap-3">
-                <AlertCircle size={20} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
-                    <strong>Note:</strong> This assignment will allow the teacher to be selected when creating timetables for the selected classes and subject.
-                  </p>
-                </div>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex gap-3">
+                <AlertCircle size={18} className="text-gray-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-gray-600">
+                  <strong>Note:</strong> This assignment will allow the teacher to be selected when creating timetables for the selected classes and subject.
+                </p>
               </div>
             </div>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-200 dark:border-gray-800">
-            <Button
-              variant="light"
-              onPress={handleCloseAddModal}
-              isDisabled={saving}
+          <ModalFooter className="border-t border-gray-100 px-6 py-4">
+            <button
+              onClick={handleCloseAddModal}
+              disabled={saving}
+              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
             >
               Cancel
-            </Button>
-            <Button
-              color="secondary"
-              onPress={handleAddAssignment}
-              isLoading={saving}
-              startContent={!saving && <Plus size={16} />}
+            </button>
+            <button
+              onClick={handleAddAssignment}
+              disabled={saving}
+              className="px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
             >
-              Add Assignment
-            </Button>
+              {saving ? (
+                <>
+                  <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <Plus size={14} />
+                  Add Assignment
+                </>
+              )}
+            </button>
           </ModalFooter>
         </ModalContent>
       </Modal>

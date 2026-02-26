@@ -78,6 +78,65 @@ function AuthenticatedApp() {
   // Initialize Owlin tracking
   useOwlinTracking();
 
+  // Add window scroll detection for scrollbar visibility
+  useEffect(() => {
+    let scrollTimeout;
+    
+    // Create style element for dynamic scrollbar styles
+    const styleEl = document.createElement('style');
+    styleEl.id = 'dynamic-scrollbar-styles';
+    document.head.appendChild(styleEl);
+    
+    const showScrollbar = () => {
+      styleEl.textContent = `
+        *::-webkit-scrollbar-thumb {
+          background: rgba(0, 0, 0, 0.4) !important;
+        }
+        *::-webkit-scrollbar-thumb:hover {
+          background: rgba(0, 0, 0, 0.6) !important;
+        }
+        * {
+          scrollbar-color: rgba(0, 0, 0, 0.4) transparent !important;
+        }
+        html.dark *::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.4) !important;
+        }
+        html.dark *::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.6) !important;
+        }
+        html.dark * {
+          scrollbar-color: rgba(255, 255, 255, 0.4) transparent !important;
+        }
+      `;
+    };
+    
+    const hideScrollbar = () => {
+      styleEl.textContent = '';
+    };
+    
+    const handleScroll = () => {
+      showScrollbar();
+      console.log('Scrolling detected - scrollbar shown');
+      
+      clearTimeout(scrollTimeout);
+      
+      scrollTimeout = setTimeout(() => {
+        hideScrollbar();
+        console.log('Scrolling stopped - scrollbar hidden');
+      }, 1500);
+    };
+
+    window.addEventListener('scroll', handleScroll, true);
+    document.addEventListener('scroll', handleScroll, true);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      document.removeEventListener('scroll', handleScroll, true);
+      clearTimeout(scrollTimeout);
+      styleEl.remove();
+    };
+  }, []);
+
   useEffect(() => {
     // Check if onboarding is completed
     const hasCompleted = localStorage.getItem("hasCompletedOnboarding");

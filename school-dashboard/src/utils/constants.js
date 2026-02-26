@@ -64,6 +64,5 @@ export const ATTENDANCE_STATUS = {
 export const STUDENT_STATUS = {
   ACTIVE: 'active',
   INACTIVE: 'inactive',
-  GRADUATED: 'graduated',
-  TRANSFERRED: 'transferred'
+  GRADUATED: 'graduated'
 };

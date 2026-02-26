@@ -100,8 +100,6 @@ export default function ClassDashboard() {
     }
   };
 
-  // Calculate strength percentage
-  const strengthPercentage = cls?.strengthLimit ? ((cls?.strength || 0) / cls.strengthLimit) * 100 : ((cls?.strength || 0) / 40) * 100;
 
   // Tabs configuration
   const tabs = [
@@ -212,6 +210,18 @@ export default function ClassDashboard() {
       {/* ═══════════════════════════════════════════════════════════════════
           CONTENT AREA
       ═══════════════════════════════════════════════════════════════════ */}
+
+      {/* ─── FULL-WIDTH TABS (Timetable, Settings) ─── */}
+      {activeTab === "timetable" && (
+        <Timetable classId={id} />
+      )}
+
+      {activeTab === "settings" && (
+        <ClassSettingsPanel classId={id} />
+      )}
+
+      {/* ─── GRID LAYOUT TABS (Overview, Students, Fees, Academics) ─── */}
+      {!["timetable", "settings"].includes(activeTab) && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* MAIN CONTENT - 2/3 */}
@@ -227,55 +237,22 @@ export default function ClassDashboard() {
             <StudentsTab id={id} cls={cls} navigate={navigate} />
           )}
 
-          {/* ─── ATTENDANCE TAB ─── */}
-          {activeTab === "attendance" && <Attendance classId={id} />}
-
-          {/* ─── TIMETABLE TAB ─── */}
-          {activeTab === "timetable" && <Timetable classId={id} />}
-
           {/* ─── FEES TAB ─── */}
           {activeTab === "fees" && (
             <FeesTab id={id} cls={cls} classesEnhancedApi={classesEnhancedApi} navigate={navigate} />
           )}
 
+          {/* ─── ATTENDANCE TAB ─── */}
+          {activeTab === "attendance" && <Attendance classId={id} />}
+
           {/* ─── ACADEMICS TAB ─── */}
           {activeTab === "academics" && (
             <AcademicsTab id={id} cls={cls} classesEnhancedApi={classesEnhancedApi} />
           )}
-
-          {/* ─── SETTINGS TAB ─── */}
-          {activeTab === "settings" && <ClassSettingsPanel classId={id} />}
         </div>
 
         {/* RIGHT SIDEBAR - 1/3 */}
         <div className="lg:col-span-1 space-y-4">
-
-          {/* Quick Stats */}
-          <div className="bg-white rounded-lg border border-gray-100 p-5">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">Class Statistics</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">Total Students</span>
-                <span className="text-sm font-semibold text-gray-900">{cls?.strength || 0}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">Capacity</span>
-                <span className="text-sm font-semibold text-gray-900">{cls?.strengthLimit || 40}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">Fill Rate</span>
-                <span className="text-sm font-semibold text-gray-900">{Math.round(strengthPercentage)}%</span>
-              </div>
-              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    strengthPercentage >= 95 ? 'bg-gray-800' : strengthPercentage >= 80 ? 'bg-gray-600' : 'bg-gray-400'
-                  }`}
-                  style={{ width: `${Math.min(strengthPercentage, 100)}%` }}
-                />
-              </div>
-            </div>
-          </div>
 
           {/* Quick Actions */}
           <div className="bg-white rounded-lg border border-gray-100 p-5">
@@ -340,38 +317,21 @@ export default function ClassDashboard() {
               </div>
             </div>
           )}
-
-          {/* Alerts */}
-          {strengthPercentage >= 95 && (
-            <div className="bg-white rounded-lg border border-gray-100 overflow-hidden">
-              <div className="p-4 border-b border-gray-100">
-                <h3 className="text-sm font-medium text-gray-900">Attention Required</h3>
-              </div>
-              <div className="p-4 flex items-center gap-3 hover:bg-gray-50 cursor-pointer">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <AlertTriangle size={16} className="text-gray-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Class Nearly Full</p>
-                  <p className="text-xs text-gray-500">{cls?.strength || 0}/{cls?.strengthLimit || 40} students</p>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
-
-        {/* Assign Class Teacher Modal */}
-        {cls && (
-          <ClassTeacherAssignmentModal
-            isOpen={isAssignTeacherModalOpen}
-            onClose={() => setIsAssignTeacherModalOpen(false)}
-            classId={id}
-            className={cls.name}
-            section={cls.section}
-            currentTeacherId={cls.classTeacherId || null}
-          />
-        )}
       </div>
+      )}
+
+      {/* Assign Class Teacher Modal */}
+      {cls && (
+        <ClassTeacherAssignmentModal
+          isOpen={isAssignTeacherModalOpen}
+          onClose={() => setIsAssignTeacherModalOpen(false)}
+          classId={id}
+          className={cls.name}
+          section={cls.section}
+          currentTeacherId={cls.classTeacherId || null}
+        />
+      )}
     </div>
   );
 }

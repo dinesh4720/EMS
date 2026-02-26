@@ -16,12 +16,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <BrowserRouter>
         <App />
         <Toaster 
-          position="top-right"
+          position="top-center"
           toastOptions={{
             duration: 3000,
             style: {
               background: '#363636',
               color: '#fff',
+              zIndex: 999999,
             },
             success: {
               duration: 3000,
@@ -37,6 +38,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 secondary: '#fff',
               },
             },
+          }}
+          containerStyle={{
+            position: 'fixed',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 999999,
           }}
         />
       </BrowserRouter>
