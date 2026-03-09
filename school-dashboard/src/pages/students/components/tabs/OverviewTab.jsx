@@ -106,13 +106,21 @@ function OverviewTab({
         }))
       : [];
 
-  const attendanceTrendData = [
-    { name: "Jan", attendance: 92 },
-    { name: "Feb", attendance: 88 },
-    { name: "Mar", attendance: 95 },
-    { name: "Apr", attendance: attendanceStats.percentage },
-    { name: "May", attendance: 90 },
-    { name: "Jun", attendance: 87 },
+  // Use real attendance data if provided, otherwise show placeholder
+  // The parent component should pass monthlyAttendanceData derived from real API data
+  const attendanceTrendData = attendanceStats.monthlyTrend || [
+    { name: "Jan", attendance: 0 },
+    { name: "Feb", attendance: 0 },
+    { name: "Mar", attendance: 0 },
+    { name: "Apr", attendance: 0 },
+    { name: "May", attendance: 0 },
+    { name: "Jun", attendance: 0 },
+    { name: "Jul", attendance: 0 },
+    { name: "Aug", attendance: 0 },
+    { name: "Sep", attendance: 0 },
+    { name: "Oct", attendance: 0 },
+    { name: "Nov", attendance: 0 },
+    { name: "Dec", attendance: 0 },
   ];
 
   return (
@@ -504,8 +512,9 @@ function OverviewTab({
               </div>
             </CardHeader>
             <CardBody className="px-6 py-6">
-              <ResponsiveContainer width="100%" height={180}>
-                <RechartsLineChart data={attendanceTrendData}>
+              {attendanceStats.total > 0 ? (
+                <ResponsiveContainer width="100%" height={180}>
+                  <RechartsLineChart data={attendanceTrendData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                   <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
@@ -528,6 +537,11 @@ function OverviewTab({
                   />
                 </RechartsLineChart>
               </ResponsiveContainer>
+              ) : (
+                <div className="h-[180px] flex items-center justify-center text-default-400 text-sm">
+                  No attendance data available. Data will appear when teachers mark attendance through the Staff App.
+                </div>
+              )}
             </CardBody>
           </Card>
         </div>

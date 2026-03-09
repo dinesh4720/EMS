@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardBody, Button, Select, SelectItem, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Divider, Textarea, Spinner, Chip, Badge, ButtonGroup } from "@heroui/react";
 import { Save, Users, CheckCircle, AlertCircle, IndianRupee, Info, FileText, Copy } from "lucide-react";
 import toast from "react-hot-toast";
+import { useApp } from "../../context/AppContext";
+import { getAcademicYearOptions } from "../../utils/constants";
 
-const ACADEMIC_YEARS = ['2024-25', '2025-26', '2026-27'];
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 const COLLECTION_MODES = [
   { key: 'term', label: 'Term-wise' },
@@ -12,7 +14,23 @@ const COLLECTION_MODES = [
   { key: 'yearly', label: 'Yearly (One-time)' }
 ];
 
+const getAcademicYearStart = (academicYear) => {
+  const parsedYear = Number.parseInt(String(academicYear || '').split('-')[0], 10);
+  return Number.isNaN(parsedYear) ? new Date().getFullYear() : parsedYear;
+};
+
+const buildAcademicYearDate = (academicYear, month, day, useNextYear = false) => {
+  const startYear = getAcademicYearStart(academicYear);
+  const year = useNextYear ? startYear + 1 : startYear;
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+};
+
 export default function FeeStructureAssignment({ classes, onAssignmentComplete }) {
+  const { currentAcademicYear } = useApp();
+  const academicYearOptions = useMemo(
+    () => getAcademicYearOptions(currentAcademicYear, { past: 2, future: 2 }),
+    [currentAcademicYear]
+  );
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -20,8 +38,9 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
   
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState('');
-  const [academicYear, setAcademicYear] = useState('2024-25');
+  const [academicYearOverride, setAcademicYearOverride] = useState(null);
   const [existingStructure, setExistingStructure] = useState(null);
+  const academicYear = academicYearOverride || currentAcademicYear;
   
   const [formData, setFormData] = useState({
     templateId: '',
@@ -49,7 +68,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
 
   const fetchTemplates = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/fee-templates`);
+      const response = await fetch(`${API_URL}/fee-templates`);
       const data = await response.json();
       setTemplates(data);
     } catch (error) {
@@ -62,7 +81,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
     if (!selectedClass) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/fee-structure/class/${selectedClass}?academicYear=${academicYear}`);
+      const response = await fetch(`${API_URL}/fee-structure/class/${selectedClass}?academicYear=${academicYear}`);
       
       if (response.ok) {
         const data = await response.json();
@@ -100,34 +119,51 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
         feeHeads: template.feeHeads || [],
         collectionSchedule: {
           mode: 'term',
-          installments: generateInstallments(template.feeHeads, 'term')
+          installments: generateInstallments(template.feeHeads, 'term', template.totalAnnualFee || 0)
         },
         totalAnnualFee: template.totalAnnualFee || 0
       });
     }
   };
 
-  const generateInstallments = (feeHeads, mode) => {
+  const generateInstallments = (feeHeads, mode, totalAnnualFee = formData.totalAnnualFee) => {
     const installments = [];
-    
+
     if (mode === 'term') {
       installments.push(
-        { name: 'Term 1', dueDate: '2024-04-15', amount: formData.totalAnnualFee / 2, status: 'pending' },
-        { name: 'Term 2', dueDate: '2024-10-15', amount: formData.totalAnnualFee / 2, status: 'pending' }
+        { name: 'Term 1', dueDate: buildAcademicYearDate(academicYear, 4, 15), amount: totalAnnualFee / 2, status: 'pending' },
+        { name: 'Term 2', dueDate: buildAcademicYearDate(academicYear, 10, 15), amount: totalAnnualFee / 2, status: 'pending' }
       );
+    } else if (mode === 'monthly') {
+      const monthlyAmount = totalAnnualFee / 12;
+      const monthlySchedule = [
+        ['Apr', 4, false], ['May', 5, false], ['Jun', 6, false], ['Jul', 7, false],
+        ['Aug', 8, false], ['Sep', 9, false], ['Oct', 10, false], ['Nov', 11, false],
+        ['Dec', 12, false], ['Jan', 1, true], ['Feb', 2, true], ['Mar', 3, true]
+      ];
+
+      monthlySchedule.forEach(([label, month, useNextYear], index) => {
+        installments.push({
+          name: `${label} Fee`,
+          dueDate: buildAcademicYearDate(academicYear, month, 10, useNextYear),
+          amount: monthlyAmount,
+          status: 'pending',
+          order: index + 1
+        });
+      });
     } else if (mode === 'quarterly') {
       installments.push(
-        { name: 'Q1 (Apr-Jun)', dueDate: '2024-04-15', amount: formData.totalAnnualFee / 4, status: 'pending' },
-        { name: 'Q2 (Jul-Sep)', dueDate: '2024-07-15', amount: formData.totalAnnualFee / 4, status: 'pending' },
-        { name: 'Q3 (Oct-Dec)', dueDate: '2024-10-15', amount: formData.totalAnnualFee / 4, status: 'pending' },
-        { name: 'Q4 (Jan-Mar)', dueDate: '2025-01-15', amount: formData.totalAnnualFee / 4, status: 'pending' }
+        { name: 'Q1 (Apr-Jun)', dueDate: buildAcademicYearDate(academicYear, 4, 15), amount: totalAnnualFee / 4, status: 'pending' },
+        { name: 'Q2 (Jul-Sep)', dueDate: buildAcademicYearDate(academicYear, 7, 15), amount: totalAnnualFee / 4, status: 'pending' },
+        { name: 'Q3 (Oct-Dec)', dueDate: buildAcademicYearDate(academicYear, 10, 15), amount: totalAnnualFee / 4, status: 'pending' },
+        { name: 'Q4 (Jan-Mar)', dueDate: buildAcademicYearDate(academicYear, 1, 15, true), amount: totalAnnualFee / 4, status: 'pending' }
       );
     } else if (mode === 'yearly') {
       installments.push(
-        { name: 'Annual', dueDate: '2024-04-15', amount: formData.totalAnnualFee, status: 'pending' }
+        { name: 'Annual', dueDate: buildAcademicYearDate(academicYear, 4, 15), amount: totalAnnualFee, status: 'pending' }
       );
     }
-    
+
     return installments;
   };
 
@@ -145,7 +181,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
         ...formData
       };
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/fee-structure`, {
+      const response = await fetch(`${API_URL}/fee-structure`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -171,7 +207,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
     if (!selectedClass) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/students/class/${selectedClass}/fee-status?academicYear=${academicYear}`);
+      const response = await fetch(`${API_URL}/students/class/${selectedClass}/fee-status?academicYear=${academicYear}`);
       const data = await response.json();
       setPreviewStudents(data);
       onPreviewOpen();
@@ -193,7 +229,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
 
     setApplying(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/fee-structure/apply-to-students`, {
+      const response = await fetch(`${API_URL}/fee-structure/apply-to-students`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -234,7 +270,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
       totalAnnualFee: newTotal,
       collectionSchedule: {
         ...formData.collectionSchedule,
-        installments: generateInstallments(updatedHeads, formData.collectionSchedule.mode)
+        installments: generateInstallments(updatedHeads, formData.collectionSchedule.mode, newTotal)
       }
     });
   };
@@ -277,9 +313,12 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
             label="Academic Year"
             variant="bordered"
             selectedKeys={[academicYear]}
-            onChange={(e) => setAcademicYear(e.target.value)}
+            onChange={(e) => {
+              const nextAcademicYear = e.target.value;
+              setAcademicYearOverride(nextAcademicYear === currentAcademicYear ? null : nextAcademicYear);
+            }}
           >
-            {ACADEMIC_YEARS.map(year => (
+            {academicYearOptions.map(year => (
               <SelectItem key={year} value={year}>{year}</SelectItem>
             ))}
           </Select>
@@ -393,7 +432,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                           ...formData,
                           collectionSchedule: {
                             mode: newMode,
-                            installments: generateInstallments(formData.feeHeads, newMode)
+                            installments: generateInstallments(formData.feeHeads, newMode, formData.totalAnnualFee)
                           }
                         });
                       }}

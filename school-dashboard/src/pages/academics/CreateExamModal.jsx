@@ -3,6 +3,7 @@ import { Select, SelectItem, Input, Button, Textarea, Divider } from '@heroui/re
 import { Calendar, Award, BookOpen, Users, AlertCircle } from 'lucide-react';
 import { examsApi, subjectsApi, classesApi } from '../../services/api';
 import toast from 'react-hot-toast';
+import { useApp } from '../../context/AppContext';
 
 const EXAM_TYPES = [
   { value: 'unit_test', label: 'Unit Test' },
@@ -18,6 +19,7 @@ const GRADING_TYPES = [
 ];
 
 const CreateExamModal = ({ onClose, onSuccess }) => {
+  const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [subjects, setSubjects] = useState([]);
@@ -29,7 +31,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
     type: new Set(['unit_test']),
     classId: new Set([]),
     subjectId: new Set([]),
-    academicYear: '2024-25',
+    academicYear: '',
     startDate: '',
     endDate: '',
     maxMarks: '100',
@@ -141,7 +143,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
         classId: classId,
         subjectId: subjectId,
         subjectName: selectedSubject?.name || '',
-        academicYear: formData.academicYear,
+        academicYear: formData.academicYear || currentAcademicYear,
         startDate: formData.startDate,
         endDate: formData.endDate,
         maxMarks: parseInt(formData.maxMarks) || 100,
@@ -250,8 +252,8 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
           <Input
             label="Academic Year"
             labelPlacement="outside"
-            placeholder="e.g., 2024-25"
-            value={formData.academicYear}
+            placeholder={`e.g., ${currentAcademicYear}`}
+            value={formData.academicYear || currentAcademicYear}
             onValueChange={(value) => handleInputChange('academicYear', value)}
             startContent={<Calendar size={16} className="text-gray-400" />}
             classNames={{

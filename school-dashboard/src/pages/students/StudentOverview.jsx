@@ -48,8 +48,6 @@ import InvoicePrintModal from "./components/InvoicePrintModal";
 const genderOptions = ["Male", "Female", "Other"];
 const bloodGroupOptions = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const feeStatusOptions = ["paid", "pending", "overdue", "partial"];
-const academicYears = ["2024-25", "2025-26", "2023-24"];
-
 // Helper function to calculate next class for automatic promotion
 const getNextClass = (currentClass, availableClasses) => {
     // Handle special cases
@@ -127,7 +125,7 @@ const getAuthToken = () => {
 export default function StudentOverview() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getStudentById, classesWithTeachers, staff, updateStudent, updateStudentLocal, deleteStudent, loading } = useApp();
+  const { getStudentById, classesWithTeachers, staff, updateStudent, updateStudentLocal, deleteStudent, loading, currentAcademicYear } = useApp();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "overview");
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -532,10 +530,10 @@ export default function StudentOverview() {
       console.log(`🔍 [StudentOverview] Fetching fee structure for student:`, {
         id,
         idType: typeof id,
-        url: `${API_URL}/student-fees/student/${id}?academicYear=2024-25`
+        url: `${API_URL}/student-fees/student/${id}?academicYear=${currentAcademicYear}`
       });
 
-      const response = await fetch(`${API_URL}/student-fees/student/${id}?academicYear=2024-25`, { headers });
+      const response = await fetch(`${API_URL}/student-fees/student/${id}?academicYear=${currentAcademicYear}`, { headers });
 
       console.log(`📡 [StudentOverview] Response:`, {
         status: response.status,
@@ -563,7 +561,7 @@ export default function StudentOverview() {
         const initResponse = await fetch(`${API_URL}/student-fees/initialize/${id}`, {
           method: 'POST',
           headers: initHeaders,
-          body: JSON.stringify({ academicYear: '2024-25' })
+          body: JSON.stringify({ academicYear: student?.academicYear || currentAcademicYear })
         });
 
         if (initResponse.ok) {
@@ -790,7 +788,7 @@ export default function StudentOverview() {
         // Personal Information
         fullName: student.name || "",
         admissionId: student.admissionId || "",
-        academicYear: student.academicYear || "2024-25",
+        academicYear: student.academicYear || currentAcademicYear,
         dateOfBirth: student.dateOfBirth || "",
         gender: student.gender || "Male",
         picture: student.photo || null,
@@ -972,7 +970,7 @@ export default function StudentOverview() {
         body: JSON.stringify({
           amount: paymentAmount,
           feeHeadPayments,
-          academicYear: studentFeeStructure.academicYear || '2024-25'
+          academicYear: studentFeeStructure.academicYear || currentAcademicYear
         })
       });
 
@@ -991,7 +989,7 @@ export default function StudentOverview() {
           studentId: id,
           studentName: student?.name || '',
           classId: student?.classId,
-          academicYear: studentFeeStructure.academicYear || '2024-25',
+          academicYear: studentFeeStructure.academicYear || currentAcademicYear,
           paymentDate: paymentForm.date,
           amount: paymentAmount,
           paymentMode: paymentForm.paymentMode,
@@ -1135,11 +1133,73 @@ export default function StudentOverview() {
     return (staff || []).find(s => s.id === classInfo.classTeacherId);
   }, [classInfo, staff]);
 
+  // Real attendance data state
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+
+  // Fetch real attendance data
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      if (!id) return;
+      
+      setAttendanceLoading(true);
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        const token = getAuthToken();
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        
+        // Get attendance for current year
+        const year = new Date().getFullYear();
+        const startDate = `${year}-01-01`;
+        const endDate = `${year}-12-31`;
+        
+        const response = await fetch(`${API_URL}/attendance/student/${id}?start=${startDate}&end=${endDate}`, { headers });
+        if (response.ok) {
+          const data = await response.json();
+          setAttendanceData(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        console.error('Error fetching attendance:', error);
+        setAttendanceData([]);
+      } finally {
+        setAttendanceLoading(false);
+      }
+    };
+
+    fetchAttendance();
+  }, [id]);
+
+  // Calculate real attendance stats
   const attendanceStats = useMemo(() => {
-    const workingDays = 22;
-    const present = Math.floor(workingDays * 0.9);
-    return { present, absent: workingDays - present, total: workingDays, percentage: Math.round((present / workingDays) * 100) };
-  }, []);
+    if (!attendanceData.length) {
+      return { present: 0, absent: 0, total: 0, percentage: 0 };
+    }
+    
+    const total = attendanceData.length;
+    const present = attendanceData.filter(a => a.status === 'present').length;
+    const absent = attendanceData.filter(a => a.status === 'absent').length;
+    const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
+    
+    return { present, absent, total, percentage };
+  }, [attendanceData]);
+
+  // Calculate monthly attendance for chart
+  const monthlyAttendanceTrend = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentYear = new Date().getFullYear();
+    
+    return months.map((month, index) => {
+      const monthData = attendanceData.filter(a => {
+        const d = new Date(a.date);
+        return d.getMonth() === index && d.getFullYear() === currentYear;
+      });
+      
+      const present = monthData.filter(a => a.status === 'present').length;
+      const percentage = monthData.length > 0 ? Math.round((present / monthData.length) * 100) : 0;
+      
+      return { name: month, attendance: percentage };
+    });
+  }, [attendanceData]);
 
   // Compute student fee summary
   const studentFeeSummary = useMemo(() => {
@@ -1692,15 +1752,13 @@ export default function StudentOverview() {
                       </div>
                     </CardHeader>
                     <CardBody className="px-6 py-6">
-                      <ResponsiveContainer width="100%" height={180}>
-                        <RechartsLineChart data={[
-                          { name: "Jan", attendance: 92 },
-                          { name: "Feb", attendance: 88 },
-                          { name: "Mar", attendance: 95 },
-                          { name: "Apr", attendance: attendanceStats.percentage },
-                          { name: "May", attendance: 90 },
-                          { name: "Jun", attendance: 87 }
-                        ]}>
+                      {attendanceLoading ? (
+                        <div className="h-[180px] flex items-center justify-center">
+                          <div className="animate-spin w-6 h-6 border-2 border-default-300 border-t-primary rounded-full" />
+                        </div>
+                      ) : attendanceData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={180}>
+                          <RechartsLineChart data={monthlyAttendanceTrend}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                           <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
                           <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
@@ -1723,6 +1781,11 @@ export default function StudentOverview() {
                           />
                         </RechartsLineChart>
                       </ResponsiveContainer>
+                      ) : (
+                        <div className="h-[180px] flex items-center justify-center text-default-400 text-sm">
+                          No attendance data available. Data will appear when teachers mark attendance through the Staff App.
+                        </div>
+                      )}
                     </CardBody>
                   </Card>
 
@@ -1747,7 +1810,7 @@ export default function StudentOverview() {
                 <CardBody className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-6">
                   <InfoItem label="Class" value={student.class || "N/A"} />
                   <InfoItem label="Roll Number" value={student.rollNo || "N/A"} />
-                  <InfoItem label="Academic Year" value={student.academicYear || "2024-25"} />
+                  <InfoItem label="Academic Year" value={student.academicYear || currentAcademicYear} />
                   <InfoItem label="Class Teacher" value={classTeacher?.name || "Not Assigned"} />
                 </CardBody>
               </Card>
@@ -1895,7 +1958,7 @@ export default function StudentOverview() {
                   <Button isIconOnly size="sm" variant="light" onPress={() => openEditDrawer("additional")}><Edit size={16} className="text-default-500" /></Button>
                 </CardHeader>
                 <CardBody className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-6">
-                  <InfoItem label="Academic Year" value={student.academicYear || "2024-25"} />
+                  <InfoItem label="Academic Year" value={student.academicYear || currentAcademicYear} />
                   <InfoItem label="Transport Required" value={student.transportRequired ? "Yes" : "No"} />
                   <InfoItem label="Hostel Required" value={student.hostelRequired ? "Yes" : "No"} />
                   <InfoItem label="Medical Conditions" value={student.medicalConditions || "None"} className="col-span-full" />
@@ -2045,7 +2108,7 @@ export default function StudentOverview() {
                 </CardBody>
               </Card>
 
-              {/* Subject-wise Attendance */}
+              {/* Subject-wise Attendance - Not Available */}
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
                   <div className="flex items-center gap-3">
@@ -2056,40 +2119,10 @@ export default function StudentOverview() {
                   </div>
                 </CardHeader>
                 <CardBody className="p-6">
-                  <div className="space-y-4">
-                    {[
-                      { subject: "Mathematics", present: 18, total: 20, percentage: 90 },
-                      { subject: "Science", present: 19, total: 20, percentage: 95 },
-                      { subject: "English", present: 17, total: 20, percentage: 85 },
-                      { subject: "Social Studies", present: 18, total: 20, percentage: 90 },
-                      { subject: "Computer Science", present: 20, total: 20, percentage: 100 },
-                      { subject: "Physical Education", present: 16, total: 20, percentage: 80 }
-                    ].map((subject, idx) => (
-                      <div key={idx} className="flex items-center gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium text-default-900">{subject.subject}</span>
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm text-default-500">
-                                {subject.present}/{subject.total} classes
-                              </span>
-                              <span className={`text-sm font-semibold ${
-                                subject.percentage >= 90 ? 'text-success' : 
-                                subject.percentage >= 75 ? 'text-warning' : 'text-danger'
-                              }`}>
-                                {subject.percentage}%
-                              </span>
-                            </div>
-                          </div>
-                          <Progress
-                            value={subject.percentage}
-                            color={subject.percentage >= 90 ? "success" : subject.percentage >= 75 ? "warning" : "danger"}
-                            size="sm"
-                            radius="full"
-                          />
-                        </div>
-                      </div>
-                    ))}
+                  <div className="text-center py-8">
+                    <BookOpen size={32} className="mx-auto text-default-200 mb-3" />
+                    <p className="text-sm text-default-500">Subject-wise attendance tracking is not currently available.</p>
+                    <p className="text-xs text-default-400 mt-1">This feature requires per-subject attendance tracking which will be implemented in a future update.</p>
                   </div>
                 </CardBody>
               </Card>
@@ -2288,23 +2321,33 @@ export default function StudentOverview() {
                   </div>
                 </CardHeader>
                 <CardBody className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-100">
-                      <p className="text-xs text-default-600 mb-1">This Month</p>
-                      <p className="text-2xl font-bold text-blue-600">92%</p>
-                      <p className="text-xs text-success-600 mt-1">↑ 3% from last month</p>
+                  {attendanceLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin w-6 h-6 border-2 border-default-300 border-t-primary rounded-full" />
                     </div>
-                    <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-100">
-                      <p className="text-xs text-default-600 mb-1">This Quarter</p>
-                      <p className="text-2xl font-bold text-purple-600">89%</p>
-                      <p className="text-xs text-warning-600 mt-1">↓ 1% from last quarter</p>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-100">
+                        <p className="text-xs text-default-600 mb-1">This Month</p>
+                        <p className="text-2xl font-bold text-blue-600">
+                          {attendanceStats.monthlyTrend?.thisMonth || attendanceStats.percentage}%
+                        </p>
+                        <p className="text-xs text-default-500 mt-1">Based on actual data</p>
+                      </div>
+                      <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-100">
+                        <p className="text-xs text-default-600 mb-1">This Quarter</p>
+                        <p className="text-2xl font-bold text-purple-600">
+                          {attendanceStats.monthlyTrend?.thisQuarter || attendanceStats.percentage}%
+                        </p>
+                        <p className="text-xs text-default-500 mt-1">Based on actual data</p>
+                      </div>
+                      <div className="p-4 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100">
+                        <p className="text-xs text-default-600 mb-1">This Year</p>
+                        <p className="text-2xl font-bold text-green-600">{attendanceStats.percentage}%</p>
+                        <p className="text-xs text-default-500 mt-1">Based on {attendanceStats.total} recorded days</p>
+                      </div>
                     </div>
-                    <div className="p-4 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100">
-                      <p className="text-xs text-default-600 mb-1">This Year</p>
-                      <p className="text-2xl font-bold text-green-600">90%</p>
-                      <p className="text-xs text-success-600 mt-1">↑ 2% from last year</p>
-                    </div>
-                  </div>
+                  )}
                 </CardBody>
               </Card>
             </div>
@@ -2866,25 +2909,32 @@ export default function StudentOverview() {
                 </div>
                 <div className="p-6">
                   <h4 className="font-semibold text-default-900 mb-4">Subject-wise Performance</h4>
-                  <div className="space-y-4">
-                    {[{ sub: "Mathematics", score: 88 }, { sub: "Science", score: 92 }, { sub: "English", score: 85 }].map((s, i) => (
-                      <div key={i} className="flex items-center gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-default-700">{s.sub}</span>
-                            <span className="text-sm font-semibold">{s.score}/100</span>
+                  {results && results.length > 0 ? (
+                    <div className="space-y-4">
+                      {results.slice(0, 5).map((r, i) => (
+                        <div key={i} className="flex items-center gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-default-700">{r.subjectName || 'Subject'}</span>
+                              <span className="text-sm font-semibold">{Math.round(r.percentage || 0)}%</span>
+                            </div>
+                            <Progress 
+                              aria-label={`${r.subjectName} score`}
+                              value={r.percentage || 0} 
+                              color={(r.percentage || 0) >= 90 ? "success" : (r.percentage || 0) >= 75 ? "primary" : "warning"} 
+                              size="sm" 
+                              className="w-full" 
+                            />
                           </div>
-                          <Progress 
-                            aria-label={`${s.subject} score`}
-                            value={s.score} 
-                            color={s.score > 90 ? "success" : "primary"} 
-                            size="sm" 
-                            className="w-full" 
-                          />
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-default-400">
+                      <BookOpen size={32} className="mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No subject results available</p>
+                    </div>
+                  )}
                 </div>
               </DrawerBody>
               <DrawerFooter className="border-t border-default-100">

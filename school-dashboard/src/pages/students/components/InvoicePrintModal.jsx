@@ -1,3 +1,4 @@
+import { CURRENT_ACADEMIC_YEAR } from "../../../utils/constants";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from '@heroui/react';
 import { useRef, useCallback } from 'react';
 
@@ -300,7 +301,7 @@ export default function InvoicePrintModal({
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Academic Year</p>
-                <p className="text-sm text-gray-700">{studentFeeStructure?.academicYear || '2024-25'}</p>
+                <p className="text-sm text-gray-700">{studentFeeStructure?.academicYear || CURRENT_ACADEMIC_YEAR}</p>
                 {student.parentName && (
                   <>
                     <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2 mt-3">Parent/Guardian</p>

@@ -28,6 +28,8 @@ const VisitorLog = forwardRef((props, ref) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [studentLookupQuery, setStudentLookupQuery] = useState('');
+  const [studentsLoading, setStudentsLoading] = useState(false);
   const [formData, setFormData] = useState({
     visitorName: '',
     phoneNumber: '',
@@ -60,6 +62,19 @@ const VisitorLog = forwardRef((props, ref) => {
     loadStudents();
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    if (formData.reasonForVisit !== 'PARENT_MEETING' && formData.reasonForVisit !== 'STUDENT_PICKUP_DROP_OFF') {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      loadStudents(studentLookupQuery);
+    }, 250);
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.reasonForVisit, isOpen, studentLookupQuery]);
+
   const loadVisitors = async () => {
     try {
       const response = await frontDeskApi.getVisitorsToday();
@@ -72,12 +87,20 @@ const VisitorLog = forwardRef((props, ref) => {
     }
   };
 
-  const loadStudents = async () => {
+  const loadStudents = async (query = '') => {
     try {
-      const response = await studentsApi.getAll();
-      setStudents(response);
+      setStudentsLoading(true);
+      const response = await studentsApi.list({
+        page: 1,
+        limit: 20,
+        status: 'active',
+        search: query || undefined,
+      });
+      setStudents(response.data || []);
     } catch (error) {
       console.error('Failed to load students:', error);
+    } finally {
+      setStudentsLoading(false);
     }
   };
 
@@ -182,6 +205,7 @@ const VisitorLog = forwardRef((props, ref) => {
   const handleEdit = (visitor) => {
     if (!visitor) return; // Null check
     setEditingId(visitor._id);
+    setStudentLookupQuery(visitor.studentName || '');
     setFormData({
       visitorName: visitor.visitorName || '',
       phoneNumber: visitor.phoneNumber || '',
@@ -200,6 +224,21 @@ const VisitorLog = forwardRef((props, ref) => {
       deliveryPerson: visitor.deliveryPerson || '',
       notes: visitor.notes || '',
     });
+
+    if (visitor.studentId && !students.some(s => String(s._id || s.id) === String(visitor.studentId))) {
+      studentsApi.getById(visitor.studentId)
+        .then((student) => {
+          if (student) {
+            setStudents(prev => {
+              if (prev.some(item => String(item._id || item.id) === String(student._id || student.id))) {
+                return prev;
+              }
+              return [student, ...prev];
+            });
+          }
+        })
+        .catch(() => {});
+    }
     onOpen();
   };
 
@@ -225,7 +264,7 @@ const VisitorLog = forwardRef((props, ref) => {
   };
 
   const handleStudentSelect = (studentId) => {
-    const student = students.find(s => (s._id || s.id) === studentId);
+    const student = students.find(s => String(s._id || s.id) === String(studentId));
     if (student) {
       setFormData({
         ...formData,
@@ -239,6 +278,7 @@ const VisitorLog = forwardRef((props, ref) => {
   const resetForm = () => {
     setEditingId(null);
     setErrors({});
+    setStudentLookupQuery('');
     setFormData({
       visitorName: '',
       phoneNumber: '',
@@ -457,25 +497,32 @@ const VisitorLog = forwardRef((props, ref) => {
                 </>
               )}
               {(formData.reasonForVisit === 'PARENT_MEETING' || formData.reasonForVisit === 'STUDENT_PICKUP_DROP_OFF') && (
-                <Select
-                  label="Search Student (Optional)"
-                  placeholder="Select student to auto-fill visitor info"
-                  selectedKeys={formData.studentId ? [formData.studentId] : []}
-                  onChange={(e) => handleStudentSelect(e.target.value)}
-                  className="col-span-2"
-                  isClearable
-                >
-                  {students.map((student) => (
-                    <SelectItem key={student._id} value={student._id}>
-                      {student.name} {student.admissionId ? `(${student.admissionId})` : ''} - Parent: {student.parentName || 'N/A'}
-                    </SelectItem>
-                  ))}
-                </Select>
+                <div className="col-span-2 space-y-3">
+                  <Input
+                    label="Search Student (Optional)"
+                    placeholder="Search by student name, roll no, or admission ID"
+                    value={studentLookupQuery}
+                    onChange={(e) => setStudentLookupQuery(e.target.value)}
+                  />
+                  <Select
+                    placeholder={studentsLoading ? "Searching students..." : "Select student to auto-fill visitor info"}
+                    selectedKeys={formData.studentId ? [String(formData.studentId)] : []}
+                    onChange={(e) => handleStudentSelect(e.target.value)}
+                    isDisabled={studentsLoading}
+                    isClearable
+                  >
+                    {students.map((student) => (
+                      <SelectItem key={String(student._id || student.id)} value={String(student._id || student.id)}>
+                        {student.name} {student.admissionId ? `(${student.admissionId})` : ''} - Parent: {student.parentName || 'N/A'}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                </div>
               )}
               {formData.studentName && (
                 <div className="col-span-2 bg-default-100 p-3 rounded-lg">
                   <p className="text-sm text-default-600">Student: <span className="font-medium">{formData.studentName}</span></p>
-                  <p className="text-sm text-default-600">Parent: <span className="font-medium">{students.find(s => s._id === formData.studentId)?.parentName || 'N/A'}</span></p>
+                  <p className="text-sm text-default-600">Parent: <span className="font-medium">{students.find(s => String(s._id || s.id) === String(formData.studentId))?.parentName || 'N/A'}</span></p>
                 </div>
               )}
               <FormInput

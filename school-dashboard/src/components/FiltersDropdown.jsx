@@ -144,7 +144,7 @@ export default function FiltersDropdown({
                     >
                         {filterConfig.options.map((option) => {
                             const isSelected = filterConfig.value === option;
-                            const count = filterConfig.counts?.[option] || 0;
+                            const count = filterConfig.counts?.[option];
                             const displayLabel = filterConfig.displayLabels?.[option] || option;
 
                             return (
@@ -152,7 +152,7 @@ export default function FiltersDropdown({
                                     key={`${filterKey}-${option}`}
                                     onPress={() => handleFilterSelect(filterKey, option)}
                                     startContent={isSelected ? <Check size={14} className="text-primary" /> : <span className="w-3.5"></span>}
-                                    endContent={<span className="text-default-400 text-xs">{count}</span>}
+                                    endContent={count === undefined ? null : <span className="text-default-400 text-xs">{count}</span>}
                                     textValue={displayLabel}
                                     className="capitalize"
                                 >

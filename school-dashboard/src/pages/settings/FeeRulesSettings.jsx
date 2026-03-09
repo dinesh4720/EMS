@@ -6,11 +6,13 @@ import {
 } from "@heroui/react";
 import { Plus, Edit, Trash2, Save } from "lucide-react";
 import toast from "react-hot-toast";
+import { useApp } from "../../context/AppContext";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 // ============ CONCESSIONS TAB ============
 export function ConcessionsTab() {
+  const { currentAcademicYear } = useApp();
   const [concessions, setConcessions] = useState([]);
   const [loading, setLoading] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -23,12 +25,12 @@ export function ConcessionsTab() {
     isActive: true
   });
 
-  useEffect(() => { fetchConcessions(); }, []);
+  useEffect(() => { fetchConcessions(); }, [currentAcademicYear]);
 
   const fetchConcessions = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/fee-settings/concessions?academicYear=2024-25`);
+      const response = await fetch(`${API_URL}/fee-settings/concessions?academicYear=${currentAcademicYear}`);
       if (!response.ok) throw new Error('Failed to fetch');
       setConcessions(await response.json());
     } catch (error) {
@@ -61,7 +63,7 @@ export function ConcessionsTab() {
       const payload = {
         ...formData,
         eligibilityCriteria: { type: formData.eligibilityType, conditions: [] },
-        academicYear: "2024-25"
+        academicYear: currentAcademicYear
       };
       const url = editingConcession ? `${API_URL}/fee-settings/concessions/${editingConcession._id}` : `${API_URL}/fee-settings/concessions`;
       const response = await fetch(url, {
@@ -183,16 +185,17 @@ export function ConcessionsTab() {
 
 // ============ LATE FEE TAB ============
 export function LateFeeTab() {
+  const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({ enabled: false, gracePeriod: 7, fineType: "flat", flatAmount: 100, perDayAmount: 10, maximumCap: 0 });
 
-  useEffect(() => { fetchConfig(); }, []);
+  useEffect(() => { fetchConfig(); }, [currentAcademicYear]);
 
   const fetchConfig = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/fee-settings/late-fee-rules?academicYear=2024-25`);
+      const response = await fetch(`${API_URL}/fee-settings/late-fee-rules?academicYear=${currentAcademicYear}`);
       const data = await response.json();
       if (data.length > 0) setFormData({ ...formData, ...data[0] });
     } catch (error) { console.error(error); }
@@ -205,7 +208,7 @@ export function LateFeeTab() {
       await fetch(`${API_URL}/fee-settings/late-fee-rules`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, academicYear: "2024-25" })
+        body: JSON.stringify({ ...formData, academicYear: currentAcademicYear })
       });
       toast.success('Saved');
     } catch (error) { toast.error('Failed to save'); }
@@ -289,6 +292,7 @@ export function LateFeeTab() {
 
 // ============ PAYMENT METHODS TAB ============
 export function PaymentMethodsTab() {
+  const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -296,12 +300,12 @@ export function PaymentMethodsTab() {
     offline: { enabled: true, cash: true, cheque: true, dd: true }
   });
 
-  useEffect(() => { fetchConfig(); }, []);
+  useEffect(() => { fetchConfig(); }, [currentAcademicYear]);
 
   const fetchConfig = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/fee-settings/payment-methods?academicYear=2024-25`);
+      const response = await fetch(`${API_URL}/fee-settings/payment-methods?academicYear=${currentAcademicYear}`);
       const data = await response.json();
       if (data.length > 0) setFormData(data[0]);
     } catch (error) { console.error(error); }
@@ -314,7 +318,7 @@ export function PaymentMethodsTab() {
       await fetch(`${API_URL}/fee-settings/payment-methods`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, academicYear: "2024-25" })
+        body: JSON.stringify({ ...formData, academicYear: currentAcademicYear })
       });
       toast.success('Saved');
     } catch (error) { toast.error('Failed to save'); }
@@ -392,16 +396,17 @@ export function PaymentMethodsTab() {
 
 // ============ COLLECTION PERIOD TAB ============
 export function CollectionPeriodTab() {
+  const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({ collectionInterval: "yearly", reminders: { enabled: true, daysBefore: 3 } });
 
-  useEffect(() => { fetchConfig(); }, []);
+  useEffect(() => { fetchConfig(); }, [currentAcademicYear]);
 
   const fetchConfig = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/fee-settings/collection-period?academicYear=2024-25`);
+      const response = await fetch(`${API_URL}/fee-settings/collection-period?academicYear=${currentAcademicYear}`);
       const data = await response.json();
       if (data.length > 0) setFormData({ collectionInterval: data[0].collectionInterval, reminders: data[0].autoPay || { enabled: true, daysBefore: 3 } });
     } catch (error) { console.error(error); }
@@ -414,7 +419,7 @@ export function CollectionPeriodTab() {
       await fetch(`${API_URL}/fee-settings/collection-period`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, academicYear: "2024-25", autoPay: formData.reminders })
+        body: JSON.stringify({ ...formData, academicYear: currentAcademicYear, autoPay: formData.reminders })
       });
       toast.success('Saved');
     } catch (error) { toast.error('Failed to save'); }
@@ -463,6 +468,7 @@ export function CollectionPeriodTab() {
 
 // ============ GENERAL RULES TAB ============
 export function GeneralRulesTab() {
+  const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -472,12 +478,12 @@ export function GeneralRulesTab() {
     refundPolicy: { enabled: false, processingDays: 7 }
   });
 
-  useEffect(() => { fetchConfig(); }, []);
+  useEffect(() => { fetchConfig(); }, [currentAcademicYear]);
 
   const fetchConfig = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/fee-settings/rules?academicYear=2024-25`);
+      const response = await fetch(`${API_URL}/fee-settings/rules?academicYear=${currentAcademicYear}`);
       const data = await response.json();
       if (data.length > 0) setFormData(data[0]);
     } catch (error) { console.error(error); }
@@ -490,7 +496,7 @@ export function GeneralRulesTab() {
       await fetch(`${API_URL}/fee-settings/rules`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, academicYear: "2024-25" })
+        body: JSON.stringify({ ...formData, academicYear: currentAcademicYear })
       });
       toast.success('Saved');
     } catch (error) { toast.error('Failed to save'); }

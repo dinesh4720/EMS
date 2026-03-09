@@ -122,22 +122,23 @@ export const StudentProvider = ({ children }) => {
   }, [fetchFees]);
 
   const fetchExams = useCallback(async () => {
-    // Exams come through results endpoint - extract exam info
+    // Fetch all exams for student's class (including upcoming ones)
     if (!studentId) return;
     setLoading((prev) => ({ ...prev, exams: true }));
     try {
-      const response = await api.getStudentResults(studentId);
-      if (response.success && response.data?.results) {
-        const examList = response.data.results
-          .filter(r => r.examId)
-          .map(r => ({
-            id: r.examId._id || r.examId,
-            name: r.examId.name || r.examName,
-            type: r.examId.examType,
-            startDate: r.examId.startDate,
-            endDate: r.examId.endDate,
-            status: 'completed',
-          }));
+      const response = await api.getStudentExams(studentId);
+      if (response.success && response.data?.exams) {
+        const examList = response.data.exams.map(exam => ({
+          id: exam._id,
+          name: exam.name,
+          type: exam.examType,
+          subject: exam.subjectName,
+          startDate: exam.startDate,
+          endDate: exam.endDate,
+          status: exam.status || 'scheduled',
+          maxMarks: exam.maxMarks,
+          passingMarks: exam.passingMarks,
+        }));
         setExams(examList);
       }
     } catch (error) {

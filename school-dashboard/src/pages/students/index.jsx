@@ -1,12 +1,12 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, lazy, Suspense, useTransition } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { Drawer, DrawerContent, DrawerHeader, DrawerBody, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter as ModalFooterUI, Chip } from "@heroui/react";
-import { Plus, X, UserPlus, Send, FileText, CheckCircle2, ChevronDown, Mail, Phone, Eye, Check } from "lucide-react";
+import { Drawer, DrawerContent, DrawerHeader, DrawerBody, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter as ModalFooterUI, Chip, Spinner } from "@heroui/react";
+import { Plus, X, UserPlus, Send, FileText, CheckCircle2, ChevronDown, Mail, Phone, Eye, Check, GraduationCap } from "lucide-react";
 import StudentsList from "./StudentsList";
 import StudentDashboard from "./StudentDashboard";
 import StudentAttendance from "./StudentAttendance";
 import StudentFormSubmissions from "./StudentFormSubmissions";
-import AddStudent from "./AddStudent";
+const AddStudent = lazy(() => import("./AddStudent"));
 import FormInput from "../../components/FormInput";
 import { useApp } from "../../context/AppContext";
 import { intakeFormsApi } from "../../services/api";
@@ -90,9 +90,15 @@ export default function StudentsPage() {
 
   const handleRemovePhone = (phone) => setRecipientPhones(recipientPhones.filter(p => p !== phone));
 
+  const [isPending, startTransition] = useTransition();
+
   const handleSelectMethod = (method) => {
     setIsMethodModalOpen(false);
-    if (method === 'full') setIsAddStudentOpen(true);
+    if (method === 'full') {
+      startTransition(() => {
+        setIsAddStudentOpen(true);
+      });
+    }
     else if (method === 'form') loadAvailableForms();
   };
 
@@ -157,6 +163,7 @@ export default function StudentsPage() {
   const handleSaveStudent = async (studentData) => {
     try {
       await addStudent(studentData);
+      window.dispatchEvent(new Event("students:list-refresh"));
       toast.success('Student added successfully!');
       handleCloseAddStudent();
     } catch (err) {
@@ -227,7 +234,9 @@ export default function StudentsPage() {
         </div>
       </PageLayout>
 
-      {/* Add Student Drawer */}
+      {/* Add Student Drawer - only mount when open */}
+      {isAddStudentOpen && (
+      <Suspense fallback={null}>
       <Drawer
         isOpen={isAddStudentOpen}
         onOpenChange={(open) => { if (!open) handleCloseAddStudent(); }}
@@ -239,24 +248,36 @@ export default function StudentsPage() {
         <DrawerContent>
           {(onClose) => (
             <>
-              <DrawerHeader className="border-b border-gray-100 px-6 py-4 flex justify-between items-center">
-                <h2 className="text-lg font-medium text-gray-900">Manual Student Registration</h2>
+              <DrawerHeader className="border-b border-default-200/60 px-6 py-4 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-xl">
+                    <GraduationCap size={20} className="text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-default-900">Add New Student</h2>
+                    <p className="text-xs text-default-500">Register a new student manually</p>
+                  </div>
+                </div>
                 <Button isIconOnly size="sm" variant="light" onPress={handleCloseAddStudent}>
-                  <X size={20} className="text-gray-400" />
+                  <X size={20} className="text-default-400" />
                 </Button>
               </DrawerHeader>
               <DrawerBody className="p-0 overflow-hidden">
-                <AddStudent
-                  onClose={handleCloseAddStudent}
-                  onSave={handleSaveStudent}
-                  classOptions={classOptions}
-                  classesWithTeachers={classesWithTeachers}
-                />
+                <Suspense fallback={<div className="flex items-center justify-center h-full"><Spinner size="lg" /></div>}>
+                  <AddStudent
+                    onClose={handleCloseAddStudent}
+                    onSave={handleSaveStudent}
+                    classOptions={classOptions}
+                    classesWithTeachers={classesWithTeachers}
+                  />
+                </Suspense>
               </DrawerBody>
             </>
           )}
         </DrawerContent>
       </Drawer>
+      </Suspense>
+      )}
 
       {/* Method Selection Modal */}
       <Modal

@@ -27,7 +27,7 @@ import { useAuth } from "../../context/AuthContext";
 import { usePermissions } from "../../context/PermissionContext";
 import toast from "react-hot-toast";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 const MODULE_LABELS = {
   dashboard: "Dashboard",
@@ -92,7 +92,7 @@ export default function PermissionRequests() {
       setLoading(true);
       const status = activeTab === 'all' ? '' : activeTab;
       const response = await fetch(
-        `${API_URL}/api/permissions/requests?adminId=${user.id}${status ? `&status=${status}` : ''}`
+        `${API_URL}/permissions/requests?adminId=${user.id}${status ? `&status=${status}` : ''}`
       );
 
       if (!response.ok) {
@@ -121,7 +121,7 @@ export default function PermissionRequests() {
     setProcessing(true);
     try {
       const response = await fetch(
-        `${API_URL}/api/permissions/requests/${selectedRequest._id}`,
+        `${API_URL}/permissions/requests/${selectedRequest._id}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -160,7 +160,7 @@ export default function PermissionRequests() {
     setProcessing(true);
     try {
       const response = await fetch(
-        `${API_URL}/api/permissions/requests/${selectedRequest._id}`,
+        `${API_URL}/permissions/requests/${selectedRequest._id}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },

@@ -1,3 +1,4 @@
+import { useApp } from "../../../../context/AppContext";
 import { Button } from "@heroui/react";
 import { GraduationCap, User, Phone, Users, FileCheck, Edit } from "lucide-react";
 import InfoItem from "../shared/InfoItem";
@@ -10,6 +11,8 @@ export default function BasicDetailsTab({
   classTeacher,
   onEditSection
 }) {
+  const { currentAcademicYear } = useApp();
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Academic Information */}
@@ -36,7 +39,7 @@ export default function BasicDetailsTab({
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-6">
           <InfoItem label="Class" value={student?.class || "N/A"} />
           <InfoItem label="Roll Number" value={student?.rollNo || "N/A"} />
-          <InfoItem label="Academic Year" value={student?.academicYear || "2024-25"} />
+          <InfoItem label="Academic Year" value={student?.academicYear || currentAcademicYear} />
           <InfoItem label="Class Teacher" value={classTeacher?.name || "Not Assigned"} />
         </div>
       </div>
@@ -198,7 +201,7 @@ export default function BasicDetailsTab({
           )}
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-6">
-          <InfoItem label="Academic Year" value={student?.academicYear || "2024-25"} />
+          <InfoItem label="Academic Year" value={student?.academicYear || currentAcademicYear} />
           <InfoItem label="Transport Required" value={student?.transportRequired ? "Yes" : "No"} />
           <InfoItem label="Hostel Required" value={student?.hostelRequired ? "Yes" : "No"} />
           <div className="col-span-full">

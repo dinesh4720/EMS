@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardBody, CardHeader, Progress, Badge, Button, Tabs, Tab, Select, SelectItem } from '@heroui/react';
 import api from '../../services/api';
+import { CURRENT_ACADEMIC_YEAR } from '../../utils/constants';
 
 /**
  * TimetableValidationDashboard Component
@@ -12,7 +13,7 @@ const TimetableValidationDashboard = () => {
   const [teacherReport, setTeacherReport] = useState(null);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('classes');
-  const [academicYear] = useState('2024-25');
+  const [academicYear] = useState(CURRENT_ACADEMIC_YEAR);
 
   useEffect(() => {
     fetchReports();
@@ -299,3 +300,4 @@ const TimetableValidationDashboard = () => {
 };
 
 export default TimetableValidationDashboard;
+

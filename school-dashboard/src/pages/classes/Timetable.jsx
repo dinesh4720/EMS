@@ -52,7 +52,7 @@ const getSubjectStyles = (subject) => {
 };
 
 export default function Timetable({ classId }) {
-  const { classesWithTeachers, staff, schoolSettings } = useApp();
+  const { classesWithTeachers, staff, schoolSettings, currentAcademicYear } = useApp();
   const [selectedClass, setSelectedClass] = useState(classId || "");
   const [timetable, setTimetable] = useState(null);
   const [periods, setPeriods] = useState(defaultPeriods);
@@ -96,7 +96,7 @@ export default function Timetable({ classId }) {
   const loadTimetable = async () => {
     try {
       setLoading(true);
-      const data = await timetableApi.getByClass(selectedClass, schoolSettings?.academicYear);
+      const data = await timetableApi.getByClass(selectedClass, currentAcademicYear);
       if (data && data.schedule) {
         setTimetable(data);
         setPeriods(data.periods || defaultPeriods);
@@ -374,7 +374,7 @@ export default function Timetable({ classId }) {
         setLoading(true);
         await timetableApi.createOrUpdate({
           classId: selectedClass,
-          academicYear: schoolSettings?.academicYear,
+          academicYear: currentAcademicYear,
           periods,
           schedule
         });
@@ -464,7 +464,7 @@ export default function Timetable({ classId }) {
             )}
             {selectedClassData && (
               <Chip size="sm" variant="flat" color="primary">
-                {schoolSettings?.academicYear || '2024-25'}
+                {currentAcademicYear}
               </Chip>
             )}
           </div>

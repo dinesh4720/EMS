@@ -1,6 +1,7 @@
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Progress } from '@heroui/react';
 import { CheckCircle, Circle, Clock } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { getAuthHeaders } from '../../utils/authSession';
 
 export default function AdmissionTracker({ admission, isOpen, onClose }) {
   const [trackerData, setTrackerData] = useState(null);
@@ -15,30 +16,10 @@ export default function AdmissionTracker({ admission, isOpen, onClose }) {
   const loadTracker = async () => {
     setLoading(true);
     try {
-      // Get token from sessionStorage using the same pattern as api.js
-      const storedUser = sessionStorage.getItem('app_user');
-      let token = null;
-
-      if (storedUser) {
-        try {
-          const userData = JSON.parse(storedUser);
-          token = userData.token;
-        } catch (err) {
-          console.error('Failed to parse user data from sessionStorage:', err);
-        }
-      }
-
-      const headers = {
-        'Content-Type': 'application/json'
-      };
-
-      // Add Authorization header if token exists
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
       const response = await fetch(`/api/front-desk/admissions/${admission._id}/tracker`, {
-        headers
+        headers: getAuthHeaders({
+          'Content-Type': 'application/json'
+        })
       });
       const data = await response.json();
       setTrackerData(data);

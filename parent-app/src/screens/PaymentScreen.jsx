@@ -26,6 +26,14 @@ import {
   X,
 } from 'lucide-react-native';
 
+const getDefaultAcademicYear = (referenceDate = new Date()) => {
+  const startYear = referenceDate.getMonth() >= 3
+    ? referenceDate.getFullYear()
+    : referenceDate.getFullYear() - 1;
+
+  return `${startYear}-${String((startYear + 1) % 100).padStart(2, '0')}`;
+};
+
 const PaymentScreen = ({ navigation, route }) => {
   const { themeColors } = useTheme();
   const { fees, fetchFees } = useStudent();
@@ -140,10 +148,11 @@ const PaymentScreen = ({ navigation, route }) => {
     setLoading(true);
     try {
       const feeHeadPayments = buildFeeHeadPayments();
+      const academicYear = fees?.feeStructure?.feeHeads?.[0]?.academicYear || getDefaultAcademicYear();
       const response = await api.createPaymentOrder(studentId, {
         amount: selectedAmount,
         feeHeadPayments,
-        academicYear: fees?.feeStructure?.feeHeads?.[0]?.academicYear || '2024-25',
+        academicYear,
       });
 
       if (response.success) {
@@ -165,13 +174,14 @@ const PaymentScreen = ({ navigation, route }) => {
 
     try {
       const feeHeadPayments = buildFeeHeadPayments();
+      const academicYear = fees?.feeStructure?.feeHeads?.[0]?.academicYear || getDefaultAcademicYear();
       const response = await api.verifyPayment(studentId, {
         razorpay_order_id: paymentData.razorpay_order_id || orderData.orderId,
         razorpay_payment_id: paymentData.razorpay_payment_id,
         razorpay_signature: paymentData.razorpay_signature,
         amount: selectedAmount,
         feeHeadPayments,
-        academicYear: fees?.feeStructure?.feeHeads?.[0]?.academicYear || '2024-25',
+        academicYear,
         mock: orderData?.mock || false,
       });
 

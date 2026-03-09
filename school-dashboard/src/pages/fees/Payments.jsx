@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback, useDeferredValue } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Table,
@@ -45,26 +45,66 @@ export default function Payments() {
   const [students, setStudents] = useState([]);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [studentsLoading, setStudentsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 20,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+  const deferredSearchQuery = useDeferredValue(searchQuery.trim());
 
-  // Fetch students and payments
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchPayments = async () => {
       try {
         setLoading(true);
-        const [studentsData, paymentsData] = await Promise.all([
-          studentsApi.getAll(),
-          feesApi.getPayments({})
-        ]);
-        setStudents(studentsData);
+        const paymentsData = await feesApi.getPayments({});
         setPayments(paymentsData);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching payments:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    fetchPayments();
   }, []);
+
+  const loadStudents = useCallback(async (pageToLoad) => {
+    try {
+      setStudentsLoading(true);
+      const response = await studentsApi.list({
+        page: pageToLoad,
+        limit: 20,
+        status: 'active',
+        search: deferredSearchQuery || undefined,
+      });
+      setStudents(response.data || []);
+      setPagination(response.pagination || {
+        currentPage: pageToLoad,
+        totalPages: 1,
+        totalItems: response.data?.length || 0,
+        itemsPerPage: 20,
+        hasNextPage: false,
+        hasPrevPage: false,
+      });
+    } catch (error) {
+      console.error('Error fetching students:', error);
+      setStudents([]);
+    } finally {
+      setStudentsLoading(false);
+    }
+  }, [deferredSearchQuery]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [deferredSearchQuery]);
+
+  useEffect(() => {
+    loadStudents(currentPage);
+  }, [currentPage, loadStudents]);
 
   // Transform students to payment format
   const feePayments = useMemo(() => {
@@ -116,45 +156,7 @@ export default function Payments() {
     });
   }, [feePayments, searchQuery, statusFilter, dateFrom, dateTo, amountMin, amountMax]);
 
-  // Lazy loading state
-  const ITEMS_PER_LOAD = 10;
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loaderRef = useRef(null);
-
-  const visiblePayments = useMemo(
-    () => filteredPayments.slice(0, visibleCount),
-    [filteredPayments, visibleCount]
-  );
-
-  const hasMore = visibleCount < filteredPayments.length;
-
-  // Reset visible count when filters change
-  useEffect(() => {
-    setVisibleCount(ITEMS_PER_LOAD);
-  }, [searchQuery, statusFilter, dateFrom, dateTo, amountMin, amountMax]);
-
-  // Lazy loading intersection observer
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-          setIsLoadingMore(true);
-          setTimeout(() => {
-            setVisibleCount((prev) => prev + ITEMS_PER_LOAD);
-            setIsLoadingMore(false);
-          }, 300);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, isLoadingMore]);
+  const visiblePayments = filteredPayments;
 
   // Calculate fee heads dynamically based on selected student's pending amount
   const getStudentFees = (student) => {
@@ -269,8 +271,7 @@ export default function Payments() {
         const newPayment = await feesApi.createPayment(paymentData);
         setPayments([newPayment, ...payments]);
 
-        const updatedStudents = await studentsApi.getAll();
-        setStudents(updatedStudents);
+        await loadStudents(currentPage);
 
         setReceiptData({
           receiptNumber: newPayment.receiptNumber,
@@ -346,7 +347,7 @@ export default function Payments() {
   const totalCollected = filteredPayments.reduce((sum, p) => sum + p.paid, 0);
   const pendingCount = filteredPayments.filter((p) => p.status === "pending").length;
 
-  if (loading) {
+  if (loading || studentsLoading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <Spinner size="lg" />
@@ -605,13 +606,27 @@ export default function Payments() {
         </Table>
       </div>
 
-      {/* Lazy loading indicator */}
-      <div ref={loaderRef} className="flex justify-center py-4">
-        {isLoadingMore && <Spinner size="sm" />}
-        {!hasMore && filteredPayments.length > ITEMS_PER_LOAD && (
-          <span className="text-gray-400 text-sm">
-            All {filteredPayments.length} payments loaded
-          </span>
+      <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <span className="text-gray-500 text-sm">
+          Page {currentPage} of {pagination.totalPages} ({pagination.totalItems} students)
+        </span>
+        {pagination.totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={!pagination.hasPrevPage || studentsLoading}
+              className="px-3 py-1.5 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setCurrentPage((prev) => prev + 1)}
+              disabled={!pagination.hasNextPage || studentsLoading}
+              className="px-3 py-1.5 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
         )}
       </div>
 

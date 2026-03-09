@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Select, SelectItem, Input, Textarea } from "@heroui/react";
 import toast from "react-hot-toast";
+import { getAuthHeaders } from "../../../../utils/authSession";
 
 /**
  * WriteRemarkModal - Modal for writing a remark for a student
@@ -31,14 +32,10 @@ export default function WriteRemarkModal({ isOpen, onClose, student, onSave }) {
 
     try {
       const { request } = await import("../../../../services/api");
-      const token = sessionStorage.getItem('app_user') ? JSON.parse(sessionStorage.getItem('app_user')).token : null;
-
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
 
       await request(`/students/${student.id}/remarks`, {
         method: 'POST',
-        headers,
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           title: form.title,
           description: form.description,

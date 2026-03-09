@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem } from "@heroui/react";
 import toast from "react-hot-toast";
+import { useApp } from "../../../../context/AppContext";
 
 /**
  * PaymentModal - Modal for recording fee payments
@@ -13,6 +14,7 @@ import toast from "react-hot-toast";
  * - onPaymentComplete: function - Called after successful payment
  */
 export default function PaymentModal({ isOpen, onClose, student, studentFeeStructure, onPaymentComplete }) {
+  const { currentAcademicYear } = useApp();
   const [paymentForm, setPaymentForm] = useState({
     amount: "",
     paymentMode: "cash",
@@ -51,7 +53,7 @@ export default function PaymentModal({ isOpen, onClose, student, studentFeeStruc
         studentId: student.id,
         studentName: student.name,
         classId: student.classId,
-        academicYear: '2024-25',
+        academicYear: student?.academicYear || currentAcademicYear,
         paymentDate: paymentForm.date,
         amount: paymentAmount,
         paymentMode: paymentForm.paymentMode,
@@ -167,3 +169,4 @@ export default function PaymentModal({ isOpen, onClose, student, studentFeeStruc
     </Modal>
   );
 }
+

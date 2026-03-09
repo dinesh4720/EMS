@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { parseDate } from "@internationalized/date";
 import { Button, Input, Select, SelectItem, Checkbox, Textarea, Chip, Avatar, RadioGroup, Radio, cn, Divider, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, DatePicker, Popover, PopoverTrigger, PopoverContent, Calendar as CalendarIcon } from "@heroui/react";
 import { ArrowLeft, ArrowRight, Upload, X, Plus, User, FileText, Users, GraduationCap, Check, Heart, Bus, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
@@ -314,7 +314,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         console.log('📄 Document configs loaded:', docConfigs);
       } catch (error) {
         console.error('❌ Error loading configurations:', error);
-        toast.error('Failed to load admission settings: ' + error.message);
+        // Don't show error toast - just log it and continue with empty configs
+        setDocumentConfigs([]);
       }
     };
     loadConfigurations();
@@ -329,13 +330,16 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     return () => clearTimeout(timer);
   }, []);
 
-  // Detect form changes for dirty state
+  // Detect form changes for dirty state (debounced to avoid lag)
   useEffect(() => {
     if (!initialFormDataRef.current) return;
 
-    const currentData = JSON.stringify(formData);
-    const hasChanges = currentData !== initialFormDataRef.current;
-    setHasUnsavedChanges(hasChanges);
+    const timer = setTimeout(() => {
+      const currentData = JSON.stringify(formData);
+      const hasChanges = currentData !== initialFormDataRef.current;
+      setHasUnsavedChanges(hasChanges);
+    }, 300);
+    return () => clearTimeout(timer);
   }, [formData]);
 
   // Browser navigation warning
@@ -416,10 +420,43 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }));
   };
 
+  // Memoize picture preview URL to avoid creating new blob URLs on every render
+  const picturePreviewUrl = useMemo(() => {
+    if (formData.picture instanceof File) {
+      return URL.createObjectURL(formData.picture);
+    }
+    return formData.picture || null;
+  }, [formData.picture]);
+
+  // Cleanup blob URL on unmount or when picture changes
+  useEffect(() => {
+    return () => {
+      if (picturePreviewUrl && formData.picture instanceof File) {
+        URL.revokeObjectURL(picturePreviewUrl);
+      }
+    };
+  }, [picturePreviewUrl]);
+
   // Memoize state selectedKeys to prevent Select component from closing/flickering during PIN lookup
   const stateSelectedKeys = useMemo(() => {
     return formData.state ? [formData.state] : [];
   }, [formData.state]);
+
+  // Memoize unique class names to prevent recalculation on every render
+  const uniqueClassNames = useMemo(() => {
+    return Array.from(new Set(classesWithTeachers.map(c => c.name)))
+      .sort((a, b) => parseInt(a) - parseInt(b));
+  }, [classesWithTeachers]);
+
+  // Memoize sections for selected class
+  const availableSections = useMemo(() => {
+    if (!formData.classGrade) return [];
+    return Array.from(new Set(
+      classesWithTeachers
+        .filter(c => c.name === formData.classGrade)
+        .map(c => c.section)
+    )).sort();
+  }, [classesWithTeachers, formData.classGrade]);
 
   // Helper functions for date format conversion
   const ddmmyyToIso = (ddmmyy) => {
@@ -587,40 +624,42 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       }
     }
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return { isValid: Object.keys(newErrors).length === 0, errors: newErrors };
   };
 
-  const scrollToError = (stepNum) => {
-    // Scroll to the first error field
-    setTimeout(() => {
+  const scrollToError = (stepNum, errorObj) => {
+    // Scroll to the first error field using the passed error object
+    // Use requestAnimationFrame for more reliable scrolling after DOM updates
+    requestAnimationFrame(() => {
       if (stepNum === 1) {
-        if (errors.fullName && fullNameRef.current) {
+        if (errorObj.fullName && fullNameRef.current) {
           fullNameRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else if (errors.dateOfBirth && dobRef.current) {
+        } else if (errorObj.dateOfBirth && dobRef.current) {
           dobRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else if (errors.gender && genderRef.current) {
+        } else if (errorObj.gender && genderRef.current) {
           genderRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else if ((errors.classGrade || errors.section) && classRef.current) {
+        } else if ((errorObj.classGrade || errorObj.section) && classRef.current) {
           classRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       } else if (stepNum === 2) {
-        if (errors.parentName && parentNameRef.current) {
+        if (errorObj.parentName && parentNameRef.current) {
           parentNameRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else if (errors.parentPhone && parentPhoneRef.current) {
+        } else if (errorObj.parentPhone && parentPhoneRef.current) {
           parentPhoneRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       }
-    }, 100);
+    });
   };
 
   const handleNext = () => {
-    if (validateStep(step)) {
+    const validation = validateStep(step);
+    if (validation.isValid) {
       setStep(prev => Math.min(prev + 1, 3));
       // Scroll to top when moving to next step
       scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      // Scroll to first error
-      scrollToError(step);
+      // Scroll to first error using the errors from validation
+      scrollToError(step, validation.errors);
     }
   };
 
@@ -760,21 +799,21 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
   const handleSubmit = async () => {
     // Validate all steps before submitting
-    const step1Valid = validateStep(1);
-    const step2Valid = validateStep(2);
+    const step1Validation = validateStep(1);
+    const step2Validation = validateStep(2);
 
-    if (!step1Valid || !step2Valid) {
+    if (!step1Validation.isValid || !step2Validation.isValid) {
       // Go back to the first invalid step
-      if (!step1Valid) {
+      if (!step1Validation.isValid) {
         setStep(1);
         scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
         toast.error('Please fill in all required fields in Personal Information');
-        scrollToError(1);
-      } else if (!step2Valid) {
+        scrollToError(1, step1Validation.errors);
+      } else if (!step2Validation.isValid) {
         setStep(2);
         scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
         toast.error('Please fill in all required parent/guardian information');
-        scrollToError(2);
+        scrollToError(2, step2Validation.errors);
       }
       return;
     }
@@ -1110,7 +1149,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       <div className="flex items-center gap-5">
         {formData.picture ? (
           <Avatar
-            src={formData.picture instanceof File ? URL.createObjectURL(formData.picture) : formData.picture}
+            src={picturePreviewUrl}
             className="w-20 h-20 text-3xl"
             isBordered
             radius="full"
@@ -1151,8 +1190,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       </div>
 
       {/* Personal Information - Full Name & Date of Birth in same row */}
-      <div className="space-y-2">
-        <label className="text-sm font-semibold text-default-900">Personal Information</label>
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium text-gray-900">Personal Information</h3>
         <div className="grid grid-cols-2 gap-4">
           <div ref={fullNameRef}>
             <Input
@@ -1415,8 +1454,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       </div>
 
       {/* Gender */}
-      <div className="space-y-1" ref={genderRef}>
-        <label className="text-xs font-medium text-default-600">Gender <span className="text-danger">*</span></label>
+      <div className="space-y-2" ref={genderRef}>
+        <label className="text-xs font-medium text-gray-600">Gender <span className="text-red-500">*</span></label>
         <RadioGroup
           orientation="horizontal"
           value={formData.gender}
@@ -1432,8 +1471,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       </div>
 
       {/* Class Info */}
-      <div className="space-y-2 pt-2 border-t border-solid border-default-200">
-        <label className="text-sm font-semibold text-default-900 block mt-2">Class Information</label>
+      <div className="space-y-3 pt-5 border-t border-gray-100">
+        <h3 className="text-sm font-medium text-gray-900">Class Information</h3>
         <div className="grid grid-cols-2 gap-4">
           {/* Class Selection */}
           <div ref={classRef}>
@@ -1455,7 +1494,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               radius="sm"
               classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
             >
-              {Array.from(new Set(classesWithTeachers.map(c => c.name))).sort((a, b) => parseInt(a) - parseInt(b)).map(className => (
+              {uniqueClassNames.map(className => (
                 <SelectItem key={className}>{className}</SelectItem>
               ))}
             </Select>
@@ -1477,10 +1516,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               radius="sm"
               classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
             >
-              {Array.from(new Set(classesWithTeachers
-                .filter(c => c.name === formData.classGrade)
-                .map(c => c.section)
-              )).sort().map(section => (
+              {availableSections.map(section => (
                 <SelectItem key={section}>{section}</SelectItem>
               ))}
             </Select>
@@ -1503,8 +1539,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       </div>
 
       {/* Contact Info */}
-      <div className="space-y-2 pt-2 border-t border-solid border-default-200">
-        <label className="text-sm font-semibold text-default-900 block mt-2">Contact Details</label>
+      <div className="space-y-3 pt-5 border-t border-gray-100">
+        <h3 className="text-sm font-medium text-gray-900">Contact Details</h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Input
@@ -1662,9 +1698,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       </div>
 
       {/* Optional Fields */}
-      <div className="space-y-2 pt-2 border-t border-solid border-default-200">
-        <label className="text-sm font-semibold text-default-900 block mt-2">Optional Information</label>
-        <p className="text-xs text-default-500 mb-3">These fields are optional and can be filled later</p>
+      <div className="space-y-3 pt-5 border-t border-gray-100">
+        <h3 className="text-sm font-medium text-gray-900">Optional Information</h3>
+        <p className="text-xs text-gray-500 -mt-1">These fields are optional and can be filled later</p>
         <div className="grid grid-cols-2 gap-4">
           <Input
             label="Aadhaar Number"
@@ -1770,9 +1806,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       <div className="space-y-5 animate-fade-in text-left">
         {/* Parent Details */}
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <label className="text-sm font-semibold text-default-900">Parent Details</label>
-          </div>
+          <h3 className="text-sm font-medium text-gray-900">Parent Details</h3>
 
           {parents.map((parent, idx) => {
             const index = formData.parents.findIndex(p => p === parent);
@@ -1880,10 +1914,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         </div>
 
         {/* Guardian Details */}
-        <div className="space-y-4 pt-2 border-t border-solid border-default-200">
-          <div className="flex justify-between items-center">
-            <label className="text-sm font-semibold text-default-900">Guardian Details</label>
-            <span className="text-xs text-default-500">(Optional)</span>
+        <div className="space-y-4 pt-5 border-t border-gray-100">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-medium text-gray-900">Guardian Details</h3>
+            <span className="text-xs text-gray-400">(Optional)</span>
           </div>
 
           {guardians.map((guardian, idx) => {
@@ -1981,10 +2015,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         </div>
 
         {/* Sibling Details */}
-        <div className="space-y-4 pt-2 border-t border-solid border-default-200">
-          <div className="flex justify-between items-center">
-            <label className="text-sm font-semibold text-default-900">Sibling Details</label>
-            <span className="text-xs text-default-500">(Siblings in same school only)</span>
+        <div className="space-y-4 pt-5 border-t border-gray-100">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-medium text-gray-900">Sibling Details</h3>
+            <span className="text-xs text-gray-400">(Siblings in same school only)</span>
           </div>
 
           {formData.siblings.map((sibling, idx) => (
@@ -2050,8 +2084,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         </div>
 
         {/* Health & Safety */}
-        <div className="space-y-2 pt-2 border-t border-solid border-default-200">
-          <label className="text-sm font-semibold text-default-900 block mt-2">Health & Safety</label>
+        <div className="space-y-3 pt-5 border-t border-gray-100">
+          <h3 className="text-sm font-medium text-gray-900">Health & Safety</h3>
           <Textarea
             label="Medical Conditions"
             labelPlacement="outside"
@@ -2066,8 +2100,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         </div>
 
         {/* Transport & Hostel */}
-        <div className="space-y-4 pt-2 border-t border-solid border-default-200">
-          <label className="text-sm font-semibold text-default-900 block mt-2">Additional Requirements</label>
+        <div className="space-y-4 pt-5 border-t border-gray-100">
+          <h3 className="text-sm font-medium text-gray-900">Additional Requirements</h3>
           <div className="grid grid-cols-2 gap-4">
             <div className={cn(
               "cursor-pointer rounded-xl border-2 p-4 flex items-center gap-3 transition-all",
@@ -2250,36 +2284,42 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     </div>
   );
 
-  const steps = useMemo(() => [
+  const steps = [
     { number: 1, title: "Personal Info", icon: User },
     { number: 2, title: "Parents & Health", icon: Users },
     { number: 3, title: "Documents", icon: FileText }
-  ], []);
-
-
+  ];
 
   return (
     <>
-      <div className="h-full flex flex-col bg-background">
-        {/* Elegant Stepper */}
-        <div className="px-4 py-3">
+      <div className="h-full flex flex-col bg-white">
+        {/* Stepper */}
+        <div className="px-6 py-4 border-b border-gray-100">
           <div className="flex items-center justify-between relative">
             {steps.map((s, i) => {
               const isActive = step >= s.number;
               const isCurrent = step === s.number;
+              const isCompleted = step > s.number;
               return (
-                <div key={s.number} className="flex flex-col items-center relative z-10 bg-background px-2">
+                <div key={s.number} className="flex flex-col items-center relative z-10 flex-1">
+                  {/* Progress line */}
+                  {i < steps.length - 1 && (
+                    <div className={cn(
+                      "absolute top-4 left-1/2 w-full h-0.5 -translate-y-1/2 transition-all duration-300",
+                      isActive ? "bg-gray-900" : "bg-gray-200"
+                    )} style={{ left: '50%', width: 'calc(100% - 36px)' }} />
+                  )}
                   <div className={cn(
-                    "w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all",
-                    isCurrent ? "border-primary text-primary bg-primary-50 dark:bg-primary-900/20" :
-                      isActive ? "border-primary text-white bg-primary" :
-                        "border-default-200 text-default-400 bg-white dark:bg-default-50"
+                    "w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all duration-200 relative z-20",
+                    isCurrent ? "border-gray-900 text-gray-900 bg-white" :
+                      isCompleted ? "border-gray-900 text-white bg-gray-900" :
+                        "border-gray-300 text-gray-400 bg-white"
                   )}>
-                    <s.icon size={16} strokeWidth={2} />
+                    {isCompleted ? <Check size={16} strokeWidth={2.5} /> : <s.icon size={16} strokeWidth={2} />}
                   </div>
                   <span className={cn(
-                    "text-[11px] font-semibold mt-2 uppercase tracking-wide hidden sm:block",
-                    isCurrent ? "text-primary" : "text-default-400"
+                    "text-[11px] font-medium mt-2 uppercase tracking-wide transition-colors duration-200",
+                    isCurrent || isCompleted ? "text-gray-900" : "text-gray-400"
                   )}>
                     {s.title}
                   </span>
@@ -2292,34 +2332,45 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         {/* Scrollable Content */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto px-4 pb-4 custom-scrollbar"
+          className="flex-1 overflow-y-auto px-6 py-5 custom-scrollbar"
         >
           {step === 1 && renderStep1()}
           {step === 2 && renderStep2()}
+          {step === 3 && renderStep3()}
         </div>
 
-        {/* Footer with Action Buttons */}
-        <div className="flex-none px-4 py-3 border-t border-default-200 bg-background z-10">
-          <div className="flex items-center justify-between gap-2">
-            {step > 1 && (
-              <Button
-                variant="light"
-                onPress={handlePrev}
-                className="font-medium"
+        {/* Footer */}
+        <div className="flex-none px-6 py-4 border-t border-gray-100 bg-white">
+          <div className="flex items-center justify-between gap-3">
+            {step > 1 ? (
+              <button
+                onClick={handlePrev}
+                className="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
               >
-                <ArrowLeft size={16} />
                 Back
-              </Button>
+              </button>
+            ) : (
+              <div />
             )}
-            <div className="flex-1" /> {/* Spacer */}
-            <Button
-              color="primary"
-              onPress={step === 2 ? handleSubmit : handleNext}
-              isLoading={isSubmitting}
-              className="font-medium"
+            <button
+              onClick={step === 3 ? handleSubmit : handleNext}
+              disabled={isSubmitting}
+              className="px-5 py-2.5 text-sm font-medium text-white bg-gray-900 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              {step === 2 ? "Add Student" : <>Next Step <ArrowRight size={16} /></>}
-            </Button>
+              {isSubmitting ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Saving...
+                </>
+              ) : step === 3 ? (
+                "Add Student"
+              ) : (
+                <>
+                  Continue
+                  <ArrowRight size={16} />
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -2334,12 +2385,14 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         />
       )}
 
-      {/* Camera Capture Modal */}
-      <CameraCaptureModal
-        isOpen={isCameraCaptureOpen}
-        onClose={() => setIsCameraCaptureOpen(false)}
-        onPhotoCaptured={handleCameraPhotoCapture}
-      />
+      {/* Camera Capture Modal - only mount when opened */}
+      {isCameraCaptureOpen && (
+        <CameraCaptureModal
+          isOpen={isCameraCaptureOpen}
+          onClose={() => setIsCameraCaptureOpen(false)}
+          onPhotoCaptured={handleCameraPhotoCapture}
+        />
+      )}
 
       {/* Unsaved Changes Warning Modal */}
       <Modal

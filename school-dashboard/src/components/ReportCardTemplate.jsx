@@ -9,6 +9,7 @@ import {
 /**
  * Report Card Template Component
  * Used for both screen preview and PDF generation
+ * Designed for 2-page print layout with spacious, minimal design
  *
  * @param {Object} student - Student information
  * @param {Object} performance - Academic performance data
@@ -24,13 +25,16 @@ const ReportCardTemplate = ({
   attendance = {},
   forPrint = false
 }) => {
+  // Print styles - 2 page layout with generous spacing
   const containerStyle = forPrint ? {
     width: '210mm',
     minHeight: '297mm',
-    padding: '15mm',
+    padding: '20mm',
     backgroundColor: 'white',
     fontFamily: 'Arial, sans-serif',
-    fontSize: '10pt'
+    fontSize: '11pt',
+    lineHeight: '1.5',
+    color: '#1a1a1a'
   } : {};
 
   const calculateGradeColor = (grade) => {
@@ -68,292 +72,346 @@ const ReportCardTemplate = ({
 
   return (
     <div style={containerStyle} className={forPrint ? '' : 'max-w-4xl mx-auto'}>
+      {/* ========== PAGE 1 ========== */}
+      
       {/* School Header */}
-      <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold text-default-900">
-          {schoolInfo.name || 'School Management System'}
-        </h1>
-        <p className="text-sm text-default-500">
-          {schoolInfo.address || 'Academic Excellence Through Innovation'}
-        </p>
+      <div className="text-center mb-8">
         {schoolInfo.logo && (
           <img
             src={schoolInfo.logo}
             alt="School Logo"
-            className="w-16 h-16 mx-auto mt-2 object-contain"
+            className="w-20 h-20 mx-auto mb-4 object-contain"
           />
         )}
-        <Divider className="my-4" />
-        <h2 className="text-xl font-bold text-default-900">ACADEMIC REPORT CARD</h2>
+        <h1 className="text-3xl font-bold text-gray-900 tracking-wide">
+          {schoolInfo.name || 'School Management System'}
+        </h1>
+        <p className="text-base text-gray-600 mt-2">
+          {schoolInfo.address || 'Academic Excellence Through Innovation'}
+        </p>
+        <Divider className="my-6" />
+        <h2 className="text-xl font-semibold text-gray-800 uppercase tracking-widest">
+          Academic Report Card
+        </h2>
+        <p className="text-sm text-gray-500 mt-2">
+          {performance?.academicYear || new Date().getFullYear()} • {performance?.term || 'Annual Report'}
+        </p>
       </div>
 
-      {/* Student Information */}
-      <Card shadow="none" className="border border-default-200 mb-6">
-        <CardBody className="p-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <p className="text-xs text-default-500">Student Name</p>
-              <p className="font-semibold text-default-900">{student?.name || 'N/A'}</p>
-            </div>
-            <div>
-              <p className="text-xs text-default-500">Class / Section</p>
-              <p className="font-semibold text-default-900">{student?.class || 'N/A'}</p>
-            </div>
-            <div>
-              <p className="text-xs text-default-500">Roll Number</p>
-              <p className="font-semibold text-default-900">{student?.rollNo || student?.id || 'N/A'}</p>
-            </div>
-            <div>
-              <p className="text-xs text-default-500">Academic Year</p>
-              <p className="font-semibold text-default-900">{performance?.academicYear || new Date().getFullYear()}</p>
-            </div>
-            <div>
-              <p className="text-xs text-default-500">Father's Name</p>
-              <p className="font-semibold text-default-900">{student?.fatherName || student?.guardianName || 'N/A'}</p>
-            </div>
-            <div>
-              <p className="text-xs text-default-500">Date of Birth</p>
-              <p className="font-semibold text-default-900">{student?.dob || 'N/A'}</p>
-            </div>
-            <div>
-              <p className="text-xs text-default-500">Term</p>
-              <p className="font-semibold text-default-900">{performance?.term || 'Full Year'}</p>
-            </div>
-            <div>
-              <p className="text-xs text-default-500">Admission No.</p>
-              <p className="font-semibold text-default-900">{student?.admissionNo || 'N/A'}</p>
-            </div>
+      {/* Student Information - Spacious 2-column layout */}
+      <div className="mb-10">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b-2 border-gray-200">
+          Student Information
+        </h3>
+        <div className="grid grid-cols-2 gap-x-12 gap-y-4">
+          <div className="flex flex-col">
+            <span className="text-sm text-gray-500 uppercase tracking-wide">Student Name</span>
+            <span className="text-base font-semibold text-gray-900 mt-1">{student?.name || 'N/A'}</span>
           </div>
-        </CardBody>
-      </Card>
-
-      {/* Overall Performance Summary */}
-      <Card shadow="none" className="border border-default-200 mb-6">
-        <CardBody className="p-4">
-          <h3 className="font-semibold text-default-900 mb-4 flex items-center gap-2">
-            <Award className="text-yellow-500" size={18} />
-            Overall Performance
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="text-center p-3 bg-blue-50 rounded-lg">
-              <p className="text-2xl font-bold text-blue-600">
-                {performance?.overallGrade || 'N/A'}
-              </p>
-              <p className="text-xs text-blue-600">Grade</p>
-            </div>
-            <div className="text-center p-3 bg-green-50 rounded-lg">
-              <p className="text-2xl font-bold text-green-600">
-                {performance?.overallPercentage?.toFixed(1) || overallPercentage.toFixed(1)}%
-              </p>
-              <p className="text-xs text-green-600">Percentage</p>
-            </div>
-            <div className="text-center p-3 bg-purple-50 rounded-lg">
-              <p className="text-2xl font-bold text-purple-600">
-                {performance?.overallGPA?.toFixed(2) || 'N/A'}
-              </p>
-              <p className="text-xs text-purple-600">GPA</p>
-            </div>
-            <div className="text-center p-3 bg-orange-50 rounded-lg">
-              <p className="text-2xl font-bold text-orange-600">
-                #{performance?.classRank || 'N/A'}
-              </p>
-              <p className="text-xs text-orange-600">Class Rank</p>
-            </div>
-            <div className="text-center p-3 bg-cyan-50 rounded-lg">
-              <p className="text-2xl font-bold text-cyan-600">
-                {performance?.totalStudents || 'N/A'}
-              </p>
-              <p className="text-xs text-cyan-600">Total Students</p>
-            </div>
+          <div className="flex flex-col">
+            <span className="text-sm text-gray-500 uppercase tracking-wide">Class / Section</span>
+            <span className="text-base font-semibold text-gray-900 mt-1">{student?.class || 'N/A'}</span>
           </div>
+          <div className="flex flex-col">
+            <span className="text-sm text-gray-500 uppercase tracking-wide">Roll Number</span>
+            <span className="text-base font-semibold text-gray-900 mt-1">{student?.rollNo || student?.id || 'N/A'}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm text-gray-500 uppercase tracking-wide">Admission Number</span>
+            <span className="text-base font-semibold text-gray-900 mt-1">{student?.admissionNo || 'N/A'}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm text-gray-500 uppercase tracking-wide">Father's Name</span>
+            <span className="text-base font-semibold text-gray-900 mt-1">{student?.fatherName || student?.guardianName || 'N/A'}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm text-gray-500 uppercase tracking-wide">Date of Birth</span>
+            <span className="text-base font-semibold text-gray-900 mt-1">{student?.dob || 'N/A'}</span>
+          </div>
+        </div>
+      </div>
 
-          {performance?.trend && (
-            <div className="mt-4 flex items-center gap-2 justify-center">
-              <TrendingUp size={16} className={
-                performance.trend === 'improving' ? 'text-success' :
-                performance.trend === 'declining' ? 'text-danger' : 'text-default-400'
-              } />
-              <span className="text-sm text-default-600">
-                Performance Trend: <span className="font-semibold capitalize">{performance.trend}</span>
-                {performance.trendData?.difference && (
-                  <span className="ml-2">
-                    ({performance.trendData.difference > 0 ? '+' : ''}{performance.trendData.difference}%)
-                  </span>
-                )}
-              </span>
-            </div>
-          )}
-        </CardBody>
-      </Card>
+      {/* Overall Performance Summary - 3 spacious columns */}
+      <div className="mb-10">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b-2 border-gray-200">
+          Overall Performance
+        </h3>
+        <div className="grid grid-cols-3 gap-6">
+          <div className="text-center p-6 bg-blue-50 rounded-xl">
+            <p className="text-4xl font-bold text-blue-600">
+              {performance?.overallGrade || 'N/A'}
+            </p>
+            <p className="text-sm text-blue-500 uppercase tracking-wide mt-2">Grade</p>
+          </div>
+          <div className="text-center p-6 bg-green-50 rounded-xl">
+            <p className="text-4xl font-bold text-green-600">
+              {performance?.overallPercentage?.toFixed(1) || overallPercentage.toFixed(1)}%
+            </p>
+            <p className="text-sm text-green-500 uppercase tracking-wide mt-2">Percentage</p>
+          </div>
+          <div className="text-center p-6 bg-purple-50 rounded-xl">
+            <p className="text-4xl font-bold text-purple-600">
+              #{performance?.classRank || 'N/A'}
+            </p>
+            <p className="text-sm text-purple-500 uppercase tracking-wide mt-2">Class Rank</p>
+          </div>
+        </div>
 
-      {/* Subject-wise Results Table */}
-      <Card shadow="none" className="border border-default-200 mb-6">
-        <CardBody className="p-4">
-          <h3 className="font-semibold text-default-900 mb-4 flex items-center gap-2">
-            <BookOpen className="text-blue-500" size={18} />
-            Subject-wise Performance
-          </h3>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-default-200">
-                <th className="text-left py-2 px-3 text-default-600 font-medium">Subject</th>
-                <th className="text-center py-2 px-3 text-default-600 font-medium">Max Marks</th>
-                <th className="text-center py-2 px-3 text-default-600 font-medium">Obtained</th>
-                <th className="text-center py-2 px-3 text-default-600 font-medium">Percentage</th>
-                <th className="text-center py-2 px-3 text-default-600 font-medium">Grade</th>
-                <th className="text-center py-2 px-3 text-default-600 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {publishedResults.length > 0 ? (
-                publishedResults.map((result, idx) => (
-                  <tr key={idx} className="border-b border-default-100">
-                    <td className="py-2 px-3">
-                      <div className="flex items-center gap-2">
-                        <span>{getSubjectIcon(result.subjectName)}</span>
-                        <span className="font-medium">{result.subjectName}</span>
-                      </div>
-                    </td>
-                    <td className="text-center py-2 px-3">{result.maxMarks}</td>
-                    <td className="text-center py-2 px-3 font-medium">{result.marksObtained}</td>
-                    <td className="text-center py-2 px-3">
-                      {result.percentage?.toFixed(1) || '-'}%
-                    </td>
-                    <td className="text-center py-2 px-3">
-                      <Chip
-                        size="sm"
-                        color={calculateGradeColor(result.grade)}
-                        variant="flat"
-                      >
-                        {result.grade || 'N/A'}
-                      </Chip>
-                    </td>
-                    <td className="text-center py-2 px-3">
-                      <Chip
-                        size="sm"
-                        color={result.status === 'pass' ? 'success' : 'danger'}
-                        variant="flat"
-                      >
-                        {result.status || 'N/A'}
-                      </Chip>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="text-center py-8 text-default-400">
-                    No published results available
-                  </td>
-                </tr>
+        {/* Additional metrics row */}
+        <div className="grid grid-cols-2 gap-6 mt-6">
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <span className="text-sm text-gray-600">GPA</span>
+            <span className="text-lg font-semibold text-gray-800">
+              {performance?.overallGPA?.toFixed(2) || 'N/A'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <span className="text-sm text-gray-600">Total Students</span>
+            <span className="text-lg font-semibold text-gray-800">
+              {performance?.totalStudents || 'N/A'}
+            </span>
+          </div>
+        </div>
+
+        {performance?.trend && (
+          <div className="mt-6 flex items-center justify-center gap-3 p-4 bg-gray-50 rounded-lg">
+            <TrendingUp size={20} className={
+              performance.trend === 'improving' ? 'text-green-500' :
+              performance.trend === 'declining' ? 'text-red-500' : 'text-gray-400'
+            } />
+            <span className="text-base text-gray-700">
+              Performance Trend: <span className="font-semibold capitalize">{performance.trend}</span>
+              {performance.trendData?.difference && (
+                <span className="ml-2 font-medium">
+                  ({performance.trendData.difference > 0 ? '+' : ''}{performance.trendData.difference}%)
+                </span>
               )}
-              {publishedResults.length > 0 && (
-                <tr className="bg-default-50 font-semibold">
-                  <td className="py-2 px-3">Total</td>
-                  <td className="text-center py-2 px-3">{totalMaxMarks}</td>
-                  <td className="text-center py-2 px-3">{totalMarksObtained}</td>
-                  <td className="text-center py-2 px-3">{overallPercentage.toFixed(1)}%</td>
-                  <td className="text-center py-2 px-3">
-                    <Chip
-                      size="sm"
-                      color={calculateGradeColor(performance?.overallGrade)}
-                      variant="flat"
-                    >
-                      {performance?.overallGrade || 'N/A'}
-                    </Chip>
-                  </td>
-                  <td className="text-center py-2 px-3">-</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </CardBody>
-      </Card>
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* Attendance Summary */}
       {attendance.totalDays > 0 && (
-        <Card shadow="none" className="border border-default-200 mb-6">
-          <CardBody className="p-4">
-            <h3 className="font-semibold text-default-900 mb-4 flex items-center gap-2">
-              <Calendar className="text-green-500" size={18} />
-              Attendance Summary
-            </h3>
-            <div className="grid grid-cols-4 gap-4">
-              <div className="text-center">
-                <p className="text-xl font-bold text-default-900">{attendance.totalDays}</p>
-                <p className="text-xs text-default-500">Total Days</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl font-bold text-success">{attendance.present}</p>
-                <p className="text-xs text-default-500">Present</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl font-bold text-danger">{attendance.absent}</p>
-                <p className="text-xs text-default-500">Absent</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl font-bold text-primary">
-                  {((attendance.present / attendance.totalDays) * 100).toFixed(1)}%
-                </p>
-                <p className="text-xs text-default-500">Attendance</p>
-              </div>
+        <div className="mb-10">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b-2 border-gray-200">
+            Attendance Summary
+          </h3>
+          <div className="grid grid-cols-4 gap-4">
+            <div className="text-center p-5 bg-gray-50 rounded-lg">
+              <p className="text-3xl font-bold text-gray-800">{attendance.totalDays}</p>
+              <p className="text-sm text-gray-500 mt-1">Total Days</p>
             </div>
-          </CardBody>
-        </Card>
+            <div className="text-center p-5 bg-green-50 rounded-lg">
+              <p className="text-3xl font-bold text-green-600">{attendance.present}</p>
+              <p className="text-sm text-green-500 mt-1">Present</p>
+            </div>
+            <div className="text-center p-5 bg-red-50 rounded-lg">
+              <p className="text-3xl font-bold text-red-600">{attendance.absent}</p>
+              <p className="text-sm text-red-500 mt-1">Absent</p>
+            </div>
+            <div className="text-center p-5 bg-blue-50 rounded-lg">
+              <p className="text-3xl font-bold text-blue-600">
+                {((attendance.present / attendance.totalDays) * 100).toFixed(1)}%
+              </p>
+              <p className="text-sm text-blue-500 mt-1">Attendance</p>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Teacher Remarks */}
-      <Card shadow="none" className="border border-default-200 mb-6">
-        <CardBody className="p-4">
-          <h3 className="font-semibold text-default-900 mb-4 flex items-center gap-2">
-            <FileText className="text-purple-500" size={18} />
-            Teacher Remarks
-          </h3>
-          <div className="space-y-3">
-            <div className="border-b border-dashed border-default-200 py-4 min-h-[40px]">
-              <p className="text-default-600 italic">
-                {performance?.teacherRemarks || '______________________________________________________________'}
-              </p>
-            </div>
-            <div className="border-b border-dashed border-default-200 py-4 min-h-[40px]">
-              <p className="text-default-600 italic">
-                ______________________________________________________________
-              </p>
-            </div>
-          </div>
-        </CardBody>
-      </Card>
+      {/* Page Break */}
+      <div className="page-break-after" style={{ pageBreakAfter: 'always', breakAfter: 'page' }}>
+        <div className="text-center text-sm text-gray-400 mt-8 pt-4">
+          — Continued on next page —
+        </div>
+      </div>
 
-      {/* Signature Area */}
-      <div className="grid grid-cols-3 gap-8 mt-8 pt-8">
-        <div className="text-center">
-          <div className="border-t border-default-400 pt-2 mb-2">
-            <p className="text-sm font-medium text-default-900">Class Teacher</p>
+      {/* ========== PAGE 2 ========== */}
+      
+      {/* Page 2 Header */}
+      <div className="mb-8 pt-4">
+        <div className="flex items-center justify-between border-b-2 border-gray-200 pb-4">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">Academic Report Card</h2>
+            <p className="text-sm text-gray-500">{performance?.academicYear || new Date().getFullYear()}</p>
           </div>
-          <p className="text-xs text-default-500">Signature</p>
+          <div className="text-right">
+            <p className="text-base font-semibold text-gray-800">{student?.name || 'Student'}</p>
+            <p className="text-sm text-gray-500">{student?.class || 'Class'}</p>
+          </div>
         </div>
-        <div className="text-center">
-          <div className="border-t border-default-400 pt-2 mb-2">
-            <p className="text-sm font-medium text-default-900">Principal</p>
+      </div>
+
+      {/* Subject-wise Results Table - Full width with comfortable spacing */}
+      <div className="mb-10">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b-2 border-gray-200">
+          Subject-wise Performance
+        </h3>
+        
+        {publishedResults.length > 0 ? (
+          <table className="w-full text-sm" style={{ borderCollapse: 'separate', borderSpacing: '0' }}>
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="text-left py-4 px-4 font-semibold text-gray-700 rounded-tl-lg">Subject</th>
+                <th className="text-center py-4 px-4 font-semibold text-gray-700">Max Marks</th>
+                <th className="text-center py-4 px-4 font-semibold text-gray-700">Obtained</th>
+                <th className="text-center py-4 px-4 font-semibold text-gray-700">Percentage</th>
+                <th className="text-center py-4 px-4 font-semibold text-gray-700">Grade</th>
+                <th className="text-center py-4 px-4 font-semibold text-gray-700 rounded-tr-lg">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {publishedResults.map((result, idx) => (
+                <tr key={idx} className="border-b border-gray-100">
+                  <td className="py-4 px-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">{getSubjectIcon(result.subjectName)}</span>
+                      <span className="font-medium text-gray-800">{result.subjectName}</span>
+                    </div>
+                  </td>
+                  <td className="text-center py-4 px-4 text-gray-600">{result.maxMarks}</td>
+                  <td className="text-center py-4 px-4 font-semibold text-gray-800">{result.marksObtained}</td>
+                  <td className="text-center py-4 px-4 text-gray-600">
+                    {result.percentage?.toFixed(1) || '-'}%
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                      result.grade?.includes('A') ? 'bg-green-100 text-green-700' :
+                      result.grade?.includes('B') ? 'bg-blue-100 text-blue-700' :
+                      result.grade?.includes('C') ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {result.grade || 'N/A'}
+                    </span>
+                  </td>
+                  <td className="text-center py-4 px-4">
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                      result.status === 'pass' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {result.status || 'N/A'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {/* Total Row */}
+              <tr className="bg-gray-50 font-semibold">
+                <td className="py-4 px-4 rounded-bl-lg">Total</td>
+                <td className="text-center py-4 px-4">{totalMaxMarks}</td>
+                <td className="text-center py-4 px-4">{totalMarksObtained}</td>
+                <td className="text-center py-4 px-4">{overallPercentage.toFixed(1)}%</td>
+                <td className="text-center py-4 px-4">
+                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                    performance?.overallGrade?.includes('A') ? 'bg-green-100 text-green-700' :
+                    performance?.overallGrade?.includes('B') ? 'bg-blue-100 text-blue-700' :
+                    performance?.overallGrade?.includes('C') ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-gray-200 text-gray-700'
+                  }`}>
+                    {performance?.overallGrade || 'N/A'}
+                  </span>
+                </td>
+                <td className="text-center py-4 px-4 rounded-br-lg">-</td>
+              </tr>
+            </tbody>
+          </table>
+        ) : (
+          <div className="text-center py-12 text-gray-400 bg-gray-50 rounded-lg">
+            <BookOpen size={40} className="mx-auto mb-3 opacity-50" />
+            <p>No published results available</p>
           </div>
-          <p className="text-xs text-default-500">Signature & Seal</p>
+        )}
+      </div>
+
+      {/* Teacher Remarks - Spacious comment areas */}
+      <div className="mb-10">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b-2 border-gray-200">
+          Teacher Remarks
+        </h3>
+        <div className="space-y-6">
+          <div className="p-5 bg-gray-50 rounded-lg min-h-[80px]">
+            <p className="text-sm text-gray-500 mb-2">Class Teacher's Remarks:</p>
+            <p className="text-base text-gray-700">
+              {performance?.teacherRemarks || (
+                <span className="text-gray-400 italic">No remarks provided</span>
+              )}
+            </p>
+          </div>
+          <div className="p-5 bg-gray-50 rounded-lg min-h-[80px]">
+            <p className="text-sm text-gray-500 mb-2">Principal's Remarks:</p>
+            <p className="text-base text-gray-700 italic text-gray-400">
+              ____________________________________________________________________________
+            </p>
+          </div>
         </div>
-        <div className="text-center">
-          <div className="border-t border-default-400 pt-2 mb-2">
-            <p className="text-sm font-medium text-default-900">Parent/Guardian</p>
+      </div>
+
+      {/* Signature Section - Well spaced 3 columns */}
+      <div className="mt-16 mb-8">
+        <div className="grid grid-cols-3 gap-8">
+          <div className="text-center">
+            <div className="border-t-2 border-gray-300 pt-4 mt-16">
+              <p className="font-semibold text-gray-800">Class Teacher</p>
+            </div>
+            <p className="text-sm text-gray-500 mt-2">Signature</p>
           </div>
-          <p className="text-xs text-default-500">Signature</p>
+          <div className="text-center">
+            <div className="border-t-2 border-gray-300 pt-4 mt-16">
+              <p className="font-semibold text-gray-800">Principal</p>
+            </div>
+            <p className="text-sm text-gray-500 mt-2">Signature & Seal</p>
+          </div>
+          <div className="text-center">
+            <div className="border-t-2 border-gray-300 pt-4 mt-16">
+              <p className="font-semibold text-gray-800">Parent/Guardian</p>
+            </div>
+            <p className="text-sm text-gray-500 mt-2">Signature</p>
+          </div>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="text-center mt-8 pt-4 border-t border-default-200">
-        <p className="text-xs text-default-400">
-          Generated on: {new Date().toLocaleString()}
+      <div className="text-center mt-12 pt-6 border-t border-gray-200">
+        <p className="text-sm text-gray-500">
+          Generated on: {new Date().toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}
         </p>
-        <p className="text-xs text-default-400">
+        <p className="text-xs text-gray-400 mt-2 italic">
           This is a computer-generated report card and does not require physical signature for verification.
         </p>
       </div>
+
+      {/* Print-specific styles */}
+      <style>{`
+        @media print {
+          .page-break-after {
+            page-break-after: always;
+            break-after: page;
+          }
+          
+          body {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          
+          .bg-blue-50 { background-color: #eff6ff !important; }
+          .bg-green-50 { background-color: #f0fdf4 !important; }
+          .bg-purple-50 { background-color: #faf5ff !important; }
+          .bg-red-50 { background-color: #fef2f2 !important; }
+          .bg-gray-50 { background-color: #f9fafb !important; }
+          .bg-gray-100 { background-color: #f3f4f6 !important; }
+          
+          .text-blue-600 { color: #2563eb !important; }
+          .text-green-600 { color: #16a34a !important; }
+          .text-purple-600 { color: #9333ea !important; }
+          .text-red-600 { color: #dc2626 !important; }
+        }
+      `}</style>
     </div>
   );
 };
