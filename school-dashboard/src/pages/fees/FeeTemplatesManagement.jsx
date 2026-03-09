@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { Card, CardBody, Button, Input, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Switch, Divider, Textarea, Spinner, Badge } from "@heroui/react";
 import { Plus, Edit, Trash2, IndianRupee, Copy, Eye, Save, Layers, FolderTree } from "lucide-react";
 import toast from "react-hot-toast";
+import { CURRENT_ACADEMIC_YEAR } from "../../utils/constants";
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 const SECTIONS = [
   { key: 'primary', label: 'Primary Section (Classes 1-5)' },
@@ -44,7 +47,7 @@ export default function FeeTemplatesManagement() {
   const fetchTemplates = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/fee-templates`);
+      const response = await fetch(`${API_URL}/fee-templates`);
       const data = await response.json();
       setTemplates(data);
     } catch (error) {
@@ -99,8 +102,8 @@ export default function FeeTemplatesManagement() {
       const payload = { ...formData, totalAnnualFee };
 
       const url = selectedTemplate
-        ? `${import.meta.env.VITE_API_URL}/api/fee-templates/${selectedTemplate._id}`
-        : `${import.meta.env.VITE_API_URL}/api/fee-templates`;
+        ? `${API_URL}/fee-templates/${selectedTemplate._id}`
+        : `${API_URL}/fee-templates`;
 
       const method = selectedTemplate ? 'PUT' : 'POST';
 
@@ -127,7 +130,7 @@ export default function FeeTemplatesManagement() {
     if (!confirm('Are you sure you want to delete this template?')) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/fee-templates/${id}`, {
+      const response = await fetch(`${API_URL}/fee-templates/${id}`, {
         method: 'DELETE'
       });
 
@@ -191,7 +194,7 @@ export default function FeeTemplatesManagement() {
     };
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/fee-templates`, {
+      const response = await fetch(`${API_URL}/fee-templates`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(duplicated)
@@ -358,7 +361,7 @@ export default function FeeTemplatesManagement() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Template Name"
-                placeholder="e.g., Primary Section 2024-25"
+                placeholder={`e.g., Primary Section ${CURRENT_ACADEMIC_YEAR}`}
                 value={formData.name}
                 onValueChange={(v) => setFormData({ ...formData, name: v })}
                 variant="bordered"

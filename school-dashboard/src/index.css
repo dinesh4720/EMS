@@ -349,30 +349,70 @@ input[type="checkbox"] {
 
 /* ===== PRINT STYLES ===== */
 
+/* Hide print-only content on screen */
+.print-only {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  visibility: hidden;
+  opacity: 0;
+}
+
 @media print {
-  body > *:not(.printable-profile) {
+  /* Reset body for printing */
+  body, html {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide the entire #root first */
+  #root {
     display: none !important;
   }
 
+  /* Then show only .print-only by attaching it to body */
+  body > .print-only,
+  .print-only {
+    display: block !important;
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    height: auto !important;
+    background: white !important;
+    overflow: visible !important;
+  }
+
+  /* Legacy support for printable-profile class */
   .printable-profile {
     display: block !important;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background: white !important;
+    visibility: visible !important;
   }
 
-  body {
-    margin: 0;
-    padding: 0;
-    background: white !important;
+  /* Hide common UI elements */
+  nav, header, .sidebar, .drawer, .modal, .dropdown, aside, footer,
+  [class*="Sidebar"], [class*="Header"], [class*="Navbar"],
+  [class*="Drawer"], [class*="Modal"], [class*="Dropdown"],
+  [data-testid="dropdown"], [role="dialog"], [role="menu"] {
+    display: none !important;
   }
 
+  /* Page break handling */
+  .print-only > div,
   .printable-profile > div {
     page-break-inside: avoid;
   }
 
+  /* Ensure colors print correctly */
+  .print-only *,
   .printable-profile * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
@@ -382,8 +422,36 @@ input[type="checkbox"] {
     transition: none !important;
   }
 
+  /* Image handling */
+  .print-only img,
   .printable-profile img {
-    max-width: 100%;
-    height: auto;
+    max-width: 100% !important;
+    height: auto !important;
+    display: block !important;
+  }
+
+  /* Table handling */
+  .print-only table,
+  .printable-profile table {
+    page-break-inside: avoid;
+    width: 100% !important;
+  }
+
+  .print-only tr,
+  .printable-profile tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  /* Link URLs */
+  .print-only a[href]:after,
+  .printable-profile a[href]:after {
+    content: none !important;
+  }
+
+  /* Ensure proper page margins - minimal to reduce header space */
+  @page {
+    margin: 5mm 8mm;
+    size: A4 portrait;
   }
 }

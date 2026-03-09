@@ -1,4 +1,5 @@
 import { requestQueue, retryRequest, requestCache } from '../utils/requestQueue.js';
+import { clearStoredUser, getAuthHeaders } from '../utils/authSession';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -31,32 +32,15 @@ export async function request(endpoint, options = {}) {
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
     try {
-      // Get token from sessionStorage
-      const storedUser = sessionStorage.getItem('app_user');
-      let token = null;
-
-      if (storedUser) {
-        try {
-          const userData = JSON.parse(storedUser);
-          token = userData.token;
-        } catch (err) {
-          console.error('❌ Failed to parse user data from sessionStorage:', err);
-        }
-      }
-
-      const headers = {
+      const headers = getAuthHeaders({
         'Content-Type': 'application/json',
         ...options.headers
-      };
-
-      // Add Authorization header if token exists
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      });
 
       const response = await fetch(url, {
         ...options,
         headers,
+        credentials: options.credentials ?? 'include',
         signal: controller.signal,
       });
 
@@ -70,7 +54,7 @@ export async function request(endpoint, options = {}) {
         // If unauthorized, clear session storage
         if (response.status === 401) {
           console.warn('⚠️ 401 Unauthorized - clearing session');
-          sessionStorage.removeItem('app_user');
+          clearStoredUser();
         }
 
         // If rate limited, throw specific error
@@ -135,6 +119,7 @@ export async function request(endpoint, options = {}) {
 export const staffApi = {
   getAll: (skipCache = false) => request('/staff', { skipCache }),
   getById: (id) => request(`/staff/${id}`),
+  getClasses: (id) => request(`/staff/${id}/classes`),
   create: (data) => request('/staff', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/staff/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   updateCredentials: (id, data) => request(`/staff/${id}/credentials`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -143,14 +128,59 @@ export const staffApi = {
 
 // Students API
 export const studentsApi = {
-  getAll: async (classIdOrSkipCache) => {
-    // Handle both old API (classId as string) and new API (skipCache as boolean)
-    const skipCache = typeof classIdOrSkipCache === 'boolean' ? classIdOrSkipCache : false;
-    const classId = typeof classIdOrSkipCache === 'string' ? classIdOrSkipCache : null;
-    // FIXED: Increase limit to 1000 to fetch all students (pagination was causing missing students)
-    const response = await request(`/students${classId ? `?classId=${classId}&limit=1000` : '?limit=1000'}`, { skipCache });
-    // Backend returns paginated response with data property
-    return response.data || response;
+  list: async (params = {}, options = {}) => {
+    const query = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === '' || value === 'all') {
+        return;
+      }
+
+      query.set(key, value);
+    });
+
+    const queryString = query.toString();
+    const response = await request(`/students${queryString ? `?${queryString}` : ''}`, {
+      skipCache: options.skipCache ?? false
+    });
+
+    return {
+      data: response.data || [],
+      pagination: response.pagination || {
+        currentPage: params.page || 1,
+        totalPages: 1,
+        totalItems: Array.isArray(response.data) ? response.data.length : 0,
+        itemsPerPage: params.limit || 50,
+        hasNextPage: false,
+        hasPrevPage: false
+      }
+    };
+  },
+  getAll: async (classIdOrOptions) => {
+    let params = {};
+    let skipCache = false;
+
+    if (typeof classIdOrOptions === 'boolean') {
+      skipCache = classIdOrOptions;
+    } else if (typeof classIdOrOptions === 'string') {
+      params.classId = classIdOrOptions;
+    } else if (classIdOrOptions && typeof classIdOrOptions === 'object') {
+      params = { ...classIdOrOptions };
+      skipCache = classIdOrOptions.skipCache ?? false;
+      delete params.skipCache;
+    }
+
+    const limit = params.limit || 100;
+    const firstPage = await studentsApi.list({ ...params, page: 1, limit }, { skipCache });
+    const allStudents = [...firstPage.data];
+    const totalPages = firstPage.pagination?.totalPages || 1;
+
+    for (let page = 2; page <= totalPages; page += 1) {
+      const nextPage = await studentsApi.list({ ...params, page, limit }, { skipCache });
+      allStudents.push(...nextPage.data);
+    }
+
+    return allStudents;
   },
   getById: (id) => request(`/students/${id}`),
   create: (data) => request('/students', { method: 'POST', body: JSON.stringify(data) }),
@@ -340,6 +370,13 @@ export const attendanceApi = {
   mark: (data) => request('/attendance', { method: 'POST', body: JSON.stringify(data) }),
   markBulk: (data) => request('/attendance/bulk', { method: 'POST', body: JSON.stringify(data) }),
   getByClassDate: (classId, date) => request(`/attendance/${classId}/${date}`),
+  getStudentAttendance: (studentId, startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start', startDate);
+    if (endDate) params.append('end', endDate);
+    const queryString = params.toString();
+    return request(`/attendance/student/${studentId}${queryString ? `?${queryString}` : ''}`);
+  },
 };
 
 // Staff Attendance API
@@ -644,8 +681,7 @@ export const payrollApi = {
   bulkPay: (data) => request('/payroll/records/bulk-pay', { method: 'POST', body: JSON.stringify(data) }),
   fixSalaries: (data) => request('/payroll/fix-salaries', { method: 'POST', body: JSON.stringify(data || {}) }),
   exportPayroll: (month, year) => {
-    const token = localStorage.getItem('token');
-    window.location.href = `${API_URL}/payroll/export/${month}/${year}?token=${token}`;
+    window.location.href = `${API_URL}/payroll/export/${month}/${year}`;
     return Promise.resolve({ success: true });
   },
   getAuditLogs: (params) => {
@@ -660,28 +696,10 @@ export const uploadApi = {
     const formData = new FormData();
     formData.append('file', file);
 
-    // Get token from sessionStorage for authentication
-    const storedUser = sessionStorage.getItem('app_user');
-    let token = null;
-
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        token = userData.token;
-      } catch (err) {
-        console.error('❌ Failed to parse user data from sessionStorage:', err);
-      }
-    }
-
-    const headers = {};
-    // Add Authorization header if token exists
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
     const response = await fetch(`${API_URL}/upload`, {
       method: 'POST',
-      headers,
+      headers: getAuthHeaders(),
+      credentials: 'include',
       body: formData,
       // Content-Type header is skipped so browser can set boundary
     });
@@ -689,10 +707,9 @@ export const uploadApi = {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
 
-      // If unauthorized, clear session storage
       if (response.status === 401) {
         console.warn('⚠️ 401 Unauthorized - clearing session');
-        sessionStorage.removeItem('app_user');
+        clearStoredUser();
       }
 
       throw new Error(errorData.error || `Upload failed with status ${response.status}`);
@@ -935,3 +952,7 @@ export default {
   substitutionAlertsApi,
   lookupPincode
 };
+
+
+
+

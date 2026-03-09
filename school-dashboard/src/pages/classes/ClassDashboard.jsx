@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { toast } from "react-hot-toast";
+import { examsApi } from "../../services/api";
 import Attendance from "./Attendance";
 import Timetable from "./Timetable";
 import ClassSettingsPanel from "./ClassSettingsPanel";
@@ -739,23 +740,148 @@ function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
 }
 
 function AcademicsTab({ id, cls, classesEnhancedApi }) {
+  const [exams, setExams] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  // Fetch exams for this class
+  useEffect(() => {
+    const fetchExams = async () => {
+      if (!id) return;
+      setLoading(true);
+      try {
+        const data = await examsApi.getByClass(id);
+        setExams(data || []);
+      } catch (error) {
+        console.error('Error fetching exams:', error);
+        toast.error('Failed to load exams');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchExams();
+  }, [id]);
+
+  // Get status color
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'scheduled': return 'primary';
+      case 'ongoing': return 'warning';
+      case 'completed': return 'success';
+      case 'results_published': return 'success';
+      default: return 'default';
+    }
+  };
+
+  // Group exams by status
+  const examsByStatus = useMemo(() => {
+    return {
+      scheduled: exams.filter(e => e.status === 'scheduled'),
+      ongoing: exams.filter(e => e.status === 'ongoing'),
+      completed: exams.filter(e => e.status === 'completed' || e.status === 'results_published'),
+    };
+  }, [exams]);
+
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div className="p-5 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-            <Award size={16} className="text-gray-600" />
-          </div>
-          <div>
-            <h3 className="font-medium text-gray-900 text-sm">Academic Performance</h3>
-            <p className="text-xs text-gray-500">Subject-wise analysis</p>
-          </div>
+    <div className="space-y-4">
+      {/* Stats Row */}
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg p-4 border border-gray-100">
+          <p className="text-xs text-gray-500">Total Exams</p>
+          <p className="text-xl font-semibold text-gray-900">{exams.length}</p>
+        </div>
+        <div className="bg-white rounded-lg p-4 border border-gray-100">
+          <p className="text-xs text-blue-600">Scheduled</p>
+          <p className="text-xl font-semibold text-blue-700">{examsByStatus.scheduled.length}</p>
+        </div>
+        <div className="bg-white rounded-lg p-4 border border-gray-100">
+          <p className="text-xs text-amber-600">Ongoing</p>
+          <p className="text-xl font-semibold text-amber-700">{examsByStatus.ongoing.length}</p>
+        </div>
+        <div className="bg-white rounded-lg p-4 border border-gray-100">
+          <p className="text-xs text-green-600">Completed</p>
+          <p className="text-xl font-semibold text-green-700">{examsByStatus.completed.length}</p>
         </div>
       </div>
-      <div className="p-8 text-center">
-        <Award size={40} className="mx-auto text-gray-200 mb-4" />
-        <p className="text-sm text-gray-500">Detailed subject-wise academic performance and grade analysis will appear here.</p>
-        <Button className="mt-4 bg-gray-900 text-white" startContent={<FileText size={16} />}>Add Exam Results</Button>
+
+      {/* Exams List */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+              <FileText size={16} className="text-gray-600" />
+            </div>
+            <div>
+              <h3 className="font-medium text-gray-900 text-sm">Class Exams</h3>
+              <p className="text-xs text-gray-500">All scheduled and completed exams</p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            className="bg-gray-900 text-white"
+            startContent={<FileText size={14} />}
+            onPress={() => navigate('/academics/exams')}
+          >
+            Manage Exams
+          </Button>
+        </div>
+
+        {loading ? (
+          <div className="p-8 flex items-center justify-center">
+            <div className="animate-spin w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full" />
+          </div>
+        ) : exams.length === 0 ? (
+          <div className="p-8 text-center">
+            <FileText size={40} className="mx-auto text-gray-200 mb-4" />
+            <p className="text-sm text-gray-500">No exams scheduled for this class yet.</p>
+            <Button
+              className="mt-4 bg-gray-900 text-white"
+              startContent={<FileText size={16} />}
+              onPress={() => navigate('/academics/exams')}
+            >
+              Create Exam
+            </Button>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-50">
+            {exams.map((exam) => (
+              <div
+                key={exam._id || exam.id}
+                className="px-5 py-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors cursor-pointer"
+                onClick={() => navigate(`/academics/exams/${exam._id || exam.id}`)}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <FileText size={18} className="text-gray-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{exam.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {exam.subjectName || 'General'} • {exam.type?.replace('_', ' ') || 'Exam'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">
+                      {exam.startDate ? new Date(exam.startDate).toLocaleDateString() : 'Not scheduled'}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Max: {exam.maxMarks || 100} | Pass: {exam.passingMarks || 35}
+                    </p>
+                  </div>
+                  <Chip
+                    size="sm"
+                    color={getStatusColor(exam.status)}
+                    variant="flat"
+                  >
+                    {exam.status?.replace('_', ' ') || 'scheduled'}
+                  </Chip>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

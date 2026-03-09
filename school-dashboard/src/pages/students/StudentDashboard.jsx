@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, lazy, Suspense } from "react";
+import { createPortal } from "react-dom";
 import {
   Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, useDisclosure,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
@@ -21,7 +22,7 @@ import {
 import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
 import { uploadApi } from "../../services/api";
-import AddStudent from "./AddStudent";
+const AddStudent = lazy(() => import("./AddStudent"));
 import TCGeneratorModal from "./TCGeneratorModal";
 import PhotoEditorModal from "../../components/PhotoEditorModal";
 import CameraCaptureModal from "../../components/CameraCaptureModal";
@@ -84,7 +85,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function StudentDashboard() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getStudentById, classesWithTeachers, staff, updateStudent, deleteStudent, loading } = useApp();
+  const { getStudentById, classesWithTeachers, staff, updateStudent, deleteStudent, loading, currentAcademicYear } = useApp();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "overview");
 
@@ -140,12 +141,73 @@ export default function StudentDashboard() {
     return (staff || []).find(s => s.id === classInfo.classTeacherId);
   }, [classInfo, staff]);
 
-  // Attendance stats
+  // Real attendance data state
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+
+  // Fetch real attendance data
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      if (!id) return;
+      
+      setAttendanceLoading(true);
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        const token = getAuthToken();
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        
+        // Get attendance for current year
+        const year = new Date().getFullYear();
+        const startDate = `${year}-01-01`;
+        const endDate = `${year}-12-31`;
+        
+        const response = await fetch(`${API_URL}/attendance/student/${id}?start=${startDate}&end=${endDate}`, { headers });
+        if (response.ok) {
+          const data = await response.json();
+          setAttendanceData(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        console.error('Error fetching attendance:', error);
+        setAttendanceData([]);
+      } finally {
+        setAttendanceLoading(false);
+      }
+    };
+
+    fetchAttendance();
+  }, [id]);
+
+  // Calculate real attendance stats
   const attendanceStats = useMemo(() => {
-    const workingDays = 22;
-    const present = Math.floor(workingDays * 0.9);
-    return { present, absent: workingDays - present, total: workingDays, percentage: Math.round((present / workingDays) * 100) };
-  }, []);
+    if (!attendanceData.length) {
+      return { present: 0, absent: 0, total: 0, percentage: 0 };
+    }
+    
+    const total = attendanceData.length;
+    const present = attendanceData.filter(a => a.status === 'present').length;
+    const absent = attendanceData.filter(a => a.status === 'absent').length;
+    const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
+    
+    return { present, absent, total, percentage };
+  }, [attendanceData]);
+
+  // Calculate monthly attendance for chart
+  const monthlyAttendanceData = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentYear = new Date().getFullYear();
+    
+    return months.map((month, index) => {
+      const monthData = attendanceData.filter(a => {
+        const d = new Date(a.date);
+        return d.getMonth() === index && d.getFullYear() === currentYear;
+      });
+      
+      const present = monthData.filter(a => a.status === 'present').length;
+      const percentage = monthData.length > 0 ? Math.round((present / monthData.length) * 100) : 0;
+      
+      return { month, value: percentage };
+    });
+  }, [attendanceData]);
 
   // Average percentage
   const avgPercentage = results?.length > 0
@@ -167,15 +229,58 @@ export default function StudentDashboard() {
     remarks: null
   });
 
-  // OPTIMIZATION: Lazy load data only when tab is selected
-  // Results - only fetch when on academics tab
+  // Fetch all student data on mount for report generation
+  useEffect(() => {
+    if (!id) return;
+    
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+    const token = getAuthToken();
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    
+    // Fetch all data in parallel for the student report
+    const fetchAllData = async () => {
+      try {
+        const [resultsRes, feeRes, feeHistoryRes, studentRes, remarksRes] = await Promise.all([
+          fetch(`${API_URL}/students/${id}/results`, { headers }).catch(() => null),
+          fetch(`${API_URL}/student-fees/student/${id}?academicYear=${currentAcademicYear}`, { headers }).catch(() => null),
+          fetch(`${API_URL}/fees/payments?studentId=${id}`, { headers }).catch(() => null),
+          fetch(`${API_URL}/students/${id}`, { headers }).catch(() => null),
+          fetch(`${API_URL}/students/${id}/remarks`, { headers }).catch(() => null)
+        ]);
+        
+        if (resultsRes?.ok) {
+          const data = await resultsRes.json();
+          setResults(data);
+          dataCache.current.results = data;
+        }
+        
+        if (feeRes?.ok) {
+          setStudentFeeStructure(await feeRes.json());
+        }
+        
+        if (feeHistoryRes?.ok) {
+          setFeeHistory(await feeHistoryRes.json());
+        }
+        
+        if (studentRes?.ok) {
+          const data = await studentRes.json();
+          if (data.documents) setDocuments(data.documents);
+        }
+        
+        if (remarksRes?.ok) {
+          setRemarks(await remarksRes.json());
+        }
+      } catch (error) {
+        console.error('Error fetching student data:', error);
+      }
+    };
+    
+    fetchAllData();
+  }, [id]);
+
+  // Refetch results when on academics tab
   useEffect(() => {
     if (activeTab !== 'academics' || !id) return;
-    
-    // Skip if we already have data for this tab
-    if (dataCache.current.results !== null && prevActiveTab.current === 'academics') {
-      return;
-    }
     
     const fetchResults = async () => {
       setResultsLoading(true);
@@ -188,72 +293,14 @@ export default function StudentDashboard() {
         if (response.ok) {
           const data = await response.json();
           setResults(data);
-          dataCache.current.results = data;
         }
       } catch (error) { console.error('Error fetching results:', error); }
       finally { setResultsLoading(false); }
     };
     fetchResults();
-    prevActiveTab.current = 'academics';
   }, [id, activeTab]);
 
-  // Fee structure - only fetch when on fees tab
-  useEffect(() => {
-    if (activeTab !== 'fees' || !id) return;
-    
-    const fetchFeeStructure = async () => {
-      setLoadingFeeStructure(true);
-      try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-        const token = getAuthToken();
-        const response = await fetch(`${API_URL}/student-fees/student/${id}?academicYear=2024-25`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-        if (response.ok) setStudentFeeStructure(await response.json());
-      } catch (error) { console.error('Error fetching fee structure:', error); }
-      finally { setLoadingFeeStructure(false); }
-    };
-    fetchFeeStructure();
-  }, [id, activeTab]);
-
-  // Payment history - only fetch when on fees tab
-  useEffect(() => {
-    if (activeTab !== 'fees' || !id) return;
-    
-    const fetchFeeHistory = async () => {
-      try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-        const token = getAuthToken();
-        const response = await fetch(`${API_URL}/fees/payments?studentId=${id}`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-        if (response.ok) setFeeHistory(await response.json());
-      } catch (error) { console.error('Error fetching payment history:', error); }
-    };
-    fetchFeeHistory();
-  }, [id, activeTab]);
-
-  // Documents - only fetch when on documents tab
-  useEffect(() => {
-    if (activeTab !== 'documents' || !id) return;
-    
-    const fetchDocuments = async () => {
-      try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-        const token = getAuthToken();
-        const response = await fetch(`${API_URL}/students/${id}`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-        if (response.ok) {
-          const data = await response.json();
-          if (data.documents) setDocuments(data.documents);
-        }
-      } catch (error) { console.error('Error fetching documents:', error); }
-    };
-    fetchDocuments();
-  }, [id, activeTab]);
-
-  // Remarks - only fetch when on remarks tab
+  // Refetch remarks when category filter changes
   useEffect(() => {
     if (activeTab !== 'remarks' || !id) return;
     
@@ -361,7 +408,7 @@ export default function StudentDashboard() {
         body: JSON.stringify({
           amount: paymentAmount,
           feeHeadPayments,
-          academicYear: '2024-25'
+          academicYear: student?.academicYear || currentAcademicYear
         })
       });
 
@@ -379,7 +426,7 @@ export default function StudentDashboard() {
             studentId: id,
             studentName: student?.name || '',
             classId: student.classId,
-            academicYear: '2024-25',
+            academicYear: student?.academicYear || currentAcademicYear,
             receiptNumber: `RCP-${Date.now()}`,
             paymentDate: paymentForm.date,
             amount: paymentAmount,
@@ -396,7 +443,7 @@ export default function StudentDashboard() {
 
       // Refresh fee data and payment history
       const [feeResponse, historyResponse] = await Promise.all([
-        fetch(`${API_URL}/student-fees/student/${id}?academicYear=2024-25`, { headers }),
+        fetch(`${API_URL}/student-fees/student/${id}?academicYear=${currentAcademicYear}`, { headers }),
         fetch(`${API_URL}/fees/payments?studentId=${id}`, { headers })
       ]);
 
@@ -497,12 +544,40 @@ export default function StudentDashboard() {
     </div>
   );
 
-  // Stats
+  // Stats - Actionable KPIs with tab navigation
   const stats = [
-    { label: "Academic Average", value: avgPercentage ? `${avgPercentage}%` : "N/A", subtext: results?.length ? `${results.length} exams` : "No data", icon: Award },
-    { label: "Attendance", value: `${attendanceStats.percentage}%`, subtext: `${attendanceStats.present} present`, icon: Clock },
-    { label: "Fee Balance", value: `₹${(studentFeeStructure?.totalBalance || 0).toLocaleString()}`, subtext: studentFeeStructure?.totalBalance > 0 ? "Outstanding" : "All clear", icon: IndianRupee },
-    { label: "Class & Roll", value: student.class || "N/A", subtext: `Roll ${student.rollNo || "N/A"}`, icon: GraduationCap },
+    { 
+      label: "Academic Average", 
+      value: avgPercentage ? `${avgPercentage}%` : "N/A", 
+      subtext: results?.length ? `${results.length} exams` : "No data", 
+      icon: Award,
+      tab: "academics",
+      actionLabel: "View Results"
+    },
+    { 
+      label: "Attendance", 
+      value: `${attendanceStats.percentage}%`, 
+      subtext: `${attendanceStats.present} present`, 
+      icon: Clock,
+      tab: "attendance",
+      actionLabel: "View Details"
+    },
+    { 
+      label: "Fee Balance", 
+      value: `₹${(studentFeeStructure?.totalBalance || 0).toLocaleString()}`, 
+      subtext: studentFeeStructure?.totalBalance > 0 ? "Outstanding" : "All clear", 
+      icon: IndianRupee,
+      tab: "fees",
+      actionLabel: studentFeeStructure?.totalBalance > 0 ? "Pay Now" : "View History"
+    },
+    { 
+      label: "Class & Roll", 
+      value: student.class || "N/A", 
+      subtext: `Roll ${student.rollNo || "N/A"}`, 
+      icon: GraduationCap,
+      navigateTo: student?.classId ? `/classes/${student.classId}` : null,
+      actionLabel: "View Class"
+    },
   ];
 
   // Tabs
@@ -517,12 +592,30 @@ export default function StudentDashboard() {
     { key: "ratings", label: "Ratings" },
   ];
 
+  // Portal for print content - renders directly to body
+  const printContent = (
+    <div className="print-only">
+      <PrintableStudentProfile 
+        ref={printRef} 
+        student={student} 
+        results={results} 
+        attendanceStats={attendanceStats}
+        attendanceData={attendanceData}
+        studentFeeStructure={studentFeeStructure}
+        feeHistory={feeHistory}
+        documents={documents}
+        remarks={remarks}
+        classTeacher={classTeacher}
+      />
+    </div>
+  );
+
   return (
-    <div className="w-full flex-1 bg-gray-50 p-6 min-h-screen">
-      {/* Hidden Printable */}
-      <div style={{ display: "none" }}>
-        <PrintableStudentProfile ref={printRef} student={student} results={results} attendanceStats={attendanceStats} studentFeeStructure={studentFeeStructure} />
-      </div>
+    <>
+      {/* Printable content rendered via Portal to body */}
+      {createPortal(printContent, document.body)}
+      
+      <div className="w-full flex-1 bg-gray-50 p-6 min-h-screen">
 
       {/* ═══════════════════════════════════════════════════════════════════
           HEADER SECTION
@@ -633,17 +726,40 @@ export default function StudentDashboard() {
           {/* ─── OVERVIEW TAB ─── */}
           {activeTab === "overview" && (
             <>
+              {/* Actionable KPI Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {stats.map((stat, i) => (
-                  <div key={i} className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+                  <div 
+                    key={i} 
+                    onClick={() => {
+                      if (stat.tab) setActiveTab(stat.tab);
+                      else if (stat.navigateTo) navigate(stat.navigateTo);
+                    }}
+                    className={`bg-white rounded-lg p-4 border border-gray-100 transition-all cursor-pointer group ${
+                      (stat.tab || stat.navigateTo)
+                        ? 'hover:border-gray-300 hover:shadow-md active:scale-[0.98]' 
+                        : ''
+                    }`}
+                  >
                     <div className="flex items-start justify-between mb-3">
-                      <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+                      <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors">
                         <stat.icon size={16} className="text-gray-600" />
                       </div>
+                      {(stat.tab || stat.navigateTo) && (
+                        <ChevronRight size={16} className="text-gray-300 group-hover:text-gray-500 transition-colors" />
+                      )}
                     </div>
                     <h3 className="text-xl font-semibold text-gray-800">{stat.value}</h3>
                     <p className="text-xs font-medium text-gray-500 mt-0.5">{stat.label}</p>
                     {stat.subtext && <p className="text-xs text-gray-400 mt-2">{stat.subtext}</p>}
+                    {(stat.tab || stat.navigateTo) && stat.actionLabel && (
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <span className="text-xs font-medium text-gray-600 group-hover:text-gray-900 transition-colors flex items-center gap-1">
+                          {stat.actionLabel}
+                          <ChevronRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -682,17 +798,27 @@ export default function StudentDashboard() {
                   </div>
                 </div>
                 <div className="p-5">
-                  <div className="h-[180px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={[{ month: 'Jan', value: 92 }, { month: 'Feb', value: 88 }, { month: 'Mar', value: 95 }, { month: 'Apr', value: attendanceStats.percentage }, { month: 'May', value: 90 }, { month: 'Jun', value: 87 }]}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} dy={10} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} domain={[0, 100]} />
-                        <RechartsTooltip content={<CustomTooltip />} />
-                        <Area type="monotone" dataKey="value" name="Attendance" stroke="#6b7280" strokeWidth={2} fill="#e5e7eb" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
+                  {attendanceLoading ? (
+                    <div className="h-[180px] flex items-center justify-center">
+                      <div className="animate-spin w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full" />
+                    </div>
+                  ) : attendanceData.length > 0 ? (
+                    <div className="h-[180px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={monthlyAttendanceData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                          <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} dy={10} />
+                          <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} domain={[0, 100]} />
+                          <RechartsTooltip content={<CustomTooltip />} />
+                          <Area type="monotone" dataKey="value" name="Attendance" stroke="#6b7280" strokeWidth={2} fill="#e5e7eb" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="h-[180px] flex items-center justify-center text-gray-400 text-sm">
+                      No attendance data available
+                    </div>
+                  )}
                 </div>
               </div>
             </>
@@ -713,7 +839,7 @@ export default function StudentDashboard() {
                 <div className="p-5 grid grid-cols-2 lg:grid-cols-4 gap-6">
                   <div><p className="text-xs text-gray-400 mb-1">Class</p><p className="text-sm text-gray-900">{student.class || "—"}</p></div>
                   <div><p className="text-xs text-gray-400 mb-1">Roll Number</p><p className="text-sm text-gray-900">{student.rollNo || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">Academic Year</p><p className="text-sm text-gray-900">{student.academicYear || "2024-25"}</p></div>
+                  <div><p className="text-xs text-gray-400 mb-1">Academic Year</p><p className="text-sm text-gray-900">{student.academicYear || currentAcademicYear}</p></div>
                   <div><p className="text-xs text-gray-400 mb-1">Class Teacher</p><p className="text-sm text-gray-900">{classTeacher?.name || "—"}</p></div>
                 </div>
               </div>
@@ -847,33 +973,49 @@ export default function StudentDashboard() {
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100">
                   <h3 className="text-sm font-semibold text-gray-900">Subject Performance</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Current term grades</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Based on exam results</p>
                 </div>
-                <div className="divide-y divide-gray-50">
-                  {[
-                    { name: "Mathematics", score: 88, grade: "A" },
-                    { name: "Science", score: 92, grade: "A+" },
-                    { name: "English", score: 85, grade: "A" },
-                    { name: "Social Studies", score: 90, grade: "A+" },
-                    { name: "Computer Science", score: 95, grade: "A+" },
-                  ].map((subject, i) => (
-                    <div key={i} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600">
-                          {subject.name.charAt(0)}
+                {resultsLoading ? (
+                  <div className="p-8 flex justify-center">
+                    <div className="animate-spin w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full" />
+                  </div>
+                ) : results && results.length > 0 ? (
+                  <div className="divide-y divide-gray-50">
+                    {Object.values(results.reduce((acc, r) => {
+                      const subject = r.subjectName || 'Unknown';
+                      if (!acc[subject] && r.percentage !== null && r.percentage !== undefined) {
+                        acc[subject] = {
+                          name: subject,
+                          score: Math.round(r.percentage),
+                          grade: r.grade || (r.percentage >= 90 ? 'A+' : r.percentage >= 80 ? 'A' : r.percentage >= 70 ? 'B+' : r.percentage >= 60 ? 'B' : 'C')
+                        };
+                      }
+                      return acc;
+                    }, {})).slice(0, 6).map((subject, i) => (
+                      <div key={i} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600">
+                            {subject.name.charAt(0)}
+                          </div>
+                          <span className="text-sm font-medium text-gray-900">{subject.name}</span>
                         </div>
-                        <span className="text-sm font-medium text-gray-900">{subject.name}</span>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-gray-800 rounded-full" style={{ width: `${subject.score}%` }} />
+                        <div className="flex items-center gap-4">
+                          <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-gray-800 rounded-full" style={{ width: `${subject.score}%` }} />
+                          </div>
+                          <span className="text-sm font-semibold text-gray-900 w-12 text-right">{subject.score}%</span>
+                          <span className="text-xs font-medium text-gray-500 w-8">{subject.grade}</span>
                         </div>
-                        <span className="text-sm font-semibold text-gray-900 w-12 text-right">{subject.score}%</span>
-                        <span className="text-xs font-medium text-gray-500 w-8">{subject.grade}</span>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center">
+                    <BookOpen size={32} className="mx-auto text-gray-200 mb-3" />
+                    <p className="text-sm text-gray-500">No subject results available</p>
+                    <p className="text-xs text-gray-400 mt-1">Results will appear once exams are completed</p>
+                  </div>
+                )}
               </div>
 
               {/* Exam Results */}
@@ -948,30 +1090,38 @@ export default function StudentDashboard() {
             <div className="space-y-5">
               {/* Attendance Stats */}
               <div className="bg-white rounded-lg border border-gray-200 p-5">
-                <div className="flex items-center justify-between mb-5">
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900">This Month</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">{format(new Date(), 'MMMM yyyy')}</p>
+                {attendanceLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full" />
                   </div>
-                  <div className="text-right">
-                    <p className="text-3xl font-bold text-gray-900">{attendanceStats.percentage}%</p>
-                    <p className="text-xs text-gray-500">Attendance Rate</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center p-3 rounded-lg bg-gray-50">
-                    <p className="text-xl font-bold text-gray-900">{attendanceStats.present}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Present</p>
-                  </div>
-                  <div className="text-center p-3 rounded-lg bg-gray-50">
-                    <p className="text-xl font-bold text-gray-900">{attendanceStats.absent}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Absent</p>
-                  </div>
-                  <div className="text-center p-3 rounded-lg bg-gray-50">
-                    <p className="text-xl font-bold text-gray-900">{attendanceStats.total}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Total Days</p>
-                  </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between mb-5">
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900">Attendance Overview</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Based on {attendanceStats.total} recorded days</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-3xl font-bold text-gray-900">{attendanceStats.percentage}%</p>
+                        <p className="text-xs text-gray-500">Attendance Rate</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center p-3 rounded-lg bg-gray-50">
+                        <p className="text-xl font-bold text-gray-900">{attendanceStats.present}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Present</p>
+                      </div>
+                      <div className="text-center p-3 rounded-lg bg-gray-50">
+                        <p className="text-xl font-bold text-gray-900">{attendanceStats.absent}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Absent</p>
+                      </div>
+                      <div className="text-center p-3 rounded-lg bg-gray-50">
+                        <p className="text-xl font-bold text-gray-900">{attendanceStats.total}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Total Days</p>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Quick Mark */}
@@ -981,6 +1131,9 @@ export default function StudentDashboard() {
                   <p className="text-xs text-gray-500 mt-0.5">Today, {format(new Date(), 'dd MMM yyyy')}</p>
                 </div>
                 <div className="p-4">
+                  <p className="text-xs text-gray-400 mb-3">
+                    Note: Attendance is typically marked by teachers through the Staff Mobile App.
+                  </p>
                   <div className="grid grid-cols-4 gap-2">
                     <button onClick={() => toast.success("Marked as Present")} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all">
                       <CheckCircle2 size={20} className="text-gray-600" />
@@ -1002,40 +1155,15 @@ export default function StudentDashboard() {
                 </div>
               </div>
 
-              {/* Subject-wise Attendance */}
+              {/* Subject-wise Attendance - Not Available */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100">
                   <h3 className="text-sm font-semibold text-gray-900">Subject-wise Attendance</h3>
                 </div>
-                <div className="divide-y divide-gray-50">
-                  {[
-                    { subject: "Mathematics", present: 18, total: 20, teacher: "Mrs. Sharma" },
-                    { subject: "Science", present: 19, total: 20, teacher: "Mr. Gupta" },
-                    { subject: "English", present: 17, total: 20, teacher: "Ms. Verma" },
-                    { subject: "Social Studies", present: 18, total: 20, teacher: "Mr. Khan" },
-                    { subject: "Hindi", present: 16, total: 20, teacher: "Mrs. Singh" },
-                  ].map((s, i) => (
-                    <div key={i} className="px-5 py-3 hover:bg-gray-50/50 transition-colors">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600">
-                            {s.subject.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">{s.subject}</p>
-                            <p className="text-xs text-gray-500">{s.teacher}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-gray-900">{Math.round((s.present / s.total) * 100)}%</p>
-                          <p className="text-xs text-gray-500">{s.present}/{s.total} classes</p>
-                        </div>
-                      </div>
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-gray-800 rounded-full transition-all" style={{ width: `${(s.present / s.total) * 100}%` }} />
-                      </div>
-                    </div>
-                  ))}
+                <div className="p-8 text-center">
+                  <BookOpen size={32} className="mx-auto text-gray-200 mb-3" />
+                  <p className="text-sm text-gray-500">Subject-wise attendance tracking is not currently available.</p>
+                  <p className="text-xs text-gray-400 mt-1">This feature requires per-subject attendance tracking which will be implemented in a future update.</p>
                 </div>
               </div>
 
@@ -1252,11 +1380,11 @@ export default function StudentDashboard() {
           </div>
 
           {/* Alerts */}
-          {(attendanceStats.percentage < 75 || studentFeeStructure?.totalBalance > 0 || (avgPercentage && avgPercentage < 60)) && (
+          {(attendanceStats.total > 0 && attendanceStats.percentage < 75 || studentFeeStructure?.totalBalance > 0 || (avgPercentage && avgPercentage < 60)) && (
             <div className="bg-white rounded-lg border border-gray-100 overflow-hidden">
               <div className="p-4 border-b border-gray-100"><h3 className="text-sm font-medium text-gray-900">Attention Required</h3></div>
               <div className="divide-y divide-gray-50">
-                {attendanceStats.percentage < 75 && (
+                {attendanceStats.total > 0 && attendanceStats.percentage < 75 && (
                   <div className="p-4 flex items-center gap-3 hover:bg-gray-50 cursor-pointer">
                     <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center"><AlertCircle size={16} className="text-gray-600" /></div>
                     <div className="flex-1"><p className="text-sm font-medium text-gray-900">Low Attendance</p><p className="text-xs text-gray-500">{attendanceStats.percentage}% (below 75%)</p></div>
@@ -1282,13 +1410,15 @@ export default function StudentDashboard() {
           )}
 
           {/* All Clear */}
-          {attendanceStats.percentage >= 75 && !studentFeeStructure?.totalBalance && (!avgPercentage || avgPercentage >= 60) && (
+          {(attendanceStats.total === 0 || attendanceStats.percentage >= 75) && !studentFeeStructure?.totalBalance && (!avgPercentage || avgPercentage >= 60) && (
             <div className="bg-white rounded-lg border border-gray-100 p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center"><CheckCircle2 size={16} className="text-gray-600" /></div>
                 <div><h3 className="text-sm font-medium text-gray-900">All Clear</h3><p className="text-xs text-gray-500">No issues detected</p></div>
               </div>
-              <p className="text-sm text-gray-600">This student is performing well with good attendance, fee clearance, and academic progress.</p>
+              <p className="text-sm text-gray-600">
+                This student has no pending issues. All records are up to date.
+              </p>
             </div>
           )}
 
@@ -1323,7 +1453,8 @@ export default function StudentDashboard() {
           MODALS & DRAWERS
       ═══════════════════════════════════════════════════════════════════ */}
 
-      {/* Edit Drawer */}
+      {/* Edit Drawer - only mount when open */}
+      {isEditOpen && (
       <Drawer isOpen={isEditOpen} onOpenChange={(open) => open ? onEditOpen() : onEditClose()} placement="right" size="5xl" hideCloseButton classNames={{ wrapper: "!z-50", base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]" }}>
         <DrawerContent>
           {(onClose) => (
@@ -1333,12 +1464,15 @@ export default function StudentDashboard() {
                 <div><h3 className="text-lg font-semibold text-gray-900">Edit Student</h3><p className="text-xs text-gray-500">Update student information</p></div>
               </DrawerHeader>
               <DrawerBody className="p-0 overflow-auto">
-                <AddStudent onClose={onClose} onSave={(data) => { updateStudent(id, data); onClose(); }} classesWithTeachers={classesWithTeachers || []} classOptions={availableClasses} initialData={student} />
+                <Suspense fallback={<div className="flex items-center justify-center h-40"><span className="text-sm text-gray-400">Loading...</span></div>}>
+                  <AddStudent onClose={onClose} onSave={(data) => { updateStudent(id, data); onClose(); }} classesWithTeachers={classesWithTeachers || []} classOptions={availableClasses} initialData={student} />
+                </Suspense>
               </DrawerBody>
             </>
           )}
         </DrawerContent>
       </Drawer>
+      )}
 
       {/* Payment Modal */}
       <Modal isOpen={isPaymentOpen} onClose={onPaymentClose} size="md">
@@ -1438,5 +1572,6 @@ export default function StudentDashboard() {
       {/* Camera Capture */}
       <CameraCaptureModal isOpen={isCameraCaptureOpen} onClose={() => setIsCameraCaptureOpen(false)} onPhotoCaptured={(image) => { setSelectedImageForEdit(image); setIsCameraCaptureOpen(false); setIsPhotoEditorOpen(true); }} />
     </div>
+    </>
   );
 }

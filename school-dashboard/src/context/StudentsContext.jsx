@@ -11,8 +11,12 @@ export function StudentsProvider({ children }) {
   const fetchStudents = useCallback(async (classFilter) => {
     try {
       setLoading(true);
-      const data = await studentsApi.getAll(classFilter);
-      setStudents(data);
+      const response = await studentsApi.list({
+        page: 1,
+        limit: 50,
+        classId: classFilter || undefined,
+      });
+      setStudents(response.data || []);
       setError(null);
     } catch (err) {
       setError(err.message);

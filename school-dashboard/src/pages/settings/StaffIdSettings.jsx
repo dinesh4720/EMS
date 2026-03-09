@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardBody, CardHeader, Input, Switch, Button, Divider, Select, SelectItem } from "@heroui/react";
 import { Save, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
+import { getAuthHeaders } from "../../utils/authSession";
 
 export default function StaffIdSettings() {
   const [config, setConfig] = useState({
@@ -28,7 +29,9 @@ export default function StaffIdSettings() {
   const loadConfig = async () => {
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const response = await fetch(`${API_URL}/staff-id-config`);
+      const response = await fetch(`${API_URL}/staff-id-config`, {
+        headers: getAuthHeaders()
+      });
       if (!response.ok) throw new Error('Failed to load configuration');
       const data = await response.json();
       setConfig({
@@ -65,6 +68,7 @@ export default function StaffIdSettings() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          ...getAuthHeaders(),
         },
         body: JSON.stringify(config)
       });

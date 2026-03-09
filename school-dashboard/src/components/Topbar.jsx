@@ -8,6 +8,7 @@ import { Tooltip, Popover, PopoverTrigger, PopoverContent } from "@heroui/react"
 import NotificationCenter from "../pages/messaging/components/notifications/NotificationCenter";
 import { useApp } from "../context/AppContext";
 import { isObjectId } from "../utils/objectIdHelper";
+import { studentsApi } from "../services/api";
 
 function Topbar({ isSidebarOpen }) {
     const [searchOpen, setSearchOpen] = useState(false);
@@ -17,7 +18,8 @@ function Topbar({ isSidebarOpen }) {
     const navigate = useNavigate();
     const chatNotifications = useChatNotifications();
     const unreadCount = chatNotifications?.unreadCount || 0;
-    const { staff, students } = useApp();
+    const { staff } = useApp();
+    const [resolvedStudentLabel, setResolvedStudentLabel] = useState(null);
 
     useEffect(() => {
         setNotificationUnreadCount(3);
@@ -33,6 +35,48 @@ function Topbar({ isSidebarOpen }) {
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, []);
+
+    useEffect(() => {
+        const parts = location.pathname.split("/").filter(Boolean);
+        const studentIndex = parts.indexOf("students");
+        const studentId = studentIndex >= 0 ? parts[studentIndex + 1] : null;
+
+        if (
+            !studentId ||
+            studentId === "attendance" ||
+            studentId === "submissions" ||
+            (!isObjectId(studentId) && !/^[a-f\d]{20,}$/i.test(studentId))
+        ) {
+            setResolvedStudentLabel(null);
+            return;
+        }
+
+        let isActive = true;
+
+        studentsApi.getById(studentId)
+            .then((student) => {
+                if (!isActive) {
+                    return;
+                }
+
+                const label = student?.name && !isObjectId(student.name)
+                    ? student.name
+                    : student?.admissionId
+                        ? `Student ${student.admissionId}`
+                        : `...${studentId.slice(-8)}`;
+
+                setResolvedStudentLabel({ id: studentId, label });
+            })
+            .catch(() => {
+                if (isActive) {
+                    setResolvedStudentLabel({ id: studentId, label: `...${studentId.slice(-8)}` });
+                }
+            });
+
+        return () => {
+            isActive = false;
+        };
+    }, [location.pathname]);
 
     const getBreadcrumbs = () => {
         const path = location.pathname;
@@ -71,13 +115,8 @@ function Topbar({ isSidebarOpen }) {
                     }
                 }
                 // Check if it's a student ID
-                else if (prevPart === 'students' && students) {
-                    const student = students.find(s => s.id === part || s._id === part);
-                    if (student && student.name && !isObjectId(student.name)) {
-                        label = student.name;
-                    } else if (student && student.admissionId) {
-                        label = `Student ${student.admissionId}`;
-                    }
+                else if (prevPart === 'students' && resolvedStudentLabel?.id === part) {
+                    label = resolvedStudentLabel.label;
                 }
                 // If we couldn't resolve it, show a shortened version
                 else {

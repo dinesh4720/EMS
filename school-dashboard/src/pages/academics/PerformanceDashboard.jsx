@@ -12,9 +12,11 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
 import { examsApi } from '../../services/api';
+import { useApp } from '../../context/AppContext';
 import StatCard from '../../components/StatCard';
 import FiltersDropdown from '../../components/FiltersDropdown';
 import { MinimalButton } from '../../components/ui';
+import { getAcademicYearOptions } from '../../utils/constants';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -28,6 +30,7 @@ const dashboardCache = {
 
 const PerformanceDashboard = ({ onCreateExam }) => {
   const navigate = useNavigate();
+  const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(true);
   const [exams, setExams] = useState([]);
   const [classPerformance, setClassPerformance] = useState([]);
@@ -35,8 +38,13 @@ const PerformanceDashboard = ({ onCreateExam }) => {
   const [classes, setClasses] = useState([]);
   const [filters, setFilters] = useState({
     class: 'all',
-    year: '2024-25'
+    year: null
   });
+  const selectedAcademicYear = filters.year || currentAcademicYear;
+  const academicYearOptions = useMemo(
+    () => getAcademicYearOptions(currentAcademicYear, { past: 2, future: 1 }),
+    [currentAcademicYear]
+  );
 
   const initialFetchDone = useRef(false);
 
@@ -50,8 +58,8 @@ const PerformanceDashboard = ({ onCreateExam }) => {
     },
     year: {
       label: 'Academic Year',
-      value: filters.year,
-      options: ['2024-25', '2023-24', '2022-23'],
+      value: selectedAcademicYear,
+      options: academicYearOptions,
       counts: {}
     }
   };
@@ -59,7 +67,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (filters.class !== 'all') count++;
-    if (filters.year !== '2024-25') count++;
+    if (filters.year) count++;
     return count;
   }, [filters]);
 
@@ -75,10 +83,10 @@ const PerformanceDashboard = ({ onCreateExam }) => {
     if (initialFetchDone.current) {
       fetchData(true);
     }
-  }, [filters.year]);
+  }, [selectedAcademicYear]);
 
   const fetchData = async (skipCache = false) => {
-    const cacheKey = `perf-${filters.year}-${filters.class}`;
+    const cacheKey = `perf-${selectedAcademicYear}-${filters.class}`;
     const now = Date.now();
 
     // Check cache first
@@ -96,7 +104,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
     try {
       // Fetch all data in parallel
       const [examsData] = await Promise.all([
-        examsApi.getAll({ academicYear: filters.year }),
+        examsApi.getAll({ academicYear: selectedAcademicYear }),
       ]);
 
       setExams(examsData || []);
@@ -126,11 +134,14 @@ const PerformanceDashboard = ({ onCreateExam }) => {
   };
 
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters(prev => ({
+      ...prev,
+      [key]: key === 'year' ? (value === currentAcademicYear ? null : value) : value
+    }));
   };
 
   const handleClearFilters = () => {
-    setFilters({ class: 'all', year: '2024-25' });
+    setFilters({ class: 'all', year: null });
   };
 
   // Build mock class comparison data if no real data

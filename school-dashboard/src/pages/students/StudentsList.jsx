@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback, useDeferredValue } from "react";
 import {
     Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
     Button, Chip, Spinner, Progress,
@@ -17,6 +17,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import { studentsApi, classesApi, trashApi } from "../../services/api";
 import { useBatchStudentFees } from "./hooks/useStudentFees";
+import { getAuthHeaders } from "../../utils/authSession";
 import toast from "react-hot-toast";
 import TCGeneratorModal from "./TCGeneratorModal";
 import PhotoAvatar from "../../components/PhotoAvatar";
@@ -25,8 +26,8 @@ import EditStudentDrawer from "./EditStudentDrawer";
 import ScrollToTopButton from "../../components/ui/ScrollToTopButton";
 import SkeletonTable from "../../components/SkeletonTable";
 
-
-const ITEMS_PER_LOAD = 15;
+const STUDENTS_PAGE_SIZE = 50;
+const ITEMS_PER_LOAD = STUDENTS_PAGE_SIZE;
 
 // Helper function to parse CSV text into array of objects
 const parseCSV = (csvText) => {
@@ -551,7 +552,7 @@ const transformStudentForImport = (studentData, allClasses) => {
     return {
         name: studentData.name,
         admissionId: studentData.admissionId,
-        academicYear: studentData.academicYear || '2024-25', // Default if not provided
+        academicYear: studentData.academicYear || currentAcademicYear, // Default if not provided
         rollNo: studentData.rollNo ? parseInt(studentData.rollNo) : null,
         classId: matchedClass._id,
 
@@ -612,7 +613,7 @@ const ALL_COLUMNS = [
 
 export default function StudentsList() {
     const navigate = useNavigate();
-    const { students, deleteStudent, updateStudent, updateStudentLocal, addStudent, loading: contextLoading, classes } = useApp();
+    const { deleteStudent, updateStudent, addStudent, loading: contextLoading, classes, currentAcademicYear } = useApp();
 
     const [searchQuery, setSearchQuery] = useState("");
     const [classFilter, setClassFilter] = useState("all");
@@ -621,6 +622,20 @@ export default function StudentsList() {
     const [academicYearFilter, setAcademicYearFilter] = useState("all");
     const [academicPerformanceFilter, setAcademicPerformanceFilter] = useState("all");
     const [attendanceFilter, setAttendanceFilter] = useState("all");
+    const [students, setStudents] = useState([]);
+    const [listLoading, setListLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pagination, setPagination] = useState({
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: 0,
+        itemsPerPage: STUDENTS_PAGE_SIZE,
+        hasNextPage: false,
+        hasPrevPage: false,
+    });
+    const deferredSearchQuery = useDeferredValue(searchQuery.trim());
+    const latestListRequestRef = useRef(0);
+    const previousServerSignatureRef = useRef("");
 
     // DEBUG: Log students data to help diagnose filtering issues
     const studentsWithStatus = students.filter(s => s.status).length;
@@ -645,10 +660,10 @@ export default function StudentsList() {
     // FIXED: Add state for student fee structures to show real data in tooltip
     const [studentFeeStructures, setStudentFeeStructures] = useState({});
     const [loadingFeeStructures, setLoadingFeeStructures] = useState(false);
-
-    const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
     const [isLoading, setIsLoading] = useState(false);
+    const [, setVisibleCount] = useState(STUDENTS_PAGE_SIZE);
     const loaderRef = useRef(null);
+
     const csvInputRef = useRef(null);
     const [sortDescriptor, setSortDescriptor] = useState({ column: "name", direction: "ascending" });
     const [selectedKeys, setSelectedKeys] = useState(new Set([]));
@@ -739,38 +754,138 @@ export default function StudentsList() {
     const [reminderTime, setReminderTime] = useState("");
     const [reminderTargetCount, setReminderTargetCount] = useState(0);
 
-    const uniqueClasses = useMemo(() => [...new Set(students.map(s => s.class))].sort(), [students]);
-    const uniqueAcademicYears = useMemo(() => [...new Set(students.map(s => s.academicYear || "2024-25"))].sort(), [students]);
+    const uniqueClasses = useMemo(() => (
+        [...new Set(
+            classes
+                .map(c => c.section ? `${c.name}-${c.section}` : c.name)
+                .filter(Boolean)
+        )].sort()
+    ), [classes]);
+    const uniqueAcademicYears = useMemo(() => (
+        [...new Set([currentAcademicYear, ...students.map(s => s.academicYear || currentAcademicYear)])].sort()
+    ), [students, currentAcademicYear]);
     const feeStatusOptions = ["paid", "pending", "overdue", "partial"];
+    const selectedClassId = useMemo(() => {
+        if (classFilter === "all") {
+            return null;
+        }
+
+        const selectedClass = classes.find((classItem) => {
+            const classLabel = classItem.section ? `${classItem.name}-${classItem.section}` : classItem.name;
+            return classLabel === classFilter;
+        });
+
+        return selectedClass?._id || selectedClass?.id || null;
+    }, [classFilter, classes]);
+    const sortParams = useMemo(() => ({
+        sortBy: sortDescriptor.column === "class" ? "class" : "name",
+        sortOrder: sortDescriptor.direction === "descending" ? "desc" : "asc"
+    }), [sortDescriptor]);
+    const serverRequestSignature = useMemo(() => JSON.stringify({
+        search: deferredSearchQuery,
+        classId: selectedClassId,
+        feeStatus: feeStatusFilter,
+        status: statusFilter,
+        academicYear: academicYearFilter,
+        sortBy: sortParams.sortBy,
+        sortOrder: sortParams.sortOrder
+    }), [academicYearFilter, deferredSearchQuery, feeStatusFilter, selectedClassId, sortParams.sortBy, sortParams.sortOrder, statusFilter]);
+
+    const loadStudents = useCallback(async (pageToLoad, options = {}) => {
+        const requestId = ++latestListRequestRef.current;
+        setListLoading(true);
+
+        try {
+            const response = await studentsApi.list({
+                page: pageToLoad,
+                limit: STUDENTS_PAGE_SIZE,
+                search: deferredSearchQuery || undefined,
+                classId: selectedClassId || undefined,
+                feeStatus: feeStatusFilter,
+                status: statusFilter,
+                academicYear: academicYearFilter,
+                sortBy: sortParams.sortBy,
+                sortOrder: sortParams.sortOrder
+            }, {
+                skipCache: options.skipCache ?? false
+            });
+
+            if (requestId !== latestListRequestRef.current) {
+                return;
+            }
+
+            setStudents(response.data || []);
+            setPagination(response.pagination || {
+                currentPage: pageToLoad,
+                totalPages: 1,
+                totalItems: response.data?.length || 0,
+                itemsPerPage: STUDENTS_PAGE_SIZE,
+                hasNextPage: false,
+                hasPrevPage: false,
+            });
+            setSelectedKeys(new Set([]));
+        } catch (error) {
+            if (requestId !== latestListRequestRef.current) {
+                return;
+            }
+
+            console.error("Failed to load students list:", error);
+            toast.error(`Failed to load students: ${error.message}`);
+            setStudents([]);
+            setPagination({
+                currentPage: pageToLoad,
+                totalPages: 1,
+                totalItems: 0,
+                itemsPerPage: STUDENTS_PAGE_SIZE,
+                hasNextPage: false,
+                hasPrevPage: false,
+            });
+        } finally {
+            if (requestId === latestListRequestRef.current) {
+                setListLoading(false);
+            }
+        }
+    }, [academicYearFilter, deferredSearchQuery, feeStatusFilter, selectedClassId, sortParams.sortBy, sortParams.sortOrder, statusFilter]);
+    const refreshStudentsList = useCallback(() => {
+        return loadStudents(currentPage, { skipCache: true });
+    }, [currentPage, loadStudents]);
+    const loadAllStudentsForImport = useCallback(async () => {
+        const firstPage = await studentsApi.list({
+            page: 1,
+            limit: 100,
+        }, {
+            skipCache: true
+        });
+
+        const allStudents = [...(firstPage.data || [])];
+        const totalPages = firstPage.pagination?.totalPages || 1;
+
+        for (let page = 2; page <= totalPages; page += 1) {
+            const nextPage = await studentsApi.list({
+                page,
+                limit: 100,
+            }, {
+                skipCache: true
+            });
+            allStudents.push(...(nextPage.data || []));
+        }
+
+        return allStudents;
+    }, []);
 
     // FIXED: Treat students without status as 'active' (matches backend schema default)
     const statusCounts = useMemo(() => ({
-        all: students.length,
+        all: pagination.totalItems,
         active: students.filter(s => (s.status || 'active') === "active").length,
         inactive: students.filter(s => s.status === "inactive").length,
         alumni: students.filter(s => s.status === "alumni").length,
-    }), [students]);
+    }), [pagination.totalItems, students]);
 
     const getAttendancePercentage = (studentId) => 75 + ((studentId * 7) % 25);
 
     const filteredItems = useMemo(() => {
         let filtered = students;
 
-        if (searchQuery) {
-            const search = searchQuery.toLowerCase();
-            filtered = filtered.filter((s) =>
-                s.name.toLowerCase().includes(search) ||
-                s.email?.toLowerCase().includes(search) ||
-                s.admissionId?.toLowerCase().includes(search) ||
-                s.parentName?.toLowerCase().includes(search) ||
-                s.parentPhone?.includes(search)
-            );
-        }
-        if (classFilter !== "all") filtered = filtered.filter((s) => s.class === classFilter);
-        if (feeStatusFilter !== "all") filtered = filtered.filter((s) => s.feeStatus === feeStatusFilter);
-        // FIXED: Treat students without status as 'active' (matches backend schema default)
-        if (statusFilter !== "all") filtered = filtered.filter((s) => (s.status || 'active') === statusFilter);
-        if (academicYearFilter !== "all") filtered = filtered.filter((s) => (s.academicYear || "2024-25") === academicYearFilter);
         if (academicPerformanceFilter !== "all") {
             filtered = filtered.filter((s) => {
                 // Check if student has exam/marks data
@@ -814,43 +929,42 @@ export default function StudentsList() {
                 }
             });
         }
-        return filtered.sort((a, b) => {
-            // Pinned students always come first
-            if (a.isPinned && !b.isPinned) return -1;
-            if (!a.isPinned && b.isPinned) return 1;
-            // If both are pinned or both are not pinned, sort by pinnedAt (most recent first)
-            if (a.isPinned && b.isPinned) {
-                if (a.pinnedAt && b.pinnedAt) {
-                    const dateA = new Date(a.pinnedAt).getTime();
-                    const dateB = new Date(b.pinnedAt).getTime();
-                    if (dateA !== dateB) return dateB - dateA;
-                }
-            }
-            // Then apply the selected sort
-            const first = a[sortDescriptor.column];
-            const second = b[sortDescriptor.column];
-            const cmp = first < second ? -1 : first > second ? 1 : 0;
-            return sortDescriptor.direction === "descending" ? -cmp : cmp;
-        });
-    }, [students, searchQuery, classFilter, feeStatusFilter, statusFilter, academicYearFilter, academicPerformanceFilter, attendanceFilter, sortDescriptor]);
+        return filtered;
+    }, [students, academicPerformanceFilter, attendanceFilter]);
 
-    const visibleItems = useMemo(() => filteredItems.slice(0, visibleCount), [filteredItems, visibleCount]);
-    const hasMore = visibleCount < filteredItems.length;
+    const visibleItems = filteredItems;
+    const hasMore = false;
     const selectedCount = selectedKeys === "all" ? filteredItems.length : selectedKeys.size;
 
     console.log('📊 Filter results:', { 
-        totalStudents: students.length, 
+        totalStudents: pagination.totalItems, 
         filteredItems: filteredItems.length, 
         statusFilter,
-        visibleItems: visibleItems.length,
-        hasMore, 
-        isLoading 
+        currentPage,
+        totalPages: pagination.totalPages
     });
 
     useEffect(() => {
-        setVisibleCount(ITEMS_PER_LOAD);
-        setIsLoading(false); // Reset loading when filters change
-    }, [searchQuery, classFilter, feeStatusFilter, statusFilter, academicYearFilter, academicPerformanceFilter, attendanceFilter, sortDescriptor]);
+        const filtersChanged = previousServerSignatureRef.current !== serverRequestSignature;
+
+        if (filtersChanged && currentPage !== 1) {
+            previousServerSignatureRef.current = serverRequestSignature;
+            setCurrentPage(1);
+            return;
+        }
+
+        previousServerSignatureRef.current = serverRequestSignature;
+        loadStudents(currentPage);
+    }, [currentPage, loadStudents, serverRequestSignature]);
+
+    useEffect(() => {
+        const handleRefresh = () => {
+            refreshStudentsList();
+        };
+
+        window.addEventListener("students:list-refresh", handleRefresh);
+        return () => window.removeEventListener("students:list-refresh", handleRefresh);
+    }, [refreshStudentsList]);
 
     useEffect(() => {
         // Force loading to false if no more items
@@ -894,21 +1008,19 @@ export default function StudentsList() {
 
     // FIXED: Memoize student IDs to prevent infinite re-fetches
     const visibleStudentIds = useMemo(() => {
-        return visibleItems.map(s => s.id);
-    }, [visibleItems]);
+        return filteredItems.map(s => s.id);
+    }, [filteredItems]);
 
     // FIXED: Fetch fee structures for VISIBLE students only (not all students)
     // Using new useBatchStudentFees hook (extracted from component)
     const { feeStructures: batchFeeStructures, loading: batchFeeLoading } = useBatchStudentFees(
         visibleStudentIds,
-        { academicYear: '2024-25' }
+        { academicYear: currentAcademicYear }
     );
 
     // Sync batch hook results with component state
     useEffect(() => {
-        if (Object.keys(batchFeeStructures).length > 0) {
-            setStudentFeeStructures(batchFeeStructures);
-        }
+        setStudentFeeStructures(batchFeeStructures);
     }, [batchFeeStructures]);
 
     useEffect(() => {
@@ -918,32 +1030,29 @@ export default function StudentsList() {
     // Legacy fetch function (kept for reference, can be removed after testing)
     const fetchStudentFeeStructures = useCallback(async () => {
         // Only fetch for visible students, not all students (optimization)
-        if (!visibleItems || visibleItems.length === 0) return;
+        if (!filteredItems || filteredItems.length === 0) return;
 
         setLoadingFeeStructures(true);
         try {
             const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-            const token = localStorage.getItem('app_user') ? JSON.parse(localStorage.getItem('app_user')).token : null;
-
-            const headers = { 'Content-Type': 'application/json' };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
+            const headers = getAuthHeaders({ 'Content-Type': 'application/json' });
 
             const structures = {};
 
             // Fetch in batches to avoid overwhelming the server
             const batchSize = 10;
-            for (let i = 0; i < visibleItems.length; i += batchSize) {
-                const batchItems = visibleItems.slice(i, i + batchSize);
+            for (let i = 0; i < filteredItems.length; i += batchSize) {
+                const batchItems = filteredItems.slice(i, i + batchSize);
                 const promises = batchItems.map(async (student) => {
                     try {
                         console.log(`🔍 [StudentsList] Fetching fee structure for student:`, {
                             id: student.id,
                             idType: typeof student.id,
                             name: student.name,
-                            url: `${API_URL}/student-fees/student/${student.id}?academicYear=2024-25`
+                            url: `${API_URL}/student-fees/student/${student.id}?academicYear=${currentAcademicYear}`
                         });
 
-                        const response = await fetch(`${API_URL}/student-fees/student/${student.id}?academicYear=2024-25`, { headers });
+                        const response = await fetch(`${API_URL}/student-fees/student/${student.id}?academicYear=${currentAcademicYear}`, { headers });
 
                         console.log(`📡 [StudentsList] Response for ${student.id}:`, {
                             status: response.status,
@@ -968,7 +1077,7 @@ export default function StudentsList() {
                                 const initResponse = await fetch(`${API_URL}/student-fees/initialize/${student.id}`, {
                                     method: 'POST',
                                     headers: { ...headers, 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ academicYear: '2024-25' })
+                                    body: JSON.stringify({ academicYear: currentAcademicYear })
                                 });
 
                                 if (initResponse.ok) {
@@ -1003,7 +1112,7 @@ export default function StudentsList() {
                         structures[result.studentId] = {
                             ...(result.exists ? result.data : {}),
                             _exists: result.exists,
-                            _studentName: visibleItems.find(s => s.id === result.studentId)?.name
+                            _studentName: filteredItems.find(s => s.id === result.studentId)?.name
                         };
                     }
                 });
@@ -1017,12 +1126,7 @@ export default function StudentsList() {
         } finally {
             setLoadingFeeStructures(false);
         }
-    }, [visibleItems]); // Only refetch when visibleItems change
-
-    // Fetch fee structures on mount and when visibleItems change
-    useEffect(() => {
-        fetchStudentFeeStructures();
-    }, [fetchStudentFeeStructures]);
+    }, [filteredItems]);
 
     // Listen for real-time student updates via Socket.IO
     useEffect(() => {
@@ -1052,11 +1156,9 @@ export default function StudentsList() {
                 const fetchUpdatedFeeStructure = async () => {
                     try {
                         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-                        const token = localStorage.getItem('app_user') ? JSON.parse(localStorage.getItem('app_user')).token : null;
-                        const headers = { 'Content-Type': 'application/json' };
-                        if (token) headers['Authorization'] = `Bearer ${token}`;
+                        const headers = getAuthHeaders({ 'Content-Type': 'application/json' });
 
-                        const response = await fetch(`${API_URL}/student-fees/student/${data.studentId}?academicYear=2024-25`, { headers });
+                        const response = await fetch(`${API_URL}/student-fees/student/${data.studentId}?academicYear=${currentAcademicYear}`, { headers });
 
                         if (response.ok) {
                             const feeData = await response.json();
@@ -1138,6 +1240,7 @@ export default function StudentsList() {
         }
         try {
             await updateStudent(studentId, { parentPhone: phoneInput });
+            await refreshStudentsList();
             toast.success('Phone number added successfully');
             setEditingPhoneId(null);
             setPhoneInput("");
@@ -1149,11 +1252,11 @@ export default function StudentsList() {
     const handlePinStudent = async (studentId) => {
         try {
             await studentsApi.pin(studentId);
-            // Update local state immediately for visual feedback
-            updateStudentLocal(studentId, {
-                isPinned: true,
-                pinnedAt: new Date().toISOString()
-            });
+            setStudents(prev => prev.map(student => (
+                String(student.id) === String(studentId)
+                    ? { ...student, isPinned: true, pinnedAt: new Date().toISOString() }
+                    : student
+            )));
             toast.success('Student pinned');
         } catch (error) {
             toast.error('Failed to pin student');
@@ -1163,11 +1266,11 @@ export default function StudentsList() {
     const handleUnpinStudent = async (studentId) => {
         try {
             await studentsApi.unpin(studentId);
-            // Update local state immediately for visual feedback
-            updateStudentLocal(studentId, {
-                isPinned: false,
-                pinnedAt: null
-            });
+            setStudents(prev => prev.map(student => (
+                String(student.id) === String(studentId)
+                    ? { ...student, isPinned: false, pinnedAt: null }
+                    : student
+            )));
             toast.success('Student unpinned');
         } catch (error) {
             toast.error('Failed to unpin student');
@@ -1220,6 +1323,7 @@ export default function StudentsList() {
                 else if (bulkAction === "tc") await updateStudent(id, { tcIssued: true });
                 else if (bulkAction === "alumni") await updateStudent(id, { status: "alumni" });
             }
+            await refreshStudentsList();
             toast.success(`${count} student${count > 1 ? 's' : ''} updated successfully`);
             setSelectedKeys(new Set([]));
             onBulkActionClose();
@@ -1334,6 +1438,7 @@ export default function StudentsList() {
                 toast.success(`${successCount} promoted, ${failCount} failed`);
             }
 
+            await refreshStudentsList();
             setSelectedKeys(new Set([]));
             setPromotionPreview([]);
             onPromoteClose();
@@ -1392,7 +1497,7 @@ export default function StudentsList() {
         // Academic year counts
         counts.academicYear = {};
         students.forEach(s => {
-            const year = s.academicYear || "2024-25";
+            const year = s.academicYear || currentAcademicYear;
             counts.academicYear[year] = (counts.academicYear[year] || 0) + 1;
         });
 
@@ -1423,7 +1528,7 @@ export default function StudentsList() {
             label: "Class",
             value: classFilter,
             options: ["all", ...uniqueClasses],
-            counts: { all: students.length, ...filterCounts.class },
+            counts: { all: pagination.totalItems, ...filterCounts.class },
             displayLabels: {
                 all: "All Classes"
             }
@@ -1432,7 +1537,7 @@ export default function StudentsList() {
             label: "Fee Status",
             value: feeStatusFilter,
             options: ["all", ...feeStatusOptions],
-            counts: { all: students.length, ...filterCounts.feeStatus },
+            counts: { all: pagination.totalItems, ...filterCounts.feeStatus },
             displayLabels: {
                 all: "All Fee Status",
                 paid: "Paid",
@@ -1445,7 +1550,7 @@ export default function StudentsList() {
             label: "Academic Year",
             value: academicYearFilter,
             options: ["all", ...uniqueAcademicYears],
-            counts: { all: students.length, ...filterCounts.academicYear },
+            counts: { all: pagination.totalItems, ...filterCounts.academicYear },
             displayLabels: {
                 all: "All Years"
             }
@@ -1454,7 +1559,7 @@ export default function StudentsList() {
             label: "Academic Performance",
             value: academicPerformanceFilter,
             options: ["all", "excellent", "good", "average", "below_average"],
-            counts: { all: students.length, ...filterCounts.academicPerformance },
+            counts: { all: pagination.totalItems, ...filterCounts.academicPerformance },
             displayLabels: {
                 all: "All Performance",
                 excellent: "Excellent (90%+)",
@@ -1467,7 +1572,7 @@ export default function StudentsList() {
             label: "Attendance",
             value: attendanceFilter,
             options: ["all", "excellent", "good", "average", "below"],
-            counts: { all: students.length, ...filterCounts.attendance },
+            counts: { all: pagination.totalItems, ...filterCounts.attendance },
             displayLabels: {
                 all: "All Attendance",
                 excellent: "Excellent (90%+)",
@@ -1476,7 +1581,7 @@ export default function StudentsList() {
                 below: "Below Average (<50%)"
             }
         }
-    }), [classFilter, feeStatusFilter, academicYearFilter, academicPerformanceFilter, attendanceFilter, uniqueClasses, uniqueAcademicYears, feeStatusOptions, filterCounts, students.length]);
+    }), [classFilter, feeStatusFilter, academicYearFilter, academicPerformanceFilter, attendanceFilter, uniqueClasses, uniqueAcademicYears, feeStatusOptions, filterCounts, pagination.totalItems]);
 
     // Handle filter change from FiltersPanel
     const handleFilterChange = useCallback((filterKey, value) => {
@@ -1859,14 +1964,15 @@ export default function StudentsList() {
             }
 
             toast.loading('Validating student data...', { id: 'csv-upload' });
+            const existingStudents = await loadAllStudentsForImport();
 
             // Validate all students with class/section validation
             let validated = parsedStudents.map(student =>
-                validateStudentData(student, students, classes)
+                validateStudentData(student, existingStudents, classes)
             );
 
             // Check for duplicates after validation
-            validated = checkForDuplicates(validated, students);
+            validated = checkForDuplicates(validated, existingStudents);
 
             toast.dismiss('csv-upload');
 
@@ -1979,6 +2085,7 @@ export default function StudentsList() {
             onPreviewClose();
             setCsvFile(null);
             setValidatedStudents([]);
+            await refreshStudentsList();
 
         } catch (error) {
             toast.error('Failed to import students', { duration: 4000, icon: '❌' });
@@ -2023,7 +2130,7 @@ export default function StudentsList() {
     };
 
     // Show skeleton loader while context is loading data
-    if (contextLoading) {
+    if (contextLoading || listLoading) {
         return (
             <div className="w-full">
                 <SkeletonTable 
@@ -2077,7 +2184,7 @@ export default function StudentsList() {
                             <DropdownTrigger>
                                 <button className="flex items-center gap-2 px-3 py-2.5 bg-white rounded-lg border border-gray-200 hover:border-gray-300 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all text-sm cursor-pointer whitespace-nowrap">
                                     <span className="text-gray-700 capitalize">{statusFilter}</span>
-                                    <span className="text-gray-400">({statusCounts[statusFilter]})</span>
+                                    <span className="text-gray-400">({pagination.totalItems})</span>
                                     <ChevronDown size={14} className="text-gray-400" />
                                 </button>
                             </DropdownTrigger>
@@ -2444,7 +2551,7 @@ export default function StudentsList() {
                                             total: `₹${(feeStructure.totalFee || 0).toLocaleString()}`,
                                             paid: `₹${(feeStructure.totalPaid || 0).toLocaleString()}`,
                                             pending: `₹${(feeStructure.totalBalance || 0).toLocaleString()}`,
-                                            date: feeStructure.totalBalance > 0 ? `Due: 2024-25` : null,
+                                            date: feeStructure.totalBalance > 0 ? `Due: ${currentAcademicYear}` : null,
                                             status: feeStructure.overallStatus || student.feeStatus,
                                             exists: true
                                         } : {
@@ -2462,7 +2569,7 @@ export default function StudentsList() {
                                                 <Tooltip
                                                     content={
                                                         <div className="px-3 py-3">
-                                                            <div className="text-base font-semibold mb-3 text-white/90">Fee Structure (2024-25)</div>
+                                                            <div className="text-base font-semibold mb-3 text-white/90">Fee Structure (${currentAcademicYear})</div>
                                                             {details.exists ? (
                                                                 <>
                                                                     <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm text-white/70 mb-3">
@@ -2645,9 +2752,30 @@ export default function StudentsList() {
                 </TableBody>
             </Table>
 
-            <div ref={loaderRef} className="flex justify-center py-4">
-                {isLoading && <Spinner size="sm" color="primary" />}
-                {!hasMore && filteredItems.length > ITEMS_PER_LOAD && <span className="text-default-400 text-sm">All {filteredItems.length} students loaded</span>}
+            <div className="flex flex-col gap-3 border-t border-gray-200 px-1 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-default-500 text-sm">
+                    Page {currentPage} of {pagination.totalPages} ({pagination.totalItems} students)
+                </span>
+                {pagination.totalPages > 1 && (
+                    <div className="flex items-center gap-2">
+                        <Button
+                            size="sm"
+                            variant="flat"
+                            isDisabled={!pagination.hasPrevPage || listLoading}
+                            onPress={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="flat"
+                            isDisabled={!pagination.hasNextPage || listLoading}
+                            onPress={() => setCurrentPage(prev => prev + 1)}
+                        >
+                            Next
+                        </Button>
+                    </div>
+                )}
             </div>
 
             {/* Bulk Action Modal */}
@@ -2813,6 +2941,7 @@ export default function StudentsList() {
                                         setIsDeleting(true);
                                         try {
                                             const result = await deleteStudent(studentToDelete.id);
+                                            await refreshStudentsList();
 
                                             // Show toast with undo button using react-hot-toast's custom toast
                                             toast((t) => (
@@ -2912,6 +3041,7 @@ export default function StudentsList() {
                                     onPress={async () => {
                                         try {
                                             await updateStudent(statusChangeData.student.id, { status: statusChangeData.newStatus });
+                                            await refreshStudentsList();
                                             toast.success(`${statusChangeData.student.name} marked as ${statusChangeData.newStatus}`);
                                             onClose();
                                             setStatusChangeData({ student: null, newStatus: '', action: '' });
@@ -3468,7 +3598,12 @@ export default function StudentsList() {
                 }}
                 student={selectedStudent}
                 onUpdate={(updatedStudent) => {
-                    updateStudentLocal(updatedStudent);
+                    setStudents(prev => prev.map(student => (
+                        String(student.id) === String(updatedStudent.id)
+                            ? { ...student, ...updatedStudent }
+                            : student
+                    )));
+                    setSelectedStudent(updatedStudent);
                 }}
                 classOptions={getClassOptions()}
                 classesWithTeachers={classes}

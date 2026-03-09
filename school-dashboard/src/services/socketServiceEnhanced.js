@@ -55,10 +55,11 @@ class SocketServiceEnhanced {
       const connectionTimeout = setTimeout(() => {
         if (!this.connected || !this.authenticated) {
           console.warn('⚠️ Socket connection/authentication timeout');
+          console.warn('⚠️ Connection status:', { connected: this.connected, authenticated: this.authenticated });
           this.disconnect(); // Ensure we clean up if we timeout
           reject(new Error('Connection/Authentication timeout'));
         }
-      }, 5000); // Reduced to 5s for faster fallback
+      }, 10000); // Increased to 10s to allow for slower connections
 
       this.socket.on('connect', () => {
         console.log('✅ Socket connected:', this.socket.id);
@@ -76,6 +77,7 @@ class SocketServiceEnhanced {
         });
 
         // Authenticate
+        console.log('🔐 Sending authentication:', { userId, userType });
         this.socket.emit('authenticate', { userId, userType });
       });
 

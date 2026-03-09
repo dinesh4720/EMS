@@ -27,8 +27,10 @@ export default function AiAssistantPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [isTranscribing, setIsTranscribing] = useState(false);
-    const [selectedModel, setSelectedModel] = useState('groq');
+    const [selectedModel, setSelectedModel] = useState('');
     const [showModelSelector, setShowModelSelector] = useState(false);
+    const [availableModels, setAvailableModels] = useState([]);
+    const [isLoadingModels, setIsLoadingModels] = useState(true);
 
     // For the initial empty state view
     const [hasInteracted, setHasInteracted] = useState(false);
@@ -39,7 +41,8 @@ export default function AiAssistantPage() {
     const audioChunksRef = useRef([]);
 
     const prebuiltPrompts = aiService.getPrebuiltPrompts();
-    const availableModels = aiService.getAvailableModels();
+    const selectedModelMeta = availableModels.find(model => model.id === selectedModel) || null;
+    const hasAvailableModels = availableModels.some(model => model.available);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -48,6 +51,47 @@ export default function AiAssistantPage() {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadModels = async () => {
+            try {
+                const models = await aiService.getAvailableModels();
+                if (cancelled) return;
+
+                setAvailableModels(models);
+                const nextDefaultModel =
+                    aiService.getDefaultModelId() ||
+                    models.find(model => model.available)?.id ||
+                    models[0]?.id ||
+                    '';
+
+                setSelectedModel(currentModel => {
+                    if (currentModel && models.some(model => model.id === currentModel && model.available)) {
+                        return currentModel;
+                    }
+
+                    return nextDefaultModel;
+                });
+            } catch (error) {
+                if (!cancelled) {
+                    console.error('Failed to load AI models:', error);
+                    setAvailableModels([]);
+                }
+            } finally {
+                if (!cancelled) {
+                    setIsLoadingModels(false);
+                }
+            }
+        };
+
+        loadModels();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const startRecording = async () => {
         try {
@@ -113,6 +157,10 @@ export default function AiAssistantPage() {
 
     const handleSend = async () => {
         if (!input.trim() || isLoading || isRecording || isTranscribing) return;
+        if (!selectedModel || !hasAvailableModels) {
+            toast.error('The AI assistant is not configured right now.');
+            return;
+        }
 
         const userMessage = { role: 'user', content: input };
 
@@ -190,9 +238,10 @@ export default function AiAssistantPage() {
                                 <div className="relative">
                                     <button
                                         onClick={() => setShowModelSelector(!showModelSelector)}
+                                        disabled={isLoadingModels || availableModels.length === 0}
                                         className="flex items-center gap-2 text-xs font-medium bg-white dark:bg-zinc-800 px-3 py-1.5 rounded-full border border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 shadow-sm text-gray-600 dark:text-gray-300 transition-colors"
                                     >
-                                        <span>{availableModels.find(m => m.id === selectedModel)?.name || 'Select Model'}</span>
+                                        <span>{selectedModelMeta?.name || (isLoadingModels ? 'Loading models...' : 'No model available')}</span>
                                         <ChevronDown size={14} className={`transition-transform ${showModelSelector ? 'rotate-180' : ''}`} />
                                     </button>
 
@@ -257,7 +306,7 @@ export default function AiAssistantPage() {
                                         e.target.style.height = e.target.scrollHeight + 'px'; // Set new height
                                     }}
                                     onKeyDown={handleKeyDown}
-                                    placeholder={isTranscribing ? "Transcribing..." : isRecording ? "Listening..." : "Ask AI a question..."}
+                                    placeholder={isTranscribing ? "Transcribing..." : isRecording ? "Listening..." : "Ask about students, staff, classes, or school work..."}
                                     disabled={isRecording || isTranscribing}
                                     className="w-full bg-transparent border-none outline-none focus:ring-0 text-base md:text-lg placeholder-gray-400 dark:placeholder-gray-500 dark:text-gray-100 resize-none max-h-32 py-2 px-2 custom-scrollbar"
                                     rows={1}
@@ -286,7 +335,7 @@ export default function AiAssistantPage() {
 
                                         <button
                                             onClick={handleSend}
-                                            disabled={!input.trim() || isRecording || isTranscribing}
+                                            disabled={!input.trim() || isRecording || isTranscribing || !selectedModel || !hasAvailableModels}
                                             className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${input.trim()
                                                 ? 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 scale-100'
                                                 : 'bg-gray-100 dark:bg-zinc-700 text-gray-400 dark:text-gray-500 cursor-not-allowed scale-90'
@@ -334,9 +383,10 @@ export default function AiAssistantPage() {
                                     <div className="relative pointer-events-auto">
                                     <button
                                         onClick={() => setShowModelSelector(!showModelSelector)}
+                                        disabled={isLoadingModels || availableModels.length === 0}
                                         className="flex items-center gap-2 text-xs font-medium bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 shadow-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
                                     >
-                                        <span>{availableModels.find(m => m.id === selectedModel)?.name || 'Select Model'}</span>
+                                        <span>{selectedModelMeta?.name || (isLoadingModels ? 'Loading models...' : 'No model available')}</span>
                                         <ChevronDown size={14} className={`transition-transform ${showModelSelector ? 'rotate-180' : ''}`} />
                                     </button>
 
@@ -394,7 +444,7 @@ export default function AiAssistantPage() {
                                     <div className={`space-y-1 max-w-[85%] ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
                                         {/* Name Label */}
                                         <div className="text-xs font-medium text-gray-400 px-1">
-                                            {msg.role === 'user' ? 'You' : 'ChatGPT 4o'}
+                                            {msg.role === 'user' ? 'You' : 'School AI Assistant'}
                                         </div>
 
                                         <div className={`whitespace-pre-wrap text-[15px] leading-relaxed p-0 rounded-2xl ${msg.role === 'user'
@@ -441,7 +491,7 @@ export default function AiAssistantPage() {
                                     e.target.style.height = e.target.scrollHeight + 'px'; // Set new height
                                 }}
                                 onKeyDown={handleKeyDown}
-                                placeholder={isTranscribing ? "Transcribing..." : isRecording ? "Listening..." : "Message ChatGPT..."}
+                                placeholder={isTranscribing ? "Transcribing..." : isRecording ? "Listening..." : "Message the school AI assistant..."}
                                 disabled={isRecording || isTranscribing}
                                 className="w-full bg-transparent border-none outline-none focus:ring-0 text-base placeholder-gray-400 dark:placeholder-gray-500 dark:text-gray-100 resize-none max-h-48 py-2 px-2 custom-scrollbar"
                                 rows={1}
@@ -469,7 +519,7 @@ export default function AiAssistantPage() {
 
                                     <button
                                         onClick={handleSend}
-                                        disabled={!input.trim()}
+                                        disabled={!input.trim() || !selectedModel || !hasAvailableModels}
                                         className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${input.trim()
                                             ? 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 scale-100'
                                             : 'bg-gray-100 dark:bg-zinc-700 text-gray-300 dark:text-gray-500 cursor-not-allowed scale-90'
@@ -481,7 +531,7 @@ export default function AiAssistantPage() {
                             </div>
                         </div>
                         <div className="text-center mt-2">
-                            <p className="text-xs text-gray-400 dark:text-gray-500">ChatGPT can make mistakes. Check important info.</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500">School AI assistant can make mistakes. Verify important information.</p>
                         </div>
                     </div>
                 )}

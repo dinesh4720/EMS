@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Card, CardBody, CardHeader, Chip, Progress, Spinner, Button,
   Select, SelectItem, Divider
@@ -12,6 +12,10 @@ import {
   Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid,
   PolarAngleAxis, PolarRadiusAxis, Radar
 } from "recharts";
+import { useReactToPrint } from "react-to-print";
+import ReportCardTemplate from "../../../components/ReportCardTemplate";
+import { useApp } from "../../../context/AppContext";
+import { getAcademicYearOptions } from "../../../utils/constants";
 
 // Helper function to get auth token
 const getAuthToken = () => {
@@ -32,15 +36,21 @@ export default function StudentAcademics({
   student,
   classTeacher
 }) {
+  const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(true);
   const [performance, setPerformance] = useState(null);
   const [results, setResults] = useState([]);
   const [trends, setTrends] = useState([]);
   const [upcomingExams, setUpcomingExams] = useState([]);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [selectedYearOverride, setSelectedYearOverride] = useState(null);
   const [selectedTerm, setSelectedTerm] = useState("all");
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const selectedYear = selectedYearOverride || currentAcademicYear;
+  const academicYearOptions = [...getAcademicYearOptions(currentAcademicYear, { past: 2, future: 1 }), 'all'];
 
+  // Reference for the printable report card
+  const reportCardRef = useRef(null);
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
   useEffect(() => {
@@ -104,35 +114,50 @@ export default function StudentAcademics({
     }
   };
 
-  const handleDownloadReportCard = async () => {
-    setDownloadingPdf(true);
-    const token = getAuthToken();
-
-    try {
-      const url = `${API_URL}/report-cards/${studentId}/pdf?academicYear=${selectedYear}${selectedTerm !== 'all' ? `&term=${selectedTerm}` : ''}`;
-      const response = await fetch(url, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate report card');
+  // Print handler using react-to-print
+  const handlePrint = useReactToPrint({
+    contentRef: reportCardRef,
+    documentTitle: `report-card-${student?.name?.replace(/\s+/g, '-') || studentId}-${selectedYear}`,
+    pageStyle: `
+      @page {
+        size: A4;
+        margin: 20mm;
       }
-
-      const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = `report-card-${student?.name?.replace(/\s+/g, '-') || studentId}-${selectedYear}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(downloadUrl);
-      a.remove();
-    } catch (error) {
-      console.error('Error downloading report card:', error);
-      alert('Failed to download report card. Please try again.');
-    } finally {
+      @media print {
+        body {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        .page-break-after {
+          page-break-after: always;
+          break-after: page;
+        }
+        .bg-blue-50 { background-color: #eff6ff !important; }
+        .bg-green-50 { background-color: #f0fdf4 !important; }
+        .bg-purple-50 { background-color: #faf5ff !important; }
+        .bg-red-50 { background-color: #fef2f2 !important; }
+        .bg-gray-50 { background-color: #f9fafb !important; }
+        .bg-gray-100 { background-color: #f3f4f6 !important; }
+      }
+    `,
+    onBeforePrint: () => {
+      setDownloadingPdf(true);
+      return Promise.resolve();
+    },
+    onAfterPrint: () => {
       setDownloadingPdf(false);
+      setShowPrintPreview(false);
+      return Promise.resolve();
     }
+  });
+
+  const handleDownloadReportCard = async () => {
+    // Show the print preview and trigger print
+    setShowPrintPreview(true);
+    // Use a small timeout to ensure the component is rendered before printing
+    setTimeout(() => {
+      handlePrint();
+    }, 100);
   };
 
   // Calculate aggregate metrics from results
@@ -214,12 +239,7 @@ export default function StudentAcademics({
   // Build chart data for trends
   const buildTrendChartData = () => {
     if (trends.length === 0) {
-      // Return mock data if no trends available
-      return [
-        { term: 'Term 1', percentage: 75 },
-        { term: 'Term 2', percentage: 78 },
-        { term: 'Term 3', percentage: 82 },
-      ];
+      return [];
     }
     return trends.map(t => ({
       term: t.term || t.academicYear,
@@ -231,12 +251,7 @@ export default function StudentAcademics({
   const buildRadarData = () => {
     const subjects = buildSubjectData();
     if (subjects.length === 0) {
-      return [
-        { subject: 'Math', score: 80 },
-        { subject: 'Science', score: 75 },
-        { subject: 'English', score: 85 },
-        { subject: 'Social', score: 70 },
-      ];
+      return [];
     }
     return subjects.slice(0, 6).map(s => ({
       subject: s.subjectName?.substring(0, 10) || 'Subject',
@@ -292,11 +307,14 @@ export default function StudentAcademics({
           <Select
             size="sm"
             selectedKeys={[selectedYear]}
-            onSelectionChange={(keys) => setSelectedYear(Array.from(keys)[0])}
+            onSelectionChange={(keys) => {
+              const nextYear = Array.from(keys)[0];
+              setSelectedYearOverride(nextYear === currentAcademicYear ? null : nextYear);
+            }}
             className="w-36"
             label="Academic Year"
           >
-            {['2024-25', '2023-24', '2022-23', 'all'].map(year => (
+            {academicYearOptions.map(year => (
               <SelectItem key={year} value={year}>{year === 'all' ? 'All Years' : year}</SelectItem>
             ))}
           </Select>
@@ -618,6 +636,44 @@ export default function StudentAcademics({
           )}
         </CardBody>
       </Card>
+
+      {/* Hidden Print Container for Report Card */}
+      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', visibility: showPrintPreview ? 'visible' : 'hidden' }}>
+        <div ref={reportCardRef}>
+          <ReportCardTemplate
+            student={{
+              name: student?.name,
+              class: student?.class,
+              rollNo: student?.rollNo,
+              admissionNo: student?.admissionId,
+              fatherName: student?.parentName || student?.fatherName,
+              dob: student?.dateOfBirth || student?.dob
+            }}
+            performance={{
+              ...performance,
+              overallGrade: metrics.overallGrade,
+              overallPercentage: metrics.averageScore,
+              overallGPA: metrics.averageGPA,
+              classRank: metrics.classRank,
+              totalStudents: metrics.totalStudents,
+              trend: metrics.trend,
+              academicYear: selectedYear,
+              term: selectedTerm
+            }}
+            results={results}
+            schoolInfo={{
+              name: 'School Management System',
+              address: 'Academic Excellence Through Innovation'
+            }}
+            attendance={{
+              totalDays: 0,
+              present: 0,
+              absent: 0
+            }}
+            forPrint={true}
+          />
+        </div>
+      </div>
     </div>
   );
 }

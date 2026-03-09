@@ -39,7 +39,7 @@ const getSubjectColor = (subject) => {
 };
 
 export default function TeacherTimetableEditor({ teacherId, teacherName }) {
-  const { classesWithTeachers, schoolSettings } = useApp();
+  const { classesWithTeachers, schoolSettings, currentAcademicYear } = useApp();
   const { user } = useAuth();
   const { hasPermission } = usePermissions();
   const [timetable, setTimetable] = useState(null);
@@ -91,7 +91,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
   const loadTimetable = async () => {
     try {
       setLoading(true);
-      const response = await teacherTimetableApi.get(teacherId, schoolSettings?.academicYear);
+      const response = await teacherTimetableApi.get(teacherId, currentAcademicYear);
       
       if (response.success) {
         setTimetable(response.timetable);
@@ -137,7 +137,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
   const loadConflicts = async () => {
     try {
       setLoadingConflicts(true);
-      const response = await teacherTimetableApi.getConflicts(teacherId, schoolSettings?.academicYear);
+      const response = await teacherTimetableApi.getConflicts(teacherId, currentAcademicYear);
       setConflicts(response.conflicts || []);
       
       if (response.conflicts?.length > 0) {
@@ -214,7 +214,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
           periodIndex,
           classId: slotForm.classId,
           subject: slotForm.subject,
-          academicYear: schoolSettings?.academicYear
+          academicYear: currentAcademicYear
         };
 
         await teacherTimetableApi.updateSlot(teacherId, slotData);
@@ -300,7 +300,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
           periodIndex,
           classId: null,
           subject: "",
-          academicYear: schoolSettings?.academicYear
+          academicYear: currentAcademicYear
         };
 
         await teacherTimetableApi.updateSlot(teacherId, slotData);
@@ -480,7 +480,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
             {teacherName || teacher?.name || 'Teacher'} Timetable
           </h3>
           <Chip size="sm" variant="flat" color="primary" className="h-7">
-            {schoolSettings?.academicYear || '2024-25'}
+            {currentAcademicYear}
           </Chip>
           {/* Sync Status Indicator */}
           {syncStatus === 'syncing' && (

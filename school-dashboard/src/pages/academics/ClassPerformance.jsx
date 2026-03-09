@@ -14,33 +14,25 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, LineChart, Line
 } from 'recharts';
-
-// Helper function to get auth token
-const getAuthToken = () => {
-  const storedUser = sessionStorage.getItem('app_user');
-  if (storedUser) {
-    try {
-      const userData = JSON.parse(storedUser);
-      return userData.token;
-    } catch (err) {
-      return null;
-    }
-  }
-  return null;
-};
+import { useApp } from '../../context/AppContext';
+import { getAuthHeaders } from '../../utils/authSession';
+import { getAcademicYearOptions } from '../../utils/constants';
 
 const ClassPerformance = () => {
   const { classId } = useParams();
   const navigate = useNavigate();
+  const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(true);
   const [classInfo, setClassInfo] = useState(null);
   const [students, setStudents] = useState([]);
   const [performance, setPerformance] = useState([]);
   const [exams, setExams] = useState([]);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [selectedYearOverride, setSelectedYearOverride] = useState(null);
   const [selectedTerm, setSelectedTerm] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('rank');
+  const selectedYear = selectedYearOverride || currentAcademicYear;
+  const academicYearOptions = getAcademicYearOptions(currentAcademicYear, { past: 2, future: 1 });
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -52,8 +44,7 @@ const ClassPerformance = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const token = getAuthToken();
-    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    const headers = getAuthHeaders();
 
     try {
       // Fetch class info
@@ -182,10 +173,13 @@ const ClassPerformance = () => {
           <Select
             size="sm"
             selectedKeys={[selectedYear]}
-            onSelectionChange={(keys) => setSelectedYear(Array.from(keys)[0])}
+            onSelectionChange={(keys) => {
+              const nextYear = Array.from(keys)[0];
+              setSelectedYearOverride(nextYear === currentAcademicYear ? null : nextYear);
+            }}
             className="w-32"
           >
-            {['2024-25', '2023-24', '2022-23'].map(year => (
+            {academicYearOptions.map(year => (
               <SelectItem key={year} value={year}>{year}</SelectItem>
             ))}
           </Select>

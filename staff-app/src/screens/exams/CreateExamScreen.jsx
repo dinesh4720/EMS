@@ -16,8 +16,7 @@ import * as Haptics from 'expo-haptics';
 import { ArrowLeft, Calendar, ChevronDown, Check, Info } from 'lucide-react-native';
 
 import { useTheme } from '../../context/ThemeContext';
-import { examsApi, subjectsApi, authApi } from '../../services/api';
-import config from '../../config';
+import { examsApi, subjectsApi, authApi, classesApi } from '../../services/api';
 
 const CreateExamScreen = () => {
   const navigation = useNavigation();
@@ -63,8 +62,7 @@ const CreateExamScreen = () => {
         setSubjects(subjectsData || []);
 
         // Load staff's classes
-        const response = await fetch(`${config.API_URL}/staff/${user.id}/classes`);
-        const classesData = await response.json();
+        const classesData = await classesApi.getStaffClasses(user.id);
         setClasses(classesData || []);
       }
     } catch (error) {

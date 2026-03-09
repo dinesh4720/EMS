@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useDeferredValue } from "react";
 import { Modal, ModalContent, ModalBody, Kbd } from "@heroui/react";
 import { Search, User, Users, GraduationCap, BookOpen, CreditCard, MessageSquare, Settings, Home, X, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
+import { studentsApi } from "../services/api";
 
 const navigationItems = [
   { name: "Dashboard", path: "/", icon: Home, category: "Navigation" },
@@ -26,10 +27,66 @@ const navigationItems = [
 ];
 
 export default function GlobalSearch({ isOpen, onClose }) {
-  const { staff: staffData, students: studentsData, classesWithTeachers: classesData } = useApp();
+  const { staff: staffData, classesWithTeachers: classesData } = useApp();
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [studentResults, setStudentResults] = useState([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
   const navigate = useNavigate();
+  const deferredQuery = useDeferredValue(query.trim());
+
+  useEffect(() => {
+    if (!deferredQuery) {
+      setStudentResults([]);
+      setStudentsLoading(false);
+      return;
+    }
+
+    let isActive = true;
+
+    const loadStudents = async () => {
+      setStudentsLoading(true);
+
+      try {
+        const response = await studentsApi.list({
+          page: 1,
+          limit: 8,
+          search: deferredQuery,
+          sortBy: "name",
+          sortOrder: "asc",
+        }, { skipCache: true });
+
+        if (!isActive) {
+          return;
+        }
+
+        setStudentResults(
+          (response.data || []).map((student) => ({
+            ...student,
+            id: String(student.id || student._id || ""),
+            name: student.name || student.fullName || student.studentName || student.admissionId || "Student",
+            class: student.class || student.className || "",
+            rollNo: student.rollNo || "-",
+            category: "Students",
+          }))
+        );
+      } catch (error) {
+        if (isActive) {
+          setStudentResults([]);
+        }
+      } finally {
+        if (isActive) {
+          setStudentsLoading(false);
+        }
+      }
+    };
+
+    loadStudents();
+
+    return () => {
+      isActive = false;
+    };
+  }, [deferredQuery]);
 
   const searchResults = useMemo(() => {
     if (!query.trim()) return { navigation: navigationItems.slice(0, 5), staff: [], students: [], classes: [] };
@@ -47,21 +104,14 @@ export default function GlobalSearch({ isOpen, onClose }) {
       (s.phone && s.phone.includes(q))
     ).map(s => ({ ...s, category: "Staff" }));
     
-    const students = studentsData.filter(s => 
-      s.name.toLowerCase().includes(q) || 
-      s.class.toLowerCase().includes(q) ||
-      (s.phone && s.phone.includes(q)) ||
-      (s.parentPhone && s.parentPhone.includes(q))
-    ).map(s => ({ ...s, category: "Students" }));
-    
     const classes = classesData.filter(c => 
       c.name.toLowerCase().includes(q) || 
       c.section.toLowerCase().includes(q) ||
       c.teacher.toLowerCase().includes(q)
     ).map(c => ({ ...c, category: "Classes" }));
     
-    return { navigation, staff, students, classes };
-  }, [query, staffData, studentsData, classesData]);
+    return { navigation, staff, students: studentResults, classes };
+  }, [query, staffData, studentResults, classesData]);
 
   const allResults = useMemo(() => {
     return [
@@ -190,7 +240,12 @@ export default function GlobalSearch({ isOpen, onClose }) {
           </div>
           
           <div className="max-h-[400px] overflow-y-auto p-2">
-            {allResults.length === 0 ? (
+            {studentsLoading && allResults.length === 0 ? (
+              <div className="py-8 text-center text-default-400">
+                <Search size={32} className="mx-auto mb-2 opacity-50 animate-pulse" />
+                <p className="text-sm">Searching students...</p>
+              </div>
+            ) : allResults.length === 0 ? (
               <div className="py-8 text-center text-default-400">
                 <Search size={32} className="mx-auto mb-2 opacity-50" />
                 <p className="text-sm">No results found for "{query}"</p>

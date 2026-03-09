@@ -178,6 +178,10 @@ class ApiService {
     return this.get(`${CONFIG.API_ENDPOINTS.STUDENT_RESULTS}/${studentId}/results`, params);
   }
 
+  async getStudentExams(studentId, params = {}) {
+    return this.get(`${CONFIG.API_ENDPOINTS.STUDENT_EXAMS}/${studentId}/exams`, params);
+  }
+
   async getStudentRemarks(studentId, params = {}) {
     return this.get(`${CONFIG.API_ENDPOINTS.STUDENT_REMARKS}/${studentId}/remarks`, params);
   }

@@ -1,3 +1,5 @@
+import { CURRENT_ACADEMIC_YEAR } from "../utils/constants";
+
 export const dashboardData = {
   criticalAlerts: {
     pendingStaffAttendance: 12,
@@ -169,7 +171,7 @@ export const institutionSettings = {
   address: "123 Education Lane, City",
   phone: "1234567890",
   email: "info@abcschool.com",
-  academicYear: "2024-25",
+  academicYear: CURRENT_ACADEMIC_YEAR,
   logo: null
 };
 

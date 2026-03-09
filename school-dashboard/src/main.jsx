@@ -1,14 +1,18 @@
+import './utils/bootstrapLogging'
 import ReactDOM from 'react-dom/client'
 import { HeroUIProvider } from '@heroui/react'
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { BrowserRouter } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import App from './App'
+import { installApiFetchDefaults } from './utils/apiFetch'
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';
 import '@fontsource/inter/600.css';
 import '@fontsource/inter/700.css';
 import './index.css'
+
+installApiFetchDefaults()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <HeroUIProvider>
@@ -51,3 +55,4 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </NextThemesProvider>
   </HeroUIProvider>,
 )
+

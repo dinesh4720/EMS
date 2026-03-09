@@ -1,6 +1,6 @@
 # Owlin Tracker
 
-Real-time user activity tracking and analytics dashboard for school-dashboard.
+Internal analytics subsystem for EMS. Owlin currently tracks `school-dashboard` usage and ships with its own SDK, event collector server, and analytics dashboard.
 
 ## What Owlin Tracks
 
@@ -66,79 +66,26 @@ Open http://localhost:4000 in your browser.
 
 ## Integrating with School Dashboard
 
-### Option 1: Script Tag (Easiest)
+Current integration status:
 
-Add to `school-dashboard/index.html`:
+- `school-dashboard` consumes `@owlin/tracker-sdk` as a local package dependency
+- the tracking hook lives at `school-dashboard/src/hooks/useOwlinTracking.js`
+- the legacy `owlin-tracker.js` bundle remains available for manual or non-module integrations, but it is not the primary EMS integration path
 
-```html
-<script src="../owlin/sdk/owlin-tracker.js"></script>
-<script>
-  // Initialize when DOM is ready
-  document.addEventListener('DOMContentLoaded', function() {
-    OwlinTracker.init({
-      endpoint: 'http://localhost:4001/api/events',
-      appName: 'School Dashboard',
-      debug: true,
-      userId: window.CURRENT_USER_ID || null, // Set from your auth
-    });
-  });
-</script>
-```
-
-### Option 2: ES Module Import
+Example:
 
 ```javascript
-// In school-dashboard/src/main.jsx or App.jsx
-import { init } from '../../owlin/sdk/src/index.js';
+import { init } from '@owlin/tracker-sdk'
 
-// Initialize tracker
 const tracker = init({
   endpoint: 'http://localhost:4001/api/events',
   appName: 'School Dashboard',
   appVersion: '1.0.0',
-  debug: process.env.NODE_ENV === 'development',
-});
+  debug: true,
+})
 
-// Set user when they log in
-// tracker.setUserId('user-123');
-// tracker.setUserProperties({ name: 'John Doe', role: 'admin' });
-```
-
-### Option 3: React Hook
-
-```jsx
-// Create a hook in school-dashboard
-import { useEffect } from 'react';
-import { init, getTracker } from '../../owlin/sdk/src/index.js';
-
-export function useTracking(userId, userProperties) {
-  useEffect(() => {
-    const tracker = init({
-      endpoint: 'http://localhost:4001/api/events',
-      appName: 'School Dashboard',
-      debug: true,
-    });
-
-    return () => tracker.destroy();
-  }, []);
-
-  useEffect(() => {
-    if (userId) {
-      const tracker = getTracker();
-      tracker.setUserId(userId);
-      if (userProperties) {
-        tracker.setUserProperties(userProperties);
-      }
-    }
-  }, [userId, userProperties]);
-}
-
-// Use in your app
-function App() {
-  const { user } = useAuth();
-  useTracking(user?.id, { name: user?.name, role: user?.role });
-  // ...
-}
+tracker.setUserId('user-123')
+tracker.setUserProperties({ name: 'John Doe', role: 'admin' })
 ```
 
 ## API Endpoints

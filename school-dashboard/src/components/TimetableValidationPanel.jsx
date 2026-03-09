@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardBody, CardHeader, Progress, Badge, Button, Tabs, Tab } from '@heroui/react';
 import api from '../services/api';
+import { CURRENT_ACADEMIC_YEAR } from '../utils/constants';
 
 /**
  * TimetableValidationPanel Component
  * Displays validation results for timetable completeness
  * Shows empty slots for classes and unassigned periods for teachers
  */
-const TimetableValidationPanel = ({ type = 'class', id, academicYear = '2024-25' }) => {
+const TimetableValidationPanel = ({ type = 'class', id, academicYear }) => {
+  const resolvedAcademicYear = academicYear || CURRENT_ACADEMIC_YEAR;
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState(null);
   const [error, setError] = useState(null);
@@ -17,7 +19,7 @@ const TimetableValidationPanel = ({ type = 'class', id, academicYear = '2024-25'
     if (id) {
       fetchValidationReport();
     }
-  }, [id, type, academicYear]);
+  }, [id, type, resolvedAcademicYear]);
 
   const fetchValidationReport = async () => {
     setLoading(true);
@@ -29,7 +31,7 @@ const TimetableValidationPanel = ({ type = 'class', id, academicYear = '2024-25'
         : `/api/validation/teacher/${id}/report`;
 
       const response = await api.get(endpoint, {
-        params: { academicYear }
+        params: { academicYear: resolvedAcademicYear }
       });
 
       if (response.data.success) {
@@ -275,3 +277,4 @@ const TimetableValidationPanel = ({ type = 'class', id, academicYear = '2024-25'
 };
 
 export default TimetableValidationPanel;
+

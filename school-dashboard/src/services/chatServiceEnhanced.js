@@ -2,37 +2,17 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 class ChatServiceEnhanced {
-  // Helper to get auth headers
   getAuthHeaders() {
-    // Get token from sessionStorage (same as api.js)
-    const storedUser = sessionStorage.getItem('app_user');
-    let token = null;
-
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        token = userData.token;
-      } catch (err) {
-        console.error('❌ [CHAT] Failed to parse user data from sessionStorage:', err);
-      }
-    }
-
-    console.log('🔑 [CHAT] Token from sessionStorage.app_user:', token ? `Bearer ${token.substring(0, 20)}...` : 'NO TOKEN FOUND');
-
-    const headers = {
+    return {
       'Content-Type': 'application/json',
     };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    return headers;
   }
 
-  // Get user's chat permissions
   async getPermissions(userId, userType) {
     try {
       const response = await fetch(`${API_URL}/messages/permissions?userId=${userId}&userType=${userType}`, {
-        headers: this.getAuthHeaders()
+        headers: this.getAuthHeaders(),
+        credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to get permissions');
       return await response.json();
@@ -42,11 +22,11 @@ class ChatServiceEnhanced {
     }
   }
 
-  // Get all conversations for a user
   async getConversations(userId, userType) {
     try {
       const response = await fetch(`${API_URL}/messages/conversations?userId=${userId}&userType=${userType}`, {
-        headers: this.getAuthHeaders()
+        headers: this.getAuthHeaders(),
+        credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to get conversations');
       return await response.json();
@@ -56,12 +36,12 @@ class ChatServiceEnhanced {
     }
   }
 
-  // Create or get a conversation
   async createConversation(user1Id, user1Type, user2Id, user2Type) {
     try {
       const response = await fetch(`${API_URL}/messages/conversations`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify({ user1Id, user1Type, user2Id, user2Type })
       });
       if (!response.ok) {
@@ -75,14 +55,14 @@ class ChatServiceEnhanced {
     }
   }
 
-  // Get messages for a conversation
   async getMessages(conversationId, limit = 50, before = null) {
     try {
       let url = `${API_URL}/messages/conversations/${conversationId}/messages?limit=${limit}`;
       if (before) url += `&before=${before}`;
 
       const response = await fetch(url, {
-        headers: this.getAuthHeaders()
+        headers: this.getAuthHeaders(),
+        credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to get messages');
       return await response.json();
@@ -92,12 +72,12 @@ class ChatServiceEnhanced {
     }
   }
 
-  // Send a message (REST fallback)
   async sendMessage(data) {
     try {
       const response = await fetch(`${API_URL}/messages`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify(data)
       });
       if (!response.ok) throw new Error('Failed to send message');
@@ -108,12 +88,12 @@ class ChatServiceEnhanced {
     }
   }
 
-  // Mark messages as read
   async markAsRead(conversationId, userId) {
     try {
       const response = await fetch(`${API_URL}/messages/read`, {
         method: 'PUT',
         headers: this.getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify({ conversationId, userId })
       });
       if (!response.ok) throw new Error('Failed to mark as read');
@@ -124,12 +104,12 @@ class ChatServiceEnhanced {
     }
   }
 
-  // Delete a message
   async deleteMessage(messageId, userId) {
     try {
       const response = await fetch(`${API_URL}/messages/${messageId}?userId=${userId}`, {
         method: 'DELETE',
-        headers: this.getAuthHeaders()
+        headers: this.getAuthHeaders(),
+        credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to delete message');
       return await response.json();
@@ -139,11 +119,11 @@ class ChatServiceEnhanced {
     }
   }
 
-  // Search messages
   async searchMessages(userId, query, limit = 20) {
     try {
       const response = await fetch(`${API_URL}/messages/search?userId=${userId}&query=${encodeURIComponent(query)}&limit=${limit}`, {
-        headers: this.getAuthHeaders()
+        headers: this.getAuthHeaders(),
+        credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to search messages');
       return await response.json();
@@ -153,11 +133,11 @@ class ChatServiceEnhanced {
     }
   }
 
-  // Get user presence
   async getUserPresence(userId) {
     try {
       const response = await fetch(`${API_URL}/messages/presence/${userId}`, {
-        headers: this.getAuthHeaders()
+        headers: this.getAuthHeaders(),
+        credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to get presence');
       return await response.json();
@@ -167,11 +147,11 @@ class ChatServiceEnhanced {
     }
   }
 
-  // Get online users
   async getOnlineUsers() {
     try {
       const response = await fetch(`${API_URL}/messages/presence/online`, {
-        headers: this.getAuthHeaders()
+        headers: this.getAuthHeaders(),
+        credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to get online users');
       return await response.json();
@@ -181,38 +161,14 @@ class ChatServiceEnhanced {
     }
   }
 
-  // Upload file for chat
   async uploadFile(file) {
     try {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Get token from sessionStorage (same as other methods)
-      const storedUser = sessionStorage.getItem('app_user');
-      let token = null;
-
-      if (storedUser) {
-        try {
-          const userData = JSON.parse(storedUser);
-          token = userData.token;
-        } catch (err) {
-          console.error('Failed to parse user data:', err);
-        }
-      }
-
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
-      const headers = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      // API_URL already includes /api, so just use it directly
       const response = await fetch(`${API_URL}/upload`, {
         method: 'POST',
-        headers,
+        credentials: 'include',
         body: formData
       });
 

@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { useApp } from "../../../context/AppContext";
+import { getAuthHeaders as buildAuthHeaders } from "../../../utils/authSession";
 
 /**
  * Custom hook for fetching student fee structure
@@ -9,7 +11,8 @@ import { useState, useEffect, useCallback } from "react";
  * @returns {Object} Fee structure data and loading state
  */
 export function useStudentFees(studentId, options = {}) {
-  const { academicYear = "2024-25", autoInitialize = true } = options;
+  const { currentAcademicYear } = useApp();
+  const { academicYear = currentAcademicYear, autoInitialize = true } = options;
   
   const [feeStructure, setFeeStructure] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -19,11 +22,7 @@ export function useStudentFees(studentId, options = {}) {
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
 
   const getAuthHeaders = useCallback(() => {
-    const storedUser = localStorage.getItem("app_user");
-    const token = storedUser ? JSON.parse(storedUser).token : null;
-    const headers = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-    return headers;
+    return buildAuthHeaders({ "Content-Type": "application/json" });
   }, []);
 
   const initializeFeeStructure = useCallback(async () => {
@@ -109,7 +108,8 @@ export function useStudentFees(studentId, options = {}) {
  * Used in StudentsList for better performance
  */
 export function useBatchStudentFees(studentIds, options = {}) {
-  const { academicYear = "2024-25" } = options;
+  const { currentAcademicYear } = useApp();
+  const { academicYear = currentAcademicYear } = options;
   const [feeStructures, setFeeStructures] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -125,10 +125,7 @@ export function useBatchStudentFees(studentIds, options = {}) {
     const fetchBatchFees = async () => {
       setLoading(true);
       try {
-        const storedUser = localStorage.getItem("app_user");
-        const token = storedUser ? JSON.parse(storedUser).token : null;
-        const headers = { "Content-Type": "application/json" };
-        if (token) headers["Authorization"] = `Bearer ${token}`;
+        const headers = buildAuthHeaders({ "Content-Type": "application/json" });
 
         // Fetch in batches of 10 to avoid overwhelming the server
         const batchSize = 10;

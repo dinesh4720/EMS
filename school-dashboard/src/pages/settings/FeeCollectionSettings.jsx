@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { Card, CardBody, Input, Button, Switch, Select, SelectItem, Divider, Slider, Chip, Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/react";
 import { Layers, Calendar, AlertCircle, DollarSign, Save, CheckCircle, Info } from "lucide-react";
 import toast from "react-hot-toast";
+import { getAuthHeaders } from "../../utils/authSession";
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 export default function FeeCollectionSettings() {
   const [loading, setLoading] = useState(false);
@@ -26,7 +29,9 @@ export default function FeeCollectionSettings() {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/school-settings`);
+      const response = await fetch(`${API_URL}/school-settings`, {
+        headers: getAuthHeaders()
+      });
       const data = await response.json();
       
       if (data && data.feeCollection) {
@@ -86,9 +91,12 @@ export default function FeeCollectionSettings() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/school-settings`, {
+      const response = await fetch(`${API_URL}/school-settings`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({
           feeCollection: {
             collectionMode: settings.collectionMode,

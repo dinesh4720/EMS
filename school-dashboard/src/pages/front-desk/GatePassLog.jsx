@@ -40,6 +40,8 @@ const GatePassLog = forwardRef((props, ref) => {
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [selectedGatePassForPrint, setSelectedGatePassForPrint] = useState(null);
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  const [studentsLoading, setStudentsLoading] = useState(false);
 
   // Form state
   const [studentId, setStudentId] = useState(null);
@@ -79,6 +81,16 @@ const GatePassLog = forwardRef((props, ref) => {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (!isModalOpen) return;
+
+    const timeoutId = setTimeout(() => {
+      loadStudents(studentSearchQuery);
+    }, 250);
+
+    return () => clearTimeout(timeoutId);
+  }, [isModalOpen, studentSearchQuery]);
+
   useImperativeHandle(ref, () => ({
     openModal: () => {
       resetForm();
@@ -96,12 +108,20 @@ const GatePassLog = forwardRef((props, ref) => {
     }
   };
 
-  const loadStudents = async () => {
+  const loadStudents = async (query = '') => {
     try {
-      const response = await studentsApi.getAll();
-      setStudents(response);
+      setStudentsLoading(true);
+      const response = await studentsApi.list({
+        page: 1,
+        limit: 20,
+        status: 'active',
+        search: query || undefined,
+      });
+      setStudents(response.data || []);
     } catch (error) {
       console.error('Failed to load students:', error);
+    } finally {
+      setStudentsLoading(false);
     }
   };
 
@@ -116,6 +136,7 @@ const GatePassLog = forwardRef((props, ref) => {
 
   const resetForm = () => {
     setStudentId(null);
+    setStudentSearchQuery('');
     setReason(null);
     setOtherReason('');
     setLeavingDate(new Date().toISOString().split('T')[0]);
@@ -134,7 +155,7 @@ const GatePassLog = forwardRef((props, ref) => {
 
   const getSelectedStudent = () => {
     if (!studentId || !students) return null;
-    return students.find(s => (s._id || s.id) === studentId);
+    return students.find(s => String(s._id || s.id) === String(studentId));
   };
 
   const getSelectedStaff = () => {
@@ -229,6 +250,7 @@ const GatePassLog = forwardRef((props, ref) => {
     if (!gatePass) return; // Null check
     setEditingId(gatePass._id);
     setStudentId(gatePass.studentId || null);
+    setStudentSearchQuery(gatePass.studentName || '');
     setReason(gatePass.reason || null);
     setOtherReason(gatePass.otherReason || '');
     setLeavingDate(gatePass.leavingDate || new Date().toISOString().split('T')[0]);
@@ -242,6 +264,22 @@ const GatePassLog = forwardRef((props, ref) => {
     setApprovedBy(gatePass.approvedBy || null);
     setApprovedByStaffId(gatePass.approvedByStaffId || null);
     setNotes(gatePass.notes || '');
+
+    if (gatePass.studentId && !students.some(s => String(s._id || s.id) === String(gatePass.studentId))) {
+      studentsApi.getById(gatePass.studentId)
+        .then((student) => {
+          if (student) {
+            setStudents(prev => {
+              if (prev.some(item => String(item._id || item.id) === String(student._id || student.id))) {
+                return prev;
+              }
+              return [student, ...prev];
+            });
+          }
+        })
+        .catch(() => {});
+    }
+
     setIsModalOpen(true);
   };
 
@@ -383,10 +421,13 @@ const GatePassLog = forwardRef((props, ref) => {
                 label="Select Student"
                 placeholder="Search and select student"
                 selectedKey={studentId ? String(studentId) : null}
+                inputValue={studentSearchQuery}
+                onInputChange={setStudentSearchQuery}
                 onSelectionChange={(key) => {
                   setStudentId(key || null);
                 }}
                 isRequired
+                isLoading={studentsLoading}
                 className="col-span-2"
               >
                 {students.map((student) => (

@@ -1,34 +1,23 @@
 import { useState, useMemo } from "react";
-import { Card, CardBody, Button, Textarea, Chip } from "@heroui/react";
-import { Star, StarHalf, Award, Clock, TrendingUp, Edit3, Save, X } from "lucide-react";
+import { Button, Textarea } from "@heroui/react";
+import { Star, Award, Clock, Edit3, Save, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 const RATING_DIMENSIONS = [
-  { key: "behaviour", label: "Behaviour", icon: "🎯", description: "Conduct and attitude" },
-  { key: "academics", label: "Academics", icon: "📚", description: "Subject performance" },
-  { key: "extraCurricular", label: "Extra Curricular", icon: "🎨", description: "Activities & sports" },
-  { key: "attendance", label: "Attendance", icon: "📅", description: "Presence record" },
-  { key: "discipline", label: "Discipline", icon: "⚖️", description: "Rules adherence" }
+  { key: "behaviour", label: "Behaviour", icon: Award, description: "Conduct and attitude" },
+  { key: "academics", label: "Academics", icon: Award, description: "Subject performance" },
+  { key: "extraCurricular", label: "Extra Curricular", icon: Award, description: "Activities & sports" },
+  { key: "attendance", label: "Attendance", icon: Award, description: "Presence record" },
+  { key: "discipline", label: "Discipline", icon: Award, description: "Rules adherence" }
 ];
 
 const RATING_LABELS = {
-  1: { text: "Needs Improvement", color: "danger" },
-  2: { text: "Fair", color: "warning" },
-  3: { text: "Good", color: "default" },
-  4: { text: "Very Good", color: "success" },
-  5: { text: "Excellent", color: "primary" }
-};
-
-const getRatingColor = (rating) => {
-  if (rating >= 4) return "text-success";
-  if (rating === 3) return "text-warning";
-  return "text-danger";
-};
-
-const getRatingBgColor = (rating) => {
-  if (rating >= 4) return "bg-success-50";
-  if (rating === 3) return "bg-warning-50";
-  return "bg-danger-50";
+  0: { text: "Not Rated", color: "gray" },
+  1: { text: "Needs Improvement", color: "gray" },
+  2: { text: "Fair", color: "gray" },
+  3: { text: "Good", color: "gray" },
+  4: { text: "Very Good", color: "gray" },
+  5: { text: "Excellent", color: "gray" }
 };
 
 const StarRating = ({ rating, onRatingChange, editable, dimension }) => {
@@ -42,18 +31,14 @@ const StarRating = ({ rating, onRatingChange, editable, dimension }) => {
         key={star}
         type="button"
         disabled={!editable}
-        className={`transition-all duration-200 ${
-          editable ? "cursor-pointer" : "cursor-default"
-        }`}
+        className={`transition-all duration-150 ${editable ? "cursor-pointer hover:scale-110" : "cursor-default"}`}
         onClick={() => editable && onRatingChange(dimension, star)}
         onMouseEnter={() => editable && setHover(star)}
         onMouseLeave={() => editable && setHover(0)}
       >
         <Star
-          size={editable ? 24 : 20}
-          className={`${fill ? "text-gray-600" : "text-gray-200"} ${
-            editable && star <= hover ? "" : ""
-          }`}
+          size={18}
+          className={fill ? "text-gray-700" : "text-gray-200"}
           fill={fill ? "currentColor" : "none"}
           strokeWidth={fill ? 0 : 2}
         />
@@ -61,7 +46,7 @@ const StarRating = ({ rating, onRatingChange, editable, dimension }) => {
     );
   });
 
-  return <div className="flex items-center gap-1">{stars}</div>;
+  return <div className="flex items-center gap-0.5">{stars}</div>;
 };
 
 export default function StudentRatingSystem({
@@ -77,7 +62,6 @@ export default function StudentRatingSystem({
 
   const isEditing = externalIsEditing || internalEditing;
 
-  // Initialize temp ratings when entering edit mode
   const handleStartEdit = () => {
     setTempRatings({ ...ratings });
     setTempComments({
@@ -120,7 +104,6 @@ export default function StudentRatingSystem({
   };
 
   const handleSave = () => {
-    // Validate that all dimensions have ratings
     const hasEmptyRatings = RATING_DIMENSIONS.some(
       (dim) => !tempRatings[dim.key] || tempRatings[dim.key].rating === 0
     );
@@ -164,192 +147,150 @@ export default function StudentRatingSystem({
   const currentRatings = isEditing ? tempRatings : ratings;
 
   return (
-    <Card className="border border-gray-200 overflow-hidden">
-      <CardBody className="p-0">
-        {/* Header Section */}
-        <div className="bg-gray-50 px-6 py-5 border-b border-gray-100">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-white rounded-lg border border-gray-200">
-                <Award size={28} className="text-gray-600" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">Student Rating</h3>
-                <p className="text-sm text-gray-500 mt-0.5">Overall performance assessment</p>
-              </div>
-            </div>
-
-            {/* Overall Rating Badge */}
-            <div
-              className={`px-6 py-3 rounded-lg bg-white border border-gray-200 flex items-center gap-3 transition-all duration-300`}
-            >
-              <TrendingUp size={24} className="text-gray-600" />
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">
-                  Overall Rating
-                </p>
-                <p className={`text-2xl font-bold text-gray-900`}>
-                  {overallRating > 0 ? overallRating : "—"}
-                  <span className="text-sm font-normal text-gray-500 ml-1">/ 5.0</span>
-                </p>
-              </div>
-            </div>
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+            <Award size={18} className="text-gray-600" />
           </div>
-
-          {/* Last Updated */}
-          {lastUpdated && (
-            <div className="flex items-center gap-2 mt-4 text-xs text-gray-500">
-              <Clock size={14} />
-              <span>Last updated: {lastUpdated.toLocaleDateString("en-US", {
-                month: "long",
-                day: "numeric",
-                year: "numeric"
-              })}</span>
-            </div>
-          )}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900">Student Rating</h3>
+            <p className="text-xs text-gray-500">Overall performance assessment</p>
+          </div>
         </div>
 
-        {/* Rating Dimensions */}
-        <div className="p-6 space-y-5">
-          {RATING_DIMENSIONS.map((dimension, index) => {
-            const ratingData = currentRatings[dimension.key];
-            const rating = ratingData?.rating || 0;
-            const comment = ratingData?.comment || "";
-            const ratingInfo = RATING_LABELS[rating];
+        {/* Overall Score */}
+        <div className="text-right">
+          <p className="text-2xl font-bold text-gray-900">
+            {overallRating > 0 ? overallRating : "—"}
+            <span className="text-sm font-normal text-gray-400 ml-1">/ 5</span>
+          </p>
+          {lastUpdated && (
+            <p className="text-xs text-gray-400 flex items-center justify-end gap-1 mt-0.5">
+              <Clock size={12} />
+              {lastUpdated.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+            </p>
+          )}
+        </div>
+      </div>
 
-            return (
-              <div
-                key={dimension.key}
-                className="group relative animate-slide-up"
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                {/* Dimension Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{dimension.icon}</span>
-                    <div>
-                      <h4 className="font-semibold text-gray-900">{dimension.label}</h4>
-                      <p className="text-xs text-gray-500">{dimension.description}</p>
-                    </div>
+      {/* Rating Dimensions */}
+      <div className="divide-y divide-gray-100">
+        {RATING_DIMENSIONS.map((dimension) => {
+          const ratingData = currentRatings[dimension.key];
+          const rating = ratingData?.rating || 0;
+          const comment = ratingData?.comment || "";
+          const ratingInfo = RATING_LABELS[rating];
+          const IconComponent = dimension.icon;
+
+          return (
+            <div key={dimension.key} className="px-5 py-4 hover:bg-gray-50/50 transition-colors">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <IconComponent size={14} className="text-gray-500" />
                   </div>
-
-                  {!isEditing && rating > 0 && (
-                    <Chip
-                      size="sm"
-                      variant="flat"
-                      className="font-medium bg-gray-100 text-gray-600"
-                    >
-                      {ratingInfo.text}
-                    </Chip>
-                  )}
-                </div>
-
-                {/* Stars Row */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg bg-gray-50 border border-gray-100">
-                  <div className="flex items-center gap-4">
-                    {isEditing ? (
-                      <StarRating
-                        rating={rating}
-                        onRatingChange={handleRatingChange}
-                        editable={isEditing}
-                        dimension={dimension.key}
-                      />
-                    ) : (
-                      <div className="flex items-center gap-1">
-                        {rating > 0 ? (
-                          [1, 2, 3, 4, 5].map((star) => (
-                            <Star
-                              key={star}
-                              size={20}
-                              className={
-                                star <= rating ? "text-gray-600" : "text-gray-200"
-                              }
-                              fill={star <= rating ? "currentColor" : "none"}
-                              strokeWidth={star <= rating ? 0 : 2}
-                            />
-                          ))
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-900">{dimension.label}</p>
+                      <div className="flex items-center gap-3">
+                        {isEditing ? (
+                          <StarRating
+                            rating={rating}
+                            onRatingChange={handleRatingChange}
+                            editable={isEditing}
+                            dimension={dimension.key}
+                          />
                         ) : (
-                          <span className="text-sm text-gray-400">Not rated</span>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-0.5">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  size={16}
+                                  className={star <= rating ? "text-gray-600" : "text-gray-200"}
+                                  fill={star <= rating ? "currentColor" : "none"}
+                                  strokeWidth={star <= rating ? 0 : 2}
+                                />
+                              ))}
+                            </div>
+                            {rating > 0 && (
+                              <span className="text-sm font-semibold text-gray-700">{rating}.0</span>
+                            )}
+                          </div>
+                        )}
+                        {!isEditing && (
+                          <span className="text-xs text-gray-400 w-24 text-right">
+                            {ratingInfo.text}
+                          </span>
                         )}
                       </div>
-                    )}
-
-                    {rating > 0 && (
-                      <span
-                        className={`text-lg font-bold text-gray-900 ml-2`}
-                      >
-                        {rating}.0
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Comment Section */}
-                {(isEditing || comment) && (
-                  <div className="mt-3">
+                    </div>
+                    
+                    {/* Comment */}
                     {isEditing ? (
-                      <Textarea
-                        placeholder={`Add remarks about ${dimension.label.toLowerCase()}...`}
-                        value={tempComments[dimension.key] || ""}
-                        onChange={(e) =>
-                          handleCommentChange(dimension.key, e.target.value)
-                        }
-                        minRows={2}
-                        maxRows={4}
-                        variant="bordered"
-                        classNames={{
-                          input: "text-sm",
-                          base: "max-w-full"
-                        }}
-                      />
-                    ) : comment ? (
-                      <div className="p-3 rounded-lg bg-gray-50 border border-gray-100">
-                        <p className="text-sm text-gray-600 italic">"{comment}"</p>
+                      <div className="mt-3">
+                        <Textarea
+                          placeholder={`Add remarks...`}
+                          value={tempComments[dimension.key] || ""}
+                          onChange={(e) => handleCommentChange(dimension.key, e.target.value)}
+                          minRows={2}
+                          maxRows={3}
+                          variant="bordered"
+                          classNames={{
+                            input: "text-xs",
+                            base: "max-w-full"
+                          }}
+                        />
                       </div>
+                    ) : comment ? (
+                      <p className="text-xs text-gray-500 mt-1 truncate">"{comment}"</p>
                     ) : null}
                   </div>
-                )}
+                </div>
               </div>
-            );
-          })}
-
-          {/* Edit/Save Actions */}
-          {editable && (
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
-              {!isEditing ? (
-                <Button
-                  color="primary"
-                  variant="flat"
-                  startContent={<Edit3 size={16} />}
-                  onPress={handleStartEdit}
-                  className="font-medium"
-                >
-                  Edit Ratings
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    variant="flat"
-                    color="default"
-                    startContent={<X size={16} />}
-                    onPress={handleCancelEdit}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    color="primary"
-                    startContent={<Save size={16} />}
-                    onPress={handleSave}
-                    className="font-medium"
-                  >
-                    Save Changes
-                  </Button>
-                </>
-              )}
             </div>
+          );
+        })}
+      </div>
+
+      {/* Actions */}
+      {editable && (
+        <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-end gap-2">
+          {!isEditing ? (
+            <Button
+              size="sm"
+              variant="flat"
+              className="bg-gray-100 text-gray-700"
+              startContent={<Edit3 size={14} />}
+              onPress={handleStartEdit}
+            >
+              Edit Ratings
+            </Button>
+          ) : (
+            <>
+              <Button
+                size="sm"
+                variant="light"
+                className="text-gray-500"
+                startContent={<X size={14} />}
+                onPress={handleCancelEdit}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                className="bg-gray-900 text-white hover:bg-gray-800"
+                startContent={<Save size={14} />}
+                onPress={handleSave}
+              >
+                Save Changes
+              </Button>
+            </>
           )}
         </div>
-      </CardBody>
-    </Card>
+      )}
+    </div>
   );
 }

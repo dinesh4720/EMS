@@ -1,6 +1,9 @@
-import { createContext, useContext, useState, useMemo, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { staffApi, studentsApi, classesApi, classesEnhancedApi, settingsApi, teacherAssignmentsApi, teacherTimetableApi, staffAttendanceApi, calendarEventsApi } from "../services/api";
 import toast from "react-hot-toast";
+import { CURRENT_ACADEMIC_YEAR } from "../utils/constants";
+import { clearStoredUser, getStoredUser } from "../utils/authSession";
 
 // NOTE: These are minimal fallback values only.
 // The application fetches actual data from the API on mount.
@@ -27,9 +30,134 @@ const initialSchoolSettings = {
   subjects: [],
 };
 
+const ADMIN_LIKE_ROLES = new Set(["admin", "principal", "vice principal", "vice-principal", "super admin", "superadmin"]);
+const TEACHER_ROLES = new Set(["teacher"]);
+
+function normalizeClassName(name = "") {
+  return String(name).replace(/^Class\s+/i, "").trim();
+}
+
+function extractRoleNames(roleValue) {
+  if (Array.isArray(roleValue)) {
+    return roleValue
+      .flatMap((role) => extractRoleNames(role))
+      .filter(Boolean);
+  }
+
+  if (typeof roleValue !== "string") {
+    return [];
+  }
+
+  return [roleValue.toLowerCase().trim()];
+}
+
+function hasAnyRole(user, allowedRoles) {
+  return extractRoleNames(user?.role).some((role) => allowedRoles.has(role));
+}
+
+function formatClassLabel(className, section) {
+  const normalizedName = normalizeClassName(className);
+  if (!normalizedName) {
+    return null;
+  }
+
+  return section ? `${normalizedName}-${section}` : normalizedName;
+}
+
+function normalizeStaffMember(staffMember, fallbackUser = null) {
+  const source = staffMember || fallbackUser;
+  if (!source) {
+    return null;
+  }
+
+  return {
+    ...source,
+    id: String(source.id || source._id || ""),
+    role: source.role || fallbackUser?.role || [],
+    status: source.status || "active",
+    picture: source.picture || source.photo || fallbackUser?.picture || null,
+    photo: source.photo || source.picture || fallbackUser?.picture || null,
+  };
+}
+
+function normalizeClassRecord(classItem, fallbackClassTeacherId = null) {
+  if (!classItem) {
+    return null;
+  }
+
+  const sourceName = classItem.className || classItem.name || "";
+  const normalizedName = normalizeClassName(sourceName);
+  const classTeacherId = classItem.classTeacherId || (classItem.isClassTeacher ? fallbackClassTeacherId : null);
+  const studentCount = classItem.studentCount ?? classItem.strength ?? classItem.students ?? 0;
+
+  return {
+    ...classItem,
+    id: String(classItem.id || classItem._id || ""),
+    name: normalizedName,
+    section: classItem.section || "",
+    classTeacherId: classTeacherId ? String(classTeacherId) : null,
+    strength: studentCount,
+    studentCount,
+    attendance: classItem.attendance ?? 0,
+  };
+}
+
+function normalizeStudentRecord(student, classLookup = new Map()) {
+  if (!student) {
+    return null;
+  }
+
+  const classId = String(student.classId?._id || student.classId || "");
+  const relatedClass = classLookup.get(classId);
+  const classLabel = student.class || formatClassLabel(relatedClass?.name, relatedClass?.section);
+  const className = student.className || (relatedClass ? `Class ${relatedClass.name}${relatedClass.section ? ` ${relatedClass.section}` : ""}` : null);
+
+  return {
+    ...student,
+    id: String(student.id || student._id || ""),
+    classId,
+    class: classLabel,
+    className,
+    feeStatus: student.feeStatus || "pending",
+    status: student.status || "active",
+  };
+}
+
+function dedupeById(items = []) {
+  const deduped = new Map();
+
+  items.forEach((item) => {
+    if (item?.id) {
+      deduped.set(String(item.id), item);
+    }
+  });
+
+  return Array.from(deduped.values());
+}
+
+const STUDENT_PRELOAD_PATH_PATTERNS = [
+  /^\/$/,
+  /^\/analytics(?:\/|$)/,
+  /^\/classes(?:\/|$)/,
+  /^\/messaging(?:\/|$)/,
+  /^\/settings\/subscription(?:\/|$)/,
+  /^\/students\/.+/,
+];
+
+function shouldHydrateStudentsForPath(pathname = "") {
+  if (/^\/students\/?$/.test(pathname)) {
+    return false;
+  }
+
+  return STUDENT_PRELOAD_PATH_PATTERNS.some((pattern) => pattern.test(pathname));
+}
+
 const AppContext = createContext();
 
 export function AppProvider({ children }) {
+  const location = useLocation();
+  const shouldPreloadStudents = shouldHydrateStudentsForPath(location.pathname);
+  const hasInitializedRef = useRef(false);
   // State - now fetched from API
   const [staff, setStaff] = useState([]);
   const [students, setStudents] = useState([]);
@@ -44,6 +172,9 @@ export function AppProvider({ children }) {
   const [error, setError] = useState(null);
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [studentsHydrated, setStudentsHydrated] = useState(false);
+
+  const teacherTimetableYear = schoolSettings?.academicYear || CURRENT_ACADEMIC_YEAR;
 
   // Fetch staff attendance from API
   const fetchStaffAttendance = useCallback(async () => {
@@ -84,48 +215,186 @@ export function AppProvider({ children }) {
     }
   }, []);
 
+  const fetchTeacherScopedData = useCallback(async (user, skipCache = false, options = {}) => {
+    const includeStudents = options.includeStudents ?? true;
+    const [staffProfile, assignedClassRefs] = await Promise.all([
+      staffApi.getById(user.id).catch(() => user),
+      staffApi.getClasses(user.id).catch(() => []),
+      teacherTimetableApi.get(user.id, teacherTimetableYear).catch(() => null),
+    ]);
+
+    const normalizedStaffProfile = normalizeStaffMember(staffProfile, user);
+    const classMap = new Map();
+
+    (user.classes || []).forEach((classItem) => {
+      const normalizedClass = normalizeClassRecord(classItem, user.id);
+      if (normalizedClass?.id) {
+        classMap.set(normalizedClass.id, normalizedClass);
+      }
+    });
+
+    (assignedClassRefs || []).forEach((classItem) => {
+      const normalizedClass = normalizeClassRecord(classItem, user.id);
+      if (normalizedClass?.id) {
+        classMap.set(normalizedClass.id, {
+          ...(classMap.get(normalizedClass.id) || {}),
+          ...normalizedClass,
+        });
+      }
+    });
+
+    const classIds = Array.from(classMap.keys());
+    const detailedClasses = await Promise.all(
+      classIds.map((classId) => classesApi.getById(classId).catch(() => null))
+    );
+
+    detailedClasses.forEach((classItem) => {
+      const normalizedClass = normalizeClassRecord(classItem);
+      if (normalizedClass?.id) {
+        classMap.set(normalizedClass.id, {
+          ...(classMap.get(normalizedClass.id) || {}),
+          ...normalizedClass,
+        });
+      }
+    });
+
+    const normalizedClasses = Array.from(classMap.values());
+
+    setStaff(normalizedStaffProfile ? [normalizedStaffProfile] : []);
+    setClasses(normalizedClasses);
+    if (includeStudents) {
+      const classLookup = new Map(normalizedClasses.map((classItem) => [String(classItem.id), classItem]));
+      const studentsByClass = await Promise.all(
+        normalizedClasses.map((classItem) => classesApi.getStudents(classItem.id).catch(() => []))
+      );
+
+      const normalizedStudents = dedupeById(
+        studentsByClass
+          .flat()
+          .map((student) => normalizeStudentRecord(student, classLookup))
+          .filter(Boolean)
+      );
+
+      setStudents(normalizedStudents);
+    }
+    setStaffAttendance({});
+  }, [teacherTimetableYear]);
+
+  const loadAllStudentsForContext = useCallback(async (skipCache = false) => {
+    const firstPage = await studentsApi.list({
+      page: 1,
+      limit: 100,
+    }, { skipCache });
+
+    const allStudents = [...(firstPage.data || [])];
+    const totalPages = firstPage.pagination?.totalPages || 1;
+
+    for (let page = 2; page <= totalPages; page += 1) {
+      const nextPage = await studentsApi.list({
+        page,
+        limit: 100,
+      }, { skipCache });
+      allStudents.push(...(nextPage.data || []));
+    }
+
+    return allStudents;
+  }, [loadAllStudentsForContext]);
+
+  const fetchOperationalData = useCallback(async (user, skipCache = false, options = {}) => {
+    const includeStudents = options.includeStudents ?? true;
+    const [staffProfile, studentsData, classesData] = await Promise.all([
+      staffApi.getById(user.id).catch(() => user),
+      includeStudents ? loadAllStudentsForContext(skipCache) : Promise.resolve([]),
+      classesApi.getAll(skipCache),
+    ]);
+
+    const normalizedClasses = (Array.isArray(classesData) ? classesData : [])
+      .map((classItem) => normalizeClassRecord(classItem))
+      .filter(Boolean);
+    const classLookup = new Map(normalizedClasses.map((classItem) => [String(classItem.id), classItem]));
+    const normalizedStudents = (Array.isArray(studentsData) ? studentsData : [])
+      .map((student) => normalizeStudentRecord(student, classLookup))
+      .filter(Boolean);
+    const normalizedStaffProfile = normalizeStaffMember(staffProfile, user);
+
+    setStaff(normalizedStaffProfile ? [normalizedStaffProfile] : []);
+    if (includeStudents) {
+      setStudents(normalizedStudents);
+    }
+    setClasses(normalizedClasses);
+    setStaffAttendance({});
+  }, []);
+
+  const fetchAdministrativeData = useCallback(async (skipCache = false, options = {}) => {
+    const includeStudents = options.includeStudents ?? true;
+    const [staffData, studentsData, classesData] = await Promise.all([
+      staffApi.getAll(skipCache),
+      includeStudents ? loadAllStudentsForContext(skipCache) : Promise.resolve([]),
+      classesApi.getAll(skipCache),
+    ]);
+
+    const normalizedClasses = (Array.isArray(classesData) ? classesData : [])
+      .map((classItem) => normalizeClassRecord(classItem))
+      .filter(Boolean);
+    const classLookup = new Map(normalizedClasses.map((classItem) => [String(classItem.id), classItem]));
+    const normalizedStudents = (Array.isArray(studentsData) ? studentsData : [])
+      .map((student) => normalizeStudentRecord(student, classLookup))
+      .filter(Boolean);
+    const normalizedStaff = (Array.isArray(staffData) ? staffData : [])
+      .map((staffMember) => normalizeStaffMember(staffMember))
+      .filter(Boolean);
+
+    console.log('✅ Data fetched successfully:', {
+      staff: normalizedStaff.length,
+      students: normalizedStudents.length,
+      classes: normalizedClasses.length
+    });
+
+    setStaff(normalizedStaff);
+    if (includeStudents) {
+      setStudents(normalizedStudents);
+    }
+    setClasses(normalizedClasses);
+    await fetchStaffAttendance();
+  }, [fetchStaffAttendance, loadAllStudentsForContext]);
+
   // Fetch data from API on mount
-  const fetchData = useCallback(async (skipCache = false, retryCount = 0) => {
+  const fetchData = useCallback(async (skipCache = false, retryCount = 0, options = {}) => {
     const MAX_RETRIES = 3;
+    const includeStudents = options.includeStudents ?? true;
     
     try {
+      const storedUser = getStoredUser();
+
       console.log('🔄 Starting to fetch data...');
       // Only set loading to true if this is not a background refresh
       if (retryCount === 0) {
         setLoading(true);
       }
 
-      console.log('📡 Fetching from API...');
-      const [staffData, studentsData, classesData] = await Promise.all([
-        staffApi.getAll(skipCache),
-        studentsApi.getAll(skipCache),
-        classesApi.getAll(skipCache),
-      ]);
+      if (!storedUser?.id) {
+        setStaff([]);
+        setStudents([]);
+        setClasses([]);
+        setStaffAttendance({});
+        setStudentsHydrated(false);
+        setLoading(false);
+        return;
+      }
 
-      // Ensure we always have arrays
-      const safeStaffData = Array.isArray(staffData) ? staffData : [];
-      const safeStudentsData = Array.isArray(studentsData) ? studentsData : [];
-      const safeClassesData = Array.isArray(classesData) ? classesData : [];
+      console.log('📡 Fetching role-aware preload for:', storedUser.role);
 
-      console.log('✅ Data fetched successfully:', {
-        staff: safeStaffData.length,
-        students: safeStudentsData.length,
-        classes: safeClassesData.length
-      });
+      if (hasAnyRole(storedUser, ADMIN_LIKE_ROLES)) {
+        await fetchAdministrativeData(skipCache, { includeStudents });
+      } else if (hasAnyRole(storedUser, TEACHER_ROLES)) {
+        await fetchTeacherScopedData(storedUser, skipCache, { includeStudents });
+      } else {
+        await fetchOperationalData(storedUser, skipCache, { includeStudents });
+      }
 
-      setStaff(safeStaffData);
-      setStudents(safeStudentsData);
-      setClasses(safeClassesData.map(c => ({
-        ...c,
-        name: c.name.replace('Class ', ''),
-        strength: c.studentCount || 0,
-        classTeacherId: c.classTeacherId,
-        attendance: 0, // FIXED: Use 0 instead of random until real calculation available
-        // TODO: Calculate from actual student attendance data
-      })));
-
-      // Fetch staff attendance after staff data is loaded
-      await fetchStaffAttendance();
+      if (includeStudents) {
+        setStudentsHydrated(true);
+      }
 
       setError(null);
     } catch (err) {
@@ -135,14 +404,14 @@ export function AppProvider({ children }) {
       // If unauthorized, clear session and let AuthContext handle redirect
       if (err.message === 'Unauthorized' || err.message === 'Authentication required') {
         console.warn('⚠️ Token expired or invalid, clearing session');
-        sessionStorage.removeItem('app_user');
+        clearStoredUser();
         // Don't show error toast for auth issues, let login page handle it
       } else {
         // Retry logic for network errors
         if (retryCount < MAX_RETRIES && (err.message?.includes('network') || err.message?.includes('fetch'))) {
           console.log(`🔄 Retrying fetch (${retryCount + 1}/${MAX_RETRIES})...`);
           await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
-          return fetchData(skipCache, retryCount + 1);
+          return fetchData(skipCache, retryCount + 1, options);
         }
         
         setError(err.message);
@@ -152,7 +421,9 @@ export function AppProvider({ children }) {
       console.log('✅ Setting loading to false');
       setLoading(false);
     }
-  }, [fetchStaffAttendance]);
+  }, [fetchAdministrativeData, fetchOperationalData, fetchTeacherScopedData]);
+
+  const currentAcademicYear = schoolSettings?.academicYear || CURRENT_ACADEMIC_YEAR;
 
   // Fetch all settings from API
   const fetchSettings = useCallback(async (retryCount = 0) => {
@@ -225,66 +496,42 @@ export function AppProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    // Only fetch data if user is authenticated (has token in sessionStorage)
-    const storedUser = sessionStorage.getItem('app_user');
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        // Only fetch if we have a valid token
-        if (userData.token) {
-          fetchData();
-          fetchSettings();
-        } else {
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error('Invalid stored user data:', err);
-        setLoading(false);
+    const storedUser = getStoredUser();
+    if (storedUser?.id) {
+      if (!hasInitializedRef.current) {
+        hasInitializedRef.current = true;
+        fetchData(false, 0, { includeStudents: shouldPreloadStudents });
+        fetchSettings();
+        return;
+      }
+
+      if (shouldPreloadStudents && !studentsHydrated) {
+        fetchData(false, 0, { includeStudents: true });
       }
     } else {
-      // If not authenticated, just set loading to false
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array - only run once on mount
+  }, [fetchData, fetchSettings, shouldPreloadStudents, studentsHydrated]);
 
   // Listen for storage events to detect login from other tabs or login event
   useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key === 'app_user' && e.newValue) {
         // User just logged in, fetch data
-        fetchData();
+        fetchData(false, 0, { includeStudents: shouldPreloadStudents });
         fetchSettings();
       }
     };
 
     // Also listen for a custom event for same-tab login
     const handleLogin = () => {
-      // Verify token exists before fetching
-      const storedUser = sessionStorage.getItem('app_user');
-      console.log('🔍 handleLogin called, checking sessionStorage...');
+      const userData = getStoredUser();
 
-      if (storedUser) {
-        try {
-          const userData = JSON.parse(storedUser);
-          console.log('📋 User data found:', {
-            hasToken: !!userData.token,
-            userId: userData.id,
-            name: userData.name
-          });
-
-          if (userData.token) {
-            console.log('✅ Token found, fetching data after login');
-            fetchData();
-            fetchSettings();
-          } else {
-            console.warn('⚠️ No token found in user data');
-          }
-        } catch (err) {
-          console.error('❌ Error parsing user data:', err);
-        }
+      if (userData?.id) {
+        fetchData(false, 0, { includeStudents: shouldPreloadStudents });
+        fetchSettings();
       } else {
-        console.warn('⚠️ No user data in sessionStorage');
+        setLoading(false);
       }
     };
 
@@ -295,26 +542,13 @@ export function AppProvider({ children }) {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('user-logged-in', handleLogin);
     };
-  }, [fetchData, fetchSettings]);
+  }, [fetchData, fetchSettings, shouldPreloadStudents]);
 
   // Initialize Socket.IO for real-time updates when user is available
   useEffect(() => {
-    // Get user from sessionStorage
-    const userStr = sessionStorage.getItem('app_user');
-    if (!userStr) {
-      console.log('⚠️ No user found in sessionStorage, skipping socket initialization');
-      return;
-    }
-
-    let user;
-    try {
-      user = JSON.parse(userStr);
-      if (!user || !user.id) {
-        console.log('⚠️ Invalid user data in sessionStorage');
-        return;
-      }
-    } catch (err) {
-      console.error('❌ Failed to parse user from sessionStorage:', err);
+    const user = getStoredUser();
+    if (!user?.id) {
+      console.log('⚠️ No authenticated user found, skipping socket initialization');
       return;
     }
 
@@ -1159,7 +1393,7 @@ export function AppProvider({ children }) {
     }));
 
     try {
-      const user = JSON.parse(sessionStorage.getItem('app_user') || '{}');
+      const user = getStoredUser() || {};
       await staffAttendanceApi.mark({
         staffId,
         date,
@@ -1217,7 +1451,7 @@ export function AppProvider({ children }) {
     });
 
     try {
-      const user = JSON.parse(sessionStorage.getItem('app_user') || '{}');
+      const user = getStoredUser() || {};
 
       await staffAttendanceApi.markBulk({
         date,
@@ -1238,7 +1472,7 @@ export function AppProvider({ children }) {
   // Regularization functions
   const requestRegularization = async (staffId, date, requestedStatus, reason) => {
     try {
-      const user = JSON.parse(sessionStorage.getItem('app_user') || '{}');
+      const user = getStoredUser() || {};
       
       // The backend endpoint is PUT /:id/regularize where :id is staffId
       // It needs date, status, checkInTime, checkOutTime, reason, regularizedBy in body
@@ -1383,7 +1617,7 @@ export function AppProvider({ children }) {
   const value = useMemo(() => ({
     // Data
     staff, students, classes, events, feePayments, announcements,
-    staffAttendance, studentAttendance, schoolSettings,
+    staffAttendance, studentAttendance, schoolSettings, currentAcademicYear,
     leaveTypes, feeHeads,
     loading, error, settingsLoading, refetch: fetchData, refetchSettings: fetchSettings,
     // Computed
@@ -1425,7 +1659,7 @@ export function AppProvider({ children }) {
     showOnboarding, setShowOnboarding
   }), [
     staff, students, classes, events, feePayments, announcements,
-    staffAttendance, studentAttendance, schoolSettings,
+    staffAttendance, studentAttendance, schoolSettings, currentAcademicYear,
     leaveTypes, feeHeads,
     loading, error, settingsLoading,
     teachers, classesWithTeachers, feeDefaulters, dashboardStats, isBeforeSchoolHours,
@@ -1443,3 +1677,8 @@ export const useApp = () => {
   if (!context) throw new Error("useApp must be used within AppProvider");
   return context;
 };
+
+
+
+
+

@@ -1,12 +1,17 @@
 // Configuration for parent-app
 // API and backend settings
 
+const getEnvValue = (key, fallback) => {
+  const value = typeof process !== 'undefined' ? process.env?.[key] : undefined;
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback;
+};
+
 export const CONFIG = {
   // API Base URL - change this to your backend URL
-  API_BASE_URL: 'http://localhost:3001',
+  API_BASE_URL: getEnvValue('EXPO_PUBLIC_API_BASE_URL', 'http://localhost:3001'),
 
   // Socket URL for real-time communication
-  SOCKET_URL: 'http://localhost:3001',
+  SOCKET_URL: getEnvValue('EXPO_PUBLIC_SOCKET_URL', getEnvValue('EXPO_PUBLIC_API_BASE_URL', 'http://localhost:3001')),
 
   // App info
   APP_NAME: 'Parent App',
@@ -37,6 +42,7 @@ export const CONFIG = {
     CREATE_PAYMENT_ORDER: '/api/parent/students', // + /:id/payment/create-order
     VERIFY_PAYMENT: '/api/parent/students', // + /:id/payment/verify
     STUDENT_RESULTS: '/api/parent/students', // + /:id/results
+    STUDENT_EXAMS: '/api/parent/students', // + /:id/exams
     STUDENT_REMARKS: '/api/parent/students', // + /:id/remarks
     STUDENT_TIMETABLE: '/api/parent/timetable', // + /:studentId
     ANNOUNCEMENTS: '/api/parent/announcements',

@@ -46,7 +46,7 @@ export default function TimetableWizardModal({
   classId: initialClassId,
   onSaved
 }) {
-  const { classesWithTeachers, staff, schoolSettings, refetch } = useApp();
+  const { classesWithTeachers, staff, schoolSettings, currentAcademicYear, refetch } = useApp();
   const { hasPermission } = usePermissions();
   const canEdit = hasPermission('classes', 'edit');
 
@@ -118,7 +118,7 @@ export default function TimetableWizardModal({
 
         // Load existing timetable if any
         try {
-          const existingTimetable = await timetableApi.getByClass(classId, schoolSettings?.academicYear);
+          const existingTimetable = await timetableApi.getByClass(classId, currentAcademicYear);
           if (existingTimetable) {
             setPeriods(existingTimetable.periods || DEFAULT_PERIODS_LIST);
             setGeneratedSchedule(existingTimetable.schedule);
@@ -401,7 +401,7 @@ export default function TimetableWizardModal({
     try {
       const timetableData = {
         classId: selectedClassId,
-        academicYear: schoolSettings?.academicYear || '2024-25',
+        academicYear: currentAcademicYear,
         periods: periods,
         schedule: generatedSchedule
       };
@@ -409,7 +409,7 @@ export default function TimetableWizardModal({
       // Check if timetable exists (handle 404 as "not existing")
       let existing;
       try {
-        existing = await timetableApi.getByClass(selectedClassId, schoolSettings?.academicYear);
+        existing = await timetableApi.getByClass(selectedClassId, currentAcademicYear);
       } catch (err) {
         // 404 means no timetable exists - that's fine, we'll create a new one
         if (err.message && err.message.includes('not found')) {
@@ -591,7 +591,7 @@ export default function TimetableWizardModal({
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Academic Year</p>
-                        <p className="font-medium">{schoolSettings?.academicYear || '2024-25'}</p>
+                        <p className="font-medium">{currentAcademicYear}</p>
                       </div>
                     </div>
                   </CardBody>

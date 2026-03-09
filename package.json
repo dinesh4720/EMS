@@ -1,4 +1,30 @@
 {
+  "private": true,
+  "workspaces": [
+    "backend",
+    "school-dashboard",
+    "parent-app",
+    "staff-app",
+    "owlin"
+  ],
+  "scripts": {
+    "bootstrap": "npm install --workspaces --include-workspace-root --legacy-peer-deps && npm --prefix owlin/server install --legacy-peer-deps",
+    "dev": "node scripts/dev.mjs all",
+    "dev:web": "node scripts/dev.mjs web",
+    "dev:mobile": "node scripts/dev.mjs mobile",
+    "dev:backend": "npm run dev -w school-backend",
+    "dev:dashboard": "npm run dev -w school-dashboard",
+    "dev:parent": "npm run start -w parent-app -- --port 8081",
+    "dev:staff": "npm run start -w staff-app -- --port 8082",
+    "dev:owlin": "node scripts/dev.mjs owlin",
+    "dev:owlin:server": "npm --prefix owlin/server run dev",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "infra:up": "docker compose up -d mongo",
+    "infra:down": "docker compose down",
+    "infra:logs": "docker compose logs -f mongo"
+  },
   "dependencies": {
     "bufferutil": "^4.1.0",
     "expo": "^54.0.33",

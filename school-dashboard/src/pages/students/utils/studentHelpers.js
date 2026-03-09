@@ -1,3 +1,5 @@
+import { getStoredAuthToken } from "../../../utils/authSession";
+
 /**
  * Student Helper Utilities
  * Reusable functions for student-related operations
@@ -8,17 +10,7 @@
  * @returns {string|null} The auth token or null
  */
 export const getAuthToken = () => {
-  const storedUser = sessionStorage.getItem('app_user');
-  if (storedUser) {
-    try {
-      const userData = JSON.parse(storedUser);
-      return userData.token;
-    } catch (err) {
-      console.error('Failed to parse user data:', err);
-      return null;
-    }
-  }
-  return null;
+  return getStoredAuthToken();
 };
 
 /**
