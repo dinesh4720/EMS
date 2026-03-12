@@ -65,9 +65,15 @@ const ReportCardTemplate = ({
   };
 
   // Calculate totals from results
-  const publishedResults = results.filter(r => r.isPublished && r.marksObtained !== null);
-  const totalMarksObtained = publishedResults.reduce((sum, r) => sum + r.marksObtained, 0);
-  const totalMaxMarks = publishedResults.reduce((sum, r) => sum + r.maxMarks, 0);
+  // Note: isPublished filter removed here because the backend route already filters by isPublished: true.
+  // Using marksObtained for single-subject results, totalMarksObtained for multi-subject results.
+  const publishedResults = results.filter(r => r.marksObtained !== null || (r.marks && r.marks.length > 0));
+  const totalMarksObtained = publishedResults.reduce((sum, r) => {
+    return sum + (r.marks?.length > 0 ? (r.totalMarksObtained || 0) : (r.marksObtained || 0));
+  }, 0);
+  const totalMaxMarks = publishedResults.reduce((sum, r) => {
+    return sum + (r.marks?.length > 0 ? (r.totalMaxMarks || 0) : (r.maxMarks || 0));
+  }, 0);
   const overallPercentage = totalMaxMarks > 0 ? (totalMarksObtained / totalMaxMarks * 100) : 0;
 
   return (
@@ -262,38 +268,78 @@ const ReportCardTemplate = ({
               </tr>
             </thead>
             <tbody>
-              {publishedResults.map((result, idx) => (
-                <tr key={idx} className="border-b border-gray-100">
-                  <td className="py-4 px-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">{getSubjectIcon(result.subjectName)}</span>
-                      <span className="font-medium text-gray-800">{result.subjectName}</span>
-                    </div>
-                  </td>
-                  <td className="text-center py-4 px-4 text-gray-600">{result.maxMarks}</td>
-                  <td className="text-center py-4 px-4 font-semibold text-gray-800">{result.marksObtained}</td>
-                  <td className="text-center py-4 px-4 text-gray-600">
-                    {result.percentage?.toFixed(1) || '-'}%
-                  </td>
-                  <td className="text-center py-4 px-4">
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                      result.grade?.includes('A') ? 'bg-green-100 text-green-700' :
-                      result.grade?.includes('B') ? 'bg-blue-100 text-blue-700' :
-                      result.grade?.includes('C') ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
-                    }`}>
-                      {result.grade || 'N/A'}
-                    </span>
-                  </td>
-                  <td className="text-center py-4 px-4">
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                      result.status === 'pass' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                      {result.status || 'N/A'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {publishedResults.flatMap((result, idx) => {
+                // Multi-subject results: expand the marks array into rows
+                if (result.marks && result.marks.length > 0) {
+                  return result.marks.map((mark, mIdx) => (
+                    <tr key={`${idx}-${mIdx}`} className="border-b border-gray-100">
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg">{getSubjectIcon(mark.subjectName)}</span>
+                          <span className="font-medium text-gray-800">{mark.subjectName}</span>
+                        </div>
+                      </td>
+                      <td className="text-center py-4 px-4 text-gray-600">{mark.maxMarks}</td>
+                      <td className="text-center py-4 px-4 font-semibold text-gray-800">{mark.marksObtained}</td>
+                      <td className="text-center py-4 px-4 text-gray-600">
+                        {mark.maxMarks > 0 ? ((mark.marksObtained / mark.maxMarks) * 100).toFixed(1) : '-'}%
+                      </td>
+                      <td className="text-center py-4 px-4">
+                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                          mark.grade?.includes('A') ? 'bg-green-100 text-green-700' :
+                          mark.grade?.includes('B') ? 'bg-blue-100 text-blue-700' :
+                          mark.grade?.includes('C') ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {mark.grade || 'N/A'}
+                        </span>
+                      </td>
+                      <td className="text-center py-4 px-4">
+                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                          mark.marksObtained >= (mark.passingMarks || 0) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {mark.marksObtained >= (mark.passingMarks || 0) ? 'Pass' : 'Fail'}
+                        </span>
+                      </td>
+                    </tr>
+                  ));
+                }
+                // Single-subject results: use exam name as the label
+                const examName = result.examId?.name || 'Exam';
+                const pct = result.maxMarks > 0 ? ((result.marksObtained / result.maxMarks) * 100) : 0;
+                return [(
+                  <tr key={idx} className="border-b border-gray-100">
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">{getSubjectIcon(examName)}</span>
+                        <span className="font-medium text-gray-800">{examName}</span>
+                      </div>
+                    </td>
+                    <td className="text-center py-4 px-4 text-gray-600">{result.maxMarks}</td>
+                    <td className="text-center py-4 px-4 font-semibold text-gray-800">{result.marksObtained}</td>
+                    <td className="text-center py-4 px-4 text-gray-600">
+                      {result.percentage?.toFixed(1) || pct.toFixed(1)}%
+                    </td>
+                    <td className="text-center py-4 px-4">
+                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                        result.grade?.includes('A') ? 'bg-green-100 text-green-700' :
+                        result.grade?.includes('B') ? 'bg-blue-100 text-blue-700' :
+                        result.grade?.includes('C') ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {result.grade || 'N/A'}
+                      </span>
+                    </td>
+                    <td className="text-center py-4 px-4">
+                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                        result.status === 'passed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {result.status || 'N/A'}
+                      </span>
+                    </td>
+                  </tr>
+                )];
+              })}
               {/* Total Row */}
               <tr className="bg-gray-50 font-semibold">
                 <td className="py-4 px-4 rounded-bl-lg">Total</td>

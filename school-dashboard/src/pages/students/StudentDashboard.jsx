@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, lazy, Suspense } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import {
   Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, useDisclosure,
@@ -21,7 +22,7 @@ import {
 } from "recharts";
 import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
-import { uploadApi } from "../../services/api";
+import { feesApi, studentFeesApi, studentsApi, uploadApi } from "../../services/api";
 const AddStudent = lazy(() => import("./AddStudent"));
 import TCGeneratorModal from "./TCGeneratorModal";
 import PhotoEditorModal from "../../components/PhotoEditorModal";
@@ -31,20 +32,16 @@ import StudentDocuments from "./components/StudentDocuments";
 import StudentRemarks from "./components/StudentRemarks";
 import StudentRatingSystem from "./components/StudentRatingSystem";
 import InvoicePrintModal from "./components/InvoicePrintModal";
+import { useStudentAttendance, useStudentData, useStudentFees, useStudentRemarks, useStudentResults } from "./hooks";
 
 // ============================================================================
 // STUDENT DASHBOARD - COMPLETE REFACTOR
 // Dashboard style, full page, rounded corners, all features
 // ============================================================================
 
-const getAuthToken = () => {
-  const storedUser = sessionStorage.getItem('app_user');
-  if (storedUser) {
-    try { return JSON.parse(storedUser).token; }
-    catch { return null; }
-  }
-  return null;
-};
+function confirmPermanentDeletion(studentName) {
+  return window.confirm(`Permanently delete ${studentName}? This removes linked attendance, fees, and parent-contact data.`);
+}
 
 // Helper to get next class for promotion
 const getNextClass = (currentClass, availableClasses) => {
@@ -86,6 +83,7 @@ export default function StudentDashboard() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { getStudentById, classesWithTeachers, staff, updateStudent, deleteStudent, loading, currentAcademicYear } = useApp();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "overview");
 
@@ -98,16 +96,10 @@ export default function StudentDashboard() {
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
 
   // States
-  const [results, setResults] = useState([]);
-  const [resultsLoading, setResultsLoading] = useState(false);
-  const [studentFeeStructure, setStudentFeeStructure] = useState(null);
-  const [loadingFeeStructure, setLoadingFeeStructure] = useState(false);
-  const [feeHistory, setFeeHistory] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [activeUploads, setActiveUploads] = useState([]);
-  const [remarks, setRemarks] = useState([]);
-  const [remarksLoading, setRemarksLoading] = useState(false);
   const [remarksCategoryFilter, setRemarksCategoryFilter] = useState('all');
+  const [remarksOverride, setRemarksOverride] = useState(null);
 
   // Photo states
   const fileInputRef = useRef(null);
@@ -120,8 +112,31 @@ export default function StudentDashboard() {
   const [paymentForm, setPaymentForm] = useState({ amount: "", paymentMode: "cash", date: new Date().toISOString().split('T')[0] });
   const [reminderMessage, setReminderMessage] = useState("");
   const [isReminderOpen, setIsReminderOpen] = useState(false);
+  const currentYear = new Date().getFullYear();
+  const attendanceStartDate = `${currentYear}-01-01`;
+  const attendanceEndDate = `${currentYear}-12-31`;
 
-  const student = getStudentById(id);
+  const contextStudent = getStudentById(id);
+  const { student: hydratedStudent, refetch: refetchStudent } = useStudentData(id);
+  const student = hydratedStudent || contextStudent;
+  const { attendanceData, attendanceStats, loading: attendanceLoading } = useStudentAttendance(id, {
+    startDate: attendanceStartDate,
+    endDate: attendanceEndDate,
+  });
+  const { results, loading: resultsLoading } = useStudentResults(id);
+  const { remarks, loading: remarksLoading } = useStudentRemarks(id, { category: remarksCategoryFilter });
+  const {
+    feeStructure: studentFeeStructure,
+    loading: loadingFeeStructure,
+    refetch: refetchFeeStructure,
+  } = useStudentFees(id, { academicYear: currentAcademicYear });
+  const feeHistoryQuery = useQuery({
+    queryKey: ["students", "fee-history", id],
+    enabled: Boolean(id),
+    queryFn: () => feesApi.getPayments({ studentId: id }),
+  });
+  const feeHistory = feeHistoryQuery.data || [];
+  const displayedRemarks = remarksOverride || remarks;
 
   // Available classes
   const availableClasses = useMemo(() => {
@@ -140,56 +155,6 @@ export default function StudentDashboard() {
     if (!classInfo) return null;
     return (staff || []).find(s => s.id === classInfo.classTeacherId);
   }, [classInfo, staff]);
-
-  // Real attendance data state
-  const [attendanceData, setAttendanceData] = useState([]);
-  const [attendanceLoading, setAttendanceLoading] = useState(false);
-
-  // Fetch real attendance data
-  useEffect(() => {
-    const fetchAttendance = async () => {
-      if (!id) return;
-      
-      setAttendanceLoading(true);
-      try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-        const token = getAuthToken();
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        
-        // Get attendance for current year
-        const year = new Date().getFullYear();
-        const startDate = `${year}-01-01`;
-        const endDate = `${year}-12-31`;
-        
-        const response = await fetch(`${API_URL}/attendance/student/${id}?start=${startDate}&end=${endDate}`, { headers });
-        if (response.ok) {
-          const data = await response.json();
-          setAttendanceData(Array.isArray(data) ? data : []);
-        }
-      } catch (error) {
-        console.error('Error fetching attendance:', error);
-        setAttendanceData([]);
-      } finally {
-        setAttendanceLoading(false);
-      }
-    };
-
-    fetchAttendance();
-  }, [id]);
-
-  // Calculate real attendance stats
-  const attendanceStats = useMemo(() => {
-    if (!attendanceData.length) {
-      return { present: 0, absent: 0, total: 0, percentage: 0 };
-    }
-    
-    const total = attendanceData.length;
-    const present = attendanceData.filter(a => a.status === 'present').length;
-    const absent = attendanceData.filter(a => a.status === 'absent').length;
-    const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
-    
-    return { present, absent, total, percentage };
-  }, [attendanceData]);
 
   // Calculate monthly attendance for chart
   const monthlyAttendanceData = useMemo(() => {
@@ -214,110 +179,15 @@ export default function StudentDashboard() {
     ? Math.round(results.reduce((sum, r) => sum + (r.percentage || 0), 0) / results.length)
     : null;
 
-  // OPTIMIZATION: Track previous tab to avoid unnecessary re-fetches
-  const prevActiveTab = useRef(activeTab);
-
-  // Memoized tab key to prevent unnecessary renders
-  const activeTabKey = useMemo(() => activeTab, [activeTab]);
-  
-  // Cache for fetched data to prevent re-fetching on same tab
-  const dataCache = useRef({
-    results: null,
-    feeStructure: null,
-    feeHistory: null,
-    documents: null,
-    remarks: null
-  });
-
-  // Fetch all student data on mount for report generation
   useEffect(() => {
-    if (!id) return;
-    
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-    const token = getAuthToken();
-    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-    
-    // Fetch all data in parallel for the student report
-    const fetchAllData = async () => {
-      try {
-        const [resultsRes, feeRes, feeHistoryRes, studentRes, remarksRes] = await Promise.all([
-          fetch(`${API_URL}/students/${id}/results`, { headers }).catch(() => null),
-          fetch(`${API_URL}/student-fees/student/${id}?academicYear=${currentAcademicYear}`, { headers }).catch(() => null),
-          fetch(`${API_URL}/fees/payments?studentId=${id}`, { headers }).catch(() => null),
-          fetch(`${API_URL}/students/${id}`, { headers }).catch(() => null),
-          fetch(`${API_URL}/students/${id}/remarks`, { headers }).catch(() => null)
-        ]);
-        
-        if (resultsRes?.ok) {
-          const data = await resultsRes.json();
-          setResults(data);
-          dataCache.current.results = data;
-        }
-        
-        if (feeRes?.ok) {
-          setStudentFeeStructure(await feeRes.json());
-        }
-        
-        if (feeHistoryRes?.ok) {
-          setFeeHistory(await feeHistoryRes.json());
-        }
-        
-        if (studentRes?.ok) {
-          const data = await studentRes.json();
-          if (data.documents) setDocuments(data.documents);
-        }
-        
-        if (remarksRes?.ok) {
-          setRemarks(await remarksRes.json());
-        }
-      } catch (error) {
-        console.error('Error fetching student data:', error);
-      }
-    };
-    
-    fetchAllData();
-  }, [id]);
+    if (Array.isArray(hydratedStudent?.documents)) {
+      setDocuments(hydratedStudent.documents);
+    }
+  }, [hydratedStudent?.documents]);
 
-  // Refetch results when on academics tab
   useEffect(() => {
-    if (activeTab !== 'academics' || !id) return;
-    
-    const fetchResults = async () => {
-      setResultsLoading(true);
-      try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-        const token = getAuthToken();
-        const response = await fetch(`${API_URL}/students/${id}/results`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setResults(data);
-        }
-      } catch (error) { console.error('Error fetching results:', error); }
-      finally { setResultsLoading(false); }
-    };
-    fetchResults();
-  }, [id, activeTab]);
-
-  // Refetch remarks when category filter changes
-  useEffect(() => {
-    if (activeTab !== 'remarks' || !id) return;
-    
-    const fetchRemarks = async () => {
-      setRemarksLoading(true);
-      try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-        const token = getAuthToken();
-        const response = await fetch(`${API_URL}/students/${id}/remarks?category=${remarksCategoryFilter}`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-        if (response.ok) setRemarks(await response.json());
-      } catch (error) { console.error('Error fetching remarks:', error); }
-      finally { setRemarksLoading(false); }
-    };
-    fetchRemarks();
-  }, [id, activeTab, remarksCategoryFilter]);
+    setRemarksOverride(null);
+  }, [remarks]);
 
   // Photo handlers
   const handleFileSelect = (e) => {
@@ -371,11 +241,6 @@ export default function StudentDashboard() {
 
     const loadingToast = toast.loading("Recording payment...");
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const token = getAuthToken();
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
       // Calculate fee head payments for distribution
       const feeHeadPayments = [];
       let remainingAmount = paymentAmount;
@@ -402,36 +267,23 @@ export default function StudentDashboard() {
       }
 
       // 1. Update fee structure (primary operation - this is what matters)
-      const feeStructureResponse = await fetch(`${API_URL}/student-fees/student/${id}/payment`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          amount: paymentAmount,
-          feeHeadPayments,
-          academicYear: student?.academicYear || currentAcademicYear
-        })
+      await studentFeesApi.recordPayment(id, {
+        amount: paymentAmount,
+        feeHeadPayments,
+        academicYear: student?.academicYear || currentAcademicYear
       });
-
-      if (!feeStructureResponse.ok) {
-        const errorData = await feeStructureResponse.json();
-        throw new Error(errorData.error || 'Failed to update fee structure');
-      }
 
       // 2. Try to create payment record (secondary, non-blocking)
       try {
-        await fetch(`${API_URL}/fees/payments`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            studentId: id,
-            studentName: student?.name || '',
-            classId: student.classId,
-            academicYear: student?.academicYear || currentAcademicYear,
-            receiptNumber: `RCP-${Date.now()}`,
-            paymentDate: paymentForm.date,
-            amount: paymentAmount,
-            paymentMode: paymentForm.paymentMode
-          })
+        await feesApi.createPayment({
+          studentId: id,
+          studentName: student?.name || '',
+          classId: student.classId,
+          academicYear: student?.academicYear || currentAcademicYear,
+          receiptNumber: `RCP-${Date.now()}`,
+          paymentDate: paymentForm.date,
+          amount: paymentAmount,
+          paymentMode: paymentForm.paymentMode
         });
       } catch (paymentRecordError) {
         console.warn('Payment record creation failed (non-critical):', paymentRecordError);
@@ -441,18 +293,12 @@ export default function StudentDashboard() {
       onPaymentClose();
       setPaymentForm({ amount: "", paymentMode: "cash", date: new Date().toISOString().split('T')[0] });
 
-      // Refresh fee data and payment history
-      const [feeResponse, historyResponse] = await Promise.all([
-        fetch(`${API_URL}/student-fees/student/${id}?academicYear=${currentAcademicYear}`, { headers }),
-        fetch(`${API_URL}/fees/payments?studentId=${id}`, { headers })
+      await Promise.all([
+        refetchFeeStructure(),
+        feeHistoryQuery.refetch(),
+        refetchStudent(),
       ]);
-
-      if (feeResponse.ok) {
-        setStudentFeeStructure(await feeResponse.json());
-      }
-      if (historyResponse.ok) {
-        setFeeHistory(await historyResponse.json());
-      }
+      void queryClient.invalidateQueries({ queryKey: ["app-context-data"] });
     } catch (error) {
       console.error('Payment error:', error);
       toast.error("Failed to record payment: " + (error.message || "Unknown error"), { id: loadingToast });
@@ -491,20 +337,11 @@ export default function StudentDashboard() {
       return;
     }
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const token = getAuthToken();
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      await fetch(`${API_URL}/students/${id}/send-reminder`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          message: reminderMessage,
-          parentPhone: student.parentPhone,
-          parentEmail: student.parentEmail,
-          studentName: student.name
-        })
+      await studentsApi.sendReminder(id, {
+        message: reminderMessage,
+        parentPhone: student.parentPhone,
+        parentEmail: student.parentEmail,
+        studentName: student.name
       });
 
       toast.success(`Reminder sent to ${student.parentName || 'parent'}`);
@@ -604,7 +441,7 @@ export default function StudentDashboard() {
         studentFeeStructure={studentFeeStructure}
         feeHistory={feeHistory}
         documents={documents}
-        remarks={remarks}
+        remarks={displayedRemarks}
         classTeacher={classTeacher}
       />
     </div>
@@ -690,7 +527,26 @@ export default function StudentDashboard() {
                   <DropdownItem key="reminder" startContent={<Bell size={14} className="text-gray-400" />} onPress={handleSendReminder}>Send Reminder</DropdownItem>
                   <DropdownItem key="download" startContent={<Download size={14} className="text-gray-400" />} onPress={handleDownload}>Download</DropdownItem>
                   <DropdownItem key="print" startContent={<Printer size={14} className="text-gray-400" />} onPress={handleDownload}>Print</DropdownItem>
-                  <DropdownItem key="delete" className="text-red-600" startContent={<Trash2 size={14} />} onPress={() => deleteStudent(student.id)}>Delete</DropdownItem>
+                  <DropdownItem
+                    key="delete"
+                    className="text-red-600"
+                    startContent={<Trash2 size={14} />}
+                    onPress={async () => {
+                      if (!confirmPermanentDeletion(student.name)) {
+                        return;
+                      }
+
+                      try {
+                        const result = await deleteStudent(student.id);
+                        toast.success(result.message || `${student.name} permanently deleted`);
+                        navigate('/students');
+                      } catch (error) {
+                        toast.error(error.message || 'Failed to delete student');
+                      }
+                    }}
+                  >
+                    Delete
+                  </DropdownItem>
                 </DropdownMenu>
               </Dropdown>
             </div>
@@ -1346,10 +1202,10 @@ export default function StudentDashboard() {
             <StudentRemarks
               studentId={id}
               student={student}
-              remarks={remarks}
+              remarks={displayedRemarks}
               remarksLoading={remarksLoading}
               remarksCategoryFilter={remarksCategoryFilter}
-              onRemarksChange={setRemarks}
+              onRemarksChange={setRemarksOverride}
               onCategoryFilterChange={setRemarksCategoryFilter}
             />
           )}

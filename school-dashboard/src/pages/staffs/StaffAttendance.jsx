@@ -76,23 +76,11 @@ export default function StaffAttendance() {
 
     const dailyAttendance = useMemo(() => {
         const result = {};
-        console.log('📊 [StaffAttendance] Computing dailyAttendance for date:', selectedDate);
-        console.log('📊 [StaffAttendance] Staff count:', staff.length);
-        console.log('📊 [StaffAttendance] Attendance state keys:', Object.keys(attendance));
 
         staff.forEach(s => {
             const att = attendance[s.id]?.[selectedDate];
             const defaultValue = { status: "unmarked", inTime: "-", outTime: "-" };
             result[s.id] = att || defaultValue;
-
-            if (s.id === '69875624ac6f5423e3141a5c') {
-                console.log('📊 [StaffAttendance] Sooraj (EMP016) attendance:', {
-                    staffId: s.id,
-                    date: selectedDate,
-                    found: !!att,
-                    value: att || defaultValue
-                });
-            }
         });
         return result;
     }, [staff, attendance, selectedDate]);
@@ -660,9 +648,9 @@ export default function StaffAttendance() {
                     base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0",
                     thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12",
                     th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6 hover:bg-default-100 transition-colors cursor-pointer [&_svg]:text-default-300 [&:hover_svg]:text-default-500 [&_svg]:opacity-100 first:hover:bg-transparent first:cursor-default",
-                    td: "py-5 border-b border-default-200 group-data-[last=true]:border-none last:pr-6",
-                    tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-5",
-                    tr: "",
+                    td: "py-5 border-b border-default-200 group-data-[last=true]:border-none last:pr-6 transition-colors",
+                    tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-5 [&>tr[data-selected=true]>td]:bg-primary-50",
+                    tr: "transition-colors hover:bg-gray-50 data-[selected=true]:bg-primary-50",
                 }}
                 radius="none"
             >

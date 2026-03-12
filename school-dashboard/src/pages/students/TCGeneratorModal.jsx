@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem, Textarea, DatePicker } from "@heroui/react";
 import { Check, ArrowRight, ArrowLeft, Printer } from "lucide-react";
+import toast from "react-hot-toast";
 import { TransferCertificateTemplate } from "./TransferCertificateTemplate";
 import { useReactToPrint } from "react-to-print";
 
@@ -78,13 +79,17 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
     };
 
     const handleNext = () => {
+        const currentFormData = allFormData[currentStudent?.admissionId] || {};
+        if (!currentFormData.studentName?.trim()) {
+            toast.error("Student name is required before proceeding");
+            return;
+        }
+
         if (isLastStudent) {
-            // Start generation phase
             startGeneration();
         } else {
             setHasMovedNext(true);
             setCurrentIndex(prev => prev + 1);
-            // Initialize form for next student if not exists
             if (!allFormData[students[currentIndex + 1]?.admissionId]) {
                 initializeForm(students[currentIndex + 1]);
             }
@@ -157,6 +162,8 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
     }, [isGenerating]);
 
     const generateAllTCs = async () => {
+        const errors = [];
+
         for (let i = 0; i < students.length; i++) {
             const student = students[i];
             const formData = allFormData[student.admissionId];
@@ -165,14 +172,23 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
             setCurrentIndex(i);
 
             if (formData) {
-                await handlePrint({ ...formData, serialNo: i + 101, emisNo: "330201015" });
+                try {
+                    await handlePrint({ ...formData, serialNo: i + 101, emisNo: "330201015" });
+                } catch (err) {
+                    console.error(`Failed to print TC for ${student.name}:`, err);
+                    errors.push(student.name);
+                }
             }
 
-            // Delay between prints
             await new Promise(resolve => setTimeout(resolve, 2000));
         }
 
-        // All done
+        if (errors.length > 0) {
+            toast.error(`Failed to generate TC for: ${errors.join(", ")}`);
+        } else {
+            toast.success("All TCs generated successfully");
+        }
+
         setTimeout(() => {
             onClose();
         }, 1000);

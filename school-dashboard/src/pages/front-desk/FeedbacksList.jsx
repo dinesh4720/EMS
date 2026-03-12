@@ -432,13 +432,13 @@ const FeedbacksList = forwardRef((props, ref) => {
                       </SelectItem>
                     ))}
                   </Select>
-                  <Checkbox
+                  <Checkbox size="sm"
                     isSelected={formData.notifyStaff}
                     onValueChange={(value) => setFormData({ ...formData, notifyStaff: value })}
                   >
                     Notify Assigned Staff
                   </Checkbox>
-                  <Checkbox
+                  <Checkbox size="sm"
                     isSelected={formData.assignAsTask}
                     onValueChange={(value) => setFormData({ ...formData, assignAsTask: value })}
                   >

@@ -189,9 +189,10 @@ export default function StudentsPage() {
   ];
 
   const handleTabChange = (key) => {
-    if (key === "list") navigate("/students");
-    else if (key === "attendance") navigate("/students/attendance");
-    else if (key === "submissions") navigate("/students/submissions");
+    // Use replace to avoid building up history entries for tab switches
+    if (key === "list") navigate("/students", { replace: true });
+    else if (key === "attendance") navigate("/students/attendance", { replace: true });
+    else if (key === "submissions") navigate("/students/submissions", { replace: true });
   };
 
   const pathParts = location.pathname.split('/').filter(Boolean);
@@ -210,12 +211,14 @@ export default function StudentsPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in pb-8">
+    <div className="flex flex-col h-full min-h-0">
       <PageLayout
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={handleTabChange}
         header={tabHeaderInfo[activeTab]}
+        className="flex-1 min-h-0"
+        noPadding
         actions={activeTab === "list" && (
           <MinimalButton
             icon={<Plus size={16} />}
@@ -225,13 +228,21 @@ export default function StudentsPage() {
           </MinimalButton>
         )}
       >
-        <div className="min-h-[500px]">
-          <Routes>
-            <Route index element={<StudentsList />} />
-            <Route path="attendance" element={<StudentAttendance />} />
-            <Route path="submissions" element={<StudentFormSubmissions />} />
-          </Routes>
-        </div>
+        {activeTab === "list" && (
+          <div className="flex-1 flex flex-col min-h-0">
+            <StudentsList />
+          </div>
+        )}
+        {activeTab === "attendance" && (
+          <div className="p-6 overflow-auto">
+            <StudentAttendance />
+          </div>
+        )}
+        {activeTab === "submissions" && (
+          <div className="p-6 overflow-auto">
+            <StudentFormSubmissions />
+          </div>
+        )}
       </PageLayout>
 
       {/* Add Student Drawer - only mount when open */}

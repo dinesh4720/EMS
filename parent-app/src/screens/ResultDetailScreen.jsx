@@ -10,13 +10,14 @@ import { useStudent } from '../context/StudentContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card } from '../components';
 import { Trophy, TrendingUp } from 'lucide-react-native';
+import { getGradeColor } from '../utils/helpers';
 
 const ResultDetailScreen = ({ route }) => {
   const { examId, examName } = route.params;
   const { results } = useStudent();
   const { themeColors, spacing, typography } = useTheme();
 
-  const result = results?.find((r) => r.examId === examId);
+  const result = results?.find((r) => (r.examId?._id || r.examId) === examId);
 
   if (!result) {
     return (
@@ -30,18 +31,6 @@ const ResultDetailScreen = ({ route }) => {
     );
   }
 
-  const getGradeColor = (grade) => {
-    const colors = {
-      'A+': themeColors.text,
-      'A': '#333333',
-      'B+': '#4d4d4d',
-      'B': '#666666',
-      'C+': '#808080',
-      'C': '#999999',
-    };
-    return colors[grade] || themeColors.textSecondary;
-  };
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]} edges={['left', 'right']}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -50,11 +39,11 @@ const ResultDetailScreen = ({ route }) => {
           <Card style={styles.summaryCard}>
             <View style={styles.summaryHeader}>
               <Text style={[styles.examName, { color: themeColors.text }]}>
-                {result.examName}
+                {result.examId?.name || examName || 'Exam'}
               </Text>
               <View style={[styles.gradeBadge, { backgroundColor: themeColors.text }]}>
                 <Text style={[styles.gradeText, { color: themeColors.textInverse }]}>
-                  {result.grade}
+                  {result.grade || 'N/A'}
                 </Text>
               </View>
             </View>
@@ -62,7 +51,7 @@ const ResultDetailScreen = ({ route }) => {
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
                 <Text style={[styles.statValue, { color: themeColors.text }]}>
-                  {result.obtainedMarks}
+                  {result.marks?.length > 0 ? result.totalMarksObtained : result.marksObtained}
                 </Text>
                 <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>
                   Obtained Marks
@@ -71,7 +60,7 @@ const ResultDetailScreen = ({ route }) => {
               <View style={[styles.statDivider, { backgroundColor: themeColors.border }]} />
               <View style={styles.statItem}>
                 <Text style={[styles.statValue, { color: themeColors.text }]}>
-                  {result.totalMarks}
+                  {result.marks?.length > 0 ? result.totalMaxMarks : result.maxMarks}
                 </Text>
                 <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>
                   Total Marks
@@ -82,7 +71,7 @@ const ResultDetailScreen = ({ route }) => {
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
                 <Text style={[styles.statValue, { color: themeColors.text }]}>
-                  {result.percentage}%
+                  {result.percentage || 0}%
                 </Text>
                 <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>
                   Percentage
@@ -93,7 +82,7 @@ const ResultDetailScreen = ({ route }) => {
                 <View style={styles.rankContainer}>
                   <Trophy size={16} color={themeColors.warning} />
                   <Text style={[styles.statValue, { color: themeColors.text }]}>
-                    #{result.rank}
+                    {result.rank ? `#${result.rank}` : 'N/A'}
                   </Text>
                 </View>
                 <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>
@@ -108,15 +97,15 @@ const ResultDetailScreen = ({ route }) => {
             Subject-wise Performance
           </Text>
 
-          {result.subjectResults?.map((subject, index) => (
+          {result.marks?.map((subject, index) => (
             <Card key={index} style={styles.subjectCard}>
               <View style={styles.subjectHeader}>
                 <Text style={[styles.subjectName, { color: themeColors.text }]}>
-                  {subject.subject}
+                  {subject.subjectName}
                 </Text>
                 <View style={[styles.subjectGrade, { backgroundColor: getGradeColor(subject.grade) + '20' }]}>
                   <Text style={[styles.subjectGradeText, { color: getGradeColor(subject.grade) }]}>
-                    {subject.grade}
+                    {subject.grade || 'N/A'}
                   </Text>
                 </View>
               </View>
@@ -127,7 +116,7 @@ const ResultDetailScreen = ({ route }) => {
                     style={[
                       styles.marksFill,
                       {
-                        width: `${(subject.obtainedMarks / subject.maxMarks) * 100}%`,
+                        width: `${subject.maxMarks > 0 ? (subject.marksObtained / subject.maxMarks) * 100 : 0}%`,
                         backgroundColor: themeColors.text,
                       },
                     ]}
@@ -135,7 +124,7 @@ const ResultDetailScreen = ({ route }) => {
                 </View>
                 <View style={styles.marksText}>
                   <Text style={[styles.obtainedMarks, { color: themeColors.text }]}>
-                    {subject.obtainedMarks}
+                    {subject.marksObtained}
                   </Text>
                   <Text style={[styles.maxMarks, { color: themeColors.textTertiary }]}>
                     / {subject.maxMarks}
@@ -144,7 +133,7 @@ const ResultDetailScreen = ({ route }) => {
               </View>
 
               <Text style={[styles.percentageText, { color: themeColors.textSecondary }]}>
-                {Math.round((subject.obtainedMarks / subject.maxMarks) * 100)}%
+                {subject.maxMarks > 0 ? Math.round((subject.marksObtained / subject.maxMarks) * 100) : 0}%
               </Text>
             </Card>
           ))}
@@ -157,17 +146,17 @@ const ResultDetailScreen = ({ route }) => {
             <View style={styles.perfItem}>
               <TrendingUp size={18} color={themeColors.text} />
               <Text style={[styles.perfText, { color: themeColors.text }]}>
-                {result.percentage >= 90
+                {(result.percentage || 0) >= 90
                   ? 'Outstanding Performance!'
-                  : result.percentage >= 75
+                  : (result.percentage || 0) >= 75
                   ? 'Excellent Performance!'
-                  : result.percentage >= 60
+                  : (result.percentage || 0) >= 60
                   ? 'Good Performance!'
                   : 'Keep Improving!'}
               </Text>
             </View>
             <Text style={[styles.perfDetail, { color: themeColors.textSecondary }]}>
-              {result.percentage >= 60
+              {(result.percentage || 0) >= 60
                 ? 'Great job! Keep up the good work.'
                 : 'Focus on weaker subjects and practice more.'}
             </Text>

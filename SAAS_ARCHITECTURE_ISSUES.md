@@ -77,14 +77,65 @@ They are specific to: (1) things that are broken or fake right now, and
 
 ## 🟠 HIGH — Will block you from selling this as SaaS
 
-### 8. Zero multi-tenancy — this is the biggest architectural blocker for SaaS
-- **Current state:** There is no `schoolId` field on any model. Not on Student, Staff, Class, Attendance, FeePayment, or any other collection. Zero.
-- **What this means:** Every school's data lives in the same collections with no separation. If you onboard School A and School B:
-  - School A's admin can potentially see School B's students
-  - Fee payments from both schools are in the same collection
-  - You cannot run a query like "give me all students for School A" because there's no School A concept in the data
-- **This is not a small fix.** Adding multi-tenancy means adding a `schoolId` to every schema, every query, every route, and every middleware check. It's a fundamental architectural change.
-- **Fix:** Before onboarding a second school, add a `School` model and a `schoolId` field to every data model. Add middleware that sets `schoolId` from the authenticated user's context on every query. This is weeks of careful work.
+### 8. Incomplete multi-tenancy — tenant plumbing exists, but isolation is not enforced end-to-end
+- **Current state:** The backend is no longer at zero. There is already a `School` model, `schoolId` is present on some collections (`Staff`, `Parent`, `SchoolSettings`, `UserPermission`), auth resolves `req.user.schoolId`, and there is bootstrap code to backfill some legacy records.
+- **The real problem:** Multi-tenancy is only partially implemented. Core academic and finance collections such as `Class`, `Student`, `Attendance`, and `FeePayment` still do not carry `schoolId`, and many routes query them without tenant scoping.
+- **What this means:** If you onboard School A and School B:
+  - School-scoped auth exists, but it does not protect collections that are not tenant-aware
+  - Queries like class lists, student lists, attendance lookups, and fee payment lookups can still mix data across schools
+  - Unique constraints are still global in places where they should eventually be tenant-scoped
+- **Why this is still a major blocker:** This is no longer a greenfield multi-tenancy project, but it is still a large architectural rollout. You now have to finish the migration consistently instead of starting from scratch, which includes schema work, query hardening, route audits, middleware enforcement, indexes, and data backfills.
+- **Fix:** Before selling this as multi-school SaaS, complete tenant isolation across every school-owned model and route. Add `schoolId` to the remaining core collections, include it in unique indexes, scope all reads/writes from authenticated context, and migrate legacy data carefully. This is still weeks of careful work.
+
+#### Recommended rollout order
+
+1. **Define the tenant boundary explicitly**
+   - Create a written list of all school-owned collections.
+   - Treat anything tied to students, staff, classes, attendance, fees, timetables, front-office operations, announcements, reminders, and messaging as tenant-owned unless proven otherwise.
+   - Keep platform-level collections such as `School`, billing/subscription records, and super-admin data separate.
+
+2. **Finish schema coverage before touching route logic**
+   - Add `schoolId` to the core collections that still lack it: `Class`, `Student`, `Attendance`, `FeePayment`, `FeeRefund`, `Exam`, `Result`, `Timetable`, `TeacherTimetable`, `ConflictLog`, `IntakeForm`, `FormAssignment`, `FormSubmission`, `Admission`, `Appointment`, `Feedback`, `CallLog`, and any school-scoped models under `EMS-backend/models/`.
+   - Update unique indexes so they become tenant-safe. Examples:
+     - `Class`: `{ schoolId, name, section, academicYear }`
+     - `Student`: `{ schoolId, admissionId }`, `{ schoolId, rollNo, classId, academicYear }`
+     - `Attendance`: `{ schoolId, studentId, date }`
+     - `FeePayment`: `{ schoolId, receiptNumber }`
+   - Do not rely on foreign keys like `classId` or `studentId` as an implicit tenant boundary.
+
+3. **Centralize query scoping**
+   - Promote one shared helper pattern for all routes, equivalent to the scoped approach already used in `routes/staff.js`.
+   - Replace raw `findById(...)`, `find(...)`, `findOne(...)`, `findByIdAndUpdate(...)`, and `findOneAndUpdate(...)` calls on school-owned collections with school-aware queries.
+   - Update helper utilities like `resolveClassId` so they require or accept `schoolId`; otherwise they can still resolve another school's record.
+
+4. **Harden the highest-risk routes first**
+   - First wave: `routes/students.js`, `routes/classes.js`, `routes/attendance.js`, `routes/fees.js`, `routes/studentFees.js`, `routes/timetable.js`, `routes/mobile.js`, `routes/parentData.js`.
+   - Second wave: `routes/academics.js`, `routes/announcements.js`, `routes/visitors.js`, `routes/frontDesk`-style flows, intake/onboarding routes, and any message/contact search endpoints that can enumerate users across schools.
+   - Any public or unauthenticated endpoint that resolves class IDs, student IDs, or parent-linked records needs special review.
+
+5. **Backfill data in dependency order**
+   - Start from collections that already know their school (`Staff`, `Parent`, `SchoolSettings`, permissions).
+   - Backfill `Class` from its teacher/admin ownership where possible.
+   - Backfill `Student` from `classId` or linked parent/staff context.
+   - Backfill `Attendance`, `FeePayment`, `FeeRefund`, results, and timetables from their referenced student/class records.
+   - Quarantine records whose school cannot be derived with confidence instead of guessing.
+
+6. **Add enforcement at write time**
+   - On create, set `schoolId` from authenticated context server-side rather than trusting request bodies.
+   - On update/delete, require both `_id` and `schoolId` in the selector.
+   - Reject cross-tenant references, such as assigning a student from School B into a class in School A.
+
+7. **Add tests specifically for tenant isolation**
+   - Seed two schools with overlapping-looking data.
+   - Verify School A cannot read, update, delete, or aggregate School B records.
+   - Test parent flows, mobile flows, attendance marking, fee posting, timetable generation, and search endpoints.
+   - Add regression tests for every route converted from raw `findById` to scoped lookup.
+
+8. **Release behind a controlled migration plan**
+   - Run one-time migration scripts in staging against a production-like snapshot.
+   - Validate record counts per school before and after backfill.
+   - Block second-school onboarding until tenant tests and migration checks pass.
+   - Only then build the super-admin onboarding and school provisioning flow on top of the finalized tenant model.
 
 ---
 
@@ -172,7 +223,7 @@ They are specific to: (1) things that are broken or fake right now, and
 4. [ ] Fix or remove the Communication Logs mock data
 
 ### Before onboarding even one school
-5. [ ] Design and implement multi-tenancy (schoolId on all models) — this is the biggest item
+5. [ ] Complete the multi-tenancy rollout (add `schoolId` to all school-owned models and scope every query) — this is the biggest item
 6. [ ] Fix the two parent data systems — unify them
 7. [ ] Build the school signup/onboarding backend endpoint
 8. [ ] Fix Firebase OTP or replace with a working alternative

@@ -73,12 +73,12 @@ export default function StaffPayrollTab({
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="text-sm font-bold text-gray-900">₹{netSalary.toLocaleString()}</p>
-                    <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600">Paid</span>
+                    <p className="text-sm font-bold text-gray-900">₹{(record.netSalary ?? netSalary).toLocaleString()}</p>
+                    <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600">{record.status || 'Paid'}</span>
                   </div>
                   <button
                     className="p-2 hover:bg-gray-100 rounded-lg"
-                    onPress={() => toast.success('Downloading payslip...')}
+                    onClick={() => toast.success('Downloading payslip...')}
                   >
                     <Download size={14} className="text-gray-400" />
                   </button>

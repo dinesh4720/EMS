@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, CardBody, Button, Input, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Switch, Divider, Textarea, Spinner, Badge } from "@heroui/react";
+import { Card, CardHeader, CardBody, Button, Input, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Switch, Divider, Textarea, Spinner, Badge } from "@heroui/react";
 import { Plus, Edit, Trash2, IndianRupee, Copy, Eye, Save, Layers, FolderTree } from "lucide-react";
 import toast from "react-hot-toast";
 import { CURRENT_ACADEMIC_YEAR } from "../../utils/constants";
@@ -410,7 +410,7 @@ export default function FeeTemplatesManagement() {
 
               <div className="space-y-4">
                 {formData.feeHeads.map((head, index) => (
-                  <div key={index} className="p-4 bg-default-50 rounded-xl border border-default-200">
+                  <div key={head._id || head.name || index} className="p-4 bg-default-50 rounded-xl border border-default-200">
                     <div className="flex items-center justify-between mb-4">
                       <h5 className="font-semibold text-default-700">Fee Head #{index + 1}</h5>
                       <Button

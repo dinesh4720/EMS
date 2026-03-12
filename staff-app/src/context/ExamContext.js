@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { examsApi, classesApi, resultsApi } from '../services/api';
 import { useAuth } from './AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 
 const ExamContext = createContext();
 
@@ -28,6 +29,14 @@ export const ExamProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isOnline, setIsOnline] = useState(true);
+
+  // Track network connectivity
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsOnline(!!(state.isConnected && state.isInternetReachable !== false));
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Load cached exams on mount
   useEffect(() => {

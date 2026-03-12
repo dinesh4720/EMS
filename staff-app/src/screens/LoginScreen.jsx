@@ -65,8 +65,17 @@ const LoginScreen = () => {
       Alert.alert('Error', 'Please enter your email');
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
     if (!password.trim()) {
       Alert.alert('Error', 'Please enter your password');
+      return;
+    }
+    if (password.length < 8) {
+      Alert.alert('Error', 'Password must be at least 8 characters');
       return;
     }
 

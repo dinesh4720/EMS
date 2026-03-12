@@ -53,13 +53,11 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
     setLoading(true);
     setError(null);
     try {
-      console.log('Loading announcements...');
       const params = {};
       if (statusFilter !== 'all') {
         params.status = statusFilter;
       }
       const response = await announcementsApi.getAll(params);
-      console.log('Announcements loaded:', response);
       // Backend returns { announcements: [], ... }
       setAnnouncements(response.announcements || response || []);
     } catch (error) {

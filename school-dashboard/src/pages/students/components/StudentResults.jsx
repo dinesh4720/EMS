@@ -327,22 +327,7 @@ export default function StudentResults({
           </div>
         </CardHeader>
         <CardBody className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              { title: "Best Student Award", date: "Dec 2024", icon: "🏆" },
-              { title: "Science Fair Winner", date: "Nov 2024", icon: "🔬" },
-              { title: "Perfect Attendance", date: "Oct 2024", icon: "📅" },
-              { title: "Math Olympiad Bronze", date: "Sept 2024", icon: "🥉" }
-            ].map((achievement, idx) => (
-              <div key={idx} className="flex items-center gap-4 p-4 rounded-lg border border-default-200 bg-gradient-to-r from-yellow-50 to-amber-50">
-                <span className="text-3xl">{achievement.icon}</span>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-default-900">{achievement.title}</h4>
-                  <p className="text-xs text-default-500">{achievement.date}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="text-sm text-default-500">No achievements recorded</p>
         </CardBody>
       </Card>
     </div>

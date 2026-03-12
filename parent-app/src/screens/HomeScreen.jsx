@@ -287,7 +287,7 @@ const HomeScreen = ({ navigation }) => {
                 <View style={styles.resultStats}>
                   <View style={styles.resultStat}>
                     <Text style={[styles.resultStatValue, { color: themeColors.text }]}>
-                      {results[0].obtainedMarks || '-'}
+                      {(results[0].marks?.length > 0 ? results[0].totalMarksObtained : results[0].marksObtained) || '-'}
                     </Text>
                     <Text style={[styles.resultStatLabel, { color: themeColors.textTertiary }]}>
                       Obtained
@@ -296,7 +296,7 @@ const HomeScreen = ({ navigation }) => {
                   <View style={[styles.resultDivider, { backgroundColor: themeColors.border }]} />
                   <View style={styles.resultStat}>
                     <Text style={[styles.resultStatValue, { color: themeColors.text }]}>
-                      {results[0].totalMarks || '-'}
+                      {(results[0].marks?.length > 0 ? results[0].totalMaxMarks : results[0].maxMarks) || '-'}
                     </Text>
                     <Text style={[styles.resultStatLabel, { color: themeColors.textTertiary }]}>
                       Total

@@ -35,11 +35,7 @@ export default function MoveClassModal({ isOpen, onClose, student, availableClas
       await request(`/students/${student.id}`, {
         method: 'PUT',
         headers,
-        body: JSON.stringify({
-          ...student,
-          class: newClass,
-          classId: newClass
-        })
+        body: JSON.stringify({ classId: newClass })
       });
 
       toast.success(`Student moved to ${newClass}`, { id: loadingToast });

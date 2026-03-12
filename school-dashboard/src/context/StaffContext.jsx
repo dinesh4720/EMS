@@ -69,7 +69,7 @@ export function StaffProvider({ children }) {
     const staffMember = staff.find(s => s.id === id);
     if (staffMember) {
       const newStatus = staffMember.status === "active" ? "inactive" : "active";
-      await updateStaff(id, { ...staffMember, status: newStatus });
+      await updateStaff(id, { status: newStatus });
     }
   };
 
@@ -112,18 +112,19 @@ export function StaffProvider({ children }) {
 
   const getMonthlyAttendance = (staffId, year, month) => {
     const staffAtt = attendance[staffId] || {};
-    let present = 0, absent = 0, leave = 0;
-    
+    let present = 0, absent = 0, leave = 0, halfday = 0;
+
     Object.entries(staffAtt).forEach(([date, data]) => {
-      const d = new Date(date);
+      const d = new Date(date + 'T00:00:00');
       if (d.getFullYear() === year && d.getMonth() === month) {
         if (data.status === "present") present++;
         else if (data.status === "absent") absent++;
         else if (data.status === "leave") leave++;
+        else if (data.status === "halfday") halfday++;
       }
     });
-    
-    return { present, absent, leave, total: present + absent + leave };
+
+    return { present, absent, leave, halfday, total: present + absent + leave + halfday };
   };
 
   const value = {

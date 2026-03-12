@@ -473,7 +473,7 @@ export default function AdmissionFormSettings() {
 
               <div className="space-y-4">
                 {documentConfigs.map((doc, index) => (
-                  <Card key={index} className="p-4 border border-default-200">
+                  <Card key={doc._id || doc.documentName || index} className="p-4 border border-default-200">
                     <div className="space-y-4">
                       <div className="flex items-start justify-between gap-4">
                         <Input

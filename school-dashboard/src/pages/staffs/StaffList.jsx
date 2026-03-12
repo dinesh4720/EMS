@@ -142,7 +142,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
 
         if (attendanceRecords.length === 0) return 0;
 
-        const presentDays = attendanceRecords.filter(r => r.status === 'present' || r.status === 'Present').length;
+        const presentDays = attendanceRecords.filter(r => r.status?.toLowerCase() === 'present').length;
         return Math.round((presentDays / attendanceRecords.length) * 100);
     };
 
@@ -217,13 +217,10 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
     useEffect(() => {
         const socketService = window.socketService;
         if (!socketService) {
-            console.log('⚠️ Socket service not available yet');
             return;
         }
 
         const handleStaffUpdate = (data) => {
-            console.log('📢 Received staff update:', data);
-
             // Directly update the staff member in state without API call
             updateStaffLocal(data.staffId, {
                 name: data.name,
@@ -240,11 +237,9 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
             });
         };
 
-        console.log('🎧 Setting up staff_updated listener');
         socketService.on('staff_updated', handleStaffUpdate);
 
         return () => {
-            console.log('🔇 Removing staff_updated listener');
             socketService.off('staff_updated', handleStaffUpdate);
         };
     }, [updateStaffLocal]);
@@ -268,8 +263,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
     // Handle status change
     const handleStatusChange = async (staffId, newStatus) => {
         try {
-            const staffMember = staff.find(s => s.id === staffId);
-            await updateStaff(staffId, { ...staffMember, status: newStatus });
+            await updateStaff(staffId, { status: newStatus });
             toast.success(`Status updated to ${newStatus}`);
         } catch (err) {
             toast.error("Failed to update status");
@@ -279,7 +273,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
     // Clear all filters
     const clearAllFilters = () => {
         setRoleFilter("all");
-        setStatusFilter("active");
+        setStatusFilter("all");
         setSearchQuery("");
         toast.success("All filters cleared");
     };
@@ -338,7 +332,6 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
     };
 
     // Bulk actions
-    // Bulk actions
     const getSelectedIds = () => {
         if (selectedStaff === "all") {
             return filteredItems.map(s => s.id);
@@ -349,43 +342,33 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
     const handleBulkStatusChange = async (newStatus) => {
         if (selectedCount === 0) return;
 
-        try {
-            const ids = getSelectedIds();
-            const updates = ids.map(async (staffId) => {
-                const numericId = Number(staffId);
-                const staffMember = staff.find(s => s.id === numericId);
-                if (staffMember) {
-                    await updateStaff(numericId, { ...staffMember, status: newStatus });
-                }
-            });
-
-            await Promise.all(updates);
+        const ids = getSelectedIds();
+        const results = await Promise.allSettled(
+            ids.map(staffId => updateStaff(staffId, { status: newStatus }))
+        );
+        const failed = results.filter(r => r.status === 'rejected').length;
+        if (failed === 0) {
             toast.success(`Status updated to ${newStatus} for ${selectedCount} staff members`);
-            setSelectedStaff(new Set());
-        } catch (err) {
-            toast.error("Failed to update status");
+        } else {
+            toast.error(`${failed} of ${ids.length} updates failed`);
         }
+        setSelectedStaff(new Set());
     };
 
     const handleBulkRoleChange = async (newRole) => {
         if (selectedCount === 0) return;
 
-        try {
-            const ids = getSelectedIds();
-            const updates = ids.map(async (staffId) => {
-                const numericId = Number(staffId);
-                const staffMember = staff.find(s => s.id === numericId);
-                if (staffMember) {
-                    await updateStaff(numericId, { ...staffMember, role: newRole });
-                }
-            });
-
-            await Promise.all(updates);
+        const ids = getSelectedIds();
+        const results = await Promise.allSettled(
+            ids.map(staffId => updateStaff(staffId, { role: newRole }))
+        );
+        const failed = results.filter(r => r.status === 'rejected').length;
+        if (failed === 0) {
             toast.success(`Role updated to ${newRole} for ${selectedCount} staff members`);
-            setSelectedStaff(new Set());
-        } catch (err) {
-            toast.error("Failed to update role");
+        } else {
+            toast.error(`${failed} of ${ids.length} updates failed`);
         }
+        setSelectedStaff(new Set());
     };
 
     const handleBulkDelete = async () => {
@@ -395,18 +378,17 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
             return;
         }
 
-        try {
-            const ids = getSelectedIds();
-            const deletions = ids.map(async (staffId) => {
-                await deleteStaff(Number(staffId));
-            });
-
-            await Promise.all(deletions);
+        const ids = getSelectedIds();
+        const results = await Promise.allSettled(
+            ids.map(staffId => deleteStaff(staffId))
+        );
+        const failed = results.filter(r => r.status === 'rejected').length;
+        if (failed === 0) {
             toast.success(`${selectedCount} staff members deleted successfully`);
-            setSelectedStaff(new Set());
-        } catch (err) {
-            toast.error("Failed to delete staff members");
+        } else {
+            toast.error(`${failed} of ${ids.length} deletions failed`);
         }
+        setSelectedStaff(new Set());
     };
 
     return (
@@ -643,8 +625,6 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                 onRowAction={(key) => onStaffClick(key)} // Don't convert to number - MongoDB IDs are strings
                 removeWrapper
                 radius="none"
-                disableRowSelection
-                disableAnimation
                 onClick={() => {
                     // Close all dropdowns when clicking on the table
                     setOpenDropdowns({
@@ -659,9 +639,9 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                     base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0 [&_table]:select-text",
                     thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12 [&>tr>th:first-child]:sticky [&>tr>th:first-child]:left-0 [&>tr>th:first-child]:z-20 [&>tr>th:first-child]:bg-white [&>tr>th:nth-child(2)]:sticky [&>tr>th:nth-child(2)]:left-12 [&>tr>th:nth-child(2)]:z-20 [&>tr>th:nth-child(2)]:bg-white",
                     th: "bg-transparent text-gray-500 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 last:pr-6 hover:bg-gray-50 transition-colors first:hover:bg-transparent select-none",
-                    td: "py-5 border-b border-gray-200 group-data-[last=true]:border-none last:pr-6 select-text",
-                    tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr>td:first-child]:sticky [&>tr>td:first-child]:left-0 [&>tr>td:first-child]:z-20 [&>tr>td:first-child]:bg-white [&>tr>td:nth-child(2)]:sticky [&>tr>td:nth-child(2)]:left-12 [&>tr>td:nth-child(2)]:z-20 [&>tr>td:nth-child(2)]:bg-white group-hover:[&>tr>td:first-child]:bg-gray-50 group-hover:[&>tr>td:nth-child(2)]:bg-gray-50",
-                    tr: "group"
+                    td: "py-5 border-b border-gray-200 group-data-[last=true]:border-none last:pr-6 select-text transition-colors",
+                    tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr>td:first-child]:sticky [&>tr>td:first-child]:left-0 [&>tr>td:first-child]:z-20 [&>tr>td:first-child]:bg-white [&>tr>td:nth-child(2)]:sticky [&>tr>td:nth-child(2)]:left-12 [&>tr>td:nth-child(2)]:z-20 [&>tr>td:nth-child(2)]:bg-white [&>tr:hover>td:first-child]:bg-gray-50 [&>tr:hover>td:nth-child(2)]:bg-gray-50 [&>tr[data-selected=true]>td]:bg-primary-50 [&>tr[data-selected=true]>td:first-child]:bg-primary-50 [&>tr[data-selected=true]>td:nth-child(2)]:bg-primary-50",
+                    tr: "group cursor-pointer transition-colors hover:bg-gray-50 data-[selected=true]:bg-primary-50"
                 }}
             >
                 <TableHeader>
@@ -676,7 +656,6 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                     {(s) => (
                         <TableRow
                             key={s.id}
-                            className="cursor-pointer transition-colors hover:bg-default-50"
                             onClick={(e) => {
                                 // Don't navigate if clicking on interactive elements
                                 if (e.target.closest("button") || e.target.closest("label") || e.target.closest("input") || e.target.closest("a")) return;

@@ -5,11 +5,14 @@
 
 class RequestQueue {
   constructor(options = {}) {
-    this.maxConcurrent = options.maxConcurrent || 5; // Max concurrent requests
-    this.minDelay = options.minDelay || 50; // Min delay between requests (ms)
+    this.maxConcurrent = options.maxConcurrent || 4; // Max concurrent requests
+    this.minDelay = options.minDelay || 150; // Min delay between requests (ms)
+    this.rateLimitCooldownMs = options.rateLimitCooldownMs || 5000;
     this.queue = [];
     this.activeRequests = 0;
     this.lastRequestTime = 0;
+    this.cooldownUntil = 0;
+    this.cooldownTimer = null;
   }
 
   async add(requestFn) {
@@ -24,8 +27,21 @@ class RequestQueue {
       return;
     }
 
-    // Enforce minimum delay between requests
     const now = Date.now();
+    if (now < this.cooldownUntil) {
+      const remainingCooldown = this.cooldownUntil - now;
+
+      if (!this.cooldownTimer) {
+        this.cooldownTimer = setTimeout(() => {
+          this.cooldownTimer = null;
+          this.processQueue();
+        }, remainingCooldown);
+      }
+
+      return;
+    }
+
+    // Enforce minimum delay between requests
     const timeSinceLastRequest = now - this.lastRequestTime;
     if (timeSinceLastRequest < this.minDelay) {
       setTimeout(() => this.processQueue(), this.minDelay - timeSinceLastRequest);
@@ -40,11 +56,30 @@ class RequestQueue {
       const result = await requestFn();
       resolve(result);
     } catch (error) {
+      if (isRateLimitError(error)) {
+        this.applyRateLimitCooldown(getRateLimitDelayMs(error, this.rateLimitCooldownMs));
+      }
       reject(error);
     } finally {
       this.activeRequests--;
       // Process next item in queue
       setTimeout(() => this.processQueue(), this.minDelay);
+    }
+  }
+
+  applyRateLimitCooldown(delayMs = this.rateLimitCooldownMs) {
+    const cooldownMs = Math.max(delayMs, this.minDelay);
+    const nextCooldownUntil = Date.now() + cooldownMs;
+
+    if (nextCooldownUntil <= this.cooldownUntil) {
+      return;
+    }
+
+    this.cooldownUntil = nextCooldownUntil;
+
+    if (this.cooldownTimer) {
+      clearTimeout(this.cooldownTimer);
+      this.cooldownTimer = null;
     }
   }
 
@@ -63,9 +98,30 @@ class RequestQueue {
 
 // Create a global request queue instance
 export const requestQueue = new RequestQueue({
-  maxConcurrent: 15, // Increased from 5 to 15 for better parallelism
-  minDelay: 20, // Reduced from 100ms to 20ms for faster requests
+  maxConcurrent: 4,
+  minDelay: 150,
+  rateLimitCooldownMs: 5000,
 });
+
+function isRateLimitError(error) {
+  return (
+    error?.status === 429 ||
+    error?.message?.includes('429') ||
+    error?.message?.includes('Too many requests')
+  );
+}
+
+function getRateLimitDelayMs(error, fallbackDelay) {
+  if (typeof error?.retryAfterMs === 'number' && Number.isFinite(error.retryAfterMs)) {
+    return error.retryAfterMs;
+  }
+
+  if (typeof error?.retryAfter === 'number' && Number.isFinite(error.retryAfter)) {
+    return error.retryAfter * 1000;
+  }
+
+  return fallbackDelay;
+}
 
 /**
  * Batch multiple requests with delay
@@ -115,10 +171,13 @@ export async function retryRequest(requestFn, maxRetries = 3, baseDelay = 1000) 
 
       if (attempt < maxRetries) {
         const delay = isRateLimit
-          ? baseDelay * Math.pow(3, attempt) * 5 // Much longer backoff for rate limits (5s, 15s, 45s)
+          ? getRateLimitDelayMs(error, baseDelay * Math.pow(3, attempt) * 5)
           : baseDelay * Math.pow(2, attempt);
 
-        console.log(`⏳ Retrying request in ${delay}ms (attempt ${attempt + 1}/${maxRetries})...`);
+        if (isRateLimit) {
+          requestQueue.applyRateLimitCooldown(delay);
+        }
+
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -142,41 +201,3 @@ export function debounce(func, wait) {
   };
 }
 
-/**
- * Cache for request results
- */
-class RequestCache {
-  constructor(ttl = 60000) { // Default 1 minute TTL
-    this.cache = new Map();
-    this.ttl = ttl;
-  }
-
-  get(key) {
-    const item = this.cache.get(key);
-    if (!item) return null;
-
-    if (Date.now() > item.expiry) {
-      this.cache.delete(key);
-      return null;
-    }
-
-    return item.value;
-  }
-
-  set(key, value) {
-    this.cache.set(key, {
-      value,
-      expiry: Date.now() + this.ttl
-    });
-  }
-
-  clear() {
-    this.cache.clear();
-  }
-
-  delete(key) {
-    this.cache.delete(key);
-  }
-}
-
-export const requestCache = new RequestCache(30000); // 30 second cache

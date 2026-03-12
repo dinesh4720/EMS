@@ -141,6 +141,7 @@ export default function PersonalInfoStep({
         errors={errors}
         classesWithTeachers={classesWithTeachers}
         onClassChange={handleClassChange}
+        onSectionChange={(section) => updateField("section", section)}
         ref={classRef}
       />
 
@@ -154,6 +155,7 @@ export default function PersonalInfoStep({
         updateField={updateField}
         onZipCodeChange={handleZipCodeChange}
         isZipLookupLoading={isZipLookupLoading}
+        onManualCityStateEntry={() => { manualCityStateEntryRef.current = true; }}
       />
 
       {/* Optional Information */}
@@ -229,7 +231,7 @@ function DateOfBirthInput({ value, onChange, error, ref }) {
   );
 }
 
-function ClassSection({ formData, errors, classesWithTeachers, onClassChange, ref }) {
+function ClassSection({ formData, errors, classesWithTeachers, onClassChange, onSectionChange, ref }) {
   const uniqueClasses = [...new Set(classesWithTeachers.map((c) => c.name))].sort(
     (a, b) => parseInt(a) - parseInt(b)
   );
@@ -265,7 +267,7 @@ function ClassSection({ formData, errors, classesWithTeachers, onClassChange, re
           labelPlacement="outside"
           placeholder="Select section"
           selectedKeys={formData.section ? [formData.section] : []}
-          onSelectionChange={(keys) => updateField("section", Array.from(keys)[0])}
+          onSelectionChange={(keys) => onSectionChange(Array.from(keys)[0])}
           isRequired
           isDisabled={!formData.classGrade}
           isInvalid={!!errors.section}
@@ -315,7 +317,7 @@ function ContactSection({ formData, updateField }) {
   );
 }
 
-function AddressSection({ formData, errors, updateField, onZipCodeChange, isZipLookupLoading }) {
+function AddressSection({ formData, errors, updateField, onZipCodeChange, isZipLookupLoading, onManualCityStateEntry }) {
   return (
     <div className="space-y-2">
       <Textarea
@@ -336,7 +338,7 @@ function AddressSection({ formData, errors, updateField, onZipCodeChange, isZipL
           labelPlacement="outside"
           placeholder="City"
           value={formData.city}
-          onValueChange={(v) => updateField("city", v)}
+          onValueChange={(v) => { onManualCityStateEntry(); updateField("city", v); }}
           variant="bordered"
           radius="sm"
           isRequired
@@ -347,7 +349,7 @@ function AddressSection({ formData, errors, updateField, onZipCodeChange, isZipL
           labelPlacement="outside"
           placeholder="Select state"
           selectedKeys={formData.state ? [formData.state] : []}
-          onSelectionChange={(keys) => updateField("state", Array.from(keys)[0])}
+          onSelectionChange={(keys) => { onManualCityStateEntry(); updateField("state", Array.from(keys)[0]); }}
           variant="bordered"
           radius="sm"
           classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}

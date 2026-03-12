@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardBody, CardHeader, Progress, Badge, Button, Tabs, Tab, Select, SelectItem } from '@heroui/react';
-import api from '../../services/api';
+import { request } from '../../services/api';
 import { CURRENT_ACADEMIC_YEAR } from '../../utils/constants';
 
 /**
@@ -24,21 +24,21 @@ const TimetableValidationDashboard = () => {
     setError(null);
 
     try {
-      const [classResponse, teacherResponse] = await Promise.all([
-        api.get('/api/validation/classes/comprehensive', { params: { academicYear } }),
-        api.get('/api/validation/teachers/comprehensive', { params: { academicYear } })
+      const [classData, teacherData] = await Promise.all([
+        request(`/validation/classes/comprehensive?academicYear=${encodeURIComponent(academicYear)}`),
+        request(`/validation/teachers/comprehensive?academicYear=${encodeURIComponent(academicYear)}`)
       ]);
 
-      if (classResponse.data.success) {
-        setClassReport(classResponse.data.report);
+      if (classData?.success) {
+        setClassReport(classData.report);
       }
 
-      if (teacherResponse.data.success) {
-        setTeacherReport(teacherResponse.data.report);
+      if (teacherData?.success) {
+        setTeacherReport(teacherData.report);
       }
     } catch (err) {
       console.error('Error fetching validation reports:', err);
-      setError(err.response?.data?.message || 'Failed to fetch validation reports');
+      setError(err.message || 'Failed to fetch validation reports');
     } finally {
       setLoading(false);
     }
@@ -102,10 +102,10 @@ const TimetableValidationDashboard = () => {
           <CardBody>
             <div className="space-y-3">
               {classReport.classReports
-                .sort((a, b) => a.completenessPercentage - b.completenessPercentage)
-                .map((report, index) => (
-                  <div 
-                    key={index}
+                .sort((a, b) => (a.completenessPercentage ?? 0) - (b.completenessPercentage ?? 0))
+                .map((report) => (
+                  <div
+                    key={report.className}
                     className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -193,10 +193,10 @@ const TimetableValidationDashboard = () => {
           <CardBody>
             <div className="space-y-3">
               {teacherReport.teacherReports
-                .sort((a, b) => a.utilizationPercentage - b.utilizationPercentage)
-                .map((report, index) => (
-                  <div 
-                    key={index}
+                .sort((a, b) => (a.utilizationPercentage ?? 0) - (b.utilizationPercentage ?? 0))
+                .map((report) => (
+                  <div
+                    key={report.teacherName}
                     className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     <div className="flex items-center justify-between mb-2">

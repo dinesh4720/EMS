@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner, Select, SelectItem, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@heroui/react";
 import { Search, X, Download, Bell, MoreVertical, CreditCard } from "lucide-react";
 import { feesApi } from "../../services/api";
+import toast from "react-hot-toast";
 
 const ITEMS_PER_LOAD = 10;
 
@@ -38,8 +39,8 @@ export default function FeeDefaulters() {
       const matchSearch = d.student.toLowerCase().includes(search.toLowerCase());
       const matchFilter =
         filter === "all" ||
-        (filter === "7" && d.days >= 7 && d.days < 15) ||
-        (filter === "15" && d.days >= 15 && d.days < 30) ||
+        (filter === "7" && d.days >= 7) ||
+        (filter === "15" && d.days >= 15) ||
         (filter === "30" && d.days >= 30);
       return matchSearch && matchFilter;
     });
@@ -70,7 +71,7 @@ export default function FeeDefaulters() {
   const totalPending = filteredDefaulters.reduce((sum, d) => sum + d.pending, 0);
 
   const handleSendReminders = () => {
-    alert(`Sending reminders to ${filteredDefaulters.length} defaulters...`);
+    toast.success(`Reminders will be sent to ${filteredDefaulters.length} defaulters`);
   };
 
   const handleExportDefaulters = () => {
@@ -89,7 +90,7 @@ export default function FeeDefaulters() {
   };
 
   const handleSendReminder = (defaulter) => {
-    alert(`Reminder will be sent to ${defaulter.student}`);
+    toast.success(`Reminder will be sent to ${defaulter.student}`);
   };
 
   const handleCollectFee = (defaulter) => {
@@ -206,11 +207,15 @@ export default function FeeDefaulters() {
                   <span className="text-sm text-gray-600">{item.dueDate || '—'}</span>
                 </TableCell>
                 <TableCell>
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border border-gray-200 rounded bg-gray-50">
+                  <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border rounded ${
+                    item.days >= 30 ? "border-red-200 bg-red-50 text-red-700" :
+                    item.days >= 15 ? "border-orange-200 bg-orange-50 text-orange-700" :
+                    "border-yellow-200 bg-yellow-50 text-yellow-700"
+                  }`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${
-                      item.days >= 30 ? "bg-gray-400" :
-                      item.days >= 15 ? "bg-gray-400" :
-                      "bg-gray-300"
+                      item.days >= 30 ? "bg-red-500" :
+                      item.days >= 15 ? "bg-orange-500" :
+                      "bg-yellow-500"
                     }`}></span>
                     {item.days} days
                   </span>

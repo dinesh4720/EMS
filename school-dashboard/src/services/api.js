@@ -1,28 +1,35 @@
-import { requestQueue, retryRequest, requestCache } from '../utils/requestQueue.js';
+import { queryClient } from '../lib/queryClient.js';
+import { requestQueue, retryRequest } from '../utils/requestQueue.js';
 import { clearStoredUser, getAuthHeaders } from '../utils/authSession';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-console.log('🌐 API URL configured:', API_URL);
-
 // Export cache clearing function
 export function clearApiCache() {
-  requestCache.clear();
-  console.log('🧹 API cache cleared');
+  void queryClient.invalidateQueries();
+}
+
+function parseRetryAfterMs(retryAfterHeader) {
+  if (!retryAfterHeader) {
+    return null;
+  }
+
+  const numericValue = Number(retryAfterHeader);
+  if (Number.isFinite(numericValue) && numericValue >= 0) {
+    return numericValue * 1000;
+  }
+
+  const retryAt = Date.parse(retryAfterHeader);
+  if (Number.isNaN(retryAt)) {
+    return null;
+  }
+
+  return Math.max(retryAt - Date.now(), 0);
 }
 
 export async function request(endpoint, options = {}) {
   const url = `${API_URL}${endpoint}`;
   const method = options.method || 'GET';
-
-  // Check cache for GET requests
-  if (method === 'GET' && !options.skipCache) {
-    const cached = requestCache.get(url);
-    if (cached) {
-      // console.log(`💾 Cache hit: ${url}`);
-      return cached;
-    }
-  }
 
   // Create the actual request function
   const makeRequest = async () => {
@@ -55,11 +62,15 @@ export async function request(endpoint, options = {}) {
         if (response.status === 401) {
           console.warn('⚠️ 401 Unauthorized - clearing session');
           clearStoredUser();
+          queryClient.clear();
         }
 
         // If rate limited, throw specific error
         if (response.status === 429) {
-          throw new Error('Too many requests - rate limit exceeded');
+          const rateLimitError = new Error('Too many requests - rate limit exceeded');
+          rateLimitError.status = 429;
+          rateLimitError.retryAfterMs = parseRetryAfterMs(response.headers.get('retry-after'));
+          throw rateLimitError;
         }
 
         // If conflict error (409), throw with detailed information
@@ -82,11 +93,6 @@ export async function request(endpoint, options = {}) {
       }
 
       const data = await response.json();
-
-      // Cache GET requests
-      if (method === 'GET' && !options.skipCache) {
-        requestCache.set(url, data);
-      }
 
       return data;
     } catch (error) {
@@ -190,6 +196,11 @@ export const studentsApi = {
   pin: (id) => request(`/students/${id}/pin`, { method: 'PUT' }),
   unpin: (id) => request(`/students/${id}/unpin`, { method: 'PUT' }),
   getResults: (id, academicYear) => request(`/students/${id}/results${academicYear ? `?academicYear=${academicYear}` : ''}`),
+  getRemarks: (id, category) => request(`/students/${id}/remarks${category && category !== 'all' ? `?category=${category}` : ''}`),
+  addDocument: (id, data) => request(`/students/${id}/documents`, { method: 'POST', body: JSON.stringify(data) }),
+  deleteDocument: (id, documentIndex) => request(`/students/${id}/documents/${documentIndex}`, { method: 'DELETE' }),
+  fixDocuments: (id) => request(`/students/${id}/fix-documents`, { method: 'POST' }),
+  sendReminder: (id, data) => request(`/students/${id}/send-reminder`, { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // Trash API
@@ -573,6 +584,27 @@ export const settingsApi = {
   deleteDocumentConfig: (id) => request(`/settings/document-config/${id}`, { method: 'DELETE' }),
 };
 
+export const billingApi = {
+  getSummary: (skipCache = true) => request('/billing/summary', { skipCache }),
+  updateAccount: (data) => request('/billing/account', { method: 'PUT', body: JSON.stringify(data) }),
+  updateAutoRenew: (autoRenew) => request('/billing/auto-renew', {
+    method: 'POST',
+    body: JSON.stringify({ autoRenew })
+  }),
+  createCheckout: (data) => request('/billing/checkout', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+};
+
+export const superAdminApi = {
+  getOverview: () => request('/super-admin/overview'),
+  getSchools: () => request('/super-admin/schools'),
+  createSchool: (data) => request('/super-admin/schools', { method: 'POST', body: JSON.stringify(data) }),
+  updateSchool: (id, data) => request(`/super-admin/schools/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  provisionSchool: (id, data) => request(`/super-admin/schools/${id}/provision`, { method: 'POST', body: JSON.stringify(data) }),
+};
+
 // Calendar Events API
 export const calendarEventsApi = {
   getAll: () => request('/calendar/events'),
@@ -643,11 +675,11 @@ export const feesApi = {
   // Defaulters
   getDefaulters: (filters) => {
     const params = new URLSearchParams(filters).toString();
-    return request(`/fees/defaulters${params ? `?${params}` : ''}`);
+    return request(`/student-fees/defaulters${params ? `?${params}` : ''}`);
   },
 
   // Student Summary
-  getStudentSummary: (studentId, academicYear) => request(`/fees/students/${studentId}/summary${academicYear ? `?academicYear=${academicYear}` : ''}`),
+  getStudentSummary: (studentId, academicYear) => request(`/students/${studentId}/fee-summary${academicYear ? `?academicYear=${academicYear}` : ''}`),
 
   // Refunds
   getRefunds: (filters) => {
@@ -665,6 +697,22 @@ export const feesApi = {
   // Fee Structure
   getFeeStructure: (classId, academicYear) => request(`/fees/structure/${classId}${academicYear ? `?academicYear=${academicYear}` : ''}`),
   saveFeeStructure: (data) => request('/fees/structure', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+export const studentFeesApi = {
+  getByStudent: (studentId, academicYear) => request(`/student-fees/student/${studentId}${academicYear ? `?academicYear=${academicYear}` : ''}`),
+  getBatch: (studentIds, academicYear) => request('/student-fees/batch', {
+    method: 'POST',
+    body: JSON.stringify({ studentIds, academicYear })
+  }),
+  initialize: (studentId, academicYear) => request(`/student-fees/initialize/${studentId}`, {
+    method: 'POST',
+    body: JSON.stringify({ academicYear })
+  }),
+  recordPayment: (studentId, data) => request(`/student-fees/student/${studentId}/payment`, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
 };
 
 // Payroll API
@@ -933,10 +981,12 @@ export default {
   teacherAssignmentsApi,
   teacherTimetableApi,
   settingsApi,
+  billingApi,
   intakeFormsApi,
   publicApi,
   notificationsApi,
   feesApi,
+  studentFeesApi,
   payrollApi,
   uploadApi,
   announcementsApi,

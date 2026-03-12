@@ -2,8 +2,11 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
+import ErrorBoundary from "./components/ErrorBoundary";
 import PublicFormSubmission from "./pages/PublicFormSubmission";
 import { useOwlinTracking } from "./hooks/useOwlinTracking";
+
+const isDev = import.meta.env.DEV;
 
 // Lazy load pages for code splitting
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -15,16 +18,17 @@ const ClassesPage = lazy(() => import("./pages/classes"));
 const CalendarPage = lazy(() => import("./pages/calendar"));
 const MessagingPage = lazy(() => import("./pages/messaging"));
 const FeesPage = lazy(() => import("./pages/fees"));
-const AccountsPage = lazy(() => import("./pages/accounts"));
 const SettingsPage = lazy(() => import("./pages/settings"));
 const AcademicLayout = lazy(() => import("./pages/academics"));
 const FormAssignments = lazy(() => import("./pages/intake-forms/FormAssignments"));
 const FormSubmissions = lazy(() => import("./pages/intake-forms/FormSubmissions"));
 const AiAssistantPage = lazy(() => import("./pages/AiAssistantPage"));
-const StyleGuide = lazy(() => import("./pages/StyleGuide"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const StyleGuide = isDev ? lazy(() => import("./pages/StyleGuide")) : null;
 const TimetableWizardPage = lazy(() => import("./components/TimetableWizardPage"));
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));
+const SuperAdminDashboard = lazy(() => import("./pages/super-admin"));
 
 // Loading fallback component
 function PageLoader() {
@@ -44,6 +48,7 @@ import PermissionGuard from "./components/PermissionGuard";
 import PayrollReminder from "./components/PayrollReminder";
 import { AlertCircle, X } from "lucide-react";
 import { useState, useEffect } from "react";
+import { isSuperAdminRole } from "./utils/roleUtils";
 
 function BeforeSchoolAlert() {
   const { isBeforeSchoolHours, schoolSettings } = useApp();
@@ -116,13 +121,11 @@ function AuthenticatedApp() {
     
     const handleScroll = () => {
       showScrollbar();
-      console.log('Scrolling detected - scrollbar shown');
-      
+
       clearTimeout(scrollTimeout);
-      
+
       scrollTimeout = setTimeout(() => {
         hideScrollbar();
-        console.log('Scrolling stopped - scrollbar hidden');
       }, 1500);
     };
 
@@ -145,6 +148,11 @@ function AuthenticatedApp() {
     }
   }, [setShowOnboarding]);
 
+  // Reset scroll position on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   const isSettingsPage = location.pathname.startsWith("/settings");
   // Use user preference for sidebar state
   const effectiveSidebarOpen = isSidebarOpen;
@@ -154,7 +162,9 @@ function AuthenticatedApp() {
       <div className="flex min-h-screen bg-background font-sans text-foreground">
         {showOnboarding && <OnboardingFlow onComplete={() => setShowOnboarding(false)} />}
 
-        <Sidebar isSidebarOpen={effectiveSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+        <ErrorBoundary message="The sidebar encountered an error.">
+          <Sidebar isSidebarOpen={effectiveSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+        </ErrorBoundary>
         <AiAssistantLayout>
           <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${effectiveSidebarOpen ? 'ml-[240px]' : 'ml-[64px]'} relative z-10 bg-gray-50 dark:bg-zinc-950`}>
             <Topbar isSidebarOpen={effectiveSidebarOpen} />
@@ -162,6 +172,7 @@ function AuthenticatedApp() {
               <BeforeSchoolAlert />
               <main className={`flex-1 flex flex-col min-h-0 ${isSettingsPage ? 'p-0' : 'p-2 md:p-3'}`}>
                 <div className={`flex-1 flex flex-col min-h-0 ${isSettingsPage ? 'w-full' : 'max-w-[1600px] mx-auto w-full'}`}>
+                  <ErrorBoundary message="This page encountered an error. Try navigating to a different section.">
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/analytics" element={
@@ -204,11 +215,7 @@ function AuthenticatedApp() {
                         <FeesPage />
                       </PermissionGuard>
                     } />
-                    <Route path="/accounts/*" element={
-                      <PermissionGuard module="accounts">
-                        <AccountsPage />
-                      </PermissionGuard>
-                    } />
+                    <Route path="/accounts/*" element={<Navigate to="/fees" replace />} />
                     <Route path="/academics/*" element={
                       <PermissionGuard module="academics">
                         <AcademicLayout />
@@ -222,24 +229,22 @@ function AuthenticatedApp() {
                     <Route path="/intake-forms/assignments" element={<FormAssignments />} />
                     <Route path="/intake-forms/submissions" element={<FormSubmissions />} />
                     <Route path="/ai-assistant" element={<AiAssistantPage />} />
-                    <Route path="/style-guide" element={<StyleGuide />} />
+                    {isDev && StyleGuide ? (
+                      <Route path="/style-guide" element={<StyleGuide />} />
+                    ) : null}
                     <Route path="/timetable-wizard" element={
                       <PermissionGuard module="timetable">
                         <TimetableWizardPage />
                       </PermissionGuard>
                     } />
                   </Routes>
+                  </ErrorBoundary>
                 </div>
               </main>
             </div>
           </div>
         </AiAssistantLayout>
       </div>
-
-      {/* AI Assistant Panel rendered outside main layout */}
-      <AiAssistantPanel>
-        <AiAssistantPage />
-      </AiAssistantPanel>
 
       {/* Payroll Reminder */}
       <PayrollReminder />
@@ -248,7 +253,8 @@ function AuthenticatedApp() {
 }
 
 function AppRoutes() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
+  const isSuperAdmin = isSuperAdminRole(user?.role);
 
   if (loading) {
     return (
@@ -263,6 +269,7 @@ function AppRoutes() {
       <Routes>
         {/* Public route - accessible without authentication */}
         <Route path="/form/:token" element={<PublicFormSubmission />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
 
         {/* Authenticated routes */}
         {!isAuthenticated ? (
@@ -273,8 +280,19 @@ function AppRoutes() {
           </>
         ) : (
           <>
-            <Route path="/login" element={<Navigate to="/" replace />} />
-            <Route path="/*" element={<AuthenticatedApp />} />
+            <Route path="/login" element={<Navigate to={isSuperAdmin ? "/super-admin" : "/"} replace />} />
+            <Route path="/signup" element={<Navigate to={isSuperAdmin ? "/super-admin" : "/"} replace />} />
+            {isSuperAdmin ? (
+              <>
+                <Route path="/super-admin" element={<SuperAdminDashboard />} />
+                <Route path="*" element={<Navigate to="/super-admin" replace />} />
+              </>
+            ) : (
+              <>
+                <Route path="/super-admin" element={<Navigate to="/" replace />} />
+                <Route path="/*" element={<AuthenticatedApp />} />
+              </>
+            )}
           </>
         )}
       </Routes>

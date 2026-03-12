@@ -127,7 +127,7 @@ export default function ShareProfileModal({ isOpen, onClose, student, staff = []
                     });
                   }}
                 >
-                  <Checkbox
+                  <Checkbox size="sm"
                     isSelected={selectedUsers.includes(staffMember.id)}
                     onValueChange={() => {
                       setSelectedUsers(prev => {

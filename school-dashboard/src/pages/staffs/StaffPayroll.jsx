@@ -114,7 +114,6 @@ export default function StaffPayroll() {
       const response = await payrollApi.getDashboard(selectedMonth, selectedYear);
       if (response.success) {
         setDashboardData(response.data);
-        console.log('💰 Payroll Dashboard Data:', response.data);
       }
     } catch (error) {
       console.error('Error fetching dashboard:', error);
@@ -124,49 +123,15 @@ export default function StaffPayroll() {
   const fetchPayrollRecords = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Fetching payroll records for month:', selectedMonth, 'year:', selectedYear);
       const response = await payrollApi.getRecords({
         month: selectedMonth,
         year: selectedYear,
         limit: 1000
       });
-      console.log('📦 API Response:', response);
 
       if (response.success) {
         const records = response.data || [];
         setPayrollRecords(records);
-        console.log('📋 Payroll Records:', records.length, 'records');
-        console.log('📋 Record details:', records.map(r => ({
-          id: r._id,
-          employeeId: r.employeeId,
-          month: r.month,
-          year: r.year,
-          status: r.status,
-          netPay: r.netPay
-        })));
-        console.log('👥 Total Staff in System:', staff.length);
-        console.log('✅ Active Staff:', getActiveStaffCount());
-        console.log('📊 Staff Status Breakdown:', staff.reduce((acc, s) => {
-          const status = s.status || 'undefined';
-          acc[status] = (acc[status] || 0) + 1;
-          return acc;
-        }, {}));
-        
-        // CRITICAL DEBUG: Check ID matching
-        if (records.length > 0 && staff.length > 0) {
-          console.log('🔍 First payroll employeeId:', records[0].employeeId, '(type:', typeof records[0].employeeId, ')');
-          console.log('🔍 First 3 staff members:', staff.slice(0, 3).map(s => ({
-            _id: s._id,
-            id: s.id,
-            name: s.name,
-            _idType: typeof s._id,
-            idType: typeof s.id
-          })));
-          
-          // Try to find a match
-          const testMatch = staff.find(s => String(s._id || s.id) === String(records[0].employeeId));
-          console.log('🔍 Can we match first record?', testMatch ? 'YES - ' + testMatch.name : 'NO');
-        }
       } else {
         console.error('❌ API returned success=false:', response);
       }
@@ -951,8 +916,9 @@ export default function StaffPayroll() {
                 base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0",
                 thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12",
                 th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6",
-                td: "py-5 border-b border-default-200 group-data-[last=true]:border-none last:pr-6",
-                tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-5",
+                td: "py-5 border-b border-default-200 group-data-[last=true]:border-none last:pr-6 transition-colors",
+                tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-5 [&>tr[data-selected=true]>td]:bg-primary-50",
+                tr: "transition-colors hover:bg-gray-50 data-[selected=true]:bg-primary-50",
               }}
             >
               <TableHeader>
@@ -966,16 +932,6 @@ export default function StaffPayroll() {
                 <TableColumn align="end">ACTIONS</TableColumn>
               </TableHeader>
               <TableBody emptyContent="No payroll records found">
-                {(() => {
-                  // Debug: Check how many records are being filtered out
-                  const recordsWithEmployee = visibleRecords.filter(r => staff.find(s => String(s._id || s.id) === String(r.employeeId)));
-                  if (visibleRecords.length !== recordsWithEmployee.length) {
-                    console.warn(`⚠️ ${visibleRecords.length - recordsWithEmployee.length} of ${visibleRecords.length} records missing employee mapping`);
-                    console.log('📋 Sample record:', visibleRecords[0]);
-                    console.log('👋 Sample staff:', staff.slice(0, 3).map(s => ({ id: s._id || s.id, idType: typeof (s._id || s.id), name: s.name })));
-                  }
-                  return null; // This is just for debug, doesn't render
-                })()}
                 {visibleRecords.map((record) => {
                   // FIXED: Use _id from MongoDB and string comparison for ID matching
                   const employee = staff.find(s => String(s._id || s.id) === String(record.employeeId));

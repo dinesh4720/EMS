@@ -36,7 +36,7 @@ export default function ParentsStep({
           const index = formData.parents.findIndex((p) => p === parent);
           return (
             <ParentCard
-              key={index}
+              key={idx}
               parent={parent}
               index={index}
               idx={idx}
@@ -66,6 +66,7 @@ export default function ParentsStep({
         formData={formData}
         updateParent={updateParent}
         removeParent={removeParent}
+        addGuardian={() => addParent({ isParent: false, relationship: "Guardian" })}
       />
 
       {/* Sibling Details */}
@@ -193,7 +194,7 @@ function ParentCard({
   );
 }
 
-function GuardiansSection({ guardians, formData, updateParent, removeParent }) {
+function GuardiansSection({ guardians, formData, updateParent, removeParent, addGuardian }) {
   return (
     <div className="space-y-4 pt-2 border-t border-solid border-default-200">
       <div className="flex justify-between items-center">
@@ -204,7 +205,7 @@ function GuardiansSection({ guardians, formData, updateParent, removeParent }) {
       {guardians.map((guardian, idx) => {
         const index = formData.parents.findIndex((p) => p === guardian);
         return (
-          <div key={index} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
+          <div key={idx} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-default-700">Guardian {idx + 1}</span>
               <Button size="sm" variant="light" color="danger" onPress={() => removeParent(index)}>
@@ -244,9 +245,7 @@ function GuardiansSection({ guardians, formData, updateParent, removeParent }) {
       {guardians.length === 0 && (
         <button
           className="text-sm font-medium text-primary hover:text-primary-600 transition-colors"
-          onClick={() => {
-            // Add guardian logic
-          }}
+          onClick={addGuardian}
         >
           + Add Guardian
         </button>
@@ -260,8 +259,12 @@ function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, c
     <div className="space-y-4 pt-2 border-t border-solid border-default-200">
       <div className="flex justify-between items-center">
         <label className="text-sm font-semibold text-default-900">Sibling Details</label>
-        <span className="text-xs text-default-500">(Siblings in same school only)</span>
+        <span className="text-xs text-default-500">(Optional — same school only)</span>
       </div>
+
+      {siblings.length === 0 && (
+        <p className="text-xs text-default-400">No siblings added yet. Use the button below to add siblings enrolled in this school.</p>
+      )}
 
       {siblings.map((sibling, idx) => (
         <div key={idx} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
@@ -283,7 +286,7 @@ function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, c
               classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
             />
             <div className="flex items-center gap-2 pt-6">
-              <Checkbox
+              <Checkbox size="sm"
                 isSelected={sibling.inSameSchool}
                 onValueChange={(v) => {
                   updateSibling(idx, "inSameSchool", v);

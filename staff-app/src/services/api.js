@@ -5,12 +5,18 @@ import config from '../config';
 
 const API_URL = config.API_URL;
 
+// Callback to trigger logout on 401 – set by AuthContext after mount
+let onUnauthorized = null;
+export const setUnauthorizedHandler = (handler) => {
+  onUnauthorized = handler;
+};
+
 // Helper function for API requests
 const request = async (endpoint, options = {}) => {
   const url = `${API_URL}${endpoint}`;
   console.log('API Request:', url, options.method || 'GET');
 
-  const config = {
+  const reqConfig = {
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -21,12 +27,21 @@ const request = async (endpoint, options = {}) => {
   // Add auth token if available
   const token = await getAuthToken();
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    reqConfig.headers.Authorization = `Bearer ${token}`;
   }
 
   try {
-    const response = await fetch(url, config);
+    const response = await fetch(url, reqConfig);
     console.log('API Response status:', response.status);
+
+    // Handle 401 – session expired or token invalid
+    if (response.status === 401) {
+      console.warn('[API] 401 Unauthorized – clearing session');
+      await removeAuthToken();
+      await removeUserData();
+      if (onUnauthorized) onUnauthorized();
+      throw new Error('Session expired. Please log in again.');
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Network error' }));
@@ -35,7 +50,6 @@ const request = async (endpoint, options = {}) => {
     }
 
     const data = await response.json();
-    console.log('API Response data:', data);
     return data;
   } catch (error) {
     console.error(`API Error [${endpoint}]:`, error.message);

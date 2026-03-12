@@ -11,15 +11,12 @@ class SocketService {
 
   connect(userId, userType) {
     if (this.socket?.connected) {
-      console.log('Socket already connected');
       return;
     }
 
     // Remove /api from the URL for Socket.IO connection
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
     const SOCKET_URL = API_URL.replace('/api', '');
-    
-    console.log('🔌 Connecting to Socket.IO:', SOCKET_URL);
 
     this.socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
@@ -35,20 +32,17 @@ class SocketService {
     this.conversationRooms = new Set(); // NEW: Track joined rooms
 
     this.socket.on('connect', () => {
-      console.log('✅ Socket connected:', this.socket.id);
       this.connected = true;
-      
+
       // Authenticate
       this.socket.emit('authenticate', { userId, userType });
     });
 
     this.socket.on('authenticated', (data) => {
-      console.log('✅ Authenticated:', data);
       this.emit('authenticated', data);
-      
+
       // Rejoin all conversation rooms after reconnection - NEW
       if (this.conversationRooms.size > 0) {
-        console.log(`🔄 Rejoining ${this.conversationRooms.size} conversation rooms`);
         this.conversationRooms.forEach(conversationId => {
           this.socket.emit('join_conversation', { conversationId });
         });
@@ -56,26 +50,22 @@ class SocketService {
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('❌ Socket disconnected:', reason);
       this.connected = false;
       this.emit('disconnected');
-      
+
       // Auto-reconnect if server disconnected - NEW
       if (reason === 'io server disconnect') {
-        console.log('🔄 Server disconnected, attempting to reconnect...');
         this.socket.connect();
       }
     });
-    
+
     // NEW: Reconnection event handlers
     this.socket.on('reconnect', (attemptNumber) => {
-      console.log(`✅ Reconnected after ${attemptNumber} attempts`);
       this.connected = true;
       this.emit('reconnected', { attemptNumber });
     });
-    
-    this.socket.on('reconnect_attempt', (attemptNumber) => {
-      console.log(`🔄 Reconnection attempt ${attemptNumber}`);
+
+    this.socket.on('reconnect_attempt', (_attemptNumber) => {
     });
     
     this.socket.on('reconnect_error', (error) => {
@@ -177,7 +167,6 @@ class SocketService {
 
     this.socket.emit('join_conversation', { conversationId });
     this.conversationRooms.add(conversationId); // Track joined rooms
-    console.log(`📥 Joined conversation: ${conversationId}`);
   }
 
   // Send a message

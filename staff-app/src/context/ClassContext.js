@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { classesApi, ATTENDANCE_STATUS } from '../services/api';
 import * as attendanceStorage from '../services/attendanceStorage';
 import { useAuth } from './AuthContext';
+import NetInfo from '@react-native-community/netinfo';
 
 const ClassContext = createContext();
 
@@ -26,6 +27,7 @@ export const ClassProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [offlineQueue, setOfflineQueue] = useState([]);
   const [isOnline, setIsOnline] = useState(true);
+  const syncOfflineAttendanceRef = useRef(null);
 
   // Load offline queue on mount
   useEffect(() => {
@@ -38,6 +40,25 @@ export const ClassProvider = ({ children }) => {
       }
     };
     loadOfflineData();
+  }, []);
+
+  // Track network state and auto-sync when connectivity is restored
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      const online = !!(state.isConnected && state.isInternetReachable !== false);
+      setIsOnline(prev => {
+        if (!prev && online) {
+          // Just came back online – trigger sync
+          attendanceStorage.getPendingSyncQueue().then(queue => {
+            if (queue.length > 0) {
+              syncOfflineAttendanceRef.current?.();
+            }
+          });
+        }
+        return online;
+      });
+    });
+    return () => unsubscribe();
   }, []);
 
   // Fetch staff classes
@@ -240,7 +261,6 @@ export const ClassProvider = ({ children }) => {
   }, []);
 
   // Sync offline attendance
-  const syncOfflineAttendance = useCallback(async () => {
     if (offlineQueue.length === 0) return { synced: 0 };
 
     let syncedCount = 0;
@@ -261,6 +281,11 @@ export const ClassProvider = ({ children }) => {
 
     return { synced: syncedCount, failed: failedRecords.length };
   }, [offlineQueue]);
+
+  // Keep ref in sync so the NetInfo listener can call it without stale closure
+  useEffect(() => {
+    syncOfflineAttendanceRef.current = syncOfflineAttendance;
+  }, [syncOfflineAttendance]);
 
   // Clear current attendance state
   const clearAttendance = useCallback(() => {

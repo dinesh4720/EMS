@@ -106,9 +106,9 @@ const TimetableValidationPanel = ({ type = 'class', id, academicYear }) => {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {report.emptySlotDetails.map((slot, index) => (
-                      <div 
-                        key={index}
+                    {report.emptySlotDetails.map((slot) => (
+                      <div
+                        key={`${slot.day}-${slot.periodName}`}
                         className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                       >
                         <div className="flex items-center gap-3">
@@ -188,9 +188,9 @@ const TimetableValidationPanel = ({ type = 'class', id, academicYear }) => {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {report.gapDetails.map((gap, index) => (
-                      <div 
-                        key={index}
+                    {report.gapDetails.map((gap) => (
+                      <div
+                        key={`${gap.day}-${gap.periodName}`}
                         className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                       >
                         <div className="flex items-center gap-3">

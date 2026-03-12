@@ -30,12 +30,8 @@ export default function EditStudentDrawer({
    */
   const handleSave = async (studentData) => {
     try {
-      console.log('📝 Updating student:', student.id, studentData);
-
       // Call the API to update the student
       const response = await studentsApi.update(student.id, studentData);
-
-      console.log('✅ Student updated successfully:', response);
 
       // Show success toast
       toast.success('Student updated successfully!');

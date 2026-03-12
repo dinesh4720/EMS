@@ -8,7 +8,6 @@ export default function MessageActionsMenu({ message, currentUserId, onAction })
   const isOwnMessage = message.senderId?._id === currentUserId || message.senderId === currentUserId;
 
   const handleAction = (action) => {
-    console.log('🎯 Action clicked:', action);
     // Always pass message from props - DropdownMenu only gives us the key, not the message
     onAction(action, { message });
   };

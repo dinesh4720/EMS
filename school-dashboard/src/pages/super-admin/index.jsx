@@ -1,0 +1,464 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Building2, RefreshCcw, ShieldCheck, Sparkles, UserPlus } from 'lucide-react';
+import { superAdminApi } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+
+const PLAN_OPTIONS = [
+  { value: 'starter', label: 'Starter' },
+  { value: 'growth', label: 'Growth' },
+  { value: 'enterprise', label: 'Enterprise' },
+];
+
+const STATUS_OPTIONS = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+];
+
+const PLAN_STATUS_OPTIONS = [
+  { value: 'trialing', label: 'Trialing' },
+  { value: 'active', label: 'Active' },
+  { value: 'past_due', label: 'Past due' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
+
+const INITIAL_FORM = {
+  schoolName: '',
+  schoolCode: '',
+  contactEmail: '',
+  contactPhone: '',
+  plan: 'starter',
+  planStatus: 'trialing',
+  adminName: '',
+  adminEmail: '',
+  adminPassword: '',
+  frontendUrl: '',
+  backendUrl: '',
+};
+
+function SummaryCard({ icon: Icon, label, value, accent }) {
+  return (
+    <div className="rounded-3xl border border-white/70 bg-white/85 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+      <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl ${accent}`}>
+        <Icon size={20} />
+      </div>
+      <div className="text-sm text-slate-500">{label}</div>
+      <div className="mt-1 text-3xl font-semibold tracking-tight text-slate-950">{value}</div>
+    </div>
+  );
+}
+
+function SelectField({ value, onChange, options }) {
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-sky-400"
+    >
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+export default function SuperAdminDashboard() {
+  const { user, logout } = useAuth();
+  const [overview, setOverview] = useState({
+    totalSchools: 0,
+    activeSchools: 0,
+    trialingSchools: 0,
+    attentionNeeded: 0,
+  });
+  const [schools, setSchools] = useState([]);
+  const [form, setForm] = useState(INITIAL_FORM);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [rowSaving, setRowSaving] = useState({});
+  const [provisioning, setProvisioning] = useState({});
+
+  const tableRows = useMemo(
+    () =>
+      schools.map((school) => ({
+        ...school,
+        draftPlan: school.draftPlan || school.plan || 'starter',
+        draftStatus: school.draftStatus || school.status || 'active',
+        draftPlanStatus: school.draftPlanStatus || school.planStatus || 'trialing',
+      })),
+    [schools]
+  );
+
+  const loadData = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const [overviewData, schoolData] = await Promise.all([
+        superAdminApi.getOverview(),
+        superAdminApi.getSchools(),
+      ]);
+
+      setOverview(overviewData);
+      setSchools(schoolData);
+    } catch (err) {
+      setError(err.message || 'Failed to load super admin dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const updateForm = (field, value) => {
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const updateSchoolDraft = (schoolId, field, value) => {
+    setSchools((current) =>
+      current.map((school) =>
+        school.id === schoolId ? { ...school, [field]: value } : school
+      )
+    );
+  };
+
+  const handleCreateSchool = async (event) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setError('');
+    setMessage('');
+
+    try {
+      const response = await superAdminApi.createSchool({
+        ...form,
+        schoolCode: form.schoolCode || null,
+        contactEmail: form.contactEmail || null,
+        contactPhone: form.contactPhone || null,
+        adminPassword: form.adminPassword || null,
+        frontendUrl: form.frontendUrl || null,
+        backendUrl: form.backendUrl || null,
+      });
+
+      setForm(INITIAL_FORM);
+      setMessage(
+        response.temporaryPassword
+          ? `School created. Temporary admin password: ${response.temporaryPassword}`
+          : 'School created and provisioned successfully.'
+      );
+      await loadData();
+    } catch (err) {
+      setError(err.message || 'Failed to create school');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSaveSchool = async (school) => {
+    setRowSaving((current) => ({ ...current, [school.id]: true }));
+    setError('');
+    setMessage('');
+
+    try {
+      const response = await superAdminApi.updateSchool(school.id, {
+        plan: school.draftPlan,
+        status: school.draftStatus,
+        planStatus: school.draftPlanStatus,
+      });
+
+      setSchools((current) =>
+        current.map((item) =>
+          item.id === school.id
+            ? {
+                ...item,
+                ...response.school,
+                draftPlan: response.school.plan,
+                draftStatus: response.school.status,
+                draftPlanStatus: response.school.planStatus,
+              }
+            : item
+        )
+      );
+      setMessage(`Updated ${response.school.name}.`);
+      const overviewData = await superAdminApi.getOverview();
+      setOverview(overviewData);
+    } catch (err) {
+      setError(err.message || 'Failed to update school');
+    } finally {
+      setRowSaving((current) => ({ ...current, [school.id]: false }));
+    }
+  };
+
+  const handleProvisionSchool = async (school) => {
+    setProvisioning((current) => ({ ...current, [school.id]: true }));
+    setError('');
+    setMessage('');
+
+    try {
+      const response = await superAdminApi.provisionSchool(school.id, {
+        adminName: school.admin?.name || `${school.name} Admin`,
+        adminEmail: school.admin?.email || school.contactEmail,
+      });
+
+      setMessage(
+        response.temporaryPassword
+          ? `Provisioned ${school.name}. Temporary admin password: ${response.temporaryPassword}`
+          : `Provisioned ${school.name}.`
+      );
+      await loadData();
+    } catch (err) {
+      setError(err.message || 'Failed to provision school');
+    } finally {
+      setProvisioning((current) => ({ ...current, [school.id]: false }));
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.16),_transparent_28%),linear-gradient(180deg,_#f8fbff_0%,_#eef4ff_48%,_#f8fafc_100%)] text-slate-900">
+      <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">
+        <div className="mb-8 flex flex-col gap-4 rounded-[32px] border border-white/70 bg-slate-950 px-6 py-6 text-white shadow-[0_30px_120px_rgba(15,23,42,0.22)] md:flex-row md:items-end md:justify-between">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-sky-100">
+              <ShieldCheck size={14} />
+              Super Admin
+            </div>
+            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">School onboarding and tenant control</h1>
+            <p className="mt-2 max-w-3xl text-sm text-slate-300 md:text-base">
+              Provision schools, assign plans, and re-run setup from one place instead of handling each launch manually.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-right">
+              <div className="text-xs uppercase tracking-[0.24em] text-slate-400">Signed in as</div>
+              <div className="mt-1 text-sm font-medium">{user?.name || 'Super Admin'}</div>
+              <div className="text-xs text-slate-400">{user?.email}</div>
+            </div>
+            <button
+              type="button"
+              onClick={logout}
+              className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/15"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+
+        <div className="mb-8 grid gap-4 md:grid-cols-4">
+          <SummaryCard icon={Building2} label="Total schools" value={overview.totalSchools} accent="bg-sky-100 text-sky-700" />
+          <SummaryCard icon={Sparkles} label="Active schools" value={overview.activeSchools} accent="bg-emerald-100 text-emerald-700" />
+          <SummaryCard icon={UserPlus} label="Trials running" value={overview.trialingSchools} accent="bg-amber-100 text-amber-700" />
+          <SummaryCard icon={RefreshCcw} label="Attention needed" value={overview.attentionNeeded} accent="bg-rose-100 text-rose-700" />
+        </div>
+
+        {message ? (
+          <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {message}
+          </div>
+        ) : null}
+
+        {error ? (
+          <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {error}
+          </div>
+        ) : null}
+
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_1.7fr]">
+          <form
+            onSubmit={handleCreateSchool}
+            className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur"
+          >
+            <div className="mb-5">
+              <h2 className="text-xl font-semibold text-slate-950">Onboard a new school</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                This creates the school, provisions its settings, and sets up an initial admin account.
+              </p>
+            </div>
+
+            <div className="grid gap-4">
+              <input
+                value={form.schoolName}
+                onChange={(event) => updateForm('schoolName', event.target.value)}
+                placeholder="School name"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400"
+                required
+              />
+              <input
+                value={form.schoolCode}
+                onChange={(event) => updateForm('schoolCode', event.target.value)}
+                placeholder="School code (optional)"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400"
+              />
+              <div className="grid gap-4 md:grid-cols-2">
+                <input
+                  value={form.contactEmail}
+                  onChange={(event) => updateForm('contactEmail', event.target.value)}
+                  placeholder="Contact email"
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400"
+                />
+                <input
+                  value={form.contactPhone}
+                  onChange={(event) => updateForm('contactPhone', event.target.value)}
+                  placeholder="Contact phone"
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400"
+                />
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <SelectField value={form.plan} onChange={(value) => updateForm('plan', value)} options={PLAN_OPTIONS} />
+                <SelectField value={form.planStatus} onChange={(value) => updateForm('planStatus', value)} options={PLAN_STATUS_OPTIONS} />
+              </div>
+              <input
+                value={form.adminName}
+                onChange={(event) => updateForm('adminName', event.target.value)}
+                placeholder="Admin full name"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400"
+                required
+              />
+              <input
+                value={form.adminEmail}
+                onChange={(event) => updateForm('adminEmail', event.target.value)}
+                placeholder="Admin email"
+                type="email"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400"
+                required
+              />
+              <input
+                value={form.adminPassword}
+                onChange={(event) => updateForm('adminPassword', event.target.value)}
+                placeholder="Admin password (optional)"
+                type="password"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400"
+              />
+              <div className="grid gap-4 md:grid-cols-2">
+                <input
+                  value={form.frontendUrl}
+                  onChange={(event) => updateForm('frontendUrl', event.target.value)}
+                  placeholder="Frontend URL"
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400"
+                />
+                <input
+                  value={form.backendUrl}
+                  onChange={(event) => updateForm('backendUrl', event.target.value)}
+                  placeholder="Backend URL"
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="mt-5 w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submitting ? 'Provisioning school...' : 'Create school'}
+            </button>
+          </form>
+
+          <div className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-950">School registry</h2>
+                <p className="mt-1 text-sm text-slate-500">Manage plan state and re-run provisioning without touching the database manually.</p>
+              </div>
+              <button
+                type="button"
+                onClick={loadData}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300"
+              >
+                Refresh
+              </button>
+            </div>
+
+            {loading ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm text-slate-500">
+                Loading school registry...
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-slate-500">
+                      <th className="pb-3 font-medium">School</th>
+                      <th className="pb-3 font-medium">Admin</th>
+                      <th className="pb-3 font-medium">Plan</th>
+                      <th className="pb-3 font-medium">Status</th>
+                      <th className="pb-3 font-medium">Provisioning</th>
+                      <th className="pb-3 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableRows.map((school) => (
+                      <tr key={school.id} className="border-b border-slate-100 align-top">
+                        <td className="py-4 pr-4">
+                          <div className="font-medium text-slate-900">{school.name}</div>
+                          <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">{school.code}</div>
+                          <div className="mt-2 text-xs text-slate-500">{school.counts?.staff || 0} staff</div>
+                        </td>
+                        <td className="py-4 pr-4">
+                          <div className="font-medium text-slate-800">{school.admin?.name || 'Not provisioned'}</div>
+                          <div className="mt-1 text-xs text-slate-500">{school.admin?.email || school.contactEmail || 'No admin email'}</div>
+                        </td>
+                        <td className="py-4 pr-4">
+                          <div className="space-y-2">
+                            <SelectField
+                              value={school.draftPlan}
+                              onChange={(value) => updateSchoolDraft(school.id, 'draftPlan', value)}
+                              options={PLAN_OPTIONS}
+                            />
+                            <SelectField
+                              value={school.draftPlanStatus}
+                              onChange={(value) => updateSchoolDraft(school.id, 'draftPlanStatus', value)}
+                              options={PLAN_STATUS_OPTIONS}
+                            />
+                          </div>
+                        </td>
+                        <td className="py-4 pr-4">
+                          <SelectField
+                            value={school.draftStatus}
+                            onChange={(value) => updateSchoolDraft(school.id, 'draftStatus', value)}
+                            options={STATUS_OPTIONS}
+                          />
+                        </td>
+                        <td className="py-4 pr-4">
+                          <div className="font-medium capitalize text-slate-800">{school.provisioning?.status || 'pending'}</div>
+                          <div className="mt-1 text-xs text-slate-500">
+                            {school.provisioning?.lastProvisionedAt
+                              ? new Date(school.provisioning.lastProvisionedAt).toLocaleString()
+                              : 'Not provisioned yet'}
+                          </div>
+                        </td>
+                        <td className="py-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleSaveSchool(school)}
+                              disabled={rowSaving[school.id]}
+                              className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {rowSaving[school.id] ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleProvisionSchool(school)}
+                              disabled={provisioning[school.id]}
+                              className="rounded-2xl bg-sky-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {provisioning[school.id] ? 'Provisioning...' : 'Provision'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

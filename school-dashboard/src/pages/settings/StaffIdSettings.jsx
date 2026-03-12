@@ -140,8 +140,8 @@ export default function StaffIdSettings() {
           <Select
             label="Separator"
             placeholder="Select separator"
-            selectedKeys={config.separator ? [config.separator] : []}
-            onChange={(e) => setConfig({ ...config, separator: e.target.value })}
+            selectedKeys={config.separator !== undefined ? [config.separator] : [""]}
+            onSelectionChange={(keys) => setConfig({ ...config, separator: Array.from(keys)[0] ?? "" })}
             description="Character to separate parts of the ID"
             variant="bordered"
           >

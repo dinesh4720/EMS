@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { authApi, getUserData, saveUserData, removeUserData } from '../services/api';
+import { authApi, getUserData, saveUserData, removeUserData, setUnauthorizedHandler } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -17,6 +17,15 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Register 401 handler so api.js can trigger logout on expired tokens
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      setUser(null);
+      setError('Your session has expired. Please log in again.');
+    });
+    return () => setUnauthorizedHandler(null);
+  }, []);
 
   // Check for existing session on mount
   useEffect(() => {

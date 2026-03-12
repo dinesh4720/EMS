@@ -14,8 +14,8 @@ export default function PageHeader({ title, breadcrumbs = [], actions }) {
               separator: "text-gray-300"
             }}
           >
-            {breadcrumbs.map((item, index) => (
-              <BreadcrumbItem key={index} href={item.href}>{item.label}</BreadcrumbItem>
+            {breadcrumbs.map((item) => (
+              <BreadcrumbItem key={item.href || item.label} href={item.href}>{item.label}</BreadcrumbItem>
             ))}
           </Breadcrumbs>
         )}

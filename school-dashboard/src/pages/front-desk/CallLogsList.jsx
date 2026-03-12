@@ -358,7 +358,7 @@ const CallLogsList = forwardRef((props, ref) => {
                 rows={3}
               />
               <div className="col-span-2 border-t border-default-200 pt-4 mt-2">
-                <Checkbox
+                <Checkbox size="sm"
                   isSelected={formData.callbackRequired}
                   onValueChange={(value) => setFormData({ ...formData, callbackRequired: value })}
                 >

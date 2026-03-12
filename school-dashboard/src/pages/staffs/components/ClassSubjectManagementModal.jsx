@@ -16,14 +16,12 @@ const ClassSubjectManagementModal = ({ isOpen, onClose, staffId, staffName }) =>
 
   const handleManageClasses = () => {
     // TODO: Navigate to class management or open class assignment modal
-    console.log('Managing classes for staff:', staffId);
     // You can add navigation logic here
     handleStepModalClose();
   };
 
   const handleManageSubjects = () => {
     // TODO: Navigate to subject management or open subject assignment modal
-    console.log('Managing subjects for staff:', staffId);
     // You can add navigation logic here
     handleStepModalClose();
   };

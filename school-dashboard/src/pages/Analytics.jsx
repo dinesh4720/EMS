@@ -1,23 +1,73 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { 
   Users, GraduationCap, BookOpen, IndianRupee, 
   CheckCircle2, AlertTriangle, Award, Activity, Target, ArrowUpRight
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { Link } from "react-router-dom";
+import { attendanceApi } from "../services/api";
 import { 
   AreaChart, Area, BarChart, Bar, PieChart as RePieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import StatCard from "../components/StatCard";
+
+const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function parseAcademicYearRange(currentAcademicYear, schoolSettings) {
+  if (schoolSettings?.academicYearStart && schoolSettings?.academicYearEnd) {
+    return {
+      startDate: schoolSettings.academicYearStart,
+      endDate: schoolSettings.academicYearEnd,
+    };
+  }
+
+  const [startYearRaw = "", endYearRaw = ""] = String(currentAcademicYear || "").split("-");
+  const startYear = Number.parseInt(startYearRaw, 10);
+  const endYearSuffix = Number.parseInt(endYearRaw, 10);
+
+  if (Number.isNaN(startYear) || Number.isNaN(endYearSuffix)) {
+    const currentYear = new Date().getFullYear();
+    return {
+      startDate: `${currentYear}-01-01`,
+      endDate: `${currentYear}-12-31`,
+    };
+  }
+
+  const century = Math.floor(startYear / 100) * 100;
+  const normalizedEndYear = century + endYearSuffix + (endYearSuffix < startYear % 100 ? 100 : 0);
+
+  return {
+    startDate: `${startYear}-04-01`,
+    endDate: `${normalizedEndYear}-03-31`,
+  };
+}
+
+function normalizeAttendanceStatus(status) {
+  return String(status || "").trim().toLowerCase();
+}
+
+function isPresentStatus(status) {
+  return status === "present" || status === "p";
+}
+
+function getWeekdayLabel(date) {
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null;
+  }
+
+  return parsedDate.toLocaleDateString("en-US", { weekday: "short" });
+}
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white p-3 rounded-lg border border-gray-200">
         <p className="text-xs font-medium text-gray-500 mb-1">{label}</p>
-        {payload.map((entry, index) => (
-          <div key={index} className="flex items-center gap-2 text-sm">
+        {payload.map((entry) => (
+          <div key={entry.dataKey} className="flex items-center gap-2 text-sm">
             <div
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: entry.color }}
@@ -33,7 +83,120 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function Analytics() {
-  const { students, staff, classesWithTeachers, feeDefaulters } = useApp();
+  const { students, staff, classesWithTeachers, feeDefaulters, schoolSettings, currentAcademicYear } = useApp();
+  const [attendanceSummary, setAttendanceSummary] = useState({
+    avgAttendance: null,
+    weeklyTrend: [],
+    totalRecordedDays: 0,
+    loading: true,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadAttendanceSummary = async () => {
+      const activeStudents = students.filter((student) => student?.status === "active" && student?.id);
+
+      if (!activeStudents.length) {
+        setAttendanceSummary({
+          avgAttendance: null,
+          weeklyTrend: [],
+          totalRecordedDays: 0,
+          loading: false,
+        });
+        return;
+      }
+
+      setAttendanceSummary((prev) => ({ ...prev, loading: true }));
+
+      try {
+        const { startDate, endDate } = parseAcademicYearRange(currentAcademicYear, schoolSettings);
+
+        // Sample up to 50 students for analytics to avoid hundreds of API calls
+        const sampleSize = Math.min(activeStudents.length, 50);
+        const sampledStudents = sampleSize < activeStudents.length
+          ? activeStudents.sort(() => 0.5 - Math.random()).slice(0, sampleSize)
+          : activeStudents;
+
+        const results = await Promise.allSettled(
+          sampledStudents.map(async (student) => attendanceApi.getStudentAttendance(student.id, startDate, endDate))
+        );
+
+        const weekdayBuckets = WEEKDAY_LABELS.reduce((acc, day) => {
+          acc[day] = { present: 0, total: 0 };
+          return acc;
+        }, {});
+
+        const studentPercentages = [];
+        let totalRecordedDays = 0;
+
+        results.forEach((result) => {
+          if (result.status !== "fulfilled") {
+            return;
+          }
+
+          const records = Array.isArray(result.value)
+            ? result.value.filter((record) => normalizeAttendanceStatus(record?.status))
+            : [];
+
+          if (records.length > 0) {
+            const presentCount = records.filter((record) => isPresentStatus(normalizeAttendanceStatus(record.status))).length;
+            studentPercentages.push((presentCount / records.length) * 100);
+          }
+
+          records.forEach((record) => {
+            const weekday = getWeekdayLabel(record.date);
+
+            if (!weekdayBuckets[weekday]) {
+              return;
+            }
+
+            totalRecordedDays += 1;
+            weekdayBuckets[weekday].total += 1;
+
+            if (isPresentStatus(normalizeAttendanceStatus(record.status))) {
+              weekdayBuckets[weekday].present += 1;
+            }
+          });
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        setAttendanceSummary({
+          avgAttendance: studentPercentages.length
+            ? Number((studentPercentages.reduce((sum, value) => sum + value, 0) / studentPercentages.length).toFixed(1))
+            : null,
+          weeklyTrend: WEEKDAY_LABELS.map((day) => ({
+            day,
+            students: weekdayBuckets[day].total
+              ? Number(((weekdayBuckets[day].present / weekdayBuckets[day].total) * 100).toFixed(1))
+              : null,
+          })),
+          totalRecordedDays,
+          loading: false,
+        });
+      } catch (error) {
+        console.error("Failed to load analytics attendance summary:", error);
+
+        if (!cancelled) {
+          setAttendanceSummary({
+            avgAttendance: null,
+            weeklyTrend: [],
+            totalRecordedDays: 0,
+            loading: false,
+          });
+        }
+      }
+    };
+
+    loadAttendanceSummary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [students, schoolSettings, currentAcademicYear]);
 
   // Calculate comprehensive analytics
   const analytics = useMemo(() => {
@@ -54,7 +217,7 @@ export default function Analytics() {
     const paidFees = students.filter(s => s.feeStatus === "paid").length;
     const pendingFees = students.filter(s => s.feeStatus === "pending").length;
     const overdueFees = students.filter(s => s.feeStatus === "overdue").length;
-    const feeCollectionRate = ((paidFees / students.length) * 100).toFixed(1);
+    const feeCollectionRate = students.length > 0 ? ((paidFees / students.length) * 100).toFixed(1) : "0.0";
 
     // Staff Analytics
     const activeStaff = staff.filter(s => s.status === "active").length;
@@ -73,10 +236,7 @@ export default function Analytics() {
     const totalClasses = classesWithTeachers.length;
     const classesWithTeacher = classesWithTeachers.filter(c => c.classTeacherId).length;
     const classesWithoutTeacher = totalClasses - classesWithTeacher;
-    const avgClassSize = (students.length / totalClasses).toFixed(1);
-
-    // Attendance Analytics (mock data based on student IDs)
-    const avgAttendance = students.reduce((acc, s) => acc + (75 + ((s.id * 7) % 25)), 0) / students.length;
+    const avgClassSize = totalClasses > 0 ? (students.length / totalClasses).toFixed(1) : "0";
 
     return {
       students: {
@@ -87,7 +247,7 @@ export default function Analytics() {
         alumni: alumniStudents,
         largestClass,
         smallestClass,
-        avgAttendance: avgAttendance.toFixed(1)
+        avgAttendance: attendanceSummary.avgAttendance
       },
       fees: {
         paid: paidFees,
@@ -113,7 +273,7 @@ export default function Analytics() {
         avgSize: avgClassSize
       }
     };
-  }, [students, staff, classesWithTeachers, feeDefaulters]);
+  }, [students, staff, classesWithTeachers, feeDefaulters, attendanceSummary.avgAttendance]);
 
   // Stat cards data
   const stats = [
@@ -354,71 +514,60 @@ export default function Analytics() {
                     </div>
                     <div>
                       <h3 className="font-medium text-gray-900 text-sm">Attendance Trends</h3>
-                      <p className="text-xs text-gray-500">Weekly average</p>
+                      <p className="text-xs text-gray-500">Average by weekday</p>
                     </div>
                   </div>
                 </div>
               </div>
               <div className="p-5">
-                <div className="h-[200px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart 
-                      data={[
-                        { day: 'Mon', students: parseFloat(analytics.students.avgAttendance), staff: 95 },
-                        { day: 'Tue', students: parseFloat(analytics.students.avgAttendance) + 2, staff: 92 },
-                        { day: 'Wed', students: parseFloat(analytics.students.avgAttendance) + 4, staff: 96 },
-                        { day: 'Thu', students: parseFloat(analytics.students.avgAttendance) - 1, staff: 94 },
-                        { day: 'Fri', students: parseFloat(analytics.students.avgAttendance) - 3, staff: 90 },
-                        { day: 'Sat', students: parseFloat(analytics.students.avgAttendance) - 8, staff: 85 }
-                      ]}
-                      margin={{ top: 5, right: 5, left: -20, bottom: 0 }}
-                    >
-                      <defs>
-                        <linearGradient id="colorStudents" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#6b7280" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#6b7280" stopOpacity={0} />
-                        </linearGradient>
-                        <linearGradient id="colorStaff" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#9ca3af" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#9ca3af" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                      <XAxis 
-                        dataKey="day" 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: '#9ca3af', fontSize: 11 }} 
-                        dy={10} 
-                      />
-                      <YAxis 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: '#9ca3af', fontSize: 11 }} 
-                      />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend iconType="circle" />
-                      <Area 
-                        type="monotone" 
-                        dataKey="students" 
-                        stroke="#6b7280" 
-                        strokeWidth={2} 
-                        fillOpacity={1} 
-                        fill="url(#colorStudents)" 
-                        name="Students %"
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="staff" 
-                        stroke="#9ca3af" 
-                        strokeWidth={2} 
-                        fillOpacity={1} 
-                        fill="url(#colorStaff)" 
-                        name="Staff %"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
+                {attendanceSummary.loading ? (
+                  <div className="h-[200px] flex items-center justify-center text-sm text-gray-500">
+                    Loading attendance trends...
+                  </div>
+                ) : attendanceSummary.totalRecordedDays > 0 ? (
+                  <div className="h-[200px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart 
+                        data={attendanceSummary.weeklyTrend}
+                        margin={{ top: 5, right: 5, left: -20, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id="colorStudents" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#6b7280" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#6b7280" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                        <XAxis 
+                          dataKey="day" 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tick={{ fill: '#9ca3af', fontSize: 11 }} 
+                          dy={10} 
+                        />
+                        <YAxis 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tick={{ fill: '#9ca3af', fontSize: 11 }} 
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Area 
+                          type="monotone" 
+                          dataKey="students" 
+                          stroke="#6b7280" 
+                          strokeWidth={2} 
+                          fillOpacity={1} 
+                          fill="url(#colorStudents)" 
+                          name="Students %"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-[200px] flex items-center justify-center text-center text-sm text-gray-500">
+                    No attendance records found for the current academic year.
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -441,8 +590,18 @@ export default function Analytics() {
             <div className="space-y-4">
               <div className="p-3 bg-gray-50 rounded-lg">
                 <div className="text-xs text-gray-500 mb-1">Average Attendance</div>
-                <div className="text-2xl font-semibold text-gray-900">{analytics.students.avgAttendance}%</div>
-                <div className="text-xs text-gray-400 mt-1">Target: 90%</div>
+                <div className="text-2xl font-semibold text-gray-900">
+                  {attendanceSummary.loading
+                    ? "..."
+                    : analytics.students.avgAttendance != null
+                      ? `${analytics.students.avgAttendance}%`
+                      : "—"}
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  {attendanceSummary.totalRecordedDays > 0
+                    ? `Based on ${attendanceSummary.totalRecordedDays} recorded days`
+                    : "Target: 90%"}
+                </div>
               </div>
 
               <div className="p-3 bg-gray-50 rounded-lg">
@@ -454,7 +613,7 @@ export default function Analytics() {
               <div className="p-3 bg-gray-50 rounded-lg">
                 <div className="text-xs text-gray-500 mb-1">Teacher Assignment</div>
                 <div className="text-2xl font-semibold text-gray-900">
-                  {((analytics.classes.withTeacher / analytics.classes.total) * 100).toFixed(0)}%
+                  {analytics.classes.total > 0 ? ((analytics.classes.withTeacher / analytics.classes.total) * 100).toFixed(0) : "0"}%
                 </div>
                 <div className="text-xs text-gray-400 mt-1">
                   {analytics.classes.withTeacher}/{analytics.classes.total} classes

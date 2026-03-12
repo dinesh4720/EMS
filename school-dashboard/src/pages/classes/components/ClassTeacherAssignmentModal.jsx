@@ -27,7 +27,7 @@ export default function ClassTeacherAssignmentModal({
   section,
   currentTeacherId
 }) {
-  const { staff, classesApi, updateClassLocal } = useApp();
+  const { staff, classesApi, updateClassLocal, classesWithTeachers } = useApp();
 
   // Local state
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,11 +64,14 @@ export default function ClassTeacherAssignmentModal({
 
   // Handle teacher assignment
   const handleAssignTeacher = useCallback((teacher) => {
-    const currentAssignedClass = teacher.classTeacherOf 
-      ? classes.find(c => c.id === teacher.classTeacherOf) 
+    const currentAssignedClass = teacher.classTeacherOf
+      ? classesWithTeachers.find(c => {
+          const displayName = c.section ? `${c.name}-${c.section}` : c.name;
+          return displayName === teacher.classTeacherOf;
+        })
       : null;
 
-    if (currentTeacherId === teacher.id) {
+    if (String(currentTeacherId) === String(teacher.id)) {
       // Teacher is already assigned to this class
       toast.info(`${teacher.name} is already the class teacher for ${className}-${section}`);
       return;
@@ -97,7 +100,7 @@ export default function ClassTeacherAssignmentModal({
         variant: "default"
       });
     }
-  }, [currentTeacherId, className, section]);
+  }, [currentTeacherId, className, section, classesWithTeachers]);
 
   // Perform the actual assignment
   const performAssignment = async (teacherId) => {
@@ -135,12 +138,6 @@ export default function ClassTeacherAssignmentModal({
     onClose();
   }, [onClose]);
 
-  // Get classes to check teacher assignments
-  const classes = useMemo(() => {
-    // This would typically come from app context, but we'll use a simple mapping
-    // In real implementation, this should be from useApp().classes
-    return [];
-  }, []);
 
   return (
     <>
@@ -196,8 +193,9 @@ export default function ClassTeacherAssignmentModal({
                 </div>
               ) : (
                 filteredTeachers.map((teacher) => {
-                  const isCurrentTeacher = teacher.id === currentTeacherId;
-                  const hasOtherClass = teacher.classTeacherOf && teacher.classTeacherOf !== classId;
+                  const isCurrentTeacher = String(teacher.id) === String(currentTeacherId);
+                  const currentClassDisplayName = section ? `${className}-${section}` : className;
+                  const hasOtherClass = teacher.classTeacherOf && teacher.classTeacherOf !== currentClassDisplayName;
                   
                   return (
                     <div

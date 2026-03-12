@@ -15,7 +15,7 @@ import { formatDate } from '../utils/helpers';
 import { FileText, Calendar, Clock, ChevronRight } from 'lucide-react-native';
 
 const ExamsScreen = ({ navigation }) => {
-  const { exams, results, loading, fetchExams, fetchResults } = useStudent();
+  const { exams, results, loading, errors, fetchExams, fetchResults } = useStudent();
   const { themeColors, spacing, typography, borderRadius } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTab, setSelectedTab] = useState('exams');
@@ -133,18 +133,18 @@ const ExamsScreen = ({ navigation }) => {
   const ResultCard = ({ result }) => (
     <TouchableOpacity
       onPress={() => navigation.navigate('ResultDetail', {
-        examId: result.examId,
-        examName: result.examName,
+        examId: result.examId?._id || result.examId,
+        examName: result.examId?.name || 'Exam',
       })}
     >
       <Card style={styles.resultCard}>
         <View style={styles.resultHeader}>
           <Text style={[styles.resultExamName, { color: themeColors.text }]}>
-            {result.examName}
+            {result.examId?.name || 'Exam'}
           </Text>
           <View style={[styles.gradeBadge, { backgroundColor: themeColors.text }]}>
             <Text style={[styles.gradeText, { color: themeColors.textInverse }]}>
-              {result.grade}
+              {result.grade || 'N/A'}
             </Text>
           </View>
         </View>
@@ -152,7 +152,7 @@ const ExamsScreen = ({ navigation }) => {
         <View style={styles.resultStats}>
           <View style={styles.resultStat}>
             <Text style={[styles.resultStatValue, { color: themeColors.text }]}>
-              {result.obtainedMarks}
+              {result.marks?.length > 0 ? result.totalMarksObtained : result.marksObtained}
             </Text>
             <Text style={[styles.resultStatLabel, { color: themeColors.textTertiary }]}>
               Obtained
@@ -160,7 +160,7 @@ const ExamsScreen = ({ navigation }) => {
           </View>
           <View style={styles.resultStat}>
             <Text style={[styles.resultStatValue, { color: themeColors.text }]}>
-              {result.totalMarks}
+              {result.marks?.length > 0 ? result.totalMaxMarks : result.maxMarks}
             </Text>
             <Text style={[styles.resultStatLabel, { color: themeColors.textTertiary }]}>
               Total
@@ -168,7 +168,7 @@ const ExamsScreen = ({ navigation }) => {
           </View>
           <View style={styles.resultStat}>
             <Text style={[styles.resultStatValue, { color: themeColors.text }]}>
-              {result.percentage}%
+              {result.percentage || 0}%
             </Text>
             <Text style={[styles.resultStatLabel, { color: themeColors.textTertiary }]}>
               Percentage
@@ -176,7 +176,7 @@ const ExamsScreen = ({ navigation }) => {
           </View>
           <View style={styles.resultStat}>
             <Text style={[styles.resultStatValue, { color: themeColors.text }]}>
-              #{result.rank}
+              {result.rank ? `#${result.rank}` : 'N/A'}
             </Text>
             <Text style={[styles.resultStatLabel, { color: themeColors.textTertiary }]}>
               Rank
@@ -242,6 +242,14 @@ const ExamsScreen = ({ navigation }) => {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {errors?.exams ? (
+            <Card style={styles.errorCard}>
+              <Text style={[styles.errorText, { color: themeColors.error || '#ef4444' }]}>
+                {errors.exams}
+              </Text>
+            </Card>
+          ) : null}
 
           {selectedTab === 'exams' ? (
             <>
@@ -441,6 +449,14 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
+  },
+  errorCard: {
+    marginBottom: 12,
+    padding: 16,
+  },
+  errorText: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
 

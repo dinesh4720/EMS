@@ -21,7 +21,7 @@ export default function ClassesPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
-  const { teachers, addClass, staff, refetch } = useApp();
+  const { teachers, addClass, staff, refetch, schoolSettings } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({ name: "", section: "", strength: "", teacherId: "" });
   const [errors, setErrors] = useState({});
@@ -64,6 +64,11 @@ export default function ClassesPage() {
         return;
       }
 
+      // Build default subjects from school settings or fall back to defaults
+      const defaultSubjects = (schoolSettings?.subjects || [])
+        .map(s => (typeof s === 'string' ? s : s.name))
+        .filter(Boolean);
+
       // Create the class with consistent ID handling
       await addClass({
         name: formData.name,
@@ -72,20 +77,11 @@ export default function ClassesPage() {
         classTeacherId: String(formData.teacherId), // Ensure string for MongoDB ObjectId
         teacher: selectedTeacher.name,
         teacherPhoto: selectedTeacher.picture || selectedTeacher.photo,
-        subjects: ["Hindi", "English", "Math", "Science"]
+        subjects: defaultSubjects.length > 0 ? defaultSubjects : ["Hindi", "English", "Math", "Science"]
       });
 
-      // Clear API cache to ensure fresh data
-      try {
-        const { clearApiCache } = await import('../../services/api');
-        clearApiCache();
-      } catch (cacheError) {
-        console.warn('Failed to clear API cache:', cacheError);
-      }
-
-      // Refetch data to update the UI
       if (refetch) {
-        await refetch();
+        await refetch(true);
       }
 
       toast.success(`Class ${formData.name}-${formData.section} created successfully with ${selectedTeacher.name} as class teacher`);
@@ -99,13 +95,14 @@ export default function ClassesPage() {
 
       // Handle specific error types
       let errorMessage = 'Failed to create class';
-      if (error.message) {
-        if (error.message.includes('already assigned')) {
+      const serverMessage = error.response?.data?.message || error.message;
+      if (serverMessage) {
+        if (serverMessage.includes('already assigned')) {
           errorMessage = 'This teacher is already assigned to another class';
-        } else if (error.message.includes('Unauthorized') || error.message.includes('Authentication')) {
+        } else if (serverMessage.includes('Unauthorized') || serverMessage.includes('Authentication')) {
           errorMessage = 'You are not authorized to perform this action';
         } else {
-          errorMessage = error.message;
+          errorMessage = serverMessage;
         }
       }
 

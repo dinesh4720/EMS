@@ -14,7 +14,7 @@ import { calculatePercentage } from '../utils/helpers';
 import { Calendar, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react-native';
 
 const AttendanceScreen = () => {
-  const { attendance, loading, fetchAttendance } = useStudent();
+  const { attendance, loading, errors, fetchAttendance } = useStudent();
   const { themeColors } = useTheme();
   const [refreshing, setRefreshing] = React.useState(false);
 
@@ -126,6 +126,14 @@ const AttendanceScreen = () => {
         }
       >
         <View style={styles.content}>
+          {errors?.attendance ? (
+            <Card style={styles.errorCard}>
+              <Text style={[styles.errorText, { color: themeColors.error || '#ef4444' }]}>
+                {errors.attendance}
+              </Text>
+            </Card>
+          ) : null}
+
           {stats ? (
             <>
               {/* Overall Summary */}
@@ -240,13 +248,13 @@ const AttendanceScreen = () => {
                 </>
               )}
             </>
-          ) : (
+          ) : !errors?.attendance ? (
             <EmptyState
               title="No Attendance Data"
               message="Attendance records will appear here once they are available."
               icon={<Calendar size={48} color={themeColors.textTertiary} />}
             />
-          )}
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -259,6 +267,14 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+  },
+  errorCard: {
+    marginBottom: 12,
+    padding: 16,
+  },
+  errorText: {
+    fontSize: 14,
+    textAlign: 'center',
   },
   summaryCard: {
     marginBottom: 20,

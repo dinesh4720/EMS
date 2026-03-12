@@ -6,6 +6,7 @@ import { PageLayout, MinimalButton } from "../../components/ui";
 import Payments from "./Payments";
 import Refunds from "./Refunds";
 import FeeTemplatesManagement from "./FeeTemplatesManagement";
+import toast from "react-hot-toast";
 
 export default function FeesPage() {
   const navigate = useNavigate();
@@ -20,8 +21,7 @@ export default function FeesPage() {
   const activeTab = getActiveTab();
 
   const handleDownloadReport = () => {
-    // TODO: Implement comprehensive fee report generation
-    alert('Generating fee report... This will include payments, defaulters, and refunds.');
+    toast('Fee report generation coming soon', { icon: '📊' });
   };
 
   const tabs = [

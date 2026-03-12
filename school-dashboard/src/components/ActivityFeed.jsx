@@ -4,7 +4,8 @@ import {
   Megaphone,
   MessageSquare,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Inbox
 } from 'lucide-react';
 
 const tabs = [
@@ -82,40 +83,50 @@ function ActivityFeed({ payments, announcements, communications }) {
 
       {/* Activity List */}
       <div className="divide-y divide-gray-200">
-        {filteredActivities.map((activity, index) => {
-          const { icon: Icon, color } = getActivityIcon(activity.type);
+        {filteredActivities.length > 0 ? (
+          filteredActivities.map((activity, index) => {
+            const { icon: Icon, color } = getActivityIcon(activity.type);
 
-          return (
-            <div
-              key={`${activity.type}-${activity.id || index}`}
-              className="group flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-            >
-              {/* Icon */}
-              <div className={`shrink-0 w-8 h-8 rounded-lg ${color} flex items-center justify-center`}>
-                <Icon size={14} />
-              </div>
+            return (
+              <div
+                key={`${activity.type}-${activity.id || index}`}
+                className="group flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                {/* Icon */}
+                <div className={`shrink-0 w-8 h-8 rounded-lg ${color} flex items-center justify-center`}>
+                  <Icon size={14} />
+                </div>
 
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {activity.student || activity.title || activity.subject || 'Activity'}
-                </p>
-                <p className="text-xs text-gray-500 mt-0.5 truncate">
-                  {activity.type === 'payment' && `₹${activity.amount} - ${activity.status}`}
-                  {activity.type === 'announcement' && activity.content}
-                  {activity.type === 'message' && `${activity.from}: ${activity.message}`}
-                </p>
-              </div>
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {activity.student || activity.title || activity.subject || 'Activity'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5 truncate">
+                    {activity.type === 'payment' && `₹${activity.amount} - ${activity.status}`}
+                    {activity.type === 'announcement' && activity.content}
+                    {activity.type === 'message' && `${activity.from}: ${activity.message}`}
+                  </p>
+                </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">
-                  {getRelativeTime(activity.time)}
-                </span>
-                <ChevronRight size={14} className="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400">
+                    {getRelativeTime(activity.time)}
+                  </span>
+                  <ChevronRight size={14} className="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
               </div>
+            );
+          })
+        ) : (
+          <div className="px-5 py-10 text-center">
+            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
+              <Inbox size={18} className="text-gray-400" />
             </div>
-          );
-        })}
+            <p className="text-sm font-medium text-gray-700">No recent activity yet</p>
+            <p className="mt-1 text-xs text-gray-500">Payments and announcements will appear here once they are recorded.</p>
+          </div>
+        )}
       </div>
 
       {/* Footer */}

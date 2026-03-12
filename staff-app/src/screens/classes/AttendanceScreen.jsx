@@ -117,6 +117,11 @@ const AttendanceScreen = () => {
   };
 
   const handleDateChange = (date) => {
+    const today = new Date().toISOString().split('T')[0];
+    if (date > today) {
+      Alert.alert('Invalid Date', 'Cannot mark attendance for a future date.');
+      return;
+    }
     setSelectedDate(date);
     setShowDatePicker(false);
     clearAttendance();

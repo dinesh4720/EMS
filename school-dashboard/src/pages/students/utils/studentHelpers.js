@@ -47,7 +47,7 @@ export const getNextClass = (currentClass, availableClasses = []) => {
     if (currentClass.startsWith(from)) {
       const sectionMatch = currentClass.match(/-[A-Z]$/i);
       const section = sectionMatch ? sectionMatch[0] : "";
-      return \`\${to}\${section}\`;
+      return `${to}${section}`;
     }
   }
 
@@ -57,7 +57,7 @@ export const getNextClass = (currentClass, availableClasses = []) => {
     if (!numMatch) return null;
     const currentGrade = parseInt(numMatch[1]);
     if (currentGrade >= 10) return "Passed Out / Alumni";
-    return \`\${currentGrade + 1}\`;
+    return `${currentGrade + 1}`;
   }
 
   const currentGrade = parseInt(match[1]);
@@ -65,12 +65,12 @@ export const getNextClass = (currentClass, availableClasses = []) => {
 
   if (currentGrade >= 10) return "Passed Out / Alumni";
 
-  const nextClass = \`\${currentGrade + 1}-\${section}\`;
+  const nextClass = `${currentGrade + 1}-${section}`;
 
   if (availableClasses && availableClasses.length > 0) {
-    const classExists = availableClasses.some(c => c === nextClass || c.startsWith(\`\${currentGrade + 1}-\`));
+    const classExists = availableClasses.some(c => c === nextClass || c.startsWith(`${currentGrade + 1}-`));
     if (!classExists) {
-      const anyNextGrade = availableClasses.find(c => c.startsWith(\`\${currentGrade + 1}-\`));
+      const anyNextGrade = availableClasses.find(c => c.startsWith(`${currentGrade + 1}-`));
       if (anyNextGrade) return anyNextGrade;
     }
   }
@@ -88,8 +88,16 @@ export const calculateAttendanceStats = (attendance = []) => {
     return { present: 0, absent: 0, total: 0, percentage: 0 };
   }
 
-  const present = attendance.filter(a => a.status === 'present' || a.status === 'P').length;
-  const absent = attendance.filter(a => a.status === 'absent' || a.status === 'A').length;
+  const normalize = (s = "") => {
+    const lower = s.toLowerCase().trim();
+    if (lower === "p" || lower === "present") return "present";
+    if (lower === "a" || lower === "absent") return "absent";
+    return lower;
+  };
+
+  const normalized = attendance.map(a => normalize(a.status));
+  const present = normalized.filter(s => s === "present").length;
+  const absent = normalized.filter(s => s === "absent").length;
   const total = attendance.length;
   const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
 

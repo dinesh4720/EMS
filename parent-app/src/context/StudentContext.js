@@ -21,6 +21,14 @@ export const StudentProvider = ({ children }) => {
     timetable: false,
     remarks: false,
   });
+  const [errors, setErrors] = useState({
+    attendance: null,
+    fees: null,
+    exams: null,
+    results: null,
+    timetable: null,
+    remarks: null,
+  });
 
   // Track if fee fetch is needed due to socket event
   const fetchFeesRef = useRef(null);
@@ -28,7 +36,7 @@ export const StudentProvider = ({ children }) => {
   // Get the current student ID
   const studentId = student?.studentId;
 
-  // Reset data when student changes
+  // Reset data and auto-fetch when student changes (or on first mount)
   useEffect(() => {
     if (studentId) {
       setAttendance(null);
@@ -37,8 +45,13 @@ export const StudentProvider = ({ children }) => {
       setResults([]);
       setTimetable([]);
       setRemarks([]);
+      // Auto-fetch essential data on student selection
+      fetchAttendanceInternal();
+      fetchFees();
+      fetchExams();
+      fetchResults();
     }
-  }, [studentId]);
+  }, [studentId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Connect socket and listen for real-time updates
   useEffect(() => {
@@ -80,7 +93,11 @@ export const StudentProvider = ({ children }) => {
 
   const fetchAttendanceInternal = useCallback(async () => {
     if (!studentId) return;
-    setLoading((prev) => ({ ...prev, attendance: true }));
+    setLoading((prev) => {
+      if (prev.attendance) return prev; // guard: already fetching
+      return { ...prev, attendance: true };
+    });
+    setErrors((prev) => ({ ...prev, attendance: null }));
     try {
       const response = await api.getStudentAttendance(studentId, { limit: 365 });
       if (response.success) {
@@ -90,9 +107,12 @@ export const StudentProvider = ({ children }) => {
           attendance: data.attendance || [],
           records: data.attendance || [],
         });
+      } else {
+        setErrors((prev) => ({ ...prev, attendance: 'Failed to load attendance data.' }));
       }
     } catch (error) {
       console.error('Error fetching attendance:', error);
+      setErrors((prev) => ({ ...prev, attendance: 'Unable to load attendance. Please try again.' }));
     } finally {
       setLoading((prev) => ({ ...prev, attendance: false }));
     }
@@ -102,7 +122,10 @@ export const StudentProvider = ({ children }) => {
 
   const fetchFees = useCallback(async () => {
     if (!studentId) return;
-    setLoading((prev) => ({ ...prev, fees: true }));
+    setLoading((prev) => {
+      if (prev.fees) return prev;
+      return { ...prev, fees: true };
+    });
     try {
       const response = await api.getStudentFees(studentId);
       if (response.success) {
@@ -122,9 +145,12 @@ export const StudentProvider = ({ children }) => {
   }, [fetchFees]);
 
   const fetchExams = useCallback(async () => {
-    // Fetch all exams for student's class (including upcoming ones)
     if (!studentId) return;
-    setLoading((prev) => ({ ...prev, exams: true }));
+    setLoading((prev) => {
+      if (prev.exams) return prev;
+      return { ...prev, exams: true };
+    });
+    setErrors((prev) => ({ ...prev, exams: null }));
     try {
       const response = await api.getStudentExams(studentId);
       if (response.success && response.data?.exams) {
@@ -140,9 +166,12 @@ export const StudentProvider = ({ children }) => {
           passingMarks: exam.passingMarks,
         }));
         setExams(examList);
+      } else if (!response.success) {
+        setErrors((prev) => ({ ...prev, exams: 'Failed to load exams.' }));
       }
     } catch (error) {
       console.error('Error fetching exams:', error);
+      setErrors((prev) => ({ ...prev, exams: 'Unable to load exams. Please try again.' }));
     } finally {
       setLoading((prev) => ({ ...prev, exams: false }));
     }
@@ -150,7 +179,10 @@ export const StudentProvider = ({ children }) => {
 
   const fetchResults = useCallback(async () => {
     if (!studentId) return;
-    setLoading((prev) => ({ ...prev, results: true }));
+    setLoading((prev) => {
+      if (prev.results) return prev;
+      return { ...prev, results: true };
+    });
     try {
       const response = await api.getStudentResults(studentId);
       if (response.success) {
@@ -202,6 +234,7 @@ export const StudentProvider = ({ children }) => {
     timetable,
     remarks,
     loading,
+    errors,
     fetchAttendance,
     fetchFees,
     fetchExams,

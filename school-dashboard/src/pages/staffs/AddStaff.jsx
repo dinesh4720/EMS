@@ -72,6 +72,19 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCameraCaptureOpen, setIsCameraCaptureOpen] = useState(false);
   const [showTimetableModal, setShowTimetableModal] = useState(false);
+
+  // Create blob URL once per picture change to avoid memory leaks from calling createObjectURL on every render
+  const picturePreviewUrl = useMemo(() => {
+    if (!formData.picture || !(formData.picture instanceof File)) return null;
+    const url = URL.createObjectURL(formData.picture);
+    return url;
+  }, [formData.picture]);
+
+  useEffect(() => {
+    return () => {
+      if (picturePreviewUrl) URL.revokeObjectURL(picturePreviewUrl);
+    };
+  }, [picturePreviewUrl]);
   const [showClassSubjectModal, setShowClassSubjectModal] = useState(false);
   const [createdStaffId, setCreatedStaffId] = useState(null);
   const [createdStaffName, setCreatedStaffName] = useState("");
@@ -87,7 +100,6 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
   // Populate form with editingStaff data when editing
   useEffect(() => {
     if (editingStaff) {
-      console.log('📝 Editing staff member:', editingStaff);
       // EDIT MODE: Populate form with existing staff data
       setFormData({
         // Personal Details
@@ -383,11 +395,9 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       // Upload profile picture to Cloudinary if it's a File object
       let pictureUrl = null;
       if (formData.picture instanceof File) {
-        console.log('📸 Uploading staff photo to Cloudinary...');
         try {
           const uploadResponse = await uploadApi.uploadFile(formData.picture);
           pictureUrl = uploadResponse.url;
-          console.log('✅ Staff photo uploaded:', pictureUrl);
         } catch (error) {
           console.error('❌ Photo upload failed:', error);
           // Continue without photo
@@ -407,7 +417,6 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
               url: uploadResponse.url,
               name: doc.name
             });
-            console.log(`✅ ${doc.type} uploaded:`, uploadResponse.url);
           } catch (error) {
             console.error(`❌ ${doc.type} upload failed:`, error);
           }
@@ -424,7 +433,6 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
           try {
             const uploadResponse = await uploadApi.uploadFile(file);
             uploadedQualificationDocs.push(uploadResponse.url);
-            console.log('✅ Qualification doc uploaded:', uploadResponse.url);
           } catch (error) {
             console.error('❌ Qualification doc upload failed:', error);
           }
@@ -510,10 +518,6 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       // Remove staffId if it exists (not a valid field in schema)
       delete staffData.staffId;
 
-      console.log('Submitting staff data:', staffData);
-      console.log('staffId in data?', 'staffId' in staffData);
-      console.log('Keys:', Object.keys(staffData));
-
       // Save staff and get the response
       const savedStaff = await onSave(staffData);
 
@@ -547,25 +551,34 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
   };
 
   const handleEditorSave = (croppedImage) => {
-    // croppedImage is a blob or base64. PhotoEditorModal returns blob usually or base64.
-    // Assuming it returns a blob URL or base64. We need a File object for consistency usually,
-    // but saving it as is is fine for now, we'll convert if needed.
-    // Actually, usually we want to store the File.
-    // Let's check PhotoEditorModal behavior. It calls onSave(croppedImage).
-    // Let's convert base64/blob to file if needed, or just store it.
-    // For preview we use URL.createObjectURL or base64 directly.
-    fetch(croppedImage)
-      .then(res => res.blob())
-      .then(blob => {
-        const file = new File([blob], "profile_photo.jpg", { type: "image/jpeg" });
-        updateField("picture", file);
-      });
+    // croppedImage may be a base64 data URL or a blob URL
+    if (croppedImage && croppedImage.startsWith('data:')) {
+      // Base64 data URL — convert directly without fetch
+      const [header, base64] = croppedImage.split(',');
+      const mimeMatch = header.match(/:(.*?);/);
+      const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const file = new File([bytes], "profile_photo.jpg", { type: mime });
+      updateField("picture", file);
+    } else {
+      fetch(croppedImage)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], "profile_photo.jpg", { type: "image/jpeg" });
+          updateField("picture", file);
+        })
+        .catch(() => {
+          // If fetch fails, store the raw value as a fallback
+          updateField("picture", croppedImage);
+        });
+    }
   };
 
   const handleCameraPhotoCapture = (file) => {
     // File is already captured from camera or file picker, no need to edit again
     // The CameraCaptureModal handles editing internally
-    console.log('📸 Photo captured from camera/upload:', file.name);
     updateField("picture", file);
   };
 
@@ -620,7 +633,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       <div className="flex items-center gap-5">
         <div className="relative group">
           <Avatar
-            src={formData.picture ? (formData.picture instanceof File ? URL.createObjectURL(formData.picture) : formData.picture) : undefined}
+            src={formData.picture ? (formData.picture instanceof File ? picturePreviewUrl : formData.picture) : undefined}
             name={!formData.picture ? (formData.fullName?.[0] || "") : undefined}
             className="w-24 h-24 text-3xl"
             isBordered
@@ -906,7 +919,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         </div>
 
         {formData.emergencyContacts.map((contact, index) => (
-          <div key={index} className="p-4 border border-default-200 rounded-xl space-y-3 relative group hover:border-default-300 transition-colors">
+          <div key={contact.phone || index} className="p-4 border border-default-200 rounded-xl space-y-3 relative group hover:border-default-300 transition-colors">
             {formData.emergencyContacts.length > 1 && (
               <button
                 className="absolute top-2 right-2 text-default-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"

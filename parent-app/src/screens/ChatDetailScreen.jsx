@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useChat } from '../context/ChatContext';
@@ -72,9 +73,20 @@ const ChatDetailScreen = ({ route, navigation }) => {
   const roleTag = getRoleTag(participantRole);
   const roleColor = getRoleColor(roleTag);
 
-  // Set header with role tag
+  // Set header with role tag and custom back action to clear currentChat
   useEffect(() => {
     navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => {
+            selectConversation(null);
+            navigation.goBack();
+          }}
+          style={{ paddingHorizontal: 8, paddingVertical: 4 }}
+        >
+          <Text style={{ fontSize: 16, color: '#007AFF' }}>{'‹ Back'}</Text>
+        </TouchableOpacity>
+      ),
       headerTitle: () => (
         <View style={styles.headerTitleContainer}>
           <Text style={[styles.headerName, { color: themeColors.text }]} numberOfLines={1}>
@@ -110,13 +122,30 @@ const ChatDetailScreen = ({ route, navigation }) => {
     }
   }, [conversationId]);
 
+  // Handle Android hardware back button — clear currentChat state
   useEffect(() => {
-    if (messages.length > 0) {
+    if (Platform.OS !== 'android') return;
+    const onBackPress = () => {
+      selectConversation(null);
+      navigation.goBack();
+      return true; // prevent default back behavior
+    };
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [navigation, selectConversation]);
+
+  // Scroll to bottom when messages list changes (new message added)
+  const prevMessageCountRef = useRef(0);
+  useEffect(() => {
+    const newCount = messages.length;
+    if (newCount > prevMessageCountRef.current) {
+      // New messages arrived — scroll to end
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+      }, 50);
     }
-  }, [messages.length]);
+    prevMessageCountRef.current = newCount;
+  }, [messages]);
 
   const handleSend = async () => {
     if (!inputText.trim()) return;

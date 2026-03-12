@@ -156,6 +156,20 @@ class SocketService {
     }
   }
 
+  // Full reset — clears all listeners and disconnects socket.
+  // Call this on user logout to prevent cross-user data leaks.
+  reset() {
+    if (this.socket) {
+      this.socket.removeAllListeners();
+      this.socket.disconnect();
+      this.socket = null;
+    }
+    this.listeners.clear();
+    this.connected = false;
+    this.authenticated = false;
+    this.reconnectAttempts = 0;
+  }
+
   // Check connection status
   isConnected() {
     return this.connected;

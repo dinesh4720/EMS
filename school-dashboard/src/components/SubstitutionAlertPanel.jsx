@@ -68,8 +68,6 @@ export default function SubstitutionAlertPanel({ className = '' }) {
 
     // Listen for real-time substitution alerts via socket
     const handleSubstitutionAlert = (data) => {
-      console.log('🔔 Real-time substitution alert:', data);
-
       if (data.type === 'new_alerts') {
         // Show notification toast
         toast.custom((t) => (

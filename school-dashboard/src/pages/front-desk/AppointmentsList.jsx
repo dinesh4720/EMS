@@ -385,7 +385,7 @@ const AppointmentsList = forwardRef((props, ref) => {
               <div className="col-span-2 border-t border-default-200 pt-4 mt-2">
                 <p className="text-sm font-medium text-default-700 mb-3">Additional Options</p>
                 <div className="space-y-3">
-                  <Checkbox
+                  <Checkbox size="sm"
                     isSelected={formData.assignAsTask}
                     onValueChange={(value) => setFormData({ ...formData, assignAsTask: value })}
                   >

@@ -37,8 +37,8 @@ export default function TodaySnapshot({ data }) {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3">
-        {stats.map((stat, index) => (
-          <div key={index} className="p-3 rounded-lg border border-gray-200 bg-white">
+        {stats.map((stat) => (
+          <div key={stat.label} className="p-3 rounded-lg border border-gray-200 bg-white">
             <div className="flex items-center gap-2 mb-2">
               <stat.icon size={14} className="text-gray-500" strokeWidth={2} />
               <span className="text-xs font-medium text-gray-500">{stat.label}</span>

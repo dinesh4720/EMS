@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useDeferredValue } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Table,
   TableHeader,
@@ -21,16 +21,27 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@heroui/react";
-import { Search, X, IndianRupee, Download, Printer, Bell, ChevronDown, Calendar, SlidersHorizontal } from "lucide-react";
-import { feesApi, studentsApi } from "../../services/api";
+import { Search, X, IndianRupee, Download, Printer, Bell, SlidersHorizontal } from "lucide-react";
+import { feesApi, studentsApi, studentFeesApi } from "../../services/api";
+import toast from "react-hot-toast";
+
+function getCurrentUser() {
+  try {
+    const stored = sessionStorage.getItem('app_user');
+    if (stored) return JSON.parse(stored);
+  } catch (_) {}
+  return null;
+}
 
 export default function Payments() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [selectedFees, setSelectedFees] = useState([]);
   const [paymentMode, setPaymentMode] = useState("cash");
+  const [collectingPayment, setCollectingPayment] = useState(false);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
 
@@ -44,6 +55,7 @@ export default function Payments() {
   // Data from API
   const [students, setStudents] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [feeStructures, setFeeStructures] = useState({});
   const [loading, setLoading] = useState(true);
   const [studentsLoading, setStudentsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -81,18 +93,34 @@ export default function Payments() {
         status: 'active',
         search: deferredSearchQuery || undefined,
       });
-      setStudents(response.data || []);
+      const studentList = response.data || [];
+      setStudents(studentList);
       setPagination(response.pagination || {
         currentPage: pageToLoad,
         totalPages: 1,
-        totalItems: response.data?.length || 0,
+        totalItems: studentList.length || 0,
         itemsPerPage: 20,
         hasNextPage: false,
         hasPrevPage: false,
       });
+
+      // Fetch fee structures for all students on this page
+      if (studentList.length > 0) {
+        try {
+          const studentIds = studentList.map(s => s.id || s._id);
+          const structures = await studentFeesApi.getBatch(studentIds);
+          setFeeStructures(structures || {});
+        } catch (feeErr) {
+          console.error('Error fetching fee structures:', feeErr);
+          setFeeStructures({});
+        }
+      } else {
+        setFeeStructures({});
+      }
     } catch (error) {
       console.error('Error fetching students:', error);
       setStudents([]);
+      setFeeStructures({});
     } finally {
       setStudentsLoading(false);
     }
@@ -109,128 +137,97 @@ export default function Payments() {
   // Transform students to payment format
   const feePayments = useMemo(() => {
     return students.map((s) => {
-      const studentPayments = payments.filter(p => p.studentId?._id === s.id || p.studentId === s.id);
+      const studentId = s.id || s._id;
+      const studentPayments = payments.filter(p => p.studentId?._id === studentId || p.studentId === studentId);
       const totalPaid = studentPayments.reduce((sum, p) => sum + p.amount, 0);
-      const totalAnnualFee = 60000;
+
+      // Use StudentFeeStructure as source of truth; fall back to student.feeDetails; never use hardcoded values
+      const sfs = feeStructures[studentId];
+      const totalAnnualFee = sfs?.totalFee ?? s.feeDetails?.totalFee ?? 0;
+      const feeAssigned = totalAnnualFee > 0;
       const pending = totalAnnualFee - totalPaid;
 
       return {
-        id: s.id,
+        id: studentId,
         student: s.name,
         class: s.class || s.className,
         rollNo: s.rollNo,
+        classId: s.classId,
         pending: pending > 0 ? pending : 0,
         paid: totalPaid,
-        status: pending > 0 ? "pending" : "paid",
+        status: !feeAssigned ? "not_assigned" : pending > 0 ? "pending" : "paid",
+        feeAssigned,
+        totalAnnualFee,
+        feeStructure: sfs || null,
         lastPayment: studentPayments.length > 0 ? studentPayments[0].paymentDate : null,
       };
     });
-  }, [students, payments]);
+  }, [students, payments, feeStructures]);
+
+  // Auto-select student from location state (e.g. navigated from Defaulters page)
+  useEffect(() => {
+    const targetId = location.state?.selectedStudentId;
+    if (targetId && feePayments.length > 0) {
+      const match = feePayments.find(p => p.id === targetId);
+      if (match) {
+        setSelectedStudent(match);
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.selectedStudentId, feePayments]);
 
   const filteredPayments = useMemo(() => {
     return feePayments.filter((p) => {
       const matchesSearch =
-        p.student.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.rollNo?.toString().includes(searchQuery);
+        p.student.toLowerCase().includes(deferredSearchQuery.toLowerCase()) ||
+        p.rollNo?.toString().includes(deferredSearchQuery);
       const matchesStatus = statusFilter === "all" || p.status === statusFilter;
 
-      // Date range filter
+      // Date range filter — exclude students with no payment history when date filter is active
       let matchesDate = true;
-      if (dateFrom && p.lastPayment) {
-        matchesDate = new Date(p.lastPayment) >= new Date(dateFrom);
-      }
-      if (dateTo && p.lastPayment) {
-        matchesDate = matchesDate && new Date(p.lastPayment) <= new Date(dateTo);
+      if (dateFrom || dateTo) {
+        if (!p.lastPayment) {
+          matchesDate = false;
+        } else {
+          if (dateFrom) matchesDate = new Date(p.lastPayment) >= new Date(dateFrom);
+          if (dateTo) matchesDate = matchesDate && new Date(p.lastPayment) <= new Date(dateTo);
+        }
       }
 
       // Amount range filter
       let matchesAmount = true;
-      if (amountMin) {
-        matchesAmount = p.pending >= parseInt(amountMin);
-      }
-      if (amountMax) {
-        matchesAmount = matchesAmount && p.pending <= parseInt(amountMax);
-      }
+      if (amountMin) matchesAmount = p.pending >= parseInt(amountMin);
+      if (amountMax) matchesAmount = matchesAmount && p.pending <= parseInt(amountMax);
 
       return matchesSearch && matchesStatus && matchesDate && matchesAmount;
     });
-  }, [feePayments, searchQuery, statusFilter, dateFrom, dateTo, amountMin, amountMax]);
+  }, [feePayments, deferredSearchQuery, statusFilter, dateFrom, dateTo, amountMin, amountMax]);
 
-  const visiblePayments = filteredPayments;
-
-  // Calculate fee heads dynamically based on selected student's pending amount
+  // Build fee line items from the student's actual StudentFeeStructure data
   const getStudentFees = (student) => {
     if (!student) return [];
+    if (!student.feeAssigned || !student.feeStructure) return [];
 
-    const pending = student.pending;
-    if (pending <= 0) return [];
+    const sfs = student.feeStructure;
+    if (!Array.isArray(sfs.feeHeads) || sfs.feeHeads.length === 0) return [];
 
-    const monthlyTuition = 5000;
-    const monthlyTransport = 2000;
-    const totalMonthlyFee = monthlyTuition + monthlyTransport;
-
-    const completeMonths = Math.floor(pending / totalMonthlyFee);
-    const remainingAmount = pending % totalMonthlyFee;
-
-    const fees = [];
-    const currentDate = new Date();
-
-    for (let i = 0; i < completeMonths; i++) {
-      const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-      const monthName = monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-      fees.push({
-        id: `tuition-${i}`,
-        head: "Tuition Fee",
-        month: monthName,
-        amount: monthlyTuition,
-        status: i === 0 ? "pending" : "overdue"
+    return sfs.feeHeads
+      .filter(h => (h.balanceAmount ?? (h.amount - (h.paidAmount || 0))) > 0)
+      .map((h, index) => {
+        const balance = h.balanceAmount ?? Math.max((h.amount || 0) - (h.paidAmount || 0), 0);
+        return {
+          id: h.feeHeadId?._id || h.feeHeadId || `head-${index}`,
+          head: h.name || 'Fee',
+          category: h.category || '',
+          frequency: h.frequency || '',
+          month: h.frequency === 'monthly' ? 'Monthly' : h.frequency === 'quarterly' ? 'Quarterly' : 'Annual',
+          amount: balance,
+          totalAmount: h.amount || 0,
+          paidAmount: h.paidAmount || 0,
+          status: h.status || (balance > 0 ? 'pending' : 'paid'),
+        };
       });
-
-      fees.push({
-        id: `transport-${i}`,
-        head: "Transport Fee",
-        month: monthName,
-        amount: monthlyTransport,
-        status: i === 0 ? "pending" : "overdue"
-      });
-    }
-
-    if (remainingAmount > 0) {
-      const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - completeMonths, 1);
-      const monthName = monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-      if (remainingAmount >= monthlyTuition) {
-        fees.push({
-          id: `tuition-${completeMonths}`,
-          head: "Tuition Fee",
-          month: monthName,
-          amount: monthlyTuition,
-          status: "overdue"
-        });
-
-        const partialTransport = remainingAmount - monthlyTuition;
-        if (partialTransport > 0) {
-          fees.push({
-            id: `transport-${completeMonths}`,
-            head: "Transport Fee",
-            month: monthName,
-            amount: partialTransport,
-            status: "overdue"
-          });
-        }
-      } else {
-        fees.push({
-          id: `tuition-${completeMonths}`,
-          head: "Tuition Fee (Partial)",
-          month: monthName,
-          amount: remainingAmount,
-          status: "overdue"
-        });
-      }
-    }
-
-    return fees;
   };
 
   const studentFees = getStudentFees(selectedStudent);
@@ -247,73 +244,66 @@ export default function Payments() {
     .reduce((sum, f) => sum + f.amount, 0);
 
   const handleCollect = async () => {
-    if (selectedStudent && totalSelected > 0) {
-      try {
-        const student = students.find(s => s.id === selectedStudent.id);
+    if (!selectedStudent || totalSelected === 0) return;
+    setCollectingPayment(true);
+    try {
+      const student = students.find(s => s.id === selectedStudent.id);
+      const currentUser = getCurrentUser();
 
-        const paymentData = {
-          studentId: selectedStudent.id,
-          classId: student.classId,
-          paymentDate: new Date().toISOString().split("T")[0],
-          amount: totalSelected,
-          paymentMode,
-          feeHeads: studentFees
-            .filter((f) => selectedFees.includes(f.id.toString()))
-            .map(f => ({
-              name: f.head,
-              amount: f.amount,
-              month: f.month
-            })),
-          collectedBy: null,
-          remarks: "Payment collected via dashboard"
-        };
+      const paymentData = {
+        studentId: selectedStudent.id,
+        classId: student?.classId,
+        paymentDate: new Date().toISOString().split("T")[0],
+        amount: totalSelected,
+        paymentMode,
+        feeHeads: studentFees
+          .filter((f) => selectedFees.includes(f.id.toString()))
+          .map(f => ({ name: f.head, amount: f.amount, month: f.month })),
+        collectedBy: currentUser?._id || currentUser?.id || null,
+        remarks: "Payment collected via dashboard"
+      };
 
-        const newPayment = await feesApi.createPayment(paymentData);
-        setPayments([newPayment, ...payments]);
+      const newPayment = await feesApi.createPayment(paymentData);
+      setPayments([newPayment, ...payments]);
+      await loadStudents(currentPage);
 
-        await loadStudents(currentPage);
+      setReceiptData({
+        receiptNumber: newPayment.receiptNumber,
+        amount: totalSelected,
+        student: selectedStudent.student,
+        class: selectedStudent.class,
+        paymentMode,
+        date: new Date().toLocaleDateString()
+      });
 
-        setReceiptData({
-          receiptNumber: newPayment.receiptNumber,
-          amount: totalSelected,
-          student: selectedStudent.student,
-          class: selectedStudent.class,
-          paymentMode,
-          date: new Date().toLocaleDateString()
-        });
-
-        setSelectedStudent(null);
-        setSelectedFees([]);
-        setReceiptModalOpen(true);
-      } catch (error) {
-        console.error('Error creating payment:', error);
-      }
+      setSelectedStudent(null);
+      setSelectedFees([]);
+      setReceiptModalOpen(true);
+    } catch (error) {
+      console.error('Error creating payment:', error);
+      toast.error('Failed to collect payment. Please try again.');
+    } finally {
+      setCollectingPayment(false);
     }
   };
 
   const handleSendReminder = (payment) => {
-    alert(`Reminder will be sent to ${payment.student}`);
+    toast.success(`Reminder will be sent to ${payment.student}'s parents`);
   };
 
-  const handleDownloadReceipt = (payment) => {
-    alert(`Downloading receipt for ${payment.student}`);
+  const handleDownloadReceipt = (_payment) => {
+    toast('Receipt download coming soon', { icon: '📄' });
   };
 
   const handleExportData = () => {
     const headers = ['Student', 'Class', 'Roll No', 'Paid', 'Pending', 'Status', 'Last Payment'];
     const rows = filteredPayments.map(p => [
-      p.student,
-      p.class,
-      p.rollNo,
-      p.paid,
-      p.pending,
-      p.status,
-      p.lastPayment || 'N/A'
+      p.student, p.class, p.rollNo, p.paid, p.pending, p.status, p.lastPayment || 'N/A'
     ]);
 
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => row.join(','))
+      ...rows.map(row => row.map(v => `"${v ?? ''}"`).join(','))
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -327,13 +317,6 @@ export default function Payments() {
     window.URL.revokeObjectURL(url);
   };
 
-  const handleCollectAllPending = () => {
-    const firstPending = filteredPayments.find(p => p.status === "pending");
-    if (firstPending) {
-      setSelectedStudent(firstPending);
-    }
-  };
-
   const clearFilters = () => {
     setDateFrom("");
     setDateTo("");
@@ -341,11 +324,9 @@ export default function Payments() {
     setAmountMax("");
   };
 
-  const totalPending = filteredPayments
-    .filter((p) => p.status === "pending")
-    .reduce((sum, p) => sum + p.pending, 0);
+  const totalPending = filteredPayments.filter(p => p.status === "pending").reduce((sum, p) => sum + p.pending, 0);
   const totalCollected = filteredPayments.reduce((sum, p) => sum + p.paid, 0);
-  const pendingCount = filteredPayments.filter((p) => p.status === "pending").length;
+  const pendingCount = filteredPayments.filter(p => p.status === "pending").length;
 
   if (loading || studentsLoading) {
     return (
@@ -357,7 +338,7 @@ export default function Payments() {
 
   return (
     <div className="w-full flex flex-col">
-      {/* Minimal Stat Cards */}
+      {/* Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 -mx-6 -mt-6 px-6 pt-6">
         <div className="p-4 border border-gray-200 rounded-lg bg-white">
           <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Collected</p>
@@ -368,19 +349,18 @@ export default function Payments() {
           <p className="text-2xl font-bold text-gray-900">₹{totalPending.toLocaleString()}</p>
         </div>
         <div className="p-4 border border-gray-200 rounded-lg bg-white">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Defaulters</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Overdue Students</p>
           <p className="text-2xl font-bold text-gray-900">{pendingCount}</p>
         </div>
         <div className="p-4 border border-gray-200 rounded-lg bg-white">
           <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Total Students</p>
-          <p className="text-2xl font-bold text-gray-900">{feePayments.length}</p>
+          <p className="text-2xl font-bold text-gray-900">{pagination.totalItems}</p>
         </div>
       </div>
 
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center border-b border-gray-200 py-4 -mx-6 px-6 mb-6">
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          {/* Search Input */}
           <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-white rounded-lg border border-gray-200 hover:border-gray-300 focus-within:border-gray-400 transition-all duration-200">
             <Search size={16} className="text-gray-400" />
             <input
@@ -400,7 +380,6 @@ export default function Payments() {
             )}
           </div>
 
-          {/* Advanced Filters */}
           <Popover isOpen={showFilters} onOpenChange={setShowFilters}>
             <PopoverTrigger>
               <button className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-all text-sm">
@@ -416,48 +395,21 @@ export default function Payments() {
                 <p className="text-sm font-medium text-gray-900">Advanced Filters</p>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Date Range</label>
+                    <label className="text-xs text-gray-500 mb-1 block">Date Range (Last Payment)</label>
                     <div className="flex gap-2">
-                      <input
-                        type="date"
-                        value={dateFrom}
-                        onChange={(e) => setDateFrom(e.target.value)}
-                        className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-md"
-                        placeholder="From"
-                      />
-                      <input
-                        type="date"
-                        value={dateTo}
-                        onChange={(e) => setDateTo(e.target.value)}
-                        className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-md"
-                        placeholder="To"
-                      />
+                      <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-md" />
+                      <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-md" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Amount Range (Pending)</label>
+                    <label className="text-xs text-gray-500 mb-1 block">Pending Amount Range</label>
                     <div className="flex gap-2">
-                      <input
-                        type="number"
-                        value={amountMin}
-                        onChange={(e) => setAmountMin(e.target.value)}
-                        className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-md"
-                        placeholder="Min"
-                      />
-                      <input
-                        type="number"
-                        value={amountMax}
-                        onChange={(e) => setAmountMax(e.target.value)}
-                        className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-md"
-                        placeholder="Max"
-                      />
+                      <input type="number" value={amountMin} onChange={(e) => setAmountMin(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-md" placeholder="Min" />
+                      <input type="number" value={amountMax} onChange={(e) => setAmountMax(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-md" placeholder="Max" />
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={clearFilters}
-                  className="w-full py-2 text-sm text-gray-600 hover:text-gray-900"
-                >
+                <button onClick={clearFilters} className="w-full py-2 text-sm text-gray-600 hover:text-gray-900">
                   Clear Filters
                 </button>
               </div>
@@ -466,7 +418,6 @@ export default function Payments() {
         </div>
 
         <div className="flex gap-2 w-full sm:w-auto">
-          {/* Filter by Status */}
           <Select
             size="sm"
             placeholder="All Status"
@@ -482,16 +433,6 @@ export default function Payments() {
             <SelectItem key="paid">Paid</SelectItem>
             <SelectItem key="pending">Pending</SelectItem>
           </Select>
-
-          {pendingCount > 0 && (
-            <button
-              onClick={handleCollectAllPending}
-              className="flex items-center gap-2 px-3 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all text-sm"
-            >
-              <IndianRupee size={14} />
-              <span>Collect All</span>
-            </button>
-          )}
 
           <button
             onClick={handleExportData}
@@ -529,7 +470,7 @@ export default function Payments() {
               </div>
             }
           >
-            {visiblePayments.map((payment) => (
+            {filteredPayments.map((payment) => (
               <TableRow key={payment.id} className="hover:bg-gray-50 transition-colors">
                 <TableCell>
                   <div className="flex items-center gap-3">
@@ -550,31 +491,31 @@ export default function Payments() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm font-mono text-gray-700">
-                    ₹{payment.paid.toLocaleString()}
-                  </span>
+                  <span className="text-sm font-mono text-gray-700">₹{payment.paid.toLocaleString()}</span>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm font-mono text-gray-700">
-                    ₹{payment.pending.toLocaleString()}
-                  </span>
+                  <span className="text-sm font-mono text-gray-700">₹{payment.pending.toLocaleString()}</span>
                 </TableCell>
                 <TableCell>
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border border-gray-200 rounded bg-gray-50">
+                  <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border rounded ${
+                    payment.status === "paid"
+                      ? "border-green-200 bg-green-50 text-green-700"
+                      : payment.status === "not_assigned"
+                      ? "border-gray-200 bg-gray-50 text-gray-500"
+                      : "border-yellow-200 bg-yellow-50 text-yellow-700"
+                  }`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${
-                      payment.status === "paid" ? "bg-gray-400" : "bg-gray-300"
+                      payment.status === "paid" ? "bg-green-500" : payment.status === "not_assigned" ? "bg-gray-400" : "bg-yellow-500"
                     }`}></span>
-                    {payment.status}
+                    {payment.status === "not_assigned" ? "Fee not assigned" : payment.status}
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span className="text-xs text-gray-500">
-                    {payment.lastPayment || '—'}
-                  </span>
+                  <span className="text-xs text-gray-500">{payment.lastPayment || '—'}</span>
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-2">
-                    {payment.status === "pending" && (
+                    {payment.status === "pending" && payment.feeAssigned && (
                       <>
                         <button
                           onClick={() => setSelectedStudent(payment)}
@@ -630,8 +571,8 @@ export default function Payments() {
         )}
       </div>
 
-      {/* Collection Modal - Simplified */}
-      <Modal isOpen={selectedStudent !== null} onClose={() => setSelectedStudent(null)} size="xl">
+      {/* Collection Modal */}
+      <Modal isOpen={selectedStudent !== null} onClose={() => { if (!collectingPayment) setSelectedStudent(null); }} size="xl">
         <ModalContent>
           {(onClose) => (
             <>
@@ -644,7 +585,6 @@ export default function Payments() {
                 </div>
               </ModalHeader>
               <ModalBody className="p-0">
-                {/* Fee Selection with inline total */}
                 <div className="divide-y divide-gray-100 max-h-[300px] overflow-y-auto">
                   {studentFees.map((fee) => (
                     <label
@@ -670,7 +610,6 @@ export default function Payments() {
                   ))}
                 </div>
 
-                {/* Combined Payment Mode and Total */}
                 <div className="p-4 bg-gray-50 border-t border-gray-200">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
@@ -701,16 +640,17 @@ export default function Payments() {
               <ModalFooter className="border-t border-gray-200 px-6 py-4 gap-3">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all"
+                  disabled={collectingPayment}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleCollect}
-                  disabled={selectedFees.length === 0}
+                  disabled={selectedFees.length === 0 || collectingPayment}
                   className="px-4 py-2 text-sm font-medium text-white bg-gray-900 border border-gray-900 rounded-lg hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Collect ₹{totalSelected.toLocaleString()}
+                  {collectingPayment ? 'Processing...' : `Collect ₹${totalSelected.toLocaleString()}`}
                 </button>
               </ModalFooter>
             </>
@@ -726,8 +666,8 @@ export default function Payments() {
               <ModalHeader className="border-b border-gray-200">Payment Receipt</ModalHeader>
               <ModalBody className="py-6">
                 <div className="text-center space-y-3">
-                  <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto">
-                    <span className="text-2xl text-gray-600">✓</span>
+                  <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center mx-auto">
+                    <span className="text-2xl text-green-600">✓</span>
                   </div>
                   <p className="text-gray-600 text-sm font-medium">Payment Successful</p>
                   <p className="text-3xl font-bold text-gray-900">
@@ -756,11 +696,17 @@ export default function Payments() {
                 </div>
               </ModalBody>
               <ModalFooter className="border-t border-gray-200 gap-3">
-                <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all">
+                <button
+                  onClick={() => window.print()}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all"
+                >
                   <Printer size={14} />
                   <span>Print</span>
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all">
+                <button
+                  onClick={() => toast('Receipt download coming soon', { icon: '📄' })}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all"
+                >
                   <Download size={14} />
                   <span>Download</span>
                 </button>

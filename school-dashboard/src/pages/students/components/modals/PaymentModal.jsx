@@ -15,21 +15,23 @@ import { useApp } from "../../../../context/AppContext";
  */
 export default function PaymentModal({ isOpen, onClose, student, studentFeeStructure, onPaymentComplete }) {
   const { currentAcademicYear } = useApp();
+  const [isLoading, setIsLoading] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     amount: "",
     paymentMode: "cash",
     date: new Date().toISOString().split('T')[0]
   });
 
-  // Auto-populate with outstanding amount when modal opens
+  // Auto-populate with outstanding amount only when modal first opens (not on every balance change)
   useEffect(() => {
-    if (isOpen && studentFeeStructure?.totalBalance) {
-      setPaymentForm(prev => ({
-        ...prev,
-        amount: studentFeeStructure.totalBalance.toString()
-      }));
+    if (isOpen) {
+      setPaymentForm({
+        amount: studentFeeStructure?.totalBalance ? studentFeeStructure.totalBalance.toString() : "",
+        paymentMode: "cash",
+        date: new Date().toISOString().split('T')[0]
+      });
     }
-  }, [isOpen, studentFeeStructure?.totalBalance]);
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRecordPayment = async () => {
     if (!paymentForm.amount || !paymentForm.paymentMode) {
@@ -43,6 +45,7 @@ export default function PaymentModal({ isOpen, onClose, student, studentFeeStruc
       return;
     }
 
+    setIsLoading(true);
     const loadingToast = toast.loading("Processing payment...");
 
     try {
@@ -69,13 +72,6 @@ export default function PaymentModal({ isOpen, onClose, student, studentFeeStruc
 
       toast.success("Payment recorded successfully", { id: loadingToast });
 
-      // Reset form and close
-      setPaymentForm({
-        amount: "",
-        paymentMode: "cash",
-        date: new Date().toISOString().split('T')[0]
-      });
-
       if (onPaymentComplete) {
         onPaymentComplete();
       }
@@ -83,6 +79,8 @@ export default function PaymentModal({ isOpen, onClose, student, studentFeeStruc
     } catch (error) {
       console.error("Payment error:", error);
       toast.error("Failed to record payment: " + (error.message || "Unknown error"), { id: loadingToast });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -144,14 +142,8 @@ export default function PaymentModal({ isOpen, onClose, student, studentFeeStruc
         <ModalFooter>
           <Button
             variant="flat"
-            onPress={() => {
-              setPaymentForm({
-                amount: "",
-                paymentMode: "cash",
-                date: new Date().toISOString().split('T')[0]
-              });
-              onClose();
-            }}
+            onPress={onClose}
+            isDisabled={isLoading}
             className="border border-gray-200 hover:bg-gray-50 text-gray-700"
           >
             Cancel
@@ -160,6 +152,7 @@ export default function PaymentModal({ isOpen, onClose, student, studentFeeStruc
             color="primary"
             onPress={handleRecordPayment}
             isDisabled={!paymentForm.amount || !paymentForm.paymentMode}
+            isLoading={isLoading}
             className="bg-teal-600 hover:bg-teal-700 text-white"
           >
             Record Payment

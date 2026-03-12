@@ -19,8 +19,18 @@ const ExamDetailScreen = ({ route }) => {
 
   const exam = exams?.find((e) => e.id === examId);
 
-  if (loading.exams || !exam) {
+  if (loading.exams && !exam) {
     return <Loading fullScreen message="Loading exam details..." />;
+  }
+
+  if (!exam) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ color: themeColors.textTertiary, fontSize: 16 }}>Exam not found</Text>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
@@ -65,23 +75,36 @@ const ExamDetailScreen = ({ route }) => {
               </View>
 
               <View style={styles.subjectDetails}>
-                <View style={styles.subjectDetail}>
-                  <Clock size={14} color={themeColors.textTertiary} />
-                  <Text style={[styles.detailText, { color: themeColors.textSecondary }]}>
-                    {subject.time}
-                  </Text>
-                </View>
-                <View style={styles.subjectDetail}>
-                  <Text style={[styles.detailText, { color: themeColors.textSecondary }]}>
-                    Duration: {subject.duration}
-                  </Text>
-                </View>
-                <View style={styles.subjectDetail}>
-                  <Calendar size={14} color={themeColors.textTertiary} />
-                  <Text style={[styles.detailText, { color: themeColors.textSecondary }]}>
-                    {formatDate(subject.date)}
-                  </Text>
-                </View>
+                {subject.time ? (
+                  <View style={styles.subjectDetail}>
+                    <Clock size={14} color={themeColors.textTertiary} />
+                    <Text style={[styles.detailText, { color: themeColors.textSecondary }]}>
+                      {subject.time}
+                    </Text>
+                  </View>
+                ) : null}
+                {subject.duration ? (
+                  <View style={styles.subjectDetail}>
+                    <Text style={[styles.detailText, { color: themeColors.textSecondary }]}>
+                      Duration: {subject.duration}
+                    </Text>
+                  </View>
+                ) : null}
+                {subject.date ? (
+                  <View style={styles.subjectDetail}>
+                    <Calendar size={14} color={themeColors.textTertiary} />
+                    <Text style={[styles.detailText, { color: themeColors.textSecondary }]}>
+                      {formatDate(subject.date)}
+                    </Text>
+                  </View>
+                ) : null}
+                {subject.maxMarks != null ? (
+                  <View style={styles.subjectDetail}>
+                    <Text style={[styles.detailText, { color: themeColors.textSecondary }]}>
+                      Max Marks: {subject.maxMarks}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
             </Card>
           ))}

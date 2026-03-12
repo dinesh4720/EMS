@@ -573,13 +573,13 @@ export default function BulkSubjectAssignment() {
                         {assignments.length === 0 ? (
                           <p className="text-sm text-gray-400 italic">No subjects assigned</p>
                         ) : (
-                          assignments.map((assignment, index) => {
+                          assignments.map((assignment) => {
                             const isPendingAdd = changes.added.some(a => a.subject === assignment.subject);
                             const isPendingRemove = changes.removed.some(r => r.subject === assignment.subject);
 
                             if (isPendingRemove) {
                               return (
-                                <div key={index} className="flex items-center gap-2 p-2 rounded-lg bg-red-50 border border-red-200">
+                                <div key={assignment.subject} className="flex items-center gap-2 p-2 rounded-lg bg-red-50 border border-red-200">
                                   <span className="text-sm text-red-600 line-through flex-1">
                                     {assignment.subject}
                                   </span>
@@ -594,7 +594,7 @@ export default function BulkSubjectAssignment() {
                             }
 
                             return (
-                              <div key={index} className={`p-3 rounded-lg border ${
+                              <div key={assignment.subject} className={`p-3 rounded-lg border ${
                                 isPendingAdd ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
                               }`}>
                                 <div className="flex items-center justify-between">

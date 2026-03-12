@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -40,6 +40,7 @@ const ResultsEntryScreen = () => {
 
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [marksErrors, setMarksErrors] = useState({});
 
   useEffect(() => {
     loadData();
@@ -53,26 +54,43 @@ const ResultsEntryScreen = () => {
     }
   };
 
-  const handleMarksChange = (studentId, text) => {
-    // improved validation to allow empty string (clearing input)
-    if (text === '') {
-      updateResultEntry(studentId, 0, resultEntries[studentId]?.remarks || '');
-      return;
-    }
-
-    const marks = parseInt(text) || 0;
+  const handleMarksChange = useCallback((studentId, text) => {
     const maxMarks = selectedExam?.maxMarks || 100;
 
-    if (marks > maxMarks) {
-      // Inline visual feedback could be better than alert, but alert for now
-      // limiting to maxMarks automatically might be better UX
+    // Allow clearing the field
+    if (text === '') {
+      updateResultEntry(studentId, '', resultEntries[studentId]?.remarks || '');
+      setMarksErrors(prev => ({ ...prev, [studentId]: null }));
       return;
     }
 
+    // Only allow digits (no decimals, no negatives)
+    if (!/^\d+$/.test(text)) return;
+
+    const marks = parseInt(text, 10);
+
+    if (marks < 0) {
+      setMarksErrors(prev => ({ ...prev, [studentId]: 'Cannot be negative' }));
+      return;
+    }
+
+    if (marks > maxMarks) {
+      setMarksErrors(prev => ({ ...prev, [studentId]: `Max is ${maxMarks}` }));
+      return;
+    }
+
+    setMarksErrors(prev => ({ ...prev, [studentId]: null }));
     updateResultEntry(studentId, marks, resultEntries[studentId]?.remarks || '');
-  };
+  }, [selectedExam, resultEntries, updateResultEntry]);
 
   const handleSave = async () => {
+    // Block save if there are validation errors
+    const hasErrors = Object.values(marksErrors).some(Boolean);
+    if (hasErrors) {
+      Alert.alert('Validation Error', 'Please fix the highlighted marks before saving.');
+      return;
+    }
+
     Alert.alert(
       'Save Results',
       'Are you sure you want to save these results?',
@@ -125,10 +143,12 @@ const ResultsEntryScreen = () => {
 
   const renderStudentItem = ({ item, index }) => {
     const entry = resultEntries[item.id] || {};
-    const marks = entry.marksObtained || 0;
+    const rawMarks = entry.marksObtained;
+    const marks = rawMarks === '' || rawMarks === undefined ? 0 : Number(rawMarks);
     const grade = calculateGrade(marks);
     const status = getStatus(marks);
     const isPassing = status === 'Pass';
+    const marksError = marksErrors[item.id];
 
     return (
       <View style={[
@@ -137,7 +157,7 @@ const ResultsEntryScreen = () => {
           backgroundColor: colors.surfaceContainer,
           borderRadius: shape.cornerMedium,
           marginBottom: spacing.xs,
-          borderColor: colors.outlineVariant,
+          borderColor: marksError ? colors.error : colors.outlineVariant,
           borderWidth: 1,
         }
       ]}>
@@ -152,6 +172,9 @@ const ResultsEntryScreen = () => {
             <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>
               Roll: {item.rollNo || '-'}
             </Text>
+            {marksError ? (
+              <Text style={[typography.bodySmall, { color: colors.error }]}>{marksError}</Text>
+            ) : null}
           </View>
         </View>
 
@@ -162,14 +185,14 @@ const ResultsEntryScreen = () => {
               {
                 backgroundColor: colors.surface,
                 color: colors.onSurface,
-                borderColor: colors.outline,
+                borderColor: marksError ? colors.error : colors.outline,
                 borderRadius: shape.cornerSmall,
               }
             ]}
-            value={marks.toString()}
+            value={rawMarks === '' ? '' : (rawMarks ?? 0).toString()}
             onChangeText={(text) => handleMarksChange(item.id, text)}
-            keyboardType="numeric"
-            maxLength={3}
+            keyboardType="number-pad"
+            maxLength={String(selectedExam?.maxMarks || 100).length}
             placeholder="0"
             placeholderTextColor={colors.onSurfaceVariant}
             selectTextOnFocus

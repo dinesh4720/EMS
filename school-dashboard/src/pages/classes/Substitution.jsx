@@ -5,7 +5,7 @@ import {
   useDisclosure, Chip, Input, Spinner, Card, CardBody
 } from '@heroui/react';
 import { UserCheck, Calendar, Clock, Plus, Search, Filter, X, UserPlus, RefreshCw, UserMinus } from 'lucide-react';
-import api from '../../services/api';
+import { request } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useApp } from '../../context/AppContext';
 import { DEFAULT_PERIODS } from '../../utils/constants';
@@ -63,11 +63,10 @@ export default function Substitution() {
   const loadSubstitutions = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/substitutions?date=${selectedDate}`);
-      setSubstitutions(response.data || []);
+      const data = await request(`/substitutions?date=${selectedDate}`);
+      setSubstitutions(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error loading substitutions:', error);
-      // Fallback to mock data for development
       setSubstitutions([]);
     } finally {
       setLoading(false);
@@ -105,20 +104,20 @@ export default function Substitution() {
     }
 
     try {
-      await api.post('/substitutions', formData);
+      await request('/substitutions', { method: 'POST', body: JSON.stringify(formData) });
       toast.success('Substitution assigned successfully');
       onClose();
       resetForm();
       loadSubstitutions();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to assign substitution');
+      toast.error(error.message || 'Failed to assign substitution');
     }
   };
 
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to remove this substitution?')) return;
     try {
-      await api.delete(`/substitutions/${id}`);
+      await request(`/substitutions/${id}`, { method: 'DELETE' });
       toast.success('Substitution removed');
       loadSubstitutions();
     } catch (error) {
@@ -130,9 +129,9 @@ export default function Substitution() {
     if (!selectedTeacher || !selectedSubstitution) return;
 
     try {
-      await api.put(`/substitutions/${selectedSubstitution._id}`, {
-        substituteTeacherId: selectedTeacher,
-        status: 'assigned'
+      await request(`/substitutions/${selectedSubstitution._id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ substituteTeacherId: selectedTeacher, status: 'assigned' })
       });
       toast.success('Teacher assigned successfully');
       onAssignClose();
@@ -148,8 +147,9 @@ export default function Substitution() {
     if (!selectedTeacher || !selectedSubstitution) return;
 
     try {
-      await api.put(`/substitutions/${selectedSubstitution._id}`, {
-        substituteTeacherId: selectedTeacher
+      await request(`/substitutions/${selectedSubstitution._id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ substituteTeacherId: selectedTeacher })
       });
       toast.success('Teacher changed successfully');
       onChangeClose();
@@ -169,7 +169,7 @@ export default function Substitution() {
       absentTeacherId: '',
       substituteTeacherId: '',
       reason: '',
-      type: 'manual'
+      type: 'auto'
     });
   };
 
@@ -489,7 +489,10 @@ export default function Substitution() {
                   setFormData({ ...formData, absentTeacherId: selectedId || '' });
                 }}
               >
-                {teachers.filter(t => t.role === 'Teacher').map((t) => (
+                {teachers.filter(t => {
+                  const roles = Array.isArray(t.role) ? t.role : (t.role ? [t.role] : []);
+                  return roles.includes('Teacher');
+                }).map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {t.name} ({t.department})
                   </SelectItem>
@@ -506,7 +509,10 @@ export default function Substitution() {
                 isRequired
                 className="col-span-2"
               >
-                {teachers.filter(t => t.role === 'Teacher').map((t) => (
+                {teachers.filter(t => {
+                  const roles = Array.isArray(t.role) ? t.role : (t.role ? [t.role] : []);
+                  return roles.includes('Teacher');
+                }).map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {t.name} ({t.department})
                   </SelectItem>

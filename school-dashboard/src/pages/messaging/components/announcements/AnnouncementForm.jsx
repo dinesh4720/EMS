@@ -264,7 +264,7 @@ export default function AnnouncementForm({
                 { key: 'students', label: 'Students' },
                 { key: 'parents', label: 'Parents' },
               ].map((recipient) => (
-                <Checkbox
+                <Checkbox size="sm"
                   key={recipient.key}
                   isSelected={formData.recipients.some(r => r.type === recipient.key)}
                   onValueChange={() => handleRecipientChange(recipient.key)}
@@ -285,7 +285,7 @@ export default function AnnouncementForm({
                 { key: 'sms', label: 'SMS' },
                 { key: 'whatsapp', label: 'WhatsApp' },
               ].map((channel) => (
-                <Checkbox
+                <Checkbox size="sm"
                   key={channel.key}
                   isSelected={formData.channels.includes(channel.key)}
                   onValueChange={() => handleChannelToggle(channel.key)}
@@ -298,7 +298,7 @@ export default function AnnouncementForm({
 
           {/* Schedule */}
           <div className="flex items-center gap-4">
-            <Checkbox
+            <Checkbox size="sm"
               isSelected={!!formData.scheduledFor}
               onValueChange={(checked) =>
                 setFormData({ ...formData, scheduledFor: checked ? '' : null })
@@ -323,7 +323,7 @@ export default function AnnouncementForm({
             <label className="text-sm font-medium mb-2 block">Attachments</label>
             <div className="space-y-2">
               {formData.attachments.map((attachment, index) => (
-                <Card key={index} size="sm">
+                <Card key={attachment.name || index} size="sm">
                   <CardBody className="flex flex-row items-center justify-between py-2">
                     <div className="flex items-center gap-2">
                       <FileText size={16} />

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { staffData } from "../data/mockData";
 import { clearStoredUser, getAuthHeaders, getStoredUser, saveStoredUser } from "../utils/authSession";
+import { isSuperAdminRole } from "../utils/roleUtils";
 
 const AuthContext = createContext();
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -14,39 +14,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Mock database for credentials (stored in local storage for persistence across reloads)
-  // In a real app, this would be in a backend
-  const [credentials, setCredentials] = useState(() => {
-    const saved = localStorage.getItem("app_credentials");
-    if (saved) return JSON.parse(saved);
-
-    const creds = {
-      "superid@test.com": {
-        password: "12345",
-        role: "Super Admin",
-        name: "Master User",
-        id: "master"
-      }
-    };
-
-    staffData.forEach(staff => {
-      if (staff.email) {
-        creds[staff.email] = {
-          password: "password123",
-          role: staff.role,
-          name: staff.name,
-          id: staff.id
-        };
-      }
-    });
-
-    return creds;
-  });
-
-  useEffect(() => {
-    localStorage.setItem("app_credentials", JSON.stringify(credentials));
-  }, [credentials]);
 
   useEffect(() => {
     let isMounted = true;
@@ -140,10 +107,10 @@ export const AuthProvider = ({ children }) => {
       saveStoredUser(userData);
       setUser(userData);
       setIsAuthenticated(true);
-      navigate('/');
+      navigate(isSuperAdminRole(userData.role) ? '/super-admin' : '/');
       return userData;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login error:', error?.message || error);
       throw error;
     }
   };
@@ -164,24 +131,9 @@ export const AuthProvider = ({ children }) => {
     navigate('/login');
   };
 
-  const updatePassword = (email, newPassword) => {
-    if (credentials[email]) {
-      const newCredentials = {
-        ...credentials,
-        [email]: {
-          ...credentials[email],
-          password: newPassword
-        }
-      };
-      setCredentials(newCredentials);
-      return true;
-    }
-    return false;
-  };
+  const updatePassword = () => false;
 
-  const updateStaffCredentials = (staffEmail, newPassword) => {
-    return updatePassword(staffEmail, newPassword);
-  };
+  const updateStaffCredentials = () => false;
 
   return (
     <AuthContext.Provider value={{
@@ -190,7 +142,6 @@ export const AuthProvider = ({ children }) => {
       login,
       logout,
       loading,
-      credentials,
       updatePassword,
       updateStaffCredentials
     }}>

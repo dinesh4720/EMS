@@ -7,12 +7,13 @@ import {
   Platform,
   ScrollView,
   TouchableOpacity,
-  Image,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Button, TextInput } from '../components';
+import { isValidEmail, isValidPhone } from '../utils/helpers';
 
 const LoginScreen = () => {
   const { login } = useAuth();
@@ -22,11 +23,32 @@ const LoginScreen = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const handleForgotPassword = () => {
+    Alert.alert(
+      'Reset Password',
+      'Please contact your school administration to reset your password. They will provide you with new login credentials.',
+      [{ text: 'OK' }]
+    );
+  };
+
   const handleLogin = async () => {
-    if (!identifier.trim()) {
+    const id = identifier.trim();
+    if (!id) {
       setError('Please enter your email or phone number');
       return;
     }
+
+    // Validate format: must be a valid email OR a valid phone number
+    const looksLikeEmail = id.includes('@');
+    if (looksLikeEmail && !isValidEmail(id)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    if (!looksLikeEmail && !isValidPhone(id)) {
+      setError('Please enter a valid phone number (10–15 digits)');
+      return;
+    }
+
     if (!password.trim()) {
       setError('Please enter your password');
       return;
@@ -99,7 +121,7 @@ const LoginScreen = () => {
               style={styles.button}
             />
 
-            <TouchableOpacity style={styles.forgotPassword}>
+            <TouchableOpacity style={styles.forgotPassword} onPress={handleForgotPassword}>
               <Text style={[styles.forgotText, { color: themeColors.textSecondary }]}>
                 Forgot Password?
               </Text>

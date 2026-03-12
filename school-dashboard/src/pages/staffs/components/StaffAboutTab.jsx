@@ -83,7 +83,7 @@ export default function StaffAboutTab({ staff }) {
             <>
               {staff.emergencyContacts.map((contact, index) => (
                 <InfoItem
-                  key={index}
+                  key={contact._id || contact.phone || index}
                   label={`Contact ${index + 1}`}
                   value={`${contact.name} (${contact.relationship}): ${contact.phone}`}
                   className="col-span-full"

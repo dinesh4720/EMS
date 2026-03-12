@@ -15,13 +15,11 @@ class SocketServiceEnhanced {
   connect(userId, userType) {
     // If already connected and authenticated, reuse the connection
     if (this.socket?.connected && this.authenticated) {
-      console.log('✅ Socket already connected and authenticated - reusing connection');
       return Promise.resolve();
     }
 
     // If socket exists but not connected, don't create a new one - let it reconnect
     if (this.socket && !this.socket.connected) {
-      console.log('⏳ Socket exists but disconnected - waiting for reconnection...');
       return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
           reject(new Error('Reconnection timeout'));
@@ -37,8 +35,6 @@ class SocketServiceEnhanced {
     return new Promise((resolve, reject) => {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
       const SOCKET_URL = API_URL.replace('/api', '');
-
-      console.log('🔌 Creating new Socket.IO connection:', SOCKET_URL);
 
       this.socket = io(SOCKET_URL, {
         transports: ['websocket', 'polling'],
@@ -62,7 +58,6 @@ class SocketServiceEnhanced {
       }, 10000); // Increased to 10s to allow for slower connections
 
       this.socket.on('connect', () => {
-        console.log('✅ Socket connected:', this.socket.id);
         this.connected = true;
         this.reconnectAttempts = 0;
 
@@ -72,25 +67,21 @@ class SocketServiceEnhanced {
             this.socket.on(event, (data) => {
               this.emit(event, data);
             });
-            console.log(`🔌 [SOCKET] Registered pending listener for '${event}'`);
           }
         });
 
         // Authenticate
-        console.log('🔐 Sending authentication:', { userId, userType });
         this.socket.emit('authenticate', { userId, userType });
       });
 
       this.socket.on('authenticated', (data) => {
         clearTimeout(connectionTimeout);
-        console.log('✅ Socket authenticated:', data);
         this.authenticated = true;
         this.emit('authenticated', data);
         resolve();
       });
 
       this.socket.on('disconnect', (reason) => {
-        console.log('❌ Socket disconnected:', reason);
         this.connected = false;
         this.authenticated = false;
         this.emit('disconnected', { reason });
@@ -116,13 +107,10 @@ class SocketServiceEnhanced {
 
       // Chat events
       this.socket.on('new_message', (data) => {
-        console.log('📨 New message received:', data);
         this.emit('new_message', data);
       });
 
       this.socket.on('message_notification', (data) => {
-        console.log('🔔 [SOCKET] message_notification event received from server:', data);
-        console.log('🔔 [SOCKET] Emitting to custom listeners, count:', this.listeners.get('message_notification')?.length || 0);
         this.emit('message_notification', data);
       });
 
@@ -143,19 +131,16 @@ class SocketServiceEnhanced {
       });
 
       this.socket.on('joined_conversation', (data) => {
-        console.log('✅ Joined conversation:', data);
         this.emit('joined_conversation', data);
       });
 
       // Attendance events
       this.socket.on('attendance_updated', (data) => {
-        console.log('📋 Attendance updated:', data);
         this.emit('attendance_updated', data);
       });
 
       // Substitution alert events
       this.socket.on('substitution_alert', (data) => {
-        console.log('🔔 Substitution alert received:', data);
         this.emit('substitution_alert', data);
       });
     });
@@ -163,7 +148,6 @@ class SocketServiceEnhanced {
 
   disconnect() {
     if (this.socket) {
-      console.log('🔌 Disconnecting socket...');
       this.socket.disconnect();
       this.socket = null;
       this.connected = false;
@@ -181,7 +165,6 @@ class SocketServiceEnhanced {
       return;
     }
 
-    console.log('📥 Joining conversation:', conversationId);
     this.socket.emit('join_conversation', { conversationId });
   }
 
@@ -192,7 +175,6 @@ class SocketServiceEnhanced {
       throw new Error('Socket not connected');
     }
 
-    console.log('📤 Sending message:', data);
     this.socket.emit('send_message', data);
   }
 
@@ -220,21 +202,16 @@ class SocketServiceEnhanced {
         this.socket.on(event, (data) => {
           this.emit(event, data);
         });
-        console.log(`🔌 [SOCKET] Registered '${event}' with socket.io (already connected)`);
-      } else {
-        console.log(`📝 [LISTENERS] Storing '${event}' listener for later registration (socket not connected yet)`);
       }
     }
 
     // Check if this exact callback already exists to prevent duplicates
     const callbacks = this.listeners.get(event);
     if (callbacks.includes(callback)) {
-      console.log(`⚠️ [LISTENERS] Callback for '${event}' already exists, skipping duplicate`);
       return;
     }
 
     callbacks.push(callback);
-    console.log(`📝 [LISTENERS] Added listener for '${event}', total count: ${callbacks.length}`);
   }
 
   off(event, callback) {

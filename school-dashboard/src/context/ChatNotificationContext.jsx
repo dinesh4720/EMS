@@ -46,26 +46,18 @@ export function ChatNotificationProvider({ children }) {
         if (!isSubscribed) return;
         
         setIsConnected(true);
-        console.log('🔔 Global chat notifications initialized');
 
         // Store callback reference for proper cleanup
         const handleMessageNotification = (data) => {
-          console.log('🔔 Message notification received:', data);
-          console.log('📍 Current location:', locationRef.current);
-          
           // Check current location using ref to avoid stale closure
           const isOnMessagingPage = locationRef.current.includes('/messaging');
-          console.log('💬 Is on messaging page?', isOnMessagingPage);
-          
+
           // Only show notification and increment count if not on chat page
           if (!isOnMessagingPage) {
-            console.log('✅ Showing notification and playing sound');
             showNotification(data);
             playNotificationSound();
             // Increment unread count only when not on messaging page
             setUnreadCount(prev => prev + 1);
-          } else {
-            console.log('⏭️ Skipping notification - user is on messaging page');
           }
         };
 
@@ -75,7 +67,6 @@ export function ChatNotificationProvider({ children }) {
         // Return cleanup function
         return () => {
           socketService.off('message_notification', handleMessageNotification);
-          console.log('🧹 Cleaned up notification listeners');
         };
 
       } catch (error) {

@@ -76,10 +76,10 @@ export default function Overview({ stats, onTabChange }) {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.slice(0, 4).map((stat, index) => (
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        {statCards.map((stat) => (
           <div
-            key={index}
+            key={stat.tab}
             className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer"
             onClick={() => onTabChange && onTabChange(stat.tab)}
           >
@@ -93,27 +93,6 @@ export default function Overview({ stats, onTabChange }) {
             <p className="text-xs text-gray-400 mt-2">{stat.description}</p>
           </div>
         ))}
-      </div>
-
-      {/* Additional stat for larger screens */}
-      <div className="hidden lg:block">
-        <div className="grid grid-cols-5 gap-4">
-          {statCards.map((stat, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer"
-              onClick={() => onTabChange && onTabChange(stat.tab)}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <stat.icon size={16} className="text-gray-600" />
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800">{stat.value}</h3>
-              <p className="text-xs font-medium text-gray-500 mt-0.5">{stat.title}</p>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Quick Access Section */}
@@ -137,9 +116,9 @@ export default function Overview({ stats, onTabChange }) {
               { label: 'Appointments', icon: Calendar, tab: 'appointments' },
               { label: 'Feedbacks', icon: MessageSquare, tab: 'feedbacks' },
               { label: 'Call Logs', icon: Phone, tab: 'call-logs' }
-            ].map((action, index) => (
+            ].map((action) => (
               <button
-                key={index}
+                key={action.tab}
                 className="flex flex-col items-center justify-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                 onClick={() => onTabChange && onTabChange(action.tab)}
               >

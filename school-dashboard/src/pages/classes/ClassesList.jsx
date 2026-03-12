@@ -15,6 +15,10 @@ import ClassTeacherAssignmentModal from "./components/ClassTeacherAssignmentModa
 
 const ITEMS_PER_LOAD = 10;
 const SEARCH_DEBOUNCE_MS = 300;
+const CLASS_DETAILS_BATCH_SIZE = 1;
+const CLASS_DETAILS_BATCH_DELAY_MS = 300;
+
+const hasOwnKey = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 
 // Available columns configuration
 const AVAILABLE_COLUMNS = [
@@ -65,6 +69,7 @@ export default function ClassesList() {
   // Actions modal state
   const [actionsModal, setActionsModal] = useState(false);
   const [selectedClassForActions, setSelectedClassForActions] = useState(null);
+  const classDetailsRequestStateRef = useRef(new Map());
 
   // Debounced search effect
   useEffect(() => {
@@ -205,7 +210,6 @@ export default function ClassesList() {
         }
       }
 
-      console.log('Visible items generated:', items.length, 'items');
       return items;
     } catch (error) {
       console.error('Error in visibleItems useMemo:', error);
@@ -243,81 +247,122 @@ export default function ClassesList() {
     });
   };
 
-  // Load academic performance and class settings data with batching (sequenced)
+  const visibleChildClassIds = useMemo(() => (
+    visibleItems
+      .filter((item) => item?.type === 'child' && item?.data?.id)
+      .map((item) => String(item.data.id))
+  ), [visibleItems]);
+
+  // Only fetch detail data for section rows the user can actually see.
   useEffect(() => {
-    const loadClassData = async () => {
-      if (classesData.length === 0) return;
+    if (visibleChildClassIds.length === 0) {
+      return undefined;
+    }
 
-      try {
-        // Process in batches of 2 with 500ms delay between batches to prevent rate limiting
-        const batchSize = 2;
-        const delayBetweenBatches = 500;
+    let cancelled = false;
 
-        // Load both academic performance and settings in coordinated batches
-        for (let i = 0; i < classesData.length; i += batchSize) {
-          const batch = classesData.slice(i, i + batchSize);
+    const loadVisibleClassDetails = async () => {
+      const pendingIds = visibleChildClassIds.filter((classId) => {
+        const requestState = classDetailsRequestStateRef.current.get(classId);
+        const hasAcademic = hasOwnKey(academicPerformance, classId);
+        const hasAttendance = hasOwnKey(attendanceData, classId);
+        const hasSettings = hasOwnKey(classSettingsMap, classId);
 
-          // Load academic performance
-          const academicPromises = batch.map(async (cls) => {
-            try {
-              const data = await classesEnhancedApi.getAcademicPerformance(cls.id);
-              return { academic: { [cls.id]: data } };
-            } catch (error) {
-              console.error(`Error loading academic performance for class ${cls.id}:`, error);
-              return { academic: { [cls.id]: { classAverage: cls.averageAcademicPerformance || 0 } } };
-            }
-          });
+        if (hasAcademic && hasAttendance && hasSettings) {
+          classDetailsRequestStateRef.current.set(classId, 'loaded');
+          return false;
+        }
 
-          // Load attendance analytics
-          const attendancePromises = batch.map(async (cls) => {
-            try {
-              const data = await classesEnhancedApi.getAttendanceAnalytics(cls.id, 'month');
-              return { attendance: { [cls.id]: data } };
-            } catch (error) {
-              console.error(`Error loading attendance analytics for class ${cls.id}:`, error);
-              return { attendance: { [cls.id]: null } };
-            }
-          });
+        return requestState !== 'loading';
+      });
 
-          // Load class settings
-          const settingsPromises = batch.map(async (cls) => {
-            try {
-              const settings = await classesApi.getSettings(cls.id);
-              return { settings: { [cls.id]: settings } };
-            } catch (error) {
-              console.error(`Error loading settings for class ${cls.id}:`, error);
-              return { settings: { [cls.id]: null } };
-            }
-          });
+      for (let i = 0; i < pendingIds.length; i += CLASS_DETAILS_BATCH_SIZE) {
+        const batch = pendingIds.slice(i, i + CLASS_DETAILS_BATCH_SIZE);
 
-          // Execute both batches in parallel within each batch group
-          const [academicResults, settingsResults, attendanceResults] = await Promise.all([
-            Promise.all(academicPromises),
-            Promise.all(settingsPromises),
-            Promise.all(attendancePromises)
+        await Promise.all(batch.map(async (classId) => {
+          const cls = classesData.find((classItem) => String(classItem?.id) === classId);
+
+          if (!cls) {
+            classDetailsRequestStateRef.current.delete(classId);
+            return;
+          }
+
+          classDetailsRequestStateRef.current.set(classId, 'loading');
+
+          const needsAcademic = !hasOwnKey(academicPerformance, classId);
+          const needsAttendance = !hasOwnKey(attendanceData, classId);
+          const needsSettings = !hasOwnKey(classSettingsMap, classId);
+
+          const [academic, attendance, settings] = await Promise.all([
+            needsAcademic
+              ? classesEnhancedApi.getAcademicPerformance(classId).catch((error) => {
+                  console.error(`Error loading academic performance for class ${classId}:`, error);
+                  return { classAverage: cls.averageAcademicPerformance || 0 };
+                })
+              : Promise.resolve(academicPerformance[classId]),
+            needsAttendance
+              ? classesEnhancedApi.getAttendanceAnalytics(classId, 'month').catch((error) => {
+                  console.error(`Error loading attendance analytics for class ${classId}:`, error);
+                  return null;
+                })
+              : Promise.resolve(attendanceData[classId]),
+            needsSettings
+              ? classesApi.getSettings(classId).catch((error) => {
+                  console.error(`Error loading settings for class ${classId}:`, error);
+                  return null;
+                })
+              : Promise.resolve(classSettingsMap[classId]),
           ]);
 
-          const academicMerged = academicResults.reduce((acc, curr) => ({ ...acc, ...curr.academic }), {});
-          const settingsMerged = settingsResults.reduce((acc, curr) => ({ ...acc, ...curr.settings }), {});
-          const attendanceMerged = attendanceResults.reduce((acc, curr) => ({ ...acc, ...curr.attendance }), {});
-
-          // Update state with batch results
-          setAcademicPerformance(prev => ({ ...prev, ...academicMerged }));
-          setClassSettingsMap(prev => ({ ...prev, ...settingsMerged }));
-          setAttendanceData(prev => ({ ...prev, ...attendanceMerged }));
-
-          // Add delay between batches (except for the last batch)
-          if (i + batchSize < classesData.length) {
-            await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
+          if (cancelled) {
+            return;
           }
+
+          if (needsAcademic) {
+            setAcademicPerformance((prev) => (
+              hasOwnKey(prev, classId) ? prev : { ...prev, [classId]: academic }
+            ));
+          }
+
+          if (needsAttendance) {
+            setAttendanceData((prev) => (
+              hasOwnKey(prev, classId) ? prev : { ...prev, [classId]: attendance }
+            ));
+          }
+
+          if (needsSettings) {
+            setClassSettingsMap((prev) => (
+              hasOwnKey(prev, classId) ? prev : { ...prev, [classId]: settings }
+            ));
+          }
+
+          classDetailsRequestStateRef.current.set(classId, 'loaded');
+        }));
+
+        if (cancelled) {
+          return;
         }
-      } catch (error) {
-        console.error('Error loading class data:', error);
+
+        if (i + CLASS_DETAILS_BATCH_SIZE < pendingIds.length) {
+          await new Promise((resolve) => setTimeout(resolve, CLASS_DETAILS_BATCH_DELAY_MS));
+        }
       }
     };
 
-    loadClassData();
-  }, [classesData, classesEnhancedApi, classesApi]);
+    loadVisibleClassDetails();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    academicPerformance,
+    attendanceData,
+    classSettingsMap,
+    classesApi,
+    classesData,
+    classesEnhancedApi,
+    visibleChildClassIds,
+  ]);
 
   // Reset visible count when filters change
   useEffect(() => {
@@ -481,9 +526,9 @@ export default function ClassesList() {
           base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0 [&_table]:select-text",
           thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12",
           th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6 hover:bg-default-100 transition-colors cursor-pointer [&_svg]:text-default-300 [&:hover_svg]:text-default-500 [&_svg]:opacity-100 first:hover:bg-transparent first:cursor-default select-none",
-          td: "py-0 border-b border-default-200 group-data-[last=true]:border-none last:pr-6 select-text",
-          tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-0",
-          tr: "",
+          td: "py-0 border-b border-default-200 group-data-[last=true]:border-none last:pr-6 select-text transition-colors",
+          tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-0 [&>tr[data-selected=true]>td]:bg-primary-50",
+          tr: "transition-colors hover:bg-gray-50 data-[selected=true]:bg-primary-50",
         }}
       >
         <TableHeader>
@@ -524,7 +569,7 @@ export default function ClassesList() {
               return (
                 <TableRow
                   key={`parent-${group.classNum}`}
-                  className="hover:bg-default-50 cursor-pointer"
+                  className="cursor-pointer"
                   onClick={(e) => {
                     // Don't toggle if clicking on interactive elements
                     if (e.target.closest("button") || e.target.closest("a")) return;
@@ -954,7 +999,7 @@ export default function ClassesList() {
           <ModalBody>
             <div className="flex flex-col gap-2">
               {AVAILABLE_COLUMNS.filter(col => col && typeof col === 'object' && col.key).map(col => (
-                <Checkbox
+                <Checkbox size="sm"
                   key={col.key}
                   isSelected={getVisibleColumns().find(c => c?.key === col.key)?.visible ?? true}
                   isDisabled={col.fixed}

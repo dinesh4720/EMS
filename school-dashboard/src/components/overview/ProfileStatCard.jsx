@@ -44,8 +44,8 @@ function ProfileStatCard({
         </div>
         {subStats.length > 0 && (
           <div className="mt-4 pt-4 border-t border-default-100 space-y-2">
-            {subStats.map((stat, index) => (
-              <div key={index} className={`flex items-center gap-3 text-xs ${stat.textColor || 'text-default-500'}`}>
+            {subStats.map((stat) => (
+              <div key={stat.label} className={`flex items-center gap-3 text-xs ${stat.textColor || 'text-default-500'}`}>
                 <span className="font-medium">{stat.label}:</span>
                 <span className={`font-bold ${stat.valueColor || 'text-default-700'}`}>{stat.value}</span>
               </div>

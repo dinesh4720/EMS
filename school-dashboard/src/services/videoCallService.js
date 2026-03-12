@@ -23,7 +23,6 @@ class VideoCallService {
 
       return new Promise((resolve, reject) => {
         this.peer.on('open', (id) => {
-          console.log('✅ PeerJS initialized with ID:', id);
           this.emit('peerReady', id);
           resolve(id);
         });
@@ -36,7 +35,6 @@ class VideoCallService {
 
         // Handle incoming calls
         this.peer.on('call', (call) => {
-          console.log('📞 Incoming call:', call);
           this.handleIncomingCall(call);
         });
 
@@ -60,8 +58,6 @@ class VideoCallService {
     } = options;
 
     try {
-      console.log('📞 Starting call to:', remotePeerId);
-
       // Get local media stream
       this.localStream = await navigator.mediaDevices.getUserMedia({
         video,
@@ -105,8 +101,6 @@ class VideoCallService {
    * Handle incoming call
    */
   handleIncomingCall(call) {
-    console.log('📞 Handling incoming call from:', call.peer);
-
     this.setupCallHandlers(call);
 
     const callId = Date.now().toString();
@@ -130,8 +124,6 @@ class VideoCallService {
     } = options;
 
     try {
-      console.log('✅ Accepting call:', callId);
-
       // Get local media stream
       this.localStream = await navigator.mediaDevices.getUserMedia({
         video,
@@ -162,7 +154,6 @@ class VideoCallService {
     if (call) {
       call.close();
       this.calls.delete(callId);
-      console.log('❌ Call rejected:', callId);
       this.emit('callRejected', { callId });
     }
   }
@@ -175,7 +166,6 @@ class VideoCallService {
     if (call) {
       call.close();
       this.calls.delete(callId);
-      console.log('📞 Call ended:', callId);
       this.emit('callEnded', { callId });
     }
 
@@ -199,7 +189,6 @@ class VideoCallService {
    */
   setupCallHandlers(call) {
     call.on('stream', (remoteStream) => {
-      console.log('📹 Received remote stream');
       this.remoteStreams.set(call.peer, remoteStream);
       this.emit('remoteStream', {
         stream: remoteStream,
@@ -208,7 +197,6 @@ class VideoCallService {
     });
 
     call.on('close', () => {
-      console.log('📞 Call closed by remote');
       this.emit('callClosed', { peerId: call.peer });
     });
 

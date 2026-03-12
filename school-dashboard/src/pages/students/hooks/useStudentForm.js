@@ -70,9 +70,10 @@ export function useStudentForm(initialData = null) {
   }, []);
 
   /**
-   * Add a new parent
+   * Add a new parent or guardian
+   * @param {Object} overrides - Optional fields to override defaults (e.g. { isParent: false })
    */
-  const addParent = useCallback(() => {
+  const addParent = useCallback((overrides = {}) => {
     setFormData((prev) => ({
       ...prev,
       parents: [
@@ -85,6 +86,7 @@ export function useStudentForm(initialData = null) {
           occupation: "",
           isWhatsapp: true,
           isParent: true,
+          ...overrides,
         },
       ],
     }));

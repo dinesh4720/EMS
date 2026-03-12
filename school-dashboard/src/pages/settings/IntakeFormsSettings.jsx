@@ -923,7 +923,7 @@ export default function IntakeFormsSettings() {
                       />
 
                       <div className="flex gap-4">
-                        <Checkbox
+                        <Checkbox size="sm"
                           isSelected={fieldConfig.required}
                           onValueChange={(value) =>
                             setFieldConfig({ ...fieldConfig, required: value })

@@ -550,7 +550,7 @@ export default function RolesAccess() {
                               <TableCell key={action} className="text-center">
                                 {hasAction ? (
                                   <div className="flex items-center justify-center gap-2">
-                                    <Checkbox
+                                    <Checkbox size="sm"
                                       isSelected={isChecked}
                                       onValueChange={(value) =>
                                         handlePermissionChange(module.key, action, value)
