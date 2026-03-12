@@ -599,7 +599,7 @@ const AdmissionsList = forwardRef((props, ref) => {
               </Tab>
               <Tab key="assessment" title="Assessment">
                 <div className="grid grid-cols-2 gap-4 mt-4">
-                  <Checkbox
+                  <Checkbox size="sm"
                     isSelected={formData.assessmentRequired}
                     onValueChange={(value) => setFormData({ ...formData, assessmentRequired: value })}
                     className="col-span-2"

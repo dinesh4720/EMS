@@ -245,6 +245,30 @@ class ChatService {
     }
   }
 
+  // Delete (or leave) a conversation – removes it from the user's view
+  async deleteConversation(conversationId, userId) {
+    try {
+      const response = await fetch(
+        `${API_URL}/messages/conversations/${conversationId}?userId=${userId}`,
+        {
+          method: 'DELETE',
+          headers: await this.getAuthHeaders(),
+        }
+      );
+      // Accept 200 or 204
+      if (!response.ok) {
+        const text = await response.text();
+        let err;
+        try { err = JSON.parse(text); } catch { err = {}; }
+        throw new Error(err.error || err.message || 'Failed to delete conversation');
+      }
+      return true;
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      throw error;
+    }
+  }
+
   // Add reaction to a message
   async addReaction(conversationId, messageId, emoji, userId) {
     try {

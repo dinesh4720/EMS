@@ -417,6 +417,19 @@ export const ChatProvider = ({ children }) => {
     }
   }, []);
 
+  // Delete a conversation (removes from current user's view)
+  const deleteConversation = useCallback(async (conversationId) => {
+    if (!user?.id) return { success: false, error: 'Not authenticated' };
+    try {
+      await chatService.deleteConversation(conversationId, user.id);
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      return { success: false, error: error.message };
+    }
+  }, [user?.id]);
+
   // Refresh conversations
   const refreshConversations = useCallback(async () => {
     if (!user?.id) return;
@@ -484,6 +497,7 @@ export const ChatProvider = ({ children }) => {
 
     // Actions
     createConversation,
+    deleteConversation,
     sendMessage,
     markAsRead,
     sendTyping,

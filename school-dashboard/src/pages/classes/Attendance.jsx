@@ -107,7 +107,7 @@ export default function Attendance({ classId }) {
     if (classStudents.length > 0) {
       fetchAttendance();
     }
-  }, [resolvedClassId, date, classStudents.length]);
+  }, [fetchAttendance]);
 
   const visibleStudents = useMemo(() => {
     return classStudents.slice(0, visibleCount);
@@ -171,6 +171,12 @@ export default function Attendance({ classId }) {
       return;
     }
 
+    if (!resolvedClassId) {
+      setSaveMessage({ type: 'error', text: 'Please select a valid class' });
+      setTimeout(() => setSaveMessage(null), 3000);
+      return;
+    }
+
     try {
       setIsSaving(true);
       setSaveMessage(null);
@@ -183,7 +189,7 @@ export default function Attendance({ classId }) {
 
       // Use the resolved class ID (ObjectId) for the API call
       const response = await attendanceApi.markBulk({
-        classId: resolvedClassId || selectedClass,
+        classId: resolvedClassId,
         date: date,
         attendance: attendanceData
       });

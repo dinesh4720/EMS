@@ -54,8 +54,9 @@ export function StudentsProvider({ children }) {
 
   const deleteStudent = async (id) => {
     try {
-      await studentsApi.delete(id);
+      const result = await studentsApi.delete(id);
       setStudents(prev => prev.filter(s => s.id !== id));
+      return result;
     } catch (err) {
       setError(err.message);
       throw err;

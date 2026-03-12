@@ -31,7 +31,6 @@ export default function PhotoModal({ isOpen, onClose, src, alt = "Photo" }) {
   // Handle Escape key press - stable reference
   const handleEscape = useCallback((e) => {
     if (e.key === "Escape" && isOpenRef.current) {
-      console.log('🔒 PhotoModal: ESC pressed, closing modal');
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
@@ -45,14 +44,12 @@ export default function PhotoModal({ isOpen, onClose, src, alt = "Photo" }) {
   // Set up keyboard listener - use capture phase to ensure it runs first
   useEffect(() => {
     if (isOpen) {
-      console.log('🖼️ PhotoModal: Adding ESC listener');
       document.addEventListener("keydown", handleEscape, true); // true = capture phase
       // Prevent body scroll when modal is open
       document.body.style.overflow = "hidden";
     }
 
     return () => {
-      console.log('🖼️ PhotoModal: Removing ESC listener');
       document.removeEventListener("keydown", handleEscape, true);
       document.body.style.overflow = "unset";
     };

@@ -566,7 +566,13 @@ const PaymentScreen = ({ navigation, route }) => {
                             value={customAmounts[headId]?.toString() || ''}
                             onChangeText={(text) => {
                               const num = text.replace(/[^0-9.]/g, '');
-                              setCustomAmounts(prev => ({ ...prev, [headId]: num }));
+                              // Clamp to fee head balance — prevent over-payment
+                              const parsed = parseFloat(num);
+                              if (!isNaN(parsed) && parsed > balance) {
+                                setCustomAmounts(prev => ({ ...prev, [headId]: balance.toString() }));
+                              } else {
+                                setCustomAmounts(prev => ({ ...prev, [headId]: num }));
+                              }
                             }}
                             placeholder={balance.toString()}
                             placeholderTextColor={themeColors.textTertiary}

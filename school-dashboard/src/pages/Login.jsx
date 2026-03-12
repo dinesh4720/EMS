@@ -1,8 +1,8 @@
-import React, { useState, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useCallback, lazy, Suspense } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Eye, EyeOff, Lock, Mail, CheckCircle } from "lucide-react";
-import SchoolBuilding3D from "../components/SchoolBuilding3D";
+const SchoolBuilding3D = lazy(() => import("../components/SchoolBuilding3D"));
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -37,7 +37,9 @@ export default function Login() {
     <div className="h-screen w-screen flex flex-col lg:flex-row overflow-hidden">
       {/* Left Side - 3D School Building - Hidden on mobile */}
       <div className="hidden lg:flex flex-1 relative overflow-hidden h-full">
-        <SchoolBuilding3D />
+        <Suspense fallback={<div className="w-full h-full bg-gradient-to-br from-teal-50 to-teal-100" />}>
+          <SchoolBuilding3D />
+        </Suspense>
       </div>
 
       {/* Right Side - Login Form */}
@@ -139,13 +141,9 @@ export default function Login() {
               {loading ? "Signing in..." : "Sign In"}
             </button>
 
-            <button
-              type="button"
-              onClick={() => navigate("/signup")}
-              className="w-full py-2.5 rounded-lg text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
-            >
-              Sign Up
-            </button>
+            <div className="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              New schools are onboarded by invite only. Use the signup link sent to your organization.
+            </div>
 
             {/* Divider */}
             <div className="flex items-center gap-3 my-5">
@@ -185,14 +183,14 @@ export default function Login() {
             <div className="pt-3 border-t border-gray-100">
               <p className="text-xs text-gray-400 mb-1.5 text-center">Demo credentials:</p>
               <div className="flex items-center justify-center gap-2 text-xs">
-                <span className="text-gray-600">superid@test.com</span>
+                <span className="text-gray-600">vikram@school.com</span>
                 <span className="text-gray-300">•</span>
-                <span className="text-gray-600">12345</span>
+                <span className="text-gray-600">password123</span>
                 <button
                   type="button"
                   onClick={() => {
-                    setEmail("superid@test.com");
-                    setPassword("12345");
+                    setEmail("vikram@school.com");
+                    setPassword("password123");
                   }}
                   className="text-teal-600 hover:text-teal-700 font-medium ml-1"
                 >
@@ -205,8 +203,7 @@ export default function Login() {
           {/* Footer */}
           <div className="flex items-center justify-center gap-4 text-xs text-gray-400 mt-5 pt-3 border-t border-gray-100">
             <p>© {new Date().getFullYear()} SchoolSync</p>
-            <a href="#" className="hover:text-gray-600">Terms</a>
-            <a href="#" className="hover:text-gray-600">Privacy</a>
+            <Link to="/privacy" className="hover:text-gray-600">Privacy Policy</Link>
           </div>
         </div>
       </div>

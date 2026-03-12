@@ -34,6 +34,25 @@ npm install
 npx expo start
 ```
 
+### Environment configuration
+
+Create a local env file before running the app:
+
+```bash
+cp .env.example .env.local
+```
+
+Then set the backend URL for the environment you want to run:
+
+```bash
+APP_ENV=development
+EXPO_PUBLIC_API_BASE_URL_DEVELOPMENT=http://192.168.1.50:3001
+EXPO_PUBLIC_SOCKET_URL_DEVELOPMENT=http://192.168.1.50:3001
+```
+
+For staging or production builds, switch `APP_ENV` and provide the matching
+`EXPO_PUBLIC_API_BASE_URL_<ENV>` values instead of editing source files.
+
 Then scan the QR code with:
 - **iOS**: Use the Camera app
 - **Android**: Use the Expo Go app

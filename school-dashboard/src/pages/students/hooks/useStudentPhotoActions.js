@@ -37,11 +37,9 @@ export function useStudentPhotoActions(student, onUpdateStudent, printRef) {
     content: () => printRef?.current,
     documentTitle: `${student?.name || "Student"}_Profile`,
     onAfterPrint: () => {
-      console.log("Print completed");
       toast.success("Student profile downloaded successfully!");
     },
     onBeforeGetContent: () => {
-      console.log("Preparing content for printing...");
       return Promise.resolve();
     },
   });
@@ -49,10 +47,8 @@ export function useStudentPhotoActions(student, onUpdateStudent, printRef) {
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
-      console.log('📸 File selected:', file.name);
       const reader = new FileReader();
       reader.onloadend = () => {
-        console.log('✅ File loaded, opening photo editor');
         setSelectedImageForEdit(reader.result);
         setIsPhotoEditorOpen(true);
         e.target.value = null;
@@ -61,8 +57,23 @@ export function useStudentPhotoActions(student, onUpdateStudent, printRef) {
     }
   };
 
+  const updatePhotoOnServer = async (photoUrl) => {
+    const token = getAuthToken();
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${student.id}/photo`,
+      { method: 'PUT', headers, body: JSON.stringify({ photo: photoUrl }) }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update photo');
+    }
+  };
+
   const handlePhotoSave = async (croppedImage) => {
-    console.log('💾 Saving cropped photo for student');
     const loadingToast = toast.loading("Uploading photo...");
 
     try {
@@ -77,62 +88,18 @@ export function useStudentPhotoActions(student, onUpdateStudent, printRef) {
       };
 
       const file = dataURLtoFile(croppedImage, "profile_photo.jpg");
-      console.log('✅ Photo file created, uploading to server');
 
       // Upload to Cloudinary
       const response = await uploadApi.uploadFile(file);
 
-      const token = getAuthToken();
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      await updatePhotoOnServer(response.url);
 
-      // Update student photo using direct MongoDB update
-      const response2 = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${student.id}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({
-          photo: response.url,
-          // Include all other fields to prevent data loss
-          name: student.name,
-          admissionId: student.admissionId,
-          classId: student.classId,
-          rollNo: student.rollNo,
-          gender: student.gender,
-          dateOfBirth: student.dateOfBirth,
-          bloodGroup: student.bloodGroup,
-          email: student.email,
-          phone: student.phone,
-          address: student.address,
-          city: student.city || "",
-          state: student.state || "",
-          zipCode: student.zipCode || "",
-          parentName: student.parentName,
-          parentPhone: student.parentPhone,
-          parentEmail: student.parentEmail,
-          status: student.status,
-          feeStatus: student.feeStatus
-        })
-      });
-
-      if (!response2.ok) {
-        const error = await response2.json();
-        throw new Error(error.error || 'Failed to save photo');
-      }
-
-      // Update global state to trigger instant re-render
       if (onUpdateStudent) {
         onUpdateStudent(student.id, { photo: response.url });
       }
 
-      // Update local preview
       setPhotoPreview(response.url);
       toast.success("Photo updated successfully", { id: loadingToast });
-
-      // Close modal after successful upload
       setIsPhotoEditorOpen(false);
     } catch (error) {
       console.error("❌ Photo upload error:", error);
@@ -141,65 +108,19 @@ export function useStudentPhotoActions(student, onUpdateStudent, printRef) {
   };
 
   const handleCameraPhotoCapture = async (file) => {
-    console.log('📸 Photo captured from camera/upload:', file.name);
-
     const loadingToast = toast.loading("Uploading photo...");
 
     try {
-      // Upload to Cloudinary
       const response = await uploadApi.uploadFile(file);
 
-      const token = getAuthToken();
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      await updatePhotoOnServer(response.url);
 
-      // Update student photo using direct MongoDB update
-      const response2 = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${student.id}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({
-          photo: response.url,
-          // Include all other fields to prevent data loss
-          name: student.name,
-          admissionId: student.admissionId,
-          classId: student.classId,
-          rollNo: student.rollNo,
-          gender: student.gender,
-          dateOfBirth: student.dateOfBirth,
-          bloodGroup: student.bloodGroup,
-          email: student.email,
-          phone: student.phone,
-          address: student.address,
-          city: student.city || "",
-          state: student.state || "",
-          zipCode: student.zipCode || "",
-          parentName: student.parentName,
-          parentPhone: student.parentPhone,
-          parentEmail: student.parentEmail,
-          status: student.status,
-          feeStatus: student.feeStatus
-        })
-      });
-
-      if (!response2.ok) {
-        const error = await response2.json();
-        throw new Error(error.error || 'Failed to save photo');
-      }
-
-      // Update global state to trigger instant re-render
       if (onUpdateStudent) {
         onUpdateStudent(student.id, { photo: response.url });
       }
 
-      // Update local preview
       setPhotoPreview(response.url);
       toast.success("Photo updated successfully", { id: loadingToast });
-
-      // Close camera modal after successful upload
       setIsCameraCaptureOpen(false);
     } catch (error) {
       console.error("❌ Photo upload error:", error);
@@ -230,53 +151,12 @@ export function useStudentPhotoActions(student, onUpdateStudent, printRef) {
     const loadingToast = toast.loading("Removing photo...");
 
     try {
-      const token = getAuthToken();
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      await updatePhotoOnServer(null);
 
-      // Update student photo to null/empty
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${student.id}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({
-          photo: null,
-          // Include all other fields to prevent data loss
-          name: student.name,
-          admissionId: student.admissionId,
-          classId: student.classId,
-          rollNo: student.rollNo,
-          gender: student.gender,
-          dateOfBirth: student.dateOfBirth,
-          bloodGroup: student.bloodGroup,
-          email: student.email,
-          phone: student.phone,
-          address: student.address,
-          city: student.city || "",
-          state: student.state || "",
-          zipCode: student.zipCode || "",
-          parentName: student.parentName,
-          parentPhone: student.parentPhone,
-          parentEmail: student.parentEmail,
-          status: student.status,
-          feeStatus: student.feeStatus
-        })
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to remove photo');
-      }
-
-      // Update global state to trigger instant re-render
       if (onUpdateStudent) {
         onUpdateStudent(student.id, { photo: null });
       }
 
-      // Update local preview
       setPhotoPreview(null);
       toast.success("Photo removed successfully", { id: loadingToast });
     } catch (error) {

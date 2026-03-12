@@ -1,7 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import CONFIG from '../config';
 import api from '../services/api';
+import socketService from '../services/socketService';
+
+const SECURE_REFRESH_KEY = 'secure_refresh_token';
 
 const AuthContext = createContext(null);
 
@@ -60,12 +64,14 @@ export const AuthProvider = ({ children: childrenProp }) => {
     try {
       await AsyncStorage.multiRemove([
         CONFIG.STORAGE_KEYS.AUTH_TOKEN,
-        CONFIG.STORAGE_KEYS.REFRESH_TOKEN,
+        CONFIG.STORAGE_KEYS.REFRESH_TOKEN, // legacy key – keep removal for migration
         CONFIG.STORAGE_KEYS.USER_DATA,
         CONFIG.STORAGE_KEYS.CHILDREN_DATA,
         CONFIG.STORAGE_KEYS.SELECTED_CHILD,
         CONFIG.STORAGE_KEYS.STUDENT_DATA,
       ]);
+      // Remove securely-stored refresh token
+      await SecureStore.deleteItemAsync(SECURE_REFRESH_KEY).catch(() => {});
     } catch (e) {
       // ignore
     }
@@ -87,9 +93,9 @@ export const AuthProvider = ({ children: childrenProp }) => {
 
       const { parent, accessToken, refreshToken } = response.data;
 
-      // Store tokens
+      // Store access token in AsyncStorage; refresh token in SecureStore (encrypted)
       await AsyncStorage.setItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN, accessToken);
-      await AsyncStorage.setItem(CONFIG.STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+      await SecureStore.setItemAsync(SECURE_REFRESH_KEY, refreshToken);
 
       // Store user data
       const userData = {
@@ -124,6 +130,9 @@ export const AuthProvider = ({ children: childrenProp }) => {
     } catch {
       // Ignore API errors during logout
     }
+
+    // Reset socket before clearing state to prevent cross-user data leaks
+    socketService.reset();
 
     await clearStorage();
     setUser(null);

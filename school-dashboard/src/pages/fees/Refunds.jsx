@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner, Select, SelectItem } from "@heroui/react";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea } from "@heroui/react";
 import { Search, X, Plus, Download } from "lucide-react";
 import { feesApi } from "../../services/api";
+import toast from "react-hot-toast";
 
 export default function Refunds() {
   const navigate = useNavigate();
@@ -10,21 +11,77 @@ export default function Refunds() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [refunds, setRefunds] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(null); // refund id being actioned
+
+  // New Refund modal
+  const [newRefundOpen, setNewRefundOpen] = useState(false);
+  const [newRefundForm, setNewRefundForm] = useState({ studentId: "", classId: "", amount: "", reason: "", refundMode: "cash", remarks: "" });
+  const [savingRefund, setSavingRefund] = useState(false);
 
   useEffect(() => {
-    const fetchRefunds = async () => {
-      try {
-        setLoading(true);
-        const data = await feesApi.getRefunds({});
-        setRefunds(data);
-      } catch (error) {
-        console.error('Error fetching refunds:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchRefunds();
   }, []);
+
+  const fetchRefunds = async () => {
+    try {
+      setLoading(true);
+      const data = await feesApi.getRefunds({});
+      setRefunds(data);
+    } catch (error) {
+      console.error('Error fetching refunds:', error);
+      toast.error('Failed to load refunds');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprove = async (refund) => {
+    setActionLoading(refund._id);
+    try {
+      await feesApi.approveRefund(refund._id, {});
+      toast.success('Refund approved');
+      fetchRefunds();
+    } catch (error) {
+      toast.error('Failed to approve refund');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleProcess = async (refund) => {
+    setActionLoading(refund._id);
+    try {
+      await feesApi.processRefund(refund._id, {});
+      toast.success('Refund processed');
+      fetchRefunds();
+    } catch (error) {
+      toast.error('Failed to process refund');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleCreateRefund = async () => {
+    if (!newRefundForm.studentId || !newRefundForm.classId || !newRefundForm.amount || !newRefundForm.reason || !newRefundForm.refundMode) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+    setSavingRefund(true);
+    try {
+      await feesApi.createRefund({
+        ...newRefundForm,
+        amount: parseFloat(newRefundForm.amount),
+      });
+      toast.success('Refund request created');
+      setNewRefundOpen(false);
+      setNewRefundForm({ studentId: "", classId: "", amount: "", reason: "", refundMode: "cash", remarks: "" });
+      fetchRefunds();
+    } catch (error) {
+      toast.error('Failed to create refund');
+    } finally {
+      setSavingRefund(false);
+    }
+  };
 
   const filteredRefunds = useMemo(() => {
     return refunds.filter((r) => {
@@ -63,7 +120,7 @@ export default function Refunds() {
     return () => observer.disconnect();
   }, [hasMore, isLoadingMore]);
 
-  const totalRefunds = filteredRefunds.reduce((sum, r) => sum + r.amount, 0);
+  const totalRefunds = filteredRefunds.reduce((sum, r) => sum + (r.amount || 0), 0);
   const pendingCount = filteredRefunds.filter((r) => r.status === "pending").length;
   const processedCount = filteredRefunds.filter((r) => r.status === "processed").length;
 
@@ -124,7 +181,10 @@ export default function Refunds() {
             <SelectItem key="processed">Processed</SelectItem>
           </Select>
 
-          <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gray-900 border border-gray-900 rounded-lg hover:bg-gray-800 transition-all">
+          <button
+            onClick={() => setNewRefundOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gray-900 border border-gray-900 rounded-lg hover:bg-gray-800 transition-all"
+          >
             <Plus size={14} />
             <span>New Refund</span>
           </button>
@@ -172,11 +232,17 @@ export default function Refunds() {
                   <span className="text-sm text-gray-600">{refund.reason || '—'}</span>
                 </TableCell>
                 <TableCell>
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border border-gray-200 rounded bg-gray-50">
+                  <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border rounded ${
+                    refund.status === "processed" ? "border-green-200 bg-green-50 text-green-700" :
+                    refund.status === "approved" ? "border-blue-200 bg-blue-50 text-blue-700" :
+                    refund.status === "rejected" ? "border-red-200 bg-red-50 text-red-700" :
+                    "border-yellow-200 bg-yellow-50 text-yellow-700"
+                  }`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${
-                      refund.status === "processed" ? "bg-gray-400" :
-                      refund.status === "approved" ? "bg-gray-400" :
-                      "bg-gray-300"
+                      refund.status === "processed" ? "bg-green-500" :
+                      refund.status === "approved" ? "bg-blue-500" :
+                      refund.status === "rejected" ? "bg-red-500" :
+                      "bg-yellow-500"
                     }`}></span>
                     {refund.status}
                   </span>
@@ -187,13 +253,21 @@ export default function Refunds() {
                 <TableCell>
                   <div className="flex justify-end gap-2">
                     {refund.status === "pending" && (
-                      <button className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all">
-                        Approve
+                      <button
+                        onClick={() => handleApprove(refund)}
+                        disabled={actionLoading === refund._id}
+                        className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all disabled:opacity-50"
+                      >
+                        {actionLoading === refund._id ? '...' : 'Approve'}
                       </button>
                     )}
                     {refund.status === "approved" && (
-                      <button className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 border border-gray-900 rounded-lg hover:bg-gray-800 transition-all">
-                        Process
+                      <button
+                        onClick={() => handleProcess(refund)}
+                        disabled={actionLoading === refund._id}
+                        className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 border border-gray-900 rounded-lg hover:bg-gray-800 transition-all disabled:opacity-50"
+                      >
+                        {actionLoading === refund._id ? '...' : 'Process'}
                       </button>
                     )}
                     <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all">
@@ -214,6 +288,83 @@ export default function Refunds() {
           )}
         </div>
       </div>
+
+      {/* New Refund Modal */}
+      <Modal isOpen={newRefundOpen} onClose={() => setNewRefundOpen(false)} size="lg">
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="border-b border-gray-200">New Refund Request</ModalHeader>
+              <ModalBody className="py-4 space-y-4">
+                <Input
+                  label="Student ID"
+                  placeholder="Enter student ID"
+                  value={newRefundForm.studentId}
+                  onValueChange={(v) => setNewRefundForm({ ...newRefundForm, studentId: v })}
+                  variant="bordered"
+                  isRequired
+                />
+                <Input
+                  label="Class ID"
+                  placeholder="Enter class ID"
+                  value={newRefundForm.classId}
+                  onValueChange={(v) => setNewRefundForm({ ...newRefundForm, classId: v })}
+                  variant="bordered"
+                  isRequired
+                />
+                <Input
+                  type="number"
+                  label="Amount (₹)"
+                  placeholder="0"
+                  value={newRefundForm.amount}
+                  onValueChange={(v) => setNewRefundForm({ ...newRefundForm, amount: v })}
+                  variant="bordered"
+                  isRequired
+                />
+                <Textarea
+                  label="Reason"
+                  placeholder="Reason for refund..."
+                  value={newRefundForm.reason}
+                  onValueChange={(v) => setNewRefundForm({ ...newRefundForm, reason: v })}
+                  variant="bordered"
+                  isRequired
+                  minRows={2}
+                />
+                <Select
+                  label="Refund Mode"
+                  variant="bordered"
+                  selectedKeys={[newRefundForm.refundMode]}
+                  onChange={(e) => setNewRefundForm({ ...newRefundForm, refundMode: e.target.value })}
+                >
+                  <SelectItem key="cash">Cash</SelectItem>
+                  <SelectItem key="cheque">Cheque</SelectItem>
+                  <SelectItem key="bank_transfer">Bank Transfer</SelectItem>
+                </Select>
+                <Textarea
+                  label="Remarks (optional)"
+                  placeholder="Additional notes..."
+                  value={newRefundForm.remarks}
+                  onValueChange={(v) => setNewRefundForm({ ...newRefundForm, remarks: v })}
+                  variant="bordered"
+                  minRows={2}
+                />
+              </ModalBody>
+              <ModalFooter className="border-t border-gray-200 gap-3">
+                <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all">
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateRefund}
+                  disabled={savingRefund}
+                  className="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all disabled:opacity-50"
+                >
+                  {savingRefund ? 'Creating...' : 'Create Refund'}
+                </button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

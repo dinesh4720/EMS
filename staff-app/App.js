@@ -11,6 +11,7 @@ import { ChatProvider } from './src/context/ChatContext';
 import { ClassProvider } from './src/context/ClassContext';
 import { ExamProvider } from './src/context/ExamContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import ErrorBoundary from './src/components/ErrorBoundary';
 import LoginScreen from './src/screens/LoginScreen';
 import TabNavigator from './src/navigation/TabNavigator';
 import EditProfileScreen from './src/screens/EditProfileScreen';
@@ -81,24 +82,28 @@ const RootNavigator = () => {
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={styles.container}>
-      <SafeAreaProvider>
-        <ThemeProvider>
-          <AuthProvider>
-            <ChatProvider>
-              <ClassProvider>
-                <ExamProvider>
-                  <NavigationContainer>
-                    <ThemedStatusBar />
-                    <RootNavigator />
-                  </NavigationContainer>
-                </ExamProvider>
-              </ClassProvider>
-            </ChatProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={styles.container}>
+        <SafeAreaProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <ChatProvider>
+                <ClassProvider>
+                  <ExamProvider>
+                    <ErrorBoundary>
+                      <NavigationContainer>
+                        <ThemedStatusBar />
+                        <RootNavigator />
+                      </NavigationContainer>
+                    </ErrorBoundary>
+                  </ExamProvider>
+                </ClassProvider>
+              </ChatProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
 

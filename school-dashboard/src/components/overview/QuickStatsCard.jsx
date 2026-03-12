@@ -23,8 +23,8 @@ function QuickStatsCard({
         </div>
 
         <div className="space-y-4">
-          {stats.map((stat, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-default-50 rounded-lg">
+          {stats.map((stat) => (
+            <div key={stat.label} className="flex items-center justify-between p-3 bg-default-50 rounded-lg">
               <span className="text-sm text-default-500">{stat.label}</span>
               <span className={`font-bold ${stat.valueColor || 'text-default-900'}`}>{stat.value}</span>
             </div>

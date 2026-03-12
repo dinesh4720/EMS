@@ -348,6 +348,7 @@ const ChatScreen = () => {
     loading,
     socketConnected,
     refreshConversations,
+    deleteConversation,
     getConversationName,
     getConversationAvatar,
   } = useChat();
@@ -403,9 +404,25 @@ const ChatScreen = () => {
 
   // Handle delete conversation
   const handleDeleteConversation = useCallback((conversation) => {
-    // TODO: Implement delete conversation logic
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-  }, []);
+    Alert.alert(
+      'Delete Conversation',
+      `Remove your conversation with ${getConversationName(conversation)}? This only removes it from your view.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const result = await deleteConversation(conversation.id);
+            if (!result.success) {
+              Alert.alert('Error', result.error || 'Failed to delete conversation');
+            }
+          },
+        },
+      ]
+    );
+  }, [deleteConversation, getConversationName]);
 
   return (
     <GestureHandlerRootView style={[styles.container, { backgroundColor: colors.surface }]}>

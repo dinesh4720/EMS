@@ -218,7 +218,9 @@ export default function HierarchySettings() {
             }}
             classNames={{
               th: "bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold",
-              td: "py-4",
+              td: "py-4 transition-colors",
+              tbody: "[&>tr[data-selected=true]>td]:bg-primary-50",
+              tr: "transition-colors hover:bg-gray-50 data-[selected=true]:bg-primary-50",
             }}
           >
             <TableHeader>

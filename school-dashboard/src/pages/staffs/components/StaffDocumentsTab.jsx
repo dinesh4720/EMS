@@ -115,12 +115,12 @@ export default function StaffDocumentsTab({
           </div>
         ) : (
           <div className="divide-y divide-gray-50">
-            {documents.map((doc, index) => {
+            {documents.map((doc) => {
               const docType = getDocumentType(doc);
 
               return (
                 <div
-                  key={index}
+                  key={doc._id || doc.name}
                   className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors group"
                 >
                   <div className="flex items-center gap-3">
@@ -141,7 +141,7 @@ export default function StaffDocumentsTab({
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       className="p-2 hover:bg-gray-100 rounded-lg"
-                      onPress={() => window.open(doc.url, '_blank')}
+                      onClick={() => window.open(doc.url, '_blank')}
                       title="View"
                     >
                       <Eye size={14} className="text-gray-400" />
@@ -158,14 +158,14 @@ export default function StaffDocumentsTab({
                     </a>
                     <button
                       className="p-2 hover:bg-gray-100 rounded-lg"
-                      onPress={() => toast.success("Shared via internal messaging")}
+                      onClick={() => toast.success("Shared via internal messaging")}
                       title="Share"
                     >
                       <Share2 size={14} className="text-gray-400" />
                     </button>
                     <button
                       className="p-2 hover:bg-gray-100 rounded-lg"
-                      onPress={() => onDeleteDocument(doc.id || doc.url)}
+                      onClick={() => onDeleteDocument(doc._id || doc.id)}
                       title="Delete"
                     >
                       <Trash2 size={14} className="text-gray-400 hover:text-red-500" />

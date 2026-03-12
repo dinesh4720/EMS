@@ -479,8 +479,9 @@ export default function TrashSettings() {
             classNames={{
               base: "overflow-visible",
               th: "bg-default-50 text-default-500 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200",
-              td: "py-4 border-b border-default-100",
-              tbody: "[&>tr:last-child>td]:border-none",
+              td: "py-4 border-b border-default-100 transition-colors",
+              tbody: "[&>tr:last-child>td]:border-none [&>tr[data-selected=true]>td]:bg-primary-50",
+              tr: "transition-colors hover:bg-gray-50 data-[selected=true]:bg-primary-50",
             }}
           >
             <TableHeader>

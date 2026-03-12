@@ -257,7 +257,7 @@ export default function TimetableCleanup() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Checkbox
+                      <Checkbox size="sm"
                         isSelected={options[option.key]}
                         onValueChange={() => toggleOption(option.key)}
                         color="danger"

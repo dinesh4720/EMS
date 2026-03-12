@@ -121,7 +121,10 @@ export default function StaffDashboard() {
       const now = new Date();
       const start = format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd');
       const end = format(new Date(now.getFullYear(), now.getMonth() + 1, 0), 'yyyy-MM-dd');
-      fetchStaffAttendanceByStaff(id, start, end);
+      fetchStaffAttendanceByStaff(id, start, end).catch(err => {
+        console.error('Failed to fetch staff attendance:', err);
+        toast.error('Failed to load attendance data');
+      });
     }
   }, [id, fetchStaffAttendanceByStaff]);
 
@@ -136,7 +139,7 @@ export default function StaffDashboard() {
   const today = new Date();
   const monthlyStats = useMemo(() => {
     return getMonthlyAttendance(id, today.getFullYear(), today.getMonth());
-  }, [id, attendance]);
+  }, [id, attendance, getMonthlyAttendance]);
 
   const attendanceRate = monthlyStats.total > 0 ? Math.round((monthlyStats.present / monthlyStats.total) * 100) : 0;
 
@@ -393,7 +396,6 @@ export default function StaffDashboard() {
   };
 
   const handleSendMessage = () => {
-    console.log("Sending message to", staff.name, ":", message);
     setMessage("");
     onClose();
     toast.success("Message sent");

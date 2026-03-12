@@ -29,11 +29,7 @@ export default function MarkAlumniModal({ isOpen, onClose, student, onMark }) {
       await request(`/students/${student.id}`, {
         method: 'PUT',
         headers,
-        body: JSON.stringify({
-          ...student,
-          status: "alumni",
-          class: "Alumni"
-        })
+        body: JSON.stringify({ status: "alumni" })
       });
 
       toast.success(`${student.name} marked as alumni`, { id: loadingToast });

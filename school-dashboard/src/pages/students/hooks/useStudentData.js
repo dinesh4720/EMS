@@ -1,173 +1,105 @@
-import { useState, useEffect, useCallback } from "react";
-import { getAuthToken } from "../utils/studentHelpers";
+import { useMemo } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { attendanceApi, studentsApi } from "../../../services/api";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+function normalizeAttendanceStatus(status = "") {
+  const s = status.toLowerCase().trim();
+  if (s === "p" || s === "present") return "present";
+  if (s === "a" || s === "absent") return "absent";
+  return s;
+}
 
-/**
- * Custom hook for fetching and managing student data
- */
+function calculateAttendanceStats(records = []) {
+  const normalized = records.map((r) => normalizeAttendanceStatus(r.status));
+  const present = normalized.filter((s) => s === "present").length;
+  const absent = normalized.filter((s) => s === "absent").length;
+  const total = records.length;
+  const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
+
+  return { present, absent, total, percentage };
+}
+
 export function useStudentData(studentId, options = {}) {
   const { autoFetch = true } = options;
+  const queryClient = useQueryClient();
+  const queryKey = useMemo(() => ["students", "detail", studentId], [studentId]);
 
-  const [student, setStudent] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const studentQuery = useQuery({
+    queryKey,
+    enabled: Boolean(studentId) && autoFetch,
+    queryFn: () => studentsApi.getById(studentId),
+  });
 
-  const fetchStudent = useCallback(async () => {
-    if (!studentId) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const token = getAuthToken();
-      const headers = { "Content-Type": "application/json" };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
-      const response = await fetch(`${API_URL}/students/${studentId}`, { headers });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch student: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setStudent(data);
-      return data;
-    } catch (err) {
-      console.error("Error fetching student:", err);
-      setError(err.message);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [studentId]);
-
-  useEffect(() => {
-    if (autoFetch) {
-      fetchStudent();
-    }
-  }, [autoFetch, fetchStudent]);
-
-  const updateStudent = useCallback(async (updates) => {
-    if (!studentId) return false;
-
-    setLoading(true);
-    try {
-      const token = getAuthToken();
-      const headers = { "Content-Type": "application/json" };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
-      const response = await fetch(`${API_URL}/students/${studentId}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(updates)
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to update student: ${response.status}`);
-      }
-
-      const updated = await response.json();
-      setStudent(prev => ({ ...prev, ...updated }));
-      return true;
-    } catch (err) {
-      console.error("Error updating student:", err);
-      setError(err.message);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, [studentId]);
+  const updateMutation = useMutation({
+    mutationFn: (updates) => studentsApi.update(studentId, updates),
+    onSuccess: (updatedStudent) => {
+      queryClient.setQueryData(queryKey, (currentStudent) => ({
+        ...(currentStudent || {}),
+        ...(updatedStudent || {}),
+      }));
+      void queryClient.invalidateQueries({ queryKey: ["app-context-data"] });
+    },
+  });
 
   return {
-    student,
-    loading,
-    error,
-    refetch: fetchStudent,
-    updateStudent
+    student: studentQuery.data || null,
+    loading: studentQuery.isPending || updateMutation.isPending,
+    error: studentQuery.error?.message || updateMutation.error?.message || null,
+    refetch: studentQuery.refetch,
+    updateStudent: updateMutation.mutateAsync,
   };
 }
 
-/**
- * Custom hook for fetching student attendance stats
- */
-export function useStudentAttendance(studentId) {
-  const [attendanceStats, setAttendanceStats] = useState({
-    present: 0,
-    absent: 0,
-    total: 0,
-    percentage: 0
+export function useStudentAttendance(studentId, options = {}) {
+  const { autoFetch = true, startDate, endDate } = options;
+  const attendanceQuery = useQuery({
+    queryKey: ["students", "attendance", studentId, startDate || null, endDate || null],
+    enabled: Boolean(studentId) && autoFetch,
+    queryFn: () => attendanceApi.getStudentAttendance(studentId, startDate, endDate),
   });
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!studentId) return;
+  const attendanceData = attendanceQuery.data || [];
+  const attendanceStats = useMemo(() => calculateAttendanceStats(attendanceData), [attendanceData]);
 
-    const fetchAttendance = async () => {
-      setLoading(true);
-      try {
-        const token = getAuthToken();
-        const headers = {};
-        if (token) headers["Authorization"] = `Bearer ${token}`;
-
-        const response = await fetch(`${API_URL}/students/${studentId}/attendance`, { headers });
-
-        if (response.ok) {
-          const data = await response.json();
-          const present = data.filter(a => a.status === 'present' || a.status === 'P').length;
-          const absent = data.filter(a => a.status === 'absent' || a.status === 'A').length;
-          const total = data.length;
-          const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
-
-          setAttendanceStats({ present, absent, total, percentage });
-        }
-      } catch (err) {
-        console.error("Error fetching attendance:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAttendance();
-  }, [studentId]);
-
-  return { attendanceStats, loading };
+  return {
+    attendanceData,
+    attendanceStats,
+    loading: attendanceQuery.isPending,
+    error: attendanceQuery.error?.message || null,
+    refetch: attendanceQuery.refetch,
+  };
 }
 
-/**
- * Custom hook for fetching student exam results
- */
-export function useStudentResults(studentId) {
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
+export function useStudentResults(studentId, options = {}) {
+  const { autoFetch = true, academicYear } = options;
+  const resultsQuery = useQuery({
+    queryKey: ["students", "results", studentId, academicYear || null],
+    enabled: Boolean(studentId) && autoFetch,
+    queryFn: () => studentsApi.getResults(studentId, academicYear),
+  });
 
-  useEffect(() => {
-    if (!studentId) return;
+  return {
+    results: resultsQuery.data || [],
+    loading: resultsQuery.isPending,
+    error: resultsQuery.error?.message || null,
+    refetch: resultsQuery.refetch,
+  };
+}
 
-    const fetchResults = async () => {
-      setLoading(true);
-      try {
-        const token = getAuthToken();
-        const headers = {};
-        if (token) headers["Authorization"] = `Bearer ${token}`;
+export function useStudentRemarks(studentId, options = {}) {
+  const { autoFetch = true, category = "all" } = options;
+  const remarksQuery = useQuery({
+    queryKey: ["students", "remarks", studentId, category],
+    enabled: Boolean(studentId) && autoFetch,
+    queryFn: () => studentsApi.getRemarks(studentId, category),
+  });
 
-        const response = await fetch(`${API_URL}/students/${studentId}/results`, { headers });
-
-        if (response.ok) {
-          const data = await response.json();
-          setResults(data);
-        }
-      } catch (err) {
-        console.error("Error fetching results:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchResults();
-  }, [studentId]);
-
-  return { results, loading };
+  return {
+    remarks: remarksQuery.data || [],
+    loading: remarksQuery.isPending,
+    error: remarksQuery.error?.message || null,
+    refetch: remarksQuery.refetch,
+  };
 }
 
 export default useStudentData;

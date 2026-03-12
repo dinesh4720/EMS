@@ -189,7 +189,7 @@ export default function PermissionDenied({ module, action, onRequestSubmitted })
                   >
                     <div className="grid grid-cols-2 gap-3">
                       {Object.entries(ACTION_LABELS).map(([key, label]) => (
-                        <Checkbox key={key} value={key}>
+                        <Checkbox size="sm" key={key} value={key}>
                           {label}
                         </Checkbox>
                       ))}

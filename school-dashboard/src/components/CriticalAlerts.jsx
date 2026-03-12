@@ -65,9 +65,9 @@ export default function CriticalAlerts({ data }) {
         <Divider className="bg-default-200" />
         <CardBody className="p-5">
           <div className="grid grid-cols-1 gap-4">
-            {displayAlerts.map((alert, index) => (
+            {displayAlerts.map((alert) => (
               <div
-                key={index}
+                key={alert.label}
                 onClick={alert.action ? alert.action : undefined}
                 className={`group flex flex-col p-3 rounded-xl border border-default-200 
                   ${alert.action ? 'cursor-pointer hover:border-danger-300 hover:bg-danger-50/10' : ''} 

@@ -86,7 +86,7 @@ export default function ForwardModal({ isOpen, onClose, onForward, conversations
                     }`}
                     onClick={() => handleToggleConversation(conv.id)}
                   >
-                    <Checkbox
+                    <Checkbox size="sm"
                       isSelected={isSelected}
                       onValueChange={() => handleToggleConversation(conv.id)}
                       classNames={{

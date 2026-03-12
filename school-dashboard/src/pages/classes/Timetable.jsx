@@ -275,7 +275,7 @@ export default function Timetable({ classId }) {
 
           onSlotClose();
           setEditingSlot(null);
-          setSlotForm({ subject: "", teacherId: "", room: "" });
+          setSlotForm({ subject: "", teacherId: null, room: "" });
           setConflicts([]);
 
           // Reload timetable to get synced data
@@ -349,7 +349,7 @@ export default function Timetable({ classId }) {
           onConfirmClearClose();
           onSlotClose();
           setEditingSlot(null);
-          setSlotForm({ subject: "", teacherId: "", room: "" });
+          setSlotForm({ subject: "", teacherId: null, room: "" });
           setConflicts([]);
 
           // Reload timetable to get synced data
@@ -426,7 +426,7 @@ export default function Timetable({ classId }) {
   };
 
   const handleWizardClick = () => {
-    window.location.href = '/timetable-wizard';
+    onWizardOpen();
   };
 
   const selectedClassData = classesWithTeachers.find(c => String(c.id) === String(selectedClass));

@@ -98,8 +98,8 @@ export default function Payroll() {
           <CardBody className="p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Payments</h3>
             <div className="space-y-3">
-              {upcomingPayslips.map((payslip, index) => (
-                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              {upcomingPayslips.map((payslip) => (
+                <div key={payslip._id || `${payslip.employee}-${payslip.dueDate}`} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-4">
                     <div className="p-2 bg-blue-50 rounded-lg">
                       <Users size={18} className="text-blue-600" />

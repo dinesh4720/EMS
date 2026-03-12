@@ -2,65 +2,7 @@ import { useState } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
 import { GraduationCap, AlertTriangle } from "lucide-react";
 import toast from "react-hot-toast";
-
-/**
- * Helper function to calculate next class for automatic promotion
- */
-const getNextClass = (currentClass, availableClasses) => {
-  // Handle special cases
-  if (!currentClass || currentClass === "Alumni" || currentClass === "Passed Out / Alumni") {
-    return null;
-  }
-
-  // Handle Nursery/KG levels
-  const preschoolMap = {
-    "Nursery": "KG",
-    "KG": "1",
-    "LKG": "UKG",
-    "UKG": "1"
-  };
-
-  // Check if it's a preschool level
-  for (const [from, to] of Object.entries(preschoolMap)) {
-    if (currentClass.startsWith(from)) {
-      // Extract section if present
-      const sectionMatch = currentClass.match(/-[A-Z]$/i);
-      const section = sectionMatch ? sectionMatch[0] : "";
-      return `${to}${section}`;
-    }
-  }
-
-  // Extract class number and section (e.g., "9-A" → class: 9, section: "A")
-  const match = currentClass.match(/^(\d+)-([A-Z])$/i);
-  if (!match) {
-    // Try without section (e.g., "9")
-    const numMatch = currentClass.match(/^(\d+)$/);
-    if (!numMatch) return null;
-
-    const currentGrade = parseInt(numMatch[1]);
-    if (currentGrade >= 10) return "Passed Out / Alumni";
-    return `${currentGrade + 1}`;
-  }
-
-  const currentGrade = parseInt(match[1]);
-  const section = match[2];
-
-  // If already in 10th grade, promote to alumni
-  if (currentGrade >= 10) return "Passed Out / Alumni";
-
-  // Otherwise, promote to next grade with same section
-  const nextClass = `${currentGrade + 1}-${section}`;
-
-  // Check if the next class exists in available classes
-  if (availableClasses && availableClasses.length > 0) {
-    const classExists = availableClasses.some(c => c === nextClass || c.startsWith(`${currentGrade + 1}-`));
-    if (!classExists) {
-      return `${currentGrade + 1}`; // Return without section if exact match not found
-    }
-  }
-
-  return nextClass;
-};
+import { getNextClass } from "../../utils/studentHelpers";
 
 /**
  * PromoteStudentModal - Modal for promoting a student to the next class
@@ -190,4 +132,3 @@ export default function PromoteStudentModal({ isOpen, onClose, student, availabl
   );
 }
 
-export { getNextClass };

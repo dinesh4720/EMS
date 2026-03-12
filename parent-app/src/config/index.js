@@ -1,17 +1,49 @@
 // Configuration for parent-app
 // API and backend settings
 
-const getEnvValue = (key, fallback) => {
-  const value = typeof process !== 'undefined' ? process.env?.[key] : undefined;
-  return typeof value === 'string' && value.trim() ? value.trim() : fallback;
+import Constants from 'expo-constants';
+
+const expoExtra = Constants.expoConfig?.extra ?? Constants.manifest2?.extra ?? Constants.manifest?.extra ?? {};
+
+const getValue = (value) => (
+  typeof value === 'string' && value.trim() ? value.trim() : undefined
+);
+
+const getConfigValue = (envKey, extraKey, fallback) => (
+  getValue(typeof process !== 'undefined' ? process.env?.[envKey] : undefined)
+  ?? getValue(expoExtra?.[extraKey])
+  ?? fallback
+);
+
+const APP_ENV = getConfigValue('EXPO_PUBLIC_APP_ENV', 'appEnv', 'development');
+
+const resolveApiBaseUrl = () => {
+  const url = getConfigValue('EXPO_PUBLIC_API_BASE_URL', 'apiBaseUrl', undefined);
+  if (!url) {
+    if (APP_ENV === 'production') {
+      throw new Error(
+        '[Config] EXPO_PUBLIC_API_BASE_URL is required in production. ' +
+        'Set it in your EAS environment or .env file.'
+      );
+    }
+    console.warn(
+      '[Config] EXPO_PUBLIC_API_BASE_URL is not set. ' +
+      'API calls will fail until this is configured. ' +
+      'Set it in your .env.local file (e.g. EXPO_PUBLIC_API_BASE_URL=http://192.168.x.x:3001).'
+    );
+    return '';
+  }
+  return url;
 };
 
-export const CONFIG = {
-  // API Base URL - change this to your backend URL
-  API_BASE_URL: getEnvValue('EXPO_PUBLIC_API_BASE_URL', 'http://localhost:3001'),
+const API_BASE_URL = resolveApiBaseUrl();
 
-  // Socket URL for real-time communication
-  SOCKET_URL: getEnvValue('EXPO_PUBLIC_SOCKET_URL', getEnvValue('EXPO_PUBLIC_API_BASE_URL', 'http://localhost:3001')),
+export const CONFIG = {
+  APP_ENV,
+
+  API_BASE_URL,
+
+  SOCKET_URL: getConfigValue('EXPO_PUBLIC_SOCKET_URL', 'socketUrl', API_BASE_URL),
 
   // App info
   APP_NAME: 'Parent App',

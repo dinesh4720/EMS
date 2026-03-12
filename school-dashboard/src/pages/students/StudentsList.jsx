@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback, useDeferredValue } from "react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
-    Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
     Button, Chip, Spinner, Progress,
     Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection,
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
@@ -15,7 +16,7 @@ import {
 import { Accordion, AccordionItem } from "@heroui/accordion";
 import { useNavigate, Link } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
-import { studentsApi, classesApi, trashApi } from "../../services/api";
+import { studentsApi, classesApi } from "../../services/api";
 import { useBatchStudentFees } from "./hooks/useStudentFees";
 import { getAuthHeaders } from "../../utils/authSession";
 import toast from "react-hot-toast";
@@ -26,8 +27,6 @@ import EditStudentDrawer from "./EditStudentDrawer";
 import ScrollToTopButton from "../../components/ui/ScrollToTopButton";
 import SkeletonTable from "../../components/SkeletonTable";
 
-const STUDENTS_PAGE_SIZE = 50;
-const ITEMS_PER_LOAD = STUDENTS_PAGE_SIZE;
 
 // Helper function to parse CSV text into array of objects
 const parseCSV = (csvText) => {
@@ -473,42 +472,30 @@ const transformStudentForImport = (studentData, allClasses) => {
     // Normalize the class name from CSV
     const normalizedClass = normalizeClassName(csvClass);
 
-    console.log('🔍 [Class Matching] Looking for class:', {
-        csvClass,
-        csvSection,
-        normalizedClass,
-        availableClasses: allClasses.map(c => ({ name: c.name, section: c.section, id: c._id }))
-    });
-
     // Try multiple matching strategies in order of preference
     let matchedClass = allClasses.find(c => {
         // Strategy 1: Exact match with name and section
         if (c.name === csvClass && (c.section || '') === csvSection) {
-            console.log('✅ Strategy 1: Exact match with name and section');
             return true;
         }
 
         // Strategy 2: Match with "Class" prefix (e.g., "Class 3" matches "3")
         if (csvClass && c.name === `Class ${csvClass}` && (c.section || '') === csvSection) {
-            console.log('✅ Strategy 2: Match with "Class" prefix');
             return true;
         }
 
         // Strategy 3: Match with normalized number (e.g., "3" matches "3" or "Class 3")
         if (normalizedClass && (c.name === normalizedClass || c.name === `Class ${normalizedClass}`) && (c.section || '') === csvSection) {
-            console.log('✅ Strategy 3: Match with normalized number');
             return true;
         }
 
         // Strategy 4: Case-insensitive match
         if (csvClass && c.name.toLowerCase() === csvClass.toLowerCase() && (c.section || '') === csvSection) {
-            console.log('✅ Strategy 4: Case-insensitive match');
             return true;
         }
 
         // Strategy 5: Case-insensitive with "Class" prefix
         if (normalizedClass && c.name.toLowerCase() === `class ${normalizedClass}`.toLowerCase() && (c.section || '') === csvSection) {
-            console.log('✅ Strategy 5: Case-insensitive with "Class" prefix');
             return true;
         }
 
@@ -540,13 +527,6 @@ const transformStudentForImport = (studentData, allClasses) => {
             `Available classes: ${allClasses.map(c => c.name + (c.section ? `-${c.section}` : '')).join(', ')}`
         );
     }
-
-    console.log('✅ [Class Matching] Successfully matched:', {
-        csv: csvClass,
-        matched: matchedClass.name,
-        section: matchedClass.section || 'none',
-        classId: matchedClass._id
-    });
 
     // Transform the data to match backend expectations
     return {
@@ -622,32 +602,8 @@ export default function StudentsList() {
     const [academicYearFilter, setAcademicYearFilter] = useState("all");
     const [academicPerformanceFilter, setAcademicPerformanceFilter] = useState("all");
     const [attendanceFilter, setAttendanceFilter] = useState("all");
-    const [students, setStudents] = useState([]);
-    const [listLoading, setListLoading] = useState(true);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pagination, setPagination] = useState({
-        currentPage: 1,
-        totalPages: 1,
-        totalItems: 0,
-        itemsPerPage: STUDENTS_PAGE_SIZE,
-        hasNextPage: false,
-        hasPrevPage: false,
-    });
+    const [localStudents, setLocalStudents] = useState(null); // only for mutations
     const deferredSearchQuery = useDeferredValue(searchQuery.trim());
-    const latestListRequestRef = useRef(0);
-    const previousServerSignatureRef = useRef("");
-
-    // DEBUG: Log students data to help diagnose filtering issues
-    const studentsWithStatus = students.filter(s => s.status).length;
-    const studentsWithoutStatus = students.length - studentsWithStatus;
-    console.log('👥 StudentsList render:', {
-        contextLoading,
-        studentsCount: students.length,
-        studentsWithStatus,
-        studentsWithoutStatus,
-        statusFilter,
-        studentsData: students.slice(0, 3).map(s => ({ id: s.id, name: s.name, status: s.status }))
-    });
 
     // Dropdown open state tracking
     const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
@@ -659,12 +615,9 @@ export default function StudentsList() {
 
     // FIXED: Add state for student fee structures to show real data in tooltip
     const [studentFeeStructures, setStudentFeeStructures] = useState({});
-    const [loadingFeeStructures, setLoadingFeeStructures] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [, setVisibleCount] = useState(STUDENTS_PAGE_SIZE);
-    const loaderRef = useRef(null);
 
     const csvInputRef = useRef(null);
+    const tableContainerRef = useRef(null);
     const [sortDescriptor, setSortDescriptor] = useState({ column: "name", direction: "ascending" });
     const [selectedKeys, setSelectedKeys] = useState(new Set([]));
 
@@ -761,9 +714,6 @@ export default function StudentsList() {
                 .filter(Boolean)
         )].sort()
     ), [classes]);
-    const uniqueAcademicYears = useMemo(() => (
-        [...new Set([currentAcademicYear, ...students.map(s => s.academicYear || currentAcademicYear)])].sort()
-    ), [students, currentAcademicYear]);
     const feeStatusOptions = ["paid", "pending", "overdue", "partial"];
     const selectedClassId = useMemo(() => {
         if (classFilter === "all") {
@@ -781,74 +731,56 @@ export default function StudentsList() {
         sortBy: sortDescriptor.column === "class" ? "class" : "name",
         sortOrder: sortDescriptor.direction === "descending" ? "desc" : "asc"
     }), [sortDescriptor]);
-    const serverRequestSignature = useMemo(() => JSON.stringify({
-        search: deferredSearchQuery,
-        classId: selectedClassId,
-        feeStatus: feeStatusFilter,
-        status: statusFilter,
-        academicYear: academicYearFilter,
-        sortBy: sortParams.sortBy,
-        sortOrder: sortParams.sortOrder
-    }), [academicYearFilter, deferredSearchQuery, feeStatusFilter, selectedClassId, sortParams.sortBy, sortParams.sortOrder, statusFilter]);
+    const studentsQueryKey = useMemo(() => [
+        "students-list",
+        deferredSearchQuery,
+        selectedClassId,
+        feeStatusFilter,
+        statusFilter,
+        academicYearFilter,
+        sortParams.sortBy,
+        sortParams.sortOrder,
+    ], [deferredSearchQuery, selectedClassId, feeStatusFilter, statusFilter, academicYearFilter, sortParams.sortBy, sortParams.sortOrder]);
 
-    const loadStudents = useCallback(async (pageToLoad, options = {}) => {
-        const requestId = ++latestListRequestRef.current;
-        setListLoading(true);
+    const studentsQuery = useQuery({
+        queryKey: studentsQueryKey,
+        queryFn: () => studentsApi.list({
+            limit: 0,
+            search: deferredSearchQuery || undefined,
+            classId: selectedClassId || undefined,
+            feeStatus: feeStatusFilter,
+            status: statusFilter,
+            academicYear: academicYearFilter,
+            sortBy: sortParams.sortBy,
+            sortOrder: sortParams.sortOrder,
+        }),
+        placeholderData: keepPreviousData,
+        staleTime: 30_000,
+    });
 
-        try {
-            const response = await studentsApi.list({
-                page: pageToLoad,
-                limit: STUDENTS_PAGE_SIZE,
-                search: deferredSearchQuery || undefined,
-                classId: selectedClassId || undefined,
-                feeStatus: feeStatusFilter,
-                status: statusFilter,
-                academicYear: academicYearFilter,
-                sortBy: sortParams.sortBy,
-                sortOrder: sortParams.sortOrder
-            }, {
-                skipCache: options.skipCache ?? false
-            });
+    const students = localStudents ?? studentsQuery.data?.data ?? [];
+    const listLoading = studentsQuery.isLoading;
+    const uniqueAcademicYears = useMemo(() => (
+        [...new Set([currentAcademicYear, ...students.map(s => s.academicYear || currentAcademicYear)])].sort()
+    ), [students, currentAcademicYear]);
 
-            if (requestId !== latestListRequestRef.current) {
-                return;
-            }
+    // Clear local override and fee cache when query data changes
+    useEffect(() => {
+        setLocalStudents(null);
+        setStudentFeeStructures({});
+    }, [studentsQuery.data]);
 
-            setStudents(response.data || []);
-            setPagination(response.pagination || {
-                currentPage: pageToLoad,
-                totalPages: 1,
-                totalItems: response.data?.length || 0,
-                itemsPerPage: STUDENTS_PAGE_SIZE,
-                hasNextPage: false,
-                hasPrevPage: false,
-            });
-            setSelectedKeys(new Set([]));
-        } catch (error) {
-            if (requestId !== latestListRequestRef.current) {
-                return;
-            }
-
-            console.error("Failed to load students list:", error);
-            toast.error(`Failed to load students: ${error.message}`);
-            setStudents([]);
-            setPagination({
-                currentPage: pageToLoad,
-                totalPages: 1,
-                totalItems: 0,
-                itemsPerPage: STUDENTS_PAGE_SIZE,
-                hasNextPage: false,
-                hasPrevPage: false,
-            });
-        } finally {
-            if (requestId === latestListRequestRef.current) {
-                setListLoading(false);
-            }
+    useEffect(() => {
+        if (studentsQuery.error) {
+            console.error("Failed to load students list:", studentsQuery.error);
+            toast.error(`Failed to load students: ${studentsQuery.error.message}`);
         }
-    }, [academicYearFilter, deferredSearchQuery, feeStatusFilter, selectedClassId, sortParams.sortBy, sortParams.sortOrder, statusFilter]);
+    }, [studentsQuery.error]);
+
     const refreshStudentsList = useCallback(() => {
-        return loadStudents(currentPage, { skipCache: true });
-    }, [currentPage, loadStudents]);
+        setSelectedKeys(new Set([]));
+        return studentsQuery.refetch();
+    }, [studentsQuery]);
     const loadAllStudentsForImport = useCallback(async () => {
         const firstPage = await studentsApi.list({
             page: 1,
@@ -873,13 +805,12 @@ export default function StudentsList() {
         return allStudents;
     }, []);
 
-    // FIXED: Treat students without status as 'active' (matches backend schema default)
     const statusCounts = useMemo(() => ({
-        all: pagination.totalItems,
+        all: students.length,
         active: students.filter(s => (s.status || 'active') === "active").length,
         inactive: students.filter(s => s.status === "inactive").length,
         alumni: students.filter(s => s.status === "alumni").length,
-    }), [pagination.totalItems, students]);
+    }), [students]);
 
     const getAttendancePercentage = (studentId) => 75 + ((studentId * 7) % 25);
 
@@ -933,29 +864,16 @@ export default function StudentsList() {
     }, [students, academicPerformanceFilter, attendanceFilter]);
 
     const visibleItems = filteredItems;
-    const hasMore = false;
     const selectedCount = selectedKeys === "all" ? filteredItems.length : selectedKeys.size;
 
-    console.log('📊 Filter results:', { 
-        totalStudents: pagination.totalItems, 
-        filteredItems: filteredItems.length, 
-        statusFilter,
-        currentPage,
-        totalPages: pagination.totalPages
+    const ROW_HEIGHT = 65;
+    const rowVirtualizer = useVirtualizer({
+        count: visibleItems.length,
+        getScrollElement: () => tableContainerRef.current,
+        estimateSize: () => ROW_HEIGHT,
+        overscan: 8,
     });
 
-    useEffect(() => {
-        const filtersChanged = previousServerSignatureRef.current !== serverRequestSignature;
-
-        if (filtersChanged && currentPage !== 1) {
-            previousServerSignatureRef.current = serverRequestSignature;
-            setCurrentPage(1);
-            return;
-        }
-
-        previousServerSignatureRef.current = serverRequestSignature;
-        loadStudents(currentPage);
-    }, [currentPage, loadStudents, serverRequestSignature]);
 
     useEffect(() => {
         const handleRefresh = () => {
@@ -966,178 +884,45 @@ export default function StudentsList() {
         return () => window.removeEventListener("students:list-refresh", handleRefresh);
     }, [refreshStudentsList]);
 
+
+    // Fetch fees only for rendered rows, debounced to avoid firing on every scroll frame
+    const virtualItems = rowVirtualizer.getVirtualItems();
+    const [debouncedVisibleIds, setDebouncedVisibleIds] = useState([]);
+    const feeDebounceRef = useRef(null);
+
     useEffect(() => {
-        // Force loading to false if no more items
-        if (!hasMore) {
-            console.log('🛑 No more items, clearing loading state');
-            setIsLoading(false);
-            return;
-        }
-
-        let timeoutId;
-        const observer = new IntersectionObserver((entries) => {
-            console.log('👁️ Intersection observer triggered:', {
-                isIntersecting: entries[0].isIntersecting,
-                hasMore
-            });
-
-            if (entries[0].isIntersecting && hasMore) {
-                console.log('⏳ Loading more items...');
-                setIsLoading(true);
-                timeoutId = setTimeout(() => {
-                    setVisibleCount(prev => {
-                        const newCount = prev + ITEMS_PER_LOAD;
-                        console.log('✅ Loaded more items:', { prev, newCount });
-                        return newCount;
-                    });
-                    setIsLoading(false);
-                }, 300);
+        if (feeDebounceRef.current) clearTimeout(feeDebounceRef.current);
+        feeDebounceRef.current = setTimeout(() => {
+            const ids = virtualItems
+                .map(vRow => visibleItems[vRow.index]?.id)
+                .filter(id => id && !studentFeeStructures[id]);
+            if (ids.length > 0) {
+                setDebouncedVisibleIds(ids);
             }
-        }, { threshold: 0.1 });
+        }, 300);
+        return () => { if (feeDebounceRef.current) clearTimeout(feeDebounceRef.current); };
+    }, [virtualItems, visibleItems, studentFeeStructures]);
 
-        const currentLoader = loaderRef.current;
-        if (currentLoader) {
-            observer.observe(currentLoader);
-        }
-
-        return () => {
-            if (timeoutId) clearTimeout(timeoutId);
-            observer.disconnect();
-        };
-    }, [hasMore]);
-
-    // FIXED: Memoize student IDs to prevent infinite re-fetches
-    const visibleStudentIds = useMemo(() => {
-        return filteredItems.map(s => s.id);
-    }, [filteredItems]);
-
-    // FIXED: Fetch fee structures for VISIBLE students only (not all students)
-    // Using new useBatchStudentFees hook (extracted from component)
-    const { feeStructures: batchFeeStructures, loading: batchFeeLoading } = useBatchStudentFees(
-        visibleStudentIds,
+    const { feeStructures: batchFeeStructures } = useBatchStudentFees(
+        debouncedVisibleIds,
         { academicYear: currentAcademicYear }
     );
 
-    // Sync batch hook results with component state
+    // Accumulate fee results as user scrolls
     useEffect(() => {
-        setStudentFeeStructures(batchFeeStructures);
-    }, [batchFeeStructures]);
-
-    useEffect(() => {
-        setLoadingFeeStructures(batchFeeLoading);
-    }, [batchFeeLoading]);
-
-    // Legacy fetch function (kept for reference, can be removed after testing)
-    const fetchStudentFeeStructures = useCallback(async () => {
-        // Only fetch for visible students, not all students (optimization)
-        if (!filteredItems || filteredItems.length === 0) return;
-
-        setLoadingFeeStructures(true);
-        try {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-            const headers = getAuthHeaders({ 'Content-Type': 'application/json' });
-
-            const structures = {};
-
-            // Fetch in batches to avoid overwhelming the server
-            const batchSize = 10;
-            for (let i = 0; i < filteredItems.length; i += batchSize) {
-                const batchItems = filteredItems.slice(i, i + batchSize);
-                const promises = batchItems.map(async (student) => {
-                    try {
-                        console.log(`🔍 [StudentsList] Fetching fee structure for student:`, {
-                            id: student.id,
-                            idType: typeof student.id,
-                            name: student.name,
-                            url: `${API_URL}/student-fees/student/${student.id}?academicYear=${currentAcademicYear}`
-                        });
-
-                        const response = await fetch(`${API_URL}/student-fees/student/${student.id}?academicYear=${currentAcademicYear}`, { headers });
-
-                        console.log(`📡 [StudentsList] Response for ${student.id}:`, {
-                            status: response.status,
-                            ok: response.ok,
-                            statusText: response.statusText
-                        });
-
-                        if (response.ok) {
-                            const data = await response.json();
-                            console.log(`✅ [StudentsList] Fee data received for ${student.id}:`, {
-                                totalFee: data.totalFee,
-                                totalPaid: data.totalPaid,
-                                totalBalance: data.totalBalance,
-                                overallStatus: data.overallStatus,
-                                academicYear: data.academicYear
-                            });
-                            return { studentId: student.id, data, exists: true };
-                        } else if (response.status === 404) {
-                            // Auto-initialize fee structure (same as StudentOverview)
-                            console.log(`⚠️ [StudentsList] 404 for ${student.id}, auto-initializing...`);
-                            try {
-                                const initResponse = await fetch(`${API_URL}/student-fees/initialize/${student.id}`, {
-                                    method: 'POST',
-                                    headers: { ...headers, 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ academicYear: currentAcademicYear })
-                                });
-
-                                if (initResponse.ok) {
-                                    const data = await initResponse.json();
-                                    console.log(`✅ [StudentsList] Fee structure initialized for ${student.id}:`, {
-                                        totalFee: data.totalFee,
-                                        totalBalance: data.totalBalance
-                                    });
-                                    return { studentId: student.id, data, exists: true };
-                                } else {
-                                    console.warn(`⚠️ [StudentsList] Failed to initialize fee structure for ${student.id}`);
-                                    return { studentId: student.id, exists: false };
-                                }
-                            } catch (initError) {
-                                console.error(`❌ [StudentsList] Error initializing fee structure for ${student.id}:`, initError);
-                                return { studentId: student.id, exists: false };
-                            }
-                        } else {
-                            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-                            console.error(`❌ [StudentsList] Error ${response.status} fetching fee structure for ${student.id}:`, errorData);
-                            return null;
-                        }
-                    } catch (error) {
-                        console.error(`❌ [StudentsList] Exception fetching fee structure for ${student.id}:`, error);
-                        return null;
-                    }
-                });
-
-                const results = await Promise.all(promises);
-                results.forEach(result => {
-                    if (result) {
-                        structures[result.studentId] = {
-                            ...(result.exists ? result.data : {}),
-                            _exists: result.exists,
-                            _studentName: filteredItems.find(s => s.id === result.studentId)?.name
-                        };
-                    }
-                });
-            }
-
-            // Force a new object reference to trigger React re-render
-            const newStructures = { ...structures };
-            setStudentFeeStructures(newStructures);
-        } catch (error) {
-            console.error('Error fetching student fee structures:', error);
-        } finally {
-            setLoadingFeeStructures(false);
+        if (batchFeeStructures && Object.keys(batchFeeStructures).length > 0) {
+            setStudentFeeStructures(prev => ({ ...prev, ...batchFeeStructures }));
         }
-    }, [filteredItems]);
+    }, [batchFeeStructures]);
 
     // Listen for real-time student updates via Socket.IO
     useEffect(() => {
         const socketService = window.socketService;
         if (!socketService) {
-            console.log('⚠️ Socket service not available in StudentsList');
             return;
         }
 
         const handleStudentUpdate = (data) => {
-            console.log('📢 StudentsList: Received student update:', data);
             toast.success(`${data.name}'s profile was updated`, {
                 duration: 3000,
                 icon: '🔄'
@@ -1145,7 +930,6 @@ export default function StudentsList() {
         };
 
         const handleFeeUpdate = (data) => {
-            console.log('💰 StudentsList: Received fee structure update:', data);
             toast.success(`Fee structure updated for ${data.studentName || 'Student'}`, {
                 duration: 3000,
                 icon: '💰'
@@ -1169,7 +953,6 @@ export default function StudentsList() {
                                     _exists: true
                                 }
                             }));
-                            console.log(`✅ Fee structure updated in StudentsList for ${data.studentId}`);
                         }
                     } catch (error) {
                         console.error('❌ Error refetching fee structure:', error);
@@ -1252,7 +1035,7 @@ export default function StudentsList() {
     const handlePinStudent = async (studentId) => {
         try {
             await studentsApi.pin(studentId);
-            setStudents(prev => prev.map(student => (
+            setLocalStudents(students.map(student => (
                 String(student.id) === String(studentId)
                     ? { ...student, isPinned: true, pinnedAt: new Date().toISOString() }
                     : student
@@ -1266,7 +1049,7 @@ export default function StudentsList() {
     const handleUnpinStudent = async (studentId) => {
         try {
             await studentsApi.unpin(studentId);
-            setStudents(prev => prev.map(student => (
+            setLocalStudents(students.map(student => (
                 String(student.id) === String(studentId)
                     ? { ...student, isPinned: false, pinnedAt: null }
                     : student
@@ -1342,12 +1125,9 @@ export default function StudentsList() {
             let successCount = 0;
             let failCount = 0;
 
-            console.log('🚀 Starting promotion for', selectedStudents.length, 'students');
-
             for (const student of selectedStudents) {
                 try {
                     const nextClass = getNextClass(student.class, uniqueClasses);
-                    console.log(`📚 Promoting ${student.name} from ${student.class} to ${nextClass}`);
 
                     if (!nextClass) {
                         console.warn(`⚠️ Skipping ${student.name} - cannot calculate next class`);
@@ -1375,7 +1155,6 @@ export default function StudentsList() {
 
                             if (targetClass) {
                                 classId = targetClass._id || targetClass.id;
-                                console.log(`✅ Found classId for ${nextClass}: ${classId}`);
                             } else {
                                 console.warn(`⚠️ Could not find classId for ${nextClass} (grade: ${grade}, section: ${section})`);
                             }
@@ -1395,7 +1174,6 @@ export default function StudentsList() {
                             const conflictingStudent = targetClassStudents.find(s => s.rollNo === student.rollNo);
 
                             if (conflictingStudent) {
-                                console.log(`⚠️ Roll number conflict detected: ${student.name} has rollNo ${student.rollNo}, but ${conflictingStudent.name} already has this roll number in ${nextClass}`);
 
                                 try {
                                     // Get next available roll number for the target class
@@ -1404,7 +1182,6 @@ export default function StudentsList() {
 
                                     if (nextRollNo) {
                                         updateData.rollNo = nextRollNo;
-                                        console.log(`✅ Assigned new roll number ${nextRollNo} to ${student.name} for class ${nextClass}`);
                                     } else {
                                         console.warn(`⚠️ Could not get next roll number for class ${nextClass}`);
                                     }
@@ -1421,14 +1198,11 @@ export default function StudentsList() {
                         }
                     }
                     successCount++;
-                    console.log(`✅ Successfully promoted ${student.name}`);
                 } catch (error) {
                     console.error(`❌ Failed to promote ${student.name}:`, error);
                     failCount++;
                 }
             }
-
-            console.log(`📊 Promotion complete: ${successCount} success, ${failCount} failed`);
 
             if (failCount === 0) {
                 toast.success(`${successCount} student${successCount > 1 ? 's' : ''} promoted successfully`);
@@ -1528,7 +1302,7 @@ export default function StudentsList() {
             label: "Class",
             value: classFilter,
             options: ["all", ...uniqueClasses],
-            counts: { all: pagination.totalItems, ...filterCounts.class },
+            counts: { all: students.length, ...filterCounts.class },
             displayLabels: {
                 all: "All Classes"
             }
@@ -1537,7 +1311,7 @@ export default function StudentsList() {
             label: "Fee Status",
             value: feeStatusFilter,
             options: ["all", ...feeStatusOptions],
-            counts: { all: pagination.totalItems, ...filterCounts.feeStatus },
+            counts: { all: students.length, ...filterCounts.feeStatus },
             displayLabels: {
                 all: "All Fee Status",
                 paid: "Paid",
@@ -1550,7 +1324,7 @@ export default function StudentsList() {
             label: "Academic Year",
             value: academicYearFilter,
             options: ["all", ...uniqueAcademicYears],
-            counts: { all: pagination.totalItems, ...filterCounts.academicYear },
+            counts: { all: students.length, ...filterCounts.academicYear },
             displayLabels: {
                 all: "All Years"
             }
@@ -1559,7 +1333,7 @@ export default function StudentsList() {
             label: "Academic Performance",
             value: academicPerformanceFilter,
             options: ["all", "excellent", "good", "average", "below_average"],
-            counts: { all: pagination.totalItems, ...filterCounts.academicPerformance },
+            counts: { all: students.length, ...filterCounts.academicPerformance },
             displayLabels: {
                 all: "All Performance",
                 excellent: "Excellent (90%+)",
@@ -1572,7 +1346,7 @@ export default function StudentsList() {
             label: "Attendance",
             value: attendanceFilter,
             options: ["all", "excellent", "good", "average", "below"],
-            counts: { all: pagination.totalItems, ...filterCounts.attendance },
+            counts: { all: students.length, ...filterCounts.attendance },
             displayLabels: {
                 all: "All Attendance",
                 excellent: "Excellent (90%+)",
@@ -1581,7 +1355,7 @@ export default function StudentsList() {
                 below: "Below Average (<50%)"
             }
         }
-    }), [classFilter, feeStatusFilter, academicYearFilter, academicPerformanceFilter, attendanceFilter, uniqueClasses, uniqueAcademicYears, feeStatusOptions, filterCounts, pagination.totalItems]);
+    }), [classFilter, feeStatusFilter, academicYearFilter, academicPerformanceFilter, attendanceFilter, uniqueClasses, uniqueAcademicYears, feeStatusOptions, filterCounts, students.length]);
 
     // Handle filter change from FiltersPanel
     const handleFilterChange = useCallback((filterKey, value) => {
@@ -1699,16 +1473,6 @@ export default function StudentsList() {
                     { duration: 4000, icon: '🎉' }
                 );
             }
-
-            // Show detailed breakdown
-            console.log('📊 CSV Import Summary:', {
-                fileName: file.name,
-                fileSize: `${(file.size / 1024).toFixed(2)} KB`,
-                totalRows: dataRows,
-                successful: successCount,
-                errors: errorCount,
-                timestamp: new Date().toISOString()
-            });
 
         } catch (error) {
             toast.dismiss('csv-upload');
@@ -2016,26 +1780,12 @@ export default function StudentsList() {
                 const studentData = validStudents[i].data;
 
                 try {
-                    console.log(`📤 Importing student ${i + 1}/${validStudents.length}:`, {
-                        name: studentData.name,
-                        class: studentData.class,
-                        admissionId: studentData.admissionId
-                    });
-
                     // Transform the CSV data to match backend requirements
                     const transformedData = transformStudentForImport(studentData, classes);
-
-                    console.log(`✅ Transformed data for ${studentData.name}:`, {
-                        hasClassId: !!transformedData.classId,
-                        classId: transformedData.classId,
-                        academicYear: transformedData.academicYear
-                    });
 
                     // Use the API directly to create the student
                     const response = await studentsApi.create(transformedData);
                     successCount++;
-
-                    console.log(`✅ Successfully imported ${studentData.name}:`, response);
                 } catch (error) {
                     errorCount++;
                     errors.push({
@@ -2175,16 +1925,16 @@ export default function StudentsList() {
     };
 
     return (
-        <div className="w-full flex flex-col">
+        <div className="w-full flex flex-col flex-1 min-h-0">
             {/* Toolbar */}
-            <div className="flex flex-col gap-4 bg-white border-b border-gray-200 py-3 -mx-6 px-6">
+            <div className="flex flex-col gap-4 bg-white border-b border-gray-200 py-3 px-6 shrink-0">
                 <div className="flex flex-col sm:flex-row justify-between gap-4 items-center">
                     <div className="flex items-center gap-3 w-full sm:w-auto">
                         <Dropdown placement="bottom-start" isOpen={statusDropdownOpen} onOpenChange={(open) => { setStatusDropdownOpen(open); }}>
                             <DropdownTrigger>
                                 <button className="flex items-center gap-2 px-3 py-2.5 bg-white rounded-lg border border-gray-200 hover:border-gray-300 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all text-sm cursor-pointer whitespace-nowrap">
                                     <span className="text-gray-700 capitalize">{statusFilter}</span>
-                                    <span className="text-gray-400">({pagination.totalItems})</span>
+                                    <span className="text-gray-400">({students.length})</span>
                                     <ChevronDown size={14} className="text-gray-400" />
                                 </button>
                             </DropdownTrigger>
@@ -2343,439 +2093,477 @@ export default function StudentsList() {
 
             </div>
 
-            {/* Table */}
-            <Table
-                aria-label="Students list table"
-                selectionMode="multiple"
-                selectedKeys={selectedKeys}
-                onSelectionChange={setSelectedKeys}
-                sortDescriptor={sortDescriptor}
-                onSortChange={setSortDescriptor}
-                key={`table-fees-${Object.keys(studentFeeStructures).length}-${loadingFeeStructures ? 'loading' : 'loaded'}`}
-                removeWrapper
-                disableRowSelection
-                disableAnimation
-                radius="none"
-                classNames={{
-                    base: "-mx-6 overflow-visible scrollbar-auto-hide [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0 [&_table]:select-text",
-                    thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12 [&>tr>th:first-child]:sticky [&>tr>th:first-child]:left-0 [&>tr>th:first-child]:z-20 [&>tr>th:first-child]:bg-white [&>tr>th:nth-child(2)]:sticky [&>tr>th:nth-child(2)]:left-12 [&>tr>th:nth-child(2)]:z-20 [&>tr>th:nth-child(2)]:bg-white",
-                    th: "bg-white text-gray-500 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 last:pr-6 hover:bg-gray-50 transition-colors first:hover:bg-transparent select-none",
-                    td: "py-4 border-b border-gray-200 group-data-[last=true]:border-none last:pr-6 select-text bg-white",
-                    tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr>td:first-child]:sticky [&>tr>td:first-child]:left-0 [&>tr>td:first-child]:z-20 [&>tr>td:first-child]:bg-white [&>tr>td:nth-child(2)]:sticky [&>tr>td:nth-child(2)]:left-12 [&>tr>td:nth-child(2)]:z-20 [&>tr>td:nth-child(2)]:bg-white group-hover:[&>tr>td:first-child]:bg-gray-50 group-hover:[&>tr>td:nth-child(2)]:bg-gray-50",
-                    tr: "group hover:bg-gray-50"
-                }}
+            {/* Virtualized Table */}
+            <div
+                ref={tableContainerRef}
+                className="overflow-auto scrollbar-auto-hide flex-1 min-h-0"
             >
-                <TableHeader>
-                    <TableColumn key="name" allowsSorting align="start" style={{ width: 240, minWidth: 240 }}>STUDENT</TableColumn>
-                    {visibleColumnsArray.filter(col => col.key !== "name" && col.key !== "actions").map((column) => (
-                        <TableColumn
-                            key={column.key}
-                            allowsSorting={column.key === "class"}
-                            style={{
-                                width: column.key === "class" ? 100 : column.key === "parentInfo" ? 180 : column.key === "attendance" ? 110 : column.key === "academicPerformance" ? 140 : 100
-                            }}
-                        >
-                            {column.label.toUpperCase()}
-                        </TableColumn>
-                    ))}
-                    {visibleColumnsArray.some(col => col.key === "actions") && (
-                        <TableColumn key="actions" align="end" style={{ width: 60 }}>ACTIONS</TableColumn>
-                    )}
-                </TableHeader>
-                <TableBody
-                    items={visibleItems}
-                    emptyContent="No students found"
-                    key={`fees-${Object.keys(studentFeeStructures).length}`}
-                >
-                    {(student) => {
-                        const attendance = getAttendancePercentage(student.id);
-                        return (
-                            <TableRow
-                                key={student.id}
-                                className="cursor-pointer transition-colors hover:bg-default-50"
-                                onClick={(e) => {
-                                    // Close all dropdowns when clicking on table rows
-                                    closeAllDropdowns();
-
-                                    // Don't navigate if clicking on interactive elements
-                                    if (e.target.closest("button") || e.target.closest("label") || e.target.closest("input") || e.target.closest("a")) return;
-
-                                    // Don't navigate if text is being selected
-                                    const selection = window.getSelection();
-                                    if (selection && selection.toString().length > 0) return;
-
-                                    navigate(`/students/${student.id}`);
-                                }}
+                <table className="w-full border-spacing-0 select-text" style={{ borderCollapse: "collapse" }}>
+                    <thead className="sticky top-0 z-30">
+                        <tr>
+                            <th className="bg-white border-b border-gray-200 text-center" style={{ width: 48, minWidth: 48 }}>
+                                <Checkbox
+                                    size="md"
+                                    classNames={{ base: "p-0 m-0", wrapper: "m-0" }}
+                                    isSelected={selectedKeys === "all" || (selectedKeys.size > 0 && selectedKeys.size === filteredItems.length)}
+                                    isIndeterminate={selectedKeys !== "all" && selectedKeys.size > 0 && selectedKeys.size < filteredItems.length}
+                                    onValueChange={(checked) => {
+                                        if (checked) {
+                                            setSelectedKeys(new Set(filteredItems.map(s => s.id.toString())));
+                                        } else {
+                                            setSelectedKeys(new Set([]));
+                                        }
+                                    }}
+                                    aria-label="Select all students"
+                                />
+                            </th>
+                            <th
+                                className="bg-white text-gray-500 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 select-none pl-3 pr-3 sticky left-0 z-20 cursor-pointer hover:bg-gray-50"
+                                style={{ width: 220, minWidth: 220 }}
+                                onClick={() => setSortDescriptor(prev => ({
+                                    column: "name",
+                                    direction: prev.column === "name" && prev.direction === "ascending" ? "descending" : "ascending"
+                                }))}
                             >
-                                <TableCell key="name">
-                                    <div className="flex items-center gap-3">
-                                        <div onClick={(e) => e.stopPropagation()}>
-                                            <PhotoAvatar
-                                                src={student.photo}
-                                                alt={student.name}
-                                                name={student.name}
-                                                size="md"
-                                                type="student"
-                                            />
-                                        </div>
-                                        <div
-                                            className="flex flex-col min-w-0 select-text cursor-text"
-                                            onMouseDown={(e) => e.stopPropagation()}
-                                            onPointerDown={(e) => e.stopPropagation()}
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                <Link
-                                                    to={`/students/${student.id}`}
-                                                    className="text-default-900 font-medium text-base hover:text-primary transition-colors cursor-pointer truncate"
-                                                >
-                                                    {student.name}
-                                                </Link>
-                                                {student.isPinned && (
-                                                    <Pin size={14} className="text-primary flex-shrink-0" />
-                                                )}
-                                            </div>
-                                            <span className="text-default-500 text-xs">
-                                                {student.admissionId || `ADM${String(student.id).padStart(4, '0')}`}
-                                            </span>
-                                        </div>
+                                <div className="flex items-center gap-1">
+                                    STUDENT
+                                    {sortDescriptor.column === "name" && (
+                                        <ArrowUpDown size={12} className="text-gray-400" />
+                                    )}
+                                </div>
+                            </th>
+                            {visibleColumnsArray.filter(col => col.key !== "name" && col.key !== "actions").map((column) => (
+                                <th
+                                    key={column.key}
+                                    className={`bg-white text-gray-500 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 select-none px-3 text-left ${column.key === "class" ? "cursor-pointer hover:bg-gray-50" : ""}`}
+                                    style={{
+                                        width: column.key === "class" ? 100 : column.key === "parentInfo" ? 180 : column.key === "attendance" ? 110 : column.key === "academicPerformance" ? 140 : 100
+                                    }}
+                                    onClick={column.key === "class" ? () => setSortDescriptor(prev => ({
+                                        column: "class",
+                                        direction: prev.column === "class" && prev.direction === "ascending" ? "descending" : "ascending"
+                                    })) : undefined}
+                                >
+                                    <div className="flex items-center gap-1">
+                                        {column.label.toUpperCase()}
+                                        {column.key === "class" && sortDescriptor.column === "class" && (
+                                            <ArrowUpDown size={12} className="text-gray-400" />
+                                        )}
                                     </div>
-                                </TableCell>
-                                {visibleColumnsArray.filter(col => col.key !== "name" && col.key !== "actions").map((column) => {
-                                    if (column.key === "class") {
-                                        return (
-                                            <TableCell key="class">
-                                                <div className="flex items-center">
-                                                    <span className="text-sm font-medium text-default-600 bg-default-100 group-hover:bg-default-200 transition-colors px-2.5 py-1 rounded-md">
-                                                        {student.class}
-                                                    </span>
-                                                </div>
-                                            </TableCell>
-                                        );
-                                    }
-                                    if (column.key === "parentInfo") {
-                                        return (
-                                            <TableCell key="parentInfo">
-                                                <div
-                                                    className="flex flex-col gap-1 select-text cursor-text"
-                                                    onMouseDown={(e) => e.stopPropagation()}
-                                                    onPointerDown={(e) => e.stopPropagation()}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    <span className="text-default-900 text-sm font-medium">
-                                                        {student.parentName || "Parent"}
-                                                    </span>
-                                                    {editingPhoneId === student.id ? (
-                                                        <div className="flex items-center gap-1">
-                                                            <input
-                                                                type="text"
-                                                                value={phoneInput}
-                                                                onChange={(e) => setPhoneInput(e.target.value)}
-                                                                placeholder="Enter phone"
-                                                                className="text-xs px-2 py-1 border border-default-300 rounded w-28 focus:outline-none focus:border-primary"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                                autoFocus
-                                                            />
-                                                            <Button
-                                                                size="sm"
-                                                                color="primary"
-                                                                className="h-6 min-w-12 text-xs"
-                                                                onPress={() => handleSavePhone(student.id)}
+                                </th>
+                            ))}
+                            {visibleColumnsArray.some(col => col.key === "actions") && (
+                                <th className="bg-white text-gray-500 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 select-none pr-6 text-right" style={{ width: 60 }}>
+                                    ACTIONS
+                                </th>
+                            )}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {visibleItems.length === 0 ? (
+                            <tr>
+                                <td colSpan={visibleColumnsArray.length + 2} className="text-center py-12 text-default-500">
+                                    No students found
+                                </td>
+                            </tr>
+                        ) : (
+                            <>
+                                {rowVirtualizer.getVirtualItems().length > 0 && (
+                                    <tr style={{ height: rowVirtualizer.getVirtualItems()[0].start }}>
+                                        <td colSpan={visibleColumnsArray.length + 2} />
+                                    </tr>
+                                )}
+                                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                                    const student = visibleItems[virtualRow.index];
+                                    if (!student) return null;
+                                    const attendance = getAttendancePercentage(student.id);
+                                    const isSelected = selectedKeys === "all" || selectedKeys.has(student.id?.toString());
+                                    return (
+                                        <tr
+                                            key={student.id}
+                                            data-index={virtualRow.index}
+                                            ref={rowVirtualizer.measureElement}
+                                            className={`group cursor-pointer transition-colors hover:bg-gray-50 ${isSelected ? "bg-primary-50" : ""}`}
+                                            onClick={(e) => {
+                                                closeAllDropdowns();
+                                                if (e.target.closest("button") || e.target.closest("label") || e.target.closest("input") || e.target.closest("a")) return;
+                                                const selection = window.getSelection();
+                                                if (selection && selection.toString().length > 0) return;
+                                                navigate(`/students/${student.id}`);
+                                            }}
+                                        >
+                                            <td className={`py-4 border-b border-gray-200 text-center transition-colors ${isSelected ? "bg-primary-50" : "group-hover:bg-gray-50"}`} style={{ width: 48, minWidth: 48 }} onClick={(e) => e.stopPropagation()}>
+                                                <Checkbox
+                                                    size="md"
+                                                    classNames={{ base: "p-0 m-0", wrapper: "m-0" }}
+                                                    isSelected={isSelected}
+                                                    onValueChange={(checked) => {
+                                                        const id = student.id.toString();
+                                                        const newKeys = new Set(selectedKeys === "all" ? filteredItems.map(s => s.id.toString()) : selectedKeys);
+                                                        if (checked) {
+                                                            newKeys.add(id);
+                                                        } else {
+                                                            newKeys.delete(id);
+                                                        }
+                                                        setSelectedKeys(newKeys);
+                                                    }}
+                                                    aria-label={`Select ${student.name}`}
+                                                />
+                                            </td>
+                                            <td className={`py-4 border-b border-gray-200 select-text pl-3 pr-3 sticky left-0 z-10 transition-colors ${isSelected ? "bg-primary-50" : "bg-white group-hover:bg-gray-50"}`} style={{ width: 220, minWidth: 220 }}>
+                                                <div className="flex items-center gap-3">
+                                                    <div onClick={(e) => e.stopPropagation()}>
+                                                        <PhotoAvatar
+                                                            src={student.photo}
+                                                            alt={student.name}
+                                                            name={student.name}
+                                                            size="md"
+                                                            type="student"
+                                                        />
+                                                    </div>
+                                                    <div
+                                                        className="flex flex-col min-w-0 select-text cursor-text"
+                                                        onMouseDown={(e) => e.stopPropagation()}
+                                                        onPointerDown={(e) => e.stopPropagation()}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <Link
+                                                                to={`/students/${student.id}`}
+                                                                className="text-default-900 font-medium text-base hover:text-primary transition-colors cursor-pointer truncate"
                                                             >
-                                                                Save
-                                                            </Button>
-                                                            <Button
-                                                                size="sm"
-                                                                variant="light"
-                                                                className="h-6 min-w-12 text-xs"
-                                                                onPress={() => {
-                                                                    setEditingPhoneId(null);
-                                                                    setPhoneInput("");
+                                                                {student.name}
+                                                            </Link>
+                                                            {student.isPinned && (
+                                                                <Pin size={14} className="text-primary flex-shrink-0" />
+                                                            )}
+                                                        </div>
+                                                        <span className="text-default-500 text-xs">
+                                                            {student.admissionId || `ADM${String(student.id).padStart(4, '0')}`}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            {visibleColumnsArray.filter(col => col.key !== "name" && col.key !== "actions").map((column) => {
+                                                if (column.key === "class") {
+                                                    return (
+                                                        <td key="class" className={`py-4 border-b border-gray-200 select-text px-3 transition-colors ${isSelected ? "bg-primary-50" : "bg-white group-hover:bg-gray-50"}`}>
+                                                            <div className="flex items-center">
+                                                                <span className="text-sm font-medium text-default-600 bg-default-100 group-hover:bg-default-200 transition-colors px-2.5 py-1 rounded-md">
+                                                                    {student.class}
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                    );
+                                                }
+                                                if (column.key === "parentInfo") {
+                                                    return (
+                                                        <td key="parentInfo" className={`py-4 border-b border-gray-200 select-text px-3 transition-colors ${isSelected ? "bg-primary-50" : "bg-white group-hover:bg-gray-50"}`}>
+                                                            <div
+                                                                className="flex flex-col gap-1 select-text cursor-text"
+                                                                onMouseDown={(e) => e.stopPropagation()}
+                                                                onPointerDown={(e) => e.stopPropagation()}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <span className="text-default-900 text-sm font-medium">
+                                                                    {student.parentName || "Parent"}
+                                                                </span>
+                                                                {editingPhoneId === student.id ? (
+                                                                    <div className="flex items-center gap-1">
+                                                                        <input
+                                                                            type="text"
+                                                                            value={phoneInput}
+                                                                            onChange={(e) => setPhoneInput(e.target.value)}
+                                                                            placeholder="Enter phone"
+                                                                            className="text-xs px-2 py-1 border border-default-300 rounded w-28 focus:outline-none focus:border-primary"
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                            autoFocus
+                                                                        />
+                                                                        <Button
+                                                                            size="sm"
+                                                                            color="primary"
+                                                                            className="h-6 min-w-12 text-xs"
+                                                                            onPress={() => handleSavePhone(student.id)}
+                                                                        >
+                                                                            Save
+                                                                        </Button>
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="light"
+                                                                            className="h-6 min-w-12 text-xs"
+                                                                            onPress={() => {
+                                                                                setEditingPhoneId(null);
+                                                                                setPhoneInput("");
+                                                                            }}
+                                                                        >
+                                                                            Cancel
+                                                                        </Button>
+                                                                    </div>
+                                                                ) : student.parentPhone ? (
+                                                                    <span className="text-default-500 text-sm">
+                                                                        {formatPhoneNumber(student.parentPhone)}
+                                                                    </span>
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setEditingPhoneId(student.id);
+                                                                            setPhoneInput("");
+                                                                        }}
+                                                                        className="text-primary text-xs hover:underline text-left"
+                                                                    >
+                                                                        + Add phone number
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    );
+                                                }
+                                                if (column.key === "attendance") {
+                                                    const isInvalid = isNaN(attendance);
+                                                    return (
+                                                        <td key="attendance" className={`py-4 border-b border-gray-200 select-text px-3 transition-colors ${isSelected ? "bg-primary-50" : "bg-white group-hover:bg-gray-50"}`}>
+                                                            <div className="flex flex-col gap-1">
+                                                                <span className={`text-xs font-semibold ${isInvalid ? 'text-default-400' : `text-${getAttendanceColor(attendance)}`}`}>
+                                                                    {isInvalid ? "N/A" : `${attendance}%`}
+                                                                </span>
+                                                                {!isInvalid ? (
+                                                                    <Progress aria-label="Student attendance" size="sm" value={attendance} color={getAttendanceColor(attendance)} className="max-w-[60px]" />
+                                                                ) : (
+                                                                    <div className="h-1 w-[60px] bg-default-100 rounded-full"></div>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    );
+                                                }
+                                                if (column.key === "academicPerformance") {
+                                                    return (
+                                                        <td key="academicPerformance" className={`py-4 border-b border-gray-200 select-text px-3 transition-colors ${isSelected ? "bg-primary-50" : "bg-white group-hover:bg-gray-50"}`}>
+                                                            <Chip size="sm" variant="flat" color={getGradeColor(getAcademicGrade(student.id))} className="font-semibold">
+                                                                {getAcademicGrade(student.id)}
+                                                            </Chip>
+                                                        </td>
+                                                    );
+                                                }
+                                                if (column.key === "feeStatus") {
+                                                    const feeStructure = studentFeeStructures[student.id];
+                                                    const hasFeeStructure = feeStructure && feeStructure._exists !== false;
+
+                                                    const details = hasFeeStructure ? {
+                                                        total: `₹${(feeStructure.totalFee || 0).toLocaleString()}`,
+                                                        paid: `₹${(feeStructure.totalPaid || 0).toLocaleString()}`,
+                                                        pending: `₹${(feeStructure.totalBalance || 0).toLocaleString()}`,
+                                                        date: feeStructure.totalBalance > 0 ? `Due: ${currentAcademicYear}` : null,
+                                                        status: feeStructure.overallStatus || student.feeStatus,
+                                                        exists: true
+                                                    } : {
+                                                        total: 'Not initialized',
+                                                        paid: '—',
+                                                        pending: '—',
+                                                        date: null,
+                                                        status: 'not-initialized',
+                                                        exists: false
+                                                    };
+
+                                                    return (
+                                                        <td key="feeStatus" className={`py-4 border-b border-gray-200 select-text px-3 transition-colors ${isSelected ? "bg-primary-50" : "bg-white group-hover:bg-gray-50"}`}>
+                                                            <Tooltip
+                                                                content={
+                                                                    <div className="px-3 py-3">
+                                                                        <div className="text-base font-semibold mb-3 text-white/90">Fee Structure ({currentAcademicYear})</div>
+                                                                        {details.exists ? (
+                                                                            <>
+                                                                                <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm text-white/70 mb-3">
+                                                                                    <span>Total Fee:</span> <span className="text-right text-white">{details.total}</span>
+                                                                                    <span>Paid:</span> <span className="text-right text-success-300">{details.paid}</span>
+                                                                                    <span>Pending:</span> <span className="text-right text-danger-300">{details.pending}</span>
+                                                                                </div>
+                                                                                {details.date && <div className="mb-3 text-sm text-warning-300 border-t border-white/20 pt-2">{details.date}</div>}
+                                                                            </>
+                                                                        ) : (
+                                                                            <div className="text-sm text-white/70 mb-3">
+                                                                                <p className="mb-2 text-warning-300">Fee structure not initialized</p>
+                                                                                <p className="text-xs">Click "View Details" to set up fees for {student.name}</p>
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="pt-2 border-t border-white/20">
+                                                                            <button
+                                                                                className="text-primary-300 text-sm hover:text-primary-200 transition-colors w-full text-left"
+                                                                                onClick={() => navigate(`/students/${student.id}?tab=fees`)}
+                                                                            >
+                                                                                View full fee details →
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                }
+                                                                placement="bottom"
+                                                                closeDelay={0}
+                                                                classNames={{
+                                                                    content: "bg-black text-white rounded-lg",
                                                                 }}
                                                             >
-                                                                Cancel
-                                                            </Button>
-                                                        </div>
-                                                    ) : student.parentPhone ? (
-                                                        <span className="text-default-500 text-sm">
-                                                            {formatPhoneNumber(student.parentPhone)}
-                                                        </span>
-                                                    ) : (
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setEditingPhoneId(student.id);
-                                                                setPhoneInput("");
-                                                            }}
-                                                            className="text-primary text-xs hover:underline text-left"
-                                                        >
-                                                            + Add phone number
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                        );
-                                    }
-                                    if (column.key === "attendance") {
-                                        const isInvalid = isNaN(attendance);
-                                        return (
-                                            <TableCell key="attendance">
-                                                <div className="flex flex-col gap-1">
-                                                    <span className={`text-xs font-semibold ${isInvalid ? 'text-default-400' : `text-${getAttendanceColor(attendance)}`}`}>
-                                                        {isInvalid ? "N/A" : `${attendance}%`}
-                                                    </span>
-                                                    {!isInvalid ? (
-                                                        <Progress aria-label="Student attendance" size="sm" value={attendance} color={getAttendanceColor(attendance)} className="max-w-[60px]" />
-                                                    ) : (
-                                                        <div className="h-1 w-[60px] bg-default-100 rounded-full"></div>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                        );
-                                    }
-                                    if (column.key === "academicPerformance") {
-                                        return (
-                                            <TableCell key="academicPerformance">
-                                                <Chip size="sm" variant="flat" color={getGradeColor(getAcademicGrade(student.id))} className="font-semibold">
-                                                    {getAcademicGrade(student.id)}
-                                                </Chip>
-                                            </TableCell>
-                                        );
-                                    }
-                                    if (column.key === "feeStatus") {
-                                        // Use real fee structure data from state
-                                        const feeStructure = studentFeeStructures[student.id];
-                                        const hasFeeStructure = feeStructure && feeStructure._exists !== false;
-
-                                        const details = hasFeeStructure ? {
-                                            total: `₹${(feeStructure.totalFee || 0).toLocaleString()}`,
-                                            paid: `₹${(feeStructure.totalPaid || 0).toLocaleString()}`,
-                                            pending: `₹${(feeStructure.totalBalance || 0).toLocaleString()}`,
-                                            date: feeStructure.totalBalance > 0 ? `Due: ${currentAcademicYear}` : null,
-                                            status: feeStructure.overallStatus || student.feeStatus,
-                                            exists: true
-                                        } : {
-                                            // Fee structure not initialized
-                                            total: 'Not initialized',
-                                            paid: '—',
-                                            pending: '—',
-                                            date: null,
-                                            status: 'not-initialized',
-                                            exists: false
-                                        };
-
-                                        return (
-                                            <TableCell key="feeStatus">
-                                                <Tooltip
-                                                    content={
-                                                        <div className="px-3 py-3">
-                                                            <div className="text-base font-semibold mb-3 text-white/90">Fee Structure (${currentAcademicYear})</div>
-                                                            {details.exists ? (
-                                                                <>
-                                                                    <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm text-white/70 mb-3">
-                                                                        <span>Total Fee:</span> <span className="text-right text-white">{details.total}</span>
-                                                                        <span>Paid:</span> <span className="text-right text-success-300">{details.paid}</span>
-                                                                        <span>Pending:</span> <span className="text-right text-danger-300">{details.pending}</span>
-                                                                    </div>
-                                                                    {details.date && <div className="mb-3 text-sm text-warning-300 border-t border-white/20 pt-2">{details.date}</div>}
-                                                                </>
-                                                            ) : (
-                                                                <div className="text-sm text-white/70 mb-3">
-                                                                    <p className="mb-2 text-warning-300">⚠️ Fee structure not initialized</p>
-                                                                    <p className="text-xs">Click "View Details" to set up fees for {student.name}</p>
+                                                                <div className={`inline-flex items-center px-2 py-1 rounded-lg border text-xs font-medium capitalize cursor-default ${details.status === 'not-initialized'
+                                                                    ? 'bg-warning-50 border-warning-200 text-warning-700'
+                                                                    : getFeeStatusStyle(details.status)
+                                                                    }`}>
+                                                                    {details.status === 'not-initialized' ? 'Not Set' : details.status}
                                                                 </div>
-                                                            )}
-
-                                                            <div className="pt-2 border-t border-white/20">
-                                                                <button
-                                                                    className="text-primary-300 text-sm hover:text-primary-200 transition-colors w-full text-left"
-                                                                    onClick={() => navigate(`/students/${student.id}?tab=fees`)}
+                                                            </Tooltip>
+                                                        </td>
+                                                    );
+                                                }
+                                                return null;
+                                            })}
+                                            {visibleColumnsArray.some(col => col.key === "actions") && (
+                                                <td className={`py-4 border-b border-gray-200 select-text pr-6 transition-colors ${isSelected ? "bg-primary-50" : "bg-white group-hover:bg-gray-50"}`}>
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        <Tooltip content={student.isPinned ? "Unpin student" : "Pin student"}>
+                                                            <Button
+                                                                isIconOnly
+                                                                size="sm"
+                                                                variant="light"
+                                                                className={student.isPinned ? "text-primary" : "text-default-400"}
+                                                                onMouseDown={(e) => e.preventDefault()}
+                                                                onPress={() => {
+                                                                    if (student.isPinned) {
+                                                                        handleUnpinStudent(student.id);
+                                                                    } else {
+                                                                        handlePinStudent(student.id);
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {student.isPinned ? <PinOff size={16} /> : <Pin size={16} />}
+                                                            </Button>
+                                                        </Tooltip>
+                                                        <Tooltip content="Edit Details">
+                                                            <Button
+                                                                isIconOnly
+                                                                size="sm"
+                                                                variant="light"
+                                                                className="text-default-400"
+                                                                onMouseDown={(e) => e.preventDefault()}
+                                                                onPress={() => {
+                                                                    setSelectedStudent(student);
+                                                                    setIsEditDrawerOpen(true);
+                                                                }}
+                                                            >
+                                                                <Edit size={16} />
+                                                            </Button>
+                                                        </Tooltip>
+                                                        <Dropdown>
+                                                            <DropdownTrigger>
+                                                                <Button
+                                                                    isIconOnly
+                                                                    size="sm"
+                                                                    variant="light"
+                                                                    className="text-default-400"
+                                                                    onMouseDown={(e) => e.preventDefault()}
                                                                 >
-                                                                    View full fee details →
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    }
-                                                    placement="bottom"
-                                                    closeDelay={0}
-                                                    classNames={{
-                                                        content: "bg-black text-white rounded-lg",
-                                                    }}
-                                                >
-                                                    <div className={`inline-flex items-center px-2 py-1 rounded-lg border text-xs font-medium capitalize cursor-default ${details.status === 'not-initialized'
-                                                        ? 'bg-warning-50 border-warning-200 text-warning-700'
-                                                        : getFeeStatusStyle(details.status)
-                                                        }`}>
-                                                        {details.status === 'not-initialized' ? 'Not Set' : details.status}
+                                                                    <MoreVertical size={18} />
+                                                                </Button>
+                                                            </DropdownTrigger>
+                                                            <DropdownMenu aria-label="Student actions" className="max-h-[400px] overflow-y-auto">
+                                                                <DropdownSection title="Status Actions">
+                                                                    <DropdownItem
+                                                                        key="inactive"
+                                                                        startContent={<UserX size={14} />}
+                                                                        onPress={() => {
+                                                                            setStatusChangeData({
+                                                                                student,
+                                                                                newStatus: 'inactive',
+                                                                                action: 'Mark as Inactive'
+                                                                            });
+                                                                            onStatusChangeOpen();
+                                                                        }}
+                                                                    >
+                                                                        Mark as Inactive
+                                                                    </DropdownItem>
+                                                                    <DropdownItem
+                                                                        key="alumni"
+                                                                        startContent={<GraduationCap size={14} />}
+                                                                        onPress={() => {
+                                                                            setStatusChangeData({
+                                                                                student,
+                                                                                newStatus: 'alumni',
+                                                                                action: 'Mark as Alumni'
+                                                                            });
+                                                                            onStatusChangeOpen();
+                                                                        }}
+                                                                    >
+                                                                        Mark as Alumni
+                                                                    </DropdownItem>
+                                                                </DropdownSection>
+                                                                <DropdownSection title="Academic Actions">
+                                                                    <DropdownItem
+                                                                        key="promote"
+                                                                        startContent={<ArrowUpCircle size={14} />}
+                                                                        onPress={() => {
+                                                                            setSelectedKeys(new Set([student.id.toString()]));
+                                                                            onPromoteOpen();
+                                                                        }}
+                                                                    >
+                                                                        Promote Student
+                                                                    </DropdownItem>
+                                                                    <DropdownItem
+                                                                        key="tc"
+                                                                        startContent={<FileText size={14} />}
+                                                                        onPress={() => {
+                                                                            setTcStudents([student]);
+                                                                            onTcModalOpen();
+                                                                        }}
+                                                                    >
+                                                                        Generate/Issue TC
+                                                                    </DropdownItem>
+                                                                </DropdownSection>
+                                                                <DropdownSection title="Communication">
+                                                                    <DropdownItem
+                                                                        key="message"
+                                                                        startContent={<MessageSquare size={14} />}
+                                                                        onPress={() => {
+                                                                            setSelectedKeys(new Set([student.id.toString()]));
+                                                                            handleBulkAction("message");
+                                                                        }}
+                                                                    >
+                                                                        Send Message to Parent
+                                                                    </DropdownItem>
+                                                                </DropdownSection>
+                                                                <DropdownSection title="Danger Zone">
+                                                                    <DropdownItem
+                                                                        key="delete"
+                                                                        className="text-danger"
+                                                                        color="danger"
+                                                                        startContent={<Trash2 size={14} />}
+                                                                        onPress={() => {
+                                                                            setStudentToDelete(student);
+                                                                            onDeleteOpen();
+                                                                        }}
+                                                                    >
+                                                                        Delete Student
+                                                                    </DropdownItem>
+                                                                </DropdownSection>
+                                                            </DropdownMenu>
+                                                        </Dropdown>
                                                     </div>
-                                                </Tooltip>
-                                            </TableCell>
-                                        );
-                                    }
-                                    return null;
+                                                </td>
+                                            )}
+                                        </tr>
+                                    );
                                 })}
-                                {visibleColumnsArray.some(col => col.key === "actions") && (
-                                    <TableCell key="actions">
-                                        <div className="flex items-center justify-end gap-1">
-                                            <Tooltip content={student.isPinned ? "Unpin student" : "Pin student"}>
-                                                <Button
-                                                    isIconOnly
-                                                    size="sm"
-                                                    variant="light"
-                                                    className={student.isPinned ? "text-primary" : "text-default-400"}
-                                                    onMouseDown={(e) => e.preventDefault()}
-                                                    onPress={() => {
-                                                        if (student.isPinned) {
-                                                            handleUnpinStudent(student.id);
-                                                        } else {
-                                                            handlePinStudent(student.id);
-                                                        }
-                                                    }}
-                                                >
-                                                    {student.isPinned ? <PinOff size={16} /> : <Pin size={16} />}
-                                                </Button>
-                                            </Tooltip>
-                                            <Tooltip content="Edit Details">
-                                                <Button
-                                                    isIconOnly
-                                                    size="sm"
-                                                    variant="light"
-                                                    className="text-default-400"
-                                                    onMouseDown={(e) => e.preventDefault()}
-                                                    onPress={() => {
-                                                        setSelectedStudent(student);
-                                                        setIsEditDrawerOpen(true);
-                                                    }}
-                                                >
-                                                    <Edit size={16} />
-                                                </Button>
-                                            </Tooltip>
-                                            <Dropdown>
-                                                <DropdownTrigger>
-                                                    <Button 
-                                                        isIconOnly 
-                                                        size="sm" 
-                                                        variant="light" 
-                                                        className="text-default-400"
-                                                        onMouseDown={(e) => e.preventDefault()}
-                                                    >
-                                                        <MoreVertical size={18} />
-                                                    </Button>
-                                                </DropdownTrigger>
-                                                <DropdownMenu aria-label="Student actions" className="max-h-[400px] overflow-y-auto">
-                                                    <DropdownSection title="Status Actions">
-                                                        <DropdownItem
-                                                            key="inactive"
-                                                            startContent={<UserX size={14} />}
-                                                            onPress={() => {
-                                                                setStatusChangeData({
-                                                                    student,
-                                                                    newStatus: 'inactive',
-                                                                    action: 'Mark as Inactive'
-                                                                });
-                                                                onStatusChangeOpen();
-                                                            }}
-                                                        >
-                                                            Mark as Inactive
-                                                        </DropdownItem>
-                                                        <DropdownItem
-                                                            key="alumni"
-                                                            startContent={<GraduationCap size={14} />}
-                                                            onPress={() => {
-                                                                setStatusChangeData({
-                                                                    student,
-                                                                    newStatus: 'alumni',
-                                                                    action: 'Mark as Alumni'
-                                                                });
-                                                                onStatusChangeOpen();
-                                                            }}
-                                                        >
-                                                            Mark as Alumni
-                                                        </DropdownItem>
-                                                    </DropdownSection>
-                                                    <DropdownSection title="Academic Actions">
-                                                        <DropdownItem
-                                                            key="promote"
-                                                            startContent={<ArrowUpCircle size={14} />}
-                                                            onPress={() => {
-                                                                setSelectedKeys(new Set([student.id.toString()]));
-                                                                onPromoteOpen();
-                                                            }}
-                                                        >
-                                                            Promote Student
-                                                        </DropdownItem>
-                                                        <DropdownItem
-                                                            key="tc"
-                                                            startContent={<FileText size={14} />}
-                                                            onPress={() => {
-                                                                setTcStudents([student]);
-                                                                onTcModalOpen();
-                                                            }}
-                                                        >
-                                                            Generate/Issue TC
-                                                        </DropdownItem>
-                                                    </DropdownSection>
-                                                    <DropdownSection title="Communication">
-                                                        <DropdownItem
-                                                            key="message"
-                                                            startContent={<MessageSquare size={14} />}
-                                                            onPress={() => {
-                                                                setSelectedKeys(new Set([student.id.toString()]));
-                                                                handleBulkAction("message");
-                                                            }}
-                                                        >
-                                                            Send Message to Parent
-                                                        </DropdownItem>
-                                                    </DropdownSection>
-                                                    <DropdownSection title="Danger Zone">
-                                                        <DropdownItem
-                                                            key="delete"
-                                                            className="text-danger"
-                                                            color="danger"
-                                                            startContent={<Trash2 size={14} />}
-                                                            onPress={() => {
-                                                                setStudentToDelete(student);
-                                                                onDeleteOpen();
-                                                            }}
-                                                        >
-                                                            Delete Student
-                                                        </DropdownItem>
-                                                    </DropdownSection>
-                                                </DropdownMenu>
-                                            </Dropdown>
-                                        </div>
-                                    </TableCell>
+                                {rowVirtualizer.getVirtualItems().length > 0 && (
+                                    <tr style={{ height: rowVirtualizer.getTotalSize() - (rowVirtualizer.getVirtualItems().at(-1)?.end ?? 0) }}>
+                                        <td colSpan={visibleColumnsArray.length + 2} />
+                                    </tr>
                                 )}
-                            </TableRow>
-                        );
-                    }}
-                </TableBody>
-            </Table>
+                            </>
+                        )}
+                    </tbody>
+                </table>
+            </div>
 
-            <div className="flex flex-col gap-3 border-t border-gray-200 px-1 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="border-t border-gray-200 px-6 py-3 shrink-0">
                 <span className="text-default-500 text-sm">
-                    Page {currentPage} of {pagination.totalPages} ({pagination.totalItems} students)
+                    {filteredItems.length} student{filteredItems.length !== 1 ? 's' : ''}
                 </span>
-                {pagination.totalPages > 1 && (
-                    <div className="flex items-center gap-2">
-                        <Button
-                            size="sm"
-                            variant="flat"
-                            isDisabled={!pagination.hasPrevPage || listLoading}
-                            onPress={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        >
-                            Previous
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant="flat"
-                            isDisabled={!pagination.hasNextPage || listLoading}
-                            onPress={() => setCurrentPage(prev => prev + 1)}
-                        >
-                            Next
-                        </Button>
-                    </div>
-                )}
             </div>
 
             {/* Bulk Action Modal */}
@@ -2927,7 +2715,7 @@ export default function StudentsList() {
                                     Are you sure you want to delete <span className="font-semibold text-default-900">{studentToDelete?.name}</span>?
                                 </p>
                                 <p className="text-sm text-danger mt-2">
-                                    This action cannot be undone. All student data including attendance, fees, and academic records will be permanently removed.
+                                    This permanently removes the student profile and linked records, including attendance, fee, health, and parent-contact data.
                                 </p>
                             </ModalBody>
                             <ModalFooter>
@@ -2942,52 +2730,13 @@ export default function StudentsList() {
                                         try {
                                             const result = await deleteStudent(studentToDelete.id);
                                             await refreshStudentsList();
-
-                                            // Show toast with undo button using react-hot-toast's custom toast
-                                            toast((t) => (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                    <span>{studentToDelete.name} moved to trash. Permanently deleted in 30 days.</span>
-                                                    <button
-                                                        onClick={async () => {
-                                                            try {
-                                                                // Restore the student
-                                                                await trashApi.restore(result.trashItemId);
-                                                                toast.success(`${studentToDelete.name} restored successfully`);
-                                                                toast.dismiss(t.id);
-                                                                // Refresh list
-                                                                window.location.reload();
-                                                            } catch (error) {
-                                                                toast.error('Failed to restore student');
-                                                            }
-                                                        }}
-                                                        style={{
-                                                            padding: '6px 12px',
-                                                            backgroundColor: '#10b981',
-                                                            color: 'white',
-                                                            border: 'none',
-                                                            borderRadius: '4px',
-                                                            cursor: 'pointer',
-                                                            fontSize: '14px',
-                                                            fontWeight: '500'
-                                                        }}
-                                                    >
-                                                        Undo
-                                                    </button>
-                                                </div>
-                                            ), { duration: 5000 });
+                                            toast.success(result.message || `${studentToDelete.name} permanently deleted`);
 
                                             onClose();
                                             setStudentToDelete(null);
                                         } catch (error) {
                                             console.error('Delete error:', error);
-                                            // Check if student is already deleted
-                                            if (error.message?.includes('already deleted')) {
-                                                toast.error('This student is already in the trash');
-                                                // Refresh the page to update the list
-                                                window.location.reload();
-                                            } else {
-                                                toast.error(error.message || 'Failed to delete student');
-                                            }
+                                            toast.error(error.message || 'Failed to delete student');
                                             onClose();
                                             setStudentToDelete(null);
                                         } finally {
@@ -3598,7 +3347,7 @@ export default function StudentsList() {
                 }}
                 student={selectedStudent}
                 onUpdate={(updatedStudent) => {
-                    setStudents(prev => prev.map(student => (
+                    setLocalStudents(students.map(student => (
                         String(student.id) === String(updatedStudent.id)
                             ? { ...student, ...updatedStudent }
                             : student

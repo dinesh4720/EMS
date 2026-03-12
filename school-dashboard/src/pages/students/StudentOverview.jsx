@@ -162,18 +162,14 @@ export default function StudentOverview() {
         try {
           const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
           const token = getAuthToken();
-          console.log('Fetching remarks with token:', token ? 'present' : 'missing');
           const response = await fetch(`${API_URL}/students/${id}/remarks?category=${remarksCategoryFilter}`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
           });
 
-          console.log('Remarks response status:', response.status);
-
           if (response.ok) {
             const data = await response.json();
-            console.log('Remarks data received:', data);
             setRemarks(data);
           } else {
             const errorData = await response.json().catch(() => ({}));
@@ -198,18 +194,14 @@ export default function StudentOverview() {
         try {
           const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
           const token = getAuthToken();
-          console.log('Fetching results with token:', token ? 'present' : 'missing');
           const response = await fetch(`${API_URL}/students/${id}/results`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
           });
 
-          console.log('Results response status:', response.status);
-
           if (response.ok) {
             const data = await response.json();
-            console.log('Results data received:', data);
             setResults(data);
           } else {
             const errorData = await response.json().catch(() => ({}));
@@ -304,12 +296,9 @@ export default function StudentOverview() {
             }
 
             const result = await response2.json();
-            console.log('📄 Document saved to backend, received:', result);
-            console.log('📄 All documents from server:', result.documents);
 
             // Update local state with all documents from server
             setDocuments(result.documents || []);
-            console.log('📄 Local state updated with', result.documents?.length || 0, 'documents');
 
             // Mark completed
             setActiveUploads(prev => prev.map(u =>
@@ -348,19 +337,13 @@ export default function StudentOverview() {
   };
 
   const handleDeleteDocument = async (docId) => {
-    console.log('🗑️ Attempting to delete document:', docId);
-    console.log('🗑️ Current documents:', documents);
-    
     // Find the index of the document to delete
     // Handle both doc.id and fallback doc-{index} format
     let docIndex = documents.findIndex(d => d.id === docId);
-    
-    console.log('🗑️ Found document at index:', docIndex);
-    
+
     // If not found by id, try to extract index from doc-{index} format
     if (docIndex === -1 && docId.startsWith('doc-')) {
       docIndex = parseInt(docId.replace('doc-', ''));
-      console.log('🗑️ Using fallback index:', docIndex);
     }
 
     if (docIndex === -1 || docIndex >= documents.length) {
@@ -373,7 +356,6 @@ export default function StudentOverview() {
 
     try {
       const deleteUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${id}/documents/${docIndex}`;
-      console.log('🗑️ DELETE request to:', deleteUrl);
 
       const token = getAuthToken();
       const headers = {};
@@ -387,8 +369,6 @@ export default function StudentOverview() {
         headers
       });
 
-      console.log('🗑️ DELETE response status:', response.status);
-
       if (!response.ok) {
         const error = await response.json();
         console.error('🗑️ DELETE error response:', error);
@@ -396,7 +376,6 @@ export default function StudentOverview() {
       }
 
       const result = await response.json();
-      console.log('🗑️ DELETE success, remaining documents:', result.documents?.length);
 
       // Update local state with the documents array from server
       setDocuments(result.documents || []);
@@ -408,7 +387,6 @@ export default function StudentOverview() {
   };
 
   const handleCleanupCorruptedDocuments = async () => {
-    console.log('🔧 Current documents before fix:', documents);
     const loadingToast = toast.loading("Fixing documents...");
 
     try {
@@ -429,8 +407,7 @@ export default function StudentOverview() {
       }
 
       const result = await response.json();
-      console.log('✅ Fixed documents from server:', result.documents);
-      
+
       // Update local state with fixed documents
       setDocuments(result.documents || []);
       toast.success("Documents fixed successfully", { id: loadingToast });
@@ -527,32 +504,12 @@ export default function StudentOverview() {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      console.log(`🔍 [StudentOverview] Fetching fee structure for student:`, {
-        id,
-        idType: typeof id,
-        url: `${API_URL}/student-fees/student/${id}?academicYear=${currentAcademicYear}`
-      });
-
       const response = await fetch(`${API_URL}/student-fees/student/${id}?academicYear=${currentAcademicYear}`, { headers });
-
-      console.log(`📡 [StudentOverview] Response:`, {
-        status: response.status,
-        ok: response.ok,
-        statusText: response.statusText
-      });
 
       if (response.ok) {
         const data = await response.json();
-        console.log(`✅ [StudentOverview] Fee data received:`, {
-          totalFee: data.totalFee,
-          totalPaid: data.totalPaid,
-          totalBalance: data.totalBalance,
-          overallStatus: data.overallStatus,
-          academicYear: data.academicYear
-        });
         setStudentFeeStructure(data);
       } else if (response.status === 404) {
-        console.warn(`⚠️ [StudentOverview] 404 - No fee structure, initializing...`);
         // No fee structure yet, initialize it
         const initHeaders = { 'Content-Type': 'application/json' };
         if (token) {
@@ -566,10 +523,6 @@ export default function StudentOverview() {
 
         if (initResponse.ok) {
           const data = await initResponse.json();
-          console.log(`✅ [StudentOverview] Fee structure initialized:`, {
-            totalFee: data.totalFee,
-            totalBalance: data.totalBalance
-          });
           setStudentFeeStructure(data);
         }
       }
@@ -623,7 +576,6 @@ export default function StudentOverview() {
         if (response.ok) {
           const freshStudent = await response.json();
           if (freshStudent.documents) {
-            console.log('📄 Initial documents loaded:', freshStudent.documents.length);
             setDocuments(freshStudent.documents);
           }
         }
@@ -639,7 +591,6 @@ export default function StudentOverview() {
   // This prevents overwriting newly uploaded documents with stale context data
   useEffect(() => {
     if (student?.documents && documents.length === 0) {
-      console.log('📄 Syncing documents from context (only if empty)');
       setDocuments(student.documents);
     }
   }, [student, documents.length]);
@@ -719,7 +670,6 @@ export default function StudentOverview() {
 
           if (targetClass) {
             classId = targetClass._id || targetClass.id;
-            console.log(`✅ Found classId for ${nextClass}: ${classId}`);
           }
         }
 
@@ -738,8 +688,6 @@ export default function StudentOverview() {
           } catch (error) {
             // If there's a conflict error, get next roll number and retry
             if (error.message && (error.message.includes('duplicate key') || error.message.includes('E11000'))) {
-              console.log(`⚠️ Roll number conflict detected for ${student.name}, getting next roll number`);
-
               try {
                 // Get next available roll number for the target class
                 const nextRollNoResponse = await classesApi.getNextRollNumber(classId);
@@ -747,7 +695,6 @@ export default function StudentOverview() {
 
                 if (nextRollNo) {
                   updateData.rollNo = nextRollNo;
-                  console.log(`✅ Assigned new roll number ${nextRollNo} to ${student.name} for class ${nextClass}`);
                   await updateStudent(student.id, updateData);
                 } else {
                   console.warn(`⚠️ Could not get next roll number for class ${nextClass}`);
@@ -831,8 +778,6 @@ export default function StudentOverview() {
     const selectedClass = (classesWithTeachers || []).find(c => `${c.name}-${c.section}` === editForm.class);
 
     let photoUrl = student.photo; // Default to existing photo
-    console.log('💾 Starting save - Current photo:', photoUrl);
-    console.log('💾 editForm.picture:', editForm.picture ? (typeof editForm.picture === 'string' ? editForm.picture.substring(0, 50) + '...' : 'File object') : 'null');
 
     // Handle photo upload
     if (editForm.picture) {
@@ -842,7 +787,6 @@ export default function StudentOverview() {
         try {
           const response = await uploadApi.uploadFile(editForm.picture);
           photoUrl = response.url;
-          console.log('✅ Photo uploaded (File):', photoUrl);
           toast.success("Photo uploaded", { id: loadingToast });
         } catch (error) {
           toast.error("Photo upload failed", { id: loadingToast });
@@ -853,17 +797,14 @@ export default function StudentOverview() {
           // If it's a base64 string, convert to File and upload
           const loadingToast = toast.loading("Uploading photo...");
           try {
-            console.log('🔄 Converting base64 to File...');
             // Convert base64 to blob
             const response = await fetch(editForm.picture);
             const blob = await response.blob();
             const file = new File([blob], 'profile-photo.jpg', { type: 'image/jpeg' });
 
-            console.log('🔄 Uploading to Cloudinary...');
             // Upload to Cloudinary
             const uploadResponse = await uploadApi.uploadFile(file);
             photoUrl = uploadResponse.url;
-            console.log('✅ Photo uploaded (base64):', photoUrl);
             toast.success("Photo uploaded", { id: loadingToast });
           } catch (error) {
             toast.error("Photo upload failed", { id: loadingToast });
@@ -872,7 +813,6 @@ export default function StudentOverview() {
         } else if (editForm.picture.startsWith('http')) {
           // If it's already a URL, use it
           photoUrl = editForm.picture;
-          console.log('✅ Using existing URL:', photoUrl);
         }
       }
     }
@@ -895,9 +835,6 @@ export default function StudentOverview() {
       photo: photoUrl,
       status: editForm.status
     };
-
-    console.log('💾 Saving student with photo:', photoUrl);
-    console.log('💾 Full update data:', updatedData);
 
     await updateStudent(id, updatedData);
     setIsEditOpen(false);
@@ -956,8 +893,6 @@ export default function StudentOverview() {
         }
       }
 
-      console.log('💰 Recording payment:', { paymentAmount, feeHeadPayments });
-
       const headers = { 'Content-Type': 'application/json' };
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
@@ -981,7 +916,6 @@ export default function StudentOverview() {
       }
 
       const updatedStructure = await feeStructureResponse.json();
-      console.log('✅ Payment recorded, new balance:', updatedStructure.totalBalance);
 
       // 3. Try to create payment record (secondary, non-blocking)
       try {
@@ -1064,7 +998,6 @@ export default function StudentOverview() {
 
       if (response.ok) {
         const savedRemark = await response.json();
-        console.log("Remark saved successfully:", savedRemark);
 
         // Add to local state
         setRemarks([savedRemark, ...remarks]);
@@ -2743,7 +2676,7 @@ export default function StudentOverview() {
 
                 {/* Send to Parent */}
                 <div className="p-4 rounded-lg border border-default-200 bg-default-50">
-                  <Checkbox 
+                  <Checkbox size="sm" 
                     isSelected={remarkForm.sendToParent}
                     onValueChange={(checked) => setRemarkForm({ ...remarkForm, sendToParent: checked })}
                   >
@@ -2842,7 +2775,7 @@ export default function StudentOverview() {
                   {["Oct 12, 2024", "Oct 15, 2024", "Oct 18, 2024"].map((date, i) => (
                     <div key={i} className="flex items-center justify-between p-4 border border-default-200 rounded-xl">
                       <div className="flex items-center gap-4">
-                        <Checkbox />
+                        <Checkbox size="sm" />
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-default-100 rounded-lg text-default-500"><CalendarCheck size={20} /></div>
                           <span className="font-medium text-default-900">{date}</span>
@@ -2964,7 +2897,7 @@ export default function StudentOverview() {
                   Are you sure you want to delete <span className="font-semibold text-default-900">{student?.name}</span>?
                 </p>
                 <p className="text-sm text-danger mt-2">
-                  This action cannot be undone. All student data including attendance, fees, and academic records will be permanently removed.
+                  This permanently removes the student profile and linked records, including attendance, fee, health, and parent-contact data.
                 </p>
               </ModalBody>
               <ModalFooter>
@@ -2975,8 +2908,8 @@ export default function StudentOverview() {
                   color="danger"
                   onPress={async () => {
                     try {
-                      await deleteStudent(id);
-                      toast.success(`${student.name} has been deleted`);
+                      const result = await deleteStudent(id);
+                      toast.success(result.message || `${student.name} permanently deleted`);
                       onClose();
                       navigate('/students');
                     } catch (error) {

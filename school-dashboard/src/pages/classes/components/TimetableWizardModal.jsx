@@ -796,14 +796,14 @@ export default function TimetableWizardModal({
 
                       <Divider />
 
-                      <Checkbox
+                      <Checkbox size="sm"
                         isSelected={periodRules.noConsecutiveSame}
                         onValueChange={(v) => updatePeriodRule('noConsecutiveSame', v)}
                       >
                         No consecutive same subject
                       </Checkbox>
 
-                      <Checkbox
+                      <Checkbox size="sm"
                         isSelected={periodRules.distributeEvenly}
                         onValueChange={(v) => updatePeriodRule('distributeEvenly', v)}
                       >
@@ -822,21 +822,21 @@ export default function TimetableWizardModal({
                     </h4>
 
                     <div className="space-y-3">
-                      <Checkbox
+                      <Checkbox size="sm"
                         isSelected={periodRules.doublePeriodsAllowed}
                         onValueChange={(v) => updatePeriodRule('doublePeriodsAllowed', v)}
                       >
                         Allow double periods (2 consecutive periods)
                       </Checkbox>
 
-                      <Checkbox
+                      <Checkbox size="sm"
                         isSelected={periodRules.preferMorningForCore}
                         onValueChange={(v) => updatePeriodRule('preferMorningForCore', v)}
                       >
                         Prefer morning slots for core subjects
                       </Checkbox>
 
-                      <Checkbox
+                      <Checkbox size="sm"
                         isSelected={periodRules.excludeBreaksFromRandomization}
                         onValueChange={(v) => updatePeriodRule('excludeBreaksFromRandomization', v)}
                         defaultSelected

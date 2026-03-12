@@ -185,7 +185,7 @@ function CustomCalendar({ selectedDate, onSelect, onClose }) {
 
       {/* Calendar grid */}
       <div className="grid grid-cols-7 gap-1">
-        {allDays.map((day, index) => {
+        {allDays.map((day) => {
           const isCurrentMonth = isSameMonth(day, currentMonth);
           const isSelected = selectedDate && isSameDay(day, selectedDate);
           const isToday = isSameDay(day, today);
@@ -198,7 +198,7 @@ function CustomCalendar({ selectedDate, onSelect, onClose }) {
 
           return (
             <button
-              key={index}
+              key={day.toISOString()}
               type="button"
               onClick={() => handleDateClick(day)}
               disabled={isDisabled}
@@ -311,7 +311,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         // Load document configuration
         const docConfigs = await settingsApi.getDocumentConfig();
         setDocumentConfigs(docConfigs);
-        console.log('📄 Document configs loaded:', docConfigs);
       } catch (error) {
         console.error('❌ Error loading configurations:', error);
         // Don't show error toast - just log it and continue with empty configs
@@ -367,7 +366,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             const response = await fetch(`${API_URL}/classes/${selectedClass.id}/next-roll-number`);
             const data = await response.json();
             updateField("rollNumber", data.rollNumber.toString());
-            console.log('✅ Roll number set to:', data.rollNumber);
           }
         } catch (error) {
           console.error('❌ Error generating roll number:', error);
@@ -534,10 +532,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
-      console.log('📸 File selected:', file.name);
       const reader = new FileReader();
       reader.onloadend = () => {
-        console.log('✅ File loaded, opening photo editor');
         setSelectedImageForEdit(reader.result);
         setIsPhotoEditorOpen(true);
         // Reset so we can select same file again if needed
@@ -548,7 +544,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
   };
 
   const handlePhotoSave = (croppedImage) => {
-    console.log('💾 Saving cropped photo');
     // croppedImage is a data URL (string)
     // We can convert it to a File/Blob if needed, but for now assuming direct usage or handling in submit
     // Ideally convert dataURL to Blob/File to stay consistent with File object structure
@@ -564,14 +559,12 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     }
 
     const file = dataURLtoFile(croppedImage, "profile_photo.jpg");
-    console.log('✅ Photo file created, updating form');
     updateField("picture", file);
   };
 
   const handleCameraPhotoCapture = (file) => {
     // File is already captured from camera or file picker, no need to edit again
     // The CameraCaptureModal handles editing internally
-    console.log('📸 Photo captured from camera/upload:', file.name);
     updateField("picture", file);
   };
 
@@ -852,7 +845,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           return;
         }
 
-        console.log(`✅ Section has capacity: ${capacityData.available} spots available`);
       } catch (error) {
         console.error('Failed to check capacity:', error);
         // Continue anyway - let backend handle it
@@ -861,12 +853,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       // Upload photo to Cloudinary if it's a File object
       let photoUrl = null;
       if (formData.picture instanceof File) {
-        console.log('📸 Uploading photo to Cloudinary...');
         const loadingToast = toast.loading("Uploading photo...");
         try {
           const uploadResponse = await uploadApi.uploadFile(formData.picture);
           photoUrl = uploadResponse.url;
-          console.log('✅ Photo uploaded:', photoUrl);
           toast.success("Photo uploaded", { id: loadingToast });
         } catch (error) {
           console.error('❌ Photo upload failed:', error);
@@ -876,7 +866,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       } else if (typeof formData.picture === 'string' && formData.picture.length > 0) {
         // If it's already a URL string (editing existing student)
         photoUrl = formData.picture;
-        console.log('✅ Using existing photo URL:', photoUrl);
       }
 
       // Upload documents to Cloudinary
@@ -895,7 +884,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         // Upload Birth Certificate
         if (formData.birthCertificate instanceof File) {
           try {
-            console.log('📄 Uploading birth certificate...');
             const uploadResponse = await uploadApi.uploadFile(formData.birthCertificate);
             documents.push({
               id: generateUniqueId(),
@@ -907,7 +895,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               size: formData.birthCertificate.size || 'Unknown',
               date: new Date().toLocaleDateString()
             });
-            console.log('✅ Birth certificate uploaded');
           } catch (error) {
             console.error('❌ Birth certificate upload failed:', error);
             // Continue with other documents
@@ -917,7 +904,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         // Upload Transfer Certificate
         if (formData.transferCertificate instanceof File) {
           try {
-            console.log('📄 Uploading transfer certificate...');
             const uploadResponse = await uploadApi.uploadFile(formData.transferCertificate);
             documents.push({
               id: generateUniqueId(),
@@ -929,7 +915,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               size: formData.transferCertificate.size || 'Unknown',
               date: new Date().toLocaleDateString()
             });
-            console.log('✅ Transfer certificate uploaded');
           } catch (error) {
             console.error('❌ Transfer certificate upload failed:', error);
             // Continue with other documents
@@ -939,7 +924,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         // Upload Aadhaar Card (Front & Back as single document)
         if (formData.aadhaarFront instanceof File || formData.aadhaarBack instanceof File) {
           try {
-            console.log('📄 Uploading aadhaar card...');
             const aadhaarDoc = {
               id: generateUniqueId(),
               name: "Aadhaar Card",
@@ -957,7 +941,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                 url: frontResponse.url,
                 uploadDate: uploadDate
               };
-              console.log('✅ Aadhaar front uploaded');
             }
 
             // Upload back side
@@ -967,7 +950,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                 url: backResponse.url,
                 uploadDate: uploadDate
               };
-              console.log('✅ Aadhaar back uploaded');
             }
 
             documents.push(aadhaarDoc);
@@ -983,7 +965,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             const doc = formData.otherDocuments[i];
             if (doc instanceof File) {
               try {
-                console.log(`📄 Uploading other document ${i + 1}...`);
                 const uploadResponse = await uploadApi.uploadFile(doc);
                 documents.push({
                   id: generateUniqueId(),
@@ -995,7 +976,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                   size: doc.size || 'Unknown',
                   date: new Date().toLocaleDateString()
                 });
-                console.log(`✅ Other document ${i + 1} uploaded`);
               } catch (error) {
                 console.error(`❌ Other document ${i + 1} upload failed:`, error);
                 // Continue with next document
@@ -1004,7 +984,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           }
         }
 
-        console.log(`✅ Successfully uploaded ${documents.length} document(s)`);
         if (documents.length > 0) {
           toast.success(`${documents.length} document(s) uploaded`, { id: docsLoadingToast });
         } else {
@@ -1030,7 +1009,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         try {
           const response = await studentsApi.getNextAdmissionId();
           admissionId = response.admissionId;
-          console.log('📝 Got admission ID:', admissionId);
         } catch (error) {
           console.error('❌ Failed to get admission ID:', error);
           toast.error('Failed to generate admission ID');
@@ -1078,6 +1056,11 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         transportRequired: formData.transportRequired,
         hostelRequired: formData.hostelRequired,
         medicalConditions: formData.medicalConditions,
+        emergencyContactName: formData.emergencyContactName,
+        emergencyContactPhone: formData.emergencyContactPhone,
+        alternatePhone: formData.alternatePhone,
+        isWhatsapp: formData.isWhatsapp,
+        whatsappNumber: formData.whatsappNumber,
         // Use the uploaded photo URL (not the File object)
         photo: photoUrl,
       };
@@ -1113,10 +1096,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           delete studentData[key];
         }
       });
-
-      console.log('📤 Submitting student data:', studentData);
-      console.log('📤 Class ID being sent:', studentData.classId);
-      console.log('📤 Selected class:', selectedClass);
 
       await onSave(studentData);
       // Reset submitting state after successful save
@@ -1811,7 +1790,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           {parents.map((parent, idx) => {
             const index = formData.parents.findIndex(p => p === parent);
             return (
-              <div key={index} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
+              <div key={idx} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-default-700">
                     {idx === 0 ? "Primary Parent" : `Parent ${idx + 1}`}
@@ -1923,7 +1902,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           {guardians.map((guardian, idx) => {
             const index = formData.parents.findIndex(p => p === guardian);
             return (
-              <div key={index} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
+              <div key={idx} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-default-700">
                     Guardian {idx + 1}
@@ -2043,7 +2022,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                   classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                 />
                 <div className="flex items-center gap-2 pt-6">
-                  <Checkbox
+                  <Checkbox size="sm"
                     isSelected={sibling.inSameSchool}
                     onValueChange={v => {
                       updateSibling(idx, "inSameSchool", v);

@@ -14,25 +14,42 @@ export const ChatProvider = ({ children }) => {
   const socketRef = useRef(null);
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Keep refs for values used inside socket callbacks to avoid stale closures
+  const currentChatRef = useRef(currentChat);
+  const userRef = useRef(user);
+
+  useEffect(() => {
+    currentChatRef.current = currentChat;
+  }, [currentChat]);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   // Initialize socket connection
   useEffect(() => {
     if (user && isAuthenticated) {
       initializeSocket();
+      fetchConversations();
     }
     return () => {
       if (socketRef.current) {
+        socketRef.current.removeAllListeners();
         socketRef.current.disconnect();
         socketRef.current = null;
       }
     };
-  }, [user, isAuthenticated]);
+  }, [user?.id, isAuthenticated]); // depend on user.id not whole user object
 
   const initializeSocket = () => {
     try {
-      // Disconnect existing socket if any
+      // Disconnect existing socket cleanly
       if (socketRef.current) {
+        socketRef.current.removeAllListeners();
         socketRef.current.disconnect();
       }
 
@@ -42,41 +59,46 @@ export const ChatProvider = ({ children }) => {
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
       });
 
       newSocket.on('connect', () => {
-        console.log('Socket connected');
+        console.log('Chat socket connected');
         setConnected(true);
-        // Authenticate with the socket
         newSocket.emit('authenticate', {
-          userId: user.id,
+          userId: userRef.current?.id,
           userType: 'parent',
         });
       });
 
       newSocket.on('authenticated', () => {
-        console.log('Socket authenticated');
+        console.log('Chat socket authenticated');
+        // Re-join current conversation room if any
+        const chat = currentChatRef.current;
+        if (chat?.id) {
+          newSocket.emit('join_conversation', { conversationId: chat.id });
+        }
       });
 
       newSocket.on('disconnect', () => {
-        console.log('Socket disconnected');
+        console.log('Chat socket disconnected');
         setConnected(false);
       });
 
       newSocket.on('new_message', (message) => {
-        handleNewMessage(message);
+        // Always use the ref values for fresh state
+        handleNewMessage(message, currentChatRef.current, userRef.current);
       });
 
       newSocket.on('message_edited', (data) => {
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.id === data.messageId ? { ...msg, content: data.content, isEdited: true } : msg
+            msg.id === data.messageId ? { ...msg, content: data.content, text: data.content, isEdited: true } : msg
           )
         );
       });
 
       newSocket.on('user_status', (data) => {
-        // Update participant online status in conversations
         setConversations((prev) =>
           prev.map((conv) => {
             if (conv.otherParticipant?.userId === data.userId) {
@@ -87,6 +109,9 @@ export const ChatProvider = ({ children }) => {
                   online: data.status === 'online',
                   lastSeen: data.lastSeen,
                 },
+                participant: conv.participant?.id === data.userId
+                  ? { ...conv.participant, online: data.status === 'online', lastSeen: data.lastSeen }
+                  : conv.participant,
               };
             }
             return conv;
@@ -94,31 +119,31 @@ export const ChatProvider = ({ children }) => {
         );
       });
 
+      // Confirmation that the room join was acknowledged by server
+      newSocket.on('joined_conversation', (data) => {
+        console.log('Joined conversation room:', data?.conversationId);
+      });
+
       socketRef.current = newSocket;
     } catch (error) {
-      console.error('Error initializing socket:', error);
+      console.error('Error initializing chat socket:', error);
     }
   };
 
-  const handleNewMessage = (message) => {
-    // Add to current chat if it matches
-    if (currentChat && message.conversationId === currentChat.id) {
+  // Pure function — receives currentChat and user as params to avoid stale closures
+  const handleNewMessage = (message, chat, currentUser) => {
+    if (chat && message.conversationId === chat.id) {
       setMessages((prev) => {
-        // Avoid duplicates
         if (prev.some((m) => m.id === message.id)) return prev;
         return [...prev, message];
       });
-
-      // Mark as read since we're in the conversation
-      markAsRead(currentChat.id);
+      markAsRead(chat.id);
     } else {
-      // Update unread count for background conversations
-      if (message.senderId !== user?.id) {
+      if (message.senderId !== currentUser?.id) {
         setUnreadCount((prev) => prev + 1);
       }
     }
 
-    // Update conversation list
     setConversations((prev) =>
       prev.map((conv) =>
         conv.id === message.conversationId
@@ -130,9 +155,9 @@ export const ChatProvider = ({ children }) => {
                 senderId: message.senderId,
               },
               unreadCount:
-                currentChat?.id === conv.id
+                chat?.id === conv.id
                   ? 0
-                  : (conv.unreadCount || 0) + (message.senderId !== user?.id ? 1 : 0),
+                  : (conv.unreadCount || 0) + (message.senderId !== currentUser?.id ? 1 : 0),
             }
           : conv
       )
@@ -168,14 +193,11 @@ export const ChatProvider = ({ children }) => {
         }));
 
         setConversations(convs);
-
-        // Calculate total unread
         const totalUnread = convs.reduce((acc, conv) => acc + (conv.unread || 0), 0);
         setUnreadCount(totalUnread);
       }
     } catch (error) {
       console.error('Error fetching conversations:', error);
-      // If API fails, keep existing conversations
     } finally {
       setLoading(false);
     }
@@ -184,7 +206,12 @@ export const ChatProvider = ({ children }) => {
   const fetchMessages = useCallback(
     async (conversationId, before = null) => {
       if (!conversationId) return;
-      setLoading(true);
+      if (before) {
+        // Loading older messages — use separate flag
+        setMessagesLoading(true);
+      } else {
+        setLoading(true);
+      }
       try {
         const params = { limit: 50 };
         if (before) params.before = before;
@@ -218,114 +245,129 @@ export const ChatProvider = ({ children }) => {
             forwardedFrom: msg.forwardedFrom,
           }));
 
+          // Indicate if there are more (full page = more likely available)
+          setHasMoreMessages(msgs.length === 50);
+
           if (before) {
-            // Prepend older messages
             setMessages((prev) => [...msgs, ...prev]);
           } else {
             setMessages(msgs);
           }
         }
 
-        // Mark as read
         await markAsRead(conversationId);
       } catch (error) {
         console.error('Error fetching messages:', error);
       } finally {
         setLoading(false);
+        setMessagesLoading(false);
       }
     },
     []
   );
 
+  // Load older messages (pagination)
+  const loadMoreMessages = useCallback(() => {
+    if (!currentChatRef.current || messages.length === 0 || !hasMoreMessages) return;
+    const oldest = messages[0];
+    fetchMessages(currentChatRef.current.id, oldest.createdAt || oldest.timestamp);
+  }, [messages, hasMoreMessages, fetchMessages]);
+
   const sendMessage = useCallback(
     async (text, attachments = []) => {
-      if (!currentChat) return null;
+      const chat = currentChatRef.current;
+      if (!chat) return null;
 
       const messagePayload = {
-        conversationId: currentChat.id,
+        conversationId: chat.id,
         content: text,
         type: attachments.length > 0 ? 'file' : 'text',
       };
 
-      // If it's a new conversation (no id yet), include receiver info
-      if (!currentChat.id && currentChat.participant) {
-        messagePayload.receiverId = currentChat.participant.id;
-        messagePayload.receiverModel = currentChat.participant.userType === 'parent' ? 'parent' : 'staff';
+      if (!chat.id && chat.participant) {
+        messagePayload.receiverId = chat.participant.id;
+        messagePayload.receiverModel = chat.participant.userType === 'parent' ? 'parent' : 'staff';
         delete messagePayload.conversationId;
       }
+
+      // Optimistic message with pending status
+      const optimisticId = `pending_${Date.now()}`;
+      const optimisticMessage = {
+        id: optimisticId,
+        conversationId: chat.id,
+        senderId: userRef.current?.id,
+        senderName: userRef.current?.name,
+        text,
+        content: text,
+        type: 'text',
+        status: 'pending',
+        timestamp: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, optimisticMessage]);
 
       try {
         const response = await api.post('/api/parent/messages', messagePayload);
 
         if (response.success && response.data) {
-          const newMessage = {
+          const confirmedMessage = {
             id: response.data.id,
             conversationId: response.data.conversationId,
-            senderId: response.data.senderId || user?.id,
-            senderName: response.data.senderName || user?.name,
+            senderId: response.data.senderId || userRef.current?.id,
+            senderName: response.data.senderName || userRef.current?.name,
             text: response.data.content,
             content: response.data.content,
             type: response.data.type,
-            status: response.data.status,
+            status: response.data.status || 'sent',
             timestamp: response.data.createdAt,
             createdAt: response.data.createdAt,
           };
 
-          setMessages((prev) => [...prev, newMessage]);
+          // Replace optimistic message with confirmed one
+          setMessages((prev) =>
+            prev.map((m) => (m.id === optimisticId ? confirmedMessage : m))
+          );
 
-          // Update conversation list
           setConversations((prev) =>
             prev.map((conv) =>
-              conv.id === (response.data.conversationId || currentChat.id)
-                ? {
-                    ...conv,
-                    lastMessage: text,
-                    lastMessageTime: newMessage.createdAt,
-                  }
+              conv.id === (response.data.conversationId || chat.id)
+                ? { ...conv, lastMessage: text, lastMessageTime: confirmedMessage.createdAt }
                 : conv
             )
           );
 
-          // Emit via socket for real-time delivery
-          if (socketRef.current && connected) {
+          // Emit via socket for real-time delivery to recipient
+          if (socketRef.current?.connected) {
             socketRef.current.emit('send_message', {
-              ...newMessage,
-              conversationId: response.data.conversationId || currentChat.id,
+              ...confirmedMessage,
+              conversationId: response.data.conversationId || chat.id,
             });
           }
 
-          return newMessage;
+          return confirmedMessage;
+        } else {
+          // Mark optimistic message as failed
+          setMessages((prev) =>
+            prev.map((m) => (m.id === optimisticId ? { ...m, status: 'failed' } : m))
+          );
         }
       } catch (error) {
         console.error('Error sending message:', error);
-        // Optimistic: add message locally even if API fails
-        const fallbackMessage = {
-          id: Date.now().toString(),
-          conversationId: currentChat.id,
-          senderId: user?.id,
-          senderName: user?.name,
-          text,
-          content: text,
-          type: 'text',
-          status: 'pending',
-          timestamp: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-        };
-        setMessages((prev) => [...prev, fallbackMessage]);
-        return fallbackMessage;
+        setMessages((prev) =>
+          prev.map((m) => (m.id === optimisticId ? { ...m, status: 'failed' } : m))
+        );
       }
 
       return null;
     },
-    [currentChat, user, connected]
+    []
   );
 
   const markAsRead = async (conversationId) => {
     if (!conversationId) return;
     try {
       await api.put(`/api/parent/messages/${conversationId}/read`, {});
-
-      // Update local unread count
       setConversations((prev) =>
         prev.map((conv) => {
           if (conv.id === conversationId) {
@@ -336,25 +378,23 @@ export const ChatProvider = ({ children }) => {
           return conv;
         })
       );
-    } catch (error) {
-      // Silently fail - read receipts are not critical
+    } catch {
+      // Read receipts are non-critical
     }
   };
 
-  const selectConversation = (conversation) => {
+  const selectConversation = useCallback((conversation) => {
     setCurrentChat(conversation);
     if (conversation) {
-      // Join socket room for this conversation
-      if (socketRef.current && connected) {
-        socketRef.current.emit('join_conversation', {
-          conversationId: conversation.id,
-        });
+      if (socketRef.current?.connected) {
+        socketRef.current.emit('join_conversation', { conversationId: conversation.id });
       }
       fetchMessages(conversation.id);
     } else {
       setMessages([]);
+      setHasMoreMessages(false);
     }
-  };
+  }, [fetchMessages]);
 
   const value = {
     conversations,
@@ -362,9 +402,12 @@ export const ChatProvider = ({ children }) => {
     messages,
     connected,
     loading,
+    messagesLoading,
+    hasMoreMessages,
     unreadCount,
     fetchConversations,
     fetchMessages,
+    loadMoreMessages,
     sendMessage,
     selectConversation,
     markAsRead,

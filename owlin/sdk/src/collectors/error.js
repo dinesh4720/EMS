@@ -52,6 +52,7 @@ export class ErrorCollector {
       self.originalConsoleError.apply(console, args);
 
       if (!self.isEnabled) return;
+      if (self.shouldIgnoreConsoleArgs(args)) return;
 
       // Skip if called from tracker itself
       const stack = new Error().stack;
@@ -74,6 +75,20 @@ export class ErrorCollector {
 
       self.tracker.track(errorData);
     };
+  }
+
+  shouldIgnoreConsoleArgs(args = []) {
+    return args.some((arg) => {
+      if (typeof arg === 'string') {
+        return arg.includes('[Owlin Tracker]');
+      }
+
+      if (arg instanceof Error) {
+        return arg.message?.includes('[Owlin Tracker]');
+      }
+
+      return false;
+    });
   }
 
   /**

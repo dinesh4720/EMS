@@ -3,6 +3,6 @@
 
 export { useStudentForm } from './useStudentForm';
 export { useStudentFees, useBatchStudentFees } from './useStudentFees';
-export { useStudentData, useStudentAttendance, useStudentResults } from './useStudentData';
+export { useStudentData, useStudentAttendance, useStudentResults, useStudentRemarks } from './useStudentData';
 export { useStudentDocuments } from './useStudentDocuments';
 export { useStudentPhotoActions } from './useStudentPhotoActions';

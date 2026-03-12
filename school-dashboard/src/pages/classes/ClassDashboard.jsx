@@ -35,7 +35,7 @@ export default function ClassDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAssignTeacherModalOpen, setIsAssignTeacherModalOpen] = useState(false);
 
-  const cls = classesWithTeachers.find(c => c.id === id || c.id === String(id)) || classesWithTeachers[0] || {};
+  const cls = classesWithTeachers.find(c => String(c.id) === String(id) || String(c._id) === String(id)) || null;
 
   // Update active tab when URL changes
   useEffect(() => {
@@ -50,13 +50,7 @@ export default function ClassDashboard() {
       if (id && refetch && !isRefreshing) {
         try {
           setIsRefreshing(true);
-          try {
-            const { clearApiCache } = await import('../../services/api');
-            clearApiCache();
-          } catch (cacheError) {
-            console.warn('Failed to clear API cache:', cacheError);
-          }
-          await refetch();
+          await refetch(true);
         } catch (error) {
           console.error('Error refreshing class data:', error);
         } finally {
@@ -66,20 +60,6 @@ export default function ClassDashboard() {
     };
 
     refreshClassData();
-
-    const intervalId = setInterval(() => {
-      refreshClassData();
-    }, 30000);
-
-    const handleFocus = () => {
-      refreshClassData();
-    };
-    window.addEventListener('focus', handleFocus);
-
-    return () => {
-      clearInterval(intervalId);
-      window.removeEventListener('focus', handleFocus);
-    };
   }, [id, refetch]);
 
   // Load class settings
@@ -112,6 +92,24 @@ export default function ClassDashboard() {
     { key: "timetable", label: "Time Table" },
     { key: "settings", label: "Settings" },
   ];
+
+  if (!cls && classesWithTeachers.length > 0) {
+    return (
+      <div className="w-full flex-1 bg-gray-50 p-6 min-h-screen">
+        <button onClick={() => navigate('/classes')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors mb-4">
+          <ArrowLeft size={16} /><span>Back to Classes</span>
+        </button>
+        <div className="bg-white rounded-lg border border-gray-100 p-8 text-center">
+          <AlertCircle size={40} className="mx-auto text-red-400 mb-3" />
+          <h2 className="text-lg font-semibold text-gray-800 mb-1">Class Not Found</h2>
+          <p className="text-sm text-gray-500">The class you're looking for doesn't exist or has been removed.</p>
+          <button onClick={() => navigate('/classes')} className="mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors">
+            View All Classes
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex-1 bg-gray-50 p-6 min-h-screen">
@@ -307,9 +305,9 @@ export default function ClassDashboard() {
             <div className="bg-white rounded-lg border border-gray-100 p-5">
               <h3 className="text-sm font-medium text-gray-900 mb-4">Assigned Subjects</h3>
               <div className="flex flex-wrap gap-2">
-                {classSettings.assignedSubjects.map((subject, index) => (
+                {classSettings.assignedSubjects.map((subject) => (
                   <span
-                    key={index}
+                    key={subject}
                     className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-md"
                   >
                     {subject}

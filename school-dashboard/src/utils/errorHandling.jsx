@@ -235,7 +235,6 @@ export async function retryWithBackoff(fn, maxRetries = 3, initialDelay = 1000) 
       const delay = initialDelay * Math.pow(2, attempt);
       await new Promise(resolve => setTimeout(resolve, delay));
       
-      console.log(`Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`);
     }
   }
   

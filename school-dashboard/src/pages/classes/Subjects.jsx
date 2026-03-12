@@ -9,6 +9,7 @@ import {
   BookOpen, Plus, AlertCircle, Clock
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import toast from "react-hot-toast";
 
 export default function Subjects() {
   const { id } = useParams();
@@ -110,8 +111,10 @@ export default function Subjects() {
       });
 
       loadSubjects();
+      toast.success(`Subject "${newSubject.subjectName}" added successfully`);
     } catch (error) {
       console.error('Error adding subject:', error);
+      toast.error(error.response?.data?.message || error.message || 'Failed to add subject');
     }
   };
 
@@ -125,8 +128,10 @@ export default function Subjects() {
 
       setEditChapterModal(false);
       loadSubjects();
+      toast.success('Chapter progress updated successfully');
     } catch (error) {
       console.error('Error updating chapter:', error);
+      toast.error(error.response?.data?.message || error.message || 'Failed to update chapter progress');
     }
   };
 
@@ -318,7 +323,7 @@ export default function Subjects() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Assign to Students</label>
               <div className="flex gap-4">
-                <Checkbox
+                <Checkbox size="sm"
                   isSelected={newSubject.assignTo === 'all'}
                   onValueChange={(checked) => {
                     if (checked) {
@@ -328,7 +333,7 @@ export default function Subjects() {
                 >
                   All Students
                 </Checkbox>
-                <Checkbox
+                <Checkbox size="sm"
                   isSelected={newSubject.assignTo === 'specific'}
                   onValueChange={(checked) => {
                     if (checked) {

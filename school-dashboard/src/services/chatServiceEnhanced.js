@@ -31,7 +31,7 @@ class ChatServiceEnhanced {
       if (!response.ok) throw new Error('Failed to get conversations');
       return await response.json();
     } catch (error) {
-      console.error('Error getting conversations:', error);
+      console.error('Error getting conversations:', error?.message || error);
       return [];
     }
   }

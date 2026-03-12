@@ -279,7 +279,7 @@ export default function ReminderForm({
                 { key: 'students', label: 'Students' },
                 { key: 'staff', label: 'Staff' },
               ].map((recipient) => (
-                <Checkbox
+                <Checkbox size="sm"
                   key={recipient.key}
                   isSelected={formData.recipients.some(r => r.type === recipient.key)}
                   onValueChange={() => handleRecipientChange(recipient.key)}
@@ -300,7 +300,7 @@ export default function ReminderForm({
                 { key: 'email', label: 'Email' },
                 { key: 'whatsapp', label: 'WhatsApp' },
               ].map((channel) => (
-                <Checkbox
+                <Checkbox size="sm"
                   key={channel.key}
                   isSelected={formData.channels.includes(channel.key)}
                   onValueChange={() => handleChannelToggle(channel.key)}
@@ -349,7 +349,7 @@ export default function ReminderForm({
           </div>
 
           {/* Active Status */}
-          <Checkbox
+          <Checkbox size="sm"
             isSelected={formData.active}
             onValueChange={(checked) => setFormData({ ...formData, active: checked })}
           >

@@ -49,7 +49,7 @@ export default function TeacherCard({
             onSelect?.(teacher);
           }}
         >
-          <Checkbox
+          <Checkbox size="sm"
             isSelected={isSelected}
             onValueChange={() => onSelect?.(teacher)}
             size="sm"

@@ -260,7 +260,7 @@ export default function FeeCollectionSettings() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {settings.terms.map((term, index) => (
-                <div key={index} className="p-4 bg-default-50 rounded-xl border border-default-200 space-y-3">
+                <div key={term.name || index} className="p-4 bg-default-50 rounded-xl border border-default-200 space-y-3">
                   <div className="flex items-center justify-between">
                     <h4 className="font-semibold text-default-900">Term {index + 1}</h4>
                     <Chip size="sm" color="primary" variant="flat">{term.name}</Chip>

@@ -73,7 +73,6 @@ export default function PermissionRequests() {
     if (!window.socketService || !isAdmin()) return;
 
     const handleNewRequest = () => {
-      console.log('📢 New permission request received');
       fetchRequests();
       toast('New permission request received', {
         icon: '🔔',

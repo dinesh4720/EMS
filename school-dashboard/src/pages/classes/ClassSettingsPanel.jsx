@@ -20,6 +20,13 @@ export default function ClassSettingsPanel({ classId }) {
   const [classTag, setClassTag] = useState("");
   const [selectedSubjects, setSelectedSubjects] = useState(new Set());
   const [errors, setErrors] = useState({});
+  const [originalTag, setOriginalTag] = useState("");
+  const [originalSubjects, setOriginalSubjects] = useState(new Set());
+
+  const isDirty =
+    classTag !== originalTag ||
+    selectedSubjects.size !== originalSubjects.size ||
+    [...selectedSubjects].some(s => !originalSubjects.has(s));
 
   // Check if user has edit permission
   const canEdit = hasPermission('classes', 'edit');
@@ -52,12 +59,16 @@ export default function ClassSettingsPanel({ classId }) {
       const settings = await classesApi.getSettings(classId);
       
       if (settings) {
-        setClassTag(settings.classTag || "");
+        const tag = settings.classTag || "";
         // Normalize subjects to strings (handle both string and object formats)
-        const normalizedSubjects = (settings.assignedSubjects || []).map(s => 
+        const normalizedSubjects = (settings.assignedSubjects || []).map(s =>
           typeof s === 'string' ? s : s.name
         );
-        setSelectedSubjects(new Set(normalizedSubjects));
+        const subjectsSet = new Set(normalizedSubjects);
+        setClassTag(tag);
+        setSelectedSubjects(subjectsSet);
+        setOriginalTag(tag);
+        setOriginalSubjects(subjectsSet);
       }
     } catch (error) {
       console.error("Error loading class settings:", error);
@@ -307,8 +318,12 @@ export default function ClassSettingsPanel({ classId }) {
           <div className="flex justify-end gap-3">
             <Button
               variant="flat"
-              onPress={loadClassSettings}
-              isDisabled={saving || !canEdit}
+              onPress={() => {
+                if (!isDirty || window.confirm('Discard unsaved changes?')) {
+                  loadClassSettings();
+                }
+              }}
+              isDisabled={saving || !canEdit || !isDirty}
             >
               Reset
             </Button>

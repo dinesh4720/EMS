@@ -97,7 +97,6 @@ export default function ChatFull() {
     // The socket is shared with ChatNotificationContext for global notifications
     // Disconnecting here would break notifications on other pages
     return () => {
-      console.log('🧹 ChatFull unmounting - socket stays connected for global notifications');
       // No cleanup needed - socket managed by ChatNotificationContext
     };
   }, [user?.id, staff, students]);
@@ -105,7 +104,6 @@ export default function ChatFull() {
   const initializeChat = async () => {
     try {
       setLoading(true);
-      console.log('🚀 Initializing full-featured chat...');
 
       // Load contacts
       loadContacts();
@@ -114,7 +112,6 @@ export default function ChatFull() {
       try {
         await socketService.connect(user.id, 'staff');
         setSocketConnected(true);
-        console.log('✅ Socket connected');
 
         // Setup socket listeners
         setupSocketListeners();
@@ -137,7 +134,6 @@ export default function ChatFull() {
   const setupSocketListeners = () => {
     // New message received
     socketService.on('new_message', (data) => {
-      console.log('📨 New message:', data);
       handleNewMessage(data.message);
 
       // Update conversation list
@@ -209,7 +205,6 @@ export default function ChatFull() {
 
     // Message pinned/unpinned
     socketService.on('message_pinned', (data) => {
-      console.log('📌 Message pinned event:', data);
       setMessages(prev => {
         const updated = prev.map(msg =>
           msg.id === data.messageId
@@ -238,7 +233,6 @@ export default function ChatFull() {
 
     // Message reacted
     socketService.on('message_reacted', (data) => {
-      console.log('😀 Message reacted event:', data);
       setMessages(prev => prev.map(msg =>
         msg.id === data.messageId
           ? { ...msg, reactions: data.reactions }
@@ -268,7 +262,6 @@ export default function ChatFull() {
       }));
 
       setContacts([...staffContacts, ...studentContacts]);
-      console.log('✅ Loaded contacts:', staffContacts.length + studentContacts.length);
     } catch (error) {
       console.error('❌ Error loading contacts:', error);
     }
@@ -277,7 +270,6 @@ export default function ChatFull() {
   const loadConversations = async () => {
     try {
       const convs = await chatService.getConversations(user.id, 'staff');
-      console.log('✅ Loaded conversations:', convs.length);
       setConversations(convs);
 
       // Update online status
@@ -293,7 +285,6 @@ export default function ChatFull() {
   const handleSelectConversation = async (conversation) => {
     try {
       setSelectedConversation(conversation);
-      console.log('📂 Selected conversation:', conversation.id);
 
       // Load messages
       const msgs = await chatService.getMessages(conversation.id);
@@ -322,7 +313,6 @@ export default function ChatFull() {
 
   const startNewConversation = async (contact) => {
     try {
-      console.log('🆕 Starting conversation with:', contact.name);
 
       const conversation = await chatService.createConversation(
         user.id,
@@ -360,22 +350,15 @@ export default function ChatFull() {
   };
 
   const handleNewMessage = (message) => {
-    console.log('📨 Received new message:', message);
-
     // Use ref to get current conversation (avoids closure issue)
     const currentConversation = selectedConversationRef.current;
 
-    console.log('📂 Current conversation ID:', currentConversation?.id || currentConversation?._id);
-    console.log('📨 Message conversation ID:', message.conversationId);
-
     // Try both id and _id properties
     const currentConvId = currentConversation?.id || currentConversation?._id;
-    console.log('🔍 IDs match?', String(message.conversationId) === String(currentConvId));
 
     // If message is for current conversation, add it
     // Convert both to strings for comparison to handle ObjectId vs string
     if (String(message.conversationId) === String(currentConvId)) {
-      console.log('✅ Adding message to current conversation');
       setMessages(prev => {
         // Remove optimistic messages from the current user
         const filtered = prev.filter(m => {
@@ -385,12 +368,10 @@ export default function ChatFull() {
           // For voice/audio messages, match by fileUrl
           if (message.type === 'audio' && m.type === 'audio') {
             if (m.fileUrl && message.fileUrl && m.fileUrl === message.fileUrl) {
-              console.log('🗑️ Removing optimistic voice message (matched by fileUrl)');
               return false;
             }
             // Also match if both have no content (empty voice messages)
             if (!m.content && !message.content && m._originalContent === '') {
-              console.log('🗑️ Removing optimistic voice message (matched by empty content)');
               return false;
             }
             return true;
@@ -398,7 +379,6 @@ export default function ChatFull() {
 
           // For other message types, match by content
           if (m.content === message.content && m._originalContent === message.content) {
-            console.log('🗑️ Removing optimistic message');
             return false;
           }
           return true;
@@ -406,10 +386,8 @@ export default function ChatFull() {
 
         // Add new message if not already exists
         if (!filtered.find(m => String(m.id) === String(message.id))) {
-          console.log('✅ Message added to state');
           return [...filtered, message];
         }
-        console.log('⚠️ Message already exists in state');
         return filtered;
       });
       scrollToBottom();
@@ -420,7 +398,6 @@ export default function ChatFull() {
       }
     } else {
       // Message for different conversation - show notification
-      console.log('🔔 New message in other conversation');
       // Update conversation list to show unread count
       loadConversations();
     }
@@ -555,11 +532,9 @@ export default function ChatFull() {
 
     try {
       setUploadingFile(true);
-      console.log('📤 Uploading file:', selectedFile.name, 'Type:', selectedFile.type, 'Size:', selectedFile.size);
 
       // Upload file
       const uploadResult = await chatService.uploadFile(selectedFile);
-      console.log('✅ File uploaded:', uploadResult);
 
       if (!uploadResult.url) {
         throw new Error('Upload succeeded but no URL returned');
@@ -584,8 +559,6 @@ export default function ChatFull() {
         fileName: selectedFile.name,
         fileSize: selectedFile.size
       };
-
-      console.log('📨 Sending file message:', messageData);
 
       if (socketService.isConnected()) {
         socketService.sendMessage(messageData);
@@ -861,11 +834,9 @@ export default function ChatFull() {
     setSending(true);
     try {
       setUploadingFile(true);
-      console.log('📤 Uploading voice message...');
 
       // Upload file
       const uploadResult = await chatService.uploadFile(file);
-      console.log('✅ Voice uploaded:', uploadResult);
 
       if (!uploadResult.url) {
         throw new Error('Upload succeeded but no URL returned');
@@ -890,8 +861,6 @@ export default function ChatFull() {
         duration: duration,
         waveform: waveform
       };
-
-      console.log('📨 Sending voice message:', messageData);
 
       if (socketService.isConnected()) {
         socketService.sendMessage(messageData);
@@ -1004,8 +973,6 @@ export default function ChatFull() {
 
   // Unified message action handler
   const handleMessageAction = async (action, data) => {
-    console.log('🎯 Message action:', action, data);
-
     switch (action) {
       case 'reply':
         setReplyToMessage(data.message);
@@ -1018,10 +985,8 @@ export default function ChatFull() {
         break;
 
       case 'edit':
-        console.log('✏️ Editing message:', data.message);
         setEditingMessage(data.message);
         setEditText(data.message.content);
-        console.log('✏️ Edit state set:', { id: data.message?.id, content: data.message?.content });
         break;
 
       case 'delete':
@@ -1046,7 +1011,6 @@ export default function ChatFull() {
         break;
 
       case 'react':
-        console.log('😀 React action clicked for message:', data.message.id);
         // If no emoji provided, show emoji picker
         if (!data.emoji) {
           setEmojiPickerMessage(data.message);
@@ -1120,7 +1084,6 @@ export default function ChatFull() {
   // Handle pin message
   const handlePinMessage = async (messageId) => {
     try {
-      console.log('📌 Pinning message:', messageId, 'Type:', typeof messageId);
       const response = await request(`/messages/${messageId}/pin`, {
         method: 'POST',
         body: JSON.stringify({
@@ -1128,14 +1091,12 @@ export default function ChatFull() {
           pinned: true
         })
       });
-      console.log('✅ Pin response:', response);
 
       // Update local state immediately - use String comparison
       setMessages(prev => {
         const updated = prev.map(msg => {
           const matches = String(msg.id) === String(messageId);
           if (matches) {
-            console.log('📌 Updating message pinned status:', msg.id);
             return { ...msg, pinned: true, pinnedBy: [...(msg.pinnedBy || []), user.id] };
           }
           return msg;
@@ -1165,7 +1126,6 @@ export default function ChatFull() {
   // Handle unpin message
   const handleUnpinMessage = async (messageId) => {
     try {
-      console.log('📌 Unpinning message:', messageId);
       const response = await request(`/messages/${messageId}/pin`, {
         method: 'POST',
         body: JSON.stringify({
@@ -1173,7 +1133,6 @@ export default function ChatFull() {
           pinned: false
         })
       });
-      console.log('✅ Unpin response:', response);
 
       // Update local state immediately
       setMessages(prev => {
@@ -1244,7 +1203,6 @@ export default function ChatFull() {
 
     // Filter pinned messages from the current messages array
     const pinned = messages.filter(msg => msg.pinned);
-    console.log('📌 Pinned messages loaded:', pinned.length, pinned);
     setPinnedMessages(pinned);
   };
 
@@ -1644,18 +1602,6 @@ export default function ChatFull() {
               {messages.map((msg) => {
                 // Convert both to strings for proper comparison
                 const isMe = String(msg.senderId) === String(user?.id);
-
-                // Debug logging
-                if (messages.length <= 5) { // Only log for first few messages to avoid spam
-                  console.log('Message:', {
-                    content: msg.content?.substring(0, 20),
-                    senderId: msg.senderId,
-                    userId: user?.id,
-                    senderIdString: String(msg.senderId),
-                    userIdString: String(user?.id),
-                    isMe
-                  });
-                }
 
                 return (
                   <div

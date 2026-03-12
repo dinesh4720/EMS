@@ -78,10 +78,12 @@ export default function StaffAttendanceTab({ staffId }) {
     const record = staffAttendance[staffId]?.[dateStr];
 
     setSelectedDateForReg(date);
-    // If there's an existing status, we probably want to change it TO something else
-    // Default target logic: if absent/unmarked -> present, if present -> leave?
-    // Let's just default to 'present' or the current status
-    setTargetStatus(new Set([record?.status === 'present' ? 'leave' : 'present']));
+    // Default target: cycle to the most logical correction
+    const currentStatus = record?.status;
+    let defaultTarget = 'present';
+    if (currentStatus === 'present') defaultTarget = 'absent';
+    else if (currentStatus === 'absent' || currentStatus === 'leave' || currentStatus === 'halfday') defaultTarget = 'present';
+    setTargetStatus(new Set([defaultTarget]));
     setRegularizationReason("");
     onRegOpen();
   };

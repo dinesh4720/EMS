@@ -258,8 +258,8 @@ export default function AnnouncementAnalyticsModal({
               <div>
                 <h4 className="text-sm font-semibold mb-3">Attachments</h4>
                 <div className="space-y-2">
-                  {analytics.attachments.map((attachment, index) => (
-                    <Card key={index} size="sm">
+                  {analytics.attachments.map((attachment) => (
+                    <Card key={attachment._id || attachment.name} size="sm">
                       <CardBody className="py-2 flex flex-row items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Download size={16} />

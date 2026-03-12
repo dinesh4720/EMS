@@ -10,6 +10,8 @@ export class EventSender {
     this.flushInterval = config.flushInterval || 5000;
     this.maxRetries = config.maxRetries || 3;
     this.retryDelay = config.retryDelay || 1000;
+    this.maxQueueSize = config.maxQueueSize || 100;
+    this.pauseUntil = 0;
 
     this.queue = [];
     this.isSending = false;
@@ -28,6 +30,10 @@ export class EventSender {
       queueTime: Date.now(),
     };
 
+    if (this.queue.length >= this.maxQueueSize) {
+      this.queue.shift();
+    }
+
     this.queue.push(enrichedEvent);
 
     if (this.queue.length >= this.batchSize) {
@@ -39,7 +45,7 @@ export class EventSender {
    * Send all queued events
    */
   async flush() {
-    if (this.isSending || this.queue.length === 0) {
+    if (this.isSending || this.queue.length === 0 || Date.now() < this.pauseUntil) {
       return;
     }
 
@@ -50,20 +56,19 @@ export class EventSender {
     try {
       await this.sendBatch(eventsToSend);
     } catch (error) {
-      // Re-queue failed events
-      this.queue.unshift(...eventsToSend);
+      const retries = eventsToSend[0].retries !== undefined
+        ? eventsToSend[0].retries + 1
+        : 1;
 
-      if (eventsToSend[0].retries !== undefined) {
-        eventsToSend[0].retries++;
-      } else {
-        eventsToSend[0].retries = 1;
-      }
+      eventsToSend[0].retries = retries;
 
       // Retry logic
-      if (eventsToSend[0].retries < this.maxRetries) {
-        setTimeout(() => this.flush(), this.retryDelay * eventsToSend[0].retries);
+      if (retries < this.maxRetries) {
+        this.queue.unshift(...eventsToSend);
+        setTimeout(() => this.flush(), this.retryDelay * retries);
       } else {
-        // Max retries reached, discard
+        // Max retries reached, discard this batch and pause future sends briefly.
+        this.pauseUntil = Date.now() + 30000;
         console.error('[Owlin Tracker] Failed to send events after max retries:', error);
       }
     } finally {
@@ -93,7 +98,6 @@ export class EventSender {
         },
         body: JSON.stringify(payload),
         signal: controller.signal,
-        keepalive: true,
       });
 
       clearTimeout(timeoutId);

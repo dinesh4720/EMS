@@ -70,8 +70,8 @@ const ChangePasswordScreen = ({ navigation }) => {
       return false;
     }
 
-    if (newPassword.length < 6) {
-      Alert.alert('Validation Error', 'New password must be at least 6 characters long.');
+    if (newPassword.length < 8) {
+      Alert.alert('Validation Error', 'New password must be at least 8 characters long.');
       return false;
     }
 
@@ -154,7 +154,7 @@ const ChangePasswordScreen = ({ navigation }) => {
         <View style={styles.notice}>
           <Text style={styles.noticeIcon}>🔒</Text>
           <Text style={styles.noticeText}>
-            Your password must be at least 6 characters long and different from your current password.
+            Your password must be at least 8 characters long and different from your current password.
           </Text>
         </View>
 
@@ -196,7 +196,7 @@ const ChangePasswordScreen = ({ navigation }) => {
           <Text style={styles.requirementsTitle}>Password Requirements:</Text>
           <View style={styles.requirementItem}>
             <Text style={styles.requirementIcon}>✓</Text>
-            <Text style={styles.requirementText}>At least 6 characters long</Text>
+            <Text style={styles.requirementText}>At least 8 characters long</Text>
           </View>
           <View style={styles.requirementItem}>
             <Text style={styles.requirementIcon}>✓</Text>

@@ -82,21 +82,23 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
 
     try {
       const response = await fetch(`${API_URL}/fee-structure/class/${selectedClass}?academicYear=${academicYear}`);
-      
+
       if (response.ok) {
         const data = await response.json();
         setExistingStructure(data);
         setFormData({
-          templateId: data.templateId?._id || '',
+          templateId: data.templateId?._id || data.templateId || '',
           feeHeads: data.feeHeads || [],
           collectionSchedule: data.collectionSchedule || { mode: 'term', installments: [] },
           totalAnnualFee: data.totalAnnualFee || 0
         });
-        if (data.templateId) {
+        if (data.templateId?._id) {
           setSelectedTemplate(data.templateId._id);
         }
       } else {
+        // 404 = no structure yet, that's fine
         setExistingStructure(null);
+        setSelectedTemplate('');
         setFormData({
           templateId: '',
           feeHeads: [],
@@ -375,7 +377,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
 
                   <div className="space-y-3">
                     {formData.feeHeads.map((head, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 bg-default-50 rounded-xl border border-default-200">
+                      <div key={head._id || head.name || index} className="flex items-center justify-between p-4 bg-default-50 rounded-xl border border-default-200">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-default-900">{head.name}</span>
@@ -445,8 +447,8 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {formData.collectionSchedule.installments.map((installment, index) => (
-                      <div key={index} className="p-4 bg-primary-50 rounded-xl border border-primary-200">
+                    {formData.collectionSchedule.installments.map((installment) => (
+                      <div key={installment._id || installment.name} className="p-4 bg-primary-50 rounded-xl border border-primary-200">
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-semibold text-primary-900">{installment.name}</span>
                           <Chip size="sm" color="primary" variant="flat">Due: {new Date(installment.dueDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</Chip>

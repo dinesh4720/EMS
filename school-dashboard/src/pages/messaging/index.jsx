@@ -12,7 +12,6 @@ const tabs = [
   { key: "chat", title: "Chat" },
   { key: "announcements", title: "Announcements" },
   { key: "reminders", title: "Reminders" },
-  { key: "logs", title: "Logs" },
 ];
 
 export default function MessagingPage() {
@@ -23,7 +22,6 @@ export default function MessagingPage() {
   const getActiveTab = () => {
     if (location.pathname.includes("/announcements")) return "announcements";
     if (location.pathname.includes("/reminders")) return "reminders";
-    if (location.pathname.includes("/logs")) return "logs";
     return "chat";
   };
 
@@ -34,7 +32,6 @@ export default function MessagingPage() {
     if (tabId === "chat") navigate("/messaging");
     else if (tabId === "announcements") navigate("/messaging/announcements");
     else if (tabId === "reminders") navigate("/messaging/reminders");
-    else if (tabId === "logs") navigate("/messaging/logs");
   };
 
   const headerActions = activeTab === "announcements" && (

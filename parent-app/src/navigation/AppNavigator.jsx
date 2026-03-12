@@ -12,6 +12,10 @@ import ExamDetailScreen from '../screens/ExamDetailScreen';
 import ResultDetailScreen from '../screens/ResultDetailScreen';
 import TimetableScreen from '../screens/TimetableScreen';
 import PaymentScreen from '../screens/PaymentScreen';
+import RemarksScreen from '../screens/RemarksScreen';
+import AnnouncementsScreen from '../screens/AnnouncementsScreen';
+import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -83,6 +87,34 @@ const AppNavigator = () => {
               component={PaymentScreen}
               options={{
                 title: 'Pay Fees',
+              }}
+            />
+            <Stack.Screen
+              name="Remarks"
+              component={RemarksScreen}
+              options={{
+                title: 'Teacher Remarks',
+              }}
+            />
+            <Stack.Screen
+              name="Announcements"
+              component={AnnouncementsScreen}
+              options={{
+                title: 'Announcements',
+              }}
+            />
+            <Stack.Screen
+              name="NotificationSettings"
+              component={NotificationSettingsScreen}
+              options={{
+                title: 'Notification Settings',
+              }}
+            />
+            <Stack.Screen
+              name="EditProfile"
+              component={EditProfileScreen}
+              options={{
+                title: 'Edit Profile',
               }}
             />
           </>

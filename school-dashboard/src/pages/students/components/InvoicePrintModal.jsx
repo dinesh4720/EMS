@@ -330,7 +330,7 @@ export default function InvoicePrintModal({
                 <tbody className="divide-y divide-gray-100">
                   {feeHeads.length > 0 ? (
                     feeHeads.map((fee, index) => (
-                      <tr key={index}>
+                      <tr key={fee._id || fee.name}>
                         <td className="px-4 py-2 text-sm text-gray-500">{index + 1}</td>
                         <td className="px-4 py-2">
                           <p className="text-sm font-medium text-gray-900">{fee.name}</p>
@@ -397,7 +397,7 @@ export default function InvoicePrintModal({
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {feeHistory.slice(0, 3).map((payment, index) => (
-                        <tr key={index}>
+                        <tr key={payment._id || payment.receiptNumber || index}>
                           <td className="px-4 py-2 text-sm text-gray-600">{formatDate(payment.paymentDate || payment.date)}</td>
                           <td className="px-4 py-2 text-sm text-gray-600 font-mono">{payment.receiptNumber || `#${index + 1}`}</td>
                           <td className="px-4 py-2 text-sm text-gray-600 capitalize">{payment.paymentMode || payment.mode || 'Cash'}</td>

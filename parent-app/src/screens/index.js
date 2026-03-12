@@ -9,3 +9,7 @@ export { default as ResultDetailScreen } from './ResultDetailScreen';
 export { default as TimetableScreen } from './TimetableScreen';
 export { default as ChatListScreen } from './ChatListScreen';
 export { default as ChatDetailScreen } from './ChatDetailScreen';
+export { default as RemarksScreen } from './RemarksScreen';
+export { default as AnnouncementsScreen } from './AnnouncementsScreen';
+export { default as NotificationSettingsScreen } from './NotificationSettingsScreen';
+export { default as EditProfileScreen } from './EditProfileScreen';

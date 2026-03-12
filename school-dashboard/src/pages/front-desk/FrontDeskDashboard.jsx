@@ -170,8 +170,8 @@ export default function FrontDeskDashboard() {
                 { type: 'appointment', text: 'Meeting with parent', time: '25 min ago' },
                 { type: 'call', text: 'Incoming call logged', time: '1 hour ago' },
                 { type: 'gatepass', text: 'Gate pass issued', time: '2 hours ago' },
-              ].map((activity, index) => (
-                <div key={index} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
+              ].map((activity) => (
+                <div key={activity.text} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="w-7 h-7 rounded-md bg-gray-100 flex items-center justify-center">
                       {activity.type === 'visitor' && <Users size={12} className="text-gray-500" />}

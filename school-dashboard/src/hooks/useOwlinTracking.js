@@ -7,8 +7,15 @@ if (typeof window !== 'undefined' && !window.__OWLIN_TRACKER__) {
 }
 
 const OWLIN_ENABLED_KEY = 'owlinTrackerEnabled'
+const OWLIN_ENDPOINT = import.meta.env.VITE_OWLIN_ENDPOINT?.trim() || ''
+const OWLIN_API_BASE = OWLIN_ENDPOINT.replace(/\/api\/events\/?$/, '')
+const IS_OWLIN_CONFIGURED = Boolean(OWLIN_ENDPOINT)
 
 export function isOwlinEnabled() {
+  if (!IS_OWLIN_CONFIGURED) {
+    return false
+  }
+
   const stored = localStorage.getItem(OWLIN_ENABLED_KEY)
   return stored === null ? true : stored === 'true'
 }
@@ -40,10 +47,10 @@ export function useOwlinTracking() {
 
     try {
       const tracker = initOwlinTracker({
-        endpoint: 'http://localhost:4001/api/events',
+        endpoint: OWLIN_ENDPOINT,
         appName: 'School Dashboard',
         appVersion: '1.0.0',
-        debug: true,
+        debug: false,
         batchSize: 5,
         flushInterval: 1000,
       })
@@ -80,7 +87,7 @@ export function useOwlinTracking() {
           // Register the user immediately so server-side event enrichment has metadata
           // before the next queued batch flushes.
           try {
-            await fetch('http://localhost:4001/api/users/identify', {
+            await fetch(`${OWLIN_API_BASE}/api/users/identify`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -93,7 +100,7 @@ export function useOwlinTracking() {
           }
 
           try {
-            await fetch('http://localhost:4001/api/session/start', {
+            await fetch(`${OWLIN_API_BASE}/api/session/start`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({

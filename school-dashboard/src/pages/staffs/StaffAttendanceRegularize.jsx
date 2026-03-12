@@ -30,7 +30,7 @@ export default function StaffAttendanceRegularize() {
   });
 
   const selectedStaff = useMemo(() => {
-    return staff.find(s => s.id === selectedStaffId);
+    return staff.find(s => String(s.id) === String(selectedStaffId));
   }, [staff, selectedStaffId]);
 
   // Fetch attendance data when selection changes
@@ -42,14 +42,6 @@ export default function StaffAttendanceRegularize() {
     }
   }, [selectedStaffId, currentMonth, currentYear, fetchStaffAttendanceByStaff]);
 
-  // Debug logging
-  useEffect(() => {
-    if (selectedStaffId) {
-      console.log('Selected Staff ID:', selectedStaffId);
-      console.log('Staff Attendance Data:', staffAttendance);
-      console.log('Attendance for selected staff:', staffAttendance[selectedStaffId]);
-    }
-  }, [selectedStaffId, staffAttendance]);
 
   // Get calendar data for selected month
   const calendarData = useMemo(() => {
@@ -71,8 +63,9 @@ export default function StaffAttendanceRegularize() {
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const attendance = staffAttendance[selectedStaffId]?.[dateStr];
-      const isToday = dateStr === new Date().toISOString().split('T')[0];
-      const isFuture = new Date(dateStr) > new Date();
+      const todayStr = new Date().toISOString().split('T')[0];
+      const isToday = dateStr === todayStr;
+      const isFuture = dateStr > todayStr;
 
       days.push({
         day,
@@ -408,7 +401,7 @@ export default function StaffAttendanceRegularize() {
                 {/* Calendar days */}
                 {calendarData.map((dayData, index) => (
                   <button
-                    key={index}
+                    key={dayData.date || index}
                     onClick={() => handleDayClick(dayData)}
                     disabled={dayData.isEmpty || dayData.isFuture}
                     className={`

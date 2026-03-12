@@ -1,6 +1,7 @@
 import { useRef, useMemo, useState } from "react";
 import { Button } from "@heroui/react";
 import { ArrowLeft, ArrowRight, User, Users, FileText } from "lucide-react";
+import toast from "react-hot-toast";
 import { useStudentForm } from "../hooks/useStudentForm";
 import PersonalInfoStep from "./steps/PersonalInfoStep";
 import ParentsStep from "./steps/ParentsStep";
@@ -119,6 +120,7 @@ export default function StudentForm({
       await onSave(formData);
     } catch (error) {
       console.error("Submit error:", error);
+      toast.error(error?.message || "Failed to save student. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

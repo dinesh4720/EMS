@@ -11,13 +11,18 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ems.staffapp"
+      "_TODO_bundleIdentifier": "TODO: Replace 'com.yourbrand' with your actual brand before App Store submission",
+      "bundleIdentifier": "com.yourbrand.ems.staffapp",
+      "buildNumber": "1"
     },
     "android": {
-      "package": "com.ems.staffapp"
+      "_TODO_package": "TODO: Replace 'com.yourbrand' with your actual brand before Play Store submission",
+      "package": "com.yourbrand.ems.staffapp",
+      "versionCode": 1
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-updates"
     ]
   }
 }

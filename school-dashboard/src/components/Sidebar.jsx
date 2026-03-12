@@ -9,10 +9,9 @@ import {
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, BookOpen, MessageSquare, IndianRupee, Settings,
-  ChevronsLeft, GraduationCap, Calendar, BarChart3, FileText, DoorOpen,
+  ChevronsLeft, GraduationCap, Calendar, BarChart3, DoorOpen,
   Sun, Moon, LogOut, ChevronRight,
-  Briefcase, FileSpreadsheet,
-  PieChart, Layers, Award
+  Layers, Award
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "../context/AuthContext";
@@ -46,26 +45,15 @@ const modules = {
       items: [
         { icon: MessageSquare, label: "Messages", href: "/messaging" },
       ]
-    }
-  ],
-  FrontDesk: [],
-  Accounts: [
+    },
     {
       title: "Finance",
       items: [
         { icon: IndianRupee, label: "Fee Collection", href: "/fees" },
-        { icon: FileSpreadsheet, label: "Invoices", href: "/accounts/invoices" },
-        { icon: Briefcase, label: "Expenses", href: "/accounts/expenses" },
-      ]
-    },
-    {
-      title: "Reports",
-      items: [
-        { icon: PieChart, label: "Financial Reports", href: "/accounts/reports" },
-        { icon: FileText, label: "Payroll", href: "/accounts/payroll" },
       ]
     }
   ],
+  FrontDesk: [],
   Analytics: []
 };
 
@@ -77,10 +65,6 @@ const moduleInfo = {
   FrontDesk: {
     label: "Front Desk",
     icon: DoorOpen,
-  },
-  Accounts: {
-    label: "Accounts",
-    icon: IndianRupee,
   },
   Analytics: {
     label: "Analytics",

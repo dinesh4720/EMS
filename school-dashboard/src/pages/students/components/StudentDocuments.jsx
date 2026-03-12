@@ -105,12 +105,9 @@ export default function StudentDocuments({
             }
 
             const result = await response2.json();
-            console.log('📄 Document saved to backend, received:', result);
-            console.log('📄 All documents from server:', result.documents);
 
             // Update local state with all documents from server
             onDocumentsChange(result.documents || []);
-            console.log('📄 Local state updated with', result.documents?.length || 0, 'documents');
 
             // Mark completed
             onActiveUploadsChange(prev => prev.map(u =>
@@ -149,19 +146,13 @@ export default function StudentDocuments({
   };
 
   const handleDeleteDocument = async (docId) => {
-    console.log('🗑️ Attempting to delete document:', docId);
-    console.log('🗑️ Current documents:', documents);
-
     // Find the index of the document to delete
     // Handle both doc.id and fallback doc-{index} format
     let docIndex = documents.findIndex(d => d.id === docId);
 
-    console.log('🗑️ Found document at index:', docIndex);
-
     // If not found by id, try to extract index from doc-{index} format
     if (docIndex === -1 && docId.startsWith('doc-')) {
       docIndex = parseInt(docId.replace('doc-', ''));
-      console.log('🗑️ Using fallback index:', docIndex);
     }
 
     if (docIndex === -1 || docIndex >= documents.length) {
@@ -174,7 +165,6 @@ export default function StudentDocuments({
 
     try {
       const deleteUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${studentId}/documents/${docIndex}`;
-      console.log('🗑️ DELETE request to:', deleteUrl);
 
       const token = getAuthToken();
       const headers = {};
@@ -188,8 +178,6 @@ export default function StudentDocuments({
         headers
       });
 
-      console.log('🗑️ DELETE response status:', response.status);
-
       if (!response.ok) {
         const error = await response.json();
         console.error('🗑️ DELETE error response:', error);
@@ -197,7 +185,6 @@ export default function StudentDocuments({
       }
 
       const result = await response.json();
-      console.log('🗑️ DELETE success, remaining documents:', result.documents?.length);
 
       // Update local state with the documents array from server
       onDocumentsChange(result.documents || []);
@@ -209,7 +196,6 @@ export default function StudentDocuments({
   };
 
   const handleCleanupCorruptedDocuments = async () => {
-    console.log('🔧 Current documents before fix:', documents);
     const loadingToast = toast.loading("Fixing documents...");
 
     try {
@@ -230,7 +216,6 @@ export default function StudentDocuments({
       }
 
       const result = await response.json();
-      console.log('✅ Fixed documents from server:', result.documents);
 
       // Update local state with fixed documents
       onDocumentsChange(result.documents || []);
@@ -316,7 +301,6 @@ export default function StudentDocuments({
                           size="sm"
                           variant="light"
                           onPress={() => {
-                            console.log('👁️ Opening front document:', doc.front.url);
                             window.open(doc.front.url, '_blank', 'noopener,noreferrer');
                           }}
                         >
@@ -329,7 +313,6 @@ export default function StudentDocuments({
                           size="sm"
                           variant="light"
                           onPress={() => {
-                            console.log('👁️ Opening back document:', doc.back.url);
                             window.open(doc.back.url, '_blank', 'noopener,noreferrer');
                           }}
                         >
@@ -345,8 +328,6 @@ export default function StudentDocuments({
                           size="sm"
                           variant="light"
                           onPress={() => {
-                            console.log('👁️ Opening document:', doc.url);
-
                             // Check if it's a data URL (base64)
                             if (doc.url.startsWith('data:')) {
                               // Convert data URL to Blob and create object URL

@@ -15,6 +15,7 @@ import { formatDate } from '../utils/helpers';
 import { User, Phone, Mail, MapPin, Building, LogOut, ChevronRight, Bell, BookOpen, Hash } from 'lucide-react-native';
 
 const ProfileScreen = ({ navigation }) => {
+  // navigation is passed in from TabNavigator
   const { student, user, logout } = useAuth();
   const { themeColors, spacing, typography, borderRadius } = useTheme();
 
@@ -152,13 +153,19 @@ const ProfileScreen = ({ navigation }) => {
               icon={Bell}
               title="Notifications"
               subtitle="Manage notification preferences"
-              onPress={() => {}}
+              onPress={() => navigation.navigate('NotificationSettings')}
             />
             <MenuItem
               icon={User}
               title="Edit Profile"
               subtitle="Update your information"
-              onPress={() => {}}
+              onPress={() => navigation.navigate('EditProfile')}
+            />
+            <MenuItem
+              icon={BookOpen}
+              title="Remarks"
+              subtitle="View teacher feedback"
+              onPress={() => navigation.navigate('Remarks')}
             />
           </Card>
 

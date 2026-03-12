@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 /**
  * Hook that detects scrolling and adds a 'scrolling' class to the element
  * The class is removed after a delay when scrolling stops
- * 
+ *
  * @param {number} delay - Time in ms to wait after scrolling stops before removing the class (default: 1000ms)
  * @returns {React.RefObject} - Ref to attach to the scrollable element
  */
@@ -15,17 +15,13 @@ export function useScrollVisibility(delay = 1000) {
   useEffect(() => {
     const element = elementRef.current;
     if (!element) {
-      console.log('[useScrollVisibility] No element found for ref');
       return;
     }
 
-    console.log('[useScrollVisibility] Attached to element:', element);
-
     const handleScroll = () => {
-      console.log('[useScrollVisibility] Scroll event detected');
       // Add scrolling class
       setIsScrolling(true);
-      
+
       // Clear any existing timeout
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -33,7 +29,6 @@ export function useScrollVisibility(delay = 1000) {
 
       // Set timeout to remove class after delay
       timeoutRef.current = setTimeout(() => {
-        console.log('[useScrollVisibility] Removing scrolling class');
         setIsScrolling(false);
       }, delay);
     };
@@ -54,14 +49,10 @@ export function useScrollVisibility(delay = 1000) {
     const element = elementRef.current;
     if (!element) return;
 
-    console.log('[useScrollVisibility] isScrolling state:', isScrolling, 'Element classes:', element.className);
-    
     if (isScrolling) {
       element.classList.add('scrolling');
-      console.log('[useScrollVisibility] Added .scrolling class');
     } else {
       element.classList.remove('scrolling');
-      console.log('[useScrollVisibility] Removed .scrolling class');
     }
   }, [isScrolling]);
 

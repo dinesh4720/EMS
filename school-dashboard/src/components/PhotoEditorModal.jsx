@@ -14,29 +14,20 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
     const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    // Debug: Log when modal opens/closes
-    React.useEffect(() => {
-        console.log('🖼️ PhotoEditorModal isOpen:', isOpen, 'imageSrc:', imageSrc ? 'present' : 'missing');
-    }, [isOpen, imageSrc]);
-
     const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
         setCroppedAreaPixels(croppedAreaPixels);
     }, []);
 
     const handleSave = async () => {
-        console.log('💾 PhotoEditorModal handleSave called');
         try {
             setLoading(true);
-            console.log('✂️ Cropping image...');
             const croppedImage = await getCroppedImg(
                 imageSrc,
                 croppedAreaPixels,
                 rotation,
                 flip
             );
-            console.log('✅ Image cropped, calling onSave');
             onSave(croppedImage);
-            console.log('🔒 Calling onClose');
             onClose();
         } catch (e) {
             console.error('❌ Error saving photo:', e);

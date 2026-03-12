@@ -1,5 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import CONFIG from '../config';
+
+const SECURE_REFRESH_KEY = 'secure_refresh_token';
 
 class ApiService {
   constructor() {
@@ -20,6 +23,9 @@ class ApiService {
 
   async getRefreshToken() {
     try {
+      // Try SecureStore first (new storage), fall back to AsyncStorage (migration)
+      const secure = await SecureStore.getItemAsync(SECURE_REFRESH_KEY);
+      if (secure) return secure;
       return await AsyncStorage.getItem(CONFIG.STORAGE_KEYS.REFRESH_TOKEN);
     } catch (error) {
       return null;
@@ -125,8 +131,10 @@ class ApiService {
     });
   }
 
-  async delete(endpoint) {
-    return this.request(endpoint, { method: 'DELETE' });
+  async delete(endpoint, params = null) {
+    // Pass optional query params for DELETE (avoids body in DELETE requests)
+    const url = params ? `${endpoint}?${new URLSearchParams(params).toString()}` : endpoint;
+    return this.request(url, { method: 'DELETE' });
   }
 
   // Auth endpoints
@@ -215,6 +223,7 @@ class ApiService {
 
   async removeFcmToken(token) {
     return this.delete(CONFIG.API_ENDPOINTS.FCM_TOKEN, { token });
+    // token is passed as query param: DELETE /api/parent/fcm-token?token=...
   }
 }
 

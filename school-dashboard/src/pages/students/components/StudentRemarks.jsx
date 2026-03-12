@@ -72,7 +72,6 @@ export default function StudentRemarks({
 
       if (response.ok) {
         const savedRemark = await response.json();
-        console.log("Remark saved successfully:", savedRemark);
 
         // Add to local state
         onRemarksChange([savedRemark, ...remarks]);
@@ -308,7 +307,7 @@ export default function StudentRemarks({
 
                 {/* Send to Parent */}
                 <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
-                  <Checkbox
+                  <Checkbox size="sm"
                     isSelected={remarkForm.sendToParent}
                     onValueChange={(checked) => setRemarkForm({ ...remarkForm, sendToParent: checked })}
                   >

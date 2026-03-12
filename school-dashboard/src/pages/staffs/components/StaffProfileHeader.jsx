@@ -20,7 +20,8 @@ export default function StaffProfileHeader({
   onEditClick,
   onMessageClick,
   hasPermission,
-  onDeleteClick
+  onDeleteClick,
+  onTabChange
 }) {
   const navigate = useNavigate();
 
@@ -148,7 +149,9 @@ export default function StaffProfileHeader({
                   </span>
                 ))
               ) : (
-                <span className="text-gray-500 dark:text-gray-400">@{staff.role?.toLowerCase()?.replace(" ", "_") || "staff"}</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 px-2.5 py-0.5 rounded-md capitalize">
+                  {staff.role || "Staff"}
+                </span>
               )}
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 px-2.5 py-0.5 rounded-md">
                 {staff.department || "General"}
@@ -235,7 +238,7 @@ export default function StaffProfileHeader({
               <DropdownItem
                 key="viewSalary"
                 startContent={<CreditCard size={16} />}
-                onPress={() => {}}
+                onPress={() => onTabChange?.('payroll')}
               >
                 View Salary
               </DropdownItem>
@@ -243,7 +246,7 @@ export default function StaffProfileHeader({
               <DropdownItem
                 key="viewClasses"
                 startContent={<Users size={16} />}
-                onPress={() => {}}
+                onPress={() => onTabChange?.('classes')}
               >
                 View Classes
               </DropdownItem>
