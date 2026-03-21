@@ -63,7 +63,6 @@ export const ChatProvider = ({ children }) => {
       });
 
       newSocket.on('connect', () => {
-        console.log('Chat socket connected');
         setConnected(true);
         newSocket.emit('authenticate', {
           userId: userRef.current?.id,
@@ -72,7 +71,6 @@ export const ChatProvider = ({ children }) => {
       });
 
       newSocket.on('authenticated', () => {
-        console.log('Chat socket authenticated');
         // Re-join current conversation room if any
         const chat = currentChatRef.current;
         if (chat?.id) {
@@ -81,7 +79,6 @@ export const ChatProvider = ({ children }) => {
       });
 
       newSocket.on('disconnect', () => {
-        console.log('Chat socket disconnected');
         setConnected(false);
       });
 
@@ -121,7 +118,6 @@ export const ChatProvider = ({ children }) => {
 
       // Confirmation that the room join was acknowledged by server
       newSocket.on('joined_conversation', (data) => {
-        console.log('Joined conversation room:', data?.conversationId);
       });
 
       socketRef.current = newSocket;

@@ -621,7 +621,7 @@ export default function BulkSubjectAssignment() {
                                 <div className="flex flex-wrap gap-1 mt-2">
                                   {assignment.classes?.map((cls, idx) => (
                                     <span
-                                      key={idx}
+                                      key={cls._id || cls.id || `class-${idx}`}
                                       className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded"
                                     >
                                       {getClassDisplay(cls)}

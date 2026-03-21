@@ -1,0 +1,110 @@
+import { useState } from "react";
+import { useTranslation } from 'react-i18next';
+import {
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
+  Button, Input, Select, SelectItem
+} from "@heroui/react";
+import toast from "react-hot-toast";
+import { toDateInputValue } from "../../../../utils/dateFormatter";
+
+export default function PaymentRecordingModal({ isOpen, onClose, studentFeeStructure, onRecordPayment }) {
+  const { t } = useTranslation();
+  const [paymentForm, setPaymentForm] = useState({
+    amount: "",
+    paymentMode: "cash",
+    date: toDateInputValue(new Date())
+  });
+
+  const handleOpenChange = (open) => {
+    if (open && studentFeeStructure?.totalBalance) {
+      // Auto-populate with outstanding amount when modal opens
+      setPaymentForm(prev => ({
+        ...prev,
+        amount: studentFeeStructure.totalBalance.toString()
+      }));
+    }
+    if (!open) {
+      onClose();
+    }
+  };
+
+  const handleRecordPayment = async () => {
+    if (!paymentForm.amount || !paymentForm.paymentMode) {
+      toast.error(t('students.profile.overview.enterAmountAndMethod', 'Please enter amount and select payment method'));
+      return;
+    }
+
+    const paymentAmount = parseInt(paymentForm.amount);
+    if (paymentAmount <= 0) {
+      toast.error(t('students.profile.overview.enterValidAmount', 'Please enter a valid amount'));
+      return;
+    }
+
+    await onRecordPayment(paymentForm);
+
+    // Reset form after successful payment
+    setPaymentForm({
+      amount: "",
+      paymentMode: "cash",
+      date: toDateInputValue(new Date())
+    });
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      onOpenChange={handleOpenChange}
+    >
+      <ModalContent>
+        <ModalHeader>{t('students.profile.overview.recordFeePayment', 'Record Fee Payment')}</ModalHeader>
+        <ModalBody>
+          <div className="space-y-4">
+            <Input
+              label={t('students.profile.overview.amount', 'Amount')}
+              type="number"
+              value={paymentForm.amount}
+              onValueChange={(v) => setPaymentForm({ ...paymentForm, amount: v })}
+              startContent="₹"
+              variant="bordered"
+              description={`${t('students.profile.overview.outstanding', 'Outstanding')}: ₹${studentFeeStructure?.totalBalance?.toLocaleString() || 0}`}
+              isRequired
+            />
+            <Select
+              aria-label={t('students.profile.overview.paymentMethod', 'Payment method')}
+              label={t('students.profile.overview.paymentMethod', 'Payment Method')}
+              placeholder={t('students.profile.overview.selectPaymentMethod', 'Select payment method')}
+              selectedKeys={[paymentForm.paymentMode]}
+              onSelectionChange={(keys) => setPaymentForm({ ...paymentForm, paymentMode: Array.from(keys)[0] })}
+              variant="bordered"
+              isRequired
+            >
+              <SelectItem key="cash">{t('students.profile.overview.cash', 'Cash')}</SelectItem>
+              <SelectItem key="online">{t('students.profile.overview.onlineUPI', 'Online/UPI')}</SelectItem>
+              <SelectItem key="card">{t('students.profile.overview.card', 'Card')}</SelectItem>
+              <SelectItem key="cheque">{t('students.profile.overview.cheque', 'Cheque')}</SelectItem>
+              <SelectItem key="bank_transfer">{t('students.profile.overview.bankTransfer', 'Bank Transfer')}</SelectItem>
+            </Select>
+            <Input
+              label={t('students.profile.overview.paymentDate', 'Payment Date')}
+              type="date"
+              value={paymentForm.date}
+              onValueChange={(v) => setPaymentForm({ ...paymentForm, date: v })}
+              variant="bordered"
+            />
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="flat" onPress={onClose}>{t('common.cancel', 'Cancel')}</Button>
+          <Button
+            color="primary"
+            onPress={handleRecordPayment}
+            isDisabled={!paymentForm.amount || !paymentForm.paymentMode}
+          >
+            {t('students.profile.overview.recordPayment', 'Record Payment')}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+}

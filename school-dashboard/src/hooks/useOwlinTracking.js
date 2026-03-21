@@ -62,6 +62,7 @@ export function useOwlinTracking() {
         page: window.location.pathname,
       })
     } catch (error) {
+      // ignored
     }
   }, [])
 
@@ -113,8 +114,10 @@ export function useOwlinTracking() {
               }),
             })
           } catch (err) {
+            // ignored
           }
         } catch (err) {
+          // ignored
         }
       }
     }

@@ -140,7 +140,7 @@ function MultiDocumentUploadField({ label, description, files, onUpload, onRemov
         <div className="flex flex-wrap gap-2 mt-2">
           {files.map((file, i) => (
             <Chip
-              key={i}
+              key={`doc-${file.name}-${i}`}
               onClose={() => onRemove(i)}
               size="sm"
               variant="flat"

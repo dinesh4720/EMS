@@ -25,7 +25,7 @@ export default function PayrollReminder() {
           setReminder(data);
           // Show toast notification
           toast.custom((t) => (
-            <div className="bg-white border-l-4 border-warning shadow-lg rounded-lg p-4 max-w-md flex items-start gap-3">
+            <div className="bg-white dark:bg-zinc-950 border-l-4 border-warning shadow-lg rounded-lg p-4 max-w-md flex items-start gap-3">
               <AlertCircle className="text-warning flex-shrink-0 mt-0.5" size={20} />
               <div className="flex-1">
                 <p className="font-semibold text-sm text-default-800">Payroll Reminder</p>
@@ -63,7 +63,7 @@ export default function PayrollReminder() {
 
   return (
     <div className="fixed bottom-4 right-4 z-50 max-w-md animate-slide-up">
-      <div className="bg-white border border-warning shadow-xl rounded-lg overflow-hidden">
+      <div className="bg-white dark:bg-zinc-950 border border-warning shadow-xl rounded-lg overflow-hidden">
         <div className="bg-warning/10 px-4 py-3 flex items-start gap-3">
           <AlertCircle className="text-warning flex-shrink-0 mt-0.5" size={20} />
           <div className="flex-1 min-w-0">

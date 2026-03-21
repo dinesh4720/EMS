@@ -75,7 +75,7 @@ export default function ConflictIndicator({
             <p className="text-xs text-danger-600 font-semibold mb-2">Conflicting Classes:</p>
             <div className="space-y-2">
               {conflictList.map((conf, idx) => (
-                <div key={idx} className="flex items-start gap-2 text-xs">
+                <div key={conf.classId || `conflict-${idx}`} className="flex items-start gap-2 text-xs">
                   <div className="w-1.5 h-1.5 rounded-full bg-danger-500 mt-1.5 flex-shrink-0"></div>
                   <div className="flex-1">
                     <p className="font-semibold text-danger-700">{conf.className}</p>
@@ -325,7 +325,7 @@ export default function ConflictIndicator({
                   <div className="mt-4 space-y-3">
                     <h5 className="text-sm font-semibold text-default-700">All Conflicts:</h5>
                     {selectedConflict.allConflicts.map((conflict, idx) => (
-                      <div key={idx} className="bg-default-50 border border-default-200 rounded-lg p-3">
+                      <div key={`${conflict.day}-${conflict.periodIndex}`} className="bg-default-50 border border-default-200 rounded-lg p-3">
                         <p className="text-xs font-semibold text-default-700 mb-1">
                           Conflict {idx + 1}: {conflict.day} Period {conflict.periodIndex + 1}
                         </p>

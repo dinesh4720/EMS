@@ -8,7 +8,8 @@ import {
   Textarea, Button, Drawer, DrawerContent, DrawerHeader, DrawerBody,
   Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Chip
 } from "@heroui/react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useValidatedParams } from "../../hooks/useValidatedParams";
 import {
   ArrowLeft, Phone, Clock, Calendar, Briefcase, X, Users, GraduationCap,
   Link, TrendingUp, TrendingDown, Camera, MoreVertical, Edit, FileText,
@@ -38,7 +39,7 @@ import { usePermissions } from "../../context/PermissionContext";
 import { uploadApi } from "../../services/api";
 
 export default function StaffDashboard() {
-  const { id } = useParams();
+  const { params: { id }, isValid } = useValidatedParams({ id: 'objectId' }, { redirectTo: '/staffs' });
   const navigate = useNavigate();
   const { hasPermission } = usePermissions();
 
@@ -368,8 +369,10 @@ export default function StaffDashboard() {
 
     try {
       const dataURLtoFile = (dataurl, filename) => {
-        let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-          bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+        const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+          bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
         while (n--) u8arr[n] = bstr.charCodeAt(n);
         return new File([u8arr], filename, { type: mime });
       };
@@ -429,16 +432,18 @@ export default function StaffDashboard() {
     { label: "Join Date", value: staff?.joinDate || "—", subtext: staff?.status || "Active", icon: Calendar },
   ];
 
+  if (!isValid) return null;
+
   if (!staff) {
     // Show loading state while data is being fetched
     if (loading) {
-      return <div className="min-h-screen flex items-center justify-center"><div className="text-gray-400 text-sm">Loading staff data...</div></div>;
+      return <div className="min-h-screen flex items-center justify-center"><div className="text-gray-400 dark:text-zinc-500 text-sm">Loading staff data...</div></div>;
     }
-    return <div className="min-h-screen flex items-center justify-center"><div className="text-gray-400 text-sm">Staff member not found</div></div>;
+    return <div className="min-h-screen flex items-center justify-center"><div className="text-gray-400 dark:text-zinc-500 text-sm">Staff member not found</div></div>;
   }
 
   return (
-    <div className="w-full flex-1 bg-gray-50 p-6 min-h-screen">
+    <div className="w-full flex-1 bg-gray-50 dark:bg-zinc-900 p-6 min-h-screen">
       {/* Hidden file inputs */}
       <input
         type="file"
@@ -452,28 +457,28 @@ export default function StaffDashboard() {
           HEADER SECTION
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="mb-6">
-        <button onClick={() => navigate('/staffs')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors mb-2">
+        <button onClick={() => navigate('/staffs')} className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors mb-2">
           <ArrowLeft size={16} /><span>Back to Staff</span>
         </button>
 
-        <div className="bg-white rounded-lg border border-gray-100 p-5">
+        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4">
             <div className="flex items-center gap-5">
               {/* Avatar */}
               <div className="relative">
-                <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
+                <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-zinc-800 overflow-hidden flex items-center justify-center">
                   {picturePreview || staff.picture ? (
                     <img src={picturePreview || staff.picture} alt={staff.name} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-xl font-medium text-gray-400">
+                    <span className="text-xl font-medium text-gray-400 dark:text-zinc-500">
                       {getSafeInitials(staff.name, staff.code?.charAt(0)?.toUpperCase() || '?')}
                     </span>
                   )}
                 </div>
                 <Dropdown>
                   <DropdownTrigger>
-                    <button className="absolute -bottom-1 -right-1 w-6 h-6 rounded-md bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50">
-                      <Camera size={12} className="text-gray-500" />
+                    <button className="absolute -bottom-1 -right-1 w-6 h-6 rounded-md bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-zinc-900">
+                      <Camera size={12} className="text-gray-500 dark:text-zinc-400" />
                     </button>
                   </DropdownTrigger>
                   <DropdownMenu className="min-w-[140px]">
@@ -486,22 +491,22 @@ export default function StaffDashboard() {
 
               {/* Info */}
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">
+                <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
                   {getSafeDisplayName(staff, 'code')}
                 </h1>
 
                 {/* Roles Line with heading */}
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  <span className="text-xs font-medium text-gray-500">Roles:</span>
+                  <span className="text-xs font-medium text-gray-500 dark:text-zinc-400">Roles:</span>
                   {Array.isArray(staff.role) ? staff.role.map((role, idx) => (
                     <Chip
-                      key={idx}
+                      key={role}
                       size="sm"
                       variant="flat"
                       classNames={{
-                        base: role === 'Admin' || role === 'Principal' ? "bg-gray-800 text-white" :
-                          role === 'Teacher' ? "bg-gray-700 text-white" :
-                            "bg-gray-100 text-gray-700",
+                        base: role === 'Admin' || role === 'Principal' ? "bg-gray-800 dark:bg-zinc-200 text-white dark:text-zinc-900" :
+                          role === 'Teacher' ? "bg-gray-700 dark:bg-zinc-300 text-white dark:text-zinc-900" :
+                            "bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300",
                         content: "text-xs font-medium"
                       }}
                     >
@@ -512,7 +517,7 @@ export default function StaffDashboard() {
                       size="sm"
                       variant="flat"
                       classNames={{
-                        base: "bg-gray-700 text-white",
+                        base: "bg-gray-700 dark:bg-zinc-300 text-white dark:text-zinc-900",
                         content: "text-xs font-medium"
                       }}
                     >
@@ -524,14 +529,14 @@ export default function StaffDashboard() {
                 {/* Subjects Line with heading (only for teachers) */}
                 {subjectAssignments.length > 0 && (
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    <span className="text-xs font-medium text-gray-500">Subjects Handling:</span>
+                    <span className="text-xs font-medium text-gray-500 dark:text-zinc-400">Subjects Handling:</span>
                     {[...new Set(subjectAssignments.map(a => a.subject).filter(Boolean))].map((subject, idx) => (
                       <Chip
-                        key={idx}
+                        key={subject}
                         size="sm"
                         variant="flat"
                         classNames={{
-                          base: "bg-blue-50 text-blue-700 border border-blue-100",
+                          base: "bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800",
                           content: "text-xs font-medium"
                         }}
                       >
@@ -543,16 +548,16 @@ export default function StaffDashboard() {
 
                 {/* Department - only show if no subjects */}
                 {subjectAssignments.length === 0 && staff.department && (
-                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-400 dark:text-zinc-500">
                     <span>{staff.department}</span>
                   </div>
                 )}
 
                 {/* Contact Info */}
                 {staff.phone && (
-                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-400 dark:text-zinc-500">
                     <Phone size={12} /><span>{staff.phone}</span>
-                    {staff.email && <><span className="text-gray-300">|</span><span>{staff.email}</span></>}
+                    {staff.email && <><span className="text-gray-300 dark:text-zinc-600">|</span><span>{staff.email}</span></>}
                   </div>
                 )}
               </div>
@@ -560,13 +565,13 @@ export default function StaffDashboard() {
 
             {/* Actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
-              <Button variant="flat" className="bg-gray-100 text-gray-700" startContent={<Phone size={16} />}
+              <Button variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Phone size={16} />}
                 onPress={() => { if (staff.phone) { window.location.href = `tel:${staff.phone}`; toast.success(`Calling...`); } else { toast.error("No phone number"); } }}
                 isDisabled={!staff.phone}>Call</Button>
-              <Button className="bg-gray-900 text-white hover:bg-gray-800" startContent={<Edit size={16} />} onPress={handleEditClick}>Edit</Button>
+              <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200" startContent={<Edit size={16} />} onPress={handleEditClick}>Edit</Button>
               <Dropdown>
                 <DropdownTrigger>
-                  <Button isIconOnly variant="light" className="text-gray-400"><MoreVertical size={20} /></Button>
+                  <Button isIconOnly variant="light" className="text-gray-400 dark:text-zinc-500"><MoreVertical size={20} /></Button>
                 </DropdownTrigger>
                 <DropdownMenu className="min-w-[180px]">
                   <DropdownItem key="message" onPress={onOpen}>Send Message</DropdownItem>
@@ -583,13 +588,13 @@ export default function StaffDashboard() {
           TABS
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="mb-5">
-        <div className="flex items-center gap-1 border-b border-gray-200 overflow-x-auto">
+        <div className="flex items-center gap-1 border-b border-gray-200 dark:border-zinc-800 overflow-x-auto">
           {tabs.map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-3 text-sm font-medium transition-colors relative whitespace-nowrap ${activeTab === tab.key ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'
+              className={`px-4 py-3 text-sm font-medium transition-colors relative whitespace-nowrap ${activeTab === tab.key ? 'text-gray-900 dark:text-zinc-100' : 'text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-400'
                 }`}>
               {tab.label}
-              {activeTab === tab.key && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />}
+              {activeTab === tab.key && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 dark:bg-zinc-100" />}
             </button>
           ))}
         </div>
@@ -609,52 +614,52 @@ export default function StaffDashboard() {
               {/* Stats Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {stats.map((stat, i) => (
-                  <div key={i} className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+                  <div key={stat.label} className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
                     <div className="flex items-start justify-between mb-3">
-                      <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                        <stat.icon size={16} className="text-gray-600" />
+                      <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                        <stat.icon size={16} className="text-gray-600 dark:text-zinc-400" />
                       </div>
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-800">{stat.value}</h3>
-                    <p className="text-xs font-medium text-gray-500 mt-0.5">{stat.label}</p>
-                    {stat.subtext && <p className="text-xs text-gray-400 mt-2">{stat.subtext}</p>}
+                    <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{stat.value}</h3>
+                    <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{stat.label}</p>
+                    {stat.subtext && <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2">{stat.subtext}</p>}
                   </div>
                 ))}
               </div>
 
               {/* Class Teacher Section - Always visible */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="p-5 border-b border-gray-200">
+              <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+                <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><GraduationCap size={16} className="text-gray-600" /></div>
-                    <div><h3 className="font-medium text-gray-900 text-sm">Class Teacher Assignment</h3><p className="text-xs text-gray-500">{classTeacherAssignments.length > 0 ? 'Class you manage as class teacher' : 'Not assigned to any class'}</p></div>
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><GraduationCap size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Class Teacher Assignment</h3><p className="text-xs text-gray-500 dark:text-zinc-400">{classTeacherAssignments.length > 0 ? 'Class you manage as class teacher' : 'Not assigned to any class'}</p></div>
                   </div>
                 </div>
                 {classTeacherAssignments.length > 0 ? (
-                  <div className="divide-y divide-gray-50">
+                  <div className="divide-y divide-gray-50 dark:divide-zinc-800">
                     {classTeacherAssignments.map((cls) => {
                       const clsAttendance = cls.averageAttendance || cls.attendance || 0;
                       return (
                         <div
                           key={cls.id}
-                          className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors cursor-pointer"
+                          className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer"
                           onClick={() => navigate(`/classes/${cls.id}`)}
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-700">
+                            <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-sm font-semibold text-gray-700 dark:text-zinc-300">
                               {cls.name}-{cls.section}
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-gray-900">{cls.name} - {cls.section}</p>
-                              <p className="text-xs text-gray-500">{cls.studentCount || 0} students</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{cls.name} - {cls.section}</p>
+                              <p className="text-xs text-gray-500 dark:text-zinc-400">{cls.studentCount || 0} students</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
-                            <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                              <div className={`h-full rounded-full transition-all ${clsAttendance >= 90 ? 'bg-gray-800' : clsAttendance >= 75 ? 'bg-gray-600' : 'bg-gray-400'}`} style={{ width: `${clsAttendance}%` }} />
+                            <div className="w-20 h-1.5 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                              <div className={`h-full rounded-full transition-all ${clsAttendance >= 90 ? 'bg-gray-800 dark:bg-zinc-200' : clsAttendance >= 75 ? 'bg-gray-600 dark:bg-zinc-400' : 'bg-gray-400 dark:bg-zinc-500'}`} style={{ width: `${clsAttendance}%` }} />
                             </div>
-                            <span className="text-sm font-semibold text-gray-900 w-12 text-right">{clsAttendance}%</span>
-                            <Link size={16} className="text-gray-400" />
+                            <span className="text-sm font-semibold text-gray-900 dark:text-zinc-100 w-12 text-right">{clsAttendance}%</span>
+                            <Link size={16} className="text-gray-400 dark:text-zinc-500" />
                           </div>
                         </div>
                       );
@@ -662,14 +667,14 @@ export default function StaffDashboard() {
                   </div>
                 ) : (
                   <div className="p-6 flex flex-col items-center justify-center text-center">
-                    <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-3">
-                      <GraduationCap size={20} className="text-gray-300" />
+                    <div className="w-12 h-12 rounded-full bg-gray-50 dark:bg-zinc-900 flex items-center justify-center mb-3">
+                      <GraduationCap size={20} className="text-gray-300 dark:text-zinc-600" />
                     </div>
-                    <p className="text-sm text-gray-500 mb-1">No class has been assigned yet</p>
-                    <p className="text-xs text-gray-400 mb-4">This staff member is not a class teacher for any class.</p>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400 mb-1">No class has been assigned yet</p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500 mb-4">This staff member is not a class teacher for any class.</p>
                     <button
                       onClick={handleOpenAssignClassModal}
-                      className="text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors"
+                      className="text-xs font-medium text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 px-4 py-2 rounded-lg transition-colors"
                     >
                       Assign a Class →
                     </button>
@@ -678,11 +683,11 @@ export default function StaffDashboard() {
               </div>
 
               {/* Today's Status */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="p-5 border-b border-gray-200">
+              <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+                <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><Activity size={16} className="text-gray-600" /></div>
-                    <div><h3 className="font-medium text-gray-900 text-sm">Today's Status</h3><p className="text-xs text-gray-500">{format(today, 'EEEE, MMMM d, yyyy')}</p></div>
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Activity size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Today's Status</h3><p className="text-xs text-gray-500 dark:text-zinc-400">{format(today, 'EEEE, MMMM d, yyyy')}</p></div>
                   </div>
                 </div>
                 <div className="p-5">
@@ -698,22 +703,22 @@ export default function StaffDashboard() {
                     return (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isPresent ? 'bg-gray-100' : 'bg-gray-50'}`}>
-                            <CheckCircle2 size={24} className={isPresent ? 'text-gray-600' : 'text-gray-400'} />
+                          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isPresent ? 'bg-gray-100 dark:bg-zinc-800' : 'bg-gray-50 dark:bg-zinc-900'}`}>
+                            <CheckCircle2 size={24} className={isPresent ? 'text-gray-600 dark:text-zinc-400' : 'text-gray-400 dark:text-zinc-500'} />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">
                               {isPresent ? 'Present Today' : isAbsent ? 'Absent Today' : isOnLeave ? 'On Leave' : 'Not Marked'}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-zinc-400">
                               {checkInTime ? `Check-in: ${checkInTime}` : isPresent ? 'Check-in: Marked' : 'Check-in: --:--'}
                               {checkOutTime ? ` · Out: ${checkOutTime}` : ''}
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-2xl font-bold text-gray-900">{attendanceRate}%</p>
-                          <p className="text-xs text-gray-500">Monthly Attendance</p>
+                          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{attendanceRate}%</p>
+                          <p className="text-xs text-gray-500 dark:text-zinc-400">Monthly Attendance</p>
                         </div>
                       </div>
                     );
@@ -722,20 +727,20 @@ export default function StaffDashboard() {
               </div>
 
               {/* Quick Stats Summary */}
-              <div className="bg-white rounded-lg border border-gray-200 p-5">
-                <h3 className="text-sm font-medium text-gray-900 mb-4">Monthly Summary</h3>
+              <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 p-5">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Monthly Summary</h3>
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center p-3 rounded-lg bg-gray-50">
-                    <p className="text-xl font-bold text-gray-900">{monthlyStats.total}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Working Days</p>
+                  <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-zinc-900">
+                    <p className="text-xl font-bold text-gray-900 dark:text-zinc-100">{monthlyStats.total}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Working Days</p>
                   </div>
-                  <div className="text-center p-3 rounded-lg bg-gray-50">
-                    <p className="text-xl font-bold text-gray-900">{monthlyStats.present}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Present</p>
+                  <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-zinc-900">
+                    <p className="text-xl font-bold text-gray-900 dark:text-zinc-100">{monthlyStats.present}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Present</p>
                   </div>
-                  <div className="text-center p-3 rounded-lg bg-gray-50">
-                    <p className="text-xl font-bold text-gray-900">{monthlyStats.absent}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Absent</p>
+                  <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-zinc-900">
+                    <p className="text-xl font-bold text-gray-900 dark:text-zinc-100">{monthlyStats.absent}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Absent</p>
                   </div>
                 </div>
               </div>
@@ -759,11 +764,11 @@ export default function StaffDashboard() {
           {/* ─── TIMETABLE TAB ─── */}
           {activeTab === "timetable" && (
             <div className="space-y-4">
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+              <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+                <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><Calendar size={16} className="text-gray-600" /></div>
-                    <div><h3 className="font-medium text-gray-900 text-sm">Weekly Timetable</h3><p className="text-xs text-gray-500">Manage class schedules and assignments</p></div>
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Calendar size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Weekly Timetable</h3><p className="text-xs text-gray-500 dark:text-zinc-400">Manage class schedules and assignments</p></div>
                   </div>
                 </div>
                 <div className="p-5">
@@ -776,11 +781,11 @@ export default function StaffDashboard() {
           {/* ─── CLASSES TAB ─── */}
           {activeTab === "classes" && (
             <div className="space-y-4">
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+              <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+                <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><Briefcase size={16} className="text-gray-600" /></div>
-                    <div><h3 className="font-medium text-gray-900 text-sm">Subject & Class Assignments</h3><p className="text-xs text-gray-500">Manage which subjects and classes this teacher can teach</p></div>
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Briefcase size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Subject & Class Assignments</h3><p className="text-xs text-gray-500 dark:text-zinc-400">Manage which subjects and classes this teacher can teach</p></div>
                   </div>
                 </div>
                 <div className="p-5">
@@ -815,31 +820,31 @@ export default function StaffDashboard() {
         <div className="lg:col-span-1 space-y-4">
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-lg border border-gray-100 p-5">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">Quick Actions</h3>
+          <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={handleEditClick} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 hover:bg-gray-100"><Edit size={18} className="text-gray-600" /><span className="text-xs text-gray-600">Edit</span></button>
-              <button onClick={() => staff.phone && (window.location.href = `tel:${staff.phone}`)} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 hover:bg-gray-100"><Phone size={18} className="text-gray-600" /><span className="text-xs text-gray-600">Call</span></button>
-              <button onClick={onOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 hover:bg-gray-100"><Mail size={18} className="text-gray-600" /><span className="text-xs text-gray-600">Message</span></button>
-              <button onClick={() => navigate('/staffs')} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 hover:bg-gray-100"><Users size={18} className="text-gray-600" /><span className="text-xs text-gray-600">All Staff</span></button>
+              <button onClick={handleEditClick} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-700"><Edit size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">Edit</span></button>
+              <button onClick={() => staff.phone && (window.location.href = `tel:${staff.phone}`)} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-700"><Phone size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">Call</span></button>
+              <button onClick={onOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-700"><Mail size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">Message</span></button>
+              <button onClick={() => navigate('/staffs')} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-700"><Users size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">All Staff</span></button>
             </div>
           </div>
 
           {/* Alerts */}
           {(attendanceRate < 75 || (isTeacher && avgClassAttendance < 75)) && (
-            <div className="bg-white rounded-lg border border-gray-100 overflow-hidden">
-              <div className="p-4 border-b border-gray-100"><h3 className="text-sm font-medium text-gray-900">Attention Required</h3></div>
-              <div className="divide-y divide-gray-50">
+            <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 overflow-hidden">
+              <div className="p-4 border-b border-gray-100 dark:border-zinc-800"><h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Attention Required</h3></div>
+              <div className="divide-y divide-gray-50 dark:divide-zinc-800">
                 {attendanceRate < 75 && (
-                  <div className="p-4 flex items-center gap-3 hover:bg-gray-50 cursor-pointer">
-                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center"><AlertCircle size={16} className="text-gray-600" /></div>
-                    <div className="flex-1"><p className="text-sm font-medium text-gray-900">Low Attendance</p><p className="text-xs text-gray-500">{attendanceRate}% (below 75%)</p></div>
+                  <div className="p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer">
+                    <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><AlertCircle size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                    <div className="flex-1"><p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Low Attendance</p><p className="text-xs text-gray-500 dark:text-zinc-400">{attendanceRate}% (below 75%)</p></div>
                   </div>
                 )}
                 {isTeacher && avgClassAttendance < 75 && (
-                  <div className="p-4 flex items-center gap-3 hover:bg-gray-50 cursor-pointer">
-                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center"><Users size={16} className="text-gray-600" /></div>
-                    <div className="flex-1"><p className="text-sm font-medium text-gray-900">Class Attendance Alert</p><p className="text-xs text-gray-500">Average: {avgClassAttendance}%</p></div>
+                  <div className="p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer">
+                    <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Users size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                    <div className="flex-1"><p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Class Attendance Alert</p><p className="text-xs text-gray-500 dark:text-zinc-400">Average: {avgClassAttendance}%</p></div>
                   </div>
                 )}
               </div>
@@ -848,59 +853,59 @@ export default function StaffDashboard() {
 
           {/* All Clear */}
           {attendanceRate >= 75 && (!isTeacher || avgClassAttendance >= 75) && (
-            <div className="bg-white rounded-lg border border-gray-100 p-5">
+            <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center"><CheckCircle2 size={16} className="text-gray-600" /></div>
-                <div><h3 className="text-sm font-medium text-gray-900">All Clear</h3><p className="text-xs text-gray-500">No issues detected</p></div>
+                <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><CheckCircle2 size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                <div><h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">All Clear</h3><p className="text-xs text-gray-500 dark:text-zinc-400">No issues detected</p></div>
               </div>
-              <p className="text-sm text-gray-600">This staff member is performing well with good attendance and no pending actions.</p>
+              <p className="text-sm text-gray-600 dark:text-zinc-400">This staff member is performing well with good attendance and no pending actions.</p>
             </div>
           )}
 
           {/* Contact Card */}
-          <div className="bg-white rounded-lg border border-gray-100 p-5">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">Contact Information</h3>
+          <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Contact Information</h3>
             <div className="space-y-4">
               {staff.phone && (
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center"><Phone size={14} className="text-gray-600" /></div>
-                  <div><p className="text-xs text-gray-400">Phone</p><p className="text-sm text-gray-900">{staff.phone}</p></div>
+                  <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Phone size={14} className="text-gray-600 dark:text-zinc-400" /></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">Phone</p><p className="text-sm text-gray-900 dark:text-zinc-100">{staff.phone}</p></div>
                 </div>
               )}
               {staff.email && (
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center"><Mail size={14} className="text-gray-600" /></div>
-                  <div><p className="text-xs text-gray-400">Email</p><p className="text-sm text-gray-900 truncate">{staff.email}</p></div>
+                  <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Mail size={14} className="text-gray-600 dark:text-zinc-400" /></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">Email</p><p className="text-sm text-gray-900 dark:text-zinc-100 truncate">{staff.email}</p></div>
                 </div>
               )}
               {staff.address && (
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0"><Briefcase size={14} className="text-gray-600" /></div>
-                  <div><p className="text-xs text-gray-400">Address</p><p className="text-sm text-gray-900">{staff.address}</p></div>
+                  <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0"><Briefcase size={14} className="text-gray-600 dark:text-zinc-400" /></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">Address</p><p className="text-sm text-gray-900 dark:text-zinc-100">{staff.address}</p></div>
                 </div>
               )}
             </div>
           </div>
 
           {/* Department Info */}
-          <div className="bg-white rounded-lg border border-gray-100 p-5">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">Department Details</h3>
+          <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Department Details</h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Department</span>
-                <span className="text-sm font-medium text-gray-900">{staff.department || "—"}</span>
+                <span className="text-xs text-gray-500 dark:text-zinc-400">Department</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{staff.department || "—"}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Role</span>
-                <span className="text-sm font-medium text-gray-900">{Array.isArray(staff.role) ? staff.role.join(', ') : staff.role || "—"}</span>
+                <span className="text-xs text-gray-500 dark:text-zinc-400">Role</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{Array.isArray(staff.role) ? staff.role.join(', ') : staff.role || "—"}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Status</span>
-                <span className="text-sm font-medium text-gray-900">{staff.status || "Active"}</span>
+                <span className="text-xs text-gray-500 dark:text-zinc-400">Status</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{staff.status || "Active"}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Join Date</span>
-                <span className="text-sm font-medium text-gray-900">{staff.joinDate || "—"}</span>
+                <span className="text-xs text-gray-500 dark:text-zinc-400">Join Date</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{staff.joinDate || "—"}</span>
               </div>
             </div>
           </div>
@@ -922,9 +927,9 @@ export default function StaffDashboard() {
             />
           </ModalBody>
           <ModalFooter>
-            <button className="px-4 py-2 text-sm font-medium text-gray-700" onClick={onClose}>Cancel</button>
+            <button className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300" onClick={onClose}>Cancel</button>
             <button
-              className="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-white dark:text-zinc-900 bg-gray-900 dark:bg-zinc-100 rounded-lg hover:bg-gray-800 dark:hover:bg-zinc-200 disabled:opacity-50"
               onClick={handleSendMessage}
               disabled={!message.trim()}
             >
@@ -955,14 +960,14 @@ export default function StaffDashboard() {
           <DrawerContent>
             {(onClose) => (
               <>
-                <DrawerHeader className="border-b border-gray-100 px-6 py-4 flex justify-between items-center">
+                <DrawerHeader className="border-b border-gray-100 dark:border-zinc-800 px-6 py-4 flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gray-100 rounded-lg">
-                      <Edit size={20} className="text-gray-600" />
+                    <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
+                      <Edit size={20} className="text-gray-600 dark:text-zinc-400" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-medium text-gray-900">Edit Staff Member</h2>
-                      <p className="text-xs text-gray-500">Update staff details</p>
+                      <h2 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Edit Staff Member</h2>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">Update staff details</p>
                     </div>
                   </div>
                   <Button isIconOnly size="sm" variant="light" onPress={() => {
@@ -970,7 +975,7 @@ export default function StaffDashboard() {
                     else if (window.staffDrawerCloseHandler) window.staffDrawerCloseHandler();
                     else handleCloseAddStaff();
                   }}>
-                    <X size={20} className="text-gray-400" />
+                    <X size={20} className="text-gray-400 dark:text-zinc-500" />
                   </Button>
                 </DrawerHeader>
                 <DrawerBody className="p-0 overflow-hidden">

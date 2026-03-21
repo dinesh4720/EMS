@@ -22,8 +22,8 @@ export default function MinimalButton({
 
   const variantStyles = {
     primary: "bg-gray-900 text-white hover:bg-gray-800",
-    secondary: "bg-gray-100 text-gray-700 hover:bg-gray-200",
-    ghost: "bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900",
+    secondary: "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700",
+    ghost: "bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200",
     danger: "bg-red-500 text-white hover:bg-red-600",
   };
 

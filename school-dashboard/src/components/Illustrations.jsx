@@ -61,7 +61,7 @@ export const FeesIllustration = () => (
 
 export const SettingsIllustration = () => (
     <div className="w-full h-full relative">
-        <FloatingIcon icon={Settings} color="default" size={120} className="bottom-0 right-16 animate-spin-slow" style={{ animationDuration: '10s' }} />
+        <FloatingIcon icon={Settings} color="default" size={120} className="bottom-0 right-16 animate-spin-slow [animation-duration:10s]" />
         <FloatingIcon icon={Shield} color="primary" size={80} className="top-10 right-4 -rotate-12" delay="1s" />
         <FloatingIcon icon={Sliders} color="warning" size={60} className="bottom-28 right-44 rotate-90" delay="2s" />
     </div>

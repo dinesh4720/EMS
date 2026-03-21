@@ -2,6 +2,40 @@ import React, { useRef, useMemo, useState, useEffect, useCallback } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Float } from "@react-three/drei";
 import * as THREE from "three";
+import { useTheme } from "next-themes";
+
+function StaticSchoolBuildingFallback() {
+  return (
+    <div className="absolute inset-0 overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f8f8f8_50%,#f0f0f0_100%)] dark:bg-[linear-gradient(180deg,#09090b_0%,#18181b_50%,#27272a_100%)]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.18),transparent_45%)] dark:bg-[radial-gradient(circle_at_top,rgba(45,212,191,0.14),transparent_40%)]" />
+      <div className="absolute left-1/2 top-1/2 w-[420px] max-w-[78%] -translate-x-1/2 -translate-y-[42%]">
+        <div className="relative mx-auto h-64 rounded-t-[3rem] border border-gray-200/80 bg-white/90 shadow-2xl dark:border-zinc-700/80 dark:bg-zinc-900/85">
+          <div className="absolute inset-x-[18%] -top-8 h-16 rounded-t-[2rem] border border-gray-200/80 bg-white/95 dark:border-zinc-700/80 dark:bg-zinc-900/90" />
+          <div className="absolute inset-x-[28%] -top-20 h-14 rounded-t-[1.5rem] border border-gray-200/80 bg-white/95 dark:border-zinc-700/80 dark:bg-zinc-900/90" />
+          <div className="absolute inset-x-10 top-10 grid grid-cols-5 gap-3">
+            {Array.from({ length: 15 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-7 rounded-md border border-teal-100 bg-teal-50/90 dark:border-teal-900 dark:bg-teal-950/60"
+              />
+            ))}
+          </div>
+          <div className="absolute bottom-0 left-1/2 h-20 w-28 -translate-x-1/2 rounded-t-3xl border-x border-t border-gray-300 bg-teal-600/90 dark:border-zinc-600 dark:bg-teal-700/80" />
+          <div className="absolute inset-x-0 bottom-0 h-5 bg-gray-100 dark:bg-zinc-800" />
+        </div>
+        <div className="mx-auto h-6 w-[92%] rounded-b-3xl bg-gray-200/80 dark:bg-zinc-700/80" />
+      </div>
+      <div className="absolute bottom-8 lg:bottom-24 left-0 right-0 text-center pointer-events-none px-4 lg:px-8">
+        <h2 className="text-lg lg:text-2xl font-bold text-gray-800 dark:text-zinc-200 mb-1 lg:mb-2">
+          Building Excellence in Education
+        </h2>
+        <p className="text-gray-500 dark:text-zinc-400 text-xs lg:text-sm">
+          WebGL is unavailable in this browser session
+        </p>
+      </div>
+    </div>
+  );
+}
 
 // Cinematic camera angles
 const cameraAngles = [
@@ -322,38 +356,38 @@ function SchoolBuilding() {
   return (
     <group>
       {blocks.map((block, i) => (
-        <AnimatedBlock key={i} {...block} />
+        <AnimatedBlock key={`block-${i}`} {...block} />
       ))}
       {windows.map((pos, i) => (
-        <Window key={i} position={pos} scale={0.8} />
+        <Window key={`window-${i}`} position={pos} scale={0.8} />
       ))}
     </group>
   );
 }
 
 // Ground with platform
-function Ground() {
+function Ground({ isDark }) {
   return (
     <>
       {/* Main ground plane */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
         <planeGeometry args={[100, 100]} />
-        <meshStandardMaterial color="#fafafa" metalness={0} roughness={0.9} />
+        <meshStandardMaterial color={isDark ? "#18181b" : "#fafafa"} metalness={0} roughness={0.9} />
       </mesh>
-      {/* Building platform - white */}
+      {/* Building platform */}
       <mesh position={[0, -0.35, 1]} receiveShadow>
         <boxGeometry args={[24, 0.3, 8]} />
-        <meshStandardMaterial color="#ffffff" metalness={0} roughness={0.5} />
+        <meshStandardMaterial color={isDark ? "#27272a" : "#ffffff"} metalness={0} roughness={0.5} />
       </mesh>
       {/* Platform edge */}
       <mesh position={[0, -0.45, 1]} receiveShadow>
         <boxGeometry args={[24.5, 0.1, 8.5]} />
-        <meshStandardMaterial color="#e0e0e0" metalness={0} roughness={0.5} />
+        <meshStandardMaterial color={isDark ? "#3f3f46" : "#e0e0e0"} metalness={0} roughness={0.5} />
       </mesh>
       {/* Steps area */}
       <mesh position={[0, -0.55, 4.5]} receiveShadow>
         <boxGeometry args={[5, 0.2, 3]} />
-        <meshStandardMaterial color="#ffffff" metalness={0} roughness={0.5} />
+        <meshStandardMaterial color={isDark ? "#27272a" : "#ffffff"} metalness={0} roughness={0.5} />
       </mesh>
     </>
   );
@@ -408,7 +442,7 @@ function Particles() {
 }
 
 // Scene with cinematic camera
-function Scene({ enableCinematic, onUserInteraction }) {
+function Scene({ enableCinematic, onUserInteraction, isDark }) {
   const { camera } = useThree();
   const controlsRef = useRef();
   const angleIndex = useRef(0);
@@ -473,10 +507,10 @@ function Scene({ enableCinematic, onUserInteraction }) {
 
   return (
     <>
-      {/* Bright ambient light for white appearance */}
-      <ambientLight intensity={1.2} />
-      {/* Hemisphere light for natural white illumination */}
-      <hemisphereLight args={["#ffffff", "#ffffff", 0.8]} />
+      {/* Ambient light - reduced in dark mode */}
+      <ambientLight intensity={isDark ? 0.6 : 1.2} />
+      {/* Hemisphere light */}
+      <hemisphereLight args={[isDark ? "#a1a1aa" : "#ffffff", isDark ? "#27272a" : "#ffffff", isDark ? 0.4 : 0.8]} />
       <directionalLight
         position={[10, 20, 10]}
         intensity={1.5}
@@ -494,7 +528,7 @@ function Scene({ enableCinematic, onUserInteraction }) {
       <directionalLight position={[15, 5, -15]} intensity={0.3} color="#ff8844" />
 
       <SchoolBuilding />
-      <Ground />
+      <Ground isDark={isDark} />
       <Particles />
 
       <OrbitControls
@@ -516,8 +550,11 @@ function Scene({ enableCinematic, onUserInteraction }) {
 
 // Main component
 export default function SchoolBuilding3D() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [enableCinematic, setEnableCinematic] = useState(true);
   const [canvasKey, setCanvasKey] = useState(0);
+  const [hasWebGLSupport, setHasWebGLSupport] = useState(false);
   const timeoutRef = useRef(null);
 
   const handleUserInteraction = useCallback(() => {
@@ -546,28 +583,42 @@ export default function SchoolBuilding3D() {
   }, []);
 
   useEffect(() => {
+    const canvas = document.createElement("canvas");
+    const context =
+      canvas.getContext("webgl2") ||
+      canvas.getContext("webgl") ||
+      canvas.getContext("experimental-webgl");
+
+    setHasWebGLSupport(Boolean(context));
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
 
+  if (!hasWebGLSupport) {
+    return <StaticSchoolBuildingFallback />;
+  }
+
   return (
-    <div className="absolute inset-0 bg-white">
+    <div className="absolute inset-0 bg-white dark:bg-zinc-950">
       <Canvas
         key={canvasKey}
         shadows
         camera={{ position: [0, 8, 25], fov: 45, near: 0.1, far: 200 }}
         gl={{ antialias: true, alpha: true }}
-        style={{ background: "linear-gradient(180deg, #ffffff 0%, #f8f8f8 50%, #f0f0f0 100%)" }}
+        className="bg-[linear-gradient(180deg,#ffffff_0%,#f8f8f8_50%,#f0f0f0_100%)] dark:bg-[linear-gradient(180deg,#09090b_0%,#18181b_50%,#27272a_100%)]"
       >
-        <Scene enableCinematic={enableCinematic} onUserInteraction={handleUserInteraction} />
+        <Scene enableCinematic={enableCinematic} onUserInteraction={handleUserInteraction} isDark={isDark} />
       </Canvas>
 
       <div className="absolute bottom-8 lg:bottom-24 left-0 right-0 text-center pointer-events-none px-4 lg:px-8">
-        <h2 className="text-lg lg:text-2xl font-bold text-gray-800 mb-1 lg:mb-2">
+        <h2 className="text-lg lg:text-2xl font-bold text-gray-800 dark:text-zinc-200 mb-1 lg:mb-2">
           Building Excellence in Education
         </h2>
-        <p className="text-gray-500 text-xs lg:text-sm">
+        <p className="text-gray-500 dark:text-zinc-400 text-xs lg:text-sm">
           {enableCinematic ? "Cinematic camera active • Drag to explore" : "Manual control • Auto-resumes in 5s"}
         </p>
       </div>

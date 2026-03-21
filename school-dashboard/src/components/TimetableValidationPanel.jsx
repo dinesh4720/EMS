@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardBody, CardHeader, Progress, Badge, Button, Tabs, Tab } from '@heroui/react';
-import api from '../services/api';
+import { request } from '../services/api';
 import { CURRENT_ACADEMIC_YEAR } from '../utils/constants';
 
 /**
@@ -26,22 +26,21 @@ const TimetableValidationPanel = ({ type = 'class', id, academicYear }) => {
     setError(null);
 
     try {
-      const endpoint = type === 'class' 
-        ? `/api/validation/class/${id}/report`
-        : `/api/validation/teacher/${id}/report`;
+      const endpoint = type === 'class'
+        ? `/validation/class/${id}/report`
+        : `/validation/teacher/${id}/report`;
 
-      const response = await api.get(endpoint, {
-        params: { academicYear: resolvedAcademicYear }
-      });
+      const query = `?academicYear=${encodeURIComponent(resolvedAcademicYear)}`;
+      const response = await request(`${endpoint}${query}`);
 
-      if (response.data.success) {
-        setReport(response.data.report);
+      if (response.success) {
+        setReport(response.report);
       } else {
-        setError(response.data.message || 'Failed to fetch validation report');
+        setError(response.message || 'Failed to fetch validation report');
       }
     } catch (err) {
       console.error('Error fetching validation report:', err);
-      setError(err.response?.data?.message || 'Failed to fetch validation report');
+      setError(err.message || 'Failed to fetch validation report');
     } finally {
       setLoading(false);
     }

@@ -390,7 +390,7 @@ const SubjectAssignment = () => {
                             <div className="flex flex-wrap gap-2">
                               {editingClassSubjects.map((subject, idx) => (
                                 <div
-                                  key={idx}
+                                  key={subject}
                                   className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md"
                                 >
                                   <span className="text-sm font-medium">{subject}</span>
@@ -419,7 +419,7 @@ const SubjectAssignment = () => {
                           {hasSubjects ? (
                             cls.subjects.map((subject, idx) => (
                               <span
-                                key={idx}
+                                key={subject}
                                 className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm font-medium"
                               >
                                 {subject}
@@ -446,7 +446,7 @@ const SubjectAssignment = () => {
             <h3 className="text-sm font-medium text-gray-900 mb-4">Overview</h3>
             <div className="space-y-4">
               {stats.map((stat, i) => (
-                <div key={i} className="flex items-center justify-between">
+                <div key={stat.label} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
                       <stat.icon size={14} className="text-gray-600" />

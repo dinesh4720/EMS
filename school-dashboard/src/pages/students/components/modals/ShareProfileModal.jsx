@@ -92,17 +92,17 @@ export default function ShareProfileModal({ isOpen, onClose, student, staff = []
       <ModalHeader>Share Student Profile</ModalHeader>
       <ModalBody>
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">Select staff members to share {student?.name}'s profile with:</p>
+          <p className="text-sm text-gray-600 dark:text-zinc-400">Select staff members to share {student?.name}'s profile with:</p>
 
           {/* Search */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
-            <Search size={18} className="text-gray-400" />
+          <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
+            <Search size={18} className="text-gray-400 dark:text-zinc-500" />
             <input
               type="text"
               placeholder="Search staff members..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent outline-none text-sm placeholder:text-gray-400"
+              className="flex-1 bg-transparent outline-none text-sm placeholder:text-gray-400 dark:placeholder:text-zinc-500 dark:text-zinc-100"
             />
           </div>
 
@@ -114,8 +114,8 @@ export default function ShareProfileModal({ isOpen, onClose, student, staff = []
                   key={staffMember.id}
                   className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
                     selectedUsers.includes(staffMember.id)
-                      ? 'bg-gray-100 border border-gray-300'
-                      : 'hover:bg-gray-50 border border-transparent'
+                      ? 'bg-gray-100 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700'
+                      : 'hover:bg-gray-50 dark:hover:bg-zinc-900 border border-transparent'
                   }`}
                   onClick={() => {
                     setSelectedUsers(prev => {
@@ -147,24 +147,24 @@ export default function ShareProfileModal({ isOpen, onClose, student, staff = []
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{staffMember.name}</p>
-                    <p className="text-xs text-gray-500 truncate">{staffMember.role || staffMember.email}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">{staffMember.role || staffMember.email}</p>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-center text-gray-500 py-8">No staff members available</p>
+              <p className="text-center text-gray-500 dark:text-zinc-400 py-8">No staff members available</p>
             )}
           </div>
 
           {selectedUsers.length > 0 && (
-            <p className="text-sm text-gray-700 font-medium">
+            <p className="text-sm text-gray-700 dark:text-zinc-300 font-medium">
               {selectedUsers.length} user{selectedUsers.length !== 1 ? 's' : ''} selected
             </p>
           )}
         </div>
       </ModalBody>
       <ModalFooter>
-        <Button variant="bordered" className="border-gray-200 text-gray-700" onPress={handleClose}>Cancel</Button>
+        <Button variant="bordered" className="border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300" onPress={handleClose}>Cancel</Button>
         <Button
           className="bg-gray-900 hover:bg-gray-800 text-white"
           startContent={<Share2 size={16} />}

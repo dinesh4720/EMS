@@ -145,26 +145,26 @@ export default function SettingsPage() {
   }, [searchQuery, menuCategories]);
 
   return (
-    <div className="flex h-[calc(100vh-3rem)] overflow-hidden bg-gray-50">
+    <div className="flex h-[calc(100vh-3rem)] overflow-hidden bg-gray-50 dark:bg-zinc-950">
       {/* Settings Sidebar */}
-      <div className="w-[260px] flex-shrink-0 border-r border-gray-100 bg-white flex flex-col">
+      <div className="w-[260px] flex-shrink-0 border-r border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col">
         {/* Header & Search */}
-        <div className="p-4 space-y-3 sticky top-0 bg-white z-10">
-          <h1 className="text-lg font-medium text-gray-900">Settings</h1>
+        <div className="p-4 space-y-3 sticky top-0 bg-white dark:bg-zinc-950 z-10">
+          <h1 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Settings</h1>
 
-          <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg focus-within:border-gray-300 focus-within:ring-1 focus-within:ring-gray-300 transition-colors">
-            <Search size={16} className="text-gray-400" />
+          <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-lg focus-within:border-gray-300 dark:focus-within:border-zinc-600 focus-within:ring-1 focus-within:ring-gray-300 dark:focus-within:ring-zinc-600 transition-colors">
+            <Search size={16} className="text-gray-400 dark:text-zinc-500" />
             <input
               type="search"
               placeholder="Search settings..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent outline-none text-gray-900 placeholder:text-gray-400 text-sm"
+              className="flex-1 bg-transparent outline-none text-gray-900 dark:text-zinc-100 placeholder:text-gray-400 dark:placeholder:text-zinc-500 text-sm"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="text-gray-400 hover:text-gray-600 text-xs"
+                className="text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300 text-xs"
               >
                 Clear
               </button>
@@ -177,12 +177,12 @@ export default function SettingsPage() {
           <div className="space-y-4">
             {filteredCategories.length === 0 ? (
               <div className="text-center py-8 px-3">
-                <p className="text-sm text-gray-500">No settings found</p>
+                <p className="text-sm text-gray-500 dark:text-zinc-400">No settings found</p>
               </div>
             ) : (
               filteredCategories.map((category) => (
                 <div key={category.title}>
-                  <h3 className="text-[11px] font-medium text-gray-500 uppercase tracking-wider px-3 mb-1.5">
+                  <h3 className="text-[11px] font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider px-3 mb-1.5">
                     {category.title}
                   </h3>
                   <ul className="space-y-0.5">
@@ -194,13 +194,13 @@ export default function SettingsPage() {
                             onClick={() => item.isAction ? item.onClick() : navigate(item.path)}
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors
                               ${!item.isAction && active
-                                ? "bg-gray-900 font-medium text-white"
-                                : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"}
+                                ? "bg-gray-900 dark:bg-zinc-100 font-medium text-white dark:text-zinc-900"
+                                : "text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800"}
                             `}
                           >
                             <span className="truncate">{item.label}</span>
                             {item.isNew && (
-                              <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded font-medium">New</span>
+                              <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded font-medium">New</span>
                             )}
                           </button>
                         </li>
@@ -214,16 +214,16 @@ export default function SettingsPage() {
         </div>
 
         {/* Owlin Tracker Toggle */}
-        <div className="border-t border-gray-100 px-4 py-3 flex-shrink-0">
+        <div className="border-t border-gray-100 dark:border-zinc-800 px-4 py-3 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Activity size={14} className="text-gray-400" />
-              <span className="text-xs text-gray-500">Owlin Tracker</span>
+              <Activity size={14} className="text-gray-400 dark:text-zinc-500" />
+              <span className="text-xs text-gray-500 dark:text-zinc-400">Owlin Tracker</span>
             </div>
             <button
               onClick={handleOwlinToggle}
               className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                owlinEnabled ? "bg-green-500" : "bg-gray-300"
+                owlinEnabled ? "bg-green-500" : "bg-gray-300 dark:bg-zinc-600"
               }`}
             >
               <span
@@ -233,7 +233,7 @@ export default function SettingsPage() {
               />
             </button>
           </div>
-          <p className="text-[10px] text-gray-400 mt-1">
+          <p className="text-[10px] text-gray-400 dark:text-zinc-500 mt-1">
             {owlinEnabled ? "Tracking active — console logs enabled" : "Tracking disabled — console clean"}
           </p>
         </div>
@@ -263,18 +263,18 @@ export default function SettingsPage() {
             <Route path="timetable-cleanup" element={
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Timetable Data Cleanup</h2>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Timetable Data Cleanup</h2>
+                  <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
                     Clear all timetable-related data to start fresh
                   </p>
                 </div>
                 <TimetableCleanup />
               </div>
             } />
-            <Route path="*" element={<div className="flex flex-col items-center justify-center h-[50vh] text-gray-400">
+            <Route path="*" element={<div className="flex flex-col items-center justify-center h-[50vh] text-gray-400 dark:text-zinc-500">
               <Puzzle size={48} className="mb-4 opacity-50" />
-              <h3 className="text-base font-medium text-gray-900">Setting module under development</h3>
-              <p className="text-sm text-gray-500">This section will be available in the next update.</p>
+              <h3 className="text-base font-medium text-gray-900 dark:text-zinc-100">Setting module under development</h3>
+              <p className="text-sm text-gray-500 dark:text-zinc-400">This section will be available in the next update.</p>
             </div>} />
           </Routes>
         </div>

@@ -308,14 +308,14 @@ export default function StaffsPage() {
           <DrawerContent>
             {(onClose) => (
               <>
-                <DrawerHeader className="border-b border-gray-100 px-6 py-4 flex justify-between items-center">
+                <DrawerHeader className="border-b border-gray-100 dark:border-zinc-800 px-6 py-4 flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gray-100 rounded-lg">
-                      <Briefcase size={20} className="text-gray-600" />
+                    <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
+                      <Briefcase size={20} className="text-gray-600 dark:text-zinc-400" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-medium text-gray-900">{editingStaffId ? 'Edit Staff Member' : 'Create New Staff'}</h2>
-                      <p className="text-xs text-gray-500">{editingStaffId ? 'Update staff details' : 'Fill in the staff details below'}</p>
+                      <h2 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{editingStaffId ? 'Edit Staff Member' : 'Create New Staff'}</h2>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">{editingStaffId ? 'Update staff details' : 'Fill in the staff details below'}</p>
                     </div>
                   </div>
                   <Button isIconOnly size="sm" variant="light" onPress={() => {
@@ -323,7 +323,7 @@ export default function StaffsPage() {
                     else if (window.staffDrawerCloseHandler) window.staffDrawerCloseHandler();
                     else handleCloseAddStaff();
                   }}>
-                    <X size={20} className="text-gray-400" />
+                    <X size={20} className="text-gray-400 dark:text-zinc-500" />
                   </Button>
                 </DrawerHeader>
                 <DrawerBody className="p-0 overflow-hidden">
@@ -336,77 +336,77 @@ export default function StaffsPage() {
       )}
 
       {/* Method Selection Modal */}
-      <Modal isOpen={isMethodModalOpen} onClose={() => setIsMethodModalOpen(false)} size="2xl" classNames={{ backdrop: "bg-black/30", base: "bg-white" }}>
+      <Modal isOpen={isMethodModalOpen} onClose={() => setIsMethodModalOpen(false)} size="2xl" classNames={{ backdrop: "bg-black/30", base: "bg-white dark:bg-zinc-950" }}>
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 py-4">
+          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
             <h3 className="text-lg font-medium">Choose Registration Method</h3>
-            <p className="text-sm text-gray-500 font-normal mt-1">Select how to add the new staff member</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal mt-1">Select how to add the new staff member</p>
           </ModalHeader>
           <ModalBody className="py-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button onClick={() => handleSelectMethod('form')} className="p-6 rounded-lg border border-gray-200 hover:border-gray-400 transition-colors text-left">
+              <button onClick={() => handleSelectMethod('form')} className="p-6 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-400 dark:hover:border-zinc-600 transition-colors text-left">
                 <div className="flex flex-col items-center text-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                    <Send size={24} className="text-gray-600" />
+                  <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                    <Send size={24} className="text-gray-600 dark:text-zinc-400" />
                   </div>
                   <div>
-                    <h4 className="text-base font-medium text-gray-900 mb-2">Send Filling Form</h4>
-                    <p className="text-sm text-gray-500">Send an intake form for them to fill out</p>
+                    <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 mb-2">Send Filling Form</h4>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">Send an intake form for them to fill out</p>
                   </div>
                 </div>
               </button>
-              <button onClick={() => handleSelectMethod('full')} className="p-6 rounded-lg border border-gray-200 hover:border-gray-400 transition-colors text-left">
+              <button onClick={() => handleSelectMethod('full')} className="p-6 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-400 dark:hover:border-zinc-600 transition-colors text-left">
                 <div className="flex flex-col items-center text-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                    <UserPlus size={24} className="text-gray-600" />
+                  <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                    <UserPlus size={24} className="text-gray-600 dark:text-zinc-400" />
                   </div>
                   <div>
-                    <h4 className="text-base font-medium text-gray-900 mb-2">Full Registration</h4>
-                    <p className="text-sm text-gray-500">Fill out all staff details directly</p>
+                    <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 mb-2">Full Registration</h4>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">Fill out all staff details directly</p>
                   </div>
                 </div>
               </button>
             </div>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100">
+          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
             <Button variant="light" onPress={() => setIsMethodModalOpen(false)}>Cancel</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
 
       {/* Form Selection Modal */}
-      <Modal isOpen={isFormSelectModalOpen} onClose={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmail(''); setRecipientPhone(''); }} size="2xl" classNames={{ backdrop: "bg-black/30", base: "bg-white" }}>
+      <Modal isOpen={isFormSelectModalOpen} onClose={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmail(''); setRecipientPhone(''); }} size="2xl" classNames={{ backdrop: "bg-black/30", base: "bg-white dark:bg-zinc-950" }}>
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 py-4">
+          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
             <h3 className="text-lg font-medium">Send Intake Form</h3>
-            <p className="text-sm text-gray-500 font-normal mt-1">Select a form and enter recipient details</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal mt-1">Select a form and enter recipient details</p>
           </ModalHeader>
           <ModalBody className="py-6">
             <div className="space-y-4">
               <div className="relative" ref={formDropdownRef}>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Select Form</label>
-                <button type="button" onClick={() => setIsFormDropdownOpen(!isFormDropdownOpen)} className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
+                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">Select Form</label>
+                <button type="button" onClick={() => setIsFormDropdownOpen(!isFormDropdownOpen)} className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 transition-colors">
                   {selectedForm ? (
                     <div className="flex items-center gap-3">
-                      <FileText size={18} className="text-gray-500" />
+                      <FileText size={18} className="text-gray-500 dark:text-zinc-400" />
                       <span className="text-sm">{availableForms.find(f => f.id === selectedForm)?.formName}</span>
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-500">Choose an intake form</span>
+                    <span className="text-sm text-gray-500 dark:text-zinc-400">Choose an intake form</span>
                   )}
-                  <ChevronDown size={18} className={`text-gray-400 transition-transform ${isFormDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={18} className={`text-gray-400 dark:text-zinc-500 transition-transform ${isFormDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isFormDropdownOpen && availableForms.length > 0 && (
-                  <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg max-h-[320px] overflow-y-auto">
+                  <div className="absolute z-50 w-full mt-2 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg max-h-[320px] overflow-y-auto">
                     <div className="p-2">
                       {availableForms.map((form) => (
-                        <button key={form.id} type="button" onClick={() => { setSelectedForm(form.id); setIsFormDropdownOpen(false); }} className={`w-full p-3 rounded-lg text-left flex items-center gap-3 ${selectedForm === form.id ? 'bg-gray-100' : 'hover:bg-gray-50'}`}>
-                          <FileText size={18} className="text-gray-500" />
+                        <button key={form.id} type="button" onClick={() => { setSelectedForm(form.id); setIsFormDropdownOpen(false); }} className={`w-full p-3 rounded-lg text-left flex items-center gap-3 ${selectedForm === form.id ? 'bg-gray-100 dark:bg-zinc-800' : 'hover:bg-gray-50 dark:hover:bg-zinc-900'}`}>
+                          <FileText size={18} className="text-gray-500 dark:text-zinc-400" />
                           <div className="flex-1">
                             <p className="text-sm font-medium">{form.formName}</p>
-                            <p className="text-xs text-gray-500">{form.fields?.length || 0} fields</p>
+                            <p className="text-xs text-gray-500 dark:text-zinc-400">{form.fields?.length || 0} fields</p>
                           </div>
-                          {selectedForm === form.id && <CheckCircle2 size={16} className="text-gray-600" />}
+                          {selectedForm === form.id && <CheckCircle2 size={16} className="text-gray-600 dark:text-zinc-400" />}
                         </button>
                       ))}
                     </div>
@@ -414,19 +414,19 @@ export default function StaffsPage() {
                 )}
               </div>
               {availableForms.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-500 dark:text-zinc-400">
                   <p>No active staff forms available.</p>
                   <Button size="sm" variant="flat" className="mt-2" onPress={() => { setIsFormSelectModalOpen(false); navigate('/settings/intake-forms'); }}>Create a Form</Button>
                 </div>
               )}
               <FormInput label="Email" type="email" placeholder="Enter email address" value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} startContent={<Mail size={18} />} />
               <FormInput label="Phone Number" type="tel" placeholder="Enter phone number" value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} startContent={<Phone size={18} />} />
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <p className="text-sm text-gray-600">The recipient will receive a link to fill out the form.</p>
+              <div className="bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-4">
+                <p className="text-sm text-gray-600 dark:text-zinc-400">The recipient will receive a link to fill out the form.</p>
               </div>
             </div>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100">
+          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
             <Button variant="light" onPress={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmail(''); setRecipientPhone(''); }}>Cancel</Button>
             <Button color="primary" onPress={handleSendForm} isLoading={isSendingForm} isDisabled={!selectedForm || (!recipientEmail && !recipientPhone)} startContent={!isSendingForm && <Send size={16} />}>Send Form</Button>
           </ModalFooter>

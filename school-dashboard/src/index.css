@@ -49,6 +49,26 @@
     min-height: 100%;
   }
 
+  html.dark {
+    --color-primary: #d4d4d8;
+    --color-primary-hover: #e4e4e7;
+    --color-bg: #0a0a0a;
+    --color-bg-secondary: #09090b;
+    --color-bg-tertiary: #18181b;
+    --color-border: #27272a;
+    --color-border-strong: #3f3f46;
+    --color-text-primary: #fafafa;
+    --color-text-secondary: #a1a1aa;
+    --color-text-muted: #71717a;
+    --color-text-light: #52525b;
+    --color-accent: #2dd4bf;
+    --color-accent-hover: #14b8a6;
+    --color-error: #f87171;
+    --color-success: #4ade80;
+    --color-surface: #18181b;
+    --color-surface-hover: #27272a;
+  }
+
   html.dark,
   html.dark body,
   html.dark #root {
@@ -71,6 +91,19 @@
     box-shadow: 0 0 0 30px white inset !important;
     caret-color: #171717 !important;
     transition: background-color 5000s ease-in-out 0s !important;
+  }
+
+  /* Dark mode autofill styling */
+  html.dark input:-webkit-autofill,
+  html.dark input:-webkit-autofill:hover,
+  html.dark input:-webkit-autofill:focus,
+  html.dark input:-webkit-autofill:active,
+  html.dark input:-internal-autofill-previewed,
+  html.dark input:-internal-autofill-selected {
+    -webkit-box-shadow: 0 0 0 30px #18181b inset !important;
+    -webkit-text-fill-color: #fafafa !important;
+    box-shadow: 0 0 0 30px #18181b inset !important;
+    caret-color: #fafafa !important;
   }
 
   /* Firefox autofill */
@@ -345,6 +378,72 @@ tr,
 
 input[type="checkbox"] {
   pointer-events: auto !important;
+}
+
+/* ===== PRINT CONTENT: Dark mode preview + Force light for print ===== */
+/* Apply .print-content to the wrapper of any printable template. */
+
+/* Dark mode: screen-only preview styling */
+@media screen {
+  .dark .print-content {
+    background-color: #09090b;
+    color: #e4e4e7;
+  }
+  .dark .print-content .bg-white {
+    background-color: #09090b;
+  }
+  .dark .print-content .bg-gray-50,
+  .dark .print-content .bg-gray-100 {
+    background-color: #18181b;
+  }
+  .dark .print-content .text-gray-900,
+  .dark .print-content .text-gray-800 {
+    color: #e4e4e7;
+  }
+  .dark .print-content .text-gray-700 {
+    color: #d4d4d8;
+  }
+  .dark .print-content .text-gray-600 {
+    color: #a1a1aa;
+  }
+  .dark .print-content .text-gray-500 {
+    color: #71717a;
+  }
+  .dark .print-content .text-gray-400 {
+    color: #52525b;
+  }
+  .dark .print-content .border-gray-100,
+  .dark .print-content .border-gray-200 {
+    border-color: #27272a;
+  }
+  .dark .print-content .border-gray-300,
+  .dark .print-content .border-gray-400 {
+    border-color: #3f3f46;
+  }
+  .dark .print-content .divide-gray-100 > * + *,
+  .dark .print-content .divide-gray-200 > * + * {
+    border-color: #27272a;
+  }
+  /* Colored info boxes get darker backgrounds */
+  .dark .print-content .bg-blue-50 { background-color: #1e3a5f; }
+  .dark .print-content .bg-green-50 { background-color: #14532d; }
+  .dark .print-content .bg-purple-50 { background-color: #3b0764; }
+  .dark .print-content .bg-red-50 { background-color: #450a0a; }
+  .dark .print-content .bg-yellow-50 { background-color: #422006; }
+  /* Certificate borders (border-gray-800, border-black) remain dark in both modes */
+}
+
+/* Force light mode for actual printing */
+@media print {
+  .print-content {
+    background-color: white !important;
+    color: #1a1a1a !important;
+  }
+  .print-content .bg-white,
+  .print-content .bg-gray-50,
+  .print-content .bg-gray-100 {
+    background-color: white !important;
+  }
 }
 
 /* ===== PRINT STYLES ===== */

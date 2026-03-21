@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Search, Command, ChevronRight, MessageCircle, Bell } from "lucide-react";
+import { Search, Command, ChevronRight, MessageCircle, Bell, Globe, Check } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import GlobalSearch from "./GlobalSearch";
 import { AiAssistantToggle } from "./AiAssistant/AiAssistantPanel";
 import { useChatNotifications } from "../context/ChatNotificationContext";
@@ -9,13 +10,16 @@ import NotificationCenter from "../pages/messaging/components/notifications/Noti
 import { useApp } from "../context/AppContext";
 import { isObjectId } from "../utils/objectIdHelper";
 import { studentsApi } from "../services/api";
+import { SUPPORTED_LANGUAGES, setLanguage } from "../i18n";
 
 function Topbar({ isSidebarOpen }) {
     const [searchOpen, setSearchOpen] = useState(false);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+    const [isLangOpen, setIsLangOpen] = useState(false);
     const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
     const location = useLocation();
     const navigate = useNavigate();
+    const { i18n } = useTranslation();
     const chatNotifications = useChatNotifications();
     const unreadCount = chatNotifications?.unreadCount || 0;
     const { staff } = useApp();
@@ -92,7 +96,10 @@ function Topbar({ isSidebarOpen }) {
             "settings": "Settings",
             "front-desk": "Front Desk",
             "analytics": "Analytics",
-            "accounts": "Accounts"
+            "accounts": "Accounts",
+            "hostel": "Hostel",
+            "transport": "Transport",
+            "library": "Library"
         };
 
         if (parts.length === 0) return [{ label: "Dashboard", path: "/" }];
@@ -138,8 +145,8 @@ function Topbar({ isSidebarOpen }) {
             className="
                 fixed top-0 right-0 z-40 h-14 px-5
                 flex items-center justify-between
-                bg-white
-                border-b border-gray-200
+                bg-white dark:bg-zinc-950
+                border-b border-gray-200 dark:border-zinc-800
                 transition-all duration-300
             "
             style={{ left: isSidebarOpen ? '240px' : '64px' }}
@@ -151,14 +158,14 @@ function Topbar({ isSidebarOpen }) {
                 {breadcrumbs.map((crumb, index) => (
                     <div key={crumb.path} className="flex items-center gap-2 shrink-0">
                         {index > 0 && (
-                            <ChevronRight size={14} className="text-gray-300" />
+                            <ChevronRight size={14} className="text-gray-300 dark:text-zinc-600" />
                         )}
                         <Link
                             to={crumb.path}
                             className={`font-medium transition-colors truncate max-w-[140px] ${
                                 index === breadcrumbs.length - 1
-                                    ? "text-gray-800"
-                                    : "text-gray-500 hover:text-gray-700"
+                                    ? "text-gray-800 dark:text-zinc-200"
+                                    : "text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200"
                             }`}
                         >
                             {crumb.label}
@@ -171,11 +178,11 @@ function Topbar({ isSidebarOpen }) {
             <div className="flex-1 flex justify-center max-w-md">
                 <button
                     onClick={() => setSearchOpen(true)}
-                    className="flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus-within:border-gray-400 transition-colors w-full max-w-xs hover:bg-gray-50"
+                    className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg focus-within:border-gray-400 transition-colors w-full max-w-xs hover:bg-gray-50 dark:hover:bg-zinc-800"
                 >
-                    <Search className="text-gray-400" size={16} />
-                    <span className="text-gray-400 text-sm flex-1 text-left">Search...</span>
-                    <div className="flex items-center gap-1 text-gray-400 bg-gray-50 px-2 py-1 rounded border border-gray-200">
+                    <Search className="text-gray-400 dark:text-zinc-500" size={16} />
+                    <span className="text-gray-400 dark:text-zinc-500 text-sm flex-1 text-left">Search...</span>
+                    <div className="flex items-center gap-1 text-gray-400 dark:text-zinc-500 bg-gray-50 dark:bg-zinc-800 px-2 py-1 rounded border border-gray-200 dark:border-zinc-700">
                         <Command size={11} />
                         <span className="text-[10px] font-medium">K</span>
                     </div>
@@ -196,10 +203,10 @@ function Topbar({ isSidebarOpen }) {
                     shouldBlockScroll={false}
                 >
                     <PopoverTrigger>
-                        <button className="relative h-9 w-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                        <button className="relative h-9 w-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors">
                             <Bell size={16} />
                             {notificationUnreadCount > 0 && (
-                                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-gray-900 rounded-full" />
+                                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-gray-900 dark:bg-zinc-100 rounded-full" />
                             )}
                         </button>
                     </PopoverTrigger>
@@ -215,7 +222,7 @@ function Topbar({ isSidebarOpen }) {
                 >
                     <button
                         onClick={() => navigate('/messaging')}
-                        className="relative h-9 w-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="relative h-9 w-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors"
                     >
                         <MessageCircle size={16} />
                         {unreadCount > 0 && (
@@ -224,8 +231,44 @@ function Topbar({ isSidebarOpen }) {
                     </button>
                 </Tooltip>
 
+                {/* Language Switcher */}
+                <Popover
+                    isOpen={isLangOpen}
+                    onOpenChange={setIsLangOpen}
+                    placement="bottom-end"
+                    offset={8}
+                    shouldBlockScroll={false}
+                >
+                    <PopoverTrigger>
+                        <button className="h-9 w-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+                            <Globe size={16} />
+                        </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0 w-[180px]">
+                        <div className="py-1">
+                            {SUPPORTED_LANGUAGES.map((lang) => (
+                                <button
+                                    key={lang.code}
+                                    onClick={() => {
+                                        setLanguage(lang.code);
+                                        setIsLangOpen(false);
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+                                >
+                                    <span className={`${i18n.language === lang.code ? 'text-gray-900 dark:text-zinc-100 font-medium' : 'text-gray-600 dark:text-zinc-400'}`}>
+                                        {lang.name}
+                                    </span>
+                                    {i18n.language === lang.code && (
+                                        <Check size={14} className="text-gray-900 dark:text-zinc-100" />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </PopoverContent>
+                </Popover>
+
                 {/* Divider */}
-                <div className="h-5 w-px bg-gray-200 mx-2" />
+                <div className="h-5 w-px bg-gray-200 dark:bg-zinc-700 mx-2" />
 
                 {/* AI Assistant Toggle Button */}
                 <AiAssistantToggle />

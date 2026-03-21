@@ -49,7 +49,6 @@ export const AuthProvider = ({ children: childrenProp }) => {
           }
         } catch (err) {
           // Token expired or invalid - clear storage so user sees login
-          console.log('Stored token invalid, redirecting to login');
           await clearStorage();
         }
       }

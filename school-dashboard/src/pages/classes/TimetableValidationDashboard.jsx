@@ -64,19 +64,19 @@ const TimetableValidationDashboard = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600">{classReport.totalClasses}</div>
-                <div className="text-sm text-gray-600">Total Classes</div>
+                <div className="text-sm text-gray-600 dark:text-zinc-400">Total Classes</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-green-600">{classReport.completeClasses}</div>
-                <div className="text-sm text-gray-600">Complete</div>
+                <div className="text-sm text-gray-600 dark:text-zinc-400">Complete</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-red-600">{classReport.incompleteClasses}</div>
-                <div className="text-sm text-gray-600">Incomplete</div>
+                <div className="text-sm text-gray-600 dark:text-zinc-400">Incomplete</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-purple-600">{classReport.averageCompleteness}%</div>
-                <div className="text-sm text-gray-600">Avg Completeness</div>
+                <div className="text-sm text-gray-600 dark:text-zinc-400">Avg Completeness</div>
               </div>
             </div>
 
@@ -106,7 +106,7 @@ const TimetableValidationDashboard = () => {
                 .map((report) => (
                   <div
                     key={report.className}
-                    className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
@@ -118,7 +118,7 @@ const TimetableValidationDashboard = () => {
                           {report.completenessPercentage}%
                         </Badge>
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-gray-600 dark:text-zinc-400">
                         {report.filledSlots}/{report.totalSlots} slots filled
                       </div>
                     </div>
@@ -155,19 +155,19 @@ const TimetableValidationDashboard = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600">{teacherReport.totalTeachers}</div>
-                <div className="text-sm text-gray-600">Total Teachers</div>
+                <div className="text-sm text-gray-600 dark:text-zinc-400">Total Teachers</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-green-600">{teacherReport.fullyUtilizedTeachers}</div>
-                <div className="text-sm text-gray-600">Fully Utilized</div>
+                <div className="text-sm text-gray-600 dark:text-zinc-400">Fully Utilized</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-orange-600">{teacherReport.underutilizedTeachers}</div>
-                <div className="text-sm text-gray-600">Underutilized</div>
+                <div className="text-sm text-gray-600 dark:text-zinc-400">Underutilized</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-purple-600">{teacherReport.averageUtilization}%</div>
-                <div className="text-sm text-gray-600">Avg Utilization</div>
+                <div className="text-sm text-gray-600 dark:text-zinc-400">Avg Utilization</div>
               </div>
             </div>
 
@@ -197,7 +197,7 @@ const TimetableValidationDashboard = () => {
                 .map((report) => (
                   <div
                     key={report.teacherName}
-                    className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
@@ -209,7 +209,7 @@ const TimetableValidationDashboard = () => {
                           {report.utilizationPercentage}%
                         </Badge>
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-gray-600 dark:text-zinc-400">
                         {report.assignedPeriods}/{report.totalPeriods} periods assigned
                       </div>
                     </div>
@@ -239,7 +239,7 @@ const TimetableValidationDashboard = () => {
           <CardBody>
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <div className="text-gray-600 text-lg">Loading validation reports...</div>
+              <div className="text-gray-600 dark:text-zinc-400 text-lg">Loading validation reports...</div>
             </div>
           </CardBody>
         </Card>
@@ -255,7 +255,7 @@ const TimetableValidationDashboard = () => {
             <div className="text-center py-12">
               <div className="text-red-600 text-5xl mb-4">⚠</div>
               <div className="text-red-600 font-medium text-xl mb-2">Error</div>
-              <div className="text-gray-600 mb-4">{error}</div>
+              <div className="text-gray-600 dark:text-zinc-400 mb-4">{error}</div>
               <Button 
                 color="primary" 
                 onClick={fetchReports}
@@ -273,7 +273,7 @@ const TimetableValidationDashboard = () => {
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-2">Timetable Validation Dashboard</h1>
-        <p className="text-gray-600">
+        <p className="text-gray-600 dark:text-zinc-400">
           Monitor timetable completeness and teacher utilization across the school
         </p>
       </div>

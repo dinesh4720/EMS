@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useValidatedParams } from '../../hooks/useValidatedParams';
 import {
   Card,
   CardBody,
@@ -25,7 +26,7 @@ const examCache = new Map();
 const CACHE_DURATION = 60000; // 1 minute
 
 const ResultsEntry = ({ standalone = false }) => {
-  const { examId } = useParams();
+  const { params: { examId }, isValid } = useValidatedParams({ examId: 'objectId' }, { redirectTo: '/academics/exams' });
   const navigate = useNavigate();
   const [exams, setExams] = useState([]);
   const [selectedExamId, setSelectedExamId] = useState(examId ? new Set([examId]) : new Set([]));
@@ -207,6 +208,8 @@ const ResultsEntry = ({ standalone = false }) => {
   const enteredCount = Object.values(results).filter(r => r.marksObtained > 0).length;
   const passCount = Object.values(results).filter(r => r.marksObtained >= (exam?.passingMarks || 35)).length;
 
+  if (!isValid) return null;
+
   // Loading state
   if (loading || loadingExams) {
     return (
@@ -229,7 +232,7 @@ const ResultsEntry = ({ standalone = false }) => {
             onSelectionChange={setSelectedExamId}
             className="max-w-xs"
             classNames={{
-              trigger: 'border-gray-200 hover:border-gray-300'
+              trigger: 'border-gray-200 hover:border-gray-300 dark:border-zinc-700 dark:hover:border-zinc-600'
             }}
           >
             {exams.map((exam) => (
@@ -251,9 +254,9 @@ const ResultsEntry = ({ standalone = false }) => {
         {/* No exam selected */}
         {exams.length === 0 && (
           <div className="text-center py-12">
-            <FileText size={40} className="mx-auto mb-3 text-gray-300" />
-            <p className="text-gray-500">No exams available</p>
-            <p className="text-sm text-gray-400 mt-1">Create an exam first to enter results</p>
+            <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
+            <p className="text-gray-500 dark:text-zinc-400">No exams available</p>
+            <p className="text-sm text-gray-400 dark:text-zinc-500 mt-1">Create an exam first to enter results</p>
           </div>
         )}
 
@@ -268,32 +271,32 @@ const ResultsEntry = ({ standalone = false }) => {
         {exam && !loadingStudents && (
           <>
             {/* Exam Info */}
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+            <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-medium text-gray-900">{exam.name}</h3>
-                  <p className="text-sm text-gray-500">{exam.classId} - {exam.subjectName}</p>
+                  <h3 className="font-medium text-gray-900 dark:text-zinc-100">{exam.name}</h3>
+                  <p className="text-sm text-gray-500 dark:text-zinc-400">{exam.classId} - {exam.subjectName}</p>
                 </div>
                 <div className="flex items-center gap-4 text-sm">
-                  <span className="text-gray-500">Max: <span className="font-medium text-gray-900">{exam.maxMarks}</span></span>
-                  <span className="text-gray-500">Pass: <span className="font-medium text-gray-900">{exam.passingMarks}</span></span>
+                  <span className="text-gray-500 dark:text-zinc-400">Max: <span className="font-medium text-gray-900 dark:text-zinc-100">{exam.maxMarks}</span></span>
+                  <span className="text-gray-500 dark:text-zinc-400">Pass: <span className="font-medium text-gray-900 dark:text-zinc-100">{exam.passingMarks}</span></span>
                 </div>
               </div>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4">
-              <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-                <p className="text-xs text-gray-500">Total Students</p>
-                <p className="text-xl font-semibold text-gray-900">{students.length}</p>
+              <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 border border-gray-100 dark:border-zinc-800">
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Total Students</p>
+                <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{students.length}</p>
               </div>
-              <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
-                <p className="text-xs text-blue-600">Results Entered</p>
-                <p className="text-xl font-semibold text-blue-700">{enteredCount}</p>
+              <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
+                <p className="text-xs text-blue-600 dark:text-blue-400">Results Entered</p>
+                <p className="text-xl font-semibold text-blue-700 dark:text-blue-300">{enteredCount}</p>
               </div>
-              <div className="bg-green-50 rounded-lg p-3 border border-green-100">
-                <p className="text-xs text-green-600">Pass Count</p>
-                <p className="text-xl font-semibold text-green-700">{passCount}</p>
+              <div className="bg-green-50 dark:bg-green-950 rounded-lg p-3 border border-green-100 dark:border-green-800">
+                <p className="text-xs text-green-600 dark:text-green-400">Pass Count</p>
+                <p className="text-xl font-semibold text-green-700 dark:text-green-300">{passCount}</p>
               </div>
             </div>
 
@@ -303,21 +306,21 @@ const ResultsEntry = ({ standalone = false }) => {
                 placeholder="Search students..."
                 value={searchQuery}
                 onValueChange={setSearchQuery}
-                startContent={<Search size={16} className="text-gray-400" />}
+                startContent={<Search size={16} className="text-gray-400 dark:text-zinc-500" />}
                 className="max-w-xs"
                 classNames={{
-                  inputWrapper: 'border-gray-200 hover:border-gray-300'
+                  inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-700 dark:hover:border-zinc-600'
                 }}
               />
             )}
 
             {/* Results Table */}
-            <Card shadow="none" className="border border-gray-100">
+            <Card shadow="none" className="border border-gray-100 dark:border-zinc-800 dark:bg-zinc-950">
               <CardBody className="p-0">
                 {students.length === 0 ? (
                   <div className="text-center py-12">
-                    <Users size={40} className="mx-auto mb-3 text-gray-300" />
-                    <p className="text-gray-500">No students found in this class</p>
+                    <Users size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
+                    <p className="text-gray-500 dark:text-zinc-400">No students found in this class</p>
                   </div>
                 ) : (
                   <Table aria-label="Results entry table" removeWrapper>
@@ -337,19 +340,19 @@ const ResultsEntry = ({ standalone = false }) => {
                         const status = getStatus(marks);
 
                         return (
-                          <TableRow key={studentId} className="hover:bg-gray-50">
+                          <TableRow key={studentId} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
                             <TableCell>
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                  <span className="text-sm font-medium text-gray-600">
+                                <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                                  <span className="text-sm font-medium text-gray-600 dark:text-zinc-400">
                                     {student.name?.charAt(0)?.toUpperCase() || 'S'}
                                   </span>
                                 </div>
-                                <span className="font-medium text-gray-900">{student.name}</span>
+                                <span className="font-medium text-gray-900 dark:text-zinc-100">{student.name}</span>
                               </div>
                             </TableCell>
                             <TableCell>
-                              <span className="text-sm text-gray-600">{student.rollNo || studentId}</span>
+                              <span className="text-sm text-gray-600 dark:text-zinc-400">{student.rollNo || studentId}</span>
                             </TableCell>
                             <TableCell>
                               <div className="w-24">
@@ -359,7 +362,7 @@ const ResultsEntry = ({ standalone = false }) => {
                                   onChange={(e) => handleMarksChange(studentId, e.target.value)}
                                   min={0}
                                   max={exam.maxMarks}
-                                  className="w-full px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm"
+                                  className="w-full px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100"
                                   placeholder="0"
                                 />
                               </div>
@@ -378,7 +381,7 @@ const ResultsEntry = ({ standalone = false }) => {
                                   {status}
                                 </Chip>
                               ) : (
-                                <span className="text-sm text-gray-400">-</span>
+                                <span className="text-sm text-gray-400 dark:text-zinc-500">-</span>
                               )}
                             </TableCell>
                             <TableCell>
@@ -387,7 +390,7 @@ const ResultsEntry = ({ standalone = false }) => {
                                 value={results[studentId]?.remarks || ''}
                                 onChange={(e) => handleRemarksChange(studentId, e.target.value)}
                                 placeholder="Add remarks..."
-                                className="w-40 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm"
+                                className="w-40 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100"
                               />
                             </TableCell>
                           </TableRow>
@@ -408,8 +411,8 @@ const ResultsEntry = ({ standalone = false }) => {
   if (!exam) {
     return (
       <div className="text-center py-20">
-        <FileText size={40} className="mx-auto mb-3 text-gray-300" />
-        <p className="text-gray-500">Exam not found</p>
+        <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
+        <p className="text-gray-500 dark:text-zinc-400">Exam not found</p>
         <MinimalButton className="mt-4" onClick={() => navigate('/academics/exams')}>
           Back to Exams
         </MinimalButton>
@@ -420,21 +423,21 @@ const ResultsEntry = ({ standalone = false }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white border border-gray-100 rounded-lg">
+      <div className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-lg">
         <div className="flex items-center justify-between p-6">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate(`/academics/exams/${examId}`)}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
             >
-              <ArrowLeft size={20} className="text-gray-500" />
+              <ArrowLeft size={20} className="text-gray-500 dark:text-zinc-400" />
             </button>
-            <div className="p-3 bg-gray-100 rounded-lg">
-              <Award size={24} className="text-gray-600" />
+            <div className="p-3 bg-gray-100 dark:bg-zinc-800 rounded-lg">
+              <Award size={24} className="text-gray-600 dark:text-zinc-400" />
             </div>
             <div>
-              <h1 className="text-xl font-medium text-gray-900">Enter Results: {exam.name}</h1>
-              <p className="text-sm text-gray-500 mt-0.5">
+              <h1 className="text-xl font-medium text-gray-900 dark:text-zinc-100">Enter Results: {exam.name}</h1>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">
                 {exam.classId} - {exam.subjectName} | Max: {exam.maxMarks} | Pass: {exam.passingMarks}
               </p>
             </div>
@@ -452,27 +455,27 @@ const ResultsEntry = ({ standalone = false }) => {
 
       {/* Stats Summary */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-          <p className="text-xs text-gray-500">Total Students</p>
-          <p className="text-2xl font-semibold text-gray-900">{students.length}</p>
+        <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
+          <p className="text-xs text-gray-500 dark:text-zinc-400">Total Students</p>
+          <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{students.length}</p>
         </div>
-        <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-          <p className="text-xs text-gray-500">Results Entered</p>
-          <p className="text-2xl font-semibold text-gray-900">{enteredCount}</p>
+        <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
+          <p className="text-xs text-gray-500 dark:text-zinc-400">Results Entered</p>
+          <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{enteredCount}</p>
         </div>
-        <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-          <p className="text-xs text-gray-500">Pass Count</p>
-          <p className="text-2xl font-semibold text-green-600">{passCount}</p>
+        <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
+          <p className="text-xs text-gray-500 dark:text-zinc-400">Pass Count</p>
+          <p className="text-2xl font-semibold text-green-600 dark:text-green-400">{passCount}</p>
         </div>
       </div>
 
       {/* Results Table */}
-      <Card shadow="none" className="border border-gray-100">
+      <Card shadow="none" className="border border-gray-100 dark:border-zinc-800 dark:bg-zinc-950">
         <CardBody className="p-0">
           {students.length === 0 ? (
             <div className="text-center py-12">
-              <Users size={40} className="mx-auto mb-3 text-gray-300" />
-              <p className="text-gray-500">No students found in this class</p>
+              <Users size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
+              <p className="text-gray-500 dark:text-zinc-400">No students found in this class</p>
             </div>
           ) : (
             <Table aria-label="Results entry table" removeWrapper>
@@ -492,19 +495,19 @@ const ResultsEntry = ({ standalone = false }) => {
                   const status = getStatus(marks);
 
                   return (
-                    <TableRow key={studentId} className="hover:bg-gray-50">
+                    <TableRow key={studentId} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                            <span className="text-sm font-medium text-gray-600">
+                          <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                            <span className="text-sm font-medium text-gray-600 dark:text-zinc-400">
                               {student.name?.charAt(0)?.toUpperCase() || 'S'}
                             </span>
                           </div>
-                          <span className="font-medium text-gray-900">{student.name}</span>
+                          <span className="font-medium text-gray-900 dark:text-zinc-100">{student.name}</span>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-600">{student.rollNo || studentId}</span>
+                        <span className="text-sm text-gray-600 dark:text-zinc-400">{student.rollNo || studentId}</span>
                       </TableCell>
                       <TableCell>
                         <div className="w-24">
@@ -514,7 +517,7 @@ const ResultsEntry = ({ standalone = false }) => {
                             onChange={(e) => handleMarksChange(studentId, e.target.value)}
                             min={0}
                             max={exam.maxMarks}
-                            className="w-full px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm"
+                            className="w-full px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100"
                             placeholder="0"
                           />
                         </div>
@@ -533,7 +536,7 @@ const ResultsEntry = ({ standalone = false }) => {
                             {status}
                           </Chip>
                         ) : (
-                          <span className="text-sm text-gray-400">-</span>
+                          <span className="text-sm text-gray-400 dark:text-zinc-500">-</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -542,7 +545,7 @@ const ResultsEntry = ({ standalone = false }) => {
                           value={results[studentId]?.remarks || ''}
                           onChange={(e) => handleRemarksChange(studentId, e.target.value)}
                           placeholder="Add remarks..."
-                          className="w-40 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm"
+                          className="w-40 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100"
                         />
                       </TableCell>
                     </TableRow>

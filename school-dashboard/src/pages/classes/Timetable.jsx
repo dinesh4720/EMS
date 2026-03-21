@@ -434,7 +434,7 @@ export default function Timetable({ classId }) {
   if (classesWithTeachers.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">No classes available</p>
+        <p className="text-gray-500 dark:text-zinc-400">No classes available</p>
       </div>
     );
   }
@@ -442,7 +442,7 @@ export default function Timetable({ classId }) {
   return (
     <div className="w-full flex flex-col">
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-gray-200 py-4 px-4 mb-4">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-gray-200 dark:border-zinc-800 py-4 px-4 mb-4">
         {/* Left Side - Filters & Status */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
           <div className="flex items-center gap-2">
@@ -530,14 +530,14 @@ export default function Timetable({ classId }) {
         </div>
       ) : !timetable ? (
         /* No timetable set - grayed out state */
-        <div className="flex flex-col items-center justify-center h-full min-h-[400px] bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg">
+        <div className="flex flex-col items-center justify-center h-full min-h-[400px] bg-gray-50 dark:bg-zinc-900 border-2 border-dashed border-gray-200 dark:border-zinc-800 rounded-lg">
           <div className="text-center space-y-4">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
-              <Clock size={40} className="text-gray-400" />
+            <div className="w-20 h-20 bg-gray-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto">
+              <Clock size={40} className="text-gray-400 dark:text-zinc-500" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">No Timetable Set</h3>
-              <p className="text-sm text-gray-500 mb-4">
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-zinc-300 mb-2">No Timetable Set</h3>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
                 Timetable has not been created for this class yet.
               </p>
               <div className="flex items-center justify-center gap-3">
@@ -571,19 +571,19 @@ export default function Timetable({ classId }) {
             removeWrapper
             classNames={{
               base: "overflow-x-auto",
-              th: "bg-gray-100 text-gray-600 font-semibold text-xs uppercase h-10 border-b border-gray-200 text-center",
-              td: "p-1 border-b border-gray-100",
-              tr: "hover:bg-gray-50",
+              th: "bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 font-semibold text-xs uppercase h-10 border-b border-gray-200 dark:border-zinc-800 text-center",
+              td: "p-1 border-b border-gray-100 dark:border-zinc-800",
+              tr: "hover:bg-gray-50 dark:hover:bg-zinc-900",
               wrapper: "p-0"
             }}
           >
             <TableHeader>
               <TableColumn className="w-24">Day</TableColumn>
               {periods.map((period, i) => (
-                <TableColumn key={i} className="w-32">
+                <TableColumn key={`period-${period.name}-${period.startTime}`} className="w-32">
                   <div className="flex flex-col items-center justify-center gap-0.5">
                     <span className="text-xs font-bold">{period.name}</span>
-                    <span className="text-[9px] text-gray-400 font-normal">
+                    <span className="text-[9px] text-gray-400 dark:text-zinc-500 font-normal">
                       {period.startTime}-{period.endTime}
                     </span>
                   </div>
@@ -593,7 +593,7 @@ export default function Timetable({ classId }) {
             <TableBody>
               {days.map((day) => (
                 <TableRow key={day}>
-                  <TableCell className="font-semibold text-gray-700 text-xs">
+                  <TableCell className="font-semibold text-gray-700 dark:text-zinc-300 text-xs">
                     <span className="hidden sm:inline">{day}</span>
                     <span className="sm:hidden">{day.slice(0, 3)}</span>
                   </TableCell>
@@ -602,9 +602,9 @@ export default function Timetable({ classId }) {
 
                     if (period.isBreak) {
                       return (
-                        <TableCell key={i} className="text-center bg-amber-50 p-0">
+                        <TableCell key={`${day}-${i}`} className="text-center bg-amber-50 p-0">
                           <div className="h-24 flex items-center justify-center">
-                            <span className="text-[9px] font-semibold uppercase tracking-wider text-amber-600 opacity-60" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                            <span className="text-[9px] font-semibold uppercase tracking-wider text-amber-600 opacity-60 [writing-mode:vertical-rl] rotate-180">
                               {period.name}
                             </span>
                           </div>
@@ -613,7 +613,7 @@ export default function Timetable({ classId }) {
                     }
 
                     return (
-                      <TableCell key={i} className="p-1">
+                      <TableCell key={`${day}-${i}`} className="p-1">
                         {slot.subject ? (
                           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                             <Card
@@ -632,7 +632,7 @@ export default function Timetable({ classId }) {
                                 </span>
                                 {slot.teacherId && (
                                   <div className="flex items-center gap-1 bg-white/60 px-1.5 py-0.5 rounded-full max-w-full">
-                                    <span className="text-[10px] text-gray-600 text-center truncate">
+                                    <span className="text-[10px] text-gray-600 dark:text-zinc-400 text-center truncate">
                                       {getTeacherName(slot.teacherId)}
                                     </span>
                                   </div>
@@ -647,7 +647,7 @@ export default function Timetable({ classId }) {
                           </motion.div>
                         ) : (
                           <div
-                            className="w-full h-24 border border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center gap-1 text-gray-300 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 cursor-pointer"
+                            className="w-full h-24 border border-dashed border-gray-200 dark:border-zinc-800 rounded-lg flex flex-col items-center justify-center gap-1 text-gray-300 dark:text-zinc-600 hover:border-blue-400 dark:hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950 cursor-pointer"
                             onClick={() => handleSlotClick(day, i)}
                           >
                             <Plus size={16} />
@@ -663,7 +663,7 @@ export default function Timetable({ classId }) {
           </Table>
 
           {/* Legend */}
-          <div className="mt-4 flex flex-wrap gap-4 text-xs text-gray-500 items-center justify-end px-4 pb-4 border-t border-gray-100 pt-4">
+          <div className="mt-4 flex flex-wrap gap-4 text-xs text-gray-500 dark:text-zinc-400 items-center justify-end px-4 pb-4 border-t border-gray-100 dark:border-zinc-800 pt-4">
             <span className="font-medium mr-2">Subject Types:</span>
             <div className="flex gap-2 items-center">
               <span className="w-3 h-3 rounded-full bg-blue-200 border border-blue-300"></span>
@@ -699,7 +699,7 @@ export default function Timetable({ classId }) {
           <ModalBody>
             <div className="space-y-3">
               {periods.map((period, i) => (
-                <div key={i} className="flex gap-2 items-end">
+                <div key={`period-edit-${i}`} className="flex gap-2 items-end">
                   <Input
                     size="sm"
                     value={period.name}
@@ -793,9 +793,9 @@ export default function Timetable({ classId }) {
 
               {/* Show loading state while fetching teachers */}
               {loadingTeachers && slotForm.subject && (
-                <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">
                   <Spinner size="sm" />
-                  <span className="text-sm text-gray-500">Loading available teachers...</span>
+                  <span className="text-sm text-gray-500 dark:text-zinc-400">Loading available teachers...</span>
                 </div>
               )}
 

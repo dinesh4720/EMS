@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { studentsApi } from "../services/api";
 
 const StudentsContext = createContext();
@@ -30,7 +30,7 @@ export function StudentsProvider({ children }) {
     fetchStudents();
   }, [fetchStudents]);
 
-  const addStudent = async (newStudent) => {
+  const addStudent = useCallback(async (newStudent) => {
     try {
       const created = await studentsApi.create(newStudent);
       setStudents(prev => [...prev, created]);
@@ -39,9 +39,9 @@ export function StudentsProvider({ children }) {
       setError(err.message);
       throw err;
     }
-  };
+  }, []);
 
-  const updateStudent = async (id, updates) => {
+  const updateStudent = useCallback(async (id, updates) => {
     try {
       const updated = await studentsApi.update(id, updates);
       setStudents(prev => prev.map(s => s.id === id ? updated : s));
@@ -50,9 +50,9 @@ export function StudentsProvider({ children }) {
       setError(err.message);
       throw err;
     }
-  };
+  }, []);
 
-  const deleteStudent = async (id) => {
+  const deleteStudent = useCallback(async (id) => {
     try {
       const result = await studentsApi.delete(id);
       setStudents(prev => prev.filter(s => s.id !== id));
@@ -61,13 +61,13 @@ export function StudentsProvider({ children }) {
       setError(err.message);
       throw err;
     }
-  };
+  }, []);
 
-  const getStudentById = (id) => students.find(s => s.id === id || s.id === String(id));
+  const getStudentById = useCallback((id) => students.find(s => s.id === id || s.id === String(id)), [students]);
 
-  const getStudentsByClass = (className) => students.filter(s => s.class === className);
+  const getStudentsByClass = useCallback((className) => students.filter(s => s.class === className), [students]);
 
-  const value = {
+  const value = useMemo(() => ({
     students,
     loading,
     error,
@@ -77,7 +77,7 @@ export function StudentsProvider({ children }) {
     getStudentById,
     getStudentsByClass,
     refetch: fetchStudents,
-  };
+  }), [students, loading, error, addStudent, updateStudent, deleteStudent, getStudentById, getStudentsByClass, fetchStudents]);
 
   return <StudentsContext.Provider value={value}>{children}</StudentsContext.Provider>;
 }

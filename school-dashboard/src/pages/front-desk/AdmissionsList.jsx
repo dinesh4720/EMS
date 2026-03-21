@@ -261,25 +261,12 @@ const AdmissionsList = forwardRef((props, ref) => {
 
   const handleConvertToStudent = async (admissionId) => {
     try {
-      const response = await fetch(`/api/front-desk/admissions/${admissionId}/convert-to-student`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success(data.message || 'Student created successfully!');
-        loadAdmissions();
-        onClose(); // Close modal after successful conversion
-      } else {
-        toast.error(data.error || 'Failed to convert to student');
-      }
+      const data = await frontDeskApi.convertToStudent(admissionId);
+      toast.success(data.message || 'Student created successfully!');
+      loadAdmissions();
+      onClose();
     } catch (error) {
-      toast.error('Failed to convert to student');
+      toast.error(error.message || 'Failed to convert to student');
     }
   };
 

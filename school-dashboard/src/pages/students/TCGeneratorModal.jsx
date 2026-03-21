@@ -124,15 +124,103 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
             <html>
               <head>
                 <title>Transfer Certificate - ${formData.studentName}</title>
-                <script src="https://cdn.tailwindcss.com"></script>
                 <style>
+                    /* Preflight reset */
+                    *, *::before, *::after { box-sizing: border-box; border-width: 0; border-style: solid; border-color: #e5e7eb; }
+                    body { margin: 0; padding: 0; }
+
+                    /* Display */
+                    .hidden { display: none; }
+                    .flex { display: flex; }
+                    .grid { display: grid; }
+
+                    /* Flex */
+                    .flex-col { flex-direction: column; }
+                    .flex-grow { flex-grow: 1; }
+                    .flex-shrink-0 { flex-shrink: 0; }
+                    .justify-between { justify-content: space-between; }
+                    .justify-center { justify-content: center; }
+                    .items-center { align-items: center; }
+                    .items-end { align-items: end; }
+
+                    /* Grid */
+                    .grid-cols-\\[24px_1fr_10px_1fr\\] { grid-template-columns: 24px 1fr 10px 1fr; }
+                    .gap-1\\.5 { gap: 0.375rem; }
+
+                    /* Sizing */
+                    .h-full { height: 100%; }
+                    .w-full { width: 100%; }
+                    .w-12 { width: 3rem; }
+                    .h-12 { height: 3rem; }
+                    .w-56 { width: 14rem; }
+                    .w-\\[210mm\\] { width: 210mm; }
+                    .h-\\[297mm\\] { height: 297mm; }
+
+                    /* Spacing */
+                    .mx-auto { margin-left: auto; margin-right: auto; }
+                    .mt-8 { margin-top: 2rem; }
+                    .mb-0 { margin-bottom: 0; }
+                    .mb-1 { margin-bottom: 0.25rem; }
+                    .mb-2 { margin-bottom: 0.5rem; }
+                    .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+                    .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+                    .pt-4 { padding-top: 1rem; }
+                    .pt-2 { padding-top: 0.5rem; }
+                    .pb-4 { padding-bottom: 1rem; }
+                    .pb-2 { padding-bottom: 0.5rem; }
+                    .pb-1 { padding-bottom: 0.25rem; }
+                    .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+                    .space-y-1\\.5 > * + * { margin-top: 0.375rem; }
+
+                    /* Typography */
+                    .font-serif { font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif; }
+                    .font-extrabold { font-weight: 800; }
+                    .font-bold { font-weight: 700; }
+                    .font-medium { font-weight: 500; }
+                    .font-normal { font-weight: 400; }
+                    .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+                    .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+                    .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+                    .text-\\[0\\.6rem\\] { font-size: 0.6rem; }
+                    .text-\\[0\\.7rem\\] { font-size: 0.7rem; }
+                    .text-center { text-align: center; }
+                    .text-right { text-align: right; }
+                    .uppercase { text-transform: uppercase; }
+                    .tracking-wide { letter-spacing: 0.025em; }
+                    .leading-tight { line-height: 1.25; }
+                    .leading-snug { line-height: 1.375; }
+                    .underline { text-decoration-line: underline; }
+                    .decoration-2 { text-decoration-thickness: 2px; }
+                    .underline-offset-2 { text-underline-offset: 2px; }
+
+                    /* Colors */
+                    .bg-white { background-color: #fff; }
+                    .bg-gray-200 { background-color: #e5e7eb; }
+                    .text-black { color: #000; }
+
+                    /* Borders */
+                    .rounded-full { border-radius: 9999px; }
+                    .border-2 { border-width: 2px; }
+                    .border-b-2 { border-bottom-width: 2px; }
+                    .border-b { border-bottom-width: 1px; }
+                    .border-t { border-top-width: 1px; }
+                    .border-black { border-color: #000; }
+                    .border-dotted { border-style: dotted; }
+
+                    /* Other */
+                    .opacity-0 { opacity: 0; }
+
+                    /* Print */
                     @media print {
-                        body { -webkit-print-color-adjust: exact; }
-                    }
-                    body {
-                        margin: 0;
-                        padding: 0;
-                        box-sizing: border-box;
+                        @page { size: A4; margin: 0; }
+                        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        .print\\:block { display: block; }
+                        .print\\:w-full { width: 100%; }
+                        .print\\:h-full { height: 100%; }
+                        .print\\:absolute { position: absolute; }
+                        .print\\:top-0 { top: 0; }
+                        .print\\:left-0 { left: 0; }
+                        .print\\:z-\\[9999\\] { z-index: 9999; }
                     }
                 </style>
               </head>

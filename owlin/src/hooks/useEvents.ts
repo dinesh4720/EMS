@@ -13,7 +13,7 @@ export const useEvents = (filter?: AnalyticsFilter) => {
       try {
         const response = await eventsApi.getEvents(filter)
         // Handle { success: true, events: [...], pagination: {...} } format
-        const data = response.events || response.data || []
+        const data = response.events || []
         setEvents(Array.isArray(data) ? data : [])
         setError(null)
       } catch (err) {

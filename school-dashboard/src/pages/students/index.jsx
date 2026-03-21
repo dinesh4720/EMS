@@ -1,4 +1,5 @@
-import { useRef, useEffect, useState, lazy, Suspense, useTransition } from "react";
+import { useRef, useEffect, useState, Suspense, useTransition } from "react";
+import lazyWithRetry from "../../utils/lazyWithRetry";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { Drawer, DrawerContent, DrawerHeader, DrawerBody, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter as ModalFooterUI, Chip, Spinner } from "@heroui/react";
 import { Plus, X, UserPlus, Send, FileText, CheckCircle2, ChevronDown, Mail, Phone, Eye, Check, GraduationCap } from "lucide-react";
@@ -6,7 +7,7 @@ import StudentsList from "./StudentsList";
 import StudentDashboard from "./StudentDashboard";
 import StudentAttendance from "./StudentAttendance";
 import StudentFormSubmissions from "./StudentFormSubmissions";
-const AddStudent = lazy(() => import("./AddStudent"));
+const AddStudent = lazyWithRetry(() => import("./AddStudent"));
 import FormInput from "../../components/FormInput";
 import { useApp } from "../../context/AppContext";
 import { intakeFormsApi } from "../../services/api";
@@ -295,46 +296,46 @@ export default function StudentsPage() {
         isOpen={isMethodModalOpen}
         onClose={() => setIsMethodModalOpen(false)}
         size="2xl"
-        classNames={{ backdrop: "bg-black/30", base: "bg-white" }}
+        classNames={{ backdrop: "bg-black/30", base: "bg-white dark:bg-zinc-900" }}
       >
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 py-4">
+          <ModalHeader className="border-b border-gray-100 dark:border-zinc-700 py-4">
             <h3 className="text-lg font-medium">Choose Admission Method</h3>
-            <p className="text-sm text-gray-500 font-normal mt-1">Select how you want to add the new student</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal mt-1">Select how you want to add the new student</p>
           </ModalHeader>
           <ModalBody className="py-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button
                 onClick={() => handleSelectMethod('form')}
-                className="group p-6 rounded-lg border border-gray-200 hover:border-gray-400 transition-colors text-left"
+                className="group p-6 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 transition-colors text-left"
               >
                 <div className="flex flex-col items-center text-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                    <Send size={24} className="text-gray-600" />
+                  <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                    <Send size={24} className="text-gray-600 dark:text-zinc-400" />
                   </div>
                   <div>
-                    <h4 className="text-base font-medium text-gray-900 mb-2">Send Admission Form</h4>
-                    <p className="text-sm text-gray-500">Share a form link with parents via email or SMS</p>
+                    <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 mb-2">Send Admission Form</h4>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">Share a form link with parents via email or SMS</p>
                   </div>
                 </div>
               </button>
               <button
                 onClick={() => handleSelectMethod('full')}
-                className="group p-6 rounded-lg border border-gray-200 hover:border-gray-400 transition-colors text-left"
+                className="group p-6 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 transition-colors text-left"
               >
                 <div className="flex flex-col items-center text-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                    <UserPlus size={24} className="text-gray-600" />
+                  <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                    <UserPlus size={24} className="text-gray-600 dark:text-zinc-400" />
                   </div>
                   <div>
-                    <h4 className="text-base font-medium text-gray-900 mb-2">Manual Registration</h4>
-                    <p className="text-sm text-gray-500">Add student details directly in the admin panel</p>
+                    <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 mb-2">Manual Registration</h4>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">Add student details directly in the admin panel</p>
                   </div>
                 </div>
               </button>
             </div>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100">
+          <ModalFooter className="border-t border-gray-100 dark:border-zinc-700">
             <Button variant="light" onPress={() => setIsMethodModalOpen(false)}>Cancel</Button>
           </ModalFooter>
         </ModalContent>
@@ -352,34 +353,34 @@ export default function StudentsPage() {
           setFormModalKey(prev => prev + 1);
         }}
         size="2xl"
-        classNames={{ backdrop: "bg-black/30", base: "bg-white" }}
+        classNames={{ backdrop: "bg-black/30", base: "bg-white dark:bg-zinc-900" }}
       >
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 py-4">
+          <ModalHeader className="border-b border-gray-100 dark:border-zinc-700 py-4">
             <h3 className="text-lg font-medium">Send Admission Form</h3>
-            <p className="text-sm text-gray-500 font-normal mt-1">Choose a form and share it</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal mt-1">Choose a form and share it</p>
           </ModalHeader>
           <ModalBody className="py-6">
             <div className="space-y-4">
               <div className="relative" ref={formDropdownRef}>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Select Form</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">Select Form</label>
                 <button
                   type="button"
                   onClick={() => setIsFormDropdownOpen(!isFormDropdownOpen)}
-                  className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+                  className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 transition-colors"
                 >
                   {selectedForm ? (
                     <div className="flex items-center gap-3">
-                      <FileText size={18} className="text-gray-500" />
+                      <FileText size={18} className="text-gray-500 dark:text-zinc-400" />
                       <span className="text-sm">{availableForms.find(f => f.id === selectedForm)?.formName}</span>
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-500">Choose an admission form</span>
+                    <span className="text-sm text-gray-500 dark:text-zinc-400">Choose an admission form</span>
                   )}
-                  <ChevronDown size={18} className={`text-gray-400 transition-transform ${isFormDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={18} className={`text-gray-400 dark:text-zinc-500 transition-transform ${isFormDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isFormDropdownOpen && (
-                  <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg max-h-[320px] overflow-y-auto">
+                  <div className="absolute z-50 w-full mt-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg max-h-[320px] overflow-y-auto">
                     <div className="p-2">
                       {availableForms.length > 0 ? (
                         availableForms.map((form) => (
@@ -387,18 +388,18 @@ export default function StudentsPage() {
                             key={form.id}
                             type="button"
                             onClick={() => { setSelectedForm(form.id); setIsFormDropdownOpen(false); }}
-                            className={`w-full p-3 rounded-lg text-left flex items-center gap-3 ${selectedForm === form.id ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                            className={`w-full p-3 rounded-lg text-left flex items-center gap-3 ${selectedForm === form.id ? 'bg-gray-100 dark:bg-zinc-800' : 'hover:bg-gray-50 dark:hover:bg-zinc-800/50'}`}
                           >
-                            <FileText size={18} className="text-gray-500" />
+                            <FileText size={18} className="text-gray-500 dark:text-zinc-400" />
                             <div className="flex-1">
                               <p className="text-sm font-medium">{form.formName}</p>
-                              <p className="text-xs text-gray-500">{form.fields?.length || 0} fields</p>
+                              <p className="text-xs text-gray-500 dark:text-zinc-400">{form.fields?.length || 0} fields</p>
                             </div>
-                            {selectedForm === form.id && <CheckCircle2 size={16} className="text-gray-600" />}
+                            {selectedForm === form.id && <CheckCircle2 size={16} className="text-gray-600 dark:text-zinc-400" />}
                           </button>
                         ))
                       ) : (
-                        <div className="text-center py-8 text-gray-500">
+                        <div className="text-center py-8 text-gray-500 dark:text-zinc-400">
                           <p>No active admission forms available.</p>
                           <Button size="sm" variant="flat" className="mt-2" onPress={() => { setIsFormDropdownOpen(false); setIsFormSelectModalOpen(false); navigate('/settings/intake-forms'); }}>Create a Form</Button>
                         </div>
@@ -409,7 +410,7 @@ export default function StudentsPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Parent Email</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">Parent Email</label>
                 <div className="flex gap-2 mb-3">
                   <input
                     type="email"
@@ -417,7 +418,7 @@ export default function StudentsPage() {
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
                     onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddEmail(); }}}
-                    className="flex-1 px-4 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-gray-400"
+                    className="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 text-sm focus:outline-none focus:border-gray-400 dark:focus:border-zinc-500 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                   />
                   <Button variant="flat" size="sm" onPress={handleAddEmail} isDisabled={!newEmail} startContent={<Mail size={14} />}>Add</Button>
                 </div>
@@ -431,7 +432,7 @@ export default function StudentsPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Parent Mobile Number</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">Parent Mobile Number</label>
                 <div className="flex gap-2 mb-3">
                   <input
                     type="tel"
@@ -439,7 +440,7 @@ export default function StudentsPage() {
                     value={newPhone}
                     onChange={(e) => setNewPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                     onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddPhone(); }}}
-                    className="flex-1 px-4 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-gray-400"
+                    className="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 text-sm focus:outline-none focus:border-gray-400 dark:focus:border-zinc-500 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                   />
                   <Button variant="flat" size="sm" onPress={handleAddPhone} isDisabled={!newPhone || newPhone.length !== 10} startContent={<Phone size={14} />}>Add</Button>
                 </div>
@@ -452,12 +453,12 @@ export default function StudentsPage() {
                 )}
               </div>
 
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <p className="text-sm text-gray-600">A form link will be sent to the parent. Review submissions in the Submissions tab.</p>
+              <div className="bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg p-4">
+                <p className="text-sm text-gray-600 dark:text-zinc-400">A form link will be sent to the parent. Review submissions in the Submissions tab.</p>
               </div>
             </div>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100">
+          <ModalFooter className="border-t border-gray-100 dark:border-zinc-700">
             <Button variant="light" onPress={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmails([]); setRecipientPhones([]); }}>Cancel</Button>
             <Button color="primary" onPress={handleSendForm} isLoading={isSendingForm} isDisabled={!selectedForm || (recipientEmails.length === 0 && recipientPhones.length === 0)} startContent={!isSendingForm && <Send size={16} />}>Send Form</Button>
           </ModalFooter>
@@ -465,20 +466,20 @@ export default function StudentsPage() {
       </Modal>
 
       {/* Success Modal */}
-      <Modal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} size="md" classNames={{ backdrop: "bg-black/30", base: "bg-white" }}>
+      <Modal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} size="md" classNames={{ backdrop: "bg-black/30", base: "bg-white dark:bg-zinc-900" }}>
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 py-4">
+          <ModalHeader className="border-b border-gray-100 dark:border-zinc-700 py-4">
             <div className="flex flex-col items-center text-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center">
-                <Check size={24} className="text-white" />
+              <div className="w-12 h-12 rounded-full bg-gray-900 dark:bg-zinc-100 flex items-center justify-center">
+                <Check size={24} className="text-white dark:text-zinc-900" />
               </div>
               <h3 className="text-lg font-medium">Form Sent Successfully!</h3>
             </div>
           </ModalHeader>
           <ModalBody className="py-6">
-            <p className="text-sm text-gray-500 text-center">The admission form has been sent. You can review the submission in the Form Submissions tab.</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 text-center">The admission form has been sent. You can review the submission in the Form Submissions tab.</p>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100 gap-3">
+          <ModalFooter className="border-t border-gray-100 dark:border-zinc-700 gap-3">
             <Button variant="flat" onPress={() => { setShowSuccessModal(false); setIsFormSelectModalOpen(true); }} className="flex-1">Send Another</Button>
             <Button color="primary" onPress={() => { setShowSuccessModal(false); setIsMethodModalOpen(true); }} className="flex-1" startContent={<UserPlus size={16} />}>Manual Registration</Button>
           </ModalFooter>

@@ -195,21 +195,39 @@
 }
 
 /* ============================================
-   DARK MODE SUPPORT
+   DARK MODE SUPPORT (class-based for Tailwind)
    ============================================ */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --panel-bg: #1f2937;
-    --border-color: #374151;
-    --panel-header-bg: #111827;
-    --text-primary: #f9fafb;
-    --text-secondary: #9ca3af;
-    --hover-bg: #374151;
+.dark {
+    --panel-bg: #09090b;       /* zinc-950 */
+    --border-color: #27272a;   /* zinc-800 */
+    --panel-header-bg: #09090b;/* zinc-950 */
+    --text-primary: #fafafa;   /* zinc-50 */
+    --text-secondary: #a1a1aa; /* zinc-400 */
+    --hover-bg: #27272a;       /* zinc-800 */
     --primary-bg: #312e81;
-    --primary-color: #818cf8;
-    --scrollbar-thumb: #4b5563;
-    --scrollbar-thumb-hover: #6b7280;
-  }
+    --primary-color: #a78bfa;  /* purple-400 */
+    --scrollbar-thumb: #3f3f46;/* zinc-700 */
+    --scrollbar-thumb-hover: #52525b; /* zinc-600 */
+}
+
+.dark .ai-assistant-panel {
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.4);
+}
+
+.dark .ai-assistant-backdrop {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* Code blocks in AI responses - dark theme */
+.dark .ai-assistant-panel__content pre,
+.dark .ai-assistant-panel__content code {
+    background: #18181b; /* zinc-900 */
+    color: #e4e4e7;      /* zinc-200 */
+    border-color: #27272a; /* zinc-800 */
+}
+
+.dark .ai-assistant-panel__content pre code {
+    background: transparent;
 }
 
 /* ============================================

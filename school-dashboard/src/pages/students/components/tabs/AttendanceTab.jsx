@@ -188,14 +188,14 @@ export default function AttendanceTab({
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
+            <div key={`skeleton-${i}`} className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800 p-4 animate-pulse">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <Loader2 size={18} className="text-gray-400 animate-spin" />
+                <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                  <Loader2 size={18} className="text-gray-400 dark:text-zinc-500 animate-spin" />
                 </div>
                 <div className="flex-1">
-                  <div className="h-4 w-20 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-6 w-24 bg-gray-200 rounded"></div>
+                  <div className="h-4 w-20 bg-gray-200 dark:bg-zinc-700 rounded mb-2"></div>
+                  <div className="h-6 w-24 bg-gray-200 dark:bg-zinc-700 rounded"></div>
                 </div>
               </div>
             </div>
@@ -203,50 +203,50 @@ export default function AttendanceTab({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800 p-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                <Activity size={18} className="text-gray-600" />
+              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                <Activity size={18} className="text-gray-600 dark:text-zinc-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Average Attendance</p>
-                <p className="text-lg font-semibold text-gray-900">{calculatedStats.percentage}%</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Average Attendance</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{calculatedStats.percentage}%</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800 p-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                <CheckCircle size={18} className="text-gray-600" />
+              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                <CheckCircle size={18} className="text-gray-600 dark:text-zinc-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Present Days</p>
-                <p className="text-lg font-semibold text-gray-900">{calculatedStats.present}</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Present Days</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{calculatedStats.present}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800 p-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                <XCircle size={18} className="text-gray-600" />
+              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                <XCircle size={18} className="text-gray-600 dark:text-zinc-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Absent Days</p>
-                <p className="text-lg font-semibold text-gray-900">{calculatedStats.absent}</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Absent Days</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{calculatedStats.absent}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800 p-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                <Calendar size={18} className="text-gray-600" />
+              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                <Calendar size={18} className="text-gray-600 dark:text-zinc-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Total Days</p>
-                <p className="text-lg font-semibold text-gray-900">{calculatedStats.total}</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Total Days</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{calculatedStats.total}</p>
               </div>
             </div>
           </div>
@@ -254,14 +254,14 @@ export default function AttendanceTab({
       )}
 
       {/* Mark Today's Attendance */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="px-6 pt-6 pb-4 border-b border-gray-100">
+      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
+        <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                <CheckCircle size={18} className="text-gray-600" />
+              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                <CheckCircle size={18} className="text-gray-600 dark:text-zinc-400" />
               </div>
-              <h3 className="text-base font-semibold text-gray-900">Mark Today's Attendance</h3>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Mark Today's Attendance</h3>
             </div>
             <Input
               type="date"
@@ -277,7 +277,7 @@ export default function AttendanceTab({
           <div className="flex flex-wrap gap-3">
             <Button
               variant="bordered"
-              className="border-gray-200 text-gray-700 hover:bg-gray-50"
+              className="border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
               startContent={<CheckCircle size={16} />}
               onPress={() => handleMarkAttendance('present')}
             >
@@ -285,7 +285,7 @@ export default function AttendanceTab({
             </Button>
             <Button
               variant="bordered"
-              className="border-gray-200 text-gray-700 hover:bg-gray-50"
+              className="border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
               startContent={<XCircle size={16} />}
               onPress={() => handleMarkAttendance('absent')}
             >
@@ -293,48 +293,48 @@ export default function AttendanceTab({
             </Button>
             <Button
               variant="bordered"
-              className="border-gray-200 text-gray-700 hover:bg-gray-50"
+              className="border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
               startContent={<Clock size={16} />}
               onPress={() => handleMarkAttendance('late')}
             >
               Mark Late
             </Button>
           </div>
-          <p className="text-xs text-gray-400 mt-3">
+          <p className="text-xs text-gray-400 dark:text-zinc-500 mt-3">
             Note: Attendance is typically marked by teachers through the Staff Mobile App.
           </p>
         </div>
       </div>
 
       {/* Subject-wise Attendance */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="px-6 pt-6 pb-4 border-b border-gray-100">
+      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
+        <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-              <BookOpen size={18} className="text-gray-600" />
+            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+              <BookOpen size={18} className="text-gray-600 dark:text-zinc-400" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900">Subject-wise Attendance</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Subject-wise Attendance</h3>
           </div>
         </div>
         <div className="p-6">
           {subjectAttendance.length === 0 ? (
             <div className="text-center py-8">
-              <BookOpen size={32} className="mx-auto text-gray-200 mb-3" />
-              <p className="text-sm text-gray-500">Subject-wise attendance tracking is not currently available.</p>
-              <p className="text-xs text-gray-400 mt-1">This feature requires per-subject attendance tracking which will be implemented in a future update.</p>
+              <BookOpen size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
+              <p className="text-sm text-gray-500 dark:text-zinc-400">Subject-wise attendance tracking is not currently available.</p>
+              <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">This feature requires per-subject attendance tracking which will be implemented in a future update.</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {subjectAttendance.map((subject, idx) => (
-                <div key={idx} className="flex items-center gap-4">
+              {subjectAttendance.map((subject) => (
+                <div key={subject.subject} className="flex items-center gap-4">
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-900">{subject.subject}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{subject.subject}</span>
                       <div className="flex items-center gap-3">
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 dark:text-zinc-400">
                           {subject.present}/{subject.total} classes
                         </span>
-                        <span className={`text-sm font-semibold text-gray-600`}>
+                        <span className={`text-sm font-semibold text-gray-600 dark:text-zinc-400`}>
                           {subject.percentage}%
                         </span>
                       </div>
@@ -343,7 +343,7 @@ export default function AttendanceTab({
                       value={subject.percentage}
                       className="h-1.5"
                       classNames={{
-                        track: "bg-gray-100",
+                        track: "bg-gray-100 dark:bg-zinc-800",
                         indicator: "bg-gray-400"
                       }}
                       size="sm"
@@ -360,14 +360,14 @@ export default function AttendanceTab({
       {/* Monthly Overview & Regularize */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly Calendar */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="px-6 pt-6 pb-4 border-b border-gray-100">
+        <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
+          <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <Calendar size={18} className="text-gray-600" />
+                <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                  <Calendar size={18} className="text-gray-600 dark:text-zinc-400" />
                 </div>
-                <h3 className="text-base font-semibold text-gray-900">Monthly Overview</h3>
+                <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Monthly Overview</h3>
               </div>
               <Select 
                 aria-label="Select month"
@@ -389,7 +389,7 @@ export default function AttendanceTab({
         <div className="p-6">
           <div className="grid grid-cols-7 gap-2 mb-4">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
+              <div key={day} className="text-center text-xs font-medium text-gray-500 dark:text-zinc-400 py-2">
                 {day}
               </div>
             ))}
@@ -402,10 +402,10 @@ export default function AttendanceTab({
               >
                 <div
                   className={`aspect-square flex items-center justify-center text-xs font-medium rounded-lg cursor-pointer transition-all hover:scale-110 ${
-                    day.status === 'present' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' :
-                    day.status === 'absent' ? 'bg-gray-200 text-gray-800' :
-                    day.status === 'late' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-gray-50 text-gray-300'
+                    day.status === 'present' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600' :
+                    day.status === 'absent' ? 'bg-gray-200 text-gray-800 dark:bg-zinc-600 dark:text-zinc-200' :
+                    day.status === 'late' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                    'bg-gray-50 text-gray-300 dark:bg-zinc-800/50 dark:text-zinc-600'
                   }`}
                 >
                   {day.day}
@@ -413,59 +413,59 @@ export default function AttendanceTab({
               </Tooltip>
             ))}
           </div>
-            <div className="flex items-center justify-center gap-4 mt-6 pt-4 border-t border-gray-100">
+            <div className="flex items-center justify-center gap-4 mt-6 pt-4 border-t border-gray-100 dark:border-zinc-800">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded bg-gray-400"></div>
-                <span className="text-xs text-gray-600">Present</span>
+                <span className="text-xs text-gray-600 dark:text-zinc-400">Present</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded bg-gray-600"></div>
-                <span className="text-xs text-gray-600">Absent</span>
+                <span className="text-xs text-gray-600 dark:text-zinc-400">Absent</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded bg-gray-300"></div>
-                <span className="text-xs text-gray-600">Leave</span>
+                <span className="text-xs text-gray-600 dark:text-zinc-400">Leave</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Regularize Attendance */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="px-6 pt-6 pb-4 border-b border-gray-100">
+        <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
+          <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                <AlertTriangle size={18} className="text-gray-600" />
+              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                <AlertTriangle size={18} className="text-gray-600 dark:text-zinc-400" />
               </div>
-              <h3 className="text-base font-semibold text-gray-900">Regularize Attendance</h3>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Regularize Attendance</h3>
             </div>
           </div>
           <div className="p-6">
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-gray-600 dark:text-zinc-400 mb-4">
               Request to regularize attendance for days marked as absent or missing.
             </p>
 
             {regularizationRequests.length === 0 ? (
               <div className="text-center py-8">
-                <AlertTriangle size={32} className="mx-auto text-gray-200 mb-3" />
-                <p className="text-sm text-gray-500">No regularization requests</p>
-                <p className="text-xs text-gray-400 mt-1">Regularization requests will appear here once submitted.</p>
+                <AlertTriangle size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
+                <p className="text-sm text-gray-500 dark:text-zinc-400">No regularization requests</p>
+                <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Regularization requests will appear here once submitted.</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {regularizationRequests.map((request, idx) => (
-                  <div key={idx} className="p-3 rounded-lg border border-gray-200 bg-gray-50">
+                {regularizationRequests.map((request) => (
+                  <div key={request._id || request.date} className="p-3 rounded-lg border border-gray-200 bg-gray-50 dark:border-zinc-700 dark:bg-zinc-800">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-gray-900">{request.date}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{request.date}</span>
                       <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-                        request.status === 'Pending' ? 'bg-gray-200 text-gray-700' :
-                        request.status === 'Approved' ? 'bg-gray-100 text-gray-600' :
-                        'bg-gray-300 text-gray-800'
+                        request.status === 'Pending' ? 'bg-gray-200 text-gray-700 dark:bg-zinc-700 dark:text-zinc-300' :
+                        request.status === 'Approved' ? 'bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400' :
+                        'bg-gray-300 text-gray-800 dark:bg-zinc-600 dark:text-zinc-200'
                       }`}>
                         {request.status}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500">{request.reason}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{request.reason}</p>
                   </div>
                 ))}
               </div>
@@ -473,7 +473,7 @@ export default function AttendanceTab({
 
             <Button
               variant="bordered"
-              className="mt-4 w-full border-gray-200 text-gray-700 hover:bg-gray-50"
+              className="mt-4 w-full border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
               startContent={<Plus size={16} />}
               onPress={() => onRegularizeOpen?.()}
             >
@@ -484,41 +484,41 @@ export default function AttendanceTab({
       </div>
 
       {/* Attendance Trends */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="px-6 pt-6 pb-4 border-b border-gray-100">
+      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
+        <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-              <TrendingUp size={18} className="text-gray-600" />
+            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+              <TrendingUp size={18} className="text-gray-600 dark:text-zinc-400" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900">Attendance Trends</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Attendance Trends</h3>
           </div>
         </div>
         <div className="p-6">
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="p-4 rounded-lg bg-gray-50 border border-gray-200 animate-pulse">
-                  <div className="h-6 w-16 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-8 w-24 bg-gray-200 rounded"></div>
+                <div key={`skeleton-${i}`} className="p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-800 animate-pulse">
+                  <div className="h-6 w-16 bg-gray-200 dark:bg-zinc-700 rounded mb-2"></div>
+                  <div className="h-8 w-24 bg-gray-200 dark:bg-zinc-700 rounded"></div>
                 </div>
               ))}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
-                <p className="text-xs text-gray-600 mb-1">This Month</p>
-                <p className="text-2xl font-bold text-gray-800">{trends.thisMonth}%</p>
-                <p className="text-xs text-gray-500 mt-1">Based on actual attendance data</p>
+              <div className="p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-800">
+                <p className="text-xs text-gray-600 dark:text-zinc-400 mb-1">This Month</p>
+                <p className="text-2xl font-bold text-gray-800 dark:text-zinc-200">{trends.thisMonth}%</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">Based on actual attendance data</p>
               </div>
-              <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
-                <p className="text-xs text-gray-600 mb-1">This Quarter</p>
-                <p className="text-2xl font-bold text-gray-800">{trends.thisQuarter}%</p>
-                <p className="text-xs text-gray-500 mt-1">Based on actual attendance data</p>
+              <div className="p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-800">
+                <p className="text-xs text-gray-600 dark:text-zinc-400 mb-1">This Quarter</p>
+                <p className="text-2xl font-bold text-gray-800 dark:text-zinc-200">{trends.thisQuarter}%</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">Based on actual attendance data</p>
               </div>
-              <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
-                <p className="text-xs text-gray-600 mb-1">This Year</p>
-                <p className="text-2xl font-bold text-gray-800">{trends.thisYear}%</p>
-                <p className="text-xs text-gray-500 mt-1">Based on actual attendance data</p>
+              <div className="p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-800">
+                <p className="text-xs text-gray-600 dark:text-zinc-400 mb-1">This Year</p>
+                <p className="text-2xl font-bold text-gray-800 dark:text-zinc-200">{trends.thisYear}%</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">Based on actual attendance data</p>
               </div>
             </div>
           )}

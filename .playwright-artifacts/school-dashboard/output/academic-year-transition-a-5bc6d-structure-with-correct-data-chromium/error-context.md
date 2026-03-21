@@ -1,0 +1,199 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - link "Skip to main content" [ref=e4] [cursor=pointer]:
+        - /url: "#main-content"
+      - generic [ref=e5]:
+        - complementary [ref=e6]:
+          - generic [ref=e7]:
+            - generic [ref=e8]:
+              - generic [ref=e10]: S
+              - generic [ref=e11]: SchoolSync
+            - button "Collapse sidebar" [ref=e12] [cursor=pointer]:
+              - img [ref=e13]
+          - navigation "Main navigation" [ref=e16]:
+            - generic [ref=e17]:
+              - link "Dashboard" [ref=e18] [cursor=pointer]:
+                - /url: /
+                - generic [ref=e19]:
+                  - img [ref=e20]
+                  - generic [ref=e25]: Dashboard
+              - link "Calendar" [ref=e26] [cursor=pointer]:
+                - /url: /calendar
+                - generic [ref=e27]:
+                  - img [ref=e28]
+                  - generic [ref=e30]: Calendar
+            - generic [ref=e32]:
+              - generic [ref=e33]:
+                - button "School EMS" [expanded] [ref=e34] [cursor=pointer]:
+                  - generic [ref=e35]:
+                    - img [ref=e36]
+                    - generic [ref=e40]: School EMS
+                  - img [ref=e41]
+                - generic [ref=e45]:
+                  - link "Students" [ref=e46] [cursor=pointer]:
+                    - /url: /students
+                    - generic [ref=e47]:
+                      - img [ref=e48]
+                      - generic [ref=e51]: Students
+                  - link "Staff" [ref=e52] [cursor=pointer]:
+                    - /url: /staffs
+                    - generic [ref=e53]:
+                      - img [ref=e54]
+                      - generic [ref=e59]: Staff
+                  - link "Classes" [ref=e60] [cursor=pointer]:
+                    - /url: /classes
+                    - generic [ref=e61]:
+                      - img [ref=e62]
+                      - generic [ref=e64]: Classes
+                  - link "Enrollment Funnel" [ref=e65] [cursor=pointer]:
+                    - /url: /intake-forms/funnel
+                    - generic [ref=e66]:
+                      - img [ref=e67]
+                      - generic [ref=e69]: Enrollment Funnel
+                  - link "Form Assignments" [ref=e70] [cursor=pointer]:
+                    - /url: /intake-forms/assignments
+                    - generic [ref=e71]:
+                      - img [ref=e72]
+                      - generic [ref=e74]: Form Assignments
+                  - link "Form Submissions" [ref=e75] [cursor=pointer]:
+                    - /url: /intake-forms/submissions
+                    - generic [ref=e76]:
+                      - img [ref=e77]
+                      - generic [ref=e80]: Form Submissions
+                  - link "Academics" [ref=e81] [cursor=pointer]:
+                    - /url: /academics
+                    - generic [ref=e82]:
+                      - img [ref=e83]
+                      - generic [ref=e86]: Academics
+                  - link "Homework" [ref=e87] [cursor=pointer]:
+                    - /url: /homework
+                    - generic [ref=e88]:
+                      - img [ref=e89]
+                      - generic [ref=e91]: Homework
+                  - link "Messaging" [ref=e92] [cursor=pointer]:
+                    - /url: /messaging
+                    - generic [ref=e93]:
+                      - img [ref=e94]
+                      - generic [ref=e96]: Messaging
+                  - link "Fees" [ref=e97] [cursor=pointer]:
+                    - /url: /fees
+                    - generic [ref=e98]:
+                      - img [ref=e99]
+                      - generic [ref=e102]: Fees
+                  - link "Transport" [ref=e103] [cursor=pointer]:
+                    - /url: /transport
+                    - generic [ref=e104]:
+                      - img [ref=e105]
+                      - generic [ref=e109]: Transport
+                  - link "Hostel" [ref=e110] [cursor=pointer]:
+                    - /url: /hostel
+                    - generic [ref=e111]:
+                      - img [ref=e112]
+                      - generic [ref=e116]: Hostel
+                  - link "Inventory" [ref=e117] [cursor=pointer]:
+                    - /url: /inventory
+                    - generic [ref=e118]:
+                      - img [ref=e119]
+                      - generic [ref=e123]: Inventory
+                  - link "Library" [ref=e124] [cursor=pointer]:
+                    - /url: /library
+                    - generic [ref=e125]:
+                      - img [ref=e126]
+                      - generic [ref=e128]: Library
+                  - link "Help Center" [ref=e129] [cursor=pointer]:
+                    - /url: /help
+                    - generic [ref=e130]:
+                      - img [ref=e131]
+                      - generic [ref=e138]: Help Center
+                  - link "Reports" [ref=e139] [cursor=pointer]:
+                    - /url: /reports
+                    - generic [ref=e140]:
+                      - img [ref=e141]
+                      - generic [ref=e144]: Reports
+                  - link "Export Center" [ref=e145] [cursor=pointer]:
+                    - /url: /reports/export
+                    - generic [ref=e146]:
+                      - img [ref=e147]
+                      - generic [ref=e150]: Export Center
+              - button "Front Desk" [ref=e152] [cursor=pointer]:
+                - generic [ref=e153]:
+                  - img [ref=e154]
+                  - generic [ref=e157]: Front Desk
+              - button "Analytics" [ref=e159] [cursor=pointer]:
+                - generic [ref=e160]:
+                  - img [ref=e161]
+                  - generic [ref=e163]: Analytics
+          - generic [ref=e164]:
+            - link "AI Assistant" [ref=e165] [cursor=pointer]:
+              - /url: /ai-assistant
+              - generic [ref=e166]:
+                - img [ref=e167]
+                - generic [ref=e169]: AI Assistant
+            - link "Settings" [ref=e170] [cursor=pointer]:
+              - /url: /settings
+              - generic [ref=e171]:
+                - img [ref=e172]
+                - generic [ref=e175]: Settings
+            - button "Switch to dark mode" [ref=e176] [cursor=pointer]:
+              - img [ref=e177]
+              - generic [ref=e179]: Dark Mode
+            - button "User menu for Dinesh Admin" [ref=e180] [cursor=pointer]:
+              - img "D" [ref=e182]
+              - generic [ref=e183]:
+                - generic [ref=e184]: Dinesh Admin
+                - generic [ref=e185]: admin
+        - generic [ref=e186]:
+          - banner [ref=e187]:
+            - navigation "Breadcrumb" [ref=e189]:
+              - list [ref=e190]:
+                - listitem [ref=e191]:
+                  - link "Students" [ref=e192] [cursor=pointer]:
+                    - /url: /students
+                - listitem [ref=e193]:
+                  - img [ref=e194]
+                  - link "Bulk-promotion" [ref=e196] [cursor=pointer]:
+                    - /url: /students/bulk-promotion
+            - button "Open global search (Ctrl+K)" [ref=e198] [cursor=pointer]:
+              - img [ref=e199]
+              - generic [ref=e202]: Search...
+              - generic [ref=e203]:
+                - img [ref=e204]
+                - generic [ref=e206]: K
+            - generic [ref=e207]:
+              - button "What's New" [ref=e208] [cursor=pointer]:
+                - img [ref=e209]
+              - button "Notifications" [ref=e211] [cursor=pointer]:
+                - img [ref=e212]
+              - button "Messages" [ref=e215] [cursor=pointer]:
+                - img [ref=e216]
+              - button "Open AI Assistant" [ref=e219] [cursor=pointer]:
+                - img [ref=e220]
+          - main [ref=e223]:
+            - generic [ref=e225]:
+              - generic [ref=e226]: ⚠️
+              - heading "Something went wrong" [level=2] [ref=e227]
+              - paragraph [ref=e228]: This section encountered an error. The rest of the app is still working.
+              - button "Try again" [ref=e229] [cursor=pointer]
+    - generic [ref=e230]:
+      - img [ref=e232]
+      - button "Open Tanstack query devtools" [ref=e280] [cursor=pointer]:
+        - img [ref=e281]
+  - generic [ref=e331]:
+    - generic [ref=e332]: "[plugin:vite:import-analysis] Failed to resolve import \"../../utils/studentHelpers\" from \"src/components/modals/students/PromoteStudentModal.jsx\". Does the file exist?"
+    - generic [ref=e333]: /Users/dinesh/Documents/GitHub/EMS/school-dashboard/src/components/modals/students/PromoteStudentModal.jsx:6:29
+    - generic [ref=e334]: "21 | import toast from \"react-hot-toast\"; 22 | import { useTranslation } from \"react-i18next\"; 23 | import { getNextClass } from \"../../utils/studentHelpers\"; | ^ 24 | export default function PromoteStudentModal({ isOpen, onClose, student, classesWithTeachers, availableClasses, onPromote }) { 25 | _s();"
+    - generic [ref=e335]: at TransformPluginContext._formatLog (file:///Users/dinesh/Documents/GitHub/EMS/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41) at TransformPluginContext.error (file:///Users/dinesh/Documents/GitHub/EMS/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16) at normalizeUrl (file:///Users/dinesh/Documents/GitHub/EMS/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23) at process.processTicksAndRejections (node:internal/process/task_queues:104:5) at async file:///Users/dinesh/Documents/GitHub/EMS/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37 at async Promise.all (index 8) at async TransformPluginContext.transform (file:///Users/dinesh/Documents/GitHub/EMS/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7) at async EnvironmentPluginContainer.transform (file:///Users/dinesh/Documents/GitHub/EMS/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18) at async loadAndTransform (file:///Users/dinesh/Documents/GitHub/EMS/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27) at async viteTransformMiddleware (file:///Users/dinesh/Documents/GitHub/EMS/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24
+    - generic [ref=e336]:
+      - text: Click outside, press Esc key, or fix the code to dismiss.
+      - text: You can also disable this overlay by setting
+      - code [ref=e337]: server.hmr.overlay
+      - text: to
+      - code [ref=e338]: "false"
+      - text: in
+      - code [ref=e339]: vite.config.js
+      - text: .
+```

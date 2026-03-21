@@ -25,7 +25,7 @@ import PhotoAvatar from "../../components/PhotoAvatar";
 import FiltersDropdown from "../../components/FiltersDropdown";
 import EditStudentDrawer from "./EditStudentDrawer";
 import ScrollToTopButton from "../../components/ui/ScrollToTopButton";
-import SkeletonTable from "../../components/SkeletonTable";
+import SkeletonTable from "../../components/skeletons/SkeletonTable";
 
 
 // Helper function to parse CSV text into array of objects
@@ -455,25 +455,25 @@ const normalizeClassName = (className) => {
     if (!className) return '';
 
     // Remove common prefixes and patterns
-    let normalized = className
+    const normalized = className
         .replace(/^Class\s*/i, '')           // Remove "Class" prefix (case-insensitive)
-        .replace(/^\d+\s*\-\s*/, '')          // Remove "3 - " pattern (if section was appended)
+        .replace(/^\d+\s*-\s*/, '')           // Remove "3 - " pattern (if section was appended)
         .trim();
 
     return normalized;
 };
 
 // Helper function to transform CSV data for API submission
-const transformStudentForImport = (studentData, allClasses) => {
+const transformStudentForImport = (studentData, allClasses, currentAcademicYear) => {
     // Get class and section from CSV
-    let csvClass = studentData.class?.trim() || '';
-    let csvSection = studentData.section?.trim() || '';
+    const csvClass = studentData.class?.trim() || '';
+    const csvSection = studentData.section?.trim() || '';
 
     // Normalize the class name from CSV
     const normalizedClass = normalizeClassName(csvClass);
 
     // Try multiple matching strategies in order of preference
-    let matchedClass = allClasses.find(c => {
+    const matchedClass = allClasses.find(c => {
         // Strategy 1: Exact match with name and section
         if (c.name === csvClass && (c.section || '') === csvSection) {
             return true;
@@ -780,7 +780,7 @@ export default function StudentsList() {
     const refreshStudentsList = useCallback(() => {
         setSelectedKeys(new Set([]));
         return studentsQuery.refetch();
-    }, [studentsQuery]);
+    }, [studentsQuery.refetch]);
     const loadAllStudentsForImport = useCallback(async () => {
         const firstPage = await studentsApi.list({
             page: 1,
@@ -805,12 +805,16 @@ export default function StudentsList() {
         return allStudents;
     }, []);
 
-    const statusCounts = useMemo(() => ({
-        all: students.length,
-        active: students.filter(s => (s.status || 'active') === "active").length,
-        inactive: students.filter(s => s.status === "inactive").length,
-        alumni: students.filter(s => s.status === "alumni").length,
-    }), [students]);
+    const statusCounts = useMemo(() => {
+        let active = 0, inactive = 0, alumni = 0;
+        for (const s of students) {
+            const status = s.status || 'active';
+            if (status === "active") active++;
+            else if (status === "inactive") inactive++;
+            else if (status === "alumni") alumni++;
+        }
+        return { all: students.length, active, inactive, alumni };
+    }, [students]);
 
     const getAttendancePercentage = (studentId) => 75 + ((studentId * 7) % 25);
 
@@ -1162,7 +1166,7 @@ export default function StudentsList() {
 
                         if (classId) {
                             // Check if we need to update roll number to avoid conflicts
-                            let updateData = { classId, class: nextClass };
+                            const updateData = { classId, class: nextClass };
 
                             // Get students in the target class to check for roll number conflicts
                             // FIXED: Use String() comparison for ObjectId matching
@@ -1243,58 +1247,53 @@ export default function StudentsList() {
     };
 
     // Calculate active filters count
-    const activeFiltersCount = useMemo(() => {
-        return (classFilter !== "all" ? 1 : 0) +
-               (feeStatusFilter !== "all" ? 1 : 0) +
-               (academicYearFilter !== "all" ? 1 : 0) +
-               (academicPerformanceFilter !== "all" ? 1 : 0) +
-               (attendanceFilter !== "all" ? 1 : 0);
-    }, [classFilter, feeStatusFilter, academicYearFilter, academicPerformanceFilter, attendanceFilter]);
+    const activeFiltersCount = (classFilter !== "all" ? 1 : 0) +
+           (feeStatusFilter !== "all" ? 1 : 0) +
+           (academicYearFilter !== "all" ? 1 : 0) +
+           (academicPerformanceFilter !== "all" ? 1 : 0) +
+           (attendanceFilter !== "all" ? 1 : 0);
 
-    // Calculate filter counts for each option
+    // Calculate filter counts for each option (single pass)
     const filterCounts = useMemo(() => {
-        const counts = {};
+        const classCounts = {};
+        const feeStatusCounts = {};
+        const academicYearCounts = {};
+        const academicPerformanceCounts = {};
+        const attendanceCounts = {};
 
-        // Class counts
-        counts.class = {};
-        students.forEach(s => {
-            counts.class[s.class] = (counts.class[s.class] || 0) + 1;
-        });
+        for (const s of students) {
+            // Class
+            if (s.class) classCounts[s.class] = (classCounts[s.class] || 0) + 1;
 
-        // Fee status counts
-        counts.feeStatus = {};
-        students.forEach(s => {
-            const status = s.feeStatus || "pending";
-            counts.feeStatus[status] = (counts.feeStatus[status] || 0) + 1;
-        });
+            // Fee status
+            const feeStatus = s.feeStatus || "pending";
+            feeStatusCounts[feeStatus] = (feeStatusCounts[feeStatus] || 0) + 1;
 
-        // Academic year counts
-        counts.academicYear = {};
-        students.forEach(s => {
+            // Academic year
             const year = s.academicYear || currentAcademicYear;
-            counts.academicYear[year] = (counts.academicYear[year] || 0) + 1;
-        });
+            academicYearCounts[year] = (academicYearCounts[year] || 0) + 1;
 
-        // Academic performance counts
-        counts.academicPerformance = {};
-        students.forEach(s => {
+            // Academic performance
             const perf = s.academicPerformance || "average";
-            counts.academicPerformance[perf] = (counts.academicPerformance[perf] || 0) + 1;
-        });
+            academicPerformanceCounts[perf] = (academicPerformanceCounts[perf] || 0) + 1;
 
-        // Attendance counts
-        counts.attendance = {};
-        students.forEach(s => {
+            // Attendance
             const att = getAttendancePercentage(s.id);
             let category = "below";
             if (att >= 90) category = "excellent";
             else if (att >= 75) category = "good";
             else if (att >= 50) category = "average";
-            counts.attendance[category] = (counts.attendance[category] || 0) + 1;
-        });
+            attendanceCounts[category] = (attendanceCounts[category] || 0) + 1;
+        }
 
-        return counts;
-    }, [students]);
+        return {
+            class: classCounts,
+            feeStatus: feeStatusCounts,
+            academicYear: academicYearCounts,
+            academicPerformance: academicPerformanceCounts,
+            attendance: attendanceCounts,
+        };
+    }, [students, currentAcademicYear]);
 
     // Filter configuration for FiltersPanel
     const filtersConfig = useMemo(() => ({
@@ -1781,7 +1780,7 @@ export default function StudentsList() {
 
                 try {
                     // Transform the CSV data to match backend requirements
-                    const transformedData = transformStudentForImport(studentData, classes);
+                    const transformedData = transformStudentForImport(studentData, classes, currentAcademicYear);
 
                     // Use the API directly to create the student
                     const response = await studentsApi.create(transformedData);
@@ -1927,37 +1926,37 @@ export default function StudentsList() {
     return (
         <div className="w-full flex flex-col flex-1 min-h-0">
             {/* Toolbar */}
-            <div className="flex flex-col gap-4 bg-white border-b border-gray-200 py-3 px-6 shrink-0">
+            <div className="flex flex-col gap-4 bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-700 py-3 px-6 shrink-0">
                 <div className="flex flex-col sm:flex-row justify-between gap-4 items-center">
                     <div className="flex items-center gap-3 w-full sm:w-auto">
                         <Dropdown placement="bottom-start" isOpen={statusDropdownOpen} onOpenChange={(open) => { setStatusDropdownOpen(open); }}>
                             <DropdownTrigger>
-                                <button className="flex items-center gap-2 px-3 py-2.5 bg-white rounded-lg border border-gray-200 hover:border-gray-300 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all text-sm cursor-pointer whitespace-nowrap">
-                                    <span className="text-gray-700 capitalize">{statusFilter}</span>
-                                    <span className="text-gray-400">({students.length})</span>
-                                    <ChevronDown size={14} className="text-gray-400" />
+                                <button className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all text-sm cursor-pointer whitespace-nowrap">
+                                    <span className="text-gray-700 dark:text-zinc-300 capitalize">{statusFilter}</span>
+                                    <span className="text-gray-400 dark:text-zinc-500">({students.length})</span>
+                                    <ChevronDown size={14} className="text-gray-400 dark:text-zinc-500" />
                                 </button>
                             </DropdownTrigger>
                             <DropdownMenu aria-label="Filter by status" onAction={(key) => setStatusFilter(key)} className="max-h-[400px] overflow-y-auto">
-                                <DropdownItem key="all" startContent={statusFilter === "all" ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5"></span>} endContent={<span className="text-gray-400 text-xs">{statusCounts.all}</span>}>All Status</DropdownItem>
-                                <DropdownItem key="active" startContent={statusFilter === "active" ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5"></span>} endContent={<span className="text-gray-400 text-xs">{statusCounts.active}</span>}>Active</DropdownItem>
-                                <DropdownItem key="inactive" startContent={statusFilter === "inactive" ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5"></span>} endContent={<span className="text-gray-400 text-xs">{statusCounts.inactive}</span>}>Inactive</DropdownItem>
-                                <DropdownItem key="alumni" startContent={statusFilter === "alumni" ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5"></span>} endContent={<span className="text-gray-400 text-xs">{statusCounts.alumni}</span>}>Alumni</DropdownItem>
+                                <DropdownItem key="all" startContent={statusFilter === "all" ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5"></span>} endContent={<span className="text-gray-400 dark:text-zinc-500 text-xs">{statusCounts.all}</span>}>All Status</DropdownItem>
+                                <DropdownItem key="active" startContent={statusFilter === "active" ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5"></span>} endContent={<span className="text-gray-400 dark:text-zinc-500 text-xs">{statusCounts.active}</span>}>Active</DropdownItem>
+                                <DropdownItem key="inactive" startContent={statusFilter === "inactive" ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5"></span>} endContent={<span className="text-gray-400 dark:text-zinc-500 text-xs">{statusCounts.inactive}</span>}>Inactive</DropdownItem>
+                                <DropdownItem key="alumni" startContent={statusFilter === "alumni" ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5"></span>} endContent={<span className="text-gray-400 dark:text-zinc-500 text-xs">{statusCounts.alumni}</span>}>Alumni</DropdownItem>
                             </DropdownMenu>
                         </Dropdown>
-                        <div className="flex items-center gap-2 w-full sm:max-w-[280px] px-3 py-2.5 bg-white rounded-lg border border-gray-200 hover:border-gray-300 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all">
-                            <Search size={16} className="text-gray-400" />
+                        <div className="flex items-center gap-2 w-full sm:max-w-[280px] px-3 py-2.5 bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all">
+                            <Search size={16} className="text-gray-400 dark:text-zinc-500" />
                             <input
   type="search"
   name="student-search-query"
   placeholder="Search name, ID, phone…"
-  className="flex-1 bg-transparent outline-none text-sm text-gray-800 placeholder:text-gray-400"
+  className="flex-1 bg-transparent outline-none text-sm text-gray-800 dark:text-zinc-200 placeholder:text-gray-400 dark:placeholder:text-zinc-500"
   value={searchQuery}
   onChange={(e) => setSearchQuery(e.target.value)}
   autoComplete="off"
   data-form-type="other"
 />
-                            {searchQuery && <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-gray-100 rounded cursor-pointer"><X size={14} className="text-gray-400" /></button>}
+                            {searchQuery && <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded cursor-pointer"><X size={14} className="text-gray-400 dark:text-zinc-500" /></button>}
                         </div>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap items-center">
@@ -2020,8 +2019,8 @@ export default function StudentsList() {
                         />
                         <Dropdown isOpen={sortDropdownOpen} onOpenChange={(open) => { setSortDropdownOpen(open); }}>
                             <DropdownTrigger>
-                                <button className="flex items-center justify-center px-3 py-2.5 bg-white rounded-lg border border-gray-200 hover:border-gray-300 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all cursor-pointer">
-                                    <ArrowUpDown size={16} className="text-gray-400" />
+                                <button className="flex items-center justify-center px-3 py-2.5 bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all cursor-pointer">
+                                    <ArrowUpDown size={16} className="text-gray-400 dark:text-zinc-500" />
                                 </button>
                             </DropdownTrigger>
                             <DropdownMenu aria-label="Sort options" className="max-h-[400px] overflow-y-auto">
@@ -2035,10 +2034,10 @@ export default function StudentsList() {
                         </Dropdown>
                         <Dropdown closeOnSelect={false} isOpen={columnsDropdownOpen} onOpenChange={(open) => { setColumnsDropdownOpen(open); }}>
                             <DropdownTrigger>
-                                <button className="flex items-center gap-2 px-3 py-2.5 bg-white rounded-lg border border-gray-200 hover:border-gray-300 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all text-sm cursor-pointer whitespace-nowrap">
-                                    <Columns3 size={16} className="text-gray-400" />
-                                    <span className="text-gray-700">Columns</span>
-                                    <ChevronDown size={14} className="text-gray-400" />
+                                <button className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all text-sm cursor-pointer whitespace-nowrap">
+                                    <Columns3 size={16} className="text-gray-400 dark:text-zinc-500" />
+                                    <span className="text-gray-700 dark:text-zinc-300">Columns</span>
+                                    <ChevronDown size={14} className="text-gray-400 dark:text-zinc-500" />
                                 </button>
                             </DropdownTrigger>
                             <DropdownMenu aria-label="Toggle columns" closeOnSelect={false} className="max-h-[400px] overflow-y-auto">
@@ -2064,8 +2063,8 @@ export default function StudentsList() {
                         <input ref={csvInputRef} type="file" accept=".csv" className="hidden" onChange={handleCSVUpload} />
                         <Dropdown isOpen={moreDropdownOpen} onOpenChange={(open) => { setMoreDropdownOpen(open); }}>
                             <DropdownTrigger>
-                                <button className="flex items-center justify-center px-3 py-2.5 bg-white rounded-lg border border-gray-200 hover:border-gray-300 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all cursor-pointer">
-                                    <MoreVertical size={16} className="text-gray-400" />
+                                <button className="flex items-center justify-center px-3 py-2.5 bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all cursor-pointer">
+                                    <MoreVertical size={16} className="text-gray-400 dark:text-zinc-500" />
                                 </button>
                             </DropdownTrigger>
                             <DropdownMenu aria-label="More actions" className="max-h-[400px] overflow-y-auto">
@@ -2098,10 +2097,10 @@ export default function StudentsList() {
                 ref={tableContainerRef}
                 className="overflow-auto scrollbar-auto-hide flex-1 min-h-0"
             >
-                <table className="w-full border-spacing-0 select-text" style={{ borderCollapse: "collapse" }}>
+                <table className="w-full border-spacing-0 select-text border-collapse">
                     <thead className="sticky top-0 z-30">
                         <tr>
-                            <th className="bg-white border-b border-gray-200 text-center" style={{ width: 48, minWidth: 48 }}>
+                            <th className="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-700 text-center w-12 min-w-12">
                                 <Checkbox
                                     size="md"
                                     classNames={{ base: "p-0 m-0", wrapper: "m-0" }}
@@ -2118,8 +2117,7 @@ export default function StudentsList() {
                                 />
                             </th>
                             <th
-                                className="bg-white text-gray-500 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 select-none pl-3 pr-3 sticky left-0 z-20 cursor-pointer hover:bg-gray-50"
-                                style={{ width: 220, minWidth: 220 }}
+                                className="bg-white dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 dark:border-zinc-700 select-none pl-3 pr-3 sticky left-0 z-20 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800/50 w-[220px] min-w-[220px]"
                                 onClick={() => setSortDescriptor(prev => ({
                                     column: "name",
                                     direction: prev.column === "name" && prev.direction === "ascending" ? "descending" : "ascending"
@@ -2128,14 +2126,14 @@ export default function StudentsList() {
                                 <div className="flex items-center gap-1">
                                     STUDENT
                                     {sortDescriptor.column === "name" && (
-                                        <ArrowUpDown size={12} className="text-gray-400" />
+                                        <ArrowUpDown size={12} className="text-gray-400 dark:text-zinc-500" />
                                     )}
                                 </div>
                             </th>
                             {visibleColumnsArray.filter(col => col.key !== "name" && col.key !== "actions").map((column) => (
                                 <th
                                     key={column.key}
-                                    className={`bg-white text-gray-500 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 select-none px-3 text-left ${column.key === "class" ? "cursor-pointer hover:bg-gray-50" : ""}`}
+                                    className={`bg-white dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 dark:border-zinc-700 select-none px-3 text-left ${column.key === "class" ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800/50" : ""}`}
                                     style={{
                                         width: column.key === "class" ? 100 : column.key === "parentInfo" ? 180 : column.key === "attendance" ? 110 : column.key === "academicPerformance" ? 140 : 100
                                     }}
@@ -2147,13 +2145,13 @@ export default function StudentsList() {
                                     <div className="flex items-center gap-1">
                                         {column.label.toUpperCase()}
                                         {column.key === "class" && sortDescriptor.column === "class" && (
-                                            <ArrowUpDown size={12} className="text-gray-400" />
+                                            <ArrowUpDown size={12} className="text-gray-400 dark:text-zinc-500" />
                                         )}
                                     </div>
                                 </th>
                             ))}
                             {visibleColumnsArray.some(col => col.key === "actions") && (
-                                <th className="bg-white text-gray-500 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 select-none pr-6 text-right" style={{ width: 60 }}>
+                                <th className="bg-white dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 dark:border-zinc-700 select-none pr-6 text-right w-[60px]">
                                     ACTIONS
                                 </th>
                             )}
@@ -2183,7 +2181,7 @@ export default function StudentsList() {
                                             key={student.id}
                                             data-index={virtualRow.index}
                                             ref={rowVirtualizer.measureElement}
-                                            className={`group cursor-pointer transition-colors hover:bg-gray-50 ${isSelected ? "bg-primary-50" : ""}`}
+                                            className={`group cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800/50 ${isSelected ? "bg-primary-50" : ""}`}
                                             onClick={(e) => {
                                                 closeAllDropdowns();
                                                 if (e.target.closest("button") || e.target.closest("label") || e.target.closest("input") || e.target.closest("a")) return;
@@ -2192,7 +2190,7 @@ export default function StudentsList() {
                                                 navigate(`/students/${student.id}`);
                                             }}
                                         >
-                                            <td className={`py-4 border-b border-gray-200 text-center transition-colors ${isSelected ? "bg-primary-50" : "group-hover:bg-gray-50"}`} style={{ width: 48, minWidth: 48 }} onClick={(e) => e.stopPropagation()}>
+                                            <td className={`py-4 border-b border-gray-200 dark:border-zinc-700 text-center transition-colors w-12 min-w-12 ${isSelected ? "bg-primary-50" : "group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50"}`} onClick={(e) => e.stopPropagation()}>
                                                 <Checkbox
                                                     size="md"
                                                     classNames={{ base: "p-0 m-0", wrapper: "m-0" }}
@@ -2210,7 +2208,7 @@ export default function StudentsList() {
                                                     aria-label={`Select ${student.name}`}
                                                 />
                                             </td>
-                                            <td className={`py-4 border-b border-gray-200 select-text pl-3 pr-3 sticky left-0 z-10 transition-colors ${isSelected ? "bg-primary-50" : "bg-white group-hover:bg-gray-50"}`} style={{ width: 220, minWidth: 220 }}>
+                                            <td className={`py-4 border-b border-gray-200 dark:border-zinc-700 select-text pl-3 pr-3 sticky left-0 z-10 transition-colors w-[220px] min-w-[220px] ${isSelected ? "bg-primary-50" : "bg-white dark:bg-zinc-900 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50"}`}>
                                                 <div className="flex items-center gap-3">
                                                     <div onClick={(e) => e.stopPropagation()}>
                                                         <PhotoAvatar
@@ -2247,7 +2245,7 @@ export default function StudentsList() {
                                             {visibleColumnsArray.filter(col => col.key !== "name" && col.key !== "actions").map((column) => {
                                                 if (column.key === "class") {
                                                     return (
-                                                        <td key="class" className={`py-4 border-b border-gray-200 select-text px-3 transition-colors ${isSelected ? "bg-primary-50" : "bg-white group-hover:bg-gray-50"}`}>
+                                                        <td key="class" className={`py-4 border-b border-gray-200 dark:border-zinc-700 select-text px-3 transition-colors ${isSelected ? "bg-primary-50" : "bg-white dark:bg-zinc-900 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50"}`}>
                                                             <div className="flex items-center">
                                                                 <span className="text-sm font-medium text-default-600 bg-default-100 group-hover:bg-default-200 transition-colors px-2.5 py-1 rounded-md">
                                                                     {student.class}
@@ -2258,7 +2256,7 @@ export default function StudentsList() {
                                                 }
                                                 if (column.key === "parentInfo") {
                                                     return (
-                                                        <td key="parentInfo" className={`py-4 border-b border-gray-200 select-text px-3 transition-colors ${isSelected ? "bg-primary-50" : "bg-white group-hover:bg-gray-50"}`}>
+                                                        <td key="parentInfo" className={`py-4 border-b border-gray-200 dark:border-zinc-700 select-text px-3 transition-colors ${isSelected ? "bg-primary-50" : "bg-white dark:bg-zinc-900 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50"}`}>
                                                             <div
                                                                 className="flex flex-col gap-1 select-text cursor-text"
                                                                 onMouseDown={(e) => e.stopPropagation()}
@@ -2322,7 +2320,7 @@ export default function StudentsList() {
                                                 if (column.key === "attendance") {
                                                     const isInvalid = isNaN(attendance);
                                                     return (
-                                                        <td key="attendance" className={`py-4 border-b border-gray-200 select-text px-3 transition-colors ${isSelected ? "bg-primary-50" : "bg-white group-hover:bg-gray-50"}`}>
+                                                        <td key="attendance" className={`py-4 border-b border-gray-200 dark:border-zinc-700 select-text px-3 transition-colors ${isSelected ? "bg-primary-50" : "bg-white dark:bg-zinc-900 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50"}`}>
                                                             <div className="flex flex-col gap-1">
                                                                 <span className={`text-xs font-semibold ${isInvalid ? 'text-default-400' : `text-${getAttendanceColor(attendance)}`}`}>
                                                                     {isInvalid ? "N/A" : `${attendance}%`}
@@ -2338,7 +2336,7 @@ export default function StudentsList() {
                                                 }
                                                 if (column.key === "academicPerformance") {
                                                     return (
-                                                        <td key="academicPerformance" className={`py-4 border-b border-gray-200 select-text px-3 transition-colors ${isSelected ? "bg-primary-50" : "bg-white group-hover:bg-gray-50"}`}>
+                                                        <td key="academicPerformance" className={`py-4 border-b border-gray-200 dark:border-zinc-700 select-text px-3 transition-colors ${isSelected ? "bg-primary-50" : "bg-white dark:bg-zinc-900 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50"}`}>
                                                             <Chip size="sm" variant="flat" color={getGradeColor(getAcademicGrade(student.id))} className="font-semibold">
                                                                 {getAcademicGrade(student.id)}
                                                             </Chip>
@@ -2366,7 +2364,7 @@ export default function StudentsList() {
                                                     };
 
                                                     return (
-                                                        <td key="feeStatus" className={`py-4 border-b border-gray-200 select-text px-3 transition-colors ${isSelected ? "bg-primary-50" : "bg-white group-hover:bg-gray-50"}`}>
+                                                        <td key="feeStatus" className={`py-4 border-b border-gray-200 dark:border-zinc-700 select-text px-3 transition-colors ${isSelected ? "bg-primary-50" : "bg-white dark:bg-zinc-900 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50"}`}>
                                                             <Tooltip
                                                                 content={
                                                                     <div className="px-3 py-3">
@@ -2415,7 +2413,7 @@ export default function StudentsList() {
                                                 return null;
                                             })}
                                             {visibleColumnsArray.some(col => col.key === "actions") && (
-                                                <td className={`py-4 border-b border-gray-200 select-text pr-6 transition-colors ${isSelected ? "bg-primary-50" : "bg-white group-hover:bg-gray-50"}`}>
+                                                <td className={`py-4 border-b border-gray-200 dark:border-zinc-700 select-text pr-6 transition-colors ${isSelected ? "bg-primary-50" : "bg-white dark:bg-zinc-900 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50"}`}>
                                                     <div className="flex items-center justify-end gap-1">
                                                         <Tooltip content={student.isPinned ? "Unpin student" : "Pin student"}>
                                                             <Button
@@ -2560,7 +2558,7 @@ export default function StudentsList() {
                 </table>
             </div>
 
-            <div className="border-t border-gray-200 px-6 py-3 shrink-0">
+            <div className="border-t border-gray-200 dark:border-zinc-700 px-6 py-3 shrink-0">
                 <span className="text-default-500 text-sm">
                     {filteredItems.length} student{filteredItems.length !== 1 ? 's' : ''}
                 </span>
@@ -3265,7 +3263,7 @@ export default function StudentsList() {
                                                                     <div className="bg-warning-100/80 rounded-md p-2 mb-2">
                                                                         <ul className="space-y-0.5">
                                                                             {student.warnings.slice(0, 2).map((warning, idx) => (
-                                                                                <li key={idx} className="text-xs text-warning-800 flex items-start gap-1">
+                                                                                <li key={`warning-${idx}`} className="text-xs text-warning-800 flex items-start gap-1">
                                                                                     <span className="flex-shrink-0">•</span>
                                                                                     <span className="line-clamp-1">{warning}</span>
                                                                                 </li>

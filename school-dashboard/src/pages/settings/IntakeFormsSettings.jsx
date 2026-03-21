@@ -42,6 +42,7 @@ import toast from "react-hot-toast";
 import { intakeFormsApi } from "../../services/api";
 import { formTemplates } from "../../data/formTemplates";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 // Field types available in form builder
 const FIELD_TYPES = [
@@ -86,15 +87,15 @@ const DraggableFieldItem = ({
     >
       <div
         className={`p-4 rounded-xl transition-all duration-200 group relative border-2 ${isSelected
-          ? "border-primary bg-white shadow-lg shadow-primary/5 z-10"
+          ? "border-primary bg-white dark:bg-zinc-950 shadow-lg shadow-primary/5 z-10"
           : "border-transparent hover:border-gray-200 hover:bg-white bg-transparent"
           }`}
         onClick={onSelect}
       >
-        <div className="flex items-center justify-between mb-4 opacity-0 group-hover:opacity-100 transition-opacity absolute -top-3 right-4 bg-white shadow-sm border border-gray-100 rounded-full px-2 py-1 z-20">
+        <div className="flex items-center justify-between mb-4 opacity-0 group-hover:opacity-100 transition-opacity absolute -top-3 right-4 bg-white dark:bg-zinc-900 shadow-sm border border-gray-100 dark:border-zinc-700 rounded-full px-2 py-1 z-20">
           <div className="flex items-center gap-1">
             <div
-              className="cursor-move p-1 text-gray-400 hover:text-gray-700 transition-colors"
+              className="cursor-move p-1 text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-200 transition-colors"
               onPointerDown={(e) => controls.start(e)}
             >
               <GripVertical size={14} />
@@ -145,6 +146,7 @@ const DraggableFieldItem = ({
 export default function IntakeFormsSettings() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
     isOpen: isBuilderOpen,
@@ -409,7 +411,7 @@ export default function IntakeFormsSettings() {
         formType: formData.type,
         fields: builderFields,
         status: "active",
-        createdBy: "admin", // TODO: Get from auth context
+        createdBy: user?.name || user?.id,
       };
 
       if (editingForm) {
@@ -444,7 +446,7 @@ export default function IntakeFormsSettings() {
 
   const handleDuplicate = async (form) => {
     try {
-      await intakeFormsApi.duplicate(form.id, "admin"); // TODO: Get from auth context
+      await intakeFormsApi.duplicate(form.id, user?.name || user?.id);
       toast.success("Form duplicated successfully");
       fetchForms();
     } catch (error) {
@@ -466,7 +468,7 @@ export default function IntakeFormsSettings() {
     // Better: use flex basis in the parent Reorder.Item, but that wrapper handles the width.
 
     // Common Props matching HeroUI style
-    const labelClass = "text-sm font-semibold text-gray-900 mb-1.5";
+    const labelClass = "text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-1.5";
 
     const commonProps = {
       label: field.label,
@@ -479,7 +481,7 @@ export default function IntakeFormsSettings() {
       radius: "lg",
       classNames: {
         label: labelClass,
-        inputWrapper: "bg-white",
+        inputWrapper: "bg-white dark:bg-zinc-950",
       }
     };
 
@@ -495,7 +497,7 @@ export default function IntakeFormsSettings() {
         component = (
           <Input
             type="tel"
-            startContent={<span className="text-gray-400 text-xs">+91</span>}
+            startContent={<span className="text-gray-400 dark:text-zinc-500 text-xs">+91</span>}
             {...commonProps}
           />
         );
@@ -510,7 +512,7 @@ export default function IntakeFormsSettings() {
             minRows={3}
             classNames={{
               ...commonProps.classNames,
-              inputWrapper: "bg-white py-2"
+              inputWrapper: "bg-white dark:bg-zinc-950 py-2"
             }}
           />
         );
@@ -521,11 +523,11 @@ export default function IntakeFormsSettings() {
             {...commonProps}
             classNames={{
               label: labelClass,
-              trigger: "bg-white",
+              trigger: "bg-white dark:bg-zinc-950",
             }}
           >
             {field.options?.map((opt, idx) => (
-              <SelectItem key={idx} value={opt} textValue={opt}>
+              <SelectItem key={`option-${opt}`} value={opt} textValue={opt}>
                 {opt}
               </SelectItem>
             ))}
@@ -542,17 +544,17 @@ export default function IntakeFormsSettings() {
             <div className="flex gap-4">
               {field.options?.map((opt, idx) => (
                 <div
-                  key={idx}
-                  className="cursor-pointer rounded-xl border border-gray-200 p-3 flex items-center gap-3 bg-white hover:bg-gray-50 transition-all min-w-[120px]"
+                  key={`radio-${opt}`}
+                  className="cursor-pointer rounded-xl border border-gray-200 dark:border-zinc-700 p-3 flex items-center gap-3 bg-white dark:bg-zinc-950 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all min-w-[120px]"
                 >
-                  <div className="w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center">
+                  <div className="w-4 h-4 rounded-full border border-gray-300 dark:border-zinc-600 flex items-center justify-center">
                   </div>
-                  <span className="text-sm font-medium text-gray-600">{opt}</span>
+                  <span className="text-sm font-medium text-gray-600 dark:text-zinc-300">{opt}</span>
                 </div>
               ))}
             </div>
             {field.description && (
-              <p className="text-xs text-gray-400">{field.description}</p>
+              <p className="text-xs text-gray-400 dark:text-zinc-500">{field.description}</p>
             )}
           </div>
         );
@@ -566,13 +568,13 @@ export default function IntakeFormsSettings() {
             </label>
             <div className="space-y-2">
               {field.options?.map((opt, idx) => (
-                <Checkbox key={idx} size="sm" isDisabled classNames={{ label: "text-gray-700" }}>
+                <Checkbox key={`checkbox-${opt}`} size="sm" isDisabled classNames={{ label: "text-gray-700 dark:text-zinc-300" }}>
                   {opt}
                 </Checkbox>
               ))}
             </div>
             {field.description && (
-              <p className="text-xs text-gray-400">{field.description}</p>
+              <p className="text-xs text-gray-400 dark:text-zinc-500">{field.description}</p>
             )}
           </div>
         );
@@ -584,11 +586,11 @@ export default function IntakeFormsSettings() {
               {field.label}
               {field.required && <span className="text-danger ml-1">*</span>}
             </label>
-            <div className="border border-dashed border-gray-300 rounded-lg p-4 flex items-center justify-center gap-3 bg-gray-50/50">
-              <Upload size={16} className="text-gray-400" />
+            <div className="border border-dashed border-gray-300 dark:border-zinc-600 rounded-lg p-4 flex items-center justify-center gap-3 bg-gray-50/50 dark:bg-zinc-900/50">
+              <Upload size={16} className="text-gray-400 dark:text-zinc-500" />
               <div className="text-center">
-                <p className="text-xs text-gray-600 font-medium">Click to upload or drag and drop</p>
-                {field.description && <p className="text-[10px] text-gray-400 mt-1">{field.description}</p>}
+                <p className="text-xs text-gray-600 dark:text-zinc-400 font-medium">Click to upload or drag and drop</p>
+                {field.description && <p className="text-[10px] text-gray-400 dark:text-zinc-500 mt-1">{field.description}</p>}
               </div>
             </div>
           </div>
@@ -613,7 +615,7 @@ export default function IntakeFormsSettings() {
       </div>
 
       {/* Forms Table */}
-      <div className="bg-white border border-default-200 rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-white dark:bg-zinc-950 border border-default-200 rounded-xl overflow-hidden shadow-sm">
         <Table
           aria-label="Intake forms table"
           removeWrapper
@@ -642,7 +644,7 @@ export default function IntakeFormsSettings() {
             {(form) => (
               <TableRow key={form.id}>
                 <TableCell>
-                  <div className="font-medium text-gray-900 dark:text-white">
+                  <div className="font-medium text-gray-900 dark:text-zinc-100">
                     {form.name}
                   </div>
                 </TableCell>
@@ -1058,7 +1060,7 @@ export default function IntakeFormsSettings() {
                               Options
                             </label>
                             {fieldConfig.options.map((opt, idx) => (
-                              <div key={idx} className="flex gap-2 mb-2">
+                              <div key={`option-${idx}`} className="flex gap-2 mb-2">
                                 <Input
                                   value={opt}
                                   onChange={(e) => {
@@ -1191,7 +1193,7 @@ export default function IntakeFormsSettings() {
                         <h3 className="text-lg font-semibold mb-1">
                           {template.name}
                         </h3>
-                        <p className="text-sm text-gray-600 mb-3">
+                        <p className="text-sm text-gray-600 dark:text-zinc-400 mb-3">
                           {template.description}
                         </p>
                         {template.id !== "blank" && (

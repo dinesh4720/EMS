@@ -19,16 +19,20 @@ class SocketService {
     this.maxReconnectAttempts = 5;
   }
 
-  connect(userId, userType) {
+  connect(token) {
     // If already connected and authenticated, reuse the connection
     if (this.socket?.connected && this.authenticated) {
-      console.log('Socket already connected and authenticated - reusing connection');
       return Promise.resolve();
     }
 
+    if (!token) {
+      return Promise.reject(new Error('Auth token required'));
+    }
+
+    this._token = token;
+
     // If socket exists but not connected, wait for reconnection
     if (this.socket && !this.socket.connected) {
-      console.log('Socket exists but disconnected - waiting for reconnection...');
       return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
           reject(new Error('Reconnection timeout'));
@@ -42,7 +46,6 @@ class SocketService {
     }
 
     return new Promise((resolve, reject) => {
-      console.log('Creating new Socket.IO connection:', BASE_URL);
 
       this.socket = io(BASE_URL, {
         transports: ['websocket', 'polling'],
@@ -51,9 +54,6 @@ class SocketService {
         reconnectionAttempts: this.maxReconnectAttempts,
         timeout: 10000
       });
-
-      this.userId = userId;
-      this.userType = userType;
 
       // Connection timeout
       const connectionTimeout = setTimeout(() => {
@@ -65,7 +65,6 @@ class SocketService {
       }, 5000);
 
       this.socket.on('connect', () => {
-        console.log('Socket connected:', this.socket.id);
         this.connected = true;
         this.reconnectAttempts = 0;
 
@@ -78,20 +77,20 @@ class SocketService {
           }
         });
 
-        // Authenticate
-        this.socket.emit('authenticate', { userId, userType });
+        // Authenticate with JWT token
+        this.socket.emit('authenticate', { token: this._token });
       });
 
       this.socket.on('authenticated', (data) => {
         clearTimeout(connectionTimeout);
-        console.log('Socket authenticated:', data);
         this.authenticated = true;
+        this.userId = data.userId;
+        this.userType = data.userType;
         this.emit('authenticated', data);
         resolve();
       });
 
       this.socket.on('disconnect', (reason) => {
-        console.log('Socket disconnected:', reason);
         this.connected = false;
         this.authenticated = false;
         this.emit('disconnected', { reason });
@@ -117,12 +116,10 @@ class SocketService {
 
       // Chat events
       this.socket.on('new_message', (data) => {
-        console.log('New message received:', data);
         this.emit('new_message', data);
       });
 
       this.socket.on('message_notification', (data) => {
-        console.log('Message notification received:', data);
         this.emit('message_notification', data);
       });
 
@@ -143,7 +140,6 @@ class SocketService {
       });
 
       this.socket.on('joined_conversation', (data) => {
-        console.log('Joined conversation:', data);
         this.emit('joined_conversation', data);
       });
     });
@@ -151,7 +147,6 @@ class SocketService {
 
   disconnect() {
     if (this.socket) {
-      console.log('Disconnecting socket...');
       this.socket.disconnect();
       this.socket = null;
       this.connected = false;
@@ -169,7 +164,6 @@ class SocketService {
       return;
     }
 
-    console.log('Joining conversation:', conversationId);
     this.socket.emit('join_conversation', { conversationId });
   }
 
@@ -187,7 +181,6 @@ class SocketService {
       throw new Error('Socket not connected');
     }
 
-    console.log('Sending message:', data);
     this.socket.emit('send_message', data);
   }
 

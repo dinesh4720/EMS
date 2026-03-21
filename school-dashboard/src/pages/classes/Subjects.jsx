@@ -4,7 +4,8 @@ import {
   Card, CardBody, Button, Progress, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Input, Select, SelectItem, Checkbox, Spinner, Chip, User
 } from "@heroui/react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useValidatedParams } from "../../hooks/useValidatedParams";
 import {
   BookOpen, Plus, AlertCircle, Clock
 } from "lucide-react";
@@ -12,9 +13,33 @@ import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 
 export default function Subjects() {
-  const { id } = useParams();
+  const { params: { id }, isValid } = useValidatedParams({ id: 'objectId' }, { redirectTo: '/classes' });
   const navigate = useNavigate();
   const { classesEnhancedApi, staff, classes } = useApp();
+
+  const [subjects, setSubjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [addSubjectModal, setAddSubjectModal] = useState(false);
+  const [editChapterModal, setEditChapterModal] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState(null);
+
+  // New subject form state
+  const [newSubject, setNewSubject] = useState({
+    subjectName: '',
+    subjectId: '',
+    teacherId: '',
+    assignTo: 'all', // 'all' or 'specific'
+    selectedStudents: []
+  });
+
+  // Fetch subjects data
+  useEffect(() => {
+    if (isValid && id) {
+      loadSubjects();
+    }
+  }, [id, isValid]);
+
+  if (!isValid) return null;
 
   // If no id provided, show message to select a class
   if (!id) {
@@ -41,26 +66,6 @@ export default function Subjects() {
       </div>
     );
   }
-
-  const [subjects, setSubjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [addSubjectModal, setAddSubjectModal] = useState(false);
-  const [editChapterModal, setEditChapterModal] = useState(false);
-  const [selectedSubject, setSelectedSubject] = useState(null);
-
-  // New subject form state
-  const [newSubject, setNewSubject] = useState({
-    subjectName: '',
-    subjectId: '',
-    teacherId: '',
-    assignTo: 'all', // 'all' or 'specific'
-    selectedStudents: []
-  });
-
-  // Fetch subjects data
-  useEffect(() => {
-    loadSubjects();
-  }, [id]);
 
   const loadSubjects = async () => {
     try {
@@ -381,7 +386,7 @@ export default function Subjects() {
                 {selectedSubject.chapters && selectedSubject.chapters.length > 0 ? (
                   <div className="space-y-3 max-h-[60vh] overflow-y-auto px-1">
                     {selectedSubject.chapters.map((chapter, idx) => (
-                      <Card key={idx} className="border-default-200" shadow="none">
+                      <Card key={chapter._id || `ch-${chapter.chapterNumber}-${chapter.chapterName}`} className="border-default-200" shadow="none">
                         <CardBody className="space-y-3 p-3">
                           <div className="flex justify-between items-center gap-4">
                             <div className="min-w-0 flex-1">

@@ -12,6 +12,24 @@ const PrintableStudentProfile = forwardRef(({
   remarks = [],
   classTeacher = null
 }, ref) => {
+  // Calculate monthly attendance (hook must be called before any early return)
+  const monthlyAttendance = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentYear = new Date().getFullYear();
+    
+    return months.map((month, index) => {
+      const monthData = attendanceData.filter(a => {
+        const d = new Date(a.date);
+        return d.getMonth() === index && d.getFullYear() === currentYear;
+      });
+      
+      const present = monthData.filter(a => a.status === 'present').length;
+      const percentage = monthData.length > 0 ? Math.round((present / monthData.length) * 100) : 0;
+      
+      return { month, present, total: monthData.length, percentage };
+    });
+  }, [attendanceData]);
+
   if (!student) return null;
 
   // Calculate average percentage
@@ -29,24 +47,6 @@ const PrintableStudentProfile = forwardRef(({
   };
 
   const performance = getPerformanceBadge();
-
-  // Calculate monthly attendance
-  const monthlyAttendance = useMemo(() => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const currentYear = new Date().getFullYear();
-    
-    return months.map((month, index) => {
-      const monthData = attendanceData.filter(a => {
-        const d = new Date(a.date);
-        return d.getMonth() === index && d.getFullYear() === currentYear;
-      });
-      
-      const present = monthData.filter(a => a.status === 'present').length;
-      const percentage = monthData.length > 0 ? Math.round((present / monthData.length) * 100) : 0;
-      
-      return { month, present, total: monthData.length, percentage };
-    });
-  }, [attendanceData]);
 
   // Get grade from percentage
   const getGrade = (percentage) => {
@@ -423,7 +423,7 @@ const PrintableStudentProfile = forwardRef(({
               </thead>
               <tbody>
                 {results.map((result, i) => (
-                  <tr key={i}>
+                  <tr key={result._id || result.examId?._id || `result-${i}`}>
                     <td style={styles.tableCell}>{result.examId?.name || result.examName || `Exam ${i + 1}`}</td>
                     <td style={styles.tableCell}>{result.examId?.startDate ? format(new Date(result.examId.startDate), "dd MMM") : "N/A"}</td>
                     <td style={{...styles.tableCell, textAlign: "center"}}>{result.totalMarks || "-"}/{result.maxMarks || 100}</td>
@@ -448,7 +448,7 @@ const PrintableStudentProfile = forwardRef(({
                   </thead>
                   <tbody>
                     {results[0].subjects.map((subject, i) => (
-                      <tr key={i}>
+                      <tr key={subject._id || subject.name || `subject-${i}`}>
                         <td style={styles.tableCell}>{subject.name}</td>
                         <td style={{...styles.tableCell, textAlign: "center"}}>{subject.marks || 0}</td>
                         <td style={{...styles.tableCell, textAlign: "center"}}>{subject.maxMarks || 100}</td>
@@ -497,8 +497,8 @@ const PrintableStudentProfile = forwardRef(({
           <div style={{ marginTop: "10px" }}>
             <p style={{ fontSize: "10px", color: "#525252", marginBottom: "4px" }}>Monthly Overview</p>
             <div style={styles.attendanceBar}>
-              {monthlyAttendance.map((m, i) => (
-                <div key={i} style={styles.attendanceBarMonth(m.percentage)} title={`${m.month}: ${m.percentage}%`}>
+              {monthlyAttendance.map((m) => (
+                <div key={m.month} style={styles.attendanceBarMonth(m.percentage)} title={`${m.month}: ${m.percentage}%`}>
                   {m.month.substring(0, 1)}
                 </div>
               ))}
@@ -524,7 +524,7 @@ const PrintableStudentProfile = forwardRef(({
               </thead>
               <tbody>
                 {studentFeeStructure.feeHeads.map((fee, i) => (
-                  <tr key={i}>
+                  <tr key={fee._id || fee.name || `fee-${i}`}>
                     <td style={styles.tableCell}>{fee.name}</td>
                     <td style={{...styles.tableCell, textAlign: "right"}}>₹{(fee.amount || 0).toLocaleString()}</td>
                     <td style={{...styles.tableCell, textAlign: "right", color: "#22c55e"}}>₹{(fee.paidAmount || 0).toLocaleString()}</td>
@@ -652,7 +652,7 @@ const PrintableStudentProfile = forwardRef(({
           <h4 style={styles.sectionTitle}>Achievements</h4>
           <div style={styles.grid2}>
             {student.achievements.map((achievement, i) => (
-              <div key={i} style={{ padding: "6px 8px", backgroundColor: "#fafafa", borderRadius: "3px", borderLeft: "2px solid #f59e0b" }}>
+              <div key={achievement._id || achievement.title || `achievement-${i}`} style={{ padding: "6px 8px", backgroundColor: "#fafafa", borderRadius: "3px", borderLeft: "2px solid #f59e0b" }}>
                 <p style={{ margin: 0, fontSize: "11px", fontWeight: "500", color: "#171717" }}>{achievement.title || achievement}</p>
                 {achievement.date && <p style={{ margin: "2px 0 0 0", fontSize: "9px", color: "#737373" }}>{achievement.date}</p>}
               </div>

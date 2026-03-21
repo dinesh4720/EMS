@@ -3,10 +3,13 @@ import { Event, AnalyticsFilter } from '../types'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
+const API_KEY = import.meta.env.VITE_API_KEY || 'owlin-dev-key'
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    'X-API-Key': API_KEY,
   },
 })
 

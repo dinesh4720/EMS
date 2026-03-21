@@ -100,7 +100,7 @@ export default function WriteRemarkModal({ isOpen, onClose, student, onSave }) {
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="bordered" className="border-gray-200 text-gray-700" onPress={onClose}>Cancel</Button>
+          <Button variant="bordered" className="border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300" onPress={onClose}>Cancel</Button>
           <Button className="bg-gray-900 hover:bg-gray-800 text-white" onPress={handleSave} isLoading={isSaving}>Save Remark</Button>
         </ModalFooter>
       </ModalContent>

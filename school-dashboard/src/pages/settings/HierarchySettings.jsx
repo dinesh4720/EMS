@@ -147,7 +147,7 @@ export default function HierarchySettings() {
             <Network size={24} />
             Reporter-Reportee Hierarchy
           </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
             Manage organizational reporting structure and approval workflows
           </p>
         </div>
@@ -217,10 +217,10 @@ export default function HierarchySettings() {
               }
             }}
             classNames={{
-              th: "bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold",
+              th: "bg-gray-50 dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 font-semibold",
               td: "py-4 transition-colors",
               tbody: "[&>tr[data-selected=true]>td]:bg-primary-50",
-              tr: "transition-colors hover:bg-gray-50 data-[selected=true]:bg-primary-50",
+              tr: "transition-colors hover:bg-gray-50 dark:hover:bg-zinc-900 data-[selected=true]:bg-primary-50",
             }}
           >
             <TableHeader>
@@ -245,7 +245,7 @@ export default function HierarchySettings() {
                         <div className="font-medium text-gray-900 dark:text-white">
                           {staffMember.name}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 dark:text-zinc-400">
                           {staffMember.code}
                         </div>
                       </div>
@@ -256,14 +256,14 @@ export default function HierarchySettings() {
                       </Chip>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm text-gray-700 dark:text-gray-300">
+                      <div className="text-sm text-gray-700 dark:text-zinc-300">
                         {staffMember.reporterId ? (
                           <div className="flex items-center gap-2">
-                            <Users size={14} className="text-gray-500" />
+                            <Users size={14} className="text-gray-500 dark:text-zinc-400" />
                             {getReporterName(staffMember.reporterId)}
                           </div>
                         ) : (
-                          <span className="text-gray-400">No reporter</span>
+                          <span className="text-gray-400 dark:text-zinc-500">No reporter</span>
                         )}
                       </div>
                     </TableCell>
@@ -271,14 +271,14 @@ export default function HierarchySettings() {
                       <div className="flex items-center gap-2">
                         {directReportees.length > 0 ? (
                           <>
-                            <Users size={14} className="text-gray-500" />
+                            <Users size={14} className="text-gray-500 dark:text-zinc-400" />
                             <span className="font-medium">{directReportees.length}</span>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 dark:text-zinc-400">
                               ({getAllReportees(staffMember.id).length} total)
                             </span>
                           </>
                         ) : (
-                          <span className="text-gray-400 text-sm">None</span>
+                          <span className="text-gray-400 dark:text-zinc-500 text-sm">None</span>
                         )}
                       </div>
                     </TableCell>
@@ -327,7 +327,7 @@ export default function HierarchySettings() {
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   {activeStaff.filter(s => !s.reporterId).length}
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="text-sm text-gray-600 dark:text-zinc-400">
                   Top Level Staff
                 </div>
               </div>
@@ -345,7 +345,7 @@ export default function HierarchySettings() {
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   {activeStaff.filter(s => getDirectReportees(s.id).length > 0).length}
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="text-sm text-gray-600 dark:text-zinc-400">
                   Staff with Reportees
                 </div>
               </div>
@@ -363,7 +363,7 @@ export default function HierarchySettings() {
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   {activeStaff.length}
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="text-sm text-gray-600 dark:text-zinc-400">
                   Total Active Staff
                 </div>
               </div>

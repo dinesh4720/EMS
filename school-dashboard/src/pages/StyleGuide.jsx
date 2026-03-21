@@ -8,7 +8,7 @@ export default function StyleGuide() {
         <div className="p-8 max-w-4xl mx-auto space-y-8 animate-fade-in">
             <div className="space-y-2">
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Design Style Guide</h1>
-                <p className="text-gray-500">Core UI components and design tokens used throughout the application.</p>
+                <p className="text-gray-500 dark:text-zinc-500">Core UI components and design tokens used throughout the application.</p>
             </div>
 
             <section className="space-y-4">
@@ -79,8 +79,8 @@ export default function StyleGuide() {
                     <h2 className="text-3xl font-bold">Heading 2</h2>
                     <h3 className="text-2xl font-semibold">Heading 3</h3>
                     <h4 className="text-xl font-medium">Heading 4</h4>
-                    <p className="text-base text-gray-600">Body text: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-                    <p className="text-sm text-gray-500">Small text: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                    <p className="text-base text-gray-600 dark:text-zinc-400">Body text: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                    <p className="text-sm text-gray-500 dark:text-zinc-500">Small text: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
                 </Card>
             </section>
         </div>

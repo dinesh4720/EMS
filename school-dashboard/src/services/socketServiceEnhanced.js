@@ -12,7 +12,7 @@ class SocketServiceEnhanced {
     this.maxReconnectAttempts = 5;
   }
 
-  connect(userId, userType) {
+  connect() {
     // If already connected and authenticated, reuse the connection
     if (this.socket?.connected && this.authenticated) {
       return Promise.resolve();
@@ -38,14 +38,12 @@ class SocketServiceEnhanced {
 
       this.socket = io(SOCKET_URL, {
         transports: ['websocket', 'polling'],
+        withCredentials: true, // Send httpOnly cookies with handshake
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionAttempts: this.maxReconnectAttempts,
         timeout: 10000
       });
-
-      this.userId = userId;
-      this.userType = userType;
 
       // Connection timeout
       const connectionTimeout = setTimeout(() => {
@@ -70,13 +68,15 @@ class SocketServiceEnhanced {
           }
         });
 
-        // Authenticate
-        this.socket.emit('authenticate', { userId, userType });
+        // Authenticate — token is in the httpOnly cookie sent with the handshake
+        this.socket.emit('authenticate', { useCookie: true });
       });
 
       this.socket.on('authenticated', (data) => {
         clearTimeout(connectionTimeout);
         this.authenticated = true;
+        this.userId = data.userId;
+        this.userType = data.userType;
         this.emit('authenticated', data);
         resolve();
       });

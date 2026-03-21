@@ -14,18 +14,19 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer
 } from "recharts";
+import { useChartTheme } from "../../../utils/chartTheme";
 
 // Custom Tooltip
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-        <p className="text-xs font-medium text-gray-500 mb-1">{label}</p>
-        {payload.map((entry, i) => (
-          <div key={i} className="flex items-center gap-2 text-sm">
+      <div className="bg-white dark:bg-zinc-950 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 shadow-sm">
+        <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mb-1">{label}</p>
+        {payload.map((entry) => (
+          <div key={entry.name} className="flex items-center gap-2 text-sm">
             <div className="w-2 h-2 rounded-full bg-gray-500" />
-            <span className="text-gray-600">{entry.name}:</span>
-            <span className="font-medium text-gray-900">{entry.value}%</span>
+            <span className="text-gray-600 dark:text-zinc-400">{entry.name}:</span>
+            <span className="font-medium text-gray-900 dark:text-zinc-100">{entry.value}%</span>
           </div>
         ))}
       </div>
@@ -42,6 +43,7 @@ export default function StaffOverviewTab({
   classTeacherAssignments,
   staffAttendance
 }) {
+  const chart = useChartTheme();
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
   const isTeacher = Array.isArray(staff.role) ? staff.role.includes('Teacher') : staff.role === 'Teacher';
@@ -92,20 +94,20 @@ export default function StaffOverviewTab({
   return (
     <>
       {/* Attendance Chart */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="p-5 border-b border-gray-200">
+      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+        <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><TrendingUp size={16} className="text-gray-600" /></div>
-            <div><h3 className="font-medium text-gray-900 text-sm">Attendance Trend</h3><p className="text-xs text-gray-500">Monthly attendance overview</p></div>
+            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><TrendingUp size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+            <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Attendance Trend</h3><p className="text-xs text-gray-500 dark:text-zinc-500">Monthly attendance overview</p></div>
           </div>
         </div>
         <div className="p-5">
           <div className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <RechartsLineChart data={attendanceTrendData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} domain={[0, 100]} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chart.grid} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: chart.tick, fontSize: 11 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: chart.tick, fontSize: 11 }} domain={[0, 100]} />
                 <RechartsTooltip content={<CustomTooltip />} />
                 <Line
                   type="monotone"
@@ -124,11 +126,11 @@ export default function StaffOverviewTab({
 
       {/* Class-wise Attendance for Teachers */}
       {isTeacher && classTeacherAssignments.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="p-5 border-b border-gray-200">
+        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+          <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><BarChart3 size={16} className="text-gray-600" /></div>
-              <div><h3 className="font-medium text-gray-900 text-sm">Class-wise Attendance</h3><p className="text-xs text-gray-500">Attendance by assigned classes</p></div>
+              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><BarChart3 size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+              <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Class-wise Attendance</h3><p className="text-xs text-gray-500 dark:text-zinc-500">Attendance by assigned classes</p></div>
             </div>
           </div>
           <div className="p-5">
@@ -136,16 +138,16 @@ export default function StaffOverviewTab({
               <div className="h-[200px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={classPerformanceData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} dy={10} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} domain={[0, 100]} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chart.grid} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: chart.tick, fontSize: 11 }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: chart.tick, fontSize: 11 }} domain={[0, 100]} />
                     <RechartsTooltip content={<CustomTooltip />} />
                     <Bar dataKey="attendance" name="Attendance" fill="#6b7280" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-[200px] flex items-center justify-center text-gray-400 text-sm">
+              <div className="h-[200px] flex items-center justify-center text-gray-400 dark:text-zinc-500 text-sm">
                 No class data available
               </div>
             )}
@@ -155,29 +157,29 @@ export default function StaffOverviewTab({
 
       {/* Classes Handling Table for Teachers */}
       {isTeacher && classTeacherAssignments.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="p-5 border-b border-gray-200">
+        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+          <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><BookOpen size={16} className="text-gray-600" /></div>
-              <div><h3 className="font-medium text-gray-900 text-sm">Classes Handling</h3><p className="text-xs text-gray-500">{classTeacherAssignments.length} class(es) assigned</p></div>
+              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><BookOpen size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+              <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Classes Handling</h3><p className="text-xs text-gray-500 dark:text-zinc-500">{classTeacherAssignments.length} class(es) assigned</p></div>
             </div>
           </div>
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-gray-50 dark:divide-zinc-800">
             {classTeacherAssignments.map((cls) => {
               const classAttendance = cls.averageAttendance || cls.attendance || 0;
               return (
-                <div key={cls.id || cls._id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
+                <div key={cls.id || cls._id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-700">
+                    <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-sm font-semibold text-gray-700 dark:text-zinc-300">
                       {cls.name}-{cls.section}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{cls.name} - {cls.section}</p>
-                      <p className="text-xs text-gray-500">{cls.studentCount || cls.strength || 0} students</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{cls.name} - {cls.section}</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">{cls.studentCount || cls.strength || 0} students</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="w-20 h-1.5 bg-gray-100 dark:bg-zinc-700 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all ${classAttendance >= 90 ? 'bg-gray-800' :
                             classAttendance >= 75 ? 'bg-gray-600' : 'bg-gray-400'
@@ -185,8 +187,8 @@ export default function StaffOverviewTab({
                         style={{ width: `${classAttendance}%` }}
                       />
                     </div>
-                    <span className={`text-sm font-semibold w-12 text-right ${classAttendance >= 90 ? 'text-gray-900' :
-                        classAttendance >= 75 ? 'text-gray-700' : 'text-gray-500'
+                    <span className={`text-sm font-semibold w-12 text-right ${classAttendance >= 90 ? 'text-gray-900 dark:text-zinc-100' :
+                        classAttendance >= 75 ? 'text-gray-700 dark:text-zinc-300' : 'text-gray-500 dark:text-zinc-400'
                       }`}>
                       {classAttendance}%
                     </span>
@@ -199,14 +201,14 @@ export default function StaffOverviewTab({
       )}
 
       {/* Recent Activity (computed from attendance records) */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="p-5 border-b border-gray-200">
+      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+        <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><Activity size={16} className="text-gray-600" /></div>
-            <div><h3 className="font-medium text-gray-900 text-sm">Recent Activity</h3><p className="text-xs text-gray-500">From attendance records</p></div>
+            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Activity size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+            <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Recent Activity</h3><p className="text-xs text-gray-500 dark:text-zinc-500">From attendance records</p></div>
           </div>
         </div>
-        <div className="divide-y divide-gray-50">
+        <div className="divide-y divide-gray-50 dark:divide-zinc-800">
           {(() => {
             const staffAtt = staffAttendance || {};
             const entries = Object.entries(staffAtt)
@@ -215,26 +217,26 @@ export default function StaffOverviewTab({
 
             if (entries.length === 0) {
               return (
-                <div className="px-5 py-8 text-center text-gray-400 text-sm">
+                <div className="px-5 py-8 text-center text-gray-400 dark:text-zinc-500 text-sm">
                   No recent activity recorded
                 </div>
               );
             }
 
-            return entries.map(([date, data], i) => {
+            return entries.map(([date, data]) => {
               const statusText = data.status === 'present' ? 'Marked Present' : data.status === 'absent' ? 'Marked Absent' : data.status === 'leave' ? 'On Leave' : data.status;
               const IconComponent = data.status === 'present' ? CheckCircle : data.status === 'leave' ? Calendar : FileText;
               const dateObj = new Date(date + 'T00:00:00');
               const isToday = date === todayStr;
               const timeLabel = isToday ? 'Today' : dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
               return (
-                <div key={i} className="px-5 py-3 flex items-center gap-4 hover:bg-gray-50/50 transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-                    <IconComponent size={14} className="text-gray-500" />
+                <div key={date} className="px-5 py-3 flex items-center gap-4 hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors">
+                  <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                    <IconComponent size={14} className="text-gray-500 dark:text-zinc-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{statusText}</p>
-                    <p className="text-xs text-gray-500">{timeLabel}{data.inTime && data.inTime !== '-' ? ` \u00b7 ${data.inTime}` : ''}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{statusText}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{timeLabel}{data.inTime && data.inTime !== '-' ? ` \u00b7 ${data.inTime}` : ''}</p>
                   </div>
                 </div>
               );

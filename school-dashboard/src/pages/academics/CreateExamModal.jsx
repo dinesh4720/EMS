@@ -170,8 +170,8 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Basic Information */}
       <div>
-        <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-          <BookOpen size={16} className="text-gray-400" />
+        <h4 className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-3 flex items-center gap-2">
+          <BookOpen size={16} className="text-gray-400 dark:text-zinc-500" />
           Basic Information
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -185,7 +185,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             errorMessage={errors.name}
             isRequired
             classNames={{
-              inputWrapper: 'border-gray-200 hover:border-gray-300',
+              inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
             }}
           />
 
@@ -197,7 +197,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             onSelectionChange={handleSelectionChange('type')}
             isRequired
             classNames={{
-              trigger: 'border-gray-200 hover:border-gray-300',
+              trigger: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
             }}
           >
             {EXAM_TYPES.map((type) => (
@@ -218,7 +218,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             isRequired
             isDisabled={loadingData}
             classNames={{
-              trigger: 'border-gray-200 hover:border-gray-300',
+              trigger: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
             }}
           >
             {classes.map((cls) => (
@@ -239,7 +239,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             isRequired
             isDisabled={loadingData}
             classNames={{
-              trigger: 'border-gray-200 hover:border-gray-300',
+              trigger: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
             }}
           >
             {subjects.map((subject) => (
@@ -255,9 +255,9 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             placeholder={`e.g., ${currentAcademicYear}`}
             value={formData.academicYear || currentAcademicYear}
             onValueChange={(value) => handleInputChange('academicYear', value)}
-            startContent={<Calendar size={16} className="text-gray-400" />}
+            startContent={<Calendar size={16} className="text-gray-400 dark:text-zinc-500" />}
             classNames={{
-              inputWrapper: 'border-gray-200 hover:border-gray-300',
+              inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
             }}
           />
         </div>
@@ -267,8 +267,8 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
 
       {/* Schedule */}
       <div>
-        <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-          <Calendar size={16} className="text-gray-400" />
+        <h4 className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-3 flex items-center gap-2">
+          <Calendar size={16} className="text-gray-400 dark:text-zinc-500" />
           Schedule
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -282,7 +282,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             errorMessage={errors.startDate}
             isRequired
             classNames={{
-              inputWrapper: 'border-gray-200 hover:border-gray-300',
+              inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
             }}
           />
           <Input
@@ -294,7 +294,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             isInvalid={!!errors.endDate}
             errorMessage={errors.endDate}
             classNames={{
-              inputWrapper: 'border-gray-200 hover:border-gray-300',
+              inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
             }}
           />
         </div>
@@ -304,8 +304,8 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
 
       {/* Marks Configuration */}
       <div>
-        <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-          <Award size={16} className="text-gray-400" />
+        <h4 className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-3 flex items-center gap-2">
+          <Award size={16} className="text-gray-400 dark:text-zinc-500" />
           Marks Configuration
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -319,7 +319,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             isInvalid={!!errors.maxMarks}
             errorMessage={errors.maxMarks}
             classNames={{
-              inputWrapper: 'border-gray-200 hover:border-gray-300',
+              inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
             }}
           />
           <Input
@@ -332,7 +332,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             isInvalid={!!errors.passingMarks}
             errorMessage={errors.passingMarks}
             classNames={{
-              inputWrapper: 'border-gray-200 hover:border-gray-300',
+              inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
             }}
           />
           <Input
@@ -343,7 +343,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             value={formData.weightage}
             onValueChange={(value) => handleInputChange('weightage', value)}
             classNames={{
-              inputWrapper: 'border-gray-200 hover:border-gray-300',
+              inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
             }}
           />
         </div>
@@ -356,7 +356,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             selectedKeys={formData.gradingType}
             onSelectionChange={handleSelectionChange('gradingType')}
             classNames={{
-              trigger: 'border-gray-200 hover:border-gray-300',
+              trigger: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
             }}
           >
             {GRADING_TYPES.map((type) => (
@@ -380,7 +380,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
           onValueChange={(value) => handleInputChange('instructions', value)}
           minRows={3}
           classNames={{
-            inputWrapper: 'border-gray-200 hover:border-gray-300',
+            inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
           }}
         />
       </div>
@@ -398,7 +398,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
           color="primary"
           type="submit"
           isLoading={loading}
-          className="bg-gray-900"
+          className="bg-gray-900 dark:bg-zinc-100 dark:text-zinc-900"
         >
           Create Exam
         </Button>

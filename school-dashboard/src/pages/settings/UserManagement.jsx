@@ -156,8 +156,8 @@ export default function UserManagement() {
         <div className="space-y-6">
             {/* Header */}
             <div>
-                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">User Management</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">User Management</h2>
+                <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
                     Manage users, roles, permissions, and organizational hierarchy
                 </p>
             </div>
@@ -221,7 +221,6 @@ export default function UserManagement() {
                                                     name={item.name}
                                                     description={item.code || item.email}
                                                     avatarProps={{
-                                                        src: `https://i.pravatar.cc/150?u=${item.id}`,
                                                         isBordered: true,
                                                         size: "sm",
                                                         color: item.role === "Admin" ? "warning" : "primary"
@@ -319,10 +318,10 @@ export default function UserManagement() {
                                 </span>
                             </ModalHeader>
                             <ModalBody>
-                                <div className="p-4 bg-primary-50 rounded-lg mb-2">
+                                <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg mb-2">
                                     <div className="flex gap-3">
                                         <div className="mt-1"><Shield size={18} className="text-primary" /></div>
-                                        <div className="text-xs text-primary-700">
+                                        <div className="text-xs text-primary-700 dark:text-primary-300">
                                             Changes will take effect immediately. The staff member will need to log in with the new password on the Teacher App.
                                         </div>
                                     </div>

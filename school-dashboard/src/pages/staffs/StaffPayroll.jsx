@@ -12,6 +12,7 @@ import {
   Download, Lock, RotateCcw, ShieldCheck, AlertTriangle
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import PhotoAvatar from "../../components/PhotoAvatar";
 import { payrollApi } from "../../services/api";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -674,7 +675,7 @@ export default function StaffPayroll() {
         )}
 
         {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row justify-between gap-4 items-start bg-white border-b border-default-200 py-4 -mx-6 -mt-6 px-6">
+        <div className="flex flex-col sm:flex-row justify-between gap-4 items-start bg-white dark:bg-zinc-950 border-b border-default-200 py-4 -mx-6 -mt-6 px-6">
           <div className="flex flex-wrap gap-3 items-center w-full sm:w-auto">
             {/* Month/Year Selector - Moved here */}
             <div className="flex gap-2 items-center">
@@ -918,7 +919,7 @@ export default function StaffPayroll() {
                 th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6",
                 td: "py-5 border-b border-default-200 group-data-[last=true]:border-none last:pr-6 transition-colors",
                 tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-5 [&>tr[data-selected=true]>td]:bg-primary-50",
-                tr: "transition-colors hover:bg-gray-50 data-[selected=true]:bg-primary-50",
+                tr: "transition-colors hover:bg-gray-50 dark:hover:bg-zinc-900 data-[selected=true]:bg-primary-50",
               }}
             >
               <TableHeader>
@@ -948,10 +949,12 @@ export default function StaffPayroll() {
                     <TableRow key={record._id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <img
-                            src={`https://i.pravatar.cc/150?u=${employee.id}`}
+                          <PhotoAvatar
+                            src={employee.photo}
+                            name={employee.name}
                             alt={employee.name}
-                            className="w-10 h-10 rounded-full"
+                            type="staff"
+                            size="md"
                           />
                           <div className="flex flex-col">
                             <span
@@ -1230,7 +1233,7 @@ export default function StaffPayroll() {
                     </h4>
                     <div className="max-h-40 overflow-y-auto text-sm space-y-1">
                       {validationResults.warnings.map((warning, idx) => (
-                        <div key={idx} className="text-warning-700">
+                        <div key={`warning-${idx}`} className="text-warning-700">
                           {warning.name || warning.message || `Warning: ${warning.reason}`}
                         </div>
                       ))}

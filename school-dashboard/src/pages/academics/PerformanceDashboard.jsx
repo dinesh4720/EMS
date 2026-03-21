@@ -17,6 +17,7 @@ import StatCard from '../../components/StatCard';
 import FiltersDropdown from '../../components/FiltersDropdown';
 import { MinimalButton } from '../../components/ui';
 import { getAcademicYearOptions } from '../../utils/constants';
+import { useChartTheme } from '../../utils/chartTheme';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -31,6 +32,7 @@ const dashboardCache = {
 const PerformanceDashboard = ({ onCreateExam }) => {
   const navigate = useNavigate();
   const { currentAcademicYear } = useApp();
+  const chart = useChartTheme();
   const [loading, setLoading] = useState(true);
   const [exams, setExams] = useState([]);
   const [classPerformance, setClassPerformance] = useState([]);
@@ -266,28 +268,28 @@ const PerformanceDashboard = ({ onCreateExam }) => {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Class-wise Performance Comparison */}
-        <Card shadow="none" className="border border-gray-100">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100">
+        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
+          <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg">
+              <div className="p-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
                 <BarChart3 size={20} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900">Class-wise Performance</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Class-wise Performance</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
             {classComparisonData.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={classComparisonData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="class" tick={{ fontSize: 11 }} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chart.gridAlt} />
+                  <XAxis dataKey="class" tick={{ fill: chart.tick, fontSize: 11 }} />
+                  <YAxis domain={[0, 100]} tick={{ fill: chart.tick, fontSize: 11 }} />
+                  <Tooltip contentStyle={chart.tooltipStyle} itemStyle={chart.tooltipItemStyle} />
                   <Bar dataKey="average" fill="#374151" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[250px] flex items-center justify-center text-gray-400">
+              <div className="h-[250px] flex items-center justify-center text-gray-400 dark:text-zinc-500">
                 No data available
               </div>
             )}
@@ -295,28 +297,28 @@ const PerformanceDashboard = ({ onCreateExam }) => {
         </Card>
 
         {/* Subject-wise Averages */}
-        <Card shadow="none" className="border border-gray-100">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100">
+        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
+          <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg">
+              <div className="p-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
                 <BookOpen size={20} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900">Subject Averages</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Subject Averages</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
             {subjectAverages.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={subjectAverages} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
-                  <YAxis dataKey="subject" type="category" tick={{ fontSize: 11 }} width={80} />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chart.gridAlt} />
+                  <XAxis type="number" domain={[0, 100]} tick={{ fill: chart.tick, fontSize: 11 }} />
+                  <YAxis dataKey="subject" type="category" tick={{ fill: chart.tick, fontSize: 11 }} width={80} />
+                  <Tooltip contentStyle={chart.tooltipStyle} itemStyle={chart.tooltipItemStyle} />
                   <Bar dataKey="average" fill="#6b7280" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[250px] flex items-center justify-center text-gray-400">
+              <div className="h-[250px] flex items-center justify-center text-gray-400 dark:text-zinc-500">
                 No data available
               </div>
             )}
@@ -327,20 +329,20 @@ const PerformanceDashboard = ({ onCreateExam }) => {
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Top Performers */}
-        <Card shadow="none" className="border border-gray-100">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100">
+        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
+          <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg">
+              <div className="p-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
                 <Trophy size={20} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900">Top Performers</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Top Performers</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
             {topPerformers.length > 0 ? (
               <div className="space-y-3">
                 {topPerformers.slice(0, 5).map((student, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                  <div key={student._id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-zinc-900">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
                         idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-gray-400' : idx === 2 ? 'bg-amber-600' : 'bg-gray-300'
@@ -348,8 +350,8 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                         {idx + 1}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">{student.name}</p>
-                        <p className="text-xs text-gray-500">{student.class}</p>
+                        <p className="font-medium text-gray-900 dark:text-zinc-100">{student.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">{student.class}</p>
                       </div>
                     </div>
                     <Chip size="sm" color="success" variant="flat">
@@ -361,7 +363,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
             ) : (
               <div className="space-y-3">
                 {[1, 2, 3, 4, 5].map(idx => (
-                  <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                  <div key={`placeholder-${idx}`} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-zinc-900">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
                         idx === 1 ? 'bg-yellow-500' : idx === 2 ? 'bg-gray-400' : idx === 3 ? 'bg-amber-600' : 'bg-gray-300'
@@ -369,8 +371,8 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                         {idx}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">Student {idx}</p>
-                        <p className="text-xs text-gray-500">Class {(idx % 5) + 5}-A</p>
+                        <p className="font-medium text-gray-900 dark:text-zinc-100">Student {idx}</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">Class {(idx % 5) + 5}-A</p>
                       </div>
                     </div>
                     <Chip size="sm" color="success" variant="flat">
@@ -384,13 +386,13 @@ const PerformanceDashboard = ({ onCreateExam }) => {
         </Card>
 
         {/* Grade Distribution */}
-        <Card shadow="none" className="border border-gray-100">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100">
+        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
+          <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg">
+              <div className="p-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
                 <Award size={20} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900">Grade Distribution</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Grade Distribution</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
@@ -405,18 +407,18 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                   paddingAngle={2}
                   dataKey="value"
                 >
-                  {gradeDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  {gradeDistribution.map((entry) => (
+                    <Cell key={`cell-${entry.name}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip contentStyle={chart.tooltipStyle} itemStyle={chart.tooltipItemStyle} />
               </PieChart>
             </ResponsiveContainer>
             <div className="flex flex-wrap justify-center gap-3 mt-4">
-              {gradeDistribution.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-1.5 text-xs">
+              {gradeDistribution.map((item) => (
+                <div key={`legend-${item.name}`} className="flex items-center gap-1.5 text-xs">
                   <div className="w-3 h-3 rounded" style={{ backgroundColor: item.color }} />
-                  <span className="text-gray-600">{item.name}</span>
+                  <span className="text-gray-600 dark:text-zinc-400">{item.name}</span>
                 </div>
               ))}
             </div>
@@ -424,51 +426,51 @@ const PerformanceDashboard = ({ onCreateExam }) => {
         </Card>
 
         {/* Quick Actions */}
-        <Card shadow="none" className="border border-gray-100">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100">
+        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
+          <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg">
+              <div className="p-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
                 <FileText size={20} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Quick Actions</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
             <div className="space-y-3">
               <div
-                className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 cursor-pointer transition-colors"
                 onClick={() => onCreateExam?.() || navigate('/academics/exams')}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-gray-900">Create New Exam</div>
-                    <div className="text-sm text-gray-500">Schedule a new exam for any class</div>
+                    <div className="font-medium text-gray-900 dark:text-zinc-100">Create New Exam</div>
+                    <div className="text-sm text-gray-500 dark:text-zinc-400">Schedule a new exam for any class</div>
                   </div>
-                  <ArrowRight size={18} className="text-gray-400" />
+                  <ArrowRight size={18} className="text-gray-400 dark:text-zinc-500" />
                 </div>
               </div>
               <div
-                className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 cursor-pointer transition-colors"
                 onClick={() => navigate('/academics/exams')}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-gray-900">Enter Results</div>
-                    <div className="text-sm text-gray-500">Enter marks for completed exams</div>
+                    <div className="font-medium text-gray-900 dark:text-zinc-100">Enter Results</div>
+                    <div className="text-sm text-gray-500 dark:text-zinc-400">Enter marks for completed exams</div>
                   </div>
-                  <ArrowRight size={18} className="text-gray-400" />
+                  <ArrowRight size={18} className="text-gray-400 dark:text-zinc-500" />
                 </div>
               </div>
               <div
-                className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 cursor-pointer transition-colors"
                 onClick={() => navigate('/academics/results')}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-gray-900">View Results</div>
-                    <div className="text-sm text-gray-500">Review and publish results</div>
+                    <div className="font-medium text-gray-900 dark:text-zinc-100">View Results</div>
+                    <div className="text-sm text-gray-500 dark:text-zinc-400">Review and publish results</div>
                   </div>
-                  <ArrowRight size={18} className="text-gray-400" />
+                  <ArrowRight size={18} className="text-gray-400 dark:text-zinc-500" />
                 </div>
               </div>
             </div>
@@ -477,13 +479,13 @@ const PerformanceDashboard = ({ onCreateExam }) => {
       </div>
 
       {/* Recent Exams */}
-      <Card shadow="none" className="border border-gray-100">
-        <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100 flex justify-between items-center">
+      <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
+        <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg">
+            <div className="p-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
               <Calendar size={20} />
             </div>
-            <h3 className="text-lg font-medium text-gray-900">Recent Exams</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Recent Exams</h3>
           </div>
           <Button
             size="sm"
@@ -496,7 +498,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
         </CardHeader>
         <CardBody className="p-6">
           {exams.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-500 dark:text-zinc-400">
               <FileText size={40} className="mx-auto mb-3 opacity-50" />
               <p>No exams created yet</p>
               <MinimalButton className="mt-4" onClick={() => onCreateExam?.()}>
@@ -510,12 +512,12 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                   key={exam.id || exam._id}
                   isPressable
                   shadow="none"
-                  className="border border-gray-200 hover:shadow-md transition-all"
+                  className="border border-gray-200 dark:border-zinc-700 hover:shadow-md transition-all"
                   onPress={() => navigate(`/academics/exams/${exam.id}`)}
                 >
                   <CardBody className="p-4">
                     <div className="flex justify-between items-start mb-3">
-                      <div className="p-2 bg-gray-100 text-gray-600 rounded-lg">
+                      <div className="p-2 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
                         <FileText size={18} />
                       </div>
                       <Chip
@@ -530,9 +532,9 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                         {exam.status?.replace('_', ' ')}
                       </Chip>
                     </div>
-                    <h4 className="font-medium text-gray-900 mb-1">{exam.name}</h4>
-                    <p className="text-sm text-gray-500">{exam.classId} - {exam.subjectName}</p>
-                    <p className="text-xs text-gray-400 mt-2">
+                    <h4 className="font-medium text-gray-900 dark:text-zinc-100 mb-1">{exam.name}</h4>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">{exam.classId} - {exam.subjectName}</p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2">
                       {exam.date ? new Date(exam.date).toLocaleDateString() : 'No date'}
                     </p>
                   </CardBody>

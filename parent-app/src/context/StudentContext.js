@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import api from '../services/api';
+import CONFIG from '../config';
 import socketService from '../services/socketService';
 
 const StudentContext = createContext(null);
@@ -57,12 +59,13 @@ export const StudentProvider = ({ children }) => {
   useEffect(() => {
     if (!user?.id || !isAuthenticated) return;
 
-    // Connect socket with parent authentication
-    socketService.connect(user.id, 'parent');
+    // Connect socket with JWT token authentication
+    AsyncStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN).then(token => {
+      if (token) socketService.connect(token);
+    });
 
     // Listen for fee updates targeting this student
     const handleFeeUpdate = (data) => {
-      console.log('📡 Real-time fee update received:', data);
       // If the update is for the currently selected student, re-fetch fees
       if (data.studentId && fetchFeesRef.current) {
         fetchFeesRef.current();
@@ -71,7 +74,6 @@ export const StudentProvider = ({ children }) => {
 
     // Listen for attendance updates
     const handleAttendanceUpdate = (data) => {
-      console.log('📡 Real-time attendance update received:', data);
       if (data.studentId === studentId) {
         // Re-fetch attendance data
         fetchAttendanceInternal();

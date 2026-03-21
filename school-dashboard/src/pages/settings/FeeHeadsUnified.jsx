@@ -294,25 +294,25 @@ export default function FeeHeadsUnified({ embedded = false }) {
     <div className={embedded ? "space-y-6" : "max-w-5xl mx-auto pb-10 space-y-6"}>
       {/* Header */}
       {!embedded && (
-        <div className="border-b border-gray-200 pb-4">
-          <h2 className="text-xl font-bold text-gray-900">Fee Heads</h2>
-          <p className="text-sm text-gray-500 mt-1">Configure fee structures for classes</p>
+        <div className="border-b border-gray-200 dark:border-zinc-800 pb-4">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Fee Heads</h2>
+          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">Configure fee structures for classes</p>
         </div>
       )}
 
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="p-4 border border-gray-200 rounded-lg bg-white">
-          <p className="text-xs text-gray-500 uppercase tracking-wider">Total Heads</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{feeHeads.length}</p>
+        <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Total Heads</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mt-1">{feeHeads.length}</p>
         </div>
-        <div className="p-4 border border-gray-200 rounded-lg bg-white">
-          <p className="text-xs text-gray-500 uppercase tracking-wider">Required</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{feeHeads.filter(fh => fh.mandatory).length}</p>
+        <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Required</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mt-1">{feeHeads.filter(fh => fh.mandatory).length}</p>
         </div>
-        <div className="p-4 border border-gray-200 rounded-lg bg-white">
-          <p className="text-xs text-gray-500 uppercase tracking-wider">Total Amount</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">₹{totalFees.toLocaleString()}</p>
+        <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Total Amount</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{totalFees.toLocaleString()}</p>
         </div>
       </div>
 
@@ -328,13 +328,13 @@ export default function FeeHeadsUnified({ embedded = false }) {
       </div>
 
       {/* Table */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+      <div className="border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden bg-white dark:bg-zinc-950">
         <Table
           aria-label="Fee Heads"
           removeWrapper
           classNames={{
-            th: "bg-gray-50 text-gray-500 font-medium text-xs uppercase tracking-wider h-11 border-b border-gray-200",
-            td: "py-3 border-b border-gray-100",
+            th: "bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-11 border-b border-gray-200 dark:border-zinc-800",
+            td: "py-3 border-b border-gray-100 dark:border-zinc-800",
           }}
         >
           <TableHeader>
@@ -347,23 +347,23 @@ export default function FeeHeadsUnified({ embedded = false }) {
           <TableBody
             emptyContent={
               <div className="text-center py-8">
-                <p className="text-gray-400 text-sm">No fee heads configured</p>
+                <p className="text-gray-400 dark:text-zinc-500 text-sm">No fee heads configured</p>
               </div>
             }
           >
             {visibleFeeHeads.map((feeHead) => (
-              <TableRow key={feeHead._id} className="hover:bg-gray-50">
+              <TableRow key={feeHead._id} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
                 <TableCell>
                   <div>
-                    <p className="font-medium text-gray-900">{feeHead.name}</p>
-                    <p className="text-xs text-gray-500">{feeHead.category} • {feeHead.frequency}</p>
+                    <p className="font-medium text-gray-900 dark:text-zinc-100">{feeHead.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{feeHead.category} • {feeHead.frequency}</p>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="font-mono text-gray-900">₹{feeHead.amount?.toLocaleString() || 0}</span>
+                  <span className="font-mono text-gray-900 dark:text-zinc-100">₹{feeHead.amount?.toLocaleString() || 0}</span>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-gray-600 dark:text-zinc-400">
                     {feeHead.applicableClasses?.length > 0
                       ? feeHead.applicableClasses.length === 12
                         ? "All Classes"
@@ -372,7 +372,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border border-gray-200 rounded bg-gray-50">
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border border-gray-200 dark:border-zinc-800 rounded bg-gray-50 dark:bg-zinc-900">
                     <span className={`w-1.5 h-1.5 rounded-full ${feeHead.mandatory ? "bg-gray-400" : "bg-gray-300"}`}></span>
                     {feeHead.mandatory ? "Required" : "Optional"}
                   </span>
@@ -381,14 +381,14 @@ export default function FeeHeadsUnified({ embedded = false }) {
                   <div className="flex gap-1 justify-end">
                     <button
                       onClick={() => handleApplyToStudents(feeHead._id)}
-                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all"
+                      className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded transition-all"
                       title="Apply to students"
                     >
                       <Users size={14} />
                     </button>
                     <button
                       onClick={() => handleOpen(feeHead)}
-                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all"
+                      className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded transition-all"
                     >
                       <Edit size={14} />
                     </button>
@@ -398,7 +398,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
                       className={`p-1.5 rounded transition-all ${
                         deletingId === feeHead._id
                           ? 'text-gray-300 cursor-not-allowed'
-                          : 'text-gray-400 hover:text-red-600 hover:bg-gray-100'
+                          : 'text-gray-400 dark:text-zinc-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
                       }`}
                     >
                       {deletingId === feeHead._id ? (
@@ -415,10 +415,10 @@ export default function FeeHeadsUnified({ embedded = false }) {
         </Table>
 
         {/* Load more */}
-        <div ref={loaderRef} className="flex justify-center py-3 bg-gray-50 border-t border-gray-200">
+        <div ref={loaderRef} className="flex justify-center py-3 bg-gray-50 dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
           {isLoadingMore && <Spinner size="sm" />}
           {!hasMore && feeHeads.length > ITEMS_PER_LOAD && (
-            <span className="text-gray-400 text-xs">All fee heads loaded</span>
+            <span className="text-gray-400 dark:text-zinc-500 text-xs">All fee heads loaded</span>
           )}
         </div>
       </div>
@@ -428,15 +428,15 @@ export default function FeeHeadsUnified({ embedded = false }) {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="border-b border-gray-200 px-6 py-4">
-                <h3 className="text-base font-semibold text-gray-900">
+              <ModalHeader className="border-b border-gray-200 dark:border-zinc-800 px-6 py-4">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">
                   {editingFeeHead ? "Edit Fee Head" : "Add Fee Head"}
                 </h3>
               </ModalHeader>
               <ModalBody className="p-6 space-y-5">
                 {/* Name */}
                 <div>
-                  <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">
+                  <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-2 block">
                     Fee Head Name
                   </label>
                   <input
@@ -444,29 +444,29 @@ export default function FeeHeadsUnified({ embedded = false }) {
                     placeholder="e.g., Tuition Fee, Lab Fee, Transport..."
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:border-gray-400 dark:bg-zinc-950 dark:text-zinc-100"
                   />
                 </div>
 
                 {/* Amount and Frequency */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">
+                    <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-2 block">
                       Amount
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 text-sm">₹</span>
                       <input
                         type="number"
                         placeholder="0"
                         value={formData.amount || ""}
                         onChange={(e) => setFormData({ ...formData, amount: parseInt(e.target.value) || 0 })}
-                        className="w-full pl-7 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400"
+                        className="w-full pl-7 pr-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:border-gray-400 dark:bg-zinc-950 dark:text-zinc-100"
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">
+                    <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-2 block">
                       Frequency
                     </label>
                     <Select
@@ -474,7 +474,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
                       selectedKeys={[formData.frequency]}
                       onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
                       classNames={{
-                        trigger: "h-9 bg-white border-gray-200",
+                        trigger: "h-9 bg-white dark:bg-zinc-950 border-gray-200 dark:border-zinc-800",
                       }}
                     >
                       {frequencies.map(freq => (
@@ -486,14 +486,14 @@ export default function FeeHeadsUnified({ embedded = false }) {
 
                 {/* Category */}
                 <div>
-                  <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">
+                  <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-2 block">
                     Category
                   </label>
                   <Select
                     size="sm"
                     selectedKeys={[formData.category]}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    classNames={{ trigger: "h-9 bg-white border-gray-200" }}
+                    classNames={{ trigger: "h-9 bg-white dark:bg-zinc-950 border-gray-200 dark:border-zinc-800" }}
                   >
                     {categories.map(cat => (
                       <SelectItem key={cat}>{cat}</SelectItem>
@@ -503,7 +503,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
 
                 {/* Applicable Classes */}
                 <div>
-                  <label className="text-xs text-gray-500 uppercase tracking-wider mb-2 block">
+                  <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-2 block">
                     Applicable Classes
                   </label>
 
@@ -521,7 +521,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
                         className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-all ${
                           JSON.stringify(formData.applicableClasses) === JSON.stringify(CLASS_PRESETS[preset.key])
                             ? "bg-gray-900 text-white border-gray-900"
-                            : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                            : "bg-white dark:bg-zinc-950 text-gray-600 dark:text-zinc-400 border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-600"
                         }`}
                       >
                         {preset.label}
@@ -535,18 +535,18 @@ export default function FeeHeadsUnified({ embedded = false }) {
                     placeholder="Or enter range: 1-5 or 6,7,8,9"
                     value={classRangeInput}
                     onChange={(e) => handleClassRangeChange(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:border-gray-400 dark:bg-zinc-950 dark:text-zinc-100"
                   />
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
                     Selected: {formData.applicableClasses.length > 0 ? formData.applicableClasses.join(', ') : 'None'}
                   </p>
                 </div>
 
                 {/* Required Fee Toggle */}
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Required Fee</p>
-                    <p className="text-xs text-gray-500">Auto-applied to all students in selected classes</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Required Fee</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">Auto-applied to all students in selected classes</p>
                   </div>
                   <Switch
                     size="sm"
@@ -555,10 +555,10 @@ export default function FeeHeadsUnified({ embedded = false }) {
                   />
                 </div>
               </ModalBody>
-              <ModalFooter className="border-t border-gray-200 px-6 py-4 gap-3">
+              <ModalFooter className="border-t border-gray-200 dark:border-zinc-800 px-6 py-4 gap-3">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all"
                 >
                   Cancel
                 </button>

@@ -155,7 +155,7 @@ export default function AnnouncementAnalyticsModal({
       <ModalContent>
         <ModalHeader>
           <div className="w-full">
-            <h3 className="text-lg font-semibold">{analytics.title}</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{analytics.title}</h3>
             <p className="text-sm text-default-500 mt-1">{analytics.content}</p>
           </div>
         </ModalHeader>
@@ -202,7 +202,7 @@ export default function AnnouncementAnalyticsModal({
           <div className="space-y-3">
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium">Delivery Rate</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">Delivery Rate</span>
                 <span className="text-sm text-default-500">{calculateDeliveryRate()}%</span>
               </div>
               <Progress
@@ -214,7 +214,7 @@ export default function AnnouncementAnalyticsModal({
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium">Read Rate</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">Read Rate</span>
                 <span className="text-sm text-default-500">{calculateReadRate()}%</span>
               </div>
               <Progress
@@ -229,7 +229,7 @@ export default function AnnouncementAnalyticsModal({
 
           {/* Channel Breakdown */}
           <div>
-            <h4 className="text-sm font-semibold mb-3">Channel Breakdown</h4>
+            <h4 className="text-sm font-semibold mb-3 text-gray-900 dark:text-zinc-100">Channel Breakdown</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {analytics.channelBreakdown?.map((channel) => (
                 <Card key={channel.channel} size="sm">
@@ -256,7 +256,7 @@ export default function AnnouncementAnalyticsModal({
           {analytics.attachments && analytics.attachments.length > 0 && (
             <>
               <div>
-                <h4 className="text-sm font-semibold mb-3">Attachments</h4>
+                <h4 className="text-sm font-semibold mb-3 text-gray-900 dark:text-zinc-100">Attachments</h4>
                 <div className="space-y-2">
                   {analytics.attachments.map((attachment) => (
                     <Card key={attachment._id || attachment.name} size="sm">
@@ -268,7 +268,7 @@ export default function AnnouncementAnalyticsModal({
                         <Button
                           size="sm"
                           variant="flat"
-                          onPress={() => window.open(attachment.url, '_blank')}
+                          onPress={() => window.open(attachment.url, '_blank', 'noopener,noreferrer')}
                         >
                           Download
                         </Button>
@@ -286,7 +286,7 @@ export default function AnnouncementAnalyticsModal({
             <>
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-semibold">Failed Recipients</h4>
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Failed Recipients</h4>
                   <Button
                     size="sm"
                     color="primary"
@@ -310,7 +310,7 @@ export default function AnnouncementAnalyticsModal({
                               size="sm"
                             />
                             <div>
-                              <p className="text-sm font-medium">{recipient.name}</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{recipient.name}</p>
                               <p className="text-xs text-default-500">
                                 {recipient.email || recipient.phone}
                               </p>
@@ -339,11 +339,11 @@ export default function AnnouncementAnalyticsModal({
           {/* Sent By */}
           <div className="flex items-center justify-between text-sm">
             <span className="text-default-500">Sent by</span>
-            <span className="font-medium">{analytics.sentBy?.name || 'Unknown'}</span>
+            <span className="font-medium text-gray-900 dark:text-zinc-100">{analytics.sentBy?.name || 'Unknown'}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-default-500">Sent on</span>
-            <span className="font-medium">
+            <span className="font-medium text-gray-900 dark:text-zinc-100">
               {new Date(analytics.sentAt).toLocaleString()}
             </span>
           </div>

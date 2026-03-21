@@ -36,7 +36,7 @@ export default function ParentsStep({
           const index = formData.parents.findIndex((p) => p === parent);
           return (
             <ParentCard
-              key={idx}
+              key={`parent-${idx}`}
               parent={parent}
               index={index}
               idx={idx}
@@ -205,7 +205,7 @@ function GuardiansSection({ guardians, formData, updateParent, removeParent, add
       {guardians.map((guardian, idx) => {
         const index = formData.parents.findIndex((p) => p === guardian);
         return (
-          <div key={idx} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
+          <div key={`parent-${idx}`} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-default-700">Guardian {idx + 1}</span>
               <Button size="sm" variant="light" color="danger" onPress={() => removeParent(index)}>
@@ -267,7 +267,7 @@ function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, c
       )}
 
       {siblings.map((sibling, idx) => (
-        <div key={idx} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
+        <div key={`sibling-${idx}`} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-default-700">Sibling {idx + 1}</span>
             <Button size="sm" variant="light" color="danger" onPress={() => removeSibling(idx)}>
@@ -351,7 +351,7 @@ function TransportSection({ formData, updateField }) {
       <div className="grid grid-cols-2 gap-4">
         <div
           className={`cursor-pointer rounded-xl border-2 p-4 flex items-center gap-3 transition-all ${
-            formData.transportRequired ? "border-primary bg-primary-50/20" : "border-default-200 hover:border-default-300"
+            formData.transportRequired ? "border-primary bg-primary-50/20 dark:bg-primary-900/20" : "border-default-200 hover:border-default-300"
           }`}
           onClick={() => updateField("transportRequired", !formData.transportRequired)}
         >
@@ -363,7 +363,7 @@ function TransportSection({ formData, updateField }) {
             <Users size={20} />
           </div>
           <div>
-            <span className={`text-sm font-medium ${formData.transportRequired ? "text-primary-700" : "text-default-600"}`}>
+            <span className={`text-sm font-medium ${formData.transportRequired ? "text-primary-700 dark:text-primary-300" : "text-default-600"}`}>
               Transport Required
             </span>
             <p className="text-xs text-default-500">School bus facility</p>
@@ -371,7 +371,7 @@ function TransportSection({ formData, updateField }) {
         </div>
         <div
           className={`cursor-pointer rounded-xl border-2 p-4 flex items-center gap-3 transition-all ${
-            formData.hostelRequired ? "border-primary bg-primary-50/20" : "border-default-200 hover:border-default-300"
+            formData.hostelRequired ? "border-primary bg-primary-50/20 dark:bg-primary-900/20" : "border-default-200 hover:border-default-300"
           }`}
           onClick={() => updateField("hostelRequired", !formData.hostelRequired)}
         >
@@ -383,7 +383,7 @@ function TransportSection({ formData, updateField }) {
             <Users size={20} />
           </div>
           <div>
-            <span className={`text-sm font-medium ${formData.hostelRequired ? "text-primary-700" : "text-default-600"}`}>
+            <span className={`text-sm font-medium ${formData.hostelRequired ? "text-primary-700 dark:text-primary-300" : "text-default-600"}`}>
               Hostel Required
             </span>
             <p className="text-xs text-default-500">Boarding facility</p>

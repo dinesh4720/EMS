@@ -82,7 +82,7 @@ export default function PinnedMessages({ messages = [], onUnpin, onJumpToMessage
                 <div className="mt-2 flex flex-wrap gap-1">
                   {messageId.reactions.map((reaction, idx) => (
                     <span
-                      key={idx}
+                      key={`${messageId._id}-${reaction.emoji}`}
                       className="px-2 py-1 bg-default-100 rounded-full text-xs"
                     >
                       {reaction.emoji} {reaction.reactionCount || 1}

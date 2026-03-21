@@ -323,7 +323,7 @@ export default function PublicFormSubmission() {
         <div className="text-center space-y-4">
           <div className="relative">
             <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto"></div>
-            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-r-secondary rounded-full animate-spin mx-auto" style={{ animationDuration: '1.5s' }}></div>
+            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-r-secondary rounded-full animate-spin mx-auto [animation-duration:1.5s]"></div>
           </div>
           <p className="text-foreground/70 font-medium">Loading form...</p>
         </div>
@@ -422,7 +422,7 @@ export default function PublicFormSubmission() {
       {/* Background decorations */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-72 h-72 bg-secondary/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute bottom-20 right-10 w-72 h-72 bg-secondary/5 rounded-full blur-3xl animate-pulse [animation-delay:1s]"></div>
       </div>
 
       <div className="max-w-2xl mx-auto relative z-10">

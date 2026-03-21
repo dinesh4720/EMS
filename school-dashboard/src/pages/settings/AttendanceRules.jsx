@@ -13,6 +13,7 @@ export default function AttendanceRules() {
   });
   const [editingSection, setEditingSection] = useState(null);
   const [tempRules, setTempRules] = useState(rules); // Temporary state for editing
+  const [saving, setSaving] = useState(false);
 
   // Mock save with delay
   const handleSave = () => {
@@ -180,7 +181,7 @@ export default function AttendanceRules() {
               { role: "Admin", canMark: true, canEdit: true, canLock: true },
               { role: "Teacher", canMark: true, canEdit: false, canLock: false },
             ].map((item, i) => (
-              <div key={i} className="flex items-center justify-between p-4 bg-default-50 rounded-lg border border-default-200">
+              <div key={item.role} className="flex items-center justify-between p-4 bg-default-50 rounded-lg border border-default-200">
                 <span className="text-sm font-medium text-default-800">{item.role}</span>
                 <div className="flex gap-2 text-xs font-medium">
                   <span className={item.canMark ? "text-success-700 bg-success-50 px-2 py-1 rounded-md border border-success-200" : "text-default-400 opacity-50"}>

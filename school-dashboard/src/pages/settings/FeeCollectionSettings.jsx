@@ -189,7 +189,7 @@ export default function FeeCollectionSettings() {
                   }
                 }}
                 variant="bordered"
-                classNames={{ trigger: "bg-white" }}
+                classNames={{ trigger: "bg-white dark:bg-zinc-950" }}
               >
                 <SelectItem key="term" value="term">
                   <div className="flex flex-col">
@@ -445,7 +445,7 @@ export default function FeeCollectionSettings() {
                 key={mode.key}
                 className={`p-4 rounded-xl border cursor-pointer transition-all ${settings.paymentModes.includes(mode.key) 
                   ? 'bg-primary-50 border-primary-300' 
-                  : 'bg-white border-default-200 hover:border-default-300'}`}
+                  : 'bg-white dark:bg-zinc-950 border-default-200 hover:border-default-300'}`}
                 onClick={() => {
                   const updated = settings.paymentModes.includes(mode.key)
                     ? settings.paymentModes.filter(m => m !== mode.key)

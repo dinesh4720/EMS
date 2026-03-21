@@ -486,8 +486,8 @@ export default function StudentAcademics({
         <CardBody className="p-6">
           {subjectData.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {subjectData.map((subject, idx) => (
-                <div key={idx} className="p-4 rounded-lg border border-default-200 bg-white hover:shadow-md transition-all">
+              {subjectData.map((subject) => (
+                <div key={subject.subjectId || subject.subjectName} className="p-4 rounded-lg border border-default-200 bg-white dark:bg-zinc-900 hover:shadow-md dark:shadow-zinc-900/50 transition-all">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{getSubjectIcon(subject.subjectName)}</span>
@@ -547,8 +547,8 @@ export default function StudentAcademics({
           </CardHeader>
           <CardBody className="p-6">
             <div className="space-y-3">
-              {upcomingExams.map((exam, idx) => (
-                <div key={idx} className="flex items-center justify-between p-4 rounded-lg border border-default-200 bg-default-50">
+              {upcomingExams.map((exam) => (
+                <div key={exam._id} className="flex items-center justify-between p-4 rounded-lg border border-default-200 bg-default-50">
                   <div className="flex items-center gap-4">
                     <div className="p-2 bg-orange-100 text-orange-600 rounded-lg">
                       <FileText size={18} />
@@ -588,8 +588,8 @@ export default function StudentAcademics({
         <CardBody className="p-6">
           {results.filter(r => r.isPublished).length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {results.filter(r => r.isPublished).map((result, idx) => (
-                <Card key={idx} shadow="none" className="border border-default-200 hover:shadow-md transition-all">
+              {results.filter(r => r.isPublished).map((result) => (
+                <Card key={result._id} shadow="none" className="border border-default-200 hover:shadow-md dark:shadow-zinc-900/50 transition-all">
                   <CardBody className="p-4">
                     <div className="flex justify-between items-start mb-3">
                       <div>

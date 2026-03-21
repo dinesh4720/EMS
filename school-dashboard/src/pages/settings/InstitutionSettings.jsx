@@ -66,7 +66,7 @@ export default function InstitutionSettings() {
 
       <div className="space-y-8">
         {/* Section 1: Identity & Contact */}
-        <div className={`rounded-xl border transition-all duration-300 ${editingSection === 'identity' ? 'border-primary ring-1 ring-primary bg-white' : 'border-default-200 bg-white hover:border-default-300'}`}>
+        <div className={`rounded-xl border transition-all duration-300 ${editingSection === 'identity' ? 'border-primary ring-1 ring-primary bg-white dark:bg-zinc-950' : 'border-default-200 bg-white dark:bg-zinc-950 hover:border-default-300'}`}>
           <div className="p-6">
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center gap-3">
@@ -101,7 +101,7 @@ export default function InstitutionSettings() {
                     onValueChange={(v) => setLocalSettings({ ...localSettings, name: v })}
                     variant="bordered"
                     labelPlacement="outside"
-                    classNames={{ inputWrapper: "bg-white border-default-200" }}
+                    classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200" }}
                   />
                 </div>
                 <Input
@@ -110,7 +110,7 @@ export default function InstitutionSettings() {
                   onValueChange={(v) => setLocalSettings({ ...localSettings, udiseNo: v })}
                   variant="bordered"
                   labelPlacement="outside"
-                  classNames={{ inputWrapper: "bg-white border-default-200" }}
+                  classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200" }}
                 />
                 <Input
                   label="Affiliation No."
@@ -118,7 +118,7 @@ export default function InstitutionSettings() {
                   onValueChange={(v) => setLocalSettings({ ...localSettings, affiliationNo: v })}
                   variant="bordered"
                   labelPlacement="outside"
-                  classNames={{ inputWrapper: "bg-white border-default-200" }}
+                  classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200" }}
                 />
                 <Select
                   label="Board of Education"
@@ -126,7 +126,7 @@ export default function InstitutionSettings() {
                   onChange={(e) => setLocalSettings({ ...localSettings, boardOfEducation: e.target.value })}
                   variant="bordered"
                   labelPlacement="outside"
-                  classNames={{ trigger: "bg-white border-default-200" }}
+                  classNames={{ trigger: "bg-white dark:bg-zinc-950 border-default-200" }}
                 >
                   {boards.map(board => (
                     <SelectItem key={board} value={board}>{board}</SelectItem>
@@ -138,7 +138,7 @@ export default function InstitutionSettings() {
                   onValueChange={(v) => setLocalSettings({ ...localSettings, email: v })}
                   variant="bordered"
                   labelPlacement="outside"
-                  classNames={{ inputWrapper: "bg-white border-default-200" }}
+                  classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200" }}
                 />
                 <Input
                   label="Phone Number"
@@ -146,7 +146,7 @@ export default function InstitutionSettings() {
                   onValueChange={(v) => setLocalSettings({ ...localSettings, phone: v })}
                   variant="bordered"
                   labelPlacement="outside"
-                  classNames={{ inputWrapper: "bg-white border-default-200" }}
+                  classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200" }}
                 />
                 <div className="md:col-span-2 lg:col-span-3">
                   <Input
@@ -155,7 +155,7 @@ export default function InstitutionSettings() {
                     onValueChange={(v) => setLocalSettings({ ...localSettings, address: v })}
                     variant="bordered"
                     labelPlacement="outside"
-                    classNames={{ inputWrapper: "bg-white border-default-200" }}
+                    classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200" }}
                   />
                 </div>
               </div>
@@ -176,7 +176,7 @@ export default function InstitutionSettings() {
         </div>
 
         {/* Section 2: Branding */}
-        <div className={`rounded-xl border transition-all duration-300 ${editingSection === 'branding' ? 'border-primary ring-1 ring-primary bg-white' : 'border-default-200 bg-white hover:border-default-300'}`}>
+        <div className={`rounded-xl border transition-all duration-300 ${editingSection === 'branding' ? 'border-primary ring-1 ring-primary bg-white dark:bg-zinc-950' : 'border-default-200 bg-white dark:bg-zinc-950 hover:border-default-300'}`}>
           <div className="p-6">
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center gap-3">
@@ -205,7 +205,7 @@ export default function InstitutionSettings() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
               {/* Logo */}
               <div className="p-6 border border-default-200 rounded-xl bg-default-50 flex flex-col items-center text-center gap-4 group hover:border-primary/30 transition-colors">
-                <div className="w-32 h-32 rounded-full bg-white border border-default-200 flex items-center justify-center overflow-hidden relative shadow-sm">
+                <div className="w-32 h-32 rounded-full bg-white dark:bg-zinc-950 border border-default-200 flex items-center justify-center overflow-hidden relative shadow-sm">
                   {localSettings.logo ? (
                     <img src={localSettings.logo} alt="Logo" className="w-full h-full object-contain p-4" />
                   ) : (
@@ -226,7 +226,7 @@ export default function InstitutionSettings() {
 
               {/* Principal Sig */}
               <div className="p-6 border border-default-200 rounded-xl bg-default-50 flex flex-col items-center text-center gap-4 group hover:border-primary/30 transition-colors">
-                <div className="w-40 h-24 rounded-lg bg-white border border-default-200 flex items-center justify-center overflow-hidden relative shadow-sm">
+                <div className="w-40 h-24 rounded-lg bg-white dark:bg-zinc-950 border border-default-200 flex items-center justify-center overflow-hidden relative shadow-sm">
                   {localSettings.principalSignature ? (
                     <img src={localSettings.principalSignature} alt="Principal Signature" className="w-full h-full object-contain p-2" />
                   ) : (
@@ -247,7 +247,7 @@ export default function InstitutionSettings() {
 
               {/* Correspondent Sig */}
               <div className="p-6 border border-default-200 rounded-xl bg-default-50 flex flex-col items-center text-center gap-4 group hover:border-primary/30 transition-colors">
-                <div className="w-40 h-24 rounded-lg bg-white border border-default-200 flex items-center justify-center overflow-hidden relative shadow-sm">
+                <div className="w-40 h-24 rounded-lg bg-white dark:bg-zinc-950 border border-default-200 flex items-center justify-center overflow-hidden relative shadow-sm">
                   {localSettings.correspondentSignature ? (
                     <img src={localSettings.correspondentSignature} alt="Correspondent Signature" className="w-full h-full object-contain p-2" />
                   ) : (

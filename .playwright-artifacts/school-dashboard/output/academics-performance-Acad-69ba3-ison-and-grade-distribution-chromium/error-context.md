@@ -1,0 +1,322 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "Skip to main content" [ref=e4] [cursor=pointer]:
+      - /url: "#main-content"
+    - generic [ref=e5]:
+      - complementary [ref=e6]:
+        - generic [ref=e7]:
+          - generic [ref=e8]:
+            - generic [ref=e10]: S
+            - generic [ref=e11]: SchoolSync
+          - button "Collapse sidebar" [ref=e12] [cursor=pointer]:
+            - img [ref=e13]
+        - navigation "Main navigation" [ref=e16]:
+          - generic [ref=e17]:
+            - link "Dashboard" [ref=e18] [cursor=pointer]:
+              - /url: /
+              - generic [ref=e19]:
+                - img [ref=e20]
+                - generic [ref=e25]: Dashboard
+            - link "Calendar" [ref=e26] [cursor=pointer]:
+              - /url: /calendar
+              - generic [ref=e27]:
+                - img [ref=e28]
+                - generic [ref=e30]: Calendar
+          - generic [ref=e32]:
+            - generic [ref=e33]:
+              - button "School EMS" [expanded] [ref=e34] [cursor=pointer]:
+                - generic [ref=e35]:
+                  - img [ref=e36]
+                  - generic [ref=e40]: School EMS
+                - img [ref=e41]
+              - generic [ref=e45]:
+                - link "Students" [ref=e46] [cursor=pointer]:
+                  - /url: /students
+                  - generic [ref=e47]:
+                    - img [ref=e48]
+                    - generic [ref=e51]: Students
+                - link "Staff" [ref=e52] [cursor=pointer]:
+                  - /url: /staffs
+                  - generic [ref=e53]:
+                    - img [ref=e54]
+                    - generic [ref=e59]: Staff
+                - link "Classes" [ref=e60] [cursor=pointer]:
+                  - /url: /classes
+                  - generic [ref=e61]:
+                    - img [ref=e62]
+                    - generic [ref=e64]: Classes
+                - link "Enrollment Funnel" [ref=e65] [cursor=pointer]:
+                  - /url: /intake-forms/funnel
+                  - generic [ref=e66]:
+                    - img [ref=e67]
+                    - generic [ref=e69]: Enrollment Funnel
+                - link "Form Assignments" [ref=e70] [cursor=pointer]:
+                  - /url: /intake-forms/assignments
+                  - generic [ref=e71]:
+                    - img [ref=e72]
+                    - generic [ref=e74]: Form Assignments
+                - link "Form Submissions" [ref=e75] [cursor=pointer]:
+                  - /url: /intake-forms/submissions
+                  - generic [ref=e76]:
+                    - img [ref=e77]
+                    - generic [ref=e80]: Form Submissions
+                - link "Academics" [ref=e81] [cursor=pointer]:
+                  - /url: /academics
+                  - generic [ref=e82]:
+                    - img [ref=e83]
+                    - generic [ref=e86]: Academics
+                - link "Homework" [ref=e87] [cursor=pointer]:
+                  - /url: /homework
+                  - generic [ref=e88]:
+                    - img [ref=e89]
+                    - generic [ref=e91]: Homework
+                - link "Messaging" [ref=e92] [cursor=pointer]:
+                  - /url: /messaging
+                  - generic [ref=e93]:
+                    - img [ref=e94]
+                    - generic [ref=e96]: Messaging
+                - link "Fees" [ref=e97] [cursor=pointer]:
+                  - /url: /fees
+                  - generic [ref=e98]:
+                    - img [ref=e99]
+                    - generic [ref=e102]: Fees
+                - link "Transport" [ref=e103] [cursor=pointer]:
+                  - /url: /transport
+                  - generic [ref=e104]:
+                    - img [ref=e105]
+                    - generic [ref=e109]: Transport
+                - link "Hostel" [ref=e110] [cursor=pointer]:
+                  - /url: /hostel
+                  - generic [ref=e111]:
+                    - img [ref=e112]
+                    - generic [ref=e116]: Hostel
+                - link "Inventory" [ref=e117] [cursor=pointer]:
+                  - /url: /inventory
+                  - generic [ref=e118]:
+                    - img [ref=e119]
+                    - generic [ref=e123]: Inventory
+                - link "Library" [ref=e124] [cursor=pointer]:
+                  - /url: /library
+                  - generic [ref=e125]:
+                    - img [ref=e126]
+                    - generic [ref=e128]: Library
+                - link "Help Center" [ref=e129] [cursor=pointer]:
+                  - /url: /help
+                  - generic [ref=e130]:
+                    - img [ref=e131]
+                    - generic [ref=e138]: Help Center
+                - link "Reports Upgrade to unlock" [ref=e139] [cursor=pointer]:
+                  - /url: /reports
+                  - generic [ref=e140]:
+                    - img [ref=e141]
+                    - generic [ref=e144]: Reports
+                    - img "Upgrade to unlock" [ref=e145]
+                - link "Export Center Upgrade to unlock" [ref=e148] [cursor=pointer]:
+                  - /url: /reports/export
+                  - generic [ref=e149]:
+                    - img [ref=e150]
+                    - generic [ref=e153]: Export Center
+                    - img "Upgrade to unlock" [ref=e154]
+            - button "Front Desk" [ref=e158] [cursor=pointer]:
+              - generic [ref=e159]:
+                - img [ref=e160]
+                - generic [ref=e163]: Front Desk
+            - button "Analytics" [ref=e165] [cursor=pointer]:
+              - generic [ref=e166]:
+                - img [ref=e167]
+                - generic [ref=e169]: Analytics
+              - img [ref=e170]
+        - generic [ref=e173]:
+          - link "AI Assistant" [ref=e174] [cursor=pointer]:
+            - /url: /ai-assistant
+            - generic [ref=e175]:
+              - img [ref=e176]
+              - generic [ref=e178]: AI Assistant
+              - img [ref=e179]
+          - link "Settings" [ref=e182] [cursor=pointer]:
+            - /url: /settings
+            - generic [ref=e183]:
+              - img [ref=e184]
+              - generic [ref=e187]: Settings
+          - button "Switch to dark mode" [ref=e188] [cursor=pointer]:
+            - img [ref=e189]
+            - generic [ref=e191]: Dark Mode
+          - button "User menu for Dinesh Admin" [ref=e192] [cursor=pointer]:
+            - img "D" [ref=e194]
+            - generic [ref=e195]:
+              - generic [ref=e196]: Dinesh Admin
+              - generic [ref=e197]: admin
+      - generic [ref=e198]:
+        - banner [ref=e199]:
+          - navigation "Breadcrumb" [ref=e201]:
+            - list [ref=e202]:
+              - listitem [ref=e203]:
+                - link "Academics" [ref=e204] [cursor=pointer]:
+                  - /url: /academics
+          - button "Open global search (Ctrl+K)" [ref=e206] [cursor=pointer]:
+            - img [ref=e207]
+            - generic [ref=e210]: Search...
+            - generic [ref=e211]:
+              - img [ref=e212]
+              - generic [ref=e214]: K
+          - generic [ref=e215]:
+            - button "What's New" [ref=e216] [cursor=pointer]:
+              - img [ref=e217]
+            - button "Notifications" [ref=e219] [cursor=pointer]:
+              - img [ref=e220]
+            - button "Messages" [ref=e223] [cursor=pointer]:
+              - img [ref=e224]
+            - button "Open AI Assistant" [ref=e227] [cursor=pointer]:
+              - img [ref=e228]
+        - main [ref=e231]:
+          - generic [ref=e233]:
+            - navigation "Breadcrumbs" [ref=e235]:
+              - list [ref=e236]:
+                - listitem [ref=e237]:
+                  - link "Home" [ref=e238] [cursor=pointer]:
+                    - img [ref=e239]
+                    - text: Home
+                  - img [ref=e243]
+                - listitem [ref=e245]:
+                  - link "Academics" [disabled] [ref=e246]
+            - generic [ref=e247]:
+              - tablist [ref=e249]:
+                - tab "Dashboard" [selected] [ref=e250] [cursor=pointer]:
+                  - generic [ref=e251]:
+                    - img [ref=e252]
+                    - generic [ref=e254]: Dashboard
+                - tab "Exams" [ref=e255] [cursor=pointer]:
+                  - generic [ref=e256]:
+                    - img [ref=e257]
+                    - generic [ref=e260]: Exams
+                - tab "Subjects" [ref=e261] [cursor=pointer]:
+                  - generic [ref=e262]:
+                    - img [ref=e263]
+                    - generic [ref=e265]: Subjects
+              - generic [ref=e267]:
+                - generic [ref=e268]:
+                  - heading "Academic Dashboard" [level=1] [ref=e269]
+                  - link "Help documentation" [ref=e270] [cursor=pointer]:
+                    - /url: https://docs.school-ems.com/guides/academics
+                    - img [ref=e271]
+                - paragraph [ref=e274]: Overview of academic performance and analytics
+              - generic [ref=e277]:
+                - generic [ref=e278]:
+                  - button "Filters" [ref=e279] [cursor=pointer]:
+                    - img [ref=e280]
+                    - generic [ref=e281]: Filters
+                  - button "Export Report" [ref=e282] [cursor=pointer]:
+                    - img [ref=e283]
+                    - text: Export Report
+                - generic [ref=e286]:
+                  - generic [ref=e287]:
+                    - img [ref=e290]
+                    - generic [ref=e293]:
+                      - heading "0" [level=3] [ref=e294]
+                      - paragraph [ref=e295]: Total Exams
+                  - generic [ref=e296]:
+                    - img [ref=e299]
+                    - generic [ref=e301]:
+                      - heading "0" [level=3] [ref=e302]
+                      - paragraph [ref=e303]: Scheduled
+                  - generic [ref=e304]:
+                    - img [ref=e307]
+                    - generic [ref=e313]:
+                      - heading "0" [level=3] [ref=e314]
+                      - paragraph [ref=e315]: Completed
+                  - generic [ref=e316]:
+                    - img [ref=e319]
+                    - generic [ref=e322]:
+                      - heading "0" [level=3] [ref=e323]
+                      - paragraph [ref=e324]: Published
+                  - generic [ref=e325]:
+                    - img [ref=e328]
+                    - generic [ref=e331]:
+                      - heading "--" [level=3] [ref=e332]
+                      - paragraph [ref=e333]: Avg Score
+                  - generic [ref=e334]:
+                    - img [ref=e337]
+                    - generic [ref=e342]:
+                      - heading "--" [level=3] [ref=e343]
+                      - paragraph [ref=e344]: Pass Rate
+                - generic [ref=e345]:
+                  - generic [ref=e346]:
+                    - generic [ref=e348]:
+                      - img [ref=e350]
+                      - heading "Class-wise Performance" [level=3] [ref=e352]
+                    - generic [ref=e354]: No data available
+                  - generic [ref=e355]:
+                    - generic [ref=e357]:
+                      - img [ref=e359]
+                      - heading "Subject Averages" [level=3] [ref=e361]
+                    - generic [ref=e363]: No data available
+                - generic [ref=e364]:
+                  - generic [ref=e365]:
+                    - generic [ref=e367]:
+                      - img [ref=e369]
+                      - heading "Top Performers" [level=3] [ref=e375]
+                    - generic [ref=e378]:
+                      - img [ref=e379]
+                      - paragraph [ref=e385]: No data available
+                  - generic [ref=e386]:
+                    - generic [ref=e388]:
+                      - img [ref=e390]
+                      - heading "Grade Distribution" [level=3] [ref=e393]
+                    - generic [ref=e395]: No data available
+                  - generic [ref=e396]:
+                    - generic [ref=e398]:
+                      - img [ref=e400]
+                      - heading "Quick Actions" [level=3] [ref=e403]
+                    - generic [ref=e405]:
+                      - generic [ref=e407] [cursor=pointer]:
+                        - generic [ref=e408]:
+                          - generic [ref=e409]: Create New Exam
+                          - generic [ref=e410]: Schedule a new exam for any class
+                        - img [ref=e411]
+                      - generic [ref=e414] [cursor=pointer]:
+                        - generic [ref=e415]:
+                          - generic [ref=e416]: Enter Results
+                          - generic [ref=e417]: Enter marks for completed exams
+                        - img [ref=e418]
+                      - generic [ref=e421] [cursor=pointer]:
+                        - generic [ref=e422]:
+                          - generic [ref=e423]: View Results
+                          - generic [ref=e424]: Review and publish results
+                        - img [ref=e425]
+                - generic [ref=e427]:
+                  - generic [ref=e428]:
+                    - generic [ref=e429]:
+                      - img [ref=e431]
+                      - heading "Recent Exams" [level=3] [ref=e433]
+                    - button "View All" [ref=e434] [cursor=pointer]:
+                      - text: View All
+                      - img [ref=e435]
+                  - generic [ref=e438]:
+                    - img [ref=e439]
+                    - paragraph [ref=e442]: No exams created yet
+                    - button "Create First Exam" [ref=e443] [cursor=pointer]
+    - dialog "Cookie consent" [ref=e444]:
+      - generic [ref=e445]:
+        - generic [ref=e446]:
+          - generic [ref=e447]:
+            - img [ref=e449]
+            - generic [ref=e451]:
+              - paragraph [ref=e452]: We use cookies
+              - paragraph [ref=e453]:
+                - text: We use cookies to enhance your experience. You can choose which categories to allow.
+                - link "Privacy Policy" [ref=e454] [cursor=pointer]:
+                  - /url: /privacy
+          - button "Customise preferences" [ref=e455] [cursor=pointer]:
+            - img [ref=e456]
+            - text: Customise preferences
+        - generic [ref=e458]:
+          - button "Reject non-essential" [ref=e459] [cursor=pointer]
+          - button "Accept all" [ref=e460] [cursor=pointer]
+  - generic [ref=e461]:
+    - img [ref=e463]
+    - button "Open Tanstack query devtools" [ref=e511] [cursor=pointer]:
+      - img [ref=e512]
+```

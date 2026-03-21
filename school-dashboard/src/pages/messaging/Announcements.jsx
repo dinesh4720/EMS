@@ -48,32 +48,32 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
       value: "24",
       description: "This month",
       icon: Send,
-      color: "bg-teal-100 text-teal-600"
+      color: "bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400"
     },
     {
       label: "Delivered",
       value: "1,234",
       description: "Total recipients",
       icon: Check,
-      color: "bg-gray-100 text-gray-600"
+      color: "bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-300"
     },
     {
       label: "Scheduled",
       value: "3",
       description: "Pending",
       icon: Clock,
-      color: "bg-amber-100 text-amber-600"
+      color: "bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400"
     },
   ];
 
   return (
-    <div className="space-y-6 bg-white">
+    <div className="space-y-6 bg-white dark:bg-zinc-950">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className="bg-white rounded-lg border border-gray-200 p-5"
+            className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 p-5"
           >
             <div className="flex items-start gap-4">
               {/* Icon Container */}
@@ -83,13 +83,13 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
 
               {/* Content */}
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                   {stat.label}
                 </p>
-                <p className="text-2xl font-semibold text-gray-800 mt-1">
+                <p className="text-2xl font-semibold text-gray-800 dark:text-zinc-100 mt-1">
                   {stat.value}
                 </p>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-xs text-gray-400 dark:text-zinc-500 mt-0.5">
                   {stat.description}
                 </p>
               </div>
@@ -99,15 +99,15 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
       </div>
 
       {/* Announcements List */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-              <Send size={16} className="text-gray-600" />
+            <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+              <Send size={16} className="text-gray-600 dark:text-zinc-400" />
             </div>
             <div>
-              <h3 className="font-medium text-gray-800 text-sm">All Announcements</h3>
-              <p className="text-xs text-gray-500">Manage your announcements</p>
+              <h3 className="font-medium text-gray-800 dark:text-zinc-100 text-sm">All Announcements</h3>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Manage your announcements</p>
             </div>
           </div>
           <button

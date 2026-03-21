@@ -13,13 +13,7 @@ import { useAiAssistant } from '../components/AiAssistant/AiAssistantPanel';
 
 export default function AiAssistantPage() {
     // Get closePanel from context if available (when used in panel), otherwise undefined (when used as page)
-    const aiContext = useAiAssistant ? (() => {
-        try {
-            return useAiAssistant();
-        } catch {
-            return null;
-        }
-    })() : null;
+    const aiContext = useAiAssistant();
     
     const closePanel = aiContext?.closePanel;
     const [messages, setMessages] = useState([]);
@@ -206,7 +200,7 @@ export default function AiAssistantPage() {
     };
 
     return (
-        <div className="flex h-full bg-white dark:bg-zinc-950 text-gray-800 dark:text-gray-100 font-sans transition-colors duration-300 overflow-hidden">
+        <div className="flex h-full bg-white dark:bg-zinc-950 text-gray-800 dark:text-zinc-100 font-sans transition-colors duration-300 overflow-hidden">
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col items-center relative overflow-hidden">
@@ -296,7 +290,7 @@ export default function AiAssistantPage() {
                             </h2>
 
                             {/* Center Input Box (Initial Position) */}
-                            <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-[2rem] shadow-xl p-3 md:p-4 relative group focus-within:border-purple-500/30 focus-within:ring-4 focus-within:ring-purple-500/10 transition-all duration-300 z-20">
+                            <div className="w-full max-w-2xl bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-[2rem] shadow-xl dark:shadow-zinc-900/50 p-3 md:p-4 relative group focus-within:border-purple-500/30 focus-within:ring-4 focus-within:ring-purple-500/10 transition-all duration-300 z-20">
                                 <textarea
                                     ref={inputRef}
                                     value={input}
@@ -308,9 +302,8 @@ export default function AiAssistantPage() {
                                     onKeyDown={handleKeyDown}
                                     placeholder={isTranscribing ? "Transcribing..." : isRecording ? "Listening..." : "Ask about students, staff, classes, or school work..."}
                                     disabled={isRecording || isTranscribing}
-                                    className="w-full bg-transparent border-none outline-none focus:ring-0 text-base md:text-lg placeholder-gray-400 dark:placeholder-gray-500 dark:text-gray-100 resize-none max-h-32 py-2 px-2 custom-scrollbar"
+                                    className="w-full bg-transparent border-none outline-none focus:ring-0 text-base md:text-lg placeholder-gray-400 dark:placeholder-gray-500 dark:text-zinc-100 resize-none max-h-32 py-2 px-2 custom-scrollbar min-h-[48px]"
                                     rows={1}
-                                    style={{ minHeight: '48px' }}
                                 />
 
                                 <div className="flex justify-between items-center mt-1 px-1">
@@ -351,12 +344,12 @@ export default function AiAssistantPage() {
                             <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-3 w-full max-w-4xl mt-6 opacity-0 animate-[fade-in_0.5s_ease-out_0.5s_forwards] z-20">
                                 {prebuiltPrompts.map((item, idx) => (
                                     <button
-                                        key={idx}
+                                        key={item.label}
                                         onClick={() => handlePromptClick(item.prompt)}
-                                        className="text-left p-3 rounded-2xl border border-gray-100 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/60 hover:bg-white dark:hover:bg-zinc-800 hover:border-purple-200/50 hover:shadow-md transition-all group h-20 flex flex-col justify-between backdrop-blur-sm"
+                                        className="text-left p-3 rounded-2xl border border-gray-100 dark:border-zinc-800 bg-gray-100 dark:bg-zinc-800 hover:bg-white dark:hover:bg-zinc-700 hover:border-purple-200/50 hover:shadow-md dark:hover:shadow-zinc-900/50 transition-all group h-20 flex flex-col justify-between"
                                     >
                                         <div className="text-sm">
-                                            <div className="font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors line-clamp-1">{item.label}</div>
+                                            <div className="font-medium text-gray-700 dark:text-zinc-300 group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors line-clamp-1">{item.label}</div>
                                             <div className="text-gray-400 dark:text-gray-500 text-xs mt-0.5 line-clamp-1">{item.prompt}</div>
                                         </div>
                                         <div className="self-end opacity-50 text-xl group-hover:opacity-100 group-hover:scale-110 transition-all">
@@ -432,7 +425,7 @@ export default function AiAssistantPage() {
 
                             {messages.map((msg, idx) => (
                                 <div
-                                    key={idx}
+                                    key={`msg-${idx}`}
                                     className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                 >
                                     {msg.role === 'assistant' && (
@@ -447,9 +440,9 @@ export default function AiAssistantPage() {
                                             {msg.role === 'user' ? 'You' : 'School AI Assistant'}
                                         </div>
 
-                                        <div className={`whitespace-pre-wrap text-[15px] leading-relaxed p-0 rounded-2xl ${msg.role === 'user'
-                                            ? 'bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-4 py-2 inline-block rounded-br-sm'
-                                            : 'text-gray-800 dark:text-gray-200'
+                                        <div className={`whitespace-pre-wrap text-[15px] leading-relaxed rounded-2xl ${msg.role === 'user'
+                                            ? 'bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 px-4 py-2 inline-block rounded-br-sm'
+                                            : 'bg-gray-50 dark:bg-zinc-900 text-gray-800 dark:text-zinc-200 px-4 py-3 rounded-bl-sm'
                                             }`}>
                                             {msg.content}
                                         </div>
@@ -468,7 +461,7 @@ export default function AiAssistantPage() {
                                     <div className="w-8 h-8 rounded-full border border-gray-200 dark:border-zinc-700 flex items-center justify-center flex-shrink-0 bg-white dark:bg-zinc-900 animate-pulse">
                                         <Sparkles size={16} className="text-gray-400" />
                                     </div>
-                                    <div className="flex items-center gap-2 text-gray-400 text-sm">
+                                    <div className="flex items-center gap-2 text-gray-400 dark:text-zinc-500 text-sm">
                                         Thinking...
                                     </div>
                                 </div>
@@ -481,7 +474,7 @@ export default function AiAssistantPage() {
                 {/* Bottom Input Area (Visible only when chat is active) */}
                 {hasInteracted && (
                     <div className="w-full max-w-3xl px-4 pb-6 pt-2">
-                        <div className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-[1.5rem] shadow-lg p-3 relative group focus-within:border-purple-500/30 focus-within:ring-2 focus-within:ring-purple-500/10 transition-all duration-300">
+                        <div className="w-full bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-[1.5rem] shadow-lg dark:shadow-zinc-900/50 p-3 relative group focus-within:border-purple-500/30 focus-within:ring-2 focus-within:ring-purple-500/10 transition-all duration-300">
                             <textarea
                                 ref={inputRef}
                                 value={input}
@@ -493,9 +486,8 @@ export default function AiAssistantPage() {
                                 onKeyDown={handleKeyDown}
                                 placeholder={isTranscribing ? "Transcribing..." : isRecording ? "Listening..." : "Message the school AI assistant..."}
                                 disabled={isRecording || isTranscribing}
-                                className="w-full bg-transparent border-none outline-none focus:ring-0 text-base placeholder-gray-400 dark:placeholder-gray-500 dark:text-gray-100 resize-none max-h-48 py-2 px-2 custom-scrollbar"
+                                className="w-full bg-transparent border-none outline-none focus:ring-0 text-base placeholder-gray-400 dark:placeholder-gray-500 dark:text-zinc-100 resize-none max-h-48 py-2 px-2 custom-scrollbar min-h-[44px]"
                                 rows={1}
-                                style={{ minHeight: '44px' }}
                             />
                             <div className="flex justify-between items-center mt-1 px-1">
                                 <div className="flex items-center gap-2">

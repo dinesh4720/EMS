@@ -11,14 +11,21 @@ class SocketService {
     this.maxReconnectAttempts = 5;
   }
 
-  connect(userId, userType = 'parent') {
+  connect(token) {
     if (this.socket?.connected) {
       // Already connected, just re-authenticate if needed
       if (!this.authenticated) {
-        this.socket.emit('authenticate', { userId, userType });
+        this.socket.emit('authenticate', { token });
       }
       return;
     }
+
+    if (!token) {
+      console.error('Socket connect called without auth token');
+      return;
+    }
+
+    this._token = token;
 
     try {
       this.socket = io(CONFIG.SOCKET_URL, {
@@ -30,30 +37,29 @@ class SocketService {
         reconnectionDelayMax: 5000,
       });
 
-      this.setupEventHandlers(userId, userType);
+      this.setupEventHandlers();
     } catch (error) {
       console.error('Error connecting to socket:', error);
     }
   }
 
-  setupEventHandlers(userId, userType) {
+  setupEventHandlers() {
     this.socket.on('connect', () => {
-      console.log('Socket connected');
       this.connected = true;
       this.reconnectAttempts = 0;
-      // Authenticate with backend (joins user room + student rooms for parents)
-      this.socket.emit('authenticate', { userId, userType });
+      // Authenticate with JWT token
+      this.socket.emit('authenticate', { token: this._token });
       this.emitLocal('connection_status', { connected: true });
     });
 
     this.socket.on('authenticated', (data) => {
-      console.log('Socket authenticated');
       this.authenticated = true;
+      this.userId = data.userId;
+      this.userType = data.userType;
       this.emitLocal('authenticated', data);
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('Socket disconnected:', reason);
       this.connected = false;
       this.authenticated = false;
       this.emitLocal('connection_status', { connected: false, reason });
@@ -66,14 +72,12 @@ class SocketService {
     });
 
     this.socket.on('reconnect', (attemptNumber) => {
-      console.log('Socket reconnected after', attemptNumber, 'attempts');
       this.connected = true;
       this.reconnectAttempts = 0;
       this.emitLocal('reconnected', { attemptNumber });
     });
 
     this.socket.on('reconnect_failed', () => {
-      console.log('Socket reconnection failed');
       this.emitLocal('reconnect_failed');
     });
   }

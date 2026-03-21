@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardBody, CardHeader } from "@heroui/react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
+import { useChartTheme } from '../utils/chartTheme';
 
 const attendanceData = [
     { name: 'Mon', staff: 95, students: 88 },
@@ -18,6 +19,7 @@ const financeData = [
 ];
 
 export default function DashboardCharts() {
+    const chart = useChartTheme();
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Chart 1: Attendance Trends */}
@@ -42,12 +44,12 @@ export default function DashboardCharts() {
                                         <stop offset="95%" stopColor="#ec4899" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--heroui-default-200)" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#a1a1aa', fontSize: 12 }} dy={10} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#a1a1aa', fontSize: 12 }} />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chart.grid} />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: chart.tick, fontSize: 12 }} dy={10} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: chart.tick, fontSize: 12 }} />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: 'var(--heroui-content1)', borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                    itemStyle={{ color: 'var(--heroui-foreground)' }}
+                                    contentStyle={chart.tooltipStyle}
+                                    itemStyle={chart.tooltipItemStyle}
                                 />
                                 <Area type="monotone" dataKey="students" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorStudents)" />
                                 <Area type="monotone" dataKey="staff" stroke="#ec4899" strokeWidth={3} fillOpacity={1} fill="url(#colorStaff)" />
@@ -69,15 +71,15 @@ export default function DashboardCharts() {
                     <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={financeData} barSize={40}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--heroui-default-200)" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#a1a1aa', fontSize: 12 }} dy={10} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#a1a1aa', fontSize: 12 }} />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chart.grid} />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: chart.tick, fontSize: 12 }} dy={10} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: chart.tick, fontSize: 12 }} />
                                 <Tooltip
-                                    cursor={{ fill: 'var(--heroui-default-100)', opacity: 0.5 }}
-                                    contentStyle={{ backgroundColor: 'var(--heroui-content1)', borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                    itemStyle={{ color: 'var(--heroui-foreground)' }}
+                                    cursor={{ fill: chart.cursorFill }}
+                                    contentStyle={chart.tooltipStyle}
+                                    itemStyle={chart.tooltipItemStyle}
                                 />
-                                <Legend iconType="circle" />
+                                <Legend iconType="circle" wrapperStyle={{ color: chart.legendColor }} />
                                 <Bar dataKey="collected" name="Collected (Lakhs)" fill="#10b981" radius={[4, 4, 0, 0]} />
                                 <Bar dataKey="pending" name="Pending (Lakhs)" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                             </BarChart>

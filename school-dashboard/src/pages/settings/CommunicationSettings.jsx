@@ -128,7 +128,7 @@ export default function CommunicationSettings() {
 
       <div className="space-y-8">
         {/* SMS Section */}
-        <section className={`rounded-xl border transition-all duration-300 ${editingSection === 'sms' ? 'border-primary ring-1 ring-primary bg-white' : 'border-default-200 bg-white'}`}>
+        <section className={`rounded-xl border transition-all duration-300 ${editingSection === 'sms' ? 'border-primary ring-1 ring-primary bg-white dark:bg-zinc-950' : 'border-default-200 dark:border-zinc-800 bg-white dark:bg-zinc-950'}`}>
           <div className="p-6">
             <SectionHeader
               title="SMS Configuration"
@@ -143,13 +143,13 @@ export default function CommunicationSettings() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 px-2 animate-fade-in">
                 {editingSection === 'sms' ? (
                   <>
-                    <Select label="SMS Provider" defaultSelectedKeys={["twilio"]} variant="bordered" labelPlacement="outside" classNames={{ trigger: "bg-white border-default-200" }}>
+                    <Select label="SMS Provider" defaultSelectedKeys={["twilio"]} variant="bordered" labelPlacement="outside" classNames={{ trigger: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}>
                       <SelectItem key="twilio">Twilio</SelectItem>
                       <SelectItem key="msg91">MSG91</SelectItem>
                       <SelectItem key="textlocal">TextLocal</SelectItem>
                     </Select>
-                    <Input label="Sender ID" placeholder="SCHOOL" defaultValue="SCHOOL" variant="bordered" labelPlacement="outside" classNames={{ inputWrapper: "bg-white border-default-200" }} />
-                    <Input label="API Key" type="password" defaultValue="****************" placeholder="Enter API key" variant="bordered" labelPlacement="outside" classNames={{ inputWrapper: "bg-white border-default-200" }} className="md:col-span-2" />
+                    <Input label="Sender ID" placeholder="SCHOOL" defaultValue="SCHOOL" variant="bordered" labelPlacement="outside" classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }} />
+                    <Input label="API Key" type="password" defaultValue="****************" placeholder="Enter API key" variant="bordered" labelPlacement="outside" classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }} className="md:col-span-2" />
                   </>
                 ) : (
                   <>
@@ -168,12 +168,12 @@ export default function CommunicationSettings() {
                   </>
                 )}
 
-                <div className="md:col-span-2 p-4 bg-success-50 rounded-xl border border-success-200 flex justify-between items-center mt-2">
+                <div className="md:col-span-2 p-4 bg-success-50 dark:bg-success-950/30 rounded-xl border border-success-200 dark:border-success-800 flex justify-between items-center mt-2">
                   <div>
-                    <p className="text-sm font-semibold text-success-800">Connection Status: Active</p>
-                    <p className="text-xs text-success-600">Balance: 5,000 SMS Credits</p>
+                    <p className="text-sm font-semibold text-success-800 dark:text-success-200">Connection Status: Active</p>
+                    <p className="text-xs text-success-600 dark:text-success-400">Balance: 5,000 SMS Credits</p>
                   </div>
-                  <button className="px-4 py-2 bg-white text-success-700 rounded-lg border border-success-200 text-xs font-medium hover:bg-success-50">Test SMS</button>
+                  <button className="px-4 py-2 bg-white dark:bg-zinc-900 text-success-700 dark:text-success-300 rounded-lg border border-success-200 dark:border-success-800 text-xs font-medium hover:bg-success-50 dark:hover:bg-success-950/50">Test SMS</button>
                 </div>
               </div>
             )}
@@ -186,7 +186,7 @@ export default function CommunicationSettings() {
         </section>
 
         {/* Email Section */}
-        <section className={`rounded-xl border transition-all duration-300 ${editingSection === 'email' ? 'border-primary ring-1 ring-primary bg-white' : 'border-default-200 bg-white'}`}>
+        <section className={`rounded-xl border transition-all duration-300 ${editingSection === 'email' ? 'border-primary ring-1 ring-primary bg-white dark:bg-zinc-950' : 'border-default-200 dark:border-zinc-800 bg-white dark:bg-zinc-950'}`}>
           <div className="p-6">
             <SectionHeader
               title="Email Configuration"
@@ -201,15 +201,15 @@ export default function CommunicationSettings() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 px-2 animate-fade-in">
                 {editingSection === 'email' ? (
                   <>
-                    <Select label="Email Provider" defaultSelectedKeys={["smtp"]} variant="bordered" labelPlacement="outside" classNames={{ trigger: "bg-white border-default-200" }} className="md:col-span-2">
+                    <Select label="Email Provider" defaultSelectedKeys={["smtp"]} variant="bordered" labelPlacement="outside" classNames={{ trigger: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }} className="md:col-span-2">
                       <SelectItem key="smtp">SMTP</SelectItem>
                       <SelectItem key="sendgrid">SendGrid</SelectItem>
                       <SelectItem key="mailgun">Mailgun</SelectItem>
                     </Select>
-                    <Input label="SMTP Host" placeholder="smtp.gmail.com" defaultValue="smtp.gmail.com" variant="bordered" labelPlacement="outside" classNames={{ inputWrapper: "bg-white border-default-200" }} />
-                    <Input label="Port" placeholder="587" defaultValue="587" variant="bordered" labelPlacement="outside" classNames={{ inputWrapper: "bg-white border-default-200" }} />
-                    <Input label="Username/Email" placeholder="noreply@school.com" defaultValue="noreply@school.com" variant="bordered" labelPlacement="outside" classNames={{ inputWrapper: "bg-white border-default-200" }} />
-                    <Input label="Password" type="password" placeholder="Enter password" defaultValue="password" variant="bordered" labelPlacement="outside" classNames={{ inputWrapper: "bg-white border-default-200" }} />
+                    <Input label="SMTP Host" placeholder="smtp.gmail.com" defaultValue="smtp.gmail.com" variant="bordered" labelPlacement="outside" classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }} />
+                    <Input label="Port" placeholder="587" defaultValue="587" variant="bordered" labelPlacement="outside" classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }} />
+                    <Input label="Username/Email" placeholder="noreply@school.com" defaultValue="noreply@school.com" variant="bordered" labelPlacement="outside" classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }} />
+                    <Input label="Password" type="password" placeholder="Enter password" defaultValue="password" variant="bordered" labelPlacement="outside" classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }} />
                   </>
                 ) : (
                   <>
@@ -237,7 +237,7 @@ export default function CommunicationSettings() {
                 )}
 
                 <div className="md:col-span-2 flex justify-end mt-2">
-                  <button className="px-4 py-2 bg-primary-50 text-primary-700 rounded-lg border border-primary-100 text-sm font-medium hover:bg-primary-100">Send Test Email</button>
+                  <button className="px-4 py-2 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300 rounded-lg border border-primary-100 dark:border-primary-800 text-sm font-medium hover:bg-primary-100 dark:hover:bg-primary-950/50">Send Test Email</button>
                 </div>
               </div>
             )}
@@ -269,16 +269,16 @@ export default function CommunicationSettings() {
             </button>
           </div>
 
-          <div className="bg-white border border-default-200 rounded-xl overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-zinc-950 border border-default-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm dark:shadow-zinc-900/50">
             {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-default-50/50 border-b border-default-200 py-4 px-6">
+            <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-default-50/50 border-b border-default-200 dark:border-zinc-800 py-4 px-6">
               <div className="w-full sm:w-auto">
-                <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-white rounded-lg border border-default-200 hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
+                <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-white dark:bg-zinc-900 rounded-lg border border-default-200 dark:border-zinc-800 hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
                   <Search size={16} className="text-default-400" />
                   <input
                     type="text"
                     placeholder="Search templates..."
-                    className="flex-1 bg-transparent outline-none text-sm"
+                    className="flex-1 bg-transparent outline-none text-sm text-default-900"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -299,7 +299,7 @@ export default function CommunicationSettings() {
                   className="w-full sm:w-[140px]"
                   variant="bordered"
                   classNames={{
-                    trigger: "bg-white border-default-200",
+                    trigger: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800",
                   }}
                 >
                   <SelectItem key="all">All Types</SelectItem>
@@ -355,7 +355,7 @@ export default function CommunicationSettings() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <button className="p-2 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-primary-50 transition-all duration-200 cursor-pointer text-default-400 hover:text-primary">
+                        <button className="p-2 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-primary-50 dark:hover:bg-primary-950/30 transition-all duration-200 cursor-pointer text-default-400 hover:text-primary">
                           <Edit size={16} />
                         </button>
                       </div>
@@ -375,7 +375,7 @@ export default function CommunicationSettings() {
           </div>
 
           {/* Variables Helper */}
-          <div className="mt-8 p-6 bg-default-50 rounded-xl border border-default-200 border-dashed">
+          <div className="mt-8 p-6 bg-default-50 dark:bg-zinc-900/50 rounded-xl border border-default-200 dark:border-zinc-800 border-dashed">
             <h4 className="text-sm font-semibold text-default-700 mb-4 flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-primary/50"></span>
               Available Variables
@@ -383,11 +383,11 @@ export default function CommunicationSettings() {
             <div className="flex flex-wrap gap-2 mb-3">
               {["{student}", "{parent}", "{class}", "{amount}", "{date}", "{time}", "{teacher}", "{school}"].map((v, i) => (
                 <Chip
-                  key={i}
+                  key={`variable-${v}`}
                   size="sm"
                   variant="flat"
-                  className="cursor-pointer hover:bg-white hover:shadow-sm transition-all border border-transparent hover:border-default-200/50"
-                  classNames={{ base: "h-7 bg-white shadow-sm border border-default-200", content: "text-xs font-mono font-medium text-default-700" }}
+                  className="cursor-pointer hover:bg-white dark:hover:bg-zinc-800 hover:shadow-sm transition-all border border-transparent hover:border-default-200/50"
+                  classNames={{ base: "h-7 bg-white dark:bg-zinc-800 shadow-sm dark:shadow-zinc-900/50 border border-default-200 dark:border-zinc-700", content: "text-xs font-mono font-medium text-default-700" }}
                 >
                   {v}
                 </Chip>

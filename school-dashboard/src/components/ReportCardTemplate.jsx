@@ -77,7 +77,7 @@ const ReportCardTemplate = ({
   const overallPercentage = totalMaxMarks > 0 ? (totalMarksObtained / totalMaxMarks * 100) : 0;
 
   return (
-    <div style={containerStyle} className={forPrint ? '' : 'max-w-4xl mx-auto'}>
+    <div style={containerStyle} className={forPrint ? 'print-content' : 'print-content max-w-4xl mx-auto'}>
       {/* ========== PAGE 1 ========== */}
       
       {/* School Header */}
@@ -227,7 +227,7 @@ const ReportCardTemplate = ({
       )}
 
       {/* Page Break */}
-      <div className="page-break-after" style={{ pageBreakAfter: 'always', breakAfter: 'page' }}>
+      <div className="page-break-after break-after-page">
         <div className="text-center text-sm text-gray-400 mt-8 pt-4">
           — Continued on next page —
         </div>
@@ -256,7 +256,7 @@ const ReportCardTemplate = ({
         </h3>
         
         {publishedResults.length > 0 ? (
-          <table className="w-full text-sm" style={{ borderCollapse: 'separate', borderSpacing: '0' }}>
+          <table className="w-full text-sm border-separate border-spacing-0">
             <thead>
               <tr className="bg-gray-100">
                 <th className="text-left py-4 px-4 font-semibold text-gray-700 rounded-tl-lg">Subject</th>
@@ -272,7 +272,7 @@ const ReportCardTemplate = ({
                 // Multi-subject results: expand the marks array into rows
                 if (result.marks && result.marks.length > 0) {
                   return result.marks.map((mark, mIdx) => (
-                    <tr key={`${idx}-${mIdx}`} className="border-b border-gray-100">
+                    <tr key={`${result._id}-${mark.subjectName}`} className="border-b border-gray-100">
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
                           <span className="text-lg">{getSubjectIcon(mark.subjectName)}</span>
@@ -308,7 +308,7 @@ const ReportCardTemplate = ({
                 const examName = result.examId?.name || 'Exam';
                 const pct = result.maxMarks > 0 ? ((result.marksObtained / result.maxMarks) * 100) : 0;
                 return [(
-                  <tr key={idx} className="border-b border-gray-100">
+                  <tr key={result._id} className="border-b border-gray-100">
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-3">
                         <span className="text-lg">{getSubjectIcon(examName)}</span>
@@ -456,6 +456,15 @@ const ReportCardTemplate = ({
           .text-green-600 { color: #16a34a !important; }
           .text-purple-600 { color: #9333ea !important; }
           .text-red-600 { color: #dc2626 !important; }
+
+          /* Force light mode for print regardless of theme */
+          .print-content {
+            background-color: white !important;
+            color: #1a1a1a !important;
+          }
+          .text-gray-900, .text-gray-800, .text-gray-700 { color: #1a1a1a !important; }
+          .text-gray-600, .text-gray-500 { color: #4b5563 !important; }
+          .border-gray-200, .border-gray-100, .border-gray-300 { border-color: #e5e7eb !important; }
         }
       `}</style>
     </div>

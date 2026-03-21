@@ -4,8 +4,10 @@ import { useLocation } from "react-router-dom";
 import { staffApi, studentsApi, classesApi, classesEnhancedApi, settingsApi, teacherAssignmentsApi, teacherTimetableApi, staffAttendanceApi, calendarEventsApi } from "../services/api";
 import toast from "react-hot-toast";
 import { CURRENT_ACADEMIC_YEAR } from "../utils/constants";
-import { clearStoredUser, getStoredUser } from "../utils/authSession";
+import { clearStoredUser, getStoredUser, getStoredAuthToken } from "../utils/authSession";
 import { isSuperAdminRole } from "../utils/roleUtils";
+import { showErrorToast } from "../utils/errorHandling";
+import { syncSchoolLanguage } from "../i18n";
 
 // NOTE: These are minimal fallback values only.
 // The application fetches actual data from the API on mount.
@@ -527,7 +529,9 @@ export function AppProvider({ children }) {
       return;
     }
 
-    setSchoolSettings(settingsDataQuery.data.schoolSettings || initialSchoolSettings);
+    const settings = settingsDataQuery.data.schoolSettings || initialSchoolSettings;
+    setSchoolSettings(settings);
+    syncSchoolLanguage(settings.language?.defaultLanguage);
     setEvents(settingsDataQuery.data.events || []);
 
     if ((settingsDataQuery.data.leaveTypes || []).length > 0) {
@@ -622,7 +626,7 @@ export function AppProvider({ children }) {
       window.socketService = socketService;
 
       // Connect socket
-      socketService.connect(user.id, 'staff');
+      socketService.connect(getStoredAuthToken());
 
       // Test listeners
       socketService.on('authenticated', () => {

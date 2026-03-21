@@ -34,5 +34,9 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.25.0",
     "vite": "^6.3.5"
+  },
+  "overrides": {
+    "socket.io-parser": ">=4.2.6",
+    "flatted": ">=3.4.2"
   }
 }

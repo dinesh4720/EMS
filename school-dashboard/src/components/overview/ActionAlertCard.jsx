@@ -4,7 +4,7 @@ import { ChevronRight } from 'lucide-react';
 
 function ActionAlertCard({
   icon: Icon,
-  iconColor = 'bg-gray-100 text-gray-600',
+  iconColor = 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400',
   title,
   description,
   variant = 'default',

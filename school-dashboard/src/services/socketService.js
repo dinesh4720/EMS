@@ -9,14 +9,21 @@ class SocketService {
     this.listeners = new Map();
   }
 
-  connect(userId, userType) {
+  connect(token) {
     if (this.socket?.connected) {
+      return;
+    }
+
+    if (!token) {
+      console.error('❌ Socket connect called without auth token');
       return;
     }
 
     // Remove /api from the URL for Socket.IO connection
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
     const SOCKET_URL = API_URL.replace('/api', '');
+
+    this._token = token;
 
     this.socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
@@ -27,18 +34,18 @@ class SocketService {
       timeout: 20000,
     });
 
-    this.userId = userId;
-    this.userType = userType;
     this.conversationRooms = new Set(); // NEW: Track joined rooms
 
     this.socket.on('connect', () => {
       this.connected = true;
 
-      // Authenticate
-      this.socket.emit('authenticate', { userId, userType });
+      // Authenticate with JWT token
+      this.socket.emit('authenticate', { token: this._token });
     });
 
     this.socket.on('authenticated', (data) => {
+      this.userId = data.userId;
+      this.userType = data.userType;
       this.emit('authenticated', data);
 
       // Rejoin all conversation rooms after reconnection - NEW

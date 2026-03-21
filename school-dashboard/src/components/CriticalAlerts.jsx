@@ -105,7 +105,7 @@ export default function CriticalAlerts({ data }) {
           <ModalHeader>Pending Permission Requests</ModalHeader>
           <ModalBody>
             {pendingRequests.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-default-500">
                 No pending requests.
               </div>
             ) : (
@@ -115,15 +115,15 @@ export default function CriticalAlerts({ data }) {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-semibold text-sm">{req.userName}</span>
-                        <span className="text-xs text-gray-500">({req.userEmail})</span>
+                        <span className="text-xs text-default-500">({req.userEmail})</span>
                       </div>
                       <div className="text-sm mb-1">
                         Requesting access to: <span className="font-bold text-primary">{req.module}</span>
                       </div>
-                      <div className="p-2 bg-white rounded border border-gray-100 text-sm text-gray-600 italic">
+                      <div className="p-2 bg-white dark:bg-zinc-950 rounded border border-gray-100 dark:border-zinc-800 text-sm text-default-600 italic">
                         "{req.reason}"
                       </div>
-                      <div className="text-xs text-gray-400 mt-2">
+                      <div className="text-xs text-default-400 mt-2">
                         {new Date(req.createdAt).toLocaleString()}
                       </div>
                     </div>

@@ -28,11 +28,11 @@ export default function Payroll() {
       {/* Header Actions */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="relative flex-1 max-w-md">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
           <input
             type="text"
             placeholder="Search payroll records..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-zinc-800 rounded-lg text-sm bg-white dark:bg-zinc-950 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div className="flex gap-2">
@@ -48,12 +48,12 @@ export default function Payroll() {
       {/* Payroll Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {payrollSummary.map((summary) => (
-          <Card key={summary.label} className="border border-gray-100">
+          <Card key={summary.label} className="border border-gray-100 dark:border-zinc-800">
             <CardBody className="p-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <p className="text-sm text-gray-500">{summary.label}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{summary.value}</p>
+                  <p className="text-sm text-gray-500 dark:text-zinc-400">{summary.label}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mt-1">{summary.value}</p>
                 </div>
                 <div className={`p-3 rounded-lg ${summary.color.split(' ')[0]}`}>
                   <summary.icon size={20} className={summary.color.split(' ')[1]} />
@@ -66,52 +66,52 @@ export default function Payroll() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Payroll Progress */}
-        <Card className="border border-gray-100 lg:col-span-1">
+        <Card className="border border-gray-100 dark:border-zinc-800 lg:col-span-1">
           <CardBody className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Monthly Progress</h3>
-              <Calendar size={18} className="text-gray-400" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Monthly Progress</h3>
+              <Calendar size={18} className="text-gray-400 dark:text-zinc-500" />
             </div>
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">Completed</span>
-                  <span className="text-sm font-semibold text-gray-900">65%</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">Completed</span>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-zinc-100">65%</span>
                 </div>
                 <Progress value={65} color="success" className="h-2" />
-                <p className="text-xs text-gray-500 mt-1">₹2,85,000 of ₹4,50,000</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">₹2,85,000 of ₹4,50,000</p>
               </div>
-              <div className="pt-4 border-t border-gray-100">
+              <div className="pt-4 border-t border-gray-100 dark:border-zinc-800">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">Pending</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">Pending</span>
                   <span className="text-sm font-semibold text-amber-600">35%</span>
                 </div>
                 <Progress value={35} color="warning" className="h-2" />
-                <p className="text-xs text-gray-500 mt-1">₹1,65,000 remaining</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">₹1,65,000 remaining</p>
               </div>
             </div>
           </CardBody>
         </Card>
 
         {/* Upcoming Payments */}
-        <Card className="border border-gray-100 lg:col-span-2">
+        <Card className="border border-gray-100 dark:border-zinc-800 lg:col-span-2">
           <CardBody className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Payments</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4">Upcoming Payments</h3>
             <div className="space-y-3">
               {upcomingPayslips.map((payslip) => (
-                <div key={payslip._id || `${payslip.employee}-${payslip.dueDate}`} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div key={payslip._id || `${payslip.employee}-${payslip.dueDate}`} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">
                   <div className="flex items-center gap-4">
                     <div className="p-2 bg-blue-50 rounded-lg">
                       <Users size={18} className="text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{payslip.employee}</p>
-                      <p className="text-xs text-gray-500">Due: {payslip.dueDate}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{payslip.employee}</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">Due: {payslip.dueDate}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-gray-900">{payslip.amount}</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{payslip.amount}</p>
                       <p className="text-xs text-amber-600">{payslip.daysLeft} days left</p>
                     </div>
                     <Button variant="flat" size="sm">Process</Button>
@@ -124,13 +124,13 @@ export default function Payroll() {
       </div>
 
       {/* Payroll Records Table */}
-      <Card className="border border-gray-100">
+      <Card className="border border-gray-100 dark:border-zinc-800">
         <CardBody className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Payroll Records</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4">Payroll Records</h3>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="text-left text-xs font-medium text-gray-500 border-b border-gray-100">
+                <tr className="text-left text-xs font-medium text-gray-500 dark:text-zinc-400 border-b border-gray-100 dark:border-zinc-800">
                   <th className="pb-3">Payroll ID</th>
                   <th className="pb-3">Employee</th>
                   <th className="pb-3">Role</th>
@@ -142,27 +142,27 @@ export default function Payroll() {
               </thead>
               <tbody>
                 {mockPayroll.map((record) => (
-                  <tr key={record.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
+                  <tr key={record.id} className="border-b border-gray-50 dark:border-zinc-800 last:border-0 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors">
                     <td className="py-4">
                       <div className="flex items-center gap-2">
                         <div className="p-2 bg-purple-50 rounded-lg">
                           <Wallet size={16} className="text-purple-600" />
                         </div>
-                        <span className="text-sm font-medium text-gray-900">{record.id}</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{record.id}</span>
                       </div>
                     </td>
                     <td className="py-4">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-medium text-gray-600">
+                        <div className="w-8 h-8 bg-gray-200 dark:bg-zinc-700 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-medium text-gray-600 dark:text-zinc-400">
                             {record.employee.split(' ').map(n => n[0]).join('')}
                           </span>
                         </div>
-                        <span className="text-sm text-gray-700">{record.employee}</span>
+                        <span className="text-sm text-gray-700 dark:text-zinc-300">{record.employee}</span>
                       </div>
                     </td>
-                    <td className="py-4 text-sm text-gray-600">{record.role}</td>
-                    <td className="py-4 text-sm font-semibold text-gray-900">{record.amount}</td>
+                    <td className="py-4 text-sm text-gray-600 dark:text-zinc-400">{record.role}</td>
+                    <td className="py-4 text-sm font-semibold text-gray-900 dark:text-zinc-100">{record.amount}</td>
                     <td className="py-4">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                         record.status === "paid"
@@ -174,7 +174,7 @@ export default function Payroll() {
                         {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
                       </span>
                     </td>
-                    <td className="py-4 text-sm text-gray-600">{record.date}</td>
+                    <td className="py-4 text-sm text-gray-600 dark:text-zinc-400">{record.date}</td>
                     <td className="py-4 text-right">
                       <Button variant="light" size="sm">View</Button>
                     </td>

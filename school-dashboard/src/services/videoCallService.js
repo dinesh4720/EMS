@@ -18,7 +18,7 @@ class VideoCallService {
     try {
       // Create Peer instance
       this.peer = new Peer(userId.toString(), {
-        debug: process.env.NODE_ENV === 'development' ? 2 : 0
+        debug: import.meta.env.DEV ? 2 : 0
       });
 
       return new Promise((resolve, reject) => {

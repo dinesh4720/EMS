@@ -137,12 +137,12 @@ function OverviewTab({
           <Card
             isPressable
             onPress={() => handleTabChange("academics")}
-            className="border border-gray-200 bg-white cursor-pointer hover:border-gray-300 transition-colors"
+            className="border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 cursor-pointer hover:border-gray-300 dark:hover:border-zinc-700 transition-colors"
           >
             <CardBody className="p-6">
               <div className="flex items-start justify-between mb-4 w-full">
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <Award size={18} className="text-gray-600" />
+                <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                  <Award size={18} className="text-gray-600 dark:text-zinc-400" />
                 </div>
                 <Chip
                   size="sm"
@@ -161,7 +161,7 @@ function OverviewTab({
                   Average Academic Percentage
                 </p>
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-zinc-800 space-y-2">
                 <div className="flex items-center gap-3 text-xs text-default-500">
                   <span className="font-medium">Exams Taken:</span>
                   <span className="font-bold text-default-700">{results.length}</span>
@@ -170,7 +170,7 @@ function OverviewTab({
               <div className="mt-4 flex items-center justify-between">
                 <span className="text-xs text-default-400">Click to view details</span>
                 <span
-                  className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer transition-colors flex items-center gap-1.5"
+                  className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700 cursor-pointer transition-colors flex items-center gap-1.5"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDownload("academic");
@@ -187,12 +187,12 @@ function OverviewTab({
           <Card
             isPressable
             onPress={() => handleTabChange("attendance")}
-            className="border border-gray-200 bg-white cursor-pointer hover:border-gray-300 transition-colors"
+            className="border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 cursor-pointer hover:border-gray-300 dark:hover:border-zinc-700 transition-colors"
           >
             <CardBody className="p-6">
               <div className="flex items-start justify-between mb-4 w-full">
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <Clock size={18} className="text-gray-600" />
+                <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                  <Clock size={18} className="text-gray-600 dark:text-zinc-400" />
                 </div>
                 <Chip
                   size="sm"
@@ -215,7 +215,7 @@ function OverviewTab({
                 </h4>
                 <p className="text-sm font-medium text-default-500">Average Attendance</p>
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-zinc-800 space-y-2">
                 <div className="flex items-center gap-3 text-xs text-default-500">
                   <span className="font-medium">Present Days:</span>
                   <span className="font-bold text-default-700">{attendanceStats.present}</span>
@@ -228,7 +228,7 @@ function OverviewTab({
               <div className="mt-4 flex items-center justify-between">
                 <span className="text-xs text-default-400">Click to view details</span>
                 <span
-                  className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer transition-colors flex items-center gap-1.5"
+                  className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700 cursor-pointer transition-colors flex items-center gap-1.5"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDownload("attendance");
@@ -245,12 +245,12 @@ function OverviewTab({
           <Card
             isPressable
             onPress={() => handleTabChange("fees")}
-            className="border border-gray-200 bg-white cursor-pointer hover:border-gray-300 transition-colors"
+            className="border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 cursor-pointer hover:border-gray-300 dark:hover:border-zinc-700 transition-colors"
           >
             <CardBody className="p-6">
               <div className="flex items-start justify-between mb-4 w-full">
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <IndianRupee size={18} className="text-gray-600" />
+                <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                  <IndianRupee size={18} className="text-gray-600 dark:text-zinc-400" />
                 </div>
                 <Chip
                   size="sm"
@@ -274,7 +274,7 @@ function OverviewTab({
                   {totalBalance <= 0 ? "Total Fees Paid" : "Outstanding Amount"}
                 </p>
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between w-full">
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between w-full">
                 <div className="flex items-center gap-3 text-xs text-default-500">
                   {totalBalance > 0 && (
                     <>
@@ -290,7 +290,7 @@ function OverviewTab({
                 </div>
                 {totalBalance > 0 && (
                   <span
-                    className="text-xs font-semibold text-gray-600 hover:text-gray-800 cursor-pointer transition-colors"
+                    className="text-xs font-semibold text-gray-600 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 cursor-pointer transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleSendReminderClick();
@@ -317,12 +317,12 @@ function OverviewTab({
             <Card
               isPressable
               onPress={() => handleTabChange("attendance")}
-              className="border border-gray-200 bg-white cursor-pointer hover:border-gray-300 transition-colors"
+              className="border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 cursor-pointer hover:border-gray-300 dark:hover:border-zinc-700 transition-colors"
             >
               <CardBody className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                    <AlertTriangle size={18} className="text-gray-600" />
+                  <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                    <AlertTriangle size={18} className="text-gray-600 dark:text-zinc-400" />
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-default-900">Low Attendance</p>
@@ -330,7 +330,7 @@ function OverviewTab({
                       Attendance is {attendanceStats.percentage}% (below 75%)
                     </p>
                   </div>
-                  <ChevronRight size={16} className="text-gray-400" />
+                  <ChevronRight size={16} className="text-gray-400 dark:text-zinc-600" />
                 </div>
               </CardBody>
             </Card>
@@ -341,12 +341,12 @@ function OverviewTab({
             <Card
               isPressable
               onPress={() => handleTabChange("fees")}
-              className="border border-gray-200 bg-white cursor-pointer hover:border-gray-300 transition-colors"
+              className="border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 cursor-pointer hover:border-gray-300 dark:hover:border-zinc-700 transition-colors"
             >
               <CardBody className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                    <IndianRupee size={18} className="text-gray-600" />
+                  <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                    <IndianRupee size={18} className="text-gray-600 dark:text-zinc-400" />
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-default-900">Pending Fees</p>
@@ -354,7 +354,7 @@ function OverviewTab({
                       ₹{totalBalance.toLocaleString()} outstanding
                     </p>
                   </div>
-                  <ChevronRight size={16} className="text-gray-400" />
+                  <ChevronRight size={16} className="text-gray-400 dark:text-zinc-600" />
                 </div>
               </CardBody>
             </Card>
@@ -365,12 +365,12 @@ function OverviewTab({
             <Card
               isPressable
               onPress={() => handleTabChange("academics")}
-              className="border border-gray-200 bg-white cursor-pointer hover:border-gray-300 transition-colors"
+              className="border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 cursor-pointer hover:border-gray-300 dark:hover:border-zinc-700 transition-colors"
             >
               <CardBody className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                    <AlertTriangle size={18} className="text-gray-600" />
+                  <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                    <AlertTriangle size={18} className="text-gray-600 dark:text-zinc-400" />
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-default-900">Poor Performance</p>
@@ -378,7 +378,7 @@ function OverviewTab({
                       Average is {Math.round(avgPercentage)}% - needs attention
                     </p>
                   </div>
-                  <ChevronRight size={16} className="text-gray-400" />
+                  <ChevronRight size={16} className="text-gray-400 dark:text-zinc-600" />
                 </div>
               </CardBody>
             </Card>
@@ -388,11 +388,11 @@ function OverviewTab({
           {attendanceStats.percentage >= 75 &&
             totalBalance <= 0 &&
             (results.length === 0 || avgPercentage >= 60) && (
-              <Card className="border border-gray-200 bg-white">
+              <Card className="border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
                 <CardBody className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <CheckCircle size={18} className="text-gray-600" />
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                      <CheckCircle size={18} className="text-gray-600 dark:text-zinc-400" />
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-semibold text-default-900">All Good!</p>
@@ -412,11 +412,11 @@ function OverviewTab({
         <h3 className="text-lg font-semibold text-default-900">Analytics</h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Performance Trend Chart */}
-          <Card className="border border-gray-200">
+          <Card className="border border-gray-200 dark:border-zinc-800">
             <CardHeader className="pb-0 pt-6 px-6">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <TrendingUp size={18} className="text-gray-600" />
+                <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                  <TrendingUp size={18} className="text-gray-600 dark:text-zinc-400" />
                 </div>
                 <div>
                   <h4 className="text-base font-semibold text-default-900">Performance Trend</h4>
@@ -459,11 +459,11 @@ function OverviewTab({
           </Card>
 
           {/* Subject-wise Performance Chart */}
-          <Card className="border border-gray-200">
+          <Card className="border border-gray-200 dark:border-zinc-800">
             <CardHeader className="pb-0 pt-6 px-6">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <BarChart3 size={18} className="text-gray-600" />
+                <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                  <BarChart3 size={18} className="text-gray-600 dark:text-zinc-400" />
                 </div>
                 <div>
                   <h4 className="text-base font-semibold text-default-900">Subject-wise Performance</h4>
@@ -499,11 +499,11 @@ function OverviewTab({
           </Card>
 
           {/* Attendance Trend Chart */}
-          <Card className="border border-gray-200 lg:col-span-2">
+          <Card className="border border-gray-200 dark:border-zinc-800 lg:col-span-2">
             <CardHeader className="pb-0 pt-6 px-6">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <LineChartIcon size={18} className="text-gray-600" />
+                <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                  <LineChartIcon size={18} className="text-gray-600 dark:text-zinc-400" />
                 </div>
                 <div>
                   <h4 className="text-base font-semibold text-default-900">Attendance Trend</h4>

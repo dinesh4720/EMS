@@ -8,6 +8,7 @@ import {
 import { parseDate } from "@internationalized/date";
 import { Search, Filter, ChevronDown, ChevronLeft, ChevronRight, CalendarDays, Check, X, Clock, UserCheck, UserX, Users, Layers, AlertCircle, Save } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import PhotoAvatar from "../../components/PhotoAvatar";
 import toast from "react-hot-toast";
 
 // Helper function to get auth token (same as api.js)
@@ -39,12 +40,7 @@ const StudentAttendance = memo(function StudentAttendance() {
     useEffect(() => {
         const fetchAttendance = async () => {
             try {
-                // TODO: Replace with actual API endpoint when available
-                // const response = await fetch(`/api/attendance/students?date=${selectedDate}`);
-                // const data = await response.json();
-                // setAttendance(data);
-                
-                // For now, initialize with unmarked status
+                // Initialize with unmarked status
                 const initial = {};
                 students.forEach(s => {
                     initial[s.id] = {
@@ -405,16 +401,16 @@ const StudentAttendance = memo(function StudentAttendance() {
                     th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6 first:hover:bg-transparent first:cursor-default",
                     td: "py-5 border-b border-default-200 group-data-[last=true]:border-none last:pr-6 transition-colors",
                     tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-5 [&>tr[data-selected=true]>td]:bg-primary-50",
-                    tr: "transition-colors hover:bg-gray-50 data-[selected=true]:bg-primary-50",
+                    tr: "transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800/50 data-[selected=true]:bg-primary-50",
                 }}
             >
                 <TableHeader>
-                    <TableColumn style={{ width: 250 }}>STUDENT</TableColumn>
-                    <TableColumn style={{ width: 100 }}>CLASS</TableColumn>
-                    <TableColumn style={{ width: 100 }}>ROLL NO</TableColumn>
-                    <TableColumn style={{ width: 140 }}>STATUS</TableColumn>
-                    <TableColumn style={{ width: 100 }}>IN TIME</TableColumn>
-                    <TableColumn style={{ width: 100 }}>OUT TIME</TableColumn>
+                    <TableColumn className="w-[250px]">STUDENT</TableColumn>
+                    <TableColumn className="w-[100px]">CLASS</TableColumn>
+                    <TableColumn className="w-[100px]">ROLL NO</TableColumn>
+                    <TableColumn className="w-[140px]">STATUS</TableColumn>
+                    <TableColumn className="w-[100px]">IN TIME</TableColumn>
+                    <TableColumn className="w-[100px]">OUT TIME</TableColumn>
                 </TableHeader>
                 <TableBody items={filteredStudents} emptyContent="No students found">
                     {(student) => {
@@ -423,10 +419,12 @@ const StudentAttendance = memo(function StudentAttendance() {
                             <TableRow key={student.id}>
                                 <TableCell>
                                     <div className="flex items-center gap-3">
-                                        <img
-                                            src={student.photo || `https://i.pravatar.cc/150?u=student${student.id}`}
+                                        <PhotoAvatar
+                                            src={student.photo}
+                                            name={student.name}
                                             alt={student.name}
-                                            className="w-10 h-10 rounded-full object-cover"
+                                            type="student"
+                                            size="md"
                                         />
                                         <div className="flex flex-col">
                                             <span className="text-default-900 font-medium text-base">{student.name}</span>

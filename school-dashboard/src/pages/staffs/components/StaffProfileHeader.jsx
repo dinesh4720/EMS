@@ -69,9 +69,9 @@ export default function StaffProfileHeader({
 
   return (
     <>
-      <div className="w-full bg-white dark:bg-zinc-900 rounded-lg p-6 border border-gray-200 flex flex-col lg:flex-row items-center justify-between gap-6 relative overflow-hidden">
+      <div className="w-full bg-white dark:bg-zinc-950 rounded-lg p-6 border border-gray-200 dark:border-zinc-800 flex flex-col lg:flex-row items-center justify-between gap-6 relative overflow-hidden">
         {/* Background Decoration */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gray-50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gray-50 dark:bg-zinc-800/50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
 
         <div className="flex flex-col md:flex-row items-center gap-6 z-10 w-full lg:w-auto">
           {/* Back Button */}
@@ -104,10 +104,10 @@ export default function StaffProfileHeader({
             <Dropdown>
               <DropdownTrigger>
                 <div
-                  className="absolute -bottom-1 -right-1 bg-white rounded-full p-1.5 shadow-sm border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
+                  className="absolute -bottom-1 -right-1 bg-white dark:bg-zinc-900 rounded-full p-1.5 shadow-sm border border-gray-200 dark:border-zinc-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
                   title="Change photo"
                 >
-                  <Camera size={14} className="text-gray-600" />
+                  <Camera size={14} className="text-gray-600 dark:text-zinc-400" />
                 </div>
               </DropdownTrigger>
               <DropdownMenu aria-label="Photo actions">
@@ -143,8 +143,8 @@ export default function StaffProfileHeader({
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{staff.name}</h1>
             <div className="flex items-center justify-center md:justify-start gap-3 text-gray-600 dark:text-gray-400 font-medium text-sm mt-1">
               {Array.isArray(staff.role) ? (
-                staff.role.map((r, idx) => (
-                  <span key={idx} className="text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 px-2.5 py-0.5 rounded-md">
+                staff.role.map((r) => (
+                  <span key={r} className="text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 px-2.5 py-0.5 rounded-md">
                     {r}
                   </span>
                 ))
@@ -166,7 +166,7 @@ export default function StaffProfileHeader({
           {/* Call Button */}
           <Tooltip content={staff.phone ? `Call ${staff.name}` : "Call Staff"} placement="bottom">
             <Button
-              className="bg-gray-900 hover:bg-gray-800 text-white"
+              className="bg-gray-900 hover:bg-gray-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900"
               startContent={<Phone size={18} />}
               onPress={() => {
                 if (staff.phone) {

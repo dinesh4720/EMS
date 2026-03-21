@@ -76,8 +76,8 @@ export default function ReminderModal({ isOpen, onClose, student, studentFeeStru
       onClose={handleClose}
       size="2xl"
     >
-      <ModalContent className="bg-white rounded-lg border border-gray-200">
-        <ModalHeader className="flex flex-col gap-1 text-gray-900 font-medium">
+      <ModalContent className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800">
+        <ModalHeader className="flex flex-col gap-1 text-gray-900 dark:text-zinc-100 font-medium">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-xl">
               <MessageSquare size={20} className="text-primary" />
@@ -153,7 +153,7 @@ export default function ReminderModal({ isOpen, onClose, student, studentFeeStru
                 description={`${reminderMessage.length}/500 characters`}
                 maxLength={500}
                 classNames={{
-                  input: "border border-gray-200 focus:border-gray-300"
+                  input: "border border-gray-200 dark:border-zinc-800 focus:border-gray-300 dark:focus:border-zinc-600"
                 }}
               />
             </div>
@@ -164,7 +164,7 @@ export default function ReminderModal({ isOpen, onClose, student, studentFeeStru
             variant="flat"
             onPress={handleClose}
             isDisabled={reminderSending}
-            className="border border-gray-200 hover:bg-gray-50 text-gray-700"
+            className="border border-gray-200 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-900 text-gray-700 dark:text-zinc-300"
           >
             Cancel
           </Button>

@@ -175,7 +175,7 @@ export default function VoiceMessageRecorder({ onSend, onCancel }) {
         <div className="flex items-center gap-0.5 h-8">
           {waveformData.map((value, index) => (
             <div
-              key={index}
+              key={`bar-${index}`}
               className="w-1 bg-primary rounded-full transition-all"
               style={{ height: `${(value / 255) * 100}%`, minHeight: '4px' }}
             />

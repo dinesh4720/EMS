@@ -17,13 +17,13 @@ const tabs = [
 const getActivityIcon = (type) => {
   switch (type) {
     case 'payment':
-      return { icon: Wallet, color: 'text-gray-600 bg-gray-100' };
+      return { icon: Wallet, color: 'text-gray-600 dark:text-zinc-400 bg-gray-100 dark:bg-zinc-800' };
     case 'announcement':
-      return { icon: Megaphone, color: 'text-gray-600 bg-gray-100' };
+      return { icon: Megaphone, color: 'text-gray-600 dark:text-zinc-400 bg-gray-100 dark:bg-zinc-800' };
     case 'message':
-      return { icon: MessageSquare, color: 'text-gray-600 bg-gray-100' };
+      return { icon: MessageSquare, color: 'text-gray-600 dark:text-zinc-400 bg-gray-100 dark:bg-zinc-800' };
     default:
-      return { icon: Clock, color: 'text-gray-500 bg-gray-100' };
+      return { icon: Clock, color: 'text-gray-500 dark:text-zinc-400 bg-gray-100 dark:bg-zinc-800' };
   }
 };
 
@@ -56,11 +56,11 @@ function ActivityFeed({ payments, announcements, communications }) {
     : allActivities.filter(a => a.type === activeTab.slice(0, -1) || (activeTab === 'announcements' && a.type === 'announcement'));
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
       {/* Header */}
-      <div className="p-5 border-b border-gray-200">
+      <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-medium text-gray-900 text-sm">Recent Activity</h3>
+          <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Recent Activity</h3>
         </div>
 
         {/* Tabs */}
@@ -71,8 +71,8 @@ function ActivityFeed({ payments, announcements, communications }) {
               onClick={() => setActiveTab(tab.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100'
+                  : 'text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300'
               }`}
             >
               {tab.label}
@@ -82,7 +82,7 @@ function ActivityFeed({ payments, announcements, communications }) {
       </div>
 
       {/* Activity List */}
-      <div className="divide-y divide-gray-200">
+      <div className="divide-y divide-gray-200 dark:divide-zinc-800">
         {filteredActivities.length > 0 ? (
           filteredActivities.map((activity, index) => {
             const { icon: Icon, color } = getActivityIcon(activity.type);
@@ -90,7 +90,7 @@ function ActivityFeed({ payments, announcements, communications }) {
             return (
               <div
                 key={`${activity.type}-${activity.id || index}`}
-                className="group flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                className="group flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer"
               >
                 {/* Icon */}
                 <div className={`shrink-0 w-8 h-8 rounded-lg ${color} flex items-center justify-center`}>
@@ -99,10 +99,10 @@ function ActivityFeed({ payments, announcements, communications }) {
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
+                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">
                     {activity.student || activity.title || activity.subject || 'Activity'}
                   </p>
-                  <p className="text-xs text-gray-500 mt-0.5 truncate">
+                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5 truncate">
                     {activity.type === 'payment' && `₹${activity.amount} - ${activity.status}`}
                     {activity.type === 'announcement' && activity.content}
                     {activity.type === 'message' && `${activity.from}: ${activity.message}`}
@@ -110,28 +110,28 @@ function ActivityFeed({ payments, announcements, communications }) {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-400 dark:text-zinc-500">
                     {getRelativeTime(activity.time)}
                   </span>
-                  <ChevronRight size={14} className="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ChevronRight size={14} className="text-gray-300 dark:text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               </div>
             );
           })
         ) : (
           <div className="px-5 py-10 text-center">
-            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
-              <Inbox size={18} className="text-gray-400" />
+            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800">
+              <Inbox size={18} className="text-gray-400 dark:text-zinc-500" />
             </div>
-            <p className="text-sm font-medium text-gray-700">No recent activity yet</p>
-            <p className="mt-1 text-xs text-gray-500">Payments and announcements will appear here once they are recorded.</p>
+            <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">No recent activity yet</p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-zinc-400">Payments and announcements will appear here once they are recorded.</p>
           </div>
         )}
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-200">
-        <button className="w-full py-2 text-xs font-medium text-gray-600 hover:text-gray-900 transition-colors flex items-center justify-center gap-1">
+      <div className="p-4 border-t border-gray-200 dark:border-zinc-800">
+        <button className="w-full py-2 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 transition-colors flex items-center justify-center gap-1">
           View all activity
           <ChevronRight size={12} />
         </button>
