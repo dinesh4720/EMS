@@ -142,7 +142,7 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
                                         <Button
                                             isIconOnly
                                             variant={flip.horizontal ? "flat" : "flat"}
-                                            className={flip.horizontal ? "bg-primary-100 text-primary" : ""}
+                                            className={flip.horizontal ? "bg-primary-100 dark:bg-primary-900/40 text-primary" : ""}
                                             onPress={() => setFlip(prev => ({ ...prev, horizontal: !prev.horizontal }))}
                                         >
                                             <FlipHorizontal size={20} />
@@ -152,7 +152,7 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
                                         <Button
                                             isIconOnly
                                             variant={flip.vertical ? "flat" : "flat"}
-                                            className={flip.vertical ? "bg-primary-100 text-primary" : ""}
+                                            className={flip.vertical ? "bg-primary-100 dark:bg-primary-900/40 text-primary" : ""}
                                             onPress={() => setFlip(prev => ({ ...prev, vertical: !prev.vertical }))}
                                         >
                                             <FlipVertical size={20} />

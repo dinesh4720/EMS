@@ -132,35 +132,35 @@ export default function Refunds() {
     <div className="w-full flex flex-col">
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-4 mb-6 -mx-6 -mt-6 px-6 pt-6">
-        <div className="p-4 border border-gray-200 rounded-lg bg-white">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Total Refunds</p>
-          <p className="text-2xl font-bold text-gray-900">₹{totalRefunds.toLocaleString()}</p>
+        <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Total Refunds</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">₹{totalRefunds.toLocaleString()}</p>
         </div>
-        <div className="p-4 border border-gray-200 rounded-lg bg-white">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Pending</p>
-          <p className="text-2xl font-bold text-gray-900">{pendingCount}</p>
+        <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Pending</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{pendingCount}</p>
         </div>
-        <div className="p-4 border border-gray-200 rounded-lg bg-white">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Processed</p>
-          <p className="text-2xl font-bold text-gray-900">{processedCount}</p>
+        <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Processed</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{processedCount}</p>
         </div>
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-gray-200 py-4 -mx-6 px-6 mb-6">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-gray-200 dark:border-zinc-800 py-4 -mx-6 px-6 mb-6">
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-white rounded-lg border border-gray-200 hover:border-gray-300 focus-within:border-gray-400 transition-all">
-            <Search size={16} className="text-gray-400" />
+          <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 focus-within:border-gray-400 dark:focus-within:border-zinc-600 transition-all">
+            <Search size={16} className="text-gray-400 dark:text-zinc-500" />
             <input
               type="text"
               placeholder="Search student..."
-              className="flex-1 bg-transparent outline-none text-sm text-gray-900 placeholder:text-gray-400"
+              className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-zinc-100 placeholder:text-gray-400 dark:placeholder:text-zinc-500"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-gray-100 rounded">
-                <X size={14} className="text-gray-400" />
+              <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded">
+                <X size={14} className="text-gray-400 dark:text-zinc-500" />
               </button>
             )}
           </div>
@@ -173,7 +173,7 @@ export default function Refunds() {
             selectedKeys={new Set([statusFilter])}
             onSelectionChange={(keys) => setStatusFilter(Array.from(keys)[0])}
             className="w-full sm:w-[140px]"
-            classNames={{ trigger: "h-9 min-h-9 bg-white border-gray-200 hover:border-gray-300", value: "text-sm" }}
+            classNames={{ trigger: "h-9 min-h-9 bg-white dark:bg-zinc-950 border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700", value: "text-sm" }}
           >
             <SelectItem key="all">All Status</SelectItem>
             <SelectItem key="pending">Pending</SelectItem>
@@ -192,13 +192,13 @@ export default function Refunds() {
       </div>
 
       {/* Table */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden -mx-6 sm:mx-0">
+      <div className="border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden -mx-6 sm:mx-0">
         <Table
           aria-label="Refunds"
           removeWrapper
           classNames={{
-            th: "bg-gray-50 text-gray-500 font-medium text-xs uppercase tracking-wider h-11 border-b border-gray-200",
-            td: "py-4 border-b border-gray-100",
+            th: "bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-11 border-b border-gray-200 dark:border-zinc-800",
+            td: "py-4 border-b border-gray-100 dark:border-zinc-800",
           }}
         >
           <TableHeader>
@@ -209,34 +209,34 @@ export default function Refunds() {
             <TableColumn>DATE</TableColumn>
             <TableColumn align="end">ACTIONS</TableColumn>
           </TableHeader>
-          <TableBody emptyContent={<div className="text-center py-8"><p className="text-gray-400 text-sm">No refund records</p></div>}>
+          <TableBody emptyContent={<div className="text-center py-8"><p className="text-gray-400 dark:text-zinc-500 text-sm">No refund records</p></div>}>
             {visibleRefunds.map((refund) => (
-              <TableRow key={refund._id} className="hover:bg-gray-50">
+              <TableRow key={refund._id} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                      <span className="text-xs font-medium text-gray-600">{refund.studentId?.name?.charAt(0) || '?'}</span>
+                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                      <span className="text-xs font-medium text-gray-600 dark:text-zinc-400">{refund.studentId?.name?.charAt(0) || '?'}</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900 hover:text-gray-600 cursor-pointer" onClick={() => navigate(`/students/${refund.studentId?._id}`)}>
+                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 hover:text-gray-600 dark:hover:text-zinc-400 cursor-pointer" onClick={() => navigate(`/students/${refund.studentId?._id}`)}>
                         {refund.studentId?.name}
                       </p>
-                      <p className="text-xs text-gray-500">Class {refund.classId?.name} {refund.classId?.section}</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">Class {refund.classId?.name} {refund.classId?.section}</p>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm font-mono text-gray-900">₹{refund.amount?.toLocaleString() || 0}</span>
+                  <span className="text-sm font-mono text-gray-900 dark:text-zinc-100">₹{refund.amount?.toLocaleString() || 0}</span>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm text-gray-600">{refund.reason || '—'}</span>
+                  <span className="text-sm text-gray-600 dark:text-zinc-400">{refund.reason || '—'}</span>
                 </TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border rounded ${
-                    refund.status === "processed" ? "border-green-200 bg-green-50 text-green-700" :
-                    refund.status === "approved" ? "border-blue-200 bg-blue-50 text-blue-700" :
-                    refund.status === "rejected" ? "border-red-200 bg-red-50 text-red-700" :
-                    "border-yellow-200 bg-yellow-50 text-yellow-700"
+                    refund.status === "processed" ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400" :
+                    refund.status === "approved" ? "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400" :
+                    refund.status === "rejected" ? "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400" :
+                    "border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-400"
                   }`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${
                       refund.status === "processed" ? "bg-green-500" :
@@ -248,7 +248,7 @@ export default function Refunds() {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span className="text-xs text-gray-500">{refund.refundDate || '—'}</span>
+                  <span className="text-xs text-gray-500 dark:text-zinc-400">{refund.refundDate || '—'}</span>
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-2">
@@ -256,7 +256,7 @@ export default function Refunds() {
                       <button
                         onClick={() => handleApprove(refund)}
                         disabled={actionLoading === refund._id}
-                        className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all disabled:opacity-50"
+                        className="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all disabled:opacity-50"
                       >
                         {actionLoading === refund._id ? '...' : 'Approve'}
                       </button>
@@ -270,7 +270,7 @@ export default function Refunds() {
                         {actionLoading === refund._id ? '...' : 'Process'}
                       </button>
                     )}
-                    <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all">
+                    <button className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded transition-all">
                       <Download size={14} />
                     </button>
                   </div>
@@ -281,10 +281,10 @@ export default function Refunds() {
         </Table>
 
         {/* Load more */}
-        <div ref={loaderRef} className="flex justify-center py-4 bg-gray-50 border-t border-gray-200">
+        <div ref={loaderRef} className="flex justify-center py-4 bg-gray-50 dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
           {isLoadingMore && <Spinner size="sm" />}
           {!hasMore && filteredRefunds.length > ITEMS_PER_LOAD && (
-            <span className="text-gray-400 text-xs">All refunds loaded</span>
+            <span className="text-gray-400 dark:text-zinc-500 text-xs">All refunds loaded</span>
           )}
         </div>
       </div>
@@ -294,7 +294,7 @@ export default function Refunds() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="border-b border-gray-200">New Refund Request</ModalHeader>
+              <ModalHeader className="border-b border-gray-200 dark:border-zinc-800">New Refund Request</ModalHeader>
               <ModalBody className="py-4 space-y-4">
                 <Input
                   label="Student ID"
@@ -349,8 +349,8 @@ export default function Refunds() {
                   minRows={2}
                 />
               </ModalBody>
-              <ModalFooter className="border-t border-gray-200 gap-3">
-                <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all">
+              <ModalFooter className="border-t border-gray-200 dark:border-zinc-800 gap-3">
+                <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all">
                   Cancel
                 </button>
                 <button

@@ -32,17 +32,17 @@ export default function PageHeader({
   const styles = sizeStyles[size];
 
   return (
-    <div className={cn("border-b border-gray-100", styles.padding, className)}>
+    <div className={cn("border-b border-gray-100 dark:border-zinc-800", styles.padding, className)}>
       {breadcrumb && (
         <div className="mb-2">{breadcrumb}</div>
       )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className={cn("font-medium text-gray-900", styles.title)}>
+          <h1 className={cn("font-medium text-gray-900 dark:text-zinc-100", styles.title)}>
             {title}
           </h1>
           {description && (
-            <p className={cn("text-gray-500 mt-1", styles.description)}>
+            <p className={cn("text-gray-500 dark:text-zinc-400 mt-1", styles.description)}>
               {description}
             </p>
           )}

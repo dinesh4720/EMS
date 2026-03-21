@@ -31,53 +31,53 @@ export default function StaffDocumentsTab({
 
       {/* Document Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-        <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+        <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors dark:bg-zinc-950 dark:border-zinc-800 dark:hover:border-zinc-700">
           <div className="flex items-center gap-2 mb-3">
-            <FileText size={16} className="text-gray-400" />
-            <span className="text-xs text-gray-500 font-medium">Total Documents</span>
+            <FileText size={16} className="text-gray-400 dark:text-zinc-500" />
+            <span className="text-xs text-gray-500 font-medium dark:text-zinc-400">Total Documents</span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{documents.length}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{documents.length}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+        <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors dark:bg-zinc-950 dark:border-zinc-800 dark:hover:border-zinc-700">
           <div className="flex items-center gap-2 mb-3">
-            <FileCheck size={16} className="text-gray-400" />
-            <span className="text-xs text-gray-500 font-medium">ID Proofs</span>
+            <FileCheck size={16} className="text-gray-400 dark:text-zinc-500" />
+            <span className="text-xs text-gray-500 font-medium dark:text-zinc-400">ID Proofs</span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{documents.filter(d => getDocumentType(d) === 'ID Proof').length}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{documents.filter(d => getDocumentType(d) === 'ID Proof').length}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+        <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors dark:bg-zinc-950 dark:border-zinc-800 dark:hover:border-zinc-700">
           <div className="flex items-center gap-2 mb-3">
-            <FileText size={16} className="text-gray-400" />
-            <span className="text-xs text-gray-500 font-medium">Qualifications</span>
+            <FileText size={16} className="text-gray-400 dark:text-zinc-500" />
+            <span className="text-xs text-gray-500 font-medium dark:text-zinc-400">Qualifications</span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{documents.filter(d => getDocumentType(d) === 'Qualification').length}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{documents.filter(d => getDocumentType(d) === 'Qualification').length}</p>
         </div>
       </div>
 
       {/* Active Uploads */}
       {activeUploads.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="p-5 border-b border-gray-200">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden dark:bg-zinc-950 dark:border-zinc-800">
+          <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><Upload size={16} className="text-gray-600" /></div>
-              <div><h3 className="font-medium text-gray-900 text-sm">Uploading Files</h3><p className="text-xs text-gray-500">{activeUploads.length} file(s) in progress</p></div>
+              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center dark:bg-zinc-800"><Upload size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+              <div><h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">Uploading Files</h3><p className="text-xs text-gray-500 dark:text-zinc-400">{activeUploads.length} file(s) in progress</p></div>
             </div>
           </div>
           <div className="p-5 space-y-3">
             {activeUploads.map((upload) => (
-              <div key={upload.id} className="p-3 bg-gray-50 rounded-lg">
+              <div key={upload.id} className="p-3 bg-gray-50 rounded-lg dark:bg-zinc-900">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
-                    <FileText size={14} className="text-gray-500" />
-                    <span className="text-sm font-medium text-gray-900">{upload.name}</span>
+                    <FileText size={14} className="text-gray-500 dark:text-zinc-400" />
+                    <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{upload.name}</span>
                   </div>
-                  <span className="text-xs text-gray-500">{upload.progress}%</span>
+                  <span className="text-xs text-gray-500 dark:text-zinc-400">{upload.progress}%</span>
                 </div>
                 <Progress
                   aria-label="Upload progress"
                   value={upload.progress}
                   className="h-1"
-                  classNames={{ track: "bg-gray-200", indicator: "bg-gray-600" }}
+                  classNames={{ track: "bg-gray-200 dark:bg-zinc-700", indicator: "bg-gray-600" }}
                 />
               </div>
             ))}
@@ -86,11 +86,11 @@ export default function StaffDocumentsTab({
       )}
 
       {/* Documents List */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden dark:bg-zinc-950 dark:border-zinc-800">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between dark:border-zinc-800">
           <div>
-            <h3 className="text-sm font-semibold text-gray-900">Document Library</h3>
-            <p className="text-xs text-gray-500 mt-0.5">All uploaded documents</p>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Document Library</h3>
+            <p className="text-xs text-gray-500 mt-0.5 dark:text-zinc-400">All uploaded documents</p>
           </div>
           <Button size="sm" className="bg-gray-900 text-white" startContent={<Upload size={14} />} onPress={() => documentInputRef.current?.click()}>
             Upload
@@ -99,39 +99,39 @@ export default function StaffDocumentsTab({
 
         {documents.length === 0 ? (
           <div
-            className="text-center py-12 cursor-pointer hover:bg-gray-50 transition-colors"
+            className="text-center py-12 cursor-pointer hover:bg-gray-50 transition-colors dark:hover:bg-zinc-800"
             onClick={() => documentInputRef.current?.click()}
           >
-            <div className="inline-flex p-4 bg-gray-100 rounded-lg mb-4">
-              <FolderPlus size={32} className="text-gray-400" />
+            <div className="inline-flex p-4 bg-gray-100 rounded-lg mb-4 dark:bg-zinc-800">
+              <FolderPlus size={32} className="text-gray-400 dark:text-zinc-500" />
             </div>
-            <h4 className="font-medium text-gray-900 mb-1">No documents uploaded yet</h4>
-            <p className="text-sm text-gray-500 max-w-xs mx-auto mb-4">
+            <h4 className="font-medium text-gray-900 mb-1 dark:text-zinc-100">No documents uploaded yet</h4>
+            <p className="text-sm text-gray-500 max-w-xs mx-auto mb-4 dark:text-zinc-400">
               Upload certificates, ID proofs, or other essential documents.
             </p>
-            <Button size="sm" variant="flat" className="bg-gray-100 text-gray-700" startContent={<Upload size={14} />} onPress={() => documentInputRef.current?.click()}>
+            <Button size="sm" variant="flat" className="bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300" startContent={<Upload size={14} />} onPress={() => documentInputRef.current?.click()}>
               Browse Files
             </Button>
           </div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-gray-50 dark:divide-zinc-800">
             {documents.map((doc) => {
               const docType = getDocumentType(doc);
 
               return (
                 <div
                   key={doc._id || doc.name}
-                  className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors group"
+                  className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors group dark:hover:bg-zinc-800/50"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center">
-                      <FileText size={14} className="text-gray-500" />
+                    <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center dark:bg-zinc-800">
+                      <FileText size={14} className="text-gray-500 dark:text-zinc-400" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{doc.name}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{doc.name}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600">{docType}</span>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400">{docType}</span>
+                        <span className="text-xs text-gray-400 dark:text-zinc-500">
                           {doc.uploadDate ? new Date(doc.uploadDate).toLocaleDateString() : 'Just now'}
                           {doc.size && ` • ${doc.size}`}
                         </span>
@@ -140,35 +140,35 @@ export default function StaffDocumentsTab({
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      className="p-2 hover:bg-gray-100 rounded-lg"
-                      onClick={() => window.open(doc.url, '_blank')}
+                      className="p-2 hover:bg-gray-100 rounded-lg dark:hover:bg-zinc-700"
+                      onClick={() => window.open(doc.url, '_blank', 'noopener,noreferrer')}
                       title="View"
                     >
-                      <Eye size={14} className="text-gray-400" />
+                      <Eye size={14} className="text-gray-400 dark:text-zinc-500" />
                     </button>
                     <a
                       href={doc.url}
                       download={doc.name}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2 hover:bg-gray-100 rounded-lg"
+                      className="p-2 hover:bg-gray-100 rounded-lg dark:hover:bg-zinc-700"
                       title="Download"
                     >
-                      <Download size={14} className="text-gray-400" />
+                      <Download size={14} className="text-gray-400 dark:text-zinc-500" />
                     </a>
                     <button
-                      className="p-2 hover:bg-gray-100 rounded-lg"
+                      className="p-2 hover:bg-gray-100 rounded-lg dark:hover:bg-zinc-700"
                       onClick={() => toast.success("Shared via internal messaging")}
                       title="Share"
                     >
-                      <Share2 size={14} className="text-gray-400" />
+                      <Share2 size={14} className="text-gray-400 dark:text-zinc-500" />
                     </button>
                     <button
-                      className="p-2 hover:bg-gray-100 rounded-lg"
+                      className="p-2 hover:bg-gray-100 rounded-lg dark:hover:bg-zinc-700"
                       onClick={() => onDeleteDocument(doc._id || doc.id)}
                       title="Delete"
                     >
-                      <Trash2 size={14} className="text-gray-400 hover:text-red-500" />
+                      <Trash2 size={14} className="text-gray-400 hover:text-red-500 dark:text-zinc-500" />
                     </button>
                   </div>
                 </div>

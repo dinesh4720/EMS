@@ -309,7 +309,7 @@ export default function TimetableWizardModal({
 
       // Fill schedule with constraints
       for (const day of DAYS) {
-        let pool = shuffleArray(subjectPool);
+        const pool = shuffleArray(subjectPool);
 
         for (const periodIdx of nonBreakIndices) {
           // Find a valid subject from pool
@@ -484,18 +484,18 @@ export default function TimetableWizardModal({
       scrollBehavior="inside"
       classNames={{
         backdrop: "bg-black/50 backdrop-blur-sm",
-        base: "max-h-[95vh]"
+        base: "max-h-[95vh] dark:bg-zinc-950"
       }}
     >
       <ModalContent>
-        <ModalHeader className="flex flex-col gap-1 border-b border-gray-200">
+        <ModalHeader className="flex flex-col gap-1 border-b border-gray-200 dark:border-zinc-800">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary-100 rounded-lg">
               <Wand2 size={24} className="text-primary-600" />
             </div>
             <div>
               <h2 className="text-xl font-semibold">Timetable Wizard</h2>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-zinc-400">
                 Create and configure class timetables with smart generation
               </p>
             </div>
@@ -514,20 +514,20 @@ export default function TimetableWizardModal({
                     flex items-center gap-2 px-3 py-2 rounded-lg transition-colors
                     ${isActive ? 'bg-primary-100 text-primary-700' :
                       isCompleted ? 'bg-success-100 text-success-700' :
-                      'bg-gray-100 text-gray-500'}
+                      'bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400'}
                   `}>
                     <div className={`
                       w-7 h-7 rounded-full flex items-center justify-center text-sm font-medium
                       ${isActive ? 'bg-primary-500 text-white' :
                         isCompleted ? 'bg-success-500 text-white' :
-                        'bg-gray-300 text-gray-600'}
+                        'bg-gray-300 dark:bg-zinc-600 text-gray-600 dark:text-zinc-300'}
                     `}>
                       {isCompleted ? <Check size={14} /> : step.number}
                     </div>
                     <span className="text-sm font-medium hidden md:block">{step.title}</span>
                   </div>
                   {index < steps.length - 1 && (
-                    <ChevronRight size={20} className="mx-2 text-gray-400" />
+                    <ChevronRight size={20} className="mx-2 text-gray-400 dark:text-zinc-500" />
                   )}
                 </div>
               );
@@ -541,7 +541,7 @@ export default function TimetableWizardModal({
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-medium mb-2">Select a Class</h3>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
                   Choose the class for which you want to create or edit the timetable.
                 </p>
 
@@ -573,24 +573,24 @@ export default function TimetableWizardModal({
               </div>
 
               {selectedClass && (
-                <Card className="bg-gray-50">
+                <Card className="bg-gray-50 dark:bg-zinc-900">
                   <CardBody className="p-4">
                     <h4 className="font-medium mb-3">Class Information</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
-                        <p className="text-xs text-gray-500">Class</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">Class</p>
                         <p className="font-medium">{selectedClass.name}-{selectedClass.section}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Class Teacher</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">Class Teacher</p>
                         <p className="font-medium">{selectedClass.teacher || 'Not assigned'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Current Subjects</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">Current Subjects</p>
                         <p className="font-medium">{selectedClass.subjects?.length || 0} subjects</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Academic Year</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">Academic Year</p>
                         <p className="font-medium">{currentAcademicYear}</p>
                       </div>
                     </div>
@@ -605,7 +605,7 @@ export default function TimetableWizardModal({
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-medium mb-2">Configure Subjects</h3>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
                   Add or remove subjects for this class. These subjects will be used in the timetable.
                 </p>
               </div>
@@ -648,7 +648,7 @@ export default function TimetableWizardModal({
                     </Chip>
                   ))}
                   {classSubjects.length === 0 && (
-                    <p className="text-sm text-gray-400 italic">No subjects selected</p>
+                    <p className="text-sm text-gray-400 dark:text-zinc-500 italic">No subjects selected</p>
                   )}
                 </div>
               </div>
@@ -685,7 +685,7 @@ export default function TimetableWizardModal({
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-medium mb-2">Assign Teachers to Subjects</h3>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
                   Select which teachers can teach each subject for this class.
                   Teachers must already have subject assignments configured.
                 </p>
@@ -701,7 +701,7 @@ export default function TimetableWizardModal({
                       <CardBody className="p-4">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <BookOpen size={18} className="text-gray-500" />
+                            <BookOpen size={18} className="text-gray-500 dark:text-zinc-400" />
                             <span className="font-medium">{subject}</span>
                             <Chip size="sm" variant="flat" color={getSubjectColor(subject)}>
                               {assignedTeachers.length} teacher(s)
@@ -745,7 +745,7 @@ export default function TimetableWizardModal({
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-medium mb-2">Set Period Rules</h3>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
                   Configure constraints for timetable generation. These rules will be applied when generating the schedule.
                 </p>
               </div>
@@ -755,7 +755,7 @@ export default function TimetableWizardModal({
                 <Card className="shadow-sm">
                   <CardBody className="p-4 space-y-4">
                     <h4 className="font-medium flex items-center gap-2">
-                      <Settings size={18} className="text-gray-500" />
+                      <Settings size={18} className="text-gray-500 dark:text-zinc-400" />
                       Basic Rules
                     </h4>
 
@@ -763,7 +763,7 @@ export default function TimetableWizardModal({
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium">Max periods per subject per day</p>
-                          <p className="text-xs text-gray-500">Limit how many times a subject can appear in one day</p>
+                          <p className="text-xs text-gray-500 dark:text-zinc-400">Limit how many times a subject can appear in one day</p>
                         </div>
                         <Select
                           size="sm"
@@ -780,7 +780,7 @@ export default function TimetableWizardModal({
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium">Max periods per subject per week</p>
-                          <p className="text-xs text-gray-500">Total limit across all days</p>
+                          <p className="text-xs text-gray-500 dark:text-zinc-400">Total limit across all days</p>
                         </div>
                         <Select
                           size="sm"
@@ -817,7 +817,7 @@ export default function TimetableWizardModal({
                 <Card className="shadow-sm">
                   <CardBody className="p-4 space-y-4">
                     <h4 className="font-medium flex items-center gap-2">
-                      <Clock size={18} className="text-gray-500" />
+                      <Clock size={18} className="text-gray-500 dark:text-zinc-400" />
                       Advanced Rules
                     </h4>
 
@@ -860,7 +860,7 @@ export default function TimetableWizardModal({
                             <SelectItem key={s}>{s}</SelectItem>
                           ))}
                         </Select>
-                        <p className="text-xs text-gray-500 mt-1">Subjects that should be scheduled in the first period</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">Subjects that should be scheduled in the first period</p>
                       </div>
                     </div>
                   </CardBody>
@@ -871,7 +871,7 @@ export default function TimetableWizardModal({
               <Card className="shadow-sm">
                 <CardBody className="p-4">
                   <h4 className="font-medium mb-4 flex items-center gap-2">
-                    <Calendar size={18} className="text-gray-500" />
+                    <Calendar size={18} className="text-gray-500 dark:text-zinc-400" />
                     Period Configuration ({periods.length} periods)
                   </h4>
 
@@ -888,7 +888,7 @@ export default function TimetableWizardModal({
                       </thead>
                       <tbody>
                         {periods.map((period, idx) => (
-                          <tr key={idx} className={`border-b ${period.isBreak ? 'bg-gray-50' : ''}`}>
+                          <tr key={`period-config-${idx}`} className={`border-b ${period.isBreak ? 'bg-gray-50 dark:bg-zinc-900' : ''}`}>
                             <td className="py-2 px-3">{idx + 1}</td>
                             <td className="py-2 px-3">{period.name}</td>
                             <td className="py-2 px-3">{period.startTime}</td>
@@ -914,7 +914,7 @@ export default function TimetableWizardModal({
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-medium mb-2">Generated Timetable</h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-zinc-400">
                     Preview the generated timetable. Click "Regenerate" to create a new arrangement.
                   </p>
                 </div>
@@ -932,13 +932,13 @@ export default function TimetableWizardModal({
               {isGenerating ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <Spinner size="lg" />
-                  <p className="mt-4 text-gray-500">Generating timetable...</p>
+                  <p className="mt-4 text-gray-500 dark:text-zinc-400">Generating timetable...</p>
                 </div>
               ) : generatedSchedule ? (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm border-collapse">
                     <thead>
-                      <tr className="bg-gray-100">
+                      <tr className="bg-gray-100 dark:bg-zinc-800">
                         <th className="border p-2 text-left min-w-[100px]">Period</th>
                         {DAYS.map(day => (
                           <th key={day} className="border p-2 text-center min-w-[120px]">{day}</th>
@@ -947,11 +947,11 @@ export default function TimetableWizardModal({
                     </thead>
                     <tbody>
                       {periods.map((period, periodIdx) => (
-                        <tr key={periodIdx} className={period.isBreak ? 'bg-warning-50' : ''}>
+                        <tr key={`preview-${period.name}-${periodIdx}`} className={period.isBreak ? 'bg-warning-50' : ''}>
                           <td className="border p-2 font-medium">
                             <div>
                               <p>{period.name}</p>
-                              <p className="text-xs text-gray-500">{period.startTime}-{period.endTime}</p>
+                              <p className="text-xs text-gray-500 dark:text-zinc-400">{period.startTime}-{period.endTime}</p>
                             </div>
                           </td>
                           {DAYS.map(day => {
@@ -968,12 +968,12 @@ export default function TimetableWizardModal({
                                       getSubjectColor(slot.subject) === 'warning' ? 'bg-warning-50 text-warning-700' :
                                       getSubjectColor(slot.subject) === 'danger' ? 'bg-danger-50 text-danger-700' :
                                       getSubjectColor(slot.subject) === 'secondary' ? 'bg-secondary-50 text-secondary-700' :
-                                      'bg-gray-50 text-gray-700'}
+                                      'bg-gray-50 dark:bg-zinc-900 text-gray-700 dark:text-zinc-300'}
                                   `}>
                                     <p className="font-medium">{slot.subject}</p>
                                   </div>
                                 ) : (
-                                  <span className="text-gray-400 text-xs">-</span>
+                                  <span className="text-gray-400 dark:text-zinc-500 text-xs">-</span>
                                 )}
                               </td>
                             );
@@ -985,8 +985,8 @@ export default function TimetableWizardModal({
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <AlertCircle size={48} className="text-gray-300 mb-4" />
-                  <p className="text-gray-500 mb-4">No timetable generated yet</p>
+                  <AlertCircle size={48} className="text-gray-300 dark:text-zinc-600 mb-4" />
+                  <p className="text-gray-500 dark:text-zinc-400 mb-4">No timetable generated yet</p>
                   <Button
                     color="primary"
                     startContent={<Wand2 size={16} />}
@@ -999,26 +999,26 @@ export default function TimetableWizardModal({
 
               {/* Summary Stats */}
               {generatedSchedule && (
-                <Card className="bg-gray-50">
+                <Card className="bg-gray-50 dark:bg-zinc-900">
                   <CardBody className="p-4">
                     <h4 className="font-medium mb-3">Schedule Summary</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
-                        <p className="text-xs text-gray-500">Total Periods/Week</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">Total Periods/Week</p>
                         <p className="text-lg font-semibold">
                           {periods.filter(p => !p.isBreak).length * DAYS.length}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Subjects</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">Subjects</p>
                         <p className="text-lg font-semibold">{classSubjects.length}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Working Days</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">Working Days</p>
                         <p className="text-lg font-semibold">{DAYS.length}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Breaks/Day</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">Breaks/Day</p>
                         <p className="text-lg font-semibold">
                           {periods.filter(p => p.isBreak).length}
                         </p>
@@ -1031,7 +1031,7 @@ export default function TimetableWizardModal({
           )}
         </ModalBody>
 
-        <ModalFooter className="border-t border-gray-200">
+        <ModalFooter className="border-t border-gray-200 dark:border-zinc-800">
           <div className="flex items-center justify-between w-full">
             <Button
               variant="light"

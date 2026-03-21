@@ -3,7 +3,8 @@ import {
   Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
   Input, Chip
 } from "@heroui/react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useValidatedParams } from "../../hooks/useValidatedParams";
 import {
   Calendar, IndianRupee, MessageSquare, Users, Clock,
   BookOpen, TrendingUp, AlertCircle, CheckCircle2, Search, Phone,
@@ -20,7 +21,7 @@ import ClassSettingsPanel from "./ClassSettingsPanel";
 import ClassTeacherAssignmentModal from "./components/ClassTeacherAssignmentModal";
 
 export default function ClassDashboard() {
-  const { id } = useParams();
+  const { params: { id }, isValid } = useValidatedParams({ id: 'objectId' }, { redirectTo: '/classes' });
   const navigate = useNavigate();
   const location = useLocation();
   const { classesWithTeachers, students, classesEnhancedApi, classesApi, refetch } = useApp();
@@ -93,17 +94,19 @@ export default function ClassDashboard() {
     { key: "settings", label: "Settings" },
   ];
 
+  if (!isValid) return null;
+
   if (!cls && classesWithTeachers.length > 0) {
     return (
-      <div className="w-full flex-1 bg-gray-50 p-6 min-h-screen">
-        <button onClick={() => navigate('/classes')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors mb-4">
+      <div className="w-full flex-1 bg-gray-50 dark:bg-zinc-950 p-6 min-h-screen">
+        <button onClick={() => navigate('/classes')} className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors mb-4">
           <ArrowLeft size={16} /><span>Back to Classes</span>
         </button>
-        <div className="bg-white rounded-lg border border-gray-100 p-8 text-center">
+        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-8 text-center">
           <AlertCircle size={40} className="mx-auto text-red-400 mb-3" />
-          <h2 className="text-lg font-semibold text-gray-800 mb-1">Class Not Found</h2>
-          <p className="text-sm text-gray-500">The class you're looking for doesn't exist or has been removed.</p>
-          <button onClick={() => navigate('/classes')} className="mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-zinc-200 mb-1">Class Not Found</h2>
+          <p className="text-sm text-gray-500 dark:text-zinc-400">The class you're looking for doesn't exist or has been removed.</p>
+          <button onClick={() => navigate('/classes')} className="mt-4 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-lg text-sm text-gray-700 dark:text-zinc-300 transition-colors">
             View All Classes
           </button>
         </div>
@@ -112,49 +115,49 @@ export default function ClassDashboard() {
   }
 
   return (
-    <div className="w-full flex-1 bg-gray-50 p-6 min-h-screen">
+    <div className="w-full flex-1 bg-gray-50 dark:bg-zinc-950 p-6 min-h-screen">
       {/* ═══════════════════════════════════════════════════════════════════
           HEADER SECTION
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="mb-6">
-        <button onClick={() => navigate('/classes')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors mb-2">
+        <button onClick={() => navigate('/classes')} className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors mb-2">
           <ArrowLeft size={16} /><span>Back to Classes</span>
         </button>
 
-        <div className="bg-white rounded-lg border border-gray-100 p-5">
+        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4">
             <div className="flex items-center gap-5">
               {/* Avatar */}
-              <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center">
-                <span className="text-xl font-semibold text-gray-600">
+              <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                <span className="text-xl font-semibold text-gray-600 dark:text-zinc-400">
                   {cls?.name?.replace("Class ", "")}{cls?.section}
                 </span>
               </div>
 
               {/* Info */}
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">
+                <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
                   Grade {cls?.name || 'N/A'} - Section {cls?.section || 'N/A'}
                 </h1>
-                <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-zinc-400">
                   <span>{cls?.strength || 0} Students</span>
-                  <span className="text-gray-300">|</span>
+                  <span className="text-gray-300 dark:text-zinc-600">|</span>
                   <span>{cls?.strengthLimit || 40} Capacity</span>
                 </div>
                 {cls?.classTeacherId ? (
-                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-400 dark:text-zinc-500">
                     <Users size={12} />
                     <span
-                      className="text-gray-500 hover:text-gray-700 cursor-pointer"
+                      className="text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 cursor-pointer"
                       onClick={() => navigate(`/staffs/${cls.classTeacherId}`)}
                     >
                       {cls?.teacher || 'Class Teacher'}
                     </span>
-                    <span className="text-gray-300">|</span>
+                    <span className="text-gray-300 dark:text-zinc-600">|</span>
                     <span>Class Teacher</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-400 dark:text-zinc-500">
                     <AlertCircle size={12} />
                     <span>No class teacher assigned</span>
                     <button
@@ -170,18 +173,18 @@ export default function ClassDashboard() {
 
             {/* Actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
-              <Button variant="flat" className="bg-gray-100 text-gray-700" startContent={<MessageSquare size={16} />}
+              <Button variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<MessageSquare size={16} />}
                 onPress={() => toast.success("Opening messages...")}>Message</Button>
-              <Button className="bg-gray-900 text-white hover:bg-gray-800" startContent={<Edit size={16} />}
+              <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200" startContent={<Edit size={16} />}
                 onPress={() => setActiveTab("settings")}>Settings</Button>
               <Dropdown>
                 <DropdownTrigger>
-                  <Button isIconOnly variant="light" className="text-gray-400"><MoreVertical size={20} /></Button>
+                  <Button isIconOnly variant="light" className="text-gray-400 dark:text-zinc-500"><MoreVertical size={20} /></Button>
                 </DropdownTrigger>
                 <DropdownMenu className="min-w-[180px]">
-                  <DropdownItem key="export" startContent={<Download size={14} className="text-gray-400" />}>Export Report</DropdownItem>
-                  <DropdownItem key="notice" startContent={<Send size={14} className="text-gray-400" />}>Send Notice</DropdownItem>
-                  <DropdownItem key="timetable" startContent={<Clock size={14} className="text-gray-400" />} onPress={() => setActiveTab("timetable")}>View Timetable</DropdownItem>
+                  <DropdownItem key="export" startContent={<Download size={14} className="text-gray-400 dark:text-zinc-500" />}>Export Report</DropdownItem>
+                  <DropdownItem key="notice" startContent={<Send size={14} className="text-gray-400 dark:text-zinc-500" />}>Send Notice</DropdownItem>
+                  <DropdownItem key="timetable" startContent={<Clock size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={() => setActiveTab("timetable")}>View Timetable</DropdownItem>
                 </DropdownMenu>
               </Dropdown>
             </div>
@@ -193,14 +196,14 @@ export default function ClassDashboard() {
           TABS
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="mb-5">
-        <div className="flex items-center gap-1 border-b border-gray-200 overflow-x-auto">
+        <div className="flex items-center gap-1 border-b border-gray-200 dark:border-zinc-800 overflow-x-auto">
           {tabs.map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
               className={`px-4 py-3 text-sm font-medium transition-colors relative whitespace-nowrap ${
-                activeTab === tab.key ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'
+                activeTab === tab.key ? 'text-gray-900 dark:text-zinc-100' : 'text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-400'
               }`}>
               {tab.label}
-              {activeTab === tab.key && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />}
+              {activeTab === tab.key && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 dark:bg-zinc-100" />}
             </button>
           ))}
         </div>
@@ -254,47 +257,47 @@ export default function ClassDashboard() {
         <div className="lg:col-span-1 space-y-4">
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-lg border border-gray-100 p-5">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">Quick Actions</h3>
+          <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => setActiveTab("students")} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 hover:bg-gray-100">
-                <Users size={18} className="text-gray-600" />
-                <span className="text-xs text-gray-600">Students</span>
+              <button onClick={() => setActiveTab("students")} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800">
+                <Users size={18} className="text-gray-600 dark:text-zinc-400" />
+                <span className="text-xs text-gray-600 dark:text-zinc-400">Students</span>
               </button>
-              <button onClick={() => setActiveTab("attendance")} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 hover:bg-gray-100">
-                <CheckCircle2 size={18} className="text-gray-600" />
-                <span className="text-xs text-gray-600">Attendance</span>
+              <button onClick={() => setActiveTab("attendance")} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800">
+                <CheckCircle2 size={18} className="text-gray-600 dark:text-zinc-400" />
+                <span className="text-xs text-gray-600 dark:text-zinc-400">Attendance</span>
               </button>
-              <button onClick={() => setActiveTab("fees")} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 hover:bg-gray-100">
-                <IndianRupee size={18} className="text-gray-600" />
-                <span className="text-xs text-gray-600">Fees</span>
+              <button onClick={() => setActiveTab("fees")} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800">
+                <IndianRupee size={18} className="text-gray-600 dark:text-zinc-400" />
+                <span className="text-xs text-gray-600 dark:text-zinc-400">Fees</span>
               </button>
-              <button onClick={() => setActiveTab("timetable")} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 hover:bg-gray-100">
-                <Clock size={18} className="text-gray-600" />
-                <span className="text-xs text-gray-600">Timetable</span>
+              <button onClick={() => setActiveTab("timetable")} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800">
+                <Clock size={18} className="text-gray-600 dark:text-zinc-400" />
+                <span className="text-xs text-gray-600 dark:text-zinc-400">Timetable</span>
               </button>
             </div>
           </div>
 
           {/* Class Teacher Card */}
           {cls?.classTeacherId && (
-            <div className="bg-white rounded-lg border border-gray-100 p-5">
-              <h3 className="text-sm font-medium text-gray-900 mb-4">Class Teacher</h3>
+            <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Class Teacher</h3>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <span className="text-sm font-medium text-gray-600">
+                <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                  <span className="text-sm font-medium text-gray-600 dark:text-zinc-400">
                     {cls?.teacher?.charAt(0) || 'T'}
                   </span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">{cls?.teacher || 'Teacher'}</p>
-                  <p className="text-xs text-gray-500">Class Teacher</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{cls?.teacher || 'Teacher'}</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400">Class Teacher</p>
                 </div>
                 <button
                   onClick={() => navigate(`/messages?to=${cls.classTeacherId}`)}
-                  className="p-2 hover:bg-gray-50 rounded-lg"
+                  className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-900 rounded-lg"
                 >
-                  <MessageSquare size={16} className="text-gray-400" />
+                  <MessageSquare size={16} className="text-gray-400 dark:text-zinc-500" />
                 </button>
               </div>
             </div>
@@ -302,13 +305,13 @@ export default function ClassDashboard() {
 
           {/* Assigned Subjects */}
           {!settingsLoading && classSettings?.assignedSubjects && classSettings.assignedSubjects.length > 0 && (
-            <div className="bg-white rounded-lg border border-gray-100 p-5">
-              <h3 className="text-sm font-medium text-gray-900 mb-4">Assigned Subjects</h3>
+            <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Assigned Subjects</h3>
               <div className="flex flex-wrap gap-2">
                 {classSettings.assignedSubjects.map((subject) => (
                   <span
                     key={subject}
-                    className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-md"
+                    className="px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-md"
                   >
                     {subject}
                   </span>
@@ -385,9 +388,9 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 >= 0.5;
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-    for (let i = 0; i < fullStars; i++) stars.push(<Star key={`full-${i}`} size={14} className="fill-gray-400 text-gray-400" />);
-    if (hasHalfStar) stars.push(<StarHalf key="half" size={14} className="fill-gray-400 text-gray-400" />);
-    for (let i = 0; i < emptyStars; i++) stars.push(<Star key={`empty-${i}`} size={14} className="text-gray-300" />);
+    for (let i = 0; i < fullStars; i++) stars.push(<Star key={`full-${i}`} size={14} className="fill-gray-400 dark:fill-zinc-500 text-gray-400 dark:text-zinc-500" />);
+    if (hasHalfStar) stars.push(<StarHalf key="half" size={14} className="fill-gray-400 dark:fill-zinc-500 text-gray-400 dark:text-zinc-500" />);
+    for (let i = 0; i < emptyStars; i++) stars.push(<Star key={`empty-${i}`} size={14} className="text-gray-300 dark:text-zinc-600" />);
     return stars;
   };
 
@@ -406,40 +409,40 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
     <div className="space-y-4">
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, i) => (
-          <div key={i} className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+        {stats.map((stat) => (
+          <div key={stat.label} className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
             <div className="flex items-start justify-between mb-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                <stat.icon size={16} className="text-gray-600" />
+              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                <stat.icon size={16} className="text-gray-600 dark:text-zinc-400" />
               </div>
             </div>
-            <h3 className="text-xl font-semibold text-gray-800">{stat.value}</h3>
-            <p className="text-xs font-medium text-gray-500 mt-0.5">{stat.label}</p>
-            {stat.subtext && <p className="text-xs text-gray-400 mt-2">{stat.subtext}</p>}
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{stat.value}</h3>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{stat.label}</p>
+            {stat.subtext && <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2">{stat.subtext}</p>}
           </div>
         ))}
       </div>
 
       {/* Action Needed */}
       {needsAttention && (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="p-5 border-b border-gray-200">
+        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+          <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                <AlertTriangle size={16} className="text-gray-600" />
+              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                <AlertTriangle size={16} className="text-gray-600 dark:text-zinc-400" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900 text-sm">Action Needed</h3>
-                <p className="text-xs text-gray-500">Attendance is below 75%</p>
+                <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Action Needed</h3>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Attendance is below 75%</p>
               </div>
             </div>
           </div>
           <div className="p-5">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
-              <AlertCircle size={18} className="text-gray-500" />
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-zinc-900">
+              <AlertCircle size={18} className="text-gray-500 dark:text-zinc-400" />
               <div>
-                <p className="text-sm font-medium text-gray-900">Low Attendance Alert</p>
-                <p className="text-xs text-gray-500">Current: {attendancePercentage}% (target: 75%)</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Low Attendance Alert</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Current: {attendancePercentage}% (target: 75%)</p>
               </div>
             </div>
           </div>
@@ -448,47 +451,47 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Academic Overview */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="p-5 border-b border-gray-200">
+        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+          <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                <Award size={16} className="text-gray-600" />
+              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                <Award size={16} className="text-gray-600 dark:text-zinc-400" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900 text-sm">Academic Overview</h3>
-                <p className="text-xs text-gray-500">Top performers & improvements</p>
+                <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Academic Overview</h3>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Top performers & improvements</p>
               </div>
             </div>
           </div>
           <div className="p-5">
             {academicPerformanceLoading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full" />
+                <div className="animate-spin w-6 h-6 border-2 border-gray-300 dark:border-zinc-600 border-t-gray-600 dark:border-t-zinc-400 rounded-full" />
               </div>
             ) : (
               <div className="space-y-4">
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 mb-2">Top Performers</p>
-                  {academicPerformance?.topPerformers?.slice(0, 3).map((s, i) => (
-                    <div key={i} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
-                      <span className="text-sm text-gray-700">{s.name}</span>
-                      <span className="text-sm font-medium text-gray-900">{s.percentage}%</span>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400 mb-2">Top Performers</p>
+                  {academicPerformance?.topPerformers?.slice(0, 3).map((s) => (
+                    <div key={s._id || s.name} className="flex justify-between items-center py-2 border-b border-gray-50 dark:border-zinc-800 last:border-0">
+                      <span className="text-sm text-gray-700 dark:text-zinc-300">{s.name}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{s.percentage}%</span>
                     </div>
                   ))}
                   {(!academicPerformance?.topPerformers || academicPerformance.topPerformers.length === 0) && (
-                    <p className="text-xs text-gray-400">No data available</p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500">No data available</p>
                   )}
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 mb-2">Needs Improvement</p>
-                  {academicPerformance?.needsImprovement?.slice(0, 3).map((s, i) => (
-                    <div key={i} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
-                      <span className="text-sm text-gray-700">{s.name}</span>
-                      <span className="text-sm font-medium text-gray-900">{s.percentage}%</span>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400 mb-2">Needs Improvement</p>
+                  {academicPerformance?.needsImprovement?.slice(0, 3).map((s) => (
+                    <div key={s._id || s.name} className="flex justify-between items-center py-2 border-b border-gray-50 dark:border-zinc-800 last:border-0">
+                      <span className="text-sm text-gray-700 dark:text-zinc-300">{s.name}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{s.percentage}%</span>
                     </div>
                   ))}
                   {(!academicPerformance?.needsImprovement || academicPerformance.needsImprovement.length === 0) && (
-                    <p className="text-xs text-gray-400">No data available</p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500">No data available</p>
                   )}
                 </div>
               </div>
@@ -497,41 +500,41 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
         </div>
 
         {/* Ratings Breakdown */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="p-5 border-b border-gray-200">
+        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+          <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                <Star size={16} className="text-gray-600" />
+              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                <Star size={16} className="text-gray-600 dark:text-zinc-400" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900 text-sm">Class Ratings</h3>
-                <p className="text-xs text-gray-500">Detailed breakdown</p>
+                <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Class Ratings</h3>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Detailed breakdown</p>
               </div>
             </div>
           </div>
           <div className="p-5">
             {ratingLoading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full" />
+                <div className="animate-spin w-6 h-6 border-2 border-gray-300 dark:border-zinc-600 border-t-gray-600 dark:border-t-zinc-400 rounded-full" />
               </div>
             ) : (
               <div className="space-y-3">
                 {classRating?.breakdown && Object.entries(classRating.breakdown).map(([key, val]) => (
                   <div key={key}>
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="capitalize text-gray-600">{key}</span>
-                      <span className="font-medium text-gray-900">{val.toFixed(1)}</span>
+                      <span className="capitalize text-gray-600 dark:text-zinc-400">{key}</span>
+                      <span className="font-medium text-gray-900 dark:text-zinc-100">{val.toFixed(1)}</span>
                     </div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gray-800 rounded-full"
+                        className="h-full bg-gray-800 dark:bg-zinc-200 rounded-full"
                         style={{ width: `${(val / 5) * 100}%` }}
                       />
                     </div>
                   </div>
                 ))}
                 {(!classRating?.breakdown || Object.keys(classRating.breakdown).length === 0) && (
-                  <p className="text-xs text-gray-400 text-center py-4">No ratings available</p>
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 text-center py-4">No ratings available</p>
                 )}
               </div>
             )}
@@ -565,25 +568,25 @@ function StudentsTab({ id, cls, navigate }) {
   return (
     <div className="space-y-4">
       {/* Search and Filter */}
-      <div className="bg-white rounded-lg border border-gray-100 p-4">
+      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
             <input
               type="text"
               placeholder="Search students..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400"
+              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:border-gray-400 dark:focus:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
             />
           </div>
-          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+          <div className="flex items-center gap-1 bg-gray-100 dark:bg-zinc-800 p-1 rounded-lg">
             {["all", "paid", "pending"].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  filter === f ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  filter === f ? 'bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 shadow-sm' : 'text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300'
                 }`}
               >
                 {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -594,56 +597,56 @@ function StudentsTab({ id, cls, navigate }) {
       </div>
 
       {/* Students List */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-gray-900">Class Students</h3>
-            <p className="text-xs text-gray-500 mt-0.5">{filteredStudents.length} students</p>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Class Students</h3>
+            <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{filteredStudents.length} students</p>
           </div>
         </div>
 
         {filteredStudents.length > 0 ? (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-gray-50 dark:divide-zinc-800">
             {filteredStudents.map(student => (
               <div
                 key={student.id}
-                className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors cursor-pointer"
+                className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-900 transition-colors cursor-pointer"
                 onClick={() => navigate(`/students/${student.id}`)}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
                     {student.photo ? (
                       <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-xs font-medium text-gray-600">{student.name?.charAt(0)}</span>
+                      <span className="text-xs font-medium text-gray-600 dark:text-zinc-400">{student.name?.charAt(0)}</span>
                     )}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{student.name}</p>
-                    <p className="text-xs text-gray-500">Roll {student.rollNo} • {student.parentName || 'Parent'}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{student.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">Roll {student.rollNo} • {student.parentName || 'Parent'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1.5">
-                    <div className={`w-2 h-2 rounded-full ${student.attendanceStatus === 'present' ? "bg-gray-600" : "bg-gray-300"}`} />
-                    <span className="text-xs text-gray-500">
+                    <div className={`w-2 h-2 rounded-full ${student.attendanceStatus === 'present' ? "bg-gray-600 dark:bg-zinc-400" : "bg-gray-300 dark:bg-zinc-600"}`} />
+                    <span className="text-xs text-gray-500 dark:text-zinc-400">
                       {student.attendanceStatus === 'present' ? 'Present' : 'Absent'}
                     </span>
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-md ${
-                    student.feeStatus === 'paid' ? 'bg-gray-100 text-gray-600' : 'bg-gray-50 text-gray-500'
+                    student.feeStatus === 'paid' ? 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400' : 'bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400'
                   }`}>
                     {student.feeStatus || 'Pending'}
                   </span>
-                  <ArrowLeft size={16} className="text-gray-300 rotate-180" />
+                  <ArrowLeft size={16} className="text-gray-300 dark:text-zinc-600 rotate-180" />
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <div className="px-5 py-12 text-center">
-            <Users size={32} className="mx-auto text-gray-200 mb-3" />
-            <p className="text-sm text-gray-500">No students found</p>
+            <Users size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
+            <p className="text-sm text-gray-500 dark:text-zinc-400">No students found</p>
           </div>
         )}
       </div>
@@ -680,56 +683,56 @@ function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
     <div className="space-y-4">
       {/* Fee Stats */}
       <div className="grid grid-cols-3 gap-4">
-        {stats.map((stat, i) => (
-          <div key={i} className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+        {stats.map((stat) => (
+          <div key={stat.label} className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
             <div className="flex items-start justify-between mb-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                <stat.icon size={16} className="text-gray-600" />
+              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                <stat.icon size={16} className="text-gray-600 dark:text-zinc-400" />
               </div>
             </div>
-            <h3 className="text-xl font-semibold text-gray-800">{stat.value}</h3>
-            <p className="text-xs font-medium text-gray-500 mt-0.5">{stat.label}</p>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{stat.value}</h3>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{stat.label}</p>
           </div>
         ))}
       </div>
 
       {/* Defaulters List */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-gray-900">Defaulters List</h3>
-            <p className="text-xs text-gray-500 mt-0.5">{pendingStudents.length} pending payments</p>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Defaulters List</h3>
+            <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{pendingStudents.length} pending payments</p>
           </div>
         </div>
 
         {pendingStudents.length > 0 ? (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-gray-50 dark:divide-zinc-800">
             {pendingStudents.map(student => (
-              <div key={student.id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
+              <div key={student.id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-900 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
                     {student.photo ? (
                       <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-xs font-medium text-gray-600">{student.name?.charAt(0)}</span>
+                      <span className="text-xs font-medium text-gray-600 dark:text-zinc-400">{student.name?.charAt(0)}</span>
                     )}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{student.name}</p>
-                    <p className="text-xs text-gray-500">Roll {student.rollNo}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{student.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">Roll {student.rollNo}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className="text-sm font-medium text-gray-900">₹{student.pendingFees || "5,000"}</span>
-                  <Button size="sm" variant="flat" className="bg-gray-100 text-gray-700" onPress={() => navigate(`/fees/collect?student=${student.id}`)}>Collect</Button>
+                  <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{student.pendingFees || "5,000"}</span>
+                  <Button size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" onPress={() => navigate(`/fees/collect?student=${student.id}`)}>Collect</Button>
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <div className="px-5 py-12 text-center">
-            <IndianRupee size={32} className="mx-auto text-gray-200 mb-3" />
-            <p className="text-sm text-gray-500">No pending fees</p>
+            <IndianRupee size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
+            <p className="text-sm text-gray-500 dark:text-zinc-400">No pending fees</p>
           </div>
         )}
       </div>
@@ -784,39 +787,39 @@ function AcademicsTab({ id, cls, classesEnhancedApi }) {
     <div className="space-y-4">
       {/* Stats Row */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-4 border border-gray-100">
-          <p className="text-xs text-gray-500">Total Exams</p>
-          <p className="text-xl font-semibold text-gray-900">{exams.length}</p>
+        <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
+          <p className="text-xs text-gray-500 dark:text-zinc-400">Total Exams</p>
+          <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{exams.length}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-100">
+        <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
           <p className="text-xs text-blue-600">Scheduled</p>
           <p className="text-xl font-semibold text-blue-700">{examsByStatus.scheduled.length}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-100">
+        <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
           <p className="text-xs text-amber-600">Ongoing</p>
           <p className="text-xl font-semibold text-amber-700">{examsByStatus.ongoing.length}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-100">
+        <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
           <p className="text-xs text-green-600">Completed</p>
           <p className="text-xl font-semibold text-green-700">{examsByStatus.completed.length}</p>
         </div>
       </div>
 
       {/* Exams List */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+        <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-              <FileText size={16} className="text-gray-600" />
+            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+              <FileText size={16} className="text-gray-600 dark:text-zinc-400" />
             </div>
             <div>
-              <h3 className="font-medium text-gray-900 text-sm">Class Exams</h3>
-              <p className="text-xs text-gray-500">All scheduled and completed exams</p>
+              <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Class Exams</h3>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">All scheduled and completed exams</p>
             </div>
           </div>
           <Button
             size="sm"
-            className="bg-gray-900 text-white"
+            className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
             startContent={<FileText size={14} />}
             onPress={() => navigate('/academics/exams')}
           >
@@ -826,14 +829,14 @@ function AcademicsTab({ id, cls, classesEnhancedApi }) {
 
         {loading ? (
           <div className="p-8 flex items-center justify-center">
-            <div className="animate-spin w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full" />
+            <div className="animate-spin w-6 h-6 border-2 border-gray-300 dark:border-zinc-600 border-t-gray-600 dark:border-t-zinc-400 rounded-full" />
           </div>
         ) : exams.length === 0 ? (
           <div className="p-8 text-center">
-            <FileText size={40} className="mx-auto text-gray-200 mb-4" />
-            <p className="text-sm text-gray-500">No exams scheduled for this class yet.</p>
+            <FileText size={40} className="mx-auto text-gray-200 dark:text-zinc-700 mb-4" />
+            <p className="text-sm text-gray-500 dark:text-zinc-400">No exams scheduled for this class yet.</p>
             <Button
-              className="mt-4 bg-gray-900 text-white"
+              className="mt-4 bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
               startContent={<FileText size={16} />}
               onPress={() => navigate('/academics/exams')}
             >
@@ -841,30 +844,30 @@ function AcademicsTab({ id, cls, classesEnhancedApi }) {
             </Button>
           </div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-gray-50 dark:divide-zinc-800">
             {exams.map((exam) => (
               <div
                 key={exam._id || exam.id}
-                className="px-5 py-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors cursor-pointer"
+                className="px-5 py-4 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-900 transition-colors cursor-pointer"
                 onClick={() => navigate(`/academics/exams/${exam._id || exam.id}`)}
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                    <FileText size={18} className="text-gray-600" />
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                    <FileText size={18} className="text-gray-600 dark:text-zinc-400" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{exam.name}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{exam.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">
                       {exam.subjectName || 'General'} • {exam.type?.replace('_', ' ') || 'Exam'}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">
                       {exam.startDate ? new Date(exam.startDate).toLocaleDateString() : 'Not scheduled'}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-400 dark:text-zinc-500">
                       Max: {exam.maxMarks || 100} | Pass: {exam.passingMarks || 35}
                     </p>
                   </div>

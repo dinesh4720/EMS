@@ -1,8 +1,16 @@
-import React, { useState, useCallback, lazy, Suspense } from "react";
+import React, { useState, useCallback, Suspense } from "react";
+import lazyWithRetry from "../utils/lazyWithRetry";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import ErrorBoundary from "../components/ErrorBoundary";
 import { Eye, EyeOff, Lock, Mail, CheckCircle } from "lucide-react";
-const SchoolBuilding3D = lazy(() => import("../components/SchoolBuilding3D"));
+const SchoolBuilding3D = lazyWithRetry(() => import("../components/SchoolBuilding3D"));
+
+function LoginVisualFallback() {
+  return (
+    <div className="w-full h-full bg-gradient-to-br from-teal-50 via-white to-slate-100 dark:from-zinc-900 dark:via-zinc-950 dark:to-zinc-900" />
+  );
+}
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -27,7 +35,7 @@ export default function Login() {
     try {
       await login(email, password);
     } catch (err) {
-      setError("Invalid email or password");
+      setError(err?.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -37,31 +45,33 @@ export default function Login() {
     <div className="h-screen w-screen flex flex-col lg:flex-row overflow-hidden">
       {/* Left Side - 3D School Building - Hidden on mobile */}
       <div className="hidden lg:flex flex-1 relative overflow-hidden h-full">
-        <Suspense fallback={<div className="w-full h-full bg-gradient-to-br from-teal-50 to-teal-100" />}>
-          <SchoolBuilding3D />
-        </Suspense>
+        <ErrorBoundary fallback={<LoginVisualFallback />}>
+          <Suspense fallback={<LoginVisualFallback />}>
+            <SchoolBuilding3D />
+          </Suspense>
+        </ErrorBoundary>
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full lg:w-[45%] flex flex-col items-center justify-center bg-white p-6 lg:p-0 h-full overflow-y-auto">
+      <div className="w-full lg:w-[45%] flex flex-col items-center justify-center bg-white dark:bg-zinc-900 p-6 lg:p-0 h-full overflow-y-auto">
         <div className="w-full max-w-xs flex-shrink-0">
           {/* Logo */}
           <div className="flex items-center justify-center gap-2 mb-8">
             <div className="w-9 h-9 rounded-lg bg-teal-600 flex items-center justify-center">
               <span className="text-white font-bold text-lg">S</span>
             </div>
-            <span className="text-xl font-semibold text-gray-800">SchoolSync</span>
+            <span className="text-xl font-semibold text-gray-800 dark:text-zinc-100">SchoolSync</span>
           </div>
 
           {/* Welcome Text */}
           <div className="mb-6 text-center">
-            <h1 className="text-xl font-bold text-gray-800 mb-2">Welcome to SchoolSync</h1>
-            <p className="text-gray-500 text-sm">Sign in to access your dashboard</p>
+            <h1 className="text-xl font-bold text-gray-800 dark:text-zinc-100 mb-2">Welcome to SchoolSync</h1>
+            <p className="text-gray-500 dark:text-zinc-400 text-sm">Sign in to access your dashboard</p>
           </div>
 
           {/* Success Message from Signup */}
           {successMessage && (
-            <div className="mb-4 p-2.5 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm text-center flex items-center justify-center gap-2">
+            <div className="mb-4 p-2.5 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm text-center flex items-center justify-center gap-2">
               <CheckCircle size={16} />
               {successMessage}
             </div>
@@ -71,16 +81,16 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="flex flex-col" autoComplete="off">
             {/* Email */}
             <div className="mb-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5">
                 Email Address <span className="text-red-500">*</span>
               </label>
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-colors autofill-fix">
-                <Mail size={16} className="text-gray-400" />
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-colors autofill-fix">
+                <Mail size={16} className="text-gray-400 dark:text-zinc-500" />
                 <input
                   id="login-email"
                   type="email"
                   placeholder="Enter your email"
-                  className="flex-1 bg-transparent outline-none text-gray-800 placeholder:text-gray-400 text-sm autofill:bg-white autofill:text-gray-800"
+                  className="flex-1 bg-transparent outline-none text-gray-800 dark:text-zinc-100 placeholder:text-gray-400 dark:placeholder:text-zinc-500 text-sm autofill:bg-white autofill:text-gray-800"
                   autoComplete="off"
                   data-form-type="other"
                   value={email}
@@ -92,16 +102,16 @@ export default function Login() {
 
             {/* Password */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5">
                 Password <span className="text-red-500">*</span>
               </label>
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-colors autofill-fix">
-                <Lock size={16} className="text-gray-400" />
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-colors autofill-fix">
+                <Lock size={16} className="text-gray-400 dark:text-zinc-500" />
                 <input
                   id="login-password"
                   type={isVisible ? "text" : "password"}
                   placeholder="Enter your password"
-                  className="flex-1 bg-transparent outline-none text-gray-800 placeholder:text-gray-400 text-sm autofill:bg-white autofill:text-gray-800"
+                  className="flex-1 bg-transparent outline-none text-gray-800 dark:text-zinc-100 placeholder:text-gray-400 dark:placeholder:text-zinc-500 text-sm autofill:bg-white autofill:text-gray-800"
                   autoComplete="new-password"
                   data-form-type="other"
                   value={password}
@@ -110,14 +120,14 @@ export default function Login() {
                 />
                 <button
                   type="button"
-                  className="p-1 hover:bg-gray-100 rounded transition-colors"
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded transition-colors"
                   onClick={toggleVisibility}
                   aria-label={isVisible ? "Hide password" : "Show password"}
                 >
                   {isVisible ? (
-                    <EyeOff size={16} className="text-gray-400" />
+                    <EyeOff size={16} className="text-gray-400 dark:text-zinc-500" />
                   ) : (
-                    <Eye size={16} className="text-gray-400" />
+                    <Eye size={16} className="text-gray-400 dark:text-zinc-500" />
                   )}
                 </button>
               </div>
@@ -125,7 +135,7 @@ export default function Login() {
 
             {/* Error */}
             {error && (
-              <div className="mb-3 p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm text-center">
+              <div className="mb-3 p-2.5 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm text-center">
                 {error}
               </div>
             )}
@@ -141,20 +151,20 @@ export default function Login() {
               {loading ? "Signing in..." : "Sign In"}
             </button>
 
-            <div className="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            <div className="mb-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 px-3 py-2 text-xs text-amber-900 dark:text-amber-300">
               New schools are onboarded by invite only. Use the signup link sent to your organization.
             </div>
 
             {/* Divider */}
             <div className="flex items-center gap-3 my-5">
-              <div className="flex-1 h-px bg-gray-200" />
-              <span className="text-xs text-gray-400">Or continue with</span>
-              <div className="flex-1 h-px bg-gray-200" />
+              <div className="flex-1 h-px bg-gray-200 dark:bg-zinc-700" />
+              <span className="text-xs text-gray-400 dark:text-zinc-500">Or continue with</span>
+              <div className="flex-1 h-px bg-gray-200 dark:bg-zinc-700" />
             </div>
 
             {/* Social Login */}
             <div className="flex justify-center gap-3 mb-5">
-              <button type="button" className="w-9 h-9 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors">
+              <button type="button" className="w-9 h-9 rounded-full bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors">
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -162,17 +172,17 @@ export default function Login() {
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
               </button>
-              <button type="button" className="w-9 h-9 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors">
+              <button type="button" className="w-9 h-9 rounded-full bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
                 </svg>
               </button>
-              <button type="button" className="w-9 h-9 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors">
+              <button type="button" className="w-9 h-9 rounded-full bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="#1877F2">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                 </svg>
               </button>
-              <button type="button" className="w-9 h-9 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors">
+              <button type="button" className="w-9 h-9 rounded-full bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                 </svg>
@@ -180,19 +190,19 @@ export default function Login() {
             </div>
 
             {/* Demo credentials */}
-            <div className="pt-3 border-t border-gray-100">
-              <p className="text-xs text-gray-400 mb-1.5 text-center">Demo credentials:</p>
+            <div className="pt-3 border-t border-gray-100 dark:border-zinc-800">
+              <p className="text-xs text-gray-400 dark:text-zinc-500 mb-1.5 text-center">Demo credentials:</p>
               <div className="flex items-center justify-center gap-2 text-xs">
-                <span className="text-gray-600">vikram@school.com</span>
-                <span className="text-gray-300">•</span>
-                <span className="text-gray-600">password123</span>
+                <span className="text-gray-600 dark:text-zinc-400">vikram@school.com</span>
+                <span className="text-gray-300 dark:text-zinc-600">•</span>
+                <span className="text-gray-600 dark:text-zinc-400">password123</span>
                 <button
                   type="button"
                   onClick={() => {
                     setEmail("vikram@school.com");
                     setPassword("password123");
                   }}
-                  className="text-teal-600 hover:text-teal-700 font-medium ml-1"
+                  className="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 font-medium ml-1"
                 >
                   Auto-fill
                 </button>
@@ -201,9 +211,9 @@ export default function Login() {
           </form>
 
           {/* Footer */}
-          <div className="flex items-center justify-center gap-4 text-xs text-gray-400 mt-5 pt-3 border-t border-gray-100">
+          <div className="flex items-center justify-center gap-4 text-xs text-gray-400 dark:text-zinc-500 mt-5 pt-3 border-t border-gray-100 dark:border-zinc-800">
             <p>© {new Date().getFullYear()} SchoolSync</p>
-            <Link to="/privacy" className="hover:text-gray-600">Privacy Policy</Link>
+            <Link to="/privacy" className="hover:text-gray-600 dark:hover:text-zinc-300">Privacy Policy</Link>
           </div>
         </div>
       </div>

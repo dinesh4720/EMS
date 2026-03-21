@@ -330,7 +330,7 @@ export default function CalendarPage() {
     for (let i = firstDayOfMonth - 1; i >= 0; i--) {
       const day = daysInPrevMonth - i;
       days.push(
-        <div key={`prev-${day}`} className="min-h-[100px] p-2 border-r border-b border-default-100 bg-default-30">
+        <div key={`prev-${day}`} className="min-h-[100px] p-2 border-r border-b border-default-100 bg-default-50/40">
           <span className="text-xs font-medium text-default-300">{day}</span>
         </div>
       );
@@ -348,8 +348,8 @@ export default function CalendarPage() {
           key={day}
           onClick={() => handleDateClick(dateKey)}
           className={`min-h-[100px] p-2 border-r border-b border-default-100 cursor-pointer transition-all group relative
-            ${isToday ? 'bg-primary-5' : 'bg-background'}
-            ${isSelectedStaffDay ? 'bg-secondary-5' : ''}
+            ${isToday ? 'bg-primary-50/50' : 'bg-background'}
+            ${isSelectedStaffDay ? 'bg-secondary-50/50' : ''}
             hover:bg-default-50
           `}
         >
@@ -384,11 +384,11 @@ export default function CalendarPage() {
                 onClick={(e) => handleEventClick(e, event)}
                 className={`
                   text-[10px] px-1.5 py-0.5 rounded truncate font-medium border cursor-pointer hover:opacity-80
-                  ${event.type === 'holiday' ? 'bg-danger-5 text-danger-700 border-danger-100' : ''}
-                  ${event.type === 'exam' ? 'bg-warning-5 text-warning-700 border-warning-100' : ''}
-                  ${event.type === 'event' ? 'bg-primary-5 text-primary-700 border-primary-100' : ''}
-                  ${event.type === 'meeting' ? 'bg-secondary-5 text-secondary-700 border-secondary-100' : ''}
-                  ${event.type === 'appointment' ? 'bg-success-5 text-success-700 border-success-100' : ''}
+                  ${event.type === 'holiday' ? 'bg-danger-50/50 text-danger-700 border-danger-100' : ''}
+                  ${event.type === 'exam' ? 'bg-warning-50/50 text-warning-700 border-warning-100' : ''}
+                  ${event.type === 'event' ? 'bg-primary-50/50 text-primary-700 border-primary-100' : ''}
+                  ${event.type === 'meeting' ? 'bg-secondary-50/50 text-secondary-700 border-secondary-100' : ''}
+                  ${event.type === 'appointment' ? 'bg-success-50/50 text-success-700 border-success-100' : ''}
                 `}
               >
                 {event.title}
@@ -407,7 +407,7 @@ export default function CalendarPage() {
     const remainingDays = 42 - days.length;
     for (let day = 1; day <= remainingDays; day++) {
       days.push(
-        <div key={`next-${day}`} className="min-h-[100px] p-2 border-r border-b border-default-100 bg-default-30">
+        <div key={`next-${day}`} className="min-h-[100px] p-2 border-r border-b border-default-100 bg-default-50/40">
           <span className="text-xs font-medium text-default-300">{day}</span>
         </div>
       );
@@ -536,7 +536,7 @@ export default function CalendarPage() {
         {/* Header with type */}
         <div className="flex items-center gap-2">
           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-            eventType === 'appointment' ? 'bg-success-100 text-success-700' :
+            eventType === 'appointment' ? 'bg-success-100/500 text-success-700' :
             eventType === 'class' ? 'bg-default-100 text-default-700' :
             eventType === 'meeting' ? 'bg-secondary-100 text-secondary-700' :
             eventType === 'exam' ? 'bg-warning-100 text-warning-700' :
@@ -917,7 +917,7 @@ export default function CalendarPage() {
                 const isToday = dateKey === formatDateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
 
                 return (
-                  <div key={i} className={`flex flex-col rounded-lg border ${isToday ? 'border-foreground/20 bg-foreground/[0.02]' : 'border-default-200 bg-background'} min-h-[400px] hover:border-default-300 transition-colors`}>
+                  <div key={`day-${dateKey}`} className={`flex flex-col rounded-lg border ${isToday ? 'border-foreground/20 bg-foreground/[0.02]' : 'border-default-200 bg-background'} min-h-[400px] hover:border-default-300 transition-colors`}>
                     <div className={`p-2 border-b border-default-100 text-center ${isToday ? 'bg-foreground/[0.03]' : ''}`}>
                       <div className={`text-[10px] font-semibold uppercase ${isToday ? 'text-foreground' : 'text-default-400'}`}>{daysOfWeek[i]}</div>
                       <div className={`text-lg font-bold mt-0.5`}>{date.getDate()}</div>
@@ -930,7 +930,7 @@ export default function CalendarPage() {
                         </div>
                       ))}
                       {dayEvents.map(event => (
-                        <div key={event.id} onClick={(e) => handleEventClick(e, event)} className={`p-1.5 rounded text-[10px] border cursor-pointer hover:opacity-80 ${event.type === 'appointment' ? 'border-success-200 bg-success-5 text-success-700' : 'border-primary-200 bg-primary-5 text-primary-700'}`}>
+                        <div key={event.id} onClick={(e) => handleEventClick(e, event)} className={`p-1.5 rounded text-[10px] border cursor-pointer hover:opacity-80 ${event.type === 'appointment' ? 'border-success-200 bg-success-50/50 text-success-700' : 'border-primary-200 bg-primary-50/50 text-primary-700'}`}>
                           <div className="font-medium">{event.title}</div>
                           {event.startTime && <div className="opacity-70 mt-0.5 flex items-center gap-1"><Clock size={8} /> {formatTime(event.startTime)}</div>}
                         </div>
@@ -1073,7 +1073,7 @@ export default function CalendarPage() {
                           const period = defaultPeriods[idx];
                           return (
                             <div
-                              key={idx}
+                              key={`slot-${idx}`}
                               onClick={() => {
                                 const event = {
                                   id: `tt-today-${idx}`,
@@ -1134,7 +1134,7 @@ export default function CalendarPage() {
                               setSelectedEvent(event);
                               onDetailOpen();
                             }}
-                            className="p-2 rounded-lg border border-success-200 bg-success-5 hover:bg-success-10 cursor-pointer"
+                            className="p-2 rounded-lg border border-success-200 bg-success-50/50 hover:bg-success-100/50 cursor-pointer"
                           >
                             <div className="flex items-center justify-between">
                               <div className="text-xs font-medium text-success-700">{apt.visitorName}</div>
@@ -1289,7 +1289,7 @@ export default function CalendarPage() {
                         newEvent.allDay ? 'bg-foreground' : 'bg-default-200'
                       }`}
                     >
-                      <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform shadow-sm ${
+                      <div className={`w-4 h-4 rounded-full bg-background absolute top-1 transition-transform shadow-sm ${
                         newEvent.allDay ? 'translate-x-5' : 'translate-x-1'
                       }`} />
                     </button>
@@ -1397,13 +1397,13 @@ export default function CalendarPage() {
 
       <style>{`
         .writing-mode-vertical { writing-mode: vertical-rl; text-orientation: mixed; }
-        .bg-primary-5 { background-color: rgb(var(--heroui-primary-5)); }
-        .bg-secondary-5 { background-color: rgb(var(--heroui-secondary-5)); }
-        .bg-success-5 { background-color: rgb(var(--heroui-success-5)); }
-        .bg-success-10 { background-color: rgb(var(--heroui-success-10)); }
-        .bg-danger-5 { background-color: rgb(var(--heroui-danger-5)); }
-        .bg-warning-5 { background-color: rgb(var(--heroui-warning-5)); }
-        .bg-default-30 { background-color: rgba(var(--heroui-default-50), 0.3); }
+        .bg-primary-50/50 { background-color: rgb(var(--heroui-primary-5)); }
+        .bg-secondary-50/50 { background-color: rgb(var(--heroui-secondary-5)); }
+        .bg-success-50/50 { background-color: rgb(var(--heroui-success-5)); }
+        .bg-success-100/50 { background-color: rgb(var(--heroui-success-10)); }
+        .bg-danger-50/50 { background-color: rgb(var(--heroui-danger-5)); }
+        .bg-warning-50/50 { background-color: rgb(var(--heroui-warning-5)); }
+        .bg-default-50/40 { background-color: rgba(var(--heroui-default-50), 0.3); }
       `}</style>
     </div>
   );

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useValidatedParams } from '../../hooks/useValidatedParams';
 import {
   Card,
   CardBody,
@@ -18,7 +19,7 @@ import { MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
 
 const ExamDetail = () => {
-  const { examId } = useParams();
+  const { params: { examId }, isValid } = useValidatedParams({ examId: 'objectId' }, { redirectTo: '/academics/exams' });
   const navigate = useNavigate();
   const [exam, setExam] = useState(null);
   const [results, setResults] = useState([]);
@@ -69,6 +70,8 @@ const ExamDetail = () => {
     return colors[status] || 'default';
   };
 
+  if (!isValid) return null;
+
   if (loading) {
     return (
       <div className="flex justify-center py-20">
@@ -80,8 +83,8 @@ const ExamDetail = () => {
   if (!exam) {
     return (
       <div className="text-center py-20">
-        <FileText size={40} className="mx-auto mb-3 text-gray-300" />
-        <p className="text-gray-500">Exam not found</p>
+        <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
+        <p className="text-gray-500 dark:text-zinc-400">Exam not found</p>
         <MinimalButton className="mt-4" onClick={() => navigate('/academics/exams')}>
           Back to Exams
         </MinimalButton>
@@ -92,21 +95,21 @@ const ExamDetail = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white border border-gray-100 rounded-lg">
+      <div className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-lg">
         <div className="flex items-center justify-between p-6">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/academics/exams')}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
             >
-              <ArrowLeft size={20} className="text-gray-500" />
+              <ArrowLeft size={20} className="text-gray-500 dark:text-zinc-400" />
             </button>
-            <div className="p-3 bg-gray-100 rounded-lg">
-              <FileText size={24} className="text-gray-600" />
+            <div className="p-3 bg-gray-100 dark:bg-zinc-800 rounded-lg">
+              <FileText size={24} className="text-gray-600 dark:text-zinc-400" />
             </div>
             <div>
-              <h1 className="text-xl font-medium text-gray-900">{exam.name}</h1>
-              <p className="text-sm text-gray-500 mt-0.5">
+              <h1 className="text-xl font-medium text-gray-900 dark:text-zinc-100">{exam.name}</h1>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">
                 {exam.classId} - {exam.subjectName}
               </p>
             </div>
@@ -134,64 +137,64 @@ const ExamDetail = () => {
       {/* Info Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Exam Details */}
-        <Card shadow="none" className="border border-gray-100">
+        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
           <CardBody className="p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-gray-100 rounded-lg">
-                <FileText size={18} className="text-gray-600" />
+              <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
+                <FileText size={18} className="text-gray-600 dark:text-zinc-400" />
               </div>
-              <h3 className="font-medium text-gray-900">Exam Details</h3>
+              <h3 className="font-medium text-gray-900 dark:text-zinc-100">Exam Details</h3>
             </div>
             <div className="space-y-3">
-              <div className="flex justify-between py-2 border-b border-gray-50">
-                <span className="text-sm text-gray-500">Type</span>
-                <span className="text-sm font-medium text-gray-900 capitalize">
+              <div className="flex justify-between py-2 border-b border-gray-50 dark:border-zinc-800">
+                <span className="text-sm text-gray-500 dark:text-zinc-400">Type</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100 capitalize">
                   {exam.type?.replace('_', ' ')}
                 </span>
               </div>
-              <div className="flex justify-between py-2 border-b border-gray-50">
-                <span className="text-sm text-gray-500">Status</span>
+              <div className="flex justify-between py-2 border-b border-gray-50 dark:border-zinc-800">
+                <span className="text-sm text-gray-500 dark:text-zinc-400">Status</span>
                 <Chip size="sm" color={getStatusColor(exam.status)} variant="flat" className="capitalize">
                   {exam.status?.replace('_', ' ')}
                 </Chip>
               </div>
-              <div className="flex justify-between py-2 border-b border-gray-50">
-                <span className="text-sm text-gray-500">Date</span>
-                <span className="text-sm text-gray-900">{exam.startDate || 'Not scheduled'}</span>
+              <div className="flex justify-between py-2 border-b border-gray-50 dark:border-zinc-800">
+                <span className="text-sm text-gray-500 dark:text-zinc-400">Date</span>
+                <span className="text-sm text-gray-900 dark:text-zinc-100">{exam.startDate || 'Not scheduled'}</span>
               </div>
               <div className="flex justify-between py-2">
-                <span className="text-sm text-gray-500">Academic Year</span>
-                <span className="text-sm text-gray-900">{exam.academicYear}</span>
+                <span className="text-sm text-gray-500 dark:text-zinc-400">Academic Year</span>
+                <span className="text-sm text-gray-900 dark:text-zinc-100">{exam.academicYear}</span>
               </div>
             </div>
           </CardBody>
         </Card>
 
         {/* Marks Configuration */}
-        <Card shadow="none" className="border border-gray-100">
+        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
           <CardBody className="p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-gray-100 rounded-lg">
-                <Award size={18} className="text-gray-600" />
+              <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
+                <Award size={18} className="text-gray-600 dark:text-zinc-400" />
               </div>
-              <h3 className="font-medium text-gray-900">Marks Configuration</h3>
+              <h3 className="font-medium text-gray-900 dark:text-zinc-100">Marks Configuration</h3>
             </div>
             <div className="space-y-3">
-              <div className="flex justify-between py-2 border-b border-gray-50">
-                <span className="text-sm text-gray-500">Max Marks</span>
-                <span className="text-sm font-medium text-gray-900">{exam.maxMarks}</span>
+              <div className="flex justify-between py-2 border-b border-gray-50 dark:border-zinc-800">
+                <span className="text-sm text-gray-500 dark:text-zinc-400">Max Marks</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{exam.maxMarks}</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-gray-50">
-                <span className="text-sm text-gray-500">Passing Marks</span>
-                <span className="text-sm font-medium text-gray-900">{exam.passingMarks}</span>
+              <div className="flex justify-between py-2 border-b border-gray-50 dark:border-zinc-800">
+                <span className="text-sm text-gray-500 dark:text-zinc-400">Passing Marks</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{exam.passingMarks}</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-gray-50">
-                <span className="text-sm text-gray-500">Weightage</span>
-                <span className="text-sm text-gray-900">{exam.weightage}%</span>
+              <div className="flex justify-between py-2 border-b border-gray-50 dark:border-zinc-800">
+                <span className="text-sm text-gray-500 dark:text-zinc-400">Weightage</span>
+                <span className="text-sm text-gray-900 dark:text-zinc-100">{exam.weightage}%</span>
               </div>
               <div className="flex justify-between py-2">
-                <span className="text-sm text-gray-500">Results Entered</span>
-                <span className="text-sm text-gray-900">{results.length} students</span>
+                <span className="text-sm text-gray-500 dark:text-zinc-400">Results Entered</span>
+                <span className="text-sm text-gray-900 dark:text-zinc-100">{results.length} students</span>
               </div>
             </div>
           </CardBody>
@@ -199,14 +202,14 @@ const ExamDetail = () => {
       </div>
 
       {/* Results Summary */}
-      <Card shadow="none" className="border border-gray-100">
+      <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
         <CardBody className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gray-100 rounded-lg">
-                <Users size={18} className="text-gray-600" />
+              <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
+                <Users size={18} className="text-gray-600 dark:text-zinc-400" />
               </div>
-              <h3 className="font-medium text-gray-900">Results Summary</h3>
+              <h3 className="font-medium text-gray-900 dark:text-zinc-100">Results Summary</h3>
             </div>
             {results.length > 0 && (
               <MinimalButton variant="ghost" size="sm" onClick={() => navigate(`/academics/results/entry/${examId}`)}>
@@ -217,8 +220,8 @@ const ExamDetail = () => {
 
           {results.length === 0 ? (
             <div className="text-center py-8">
-              <Eye size={40} className="mx-auto mb-3 text-gray-300" />
-              <p className="text-gray-500 mb-4">No results entered yet</p>
+              <Eye size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
+              <p className="text-gray-500 dark:text-zinc-400 mb-4">No results entered yet</p>
               <MinimalButton onClick={() => navigate(`/academics/results/entry/${examId}`)}>
                 Enter Results
               </MinimalButton>
@@ -227,22 +230,22 @@ const ExamDetail = () => {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Student ID</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Marks</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Percentage</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Grade</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <tr className="border-b border-gray-100 dark:border-zinc-800">
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Student ID</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Marks</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Percentage</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Grade</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {results.map((result) => (
-                    <tr key={result.id || result._id} className="border-b border-gray-50 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-sm text-gray-900">{result.studentId}</td>
-                      <td className="py-3 px-4 text-sm text-gray-600">
+                    <tr key={result.id || result._id} className="border-b border-gray-50 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-900">
+                      <td className="py-3 px-4 text-sm text-gray-900 dark:text-zinc-100">{result.studentId}</td>
+                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-zinc-400">
                         {result.marksObtained}/{result.maxMarks}
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-600">{result.percentage}%</td>
+                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-zinc-400">{result.percentage}%</td>
                       <td className="py-3 px-4">
                         <Chip size="sm" variant="flat">{result.grade}</Chip>
                       </td>
@@ -269,30 +272,30 @@ const ExamDetail = () => {
         isOpen={publishModal}
         onClose={() => setPublishModal(false)}
         size="sm"
-        classNames={{ backdrop: 'bg-black/30', base: 'bg-white' }}
+        classNames={{ backdrop: 'bg-black/30', base: 'bg-white dark:bg-zinc-950' }}
       >
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 py-4">
+          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Send size={20} className="text-green-600" />
+              <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                <Send size={20} className="text-green-600 dark:text-green-400" />
               </div>
               <div>
                 <h3 className="text-lg font-medium">Publish Results</h3>
-                <p className="text-sm text-gray-500 font-normal">Make results visible to students</p>
+                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">Make results visible to students</p>
               </div>
             </div>
           </ModalHeader>
           <ModalBody className="py-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-zinc-400">
               Are you sure you want to publish the results for <span className="font-medium">{exam.name}</span>?
               This will make the results visible to students and parents.
             </p>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mt-2">
-              <p className="text-xs text-gray-500">This action cannot be undone.</p>
+            <div className="bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg p-3 mt-2">
+              <p className="text-xs text-gray-500 dark:text-zinc-400">This action cannot be undone.</p>
             </div>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100">
+          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
             <Button variant="light" onPress={() => setPublishModal(false)}>
               Cancel
             </Button>

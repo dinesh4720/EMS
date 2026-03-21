@@ -1,0 +1,144 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - img [ref=e9]
+          - text: Super Admin
+        - heading "School onboarding and tenant control" [level=1] [ref=e12]
+        - paragraph [ref=e13]: Provision schools, assign plans, and re-run setup from one place instead of handling each launch manually.
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]: Signed in as
+          - generic [ref=e17]: Platform Admin
+          - generic [ref=e18]: platform@schoolsync.test
+        - button "Sign out" [ref=e19] [cursor=pointer]
+    - generic [ref=e20]:
+      - generic [ref=e21]:
+        - img [ref=e23]
+        - generic [ref=e27]: Total schools
+        - generic [ref=e28]: "12"
+      - generic [ref=e29]:
+        - img [ref=e31]
+        - generic [ref=e33]: Active schools
+        - generic [ref=e34]: "8"
+      - generic [ref=e35]:
+        - img [ref=e37]
+        - generic [ref=e40]: Trials running
+        - generic [ref=e41]: "3"
+      - generic [ref=e42]:
+        - img [ref=e44]
+        - generic [ref=e49]: Attention needed
+        - generic [ref=e50]: "1"
+    - generic [ref=e51]:
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - heading "Onboard a new school" [level=2] [ref=e54]
+          - paragraph [ref=e55]: This creates the school, provisions its settings, and sets up an initial admin account.
+        - generic [ref=e56]:
+          - textbox "School name" [ref=e57]
+          - textbox "School code (optional)" [ref=e58]
+          - generic [ref=e59]:
+            - textbox "Contact email" [ref=e60]
+            - textbox "Contact phone" [ref=e61]
+          - generic [ref=e62]:
+            - combobox [ref=e63]:
+              - option "Starter" [selected]
+              - option "Growth"
+              - option "Enterprise"
+            - combobox [ref=e64]:
+              - option "Trialing" [selected]
+              - option "Active"
+              - option "Past due"
+              - option "Cancelled"
+          - textbox "Admin full name" [ref=e65]
+          - textbox "Admin email" [ref=e66]
+          - textbox "Admin password (optional)" [ref=e67]
+          - generic [ref=e68]:
+            - textbox "Frontend URL" [ref=e69]
+            - textbox "Backend URL" [ref=e70]
+        - button "Create school" [ref=e71] [cursor=pointer]
+      - generic [ref=e72]:
+        - generic [ref=e73]:
+          - generic [ref=e74]:
+            - heading "School registry" [level=2] [ref=e75]
+            - paragraph [ref=e76]: Manage plan state and re-run provisioning without touching the database manually.
+          - button "Refresh" [ref=e77] [cursor=pointer]
+        - table [ref=e79]:
+          - rowgroup [ref=e80]:
+            - row "School Admin Plan Status Provisioning Actions" [ref=e81]:
+              - columnheader "School" [ref=e82]
+              - columnheader "Admin" [ref=e83]
+              - columnheader "Plan" [ref=e84]
+              - columnheader "Status" [ref=e85]
+              - columnheader "Provisioning" [ref=e86]
+              - columnheader "Actions" [ref=e87]
+          - rowgroup [ref=e88]:
+            - row "Delhi Public School DPS 45 staff Rohit Sharma rohit@dps.edu Growth Active Active completed 1/15/2026, 3:30:00 PM Save Provision" [ref=e89]:
+              - cell "Delhi Public School DPS 45 staff" [ref=e90]:
+                - generic [ref=e91]: Delhi Public School
+                - generic [ref=e92]: DPS
+                - generic [ref=e93]: 45 staff
+              - cell "Rohit Sharma rohit@dps.edu" [ref=e94]:
+                - generic [ref=e95]: Rohit Sharma
+                - generic [ref=e96]: rohit@dps.edu
+              - cell "Growth Active" [ref=e97]:
+                - generic [ref=e98]:
+                  - combobox [ref=e99]:
+                    - option "Starter"
+                    - option "Growth" [selected]
+                    - option "Enterprise"
+                  - combobox [ref=e100]:
+                    - option "Trialing"
+                    - option "Active" [selected]
+                    - option "Past due"
+                    - option "Cancelled"
+              - cell "Active" [ref=e101]:
+                - combobox [ref=e102]:
+                  - option "Active" [selected]
+                  - option "Inactive"
+              - cell "completed 1/15/2026, 3:30:00 PM" [ref=e103]:
+                - generic [ref=e104]: completed
+                - generic [ref=e105]: 1/15/2026, 3:30:00 PM
+              - cell "Save Provision" [ref=e106]:
+                - generic [ref=e107]:
+                  - button "Save" [ref=e108] [cursor=pointer]
+                  - button "Provision" [ref=e109] [cursor=pointer]
+            - row "Greenfield Academy GFA 20 staff Priya Singh priya@greenfield.edu Starter Trialing Active pending Not provisioned yet Save Provision" [ref=e110]:
+              - cell "Greenfield Academy GFA 20 staff" [ref=e111]:
+                - generic [ref=e112]: Greenfield Academy
+                - generic [ref=e113]: GFA
+                - generic [ref=e114]: 20 staff
+              - cell "Priya Singh priya@greenfield.edu" [ref=e115]:
+                - generic [ref=e116]: Priya Singh
+                - generic [ref=e117]: priya@greenfield.edu
+              - cell "Starter Trialing" [ref=e118]:
+                - generic [ref=e119]:
+                  - combobox [ref=e120]:
+                    - option "Starter" [selected]
+                    - option "Growth"
+                    - option "Enterprise"
+                  - combobox [ref=e121]:
+                    - option "Trialing" [selected]
+                    - option "Active"
+                    - option "Past due"
+                    - option "Cancelled"
+              - cell "Active" [ref=e122]:
+                - combobox [ref=e123]:
+                  - option "Active" [selected]
+                  - option "Inactive"
+              - cell "pending Not provisioned yet" [ref=e124]:
+                - generic [ref=e125]: pending
+                - generic [ref=e126]: Not provisioned yet
+              - cell "Save Provision" [ref=e127]:
+                - generic [ref=e128]:
+                  - button "Save" [ref=e129] [cursor=pointer]
+                  - button "Provision" [ref=e130] [cursor=pointer]
+  - generic [ref=e131]:
+    - img [ref=e133]
+    - button "Open Tanstack query devtools" [ref=e181] [cursor=pointer]:
+      - img [ref=e182]
+```

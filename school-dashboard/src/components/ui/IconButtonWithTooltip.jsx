@@ -23,7 +23,7 @@ export default function IconButtonWithTooltip({
       delay={500}
       closeDelay={0}
       classNames={{
-        content: "bg-gray-800 text-white text-xs px-2 py-1 rounded-md font-medium"
+        content: "bg-gray-800 text-white dark:bg-zinc-200 dark:text-zinc-900 text-xs px-2 py-1 rounded-md font-medium"
       }}
     >
       <Button

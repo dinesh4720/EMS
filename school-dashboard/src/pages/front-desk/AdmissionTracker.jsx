@@ -1,7 +1,7 @@
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Progress } from '@heroui/react';
 import { CheckCircle, Circle, Clock } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getAuthHeaders } from '../../utils/authSession';
+import { frontDeskApi } from '../../services/api';
 
 export default function AdmissionTracker({ admission, isOpen, onClose }) {
   const [trackerData, setTrackerData] = useState(null);
@@ -16,12 +16,7 @@ export default function AdmissionTracker({ admission, isOpen, onClose }) {
   const loadTracker = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/front-desk/admissions/${admission._id}/tracker`, {
-        headers: getAuthHeaders({
-          'Content-Type': 'application/json'
-        })
-      });
-      const data = await response.json();
+      const data = await frontDeskApi.getAdmissionTracker(admission._id);
       setTrackerData(data);
     } catch (error) {
       console.error('Failed to load tracker:', error);

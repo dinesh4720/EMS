@@ -21,6 +21,14 @@ const getSchoolConfig = (schoolName) => ({
 export default function GatePassPrint({ gatePass, isOpen, onClose, schoolName }) {
   const printRef = useRef();
 
+  const handlePrint = useReactToPrint({
+    content: () => printRef.current,
+    onAfterPrint: () => {
+      // Optional: Close modal after print
+      // onClose();
+    }
+  });
+
   // Early return if no gate pass data
   if (!gatePass) {
     return (
@@ -44,14 +52,6 @@ export default function GatePassPrint({ gatePass, isOpen, onClose, schoolName })
 
   const schoolConfig = getSchoolConfig(schoolName);
 
-  const handlePrint = useReactToPrint({
-    content: () => printRef.current,
-    onAfterPrint: () => {
-      // Optional: Close modal after print
-      // onClose();
-    }
-  });
-
   const getReasonLabel = (reason) => {
     return GATE_PASS_REASONS[reason] || reason || '-';
   };
@@ -62,7 +62,7 @@ export default function GatePassPrint({ gatePass, isOpen, onClose, schoolName })
         <ModalHeader>Gate Pass Preview</ModalHeader>
         <ModalBody>
           {/* Printable Gate Pass */}
-          <div ref={printRef} className="p-6 border-2 border-dashed border-gray-300 bg-white">
+          <div ref={printRef} className="print-content p-6 border-2 border-dashed border-gray-300 bg-white">
             {/* Header */}
             <div className="text-center border-b-2 border-gray-800 pb-4 mb-4">
               <h1 className="text-2xl font-bold text-gray-800">{schoolConfig.name}</h1>
@@ -197,8 +197,8 @@ export default function GatePassPrint({ gatePass, isOpen, onClose, schoolName })
           </div>
 
           {/* Instructions for non-print view */}
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-700">
+          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <p className="text-sm text-blue-700 dark:text-blue-300">
               <strong>Note:</strong> Click "Download PDF" or "Print" to save the gate pass.
               You can also save it as PDF from the print dialog by selecting "Save as PDF" as the printer.
             </p>

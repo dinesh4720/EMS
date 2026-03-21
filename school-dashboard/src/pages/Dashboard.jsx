@@ -327,7 +327,7 @@ function Dashboard() {
     };
   }, [classes, students]);
 
-  const todayKey = useMemo(() => new Date().toISOString().split("T")[0], []);
+  const todayKey = new Date().toISOString().split("T")[0];
 
   const staffSnapshot = useMemo(() => {
     const activeStaff = (staff || []).filter((staffMember) => (staffMember.status || "active") === "active");
@@ -480,10 +480,10 @@ function Dashboard() {
   return (
     <div className="min-h-screen pb-8">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
           Overview
         </h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
           Welcome back! Here&apos;s what&apos;s happening today.
         </p>
       </div>

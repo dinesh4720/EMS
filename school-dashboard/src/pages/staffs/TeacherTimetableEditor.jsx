@@ -653,8 +653,8 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
             >
               <TableHeader>
                 <TableColumn className="w-24 sticky left-0 z-10 bg-default-100">Day</TableColumn>
-                {periods.map((period, i) => (
-                  <TableColumn key={i} className={period.isBreak ? "bg-warning-50/50 w-16" : "w-32"}>
+                {periods.map((period) => (
+                  <TableColumn key={period.name} className={period.isBreak ? "bg-warning-50/50 w-16" : "w-32"}>
                     <div className="flex flex-col items-center justify-center gap-0.5">
                       <span className="text-[11px] font-bold">{period.name}</span>
                       <span className="text-[9px] text-default-400 font-normal">
@@ -676,7 +676,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
 
                       if (period.isBreak) {
                         return (
-                          <TableCell key={i} className="text-center bg-warning-50/20 p-0">
+                          <TableCell key={`${day}-${period.name}`} className="text-center bg-warning-50/20 p-0">
                             <div className="h-20 flex items-center justify-center">
                               <span className="text-[9px] font-semibold uppercase tracking-wider text-warning-600 opacity-60 rotate-90">
                                 {period.name}
@@ -692,7 +692,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
                       );
 
                       return (
-                        <TableCell key={i} className="p-1">
+                        <TableCell key={`${day}-${period.name}`} className="p-1">
                           {slot.classId && slot.subject ? (
                             <motion.div whileHover={{ scale: canEdit ? 1.03 : 1 }} whileTap={{ scale: canEdit ? 0.97 : 1 }}>
                               <Card

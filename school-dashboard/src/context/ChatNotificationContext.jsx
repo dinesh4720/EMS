@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { getStoredAuthToken } from '../utils/authSession';
 import socketService from '../services/socketServiceEnhanced';
 import chatService from '../services/chatServiceEnhanced';
 import { MessageCircle, X, Reply, Send } from 'lucide-react';
@@ -41,7 +42,7 @@ export function ChatNotificationProvider({ children }) {
     // Initialize socket connection
     const initSocket = async () => {
       try {
-        await socketService.connect(user.id, 'staff');
+        await socketService.connect(getStoredAuthToken());
         
         if (!isSubscribed) return;
         
@@ -93,7 +94,7 @@ export function ChatNotificationProvider({ children }) {
 
     const fetchUnreadCount = async () => {
       try {
-        const conversations = await chatService.getConversations(user.id, 'staff');
+        const conversations = await chatService.getConversations();
         const totalUnread = conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
         setUnreadCount(totalUnread);
       } catch (error) {

@@ -185,7 +185,7 @@ export default function ReminderForm({
         <ModalBody className="space-y-4">
           {/* Type Selection */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Reminder Type</label>
+            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Reminder Type</label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {REMINDER_TYPES.map((type) => {
                 const Icon = type.icon;
@@ -223,7 +223,7 @@ export default function ReminderForm({
 
           {/* Trigger Condition */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Trigger Condition</label>
+            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Trigger Condition</label>
             <Select
               placeholder="Select when to send this reminder"
               selectedKeys={formData.trigger ? [formData.trigger] : []}
@@ -239,7 +239,7 @@ export default function ReminderForm({
 
           {/* Message Template */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Message</label>
+            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Message</label>
             <Textarea
               placeholder="Enter reminder message"
               value={formData.message}
@@ -272,7 +272,7 @@ export default function ReminderForm({
 
           {/* Recipients */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Send To</label>
+            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Send To</label>
             <div className="flex flex-wrap gap-2">
               {[
                 { key: 'parents', label: 'Parents' },
@@ -292,7 +292,7 @@ export default function ReminderForm({
 
           {/* Channels */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Send Via</label>
+            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Send Via</label>
             <div className="flex flex-wrap gap-2">
               {[
                 { key: 'inapp', label: 'In-App' },
@@ -314,7 +314,7 @@ export default function ReminderForm({
           {/* Schedule */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Start Date</label>
+              <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Start Date</label>
               <Input
                 type="date"
                 value={formData.startDate || ''}
@@ -323,7 +323,7 @@ export default function ReminderForm({
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">End Date</label>
+              <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">End Date</label>
               <Input
                 type="date"
                 value={formData.endDate || ''}
@@ -335,7 +335,7 @@ export default function ReminderForm({
 
           {/* Frequency */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Frequency</label>
+            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Frequency</label>
             <Select
               selectedKeys={[formData.frequency]}
               onSelectionChange={(keys) => setFormData({ ...formData, frequency: Array.from(keys)[0] })}

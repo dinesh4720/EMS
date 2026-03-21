@@ -29,7 +29,7 @@ function getCurrentUser() {
   try {
     const stored = sessionStorage.getItem('app_user');
     if (stored) return JSON.parse(stored);
-  } catch (_) {}
+  } catch (_) { /* ignored */ }
   return null;
 }
 
@@ -340,76 +340,76 @@ export default function Payments() {
     <div className="w-full flex flex-col">
       {/* Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 -mx-6 -mt-6 px-6 pt-6">
-        <div className="p-4 border border-gray-200 rounded-lg bg-white">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Collected</p>
-          <p className="text-2xl font-bold text-gray-900">₹{totalCollected.toLocaleString()}</p>
+        <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Collected</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">₹{totalCollected.toLocaleString()}</p>
         </div>
-        <div className="p-4 border border-gray-200 rounded-lg bg-white">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Pending</p>
-          <p className="text-2xl font-bold text-gray-900">₹{totalPending.toLocaleString()}</p>
+        <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Pending</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">₹{totalPending.toLocaleString()}</p>
         </div>
-        <div className="p-4 border border-gray-200 rounded-lg bg-white">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Overdue Students</p>
-          <p className="text-2xl font-bold text-gray-900">{pendingCount}</p>
+        <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Overdue Students</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{pendingCount}</p>
         </div>
-        <div className="p-4 border border-gray-200 rounded-lg bg-white">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Total Students</p>
-          <p className="text-2xl font-bold text-gray-900">{pagination.totalItems}</p>
+        <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Total Students</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{pagination.totalItems}</p>
         </div>
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center border-b border-gray-200 py-4 -mx-6 px-6 mb-6">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center border-b border-gray-200 dark:border-zinc-800 py-4 -mx-6 px-6 mb-6">
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-white rounded-lg border border-gray-200 hover:border-gray-300 focus-within:border-gray-400 transition-all duration-200">
-            <Search size={16} className="text-gray-400" />
+          <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 focus-within:border-gray-400 dark:focus-within:border-zinc-600 transition-all duration-200">
+            <Search size={16} className="text-gray-400 dark:text-zinc-500" />
             <input
               type="search"
               name="payments-search"
               autoComplete="off"
               data-form-type="other"
               placeholder="Search student..."
-              className="flex-1 bg-transparent outline-none text-sm text-gray-900 placeholder:text-gray-400"
+              className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-zinc-100 placeholder:text-gray-400 dark:placeholder:text-zinc-500"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-gray-100 rounded">
-                <X size={14} className="text-gray-400" />
+              <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded">
+                <X size={14} className="text-gray-400 dark:text-zinc-500" />
               </button>
             )}
           </div>
 
           <Popover isOpen={showFilters} onOpenChange={setShowFilters}>
             <PopoverTrigger>
-              <button className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-all text-sm">
-                <SlidersHorizontal size={16} className="text-gray-500" />
-                <span className="text-gray-600">Filters</span>
+              <button className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 transition-all text-sm">
+                <SlidersHorizontal size={16} className="text-gray-500 dark:text-zinc-400" />
+                <span className="text-gray-600 dark:text-zinc-400">Filters</span>
                 {(dateFrom || dateTo || amountMin || amountMax) && (
-                  <span className="w-2 h-2 rounded-full bg-gray-800"></span>
+                  <span className="w-2 h-2 rounded-full bg-gray-800 dark:bg-zinc-200"></span>
                 )}
               </button>
             </PopoverTrigger>
             <PopoverContent className="p-4">
               <div className="space-y-4 w-72">
-                <p className="text-sm font-medium text-gray-900">Advanced Filters</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Advanced Filters</p>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Date Range (Last Payment)</label>
+                    <label className="text-xs text-gray-500 dark:text-zinc-400 mb-1 block">Date Range (Last Payment)</label>
                     <div className="flex gap-2">
-                      <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-md" />
-                      <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-md" />
+                      <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-md dark:bg-zinc-950 dark:text-zinc-100" />
+                      <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-md dark:bg-zinc-950 dark:text-zinc-100" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Pending Amount Range</label>
+                    <label className="text-xs text-gray-500 dark:text-zinc-400 mb-1 block">Pending Amount Range</label>
                     <div className="flex gap-2">
-                      <input type="number" value={amountMin} onChange={(e) => setAmountMin(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-md" placeholder="Min" />
-                      <input type="number" value={amountMax} onChange={(e) => setAmountMax(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-md" placeholder="Max" />
+                      <input type="number" value={amountMin} onChange={(e) => setAmountMin(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-md dark:bg-zinc-950 dark:text-zinc-100" placeholder="Min" />
+                      <input type="number" value={amountMax} onChange={(e) => setAmountMax(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-md dark:bg-zinc-950 dark:text-zinc-100" placeholder="Max" />
                     </div>
                   </div>
                 </div>
-                <button onClick={clearFilters} className="w-full py-2 text-sm text-gray-600 hover:text-gray-900">
+                <button onClick={clearFilters} className="w-full py-2 text-sm text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100">
                   Clear Filters
                 </button>
               </div>
@@ -425,7 +425,7 @@ export default function Payments() {
             onSelectionChange={(keys) => setStatusFilter(Array.from(keys)[0])}
             className="w-full sm:w-[140px]"
             classNames={{
-              trigger: "h-9 min-h-9 bg-white border-gray-200 hover:border-gray-300",
+              trigger: "h-9 min-h-9 bg-white dark:bg-zinc-950 border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700",
               value: "text-sm",
             }}
           >
@@ -436,23 +436,23 @@ export default function Payments() {
 
           <button
             onClick={handleExportData}
-            className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-all text-sm"
+            className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 transition-all text-sm"
           >
-            <Download size={14} className="text-gray-500" />
-            <span className="text-gray-700">Export</span>
+            <Download size={14} className="text-gray-500 dark:text-zinc-400" />
+            <span className="text-gray-700 dark:text-zinc-300">Export</span>
           </button>
         </div>
       </div>
 
       {/* Table */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden -mx-6 sm:mx-0">
+      <div className="border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden -mx-6 sm:mx-0">
         <Table
           aria-label="Fee payments"
           removeWrapper
           classNames={{
             base: "overflow-visible [&_table]:w-full",
-            th: "bg-gray-50 text-gray-500 font-medium text-xs uppercase tracking-wider h-11 border-b border-gray-200",
-            td: "py-4 border-b border-gray-100",
+            th: "bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-11 border-b border-gray-200 dark:border-zinc-800",
+            td: "py-4 border-b border-gray-100 dark:border-zinc-800",
           }}
         >
           <TableHeader>
@@ -466,43 +466,43 @@ export default function Payments() {
           <TableBody
             emptyContent={
               <div className="text-center py-8">
-                <p className="text-gray-400 text-sm">No payment records found</p>
+                <p className="text-gray-400 dark:text-zinc-500 text-sm">No payment records found</p>
               </div>
             }
           >
             {filteredPayments.map((payment) => (
-              <TableRow key={payment.id} className="hover:bg-gray-50 transition-colors">
+              <TableRow key={payment.id} className="hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors">
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                      <span className="text-xs font-medium text-gray-600">
+                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                      <span className="text-xs font-medium text-gray-600 dark:text-zinc-400">
                         {payment.student.charAt(0)}
                       </span>
                     </div>
                     <div>
                       <p
-                        className="text-sm font-medium text-gray-900 hover:text-gray-600 cursor-pointer"
+                        className="text-sm font-medium text-gray-900 dark:text-zinc-100 hover:text-gray-600 dark:hover:text-zinc-400 cursor-pointer"
                         onClick={() => navigate(`/students/${payment.id}`)}
                       >
                         {payment.student}
                       </p>
-                      <p className="text-xs text-gray-500">Class {payment.class}</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">Class {payment.class}</p>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm font-mono text-gray-700">₹{payment.paid.toLocaleString()}</span>
+                  <span className="text-sm font-mono text-gray-700 dark:text-zinc-300">₹{payment.paid.toLocaleString()}</span>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm font-mono text-gray-700">₹{payment.pending.toLocaleString()}</span>
+                  <span className="text-sm font-mono text-gray-700 dark:text-zinc-300">₹{payment.pending.toLocaleString()}</span>
                 </TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border rounded ${
                     payment.status === "paid"
-                      ? "border-green-200 bg-green-50 text-green-700"
+                      ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400"
                       : payment.status === "not_assigned"
-                      ? "border-gray-200 bg-gray-50 text-gray-500"
-                      : "border-yellow-200 bg-yellow-50 text-yellow-700"
+                      ? "border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400"
+                      : "border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-400"
                   }`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${
                       payment.status === "paid" ? "bg-green-500" : payment.status === "not_assigned" ? "bg-gray-400" : "bg-yellow-500"
@@ -511,7 +511,7 @@ export default function Payments() {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span className="text-xs text-gray-500">{payment.lastPayment || '—'}</span>
+                  <span className="text-xs text-gray-500 dark:text-zinc-400">{payment.lastPayment || '—'}</span>
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-2">
@@ -525,18 +525,18 @@ export default function Payments() {
                         </button>
                         <button
                           onClick={() => handleSendReminder(payment)}
-                          className="p-1.5 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all"
+                          className="p-1.5 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all"
                         >
-                          <Bell size={14} className="text-gray-500" />
+                          <Bell size={14} className="text-gray-500 dark:text-zinc-400" />
                         </button>
                       </>
                     )}
                     {payment.status === "paid" && (
                       <button
                         onClick={() => handleDownloadReceipt(payment)}
-                        className="p-1.5 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all"
+                        className="p-1.5 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all"
                       >
-                        <Download size={14} className="text-gray-500" />
+                        <Download size={14} className="text-gray-500 dark:text-zinc-400" />
                       </button>
                     )}
                   </div>
@@ -548,7 +548,7 @@ export default function Payments() {
       </div>
 
       <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <span className="text-gray-500 text-sm">
+        <span className="text-gray-500 dark:text-zinc-400 text-sm">
           Page {currentPage} of {pagination.totalPages} ({pagination.totalItems} students)
         </span>
         {pagination.totalPages > 1 && (
@@ -556,14 +556,14 @@ export default function Payments() {
             <button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={!pagination.hasPrevPage || studentsLoading}
-              className="px-3 py-1.5 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50"
+              className="px-3 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded hover:bg-gray-50 dark:hover:bg-zinc-900 disabled:opacity-50 dark:text-zinc-300"
             >
               Previous
             </button>
             <button
               onClick={() => setCurrentPage((prev) => prev + 1)}
               disabled={!pagination.hasNextPage || studentsLoading}
-              className="px-3 py-1.5 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50"
+              className="px-3 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded hover:bg-gray-50 dark:hover:bg-zinc-900 disabled:opacity-50 dark:text-zinc-300"
             >
               Next
             </button>
@@ -576,20 +576,20 @@ export default function Payments() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="border-b border-gray-200 px-6 py-4">
+              <ModalHeader className="border-b border-gray-200 dark:border-zinc-800 px-6 py-4">
                 <div className="flex justify-between items-center w-full">
-                  <h3 className="text-base font-semibold text-gray-900">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">
                     Collect Fee — {selectedStudent?.student}
                   </h3>
-                  <span className="text-sm text-gray-500">Class {selectedStudent?.class}</span>
+                  <span className="text-sm text-gray-500 dark:text-zinc-400">Class {selectedStudent?.class}</span>
                 </div>
               </ModalHeader>
               <ModalBody className="p-0">
-                <div className="divide-y divide-gray-100 max-h-[300px] overflow-y-auto">
+                <div className="divide-y divide-gray-100 dark:divide-zinc-800 max-h-[300px] overflow-y-auto">
                   {studentFees.map((fee) => (
                     <label
                       key={fee.id}
-                      className="flex items-center justify-between p-4 hover:bg-gray-50 cursor-pointer"
+                      className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-zinc-900 cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
                         <Checkbox
@@ -601,19 +601,19 @@ export default function Payments() {
                           }}
                         />
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{fee.head}</p>
-                          <p className="text-xs text-gray-500">{fee.month}</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fee.head}</p>
+                          <p className="text-xs text-gray-500 dark:text-zinc-400">{fee.month}</p>
                         </div>
                       </div>
-                      <span className="text-sm font-mono text-gray-700">₹{fee.amount.toLocaleString()}</span>
+                      <span className="text-sm font-mono text-gray-700 dark:text-zinc-300">₹{fee.amount.toLocaleString()}</span>
                     </label>
                   ))}
                 </div>
 
-                <div className="p-4 bg-gray-50 border-t border-gray-200">
+                <div className="p-4 bg-gray-50 dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-gray-500">Mode:</span>
+                      <span className="text-xs text-gray-500 dark:text-zinc-400">Mode:</span>
                       <div className="flex gap-2">
                         {["cash", "online", "card", "cheque"].map((mode) => (
                           <button
@@ -622,7 +622,7 @@ export default function Payments() {
                             className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-all ${
                               paymentMode === mode
                                 ? "bg-gray-900 text-white border-gray-900"
-                                : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                                : "bg-white dark:bg-zinc-950 text-gray-600 dark:text-zinc-400 border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700"
                             }`}
                           >
                             {mode.charAt(0).toUpperCase() + mode.slice(1)}
@@ -631,17 +631,17 @@ export default function Payments() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-500">Total:</span>
-                      <span className="text-xl font-bold text-gray-900">₹{totalSelected.toLocaleString()}</span>
+                      <span className="text-sm text-gray-500 dark:text-zinc-400">Total:</span>
+                      <span className="text-xl font-bold text-gray-900 dark:text-zinc-100">₹{totalSelected.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
               </ModalBody>
-              <ModalFooter className="border-t border-gray-200 px-6 py-4 gap-3">
+              <ModalFooter className="border-t border-gray-200 dark:border-zinc-800 px-6 py-4 gap-3">
                 <button
                   onClick={onClose}
                   disabled={collectingPayment}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -663,49 +663,49 @@ export default function Payments() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="border-b border-gray-200">Payment Receipt</ModalHeader>
+              <ModalHeader className="border-b border-gray-200 dark:border-zinc-800">Payment Receipt</ModalHeader>
               <ModalBody className="py-6">
                 <div className="text-center space-y-3">
-                  <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center mx-auto">
-                    <span className="text-2xl text-green-600">✓</span>
+                  <div className="w-14 h-14 rounded-full bg-green-50 dark:bg-green-950 flex items-center justify-center mx-auto">
+                    <span className="text-2xl text-green-600 dark:text-green-400">✓</span>
                   </div>
-                  <p className="text-gray-600 text-sm font-medium">Payment Successful</p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-gray-600 dark:text-zinc-400 text-sm font-medium">Payment Successful</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100">
                     ₹{receiptData?.amount.toLocaleString()}
                   </p>
-                  <p className="text-xs text-gray-400">Receipt No: {receiptData?.receiptNumber}</p>
-                  <div className="border-t border-gray-200 my-4"></div>
-                  <div className="text-left space-y-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <p className="text-xs text-gray-400 dark:text-zinc-500">Receipt No: {receiptData?.receiptNumber}</p>
+                  <div className="border-t border-gray-200 dark:border-zinc-800 my-4"></div>
+                  <div className="text-left space-y-2 bg-gray-50 dark:bg-zinc-900 p-4 rounded-lg border border-gray-200 dark:border-zinc-800">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Student</span>
-                      <span className="text-gray-900">{receiptData?.student}</span>
+                      <span className="text-gray-500 dark:text-zinc-400">Student</span>
+                      <span className="text-gray-900 dark:text-zinc-100">{receiptData?.student}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Class</span>
-                      <span className="text-gray-900">{receiptData?.class}</span>
+                      <span className="text-gray-500 dark:text-zinc-400">Class</span>
+                      <span className="text-gray-900 dark:text-zinc-100">{receiptData?.class}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Mode</span>
-                      <span className="text-gray-900 capitalize">{receiptData?.paymentMode}</span>
+                      <span className="text-gray-500 dark:text-zinc-400">Mode</span>
+                      <span className="text-gray-900 dark:text-zinc-100 capitalize">{receiptData?.paymentMode}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Date</span>
-                      <span className="text-gray-900">{receiptData?.date}</span>
+                      <span className="text-gray-500 dark:text-zinc-400">Date</span>
+                      <span className="text-gray-900 dark:text-zinc-100">{receiptData?.date}</span>
                     </div>
                   </div>
                 </div>
               </ModalBody>
-              <ModalFooter className="border-t border-gray-200 gap-3">
+              <ModalFooter className="border-t border-gray-200 dark:border-zinc-800 gap-3">
                 <button
                   onClick={() => window.print()}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all"
                 >
                   <Printer size={14} />
                   <span>Print</span>
                 </button>
                 <button
                   onClick={() => toast('Receipt download coming soon', { icon: '📄' })}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all"
                 >
                   <Download size={14} />
                   <span>Download</span>

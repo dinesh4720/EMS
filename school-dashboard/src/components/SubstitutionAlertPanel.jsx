@@ -71,19 +71,19 @@ export default function SubstitutionAlertPanel({ className = '' }) {
       if (data.type === 'new_alerts') {
         // Show notification toast
         toast.custom((t) => (
-          <div className={`flex items-center gap-3 p-4 bg-white rounded-lg shadow-lg border-l-4 border-danger-500 ${t.visible ? 'animate-enter' : 'animate-leave'}`}>
+          <div className={`flex items-center gap-3 p-4 bg-white dark:bg-zinc-950 rounded-lg shadow-lg border-l-4 border-danger-500 ${t.visible ? 'animate-enter' : 'animate-leave'}`}>
             <div className="p-2 bg-danger-100 rounded-full">
               <AlertTriangle className="w-5 h-5 text-danger-600" />
             </div>
             <div>
-              <p className="font-semibold text-gray-900">Teacher Absent</p>
-              <p className="text-sm text-gray-600">
+              <p className="font-semibold text-gray-900 dark:text-zinc-100">Teacher Absent</p>
+              <p className="text-sm text-gray-600 dark:text-zinc-400">
                 {data.teacherName} - {data.count} class{data.count > 1 ? 'es' : ''} need{data.count === 1 ? 's' : ''} substitute
               </p>
             </div>
             <button
               onClick={() => toast.dismiss(t.id)}
-              className="ml-2 text-gray-400 hover:text-gray-600"
+              className="ml-2 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300"
             >
               ×
             </button>

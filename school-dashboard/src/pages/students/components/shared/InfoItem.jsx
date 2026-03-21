@@ -11,10 +11,10 @@ import React from 'react';
 function InfoItem({ label, value, icon: Icon, className = '' }) {
   return (
     <div className={className}>
-      <p className="text-xs text-gray-500 mb-1">{label}</p>
+      <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">{label}</p>
       <div className="flex items-center gap-1.5">
-        {Icon && <Icon size={14} className="text-gray-400" strokeWidth={2} />}
-        <p className="text-sm font-medium text-gray-900">{value || 'N/A'}</p>
+        {Icon && <Icon size={14} className="text-gray-400 dark:text-zinc-500" strokeWidth={2} />}
+        <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{value || 'N/A'}</p>
       </div>
     </div>
   );

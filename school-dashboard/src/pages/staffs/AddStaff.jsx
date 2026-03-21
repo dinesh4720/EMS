@@ -13,10 +13,10 @@ import { classesApi } from "../../services/api";
 import toast from "react-hot-toast";
 
 // Minimal design constants matching login page style
-const minimalInputClasses = "bg-white border border-gray-200 hover:border-teal-500 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all duration-200";
-const minimalLabelClasses = "text-xs font-medium text-gray-700 mb-1";
+const minimalInputClasses = "bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 hover:border-teal-500 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all duration-200";
+const minimalLabelClasses = "text-xs font-medium text-gray-700 dark:text-zinc-300 mb-1";
 const minimalButtonPrimary = "bg-teal-600 hover:bg-teal-700 text-white transition-colors";
-const minimalButtonSecondary = "bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors";
+const minimalButtonSecondary = "bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 transition-colors";
 
 // --- Constants ---
 const employmentTypes = [
@@ -1011,7 +1011,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             <div className="flex flex-wrap gap-2 pt-1">
               {formData.staffType.map((role, idx) => (
                 <Chip
-                  key={idx}
+                  key={role}
                   size="sm"
                   variant="flat"
                   color="primary"
@@ -1142,7 +1142,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
 
       <div className="space-y-4">
         {formData.professionalQualifications.map((qual, i) => (
-          <div key={i} className="p-4 border border-default-200 rounded-xl space-y-4 relative group hover:border-default-300 transition-colors bg-default-50/20">
+          <div key={`qualification-${i}`} className="p-4 border border-default-200 rounded-xl space-y-4 relative group hover:border-default-300 transition-colors bg-default-50/20">
             <button
               className="absolute top-3 right-3 text-default-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-default-100 rounded-lg"
               onClick={() => removeQualification(i)}
@@ -1377,7 +1377,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             {formData.qualificationDocs.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
                 {formData.qualificationDocs.map((file, i) => (
-                  <Chip key={i} onClose={() => removeFile("qualificationDocs", i)} size="sm" variant="flat" className="text-xs h-7 bg-default-100">
+                  <Chip key={`doc-${file.name}-${i}`} onClose={() => removeFile("qualificationDocs", i)} size="sm" variant="flat" className="text-xs h-7 bg-default-100">
                     {file.name}
                   </Chip>
                 ))}
@@ -1444,7 +1444,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
 
           <div className="border border-default-200 rounded-lg overflow-hidden">
             {formData.salaryBreakdown.map((item, i) => (
-              <div key={i} className="flex items-center gap-2 p-2 border-b border-default-100 last:border-0 hover:bg-default-50">
+              <div key={`salary-${i}`} className="flex items-center gap-2 p-2 border-b border-default-100 last:border-0 hover:bg-default-50">
                 <Input
                   size="sm"
                   value={item.component}

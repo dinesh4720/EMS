@@ -225,7 +225,7 @@ export default function Attendance({ classId }) {
   const defaulters = classStudents.filter(s => attendance[s.id] === "absent");
 
   return (
-    <div className={`w-full flex flex-col ${isEmbedded ? 'bg-white rounded-lg border border-gray-100 p-5' : ''}`}>
+    <div className={`w-full flex flex-col ${isEmbedded ? 'bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5' : ''}`}>
       {/* Toolbar */}
       <div className={`flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-default-200 py-4 ${isEmbedded ? 'mb-0' : '-mx-6 -mt-6 px-6 mb-0'}`}>
         {/* Left Side - Filters */}
@@ -276,62 +276,62 @@ export default function Attendance({ classId }) {
       {/* KPI Stats - Card Grid Style */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
         {/* Total */}
-        <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+        <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
           <div className="flex items-start justify-between mb-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-              <Users size={16} className="text-gray-600" />
+            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+              <Users size={16} className="text-gray-600 dark:text-zinc-400" />
             </div>
           </div>
-          <h3 className="text-xl font-semibold text-gray-800">{classStudents.length}</h3>
-          <p className="text-xs font-medium text-gray-500 mt-0.5">Total</p>
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{classStudents.length}</h3>
+          <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">Total</p>
         </div>
 
         {/* Present */}
-        <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+        <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
           <div className="flex items-start justify-between mb-3">
             <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center">
               <Check size={16} className="text-green-600" />
             </div>
           </div>
-          <h3 className="text-xl font-semibold text-gray-800">{presentCount}</h3>
-          <p className="text-xs font-medium text-gray-500 mt-0.5">Present</p>
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{presentCount}</h3>
+          <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">Present</p>
         </div>
 
         {/* Absent */}
-        <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+        <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
           <div className="flex items-start justify-between mb-3">
             <div className="w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center">
               <X size={16} className="text-red-600" />
             </div>
           </div>
-          <h3 className="text-xl font-semibold text-gray-800">{absentCount}</h3>
-          <p className="text-xs font-medium text-gray-500 mt-0.5">Absent</p>
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{absentCount}</h3>
+          <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">Absent</p>
         </div>
 
         {/* Unmarked */}
         {unmarkedCount > 0 && (
-          <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+          <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
             <div className="flex items-start justify-between mb-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                <Clock size={16} className="text-gray-600" />
+              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                <Clock size={16} className="text-gray-600 dark:text-zinc-400" />
               </div>
             </div>
-            <h3 className="text-xl font-semibold text-gray-800">{unmarkedCount}</h3>
-            <p className="text-xs font-medium text-gray-500 mt-0.5">Unmarked</p>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{unmarkedCount}</h3>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">Unmarked</p>
           </div>
         )}
 
         {/* Attendance Rate */}
-        <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+        <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
           <div className="flex items-start justify-between mb-3">
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${markedCount === 0 ? 'bg-gray-100' : attendancePercent >= 75 ? 'bg-green-100' : 'bg-red-100'}`}>
-              <TrendingUp size={16} className={markedCount === 0 ? 'text-gray-600' : attendancePercent >= 75 ? 'text-green-600' : 'text-red-600'} />
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${markedCount === 0 ? 'bg-gray-100 dark:bg-zinc-800' : attendancePercent >= 75 ? 'bg-green-100' : 'bg-red-100'}`}>
+              <TrendingUp size={16} className={markedCount === 0 ? 'text-gray-600 dark:text-zinc-400' : attendancePercent >= 75 ? 'text-green-600' : 'text-red-600'} />
             </div>
           </div>
-          <h3 className={`text-xl font-semibold ${markedCount === 0 ? "text-gray-400" : attendancePercent >= 75 ? "text-green-600" : "text-red-600"}`}>
+          <h3 className={`text-xl font-semibold ${markedCount === 0 ? "text-gray-400 dark:text-zinc-500" : attendancePercent >= 75 ? "text-green-600" : "text-red-600"}`}>
             {markedCount === 0 ? "—" : `${attendancePercent}%`}
           </h3>
-          <p className="text-xs font-medium text-gray-500 mt-0.5">Attendance Rate</p>
+          <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">Attendance Rate</p>
         </div>
       </div>
 

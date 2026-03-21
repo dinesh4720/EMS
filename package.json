@@ -5,7 +5,8 @@
     "school-dashboard",
     "parent-app",
     "staff-app",
-    "owlin"
+    "owlin",
+    "shared-types"
   ],
   "scripts": {
     "bootstrap": "npm install --workspaces --include-workspace-root --legacy-peer-deps && npm --prefix owlin/server install --legacy-peer-deps",
@@ -27,7 +28,7 @@
   },
   "dependencies": {
     "@heroui/theme": "^2.4.26",
-    "@react-three/fiber": "^8.18.0",
+    "@react-three/fiber": "^9.0.0",
     "bufferutil": "^4.1.0",
     "expo": "^54.0.33",
     "three": "^0.176.0",
@@ -37,5 +38,10 @@
     "@types/react": "~19.1.10",
     "puppeteer": "^24.35.0",
     "typescript": "~5.9.2"
+  },
+  "overrides": {
+    "socket.io-parser": ">=4.2.6",
+    "flatted": ">=3.4.2",
+    "fast-xml-parser": ">=5.5.7"
   }
 }

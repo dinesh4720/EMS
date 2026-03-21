@@ -38,7 +38,7 @@ const StarRating = ({ rating, onRatingChange, editable, dimension }) => {
       >
         <Star
           size={18}
-          className={fill ? "text-gray-700" : "text-gray-200"}
+          className={fill ? "text-gray-700 dark:text-zinc-300" : "text-gray-200 dark:text-zinc-700"}
           fill={fill ? "currentColor" : "none"}
           strokeWidth={fill ? 0 : 2}
         />
@@ -147,27 +147,27 @@ export default function StudentRatingSystem({
   const currentRatings = isEditing ? tempRatings : ratings;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+      <div className="px-5 py-4 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-            <Award size={18} className="text-gray-600" />
+          <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+            <Award size={18} className="text-gray-600 dark:text-zinc-400" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-gray-900">Student Rating</h3>
-            <p className="text-xs text-gray-500">Overall performance assessment</p>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Student Rating</h3>
+            <p className="text-xs text-gray-500 dark:text-zinc-400">Overall performance assessment</p>
           </div>
         </div>
 
         {/* Overall Score */}
         <div className="text-right">
-          <p className="text-2xl font-bold text-gray-900">
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">
             {overallRating > 0 ? overallRating : "—"}
-            <span className="text-sm font-normal text-gray-400 ml-1">/ 5</span>
+            <span className="text-sm font-normal text-gray-400 dark:text-zinc-500 ml-1">/ 5</span>
           </p>
           {lastUpdated && (
-            <p className="text-xs text-gray-400 flex items-center justify-end gap-1 mt-0.5">
+            <p className="text-xs text-gray-400 dark:text-zinc-500 flex items-center justify-end gap-1 mt-0.5">
               <Clock size={12} />
               {lastUpdated.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
             </p>
@@ -176,7 +176,7 @@ export default function StudentRatingSystem({
       </div>
 
       {/* Rating Dimensions */}
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-gray-100 dark:divide-zinc-800">
         {RATING_DIMENSIONS.map((dimension) => {
           const ratingData = currentRatings[dimension.key];
           const rating = ratingData?.rating || 0;
@@ -185,15 +185,15 @@ export default function StudentRatingSystem({
           const IconComponent = dimension.icon;
 
           return (
-            <div key={dimension.key} className="px-5 py-4 hover:bg-gray-50/50 transition-colors">
+            <div key={dimension.key} className="px-5 py-4 hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3 flex-1">
-                  <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <IconComponent size={14} className="text-gray-500" />
+                  <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                    <IconComponent size={14} className="text-gray-500 dark:text-zinc-400" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-900">{dimension.label}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{dimension.label}</p>
                       <div className="flex items-center gap-3">
                         {isEditing ? (
                           <StarRating
@@ -209,19 +209,19 @@ export default function StudentRatingSystem({
                                 <Star
                                   key={star}
                                   size={16}
-                                  className={star <= rating ? "text-gray-600" : "text-gray-200"}
+                                  className={star <= rating ? "text-gray-600 dark:text-zinc-400" : "text-gray-200 dark:text-zinc-700"}
                                   fill={star <= rating ? "currentColor" : "none"}
                                   strokeWidth={star <= rating ? 0 : 2}
                                 />
                               ))}
                             </div>
                             {rating > 0 && (
-                              <span className="text-sm font-semibold text-gray-700">{rating}.0</span>
+                              <span className="text-sm font-semibold text-gray-700 dark:text-zinc-300">{rating}.0</span>
                             )}
                           </div>
                         )}
                         {!isEditing && (
-                          <span className="text-xs text-gray-400 w-24 text-right">
+                          <span className="text-xs text-gray-400 dark:text-zinc-500 w-24 text-right">
                             {ratingInfo.text}
                           </span>
                         )}
@@ -245,7 +245,7 @@ export default function StudentRatingSystem({
                         />
                       </div>
                     ) : comment ? (
-                      <p className="text-xs text-gray-500 mt-1 truncate">"{comment}"</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1 truncate">"{comment}"</p>
                     ) : null}
                   </div>
                 </div>
@@ -257,12 +257,12 @@ export default function StudentRatingSystem({
 
       {/* Actions */}
       {editable && (
-        <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-end gap-2">
+        <div className="px-5 py-4 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-end gap-2">
           {!isEditing ? (
             <Button
               size="sm"
               variant="flat"
-              className="bg-gray-100 text-gray-700"
+              className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300"
               startContent={<Edit3 size={14} />}
               onPress={handleStartEdit}
             >
@@ -273,7 +273,7 @@ export default function StudentRatingSystem({
               <Button
                 size="sm"
                 variant="light"
-                className="text-gray-500"
+                className="text-gray-500 dark:text-zinc-400"
                 startContent={<X size={14} />}
                 onPress={handleCancelEdit}
               >

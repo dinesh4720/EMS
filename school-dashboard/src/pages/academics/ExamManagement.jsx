@@ -245,8 +245,8 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
             onClick={() => setActiveView('list')}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
               activeView === 'list'
-                ? 'bg-gray-900 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-gray-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
+                : 'text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
             }`}
           >
             List View
@@ -255,8 +255,8 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
             onClick={() => setActiveView('schedule')}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
               activeView === 'schedule'
-                ? 'bg-gray-900 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-gray-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
+                : 'text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
             }`}
           >
             Schedule View
@@ -281,33 +281,33 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
 
       {/* Stats Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-          <p className="text-xs text-gray-500">Total Exams</p>
-          <p className="text-xl font-semibold text-gray-900">{exams.length}</p>
+        <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 border border-gray-100 dark:border-zinc-800">
+          <p className="text-xs text-gray-500 dark:text-zinc-400">Total Exams</p>
+          <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{exams.length}</p>
         </div>
-        <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
-          <p className="text-xs text-blue-600">Scheduled</p>
-          <p className="text-xl font-semibold text-blue-700">{exams.filter(e => e.status === 'scheduled').length}</p>
+        <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
+          <p className="text-xs text-blue-600 dark:text-blue-400">Scheduled</p>
+          <p className="text-xl font-semibold text-blue-700 dark:text-blue-300">{exams.filter(e => e.status === 'scheduled').length}</p>
         </div>
-        <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
-          <p className="text-xs text-amber-600">Ongoing</p>
-          <p className="text-xl font-semibold text-amber-700">{exams.filter(e => e.status === 'ongoing').length}</p>
+        <div className="bg-amber-50 dark:bg-amber-950 rounded-lg p-3 border border-amber-100 dark:border-amber-800">
+          <p className="text-xs text-amber-600 dark:text-amber-400">Ongoing</p>
+          <p className="text-xl font-semibold text-amber-700 dark:text-amber-300">{exams.filter(e => e.status === 'ongoing').length}</p>
         </div>
-        <div className="bg-green-50 rounded-lg p-3 border border-green-100">
-          <p className="text-xs text-green-600">Completed</p>
-          <p className="text-xl font-semibold text-green-700">{exams.filter(e => e.status === 'completed' || e.status === 'results_published').length}</p>
+        <div className="bg-green-50 dark:bg-green-950 rounded-lg p-3 border border-green-100 dark:border-green-800">
+          <p className="text-xs text-green-600 dark:text-green-400">Completed</p>
+          <p className="text-xl font-semibold text-green-700 dark:text-green-300">{exams.filter(e => e.status === 'completed' || e.status === 'results_published').length}</p>
         </div>
       </div>
 
       {/* Content based on view */}
       {activeView === 'list' ? (
         // List View
-        <Card shadow="none" className="border border-gray-100">
+        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
           <CardBody className="p-0">
             {filteredExams.length === 0 ? (
               <div className="text-center py-12">
-                <FileText size={40} className="mx-auto mb-3 text-gray-300" />
-                <p className="text-gray-500 mb-4">No exams found</p>
+                <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
+                <p className="text-gray-500 dark:text-zinc-400 mb-4">No exams found</p>
                 {activeFiltersCount > 0 ? (
                   <Button variant="flat" size="sm" onClick={handleClearFilters}>
                     Clear Filters
@@ -331,33 +331,33 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
                 </TableHeader>
                 <TableBody emptyContent="No exams found">
                   {filteredExams.map((exam) => (
-                    <TableRow key={exam.id || exam._id} className="hover:bg-gray-50">
+                    <TableRow key={exam.id || exam._id} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gray-100 rounded-lg">
-                            <FileText size={16} className="text-gray-500" />
+                          <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
+                            <FileText size={16} className="text-gray-500 dark:text-zinc-400" />
                           </div>
                           <div>
-                            <span className="font-medium text-gray-900">{exam.name}</span>
+                            <span className="font-medium text-gray-900 dark:text-zinc-100">{exam.name}</span>
                             {exam.academicYear && (
-                              <p className="text-xs text-gray-400">{exam.academicYear}</p>
+                              <p className="text-xs text-gray-400 dark:text-zinc-500">{exam.academicYear}</p>
                             )}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-600 capitalize">
+                        <span className="text-sm text-gray-600 dark:text-zinc-400 capitalize">
                           {exam.type?.replace('_', ' ')}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-600">{exam.className || exam.classId}</span>
+                        <span className="text-sm text-gray-600 dark:text-zinc-400">{exam.className || exam.classId}</span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-600">{exam.subjectName}</span>
+                        <span className="text-sm text-gray-600 dark:text-zinc-400">{exam.subjectName}</span>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                        <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-zinc-400">
                           <Calendar size={14} />
                           {exam.startDate || 'Not scheduled'}
                         </div>
@@ -375,21 +375,21 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <button
-                            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
                             onClick={() => onViewExam?.(exam.id || exam._id)}
                             title="View Details"
                           >
-                            <Eye size={16} className="text-gray-500" />
+                            <Eye size={16} className="text-gray-500 dark:text-zinc-400" />
                           </button>
                           <button
-                            className="p-2 rounded-lg hover:bg-blue-50 transition-colors"
+                            className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
                             onClick={() => onEnterResults?.(exam.id || exam._id)}
                             title="Enter Results"
                           >
                             <Pencil size={16} className="text-blue-500" />
                           </button>
                           <button
-                            className="p-2 rounded-lg hover:bg-red-50 transition-colors"
+                            className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
                             onClick={() => handleDeleteClick(exam.id || exam._id, exam.name)}
                             title="Delete"
                           >
@@ -409,25 +409,25 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
         <div className="space-y-4">
           {/* Scheduled */}
           {examsByStatus.scheduled.length > 0 && (
-            <Card shadow="none" className="border border-blue-100">
+            <Card shadow="none" className="border border-blue-100 dark:border-blue-800">
               <CardBody className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Clock size={16} className="text-blue-500" />
-                  <h3 className="text-sm font-medium text-blue-700">Scheduled ({examsByStatus.scheduled.length})</h3>
+                  <h3 className="text-sm font-medium text-blue-700 dark:text-blue-300">Scheduled ({examsByStatus.scheduled.length})</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {examsByStatus.scheduled.map(exam => (
                     <div
                       key={exam.id || exam._id}
-                      className="p-3 bg-blue-50 rounded-lg border border-blue-100 hover:shadow-sm cursor-pointer transition-shadow"
+                      className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-100 dark:border-blue-800 hover:shadow-sm cursor-pointer transition-shadow"
                       onClick={() => onViewExam?.(exam.id || exam._id)}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <span className="font-medium text-gray-900 text-sm">{exam.name}</span>
+                        <span className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{exam.name}</span>
                         <Chip size="sm" color="primary" variant="flat">Scheduled</Chip>
                       </div>
-                      <p className="text-xs text-gray-500">{exam.className || exam.classId} - {exam.subjectName}</p>
-                      <p className="text-xs text-blue-600 mt-1">{exam.startDate}</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.className || exam.classId} - {exam.subjectName}</p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{exam.startDate}</p>
                     </div>
                   ))}
                 </div>
@@ -437,24 +437,24 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
 
           {/* Ongoing */}
           {examsByStatus.ongoing.length > 0 && (
-            <Card shadow="none" className="border border-amber-100">
+            <Card shadow="none" className="border border-amber-100 dark:border-amber-800">
               <CardBody className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Clock size={16} className="text-amber-500" />
-                  <h3 className="text-sm font-medium text-amber-700">Ongoing ({examsByStatus.ongoing.length})</h3>
+                  <h3 className="text-sm font-medium text-amber-700 dark:text-amber-300">Ongoing ({examsByStatus.ongoing.length})</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {examsByStatus.ongoing.map(exam => (
                     <div
                       key={exam.id || exam._id}
-                      className="p-3 bg-amber-50 rounded-lg border border-amber-100 hover:shadow-sm cursor-pointer transition-shadow"
+                      className="p-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-100 dark:border-amber-800 hover:shadow-sm cursor-pointer transition-shadow"
                       onClick={() => onViewExam?.(exam.id || exam._id)}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <span className="font-medium text-gray-900 text-sm">{exam.name}</span>
+                        <span className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{exam.name}</span>
                         <Chip size="sm" color="warning" variant="flat">Ongoing</Chip>
                       </div>
-                      <p className="text-xs text-gray-500">{exam.className || exam.classId} - {exam.subjectName}</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.className || exam.classId} - {exam.subjectName}</p>
                     </div>
                   ))}
                 </div>
@@ -464,29 +464,29 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
 
           {/* Completed */}
           {(examsByStatus.completed.length > 0 || examsByStatus.results_published.length > 0) && (
-            <Card shadow="none" className="border border-green-100">
+            <Card shadow="none" className="border border-green-100 dark:border-green-800">
               <CardBody className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <FileText size={16} className="text-green-500" />
-                  <h3 className="text-sm font-medium text-green-700">Completed ({examsByStatus.completed.length + examsByStatus.results_published.length})</h3>
+                  <h3 className="text-sm font-medium text-green-700 dark:text-green-300">Completed ({examsByStatus.completed.length + examsByStatus.results_published.length})</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {[...examsByStatus.completed, ...examsByStatus.results_published].map(exam => (
                     <div
                       key={exam.id || exam._id}
-                      className="p-3 bg-green-50 rounded-lg border border-green-100 hover:shadow-sm cursor-pointer transition-shadow"
+                      className="p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-100 dark:border-green-800 hover:shadow-sm cursor-pointer transition-shadow"
                       onClick={() => onViewExam?.(exam.id || exam._id)}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <span className="font-medium text-gray-900 text-sm">{exam.name}</span>
+                        <span className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{exam.name}</span>
                         <Chip size="sm" color="success" variant="flat">
                           {exam.status === 'results_published' ? 'Published' : 'Completed'}
                         </Chip>
                       </div>
-                      <p className="text-xs text-gray-500">{exam.className || exam.classId} - {exam.subjectName}</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.className || exam.classId} - {exam.subjectName}</p>
                       <div className="flex gap-2 mt-2">
                         <button
-                          className="text-xs text-blue-600 hover:underline"
+                          className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                           onClick={(e) => {
                             e.stopPropagation();
                             onEnterResults?.(exam.id || exam._id);
@@ -505,8 +505,8 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
           {/* Empty state for schedule view */}
           {filteredExams.length === 0 && (
             <div className="text-center py-12">
-              <FileText size={40} className="mx-auto mb-3 text-gray-300" />
-              <p className="text-gray-500 mb-4">No exams to display</p>
+              <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
+              <p className="text-gray-500 dark:text-zinc-400 mb-4">No exams to display</p>
               <MinimalButton icon={<Plus size={16} />} onClick={onCreateExam}>
                 Create First Exam
               </MinimalButton>
@@ -520,27 +520,27 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, examId: null, examName: '' })}
         size="sm"
-        classNames={{ backdrop: 'bg-black/30', base: 'bg-white' }}
+        classNames={{ backdrop: 'bg-black/30', base: 'bg-white dark:bg-zinc-950' }}
       >
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 py-4">
+          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-100 rounded-lg">
+              <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
                 <AlertTriangle size={20} className="text-red-500" />
               </div>
               <div>
                 <h3 className="text-lg font-medium">Delete Exam</h3>
-                <p className="text-sm text-gray-500 font-normal">This action cannot be undone</p>
+                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">This action cannot be undone</p>
               </div>
             </div>
           </ModalHeader>
           <ModalBody className="py-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-zinc-400">
               Are you sure you want to delete <span className="font-medium">{deleteModal.examName}</span>?
               All associated results will also be removed.
             </p>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100">
+          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
             <Button variant="light" onPress={() => setDeleteModal({ isOpen: false, examId: null, examName: '' })}>
               Cancel
             </Button>

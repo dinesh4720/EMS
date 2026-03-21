@@ -344,7 +344,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                 selectedKeys={selectedTemplate ? [selectedTemplate] : []}
                 onChange={(e) => handleTemplateChange(e.target.value)}
                 variant="bordered"
-                classNames={{ trigger: "bg-white border-default-200" }}
+                classNames={{ trigger: "bg-white dark:bg-zinc-950 border-default-200" }}
               >
                 {templates.map((template) => (
                   <SelectItem key={template._id} value={template._id}>
@@ -537,7 +537,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
 
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {previewStudents.map((student) => (
-                <div key={student.id} className="flex items-center justify-between p-3 bg-white border border-default-200 rounded-lg">
+                <div key={student.id} className="flex items-center justify-between p-3 bg-white dark:bg-zinc-950 border border-default-200 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
                       <span className="text-sm font-bold text-primary-700">{student.name.charAt(0)}</span>

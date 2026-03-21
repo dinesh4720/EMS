@@ -361,9 +361,9 @@ export default function StaffAssignmentPanel({ staffId }) {
                           <Users size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
                           <div className="flex flex-wrap gap-2">
                             {assignment.classes && assignment.classes.length > 0 ? (
-                              assignment.classes.map((classObj, idx) => (
+                              assignment.classes.map((classObj) => (
                                 <span
-                                  key={idx}
+                                  key={typeof classObj === 'string' ? classObj : classObj._id}
                                   className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-md"
                                 >
                                   {getClassDisplay(classObj)}

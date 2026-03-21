@@ -316,17 +316,17 @@ export default function TrashSettings() {
         </Card>
 
         {/* Expiring Soon */}
-        <Card className="shadow-sm border border-danger-200 rounded-lg bg-danger-50/50">
+        <Card className="shadow-sm border border-danger-200 rounded-lg bg-danger-50/50 dark:bg-danger-900/20">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-danger-100 rounded-lg">
                 <AlertTriangle size={20} className="text-danger-600" />
               </div>
               <div>
-                <p className="text-xs text-danger-700 uppercase tracking-wider font-medium">
+                <p className="text-xs text-danger-700 dark:text-danger-400 uppercase tracking-wider font-medium">
                   Expiring Soon
                 </p>
-                <p className="text-2xl font-semibold text-danger-700">
+                <p className="text-2xl font-semibold text-danger-700 dark:text-danger-400">
                   {stats.expiringSoon}
                 </p>
               </div>
@@ -335,17 +335,17 @@ export default function TrashSettings() {
         </Card>
 
         {/* Students */}
-        <Card className="shadow-sm border border-primary-200 rounded-lg bg-primary-50/50">
+        <Card className="shadow-sm border border-primary-200 rounded-lg bg-primary-50/50 dark:bg-primary-900/20">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-primary-100 rounded-lg">
-                <span className="text-lg font-semibold text-primary-700">S</span>
+                <span className="text-lg font-semibold text-primary-700 dark:text-primary-400">S</span>
               </div>
               <div>
-                <p className="text-xs text-primary-700 uppercase tracking-wider font-medium">
+                <p className="text-xs text-primary-700 dark:text-primary-400 uppercase tracking-wider font-medium">
                   Students
                 </p>
-                <p className="text-2xl font-semibold text-primary-700">
+                <p className="text-2xl font-semibold text-primary-700 dark:text-primary-400">
                   {stats.students}
                 </p>
               </div>
@@ -354,17 +354,17 @@ export default function TrashSettings() {
         </Card>
 
         {/* Staff */}
-        <Card className="shadow-sm border border-secondary-200 rounded-lg bg-secondary-50/50">
+        <Card className="shadow-sm border border-secondary-200 rounded-lg bg-secondary-50/50 dark:bg-secondary-900/20">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-secondary-100 rounded-lg">
-                <span className="text-lg font-semibold text-secondary-700">T</span>
+                <span className="text-lg font-semibold text-secondary-700 dark:text-secondary-400">T</span>
               </div>
               <div>
-                <p className="text-xs text-secondary-700 uppercase tracking-wider font-medium">
+                <p className="text-xs text-secondary-700 dark:text-secondary-400 uppercase tracking-wider font-medium">
                   Staff
                 </p>
-                <p className="text-2xl font-semibold text-secondary-700">
+                <p className="text-2xl font-semibold text-secondary-700 dark:text-secondary-400">
                   {stats.staff}
                 </p>
               </div>
@@ -387,7 +387,7 @@ export default function TrashSettings() {
               variant="bordered"
               classNames={{
                 base: "flex-1",
-                inputWrapper: "bg-white",
+                inputWrapper: "bg-white dark:bg-zinc-950",
               }}
             />
 
@@ -400,7 +400,7 @@ export default function TrashSettings() {
               variant="bordered"
               className="max-w-xs"
               classNames={{
-                trigger: "bg-white",
+                trigger: "bg-white dark:bg-zinc-950",
               }}
             >
               <SelectItem key="all" value="all">
@@ -422,7 +422,7 @@ export default function TrashSettings() {
 
       {/* Bulk Actions Toolbar */}
       {selectedItems.size > 0 && (
-        <Card className="shadow-sm border border-primary-200 rounded-lg bg-primary-50/50">
+        <Card className="shadow-sm border border-primary-200 rounded-lg bg-primary-50/50 dark:bg-primary-900/20">
           <CardBody className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -433,7 +433,7 @@ export default function TrashSettings() {
                   <p className="text-sm font-semibold text-primary-900">
                     {selectedItems.size} item(s) selected
                   </p>
-                  <p className="text-xs text-primary-700">
+                  <p className="text-xs text-primary-700 dark:text-primary-400">
                     Choose an action below
                   </p>
                 </div>
@@ -481,7 +481,7 @@ export default function TrashSettings() {
               th: "bg-default-50 text-default-500 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200",
               td: "py-4 border-b border-default-100 transition-colors",
               tbody: "[&>tr:last-child>td]:border-none [&>tr[data-selected=true]>td]:bg-primary-50",
-              tr: "transition-colors hover:bg-gray-50 data-[selected=true]:bg-primary-50",
+              tr: "transition-colors hover:bg-gray-50 dark:hover:bg-zinc-900 data-[selected=true]:bg-primary-50 dark:data-[selected=true]:bg-primary-950",
             }}
           >
             <TableHeader>

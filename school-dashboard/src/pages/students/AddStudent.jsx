@@ -550,8 +550,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
     // Helper to convert dataURL to File
     const dataURLtoFile = (dataurl, filename) => {
-      let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-        bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+      const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+        bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
       while (n--) {
         u8arr[n] = bstr.charCodeAt(n);
       }
@@ -684,7 +686,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
 
     // Reset validation state
-    let validation = { isValid: false, message: '', warning: '' };
+    const validation = { isValid: false, message: '', warning: '' };
 
     // If empty, clear validation
     if (!dateStr || dateStr.length === 0) {
@@ -1170,7 +1172,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
       {/* Personal Information - Full Name & Date of Birth in same row */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-gray-900">Personal Information</h3>
+        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Personal Information</h3>
         <div className="grid grid-cols-2 gap-4">
           <div ref={fullNameRef}>
             <Input
@@ -1217,7 +1219,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                   let filteredDigits = '';
                   let dayPart = '';
                   let monthPart = '';
-                  let yearPart = '';
+                  const yearPart = '';
 
                   if (digits.length > 0) {
                     // DAY VALIDATION (positions 0-1)
@@ -1434,7 +1436,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
       {/* Gender */}
       <div className="space-y-2" ref={genderRef}>
-        <label className="text-xs font-medium text-gray-600">Gender <span className="text-red-500">*</span></label>
+        <label className="text-xs font-medium text-gray-600 dark:text-zinc-400">Gender <span className="text-red-500">*</span></label>
         <RadioGroup
           orientation="horizontal"
           value={formData.gender}
@@ -1450,8 +1452,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       </div>
 
       {/* Class Info */}
-      <div className="space-y-3 pt-5 border-t border-gray-100">
-        <h3 className="text-sm font-medium text-gray-900">Class Information</h3>
+      <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-700">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Class Information</h3>
         <div className="grid grid-cols-2 gap-4">
           {/* Class Selection */}
           <div ref={classRef}>
@@ -1518,8 +1520,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       </div>
 
       {/* Contact Info */}
-      <div className="space-y-3 pt-5 border-t border-gray-100">
-        <h3 className="text-sm font-medium text-gray-900">Contact Details</h3>
+      <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-700">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Contact Details</h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Input
@@ -1677,9 +1679,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       </div>
 
       {/* Optional Fields */}
-      <div className="space-y-3 pt-5 border-t border-gray-100">
-        <h3 className="text-sm font-medium text-gray-900">Optional Information</h3>
-        <p className="text-xs text-gray-500 -mt-1">These fields are optional and can be filled later</p>
+      <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-700">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Optional Information</h3>
+        <p className="text-xs text-gray-500 dark:text-zinc-400 -mt-1">These fields are optional and can be filled later</p>
         <div className="grid grid-cols-2 gap-4">
           <Input
             label="Aadhaar Number"
@@ -1785,12 +1787,12 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       <div className="space-y-5 animate-fade-in text-left">
         {/* Parent Details */}
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-gray-900">Parent Details</h3>
+          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Parent Details</h3>
 
           {parents.map((parent, idx) => {
             const index = formData.parents.findIndex(p => p === parent);
             return (
-              <div key={idx} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
+              <div key={`parent-${idx}`} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-default-700">
                     {idx === 0 ? "Primary Parent" : `Parent ${idx + 1}`}
@@ -1893,16 +1895,16 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         </div>
 
         {/* Guardian Details */}
-        <div className="space-y-4 pt-5 border-t border-gray-100">
+        <div className="space-y-4 pt-5 border-t border-gray-100 dark:border-zinc-700">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-medium text-gray-900">Guardian Details</h3>
-            <span className="text-xs text-gray-400">(Optional)</span>
+            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Guardian Details</h3>
+            <span className="text-xs text-gray-400 dark:text-zinc-500">(Optional)</span>
           </div>
 
           {guardians.map((guardian, idx) => {
             const index = formData.parents.findIndex(p => p === guardian);
             return (
-              <div key={idx} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
+              <div key={`guardian-${idx}`} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-default-700">
                     Guardian {idx + 1}
@@ -1994,14 +1996,14 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         </div>
 
         {/* Sibling Details */}
-        <div className="space-y-4 pt-5 border-t border-gray-100">
+        <div className="space-y-4 pt-5 border-t border-gray-100 dark:border-zinc-700">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-medium text-gray-900">Sibling Details</h3>
-            <span className="text-xs text-gray-400">(Siblings in same school only)</span>
+            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Sibling Details</h3>
+            <span className="text-xs text-gray-400 dark:text-zinc-500">(Siblings in same school only)</span>
           </div>
 
           {formData.siblings.map((sibling, idx) => (
-            <div key={idx} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
+            <div key={`sibling-${idx}`} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-default-700">
                   Sibling {idx + 1}
@@ -2063,8 +2065,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         </div>
 
         {/* Health & Safety */}
-        <div className="space-y-3 pt-5 border-t border-gray-100">
-          <h3 className="text-sm font-medium text-gray-900">Health & Safety</h3>
+        <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-700">
+          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Health & Safety</h3>
           <Textarea
             label="Medical Conditions"
             labelPlacement="outside"
@@ -2079,8 +2081,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         </div>
 
         {/* Transport & Hostel */}
-        <div className="space-y-4 pt-5 border-t border-gray-100">
-          <h3 className="text-sm font-medium text-gray-900">Additional Requirements</h3>
+        <div className="space-y-4 pt-5 border-t border-gray-100 dark:border-zinc-700">
+          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Additional Requirements</h3>
           <div className="grid grid-cols-2 gap-4">
             <div className={cn(
               "cursor-pointer rounded-xl border-2 p-4 flex items-center gap-3 transition-all",
@@ -2253,7 +2255,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         {formData.otherDocuments?.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {formData.otherDocuments?.map((file, i) => (
-              <Chip key={i} onClose={() => removeFile("otherDocuments", i)} size="sm" variant="flat" className="h-8 border border-default-200 bg-background">
+              <Chip key={file.name || `doc-${i}`} onClose={() => removeFile("otherDocuments", i)} size="sm" variant="flat" className="h-8 border border-default-200 bg-background">
                 {file.name}
               </Chip>
             ))}
@@ -2271,9 +2273,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
   return (
     <>
-      <div className="h-full flex flex-col bg-white">
+      <div className="h-full flex flex-col bg-white dark:bg-zinc-900">
         {/* Stepper */}
-        <div className="px-6 py-4 border-b border-gray-100">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-zinc-700">
           <div className="flex items-center justify-between relative">
             {steps.map((s, i) => {
               const isActive = step >= s.number;
@@ -2284,21 +2286,21 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                   {/* Progress line */}
                   {i < steps.length - 1 && (
                     <div className={cn(
-                      "absolute top-4 left-1/2 w-full h-0.5 -translate-y-1/2 transition-all duration-300",
-                      isActive ? "bg-gray-900" : "bg-gray-200"
-                    )} style={{ left: '50%', width: 'calc(100% - 36px)' }} />
+                      "absolute top-4 h-0.5 -translate-y-1/2 transition-all duration-300 left-1/2 w-[calc(100%-36px)]",
+                      isActive ? "bg-gray-900 dark:bg-zinc-100" : "bg-gray-200 dark:bg-zinc-700"
+                    )} />
                   )}
                   <div className={cn(
                     "w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all duration-200 relative z-20",
-                    isCurrent ? "border-gray-900 text-gray-900 bg-white" :
-                      isCompleted ? "border-gray-900 text-white bg-gray-900" :
-                        "border-gray-300 text-gray-400 bg-white"
+                    isCurrent ? "border-gray-900 text-gray-900 bg-white dark:border-zinc-100 dark:text-zinc-100 dark:bg-zinc-900" :
+                      isCompleted ? "border-gray-900 text-white bg-gray-900 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900" :
+                        "border-gray-300 text-gray-400 bg-white dark:border-zinc-600 dark:text-zinc-500 dark:bg-zinc-900"
                   )}>
                     {isCompleted ? <Check size={16} strokeWidth={2.5} /> : <s.icon size={16} strokeWidth={2} />}
                   </div>
                   <span className={cn(
                     "text-[11px] font-medium mt-2 uppercase tracking-wide transition-colors duration-200",
-                    isCurrent || isCompleted ? "text-gray-900" : "text-gray-400"
+                    isCurrent || isCompleted ? "text-gray-900 dark:text-zinc-100" : "text-gray-400 dark:text-zinc-500"
                   )}>
                     {s.title}
                   </span>
@@ -2319,12 +2321,12 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         </div>
 
         {/* Footer */}
-        <div className="flex-none px-6 py-4 border-t border-gray-100 bg-white">
+        <div className="flex-none px-6 py-4 border-t border-gray-100 dark:border-zinc-700 bg-white dark:bg-zinc-900">
           <div className="flex items-center justify-between gap-3">
             {step > 1 ? (
               <button
                 onClick={handlePrev}
-                className="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors"
               >
                 Back
               </button>
@@ -2334,7 +2336,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             <button
               onClick={step === 3 ? handleSubmit : handleNext}
               disabled={isSubmitting}
-              className="px-5 py-2.5 text-sm font-medium text-white bg-gray-900 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-5 py-2.5 text-sm font-medium text-white bg-gray-900 dark:bg-zinc-100 dark:text-zinc-900 rounded-md hover:bg-gray-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSubmitting ? (
                 <>

@@ -111,7 +111,7 @@ const CameraCaptureModal = ({ isOpen, onClose, onPhotoCaptured, title, descripti
             <div className="grid grid-cols-1 gap-4">
               {/* Upload from Device Button */}
               <button
-                className="group relative w-full py-5 px-5 rounded-xl border-2 border-default-200 hover:border-primary hover:bg-primary-50/30 transition-all duration-200 flex items-center gap-4"
+                className="group relative w-full py-5 px-5 rounded-xl border-2 border-default-200 hover:border-primary hover:bg-primary-50/30 dark:hover:bg-primary-900/30 transition-all duration-200 flex items-center gap-4"
                 onClick={handleUploadFromDevice}
               >
                 <div className="w-14 h-14 rounded-full bg-default-100 group-hover:bg-primary-100 flex items-center justify-center transition-colors">
@@ -127,7 +127,7 @@ const CameraCaptureModal = ({ isOpen, onClose, onPhotoCaptured, title, descripti
 
               {/* Take Photo with Camera Button */}
               <button
-                className="group relative w-full py-5 px-5 rounded-xl border-2 border-default-200 hover:border-primary hover:bg-primary-50/30 transition-all duration-200 flex items-center gap-4"
+                className="group relative w-full py-5 px-5 rounded-xl border-2 border-default-200 hover:border-primary hover:bg-primary-50/30 dark:hover:bg-primary-900/30 transition-all duration-200 flex items-center gap-4"
                 onClick={handleOpenCamera}
               >
                 <div className="w-14 h-14 rounded-full bg-default-100 group-hover:bg-primary-100 flex items-center justify-center transition-colors">

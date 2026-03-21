@@ -116,29 +116,29 @@ export default function StudentResults({
     <div className="space-y-6 animate-fade-in">
       {/* Academic Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border border-gray-200 bg-white">
+        <Card className="border border-gray-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg">
+              <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg dark:bg-zinc-800 dark:text-zinc-400">
                 <Award size={20} />
               </div>
               <div>
-                <p className="text-xs text-gray-600">Overall Grade</p>
-                <p className="text-lg font-bold text-gray-900">{metrics.overallGrade}</p>
+                <p className="text-xs text-gray-600 dark:text-zinc-400">Overall Grade</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-zinc-100">{metrics.overallGrade}</p>
               </div>
             </div>
           </CardBody>
         </Card>
 
-        <Card className="border border-gray-200 bg-white">
+        <Card className="border border-gray-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg">
+              <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg dark:bg-zinc-800 dark:text-zinc-400">
                 <TrendingUp size={20} />
               </div>
               <div>
-                <p className="text-xs text-gray-600">Average Score</p>
-                <p className="text-lg font-bold text-gray-900">
+                <p className="text-xs text-gray-600 dark:text-zinc-400">Average Score</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-zinc-100">
                   {metrics.averageScore > 0 ? `${metrics.averageScore.toFixed(1)}%` : 'N/A'}
                 </p>
               </div>
@@ -146,29 +146,29 @@ export default function StudentResults({
           </CardBody>
         </Card>
 
-        <Card className="border border-gray-200 bg-white">
+        <Card className="border border-gray-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg">
+              <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg dark:bg-zinc-800 dark:text-zinc-400">
                 <Users size={20} />
               </div>
               <div>
-                <p className="text-xs text-gray-600">Subjects</p>
-                <p className="text-lg font-bold text-gray-900">{metrics.totalSubjects}</p>
+                <p className="text-xs text-gray-600 dark:text-zinc-400">Subjects</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-zinc-100">{metrics.totalSubjects}</p>
               </div>
             </div>
           </CardBody>
         </Card>
 
-        <Card className="border border-gray-200 bg-white">
+        <Card className="border border-gray-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg">
+              <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg dark:bg-zinc-800 dark:text-zinc-400">
                 <User size={20} />
               </div>
               <div>
-                <p className="text-xs text-gray-600">Class Teacher</p>
-                <p className="text-sm font-bold text-gray-900 truncate">{classTeacher?.name || "Not Assigned"}</p>
+                <p className="text-xs text-gray-600 dark:text-zinc-400">Class Teacher</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-zinc-100 truncate">{classTeacher?.name || "Not Assigned"}</p>
               </div>
             </div>
           </CardBody>
@@ -176,32 +176,32 @@ export default function StudentResults({
       </div>
 
       {/* Subject-wise Performance */}
-      <Card shadow="none" className="border border-gray-200">
-        <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100">
+      <Card shadow="none" className="border border-gray-200 dark:border-zinc-800">
+        <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg">
+            <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg dark:bg-zinc-800 dark:text-zinc-400">
               <BookOpen size={20} />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">Subject-wise Performance</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Subject-wise Performance</h3>
           </div>
         </CardHeader>
         <CardBody className="p-6">
           {subjectPerformance.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {subjectPerformance.map((subject, idx) => (
-                <div key={idx} className="p-4 rounded-lg border border-gray-200 bg-white transition-all">
+              {subjectPerformance.map((subject) => (
+                <div key={subject.subjectId} className="p-4 rounded-lg border border-gray-200 bg-white transition-all dark:border-zinc-800 dark:bg-zinc-900">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{subject.icon}</span>
                       <div>
-                        <h4 className="font-semibold text-gray-900">{subject.subjectName}</h4>
-                        <p className="text-xs text-gray-500">
+                        <h4 className="font-semibold text-gray-900 dark:text-zinc-100">{subject.subjectName}</h4>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">
                           {subject.examCount > 1 ? `${subject.examCount} exams` : 'Current Term'}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-gray-900">{subject.score}%</div>
+                      <div className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{subject.score}%</div>
                       <Chip 
                         size="sm" 
                         variant="flat" 
@@ -228,7 +228,7 @@ export default function StudentResults({
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-500 dark:text-zinc-400">
               <BookOpen size={40} className="mx-auto mb-3 opacity-50" />
               <p>No subject data available yet</p>
               <p className="text-sm">Results will appear here once exams are completed and published</p>
@@ -241,10 +241,10 @@ export default function StudentResults({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg">
+            <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg dark:bg-zinc-800 dark:text-zinc-400">
               <FileText size={20} />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">Exam Overview</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Exam Overview</h3>
           </div>
           {resultsLoading && <Spinner size="sm" />}
         </div>
@@ -255,37 +255,37 @@ export default function StudentResults({
               <Spinner size="lg" />
             </div>
           ) : results.length > 0 ? (
-            results.map((result, i) => {
+            results.map((result) => {
               const exam = result.examId;
               const scoreDisplay = result.isPublished ? `${Math.round(result.percentage)}%` : 'Not Published';
               const status = result.isPublished ? 'Published' : 'Pending';
 
               return (
                 <Card
-                  key={i}
+                  key={result._id}
                   isPressable
                   onPress={() => onExamSelect(result)}
                   shadow="none"
-                  className="border border-gray-200 hover:border-gray-300 transition-all"
+                  className="border border-gray-200 hover:border-gray-300 transition-all dark:border-zinc-800 dark:hover:border-zinc-700"
                 >
                   <CardBody className="p-5">
                     <div className="flex justify-between items-start mb-4">
                       <div className={`p-2.5 rounded-lg ${
-                        result.isPublished ? "bg-gray-100 text-gray-600" :
-                        "bg-gray-100 text-gray-600"
+                        result.isPublished ? "bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400" :
+                        "bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400"
                       }`}>
                         <FileText size={18} />
                       </div>
                       <Chip
                         size="sm"
-                        className="bg-gray-100 text-gray-600"
+                        className="bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400"
                         variant="flat"
                       >
                         {status}
                       </Chip>
                     </div>
-                    <h4 className="text-base font-semibold text-gray-900 mb-1">{exam?.name || result.subjectName || 'Exam'}</h4>
-                    <p className="text-xs text-gray-500 mb-4">{exam?.startDate ? new Date(exam.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'No date'}</p>
+                    <h4 className="text-base font-semibold text-gray-900 dark:text-zinc-100 mb-1">{exam?.name || result.subjectName || 'Exam'}</h4>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 mb-4">{exam?.startDate ? new Date(exam.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'No date'}</p>
                     {result.isPublished && result.percentage > 0 && (
                       <Progress
                         aria-label={`Overall percentage for ${exam?.name || 'exam'}`}
@@ -296,8 +296,8 @@ export default function StudentResults({
                         className="mb-3"
                       />
                     )}
-                    <div className="flex items-center justify-between text-sm pt-3 border-t border-gray-100">
-                      <span className="text-gray-500">Score</span>
+                    <div className="flex items-center justify-between text-sm pt-3 border-t border-gray-100 dark:border-zinc-800">
+                      <span className="text-gray-500 dark:text-zinc-400">Score</span>
                       <span className={`font-bold ${result.percentage >= 90 ? "text-success" : result.percentage >= 75 ? "text-primary" : "text-default-900"}`}>
                         {scoreDisplay}
                       </span>
@@ -307,7 +307,7 @@ export default function StudentResults({
               );
             })
           ) : (
-            <div className="col-span-full text-center py-8 text-gray-500">
+            <div className="col-span-full text-center py-8 text-gray-500 dark:text-zinc-400">
               <FileText size={40} className="mx-auto mb-3 opacity-50" />
               <p>No exam results available yet</p>
               <p className="text-sm">Results will appear here once exams are completed and published</p>

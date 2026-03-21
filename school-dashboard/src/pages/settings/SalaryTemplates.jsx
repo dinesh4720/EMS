@@ -147,7 +147,7 @@ export default function SalaryTemplates() {
               <CardBody className="pt-4">
                 <div className="space-y-2 mb-4">
                   {template.breakdown.map((item, i) => (
-                    <div key={i} className="flex justify-between text-sm">
+                    <div key={`${template.id}-${item.component}`} className="flex justify-between text-sm">
                       <span className="text-default-600">{item.component}</span>
                       <span className="font-medium">₹{item.amount.toLocaleString()}</span>
                     </div>
@@ -198,7 +198,7 @@ export default function SalaryTemplates() {
                       </div>
 
                       {editingTemplate.breakdown.map((item, i) => (
-                        <div key={i} className="p-3 bg-default-50 rounded-lg border border-default-200">
+                        <div key={`edit-breakdown-${i}`} className="p-3 bg-default-50 rounded-lg border border-default-200">
                           <div className="flex gap-3 items-start">
                             <Input
                               size="sm"

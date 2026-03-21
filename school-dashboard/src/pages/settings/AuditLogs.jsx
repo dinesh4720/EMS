@@ -214,7 +214,7 @@ const AuditLogs = () => {
       <Card shadow="none" className="border border-default-200">
         <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-blue-100 text-blue-600 rounded-lg">
+            <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
               <History size={20} />
             </div>
             <div>
@@ -370,7 +370,7 @@ const AuditLogs = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h4 className="font-semibold text-default-900 mb-2">Previous Value</h4>
-                    <div className="p-4 bg-red-50 rounded-lg border border-red-100">
+                    <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800">
                       <pre className="text-xs overflow-auto max-h-48">
                         {selectedLog.previousValue
                           ? JSON.stringify(selectedLog.previousValue, null, 2)
@@ -380,7 +380,7 @@ const AuditLogs = () => {
                   </div>
                   <div>
                     <h4 className="font-semibold text-default-900 mb-2">New Value</h4>
-                    <div className="p-4 bg-green-50 rounded-lg border border-green-100">
+                    <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
                       <pre className="text-xs overflow-auto max-h-48">
                         {JSON.stringify(selectedLog.newValue, null, 2)}
                       </pre>

@@ -145,7 +145,7 @@ const VisitorLog = forwardRef((props, ref) => {
         if (value && (!validatePhone(value) || /^(\d)\1{9}$/.test(value))) error = 'Please enter a valid 10-digit phone number';
         break;
       case 'email':
-        if (value && !/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(value)) error = 'Invalid email address';
+        if (value && !/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(value)) error = 'Invalid email address';
         break;
       case 'reasonForVisit':
         if (!value) error = 'Reason is required';

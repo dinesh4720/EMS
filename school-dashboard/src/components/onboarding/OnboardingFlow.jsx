@@ -91,12 +91,12 @@ export default function OnboardingFlow({ onComplete }) {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full max-w-5xl h-[85vh] bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-gray-200 dark:border-zinc-800 relative"
+                className="w-full max-w-5xl h-[85vh] bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-gray-200 dark:border-zinc-800 relative"
             >
                 {/* Skip Button */}
                 <button
                     onClick={handleSkip}
-                    className="absolute top-4 right-4 z-50 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800"
+                    className="absolute top-4 right-4 z-50 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800"
                     title="Skip Onboarding"
                 >
                     <X size={20} />
@@ -110,8 +110,8 @@ export default function OnboardingFlow({ onComplete }) {
                                 <School size={24} />
                             </div>
                             <div>
-                                <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100">Setup Wizard</h2>
-                                <p className="text-xs text-gray-500">Configure your school</p>
+                                <h2 className="font-bold text-lg text-gray-900 dark:text-zinc-100">Setup Wizard</h2>
+                                <p className="text-xs text-gray-500 dark:text-zinc-400">Configure your school</p>
                             </div>
                         </div>
 
@@ -126,15 +126,15 @@ export default function OnboardingFlow({ onComplete }) {
                                         onClick={() => handleJumpToStep(index)}
                                         className={`w-full flex items-center gap-4 p-3 rounded-xl text-left transition-all duration-200 ${isActive
                                                 ? "bg-white dark:bg-zinc-800 shadow-sm border border-gray-200 dark:border-zinc-700"
-                                                : "hover:bg-gray-100 dark:hover:bg-zinc-800/50 text-gray-500"
+                                                : "hover:bg-gray-100 dark:hover:bg-zinc-800/50 text-gray-500 dark:text-zinc-400"
                                             }`}
                                     >
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isActive ? "bg-primary text-white" : isCompleted ? "bg-green-100 text-green-600 dark:bg-green-900/20" : "bg-gray-200 text-gray-500 dark:bg-zinc-700"
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isActive ? "bg-primary text-white" : isCompleted ? "bg-green-100 text-green-600 dark:bg-green-950" : "bg-gray-200 text-gray-500 dark:bg-zinc-700 dark:text-zinc-400"
                                             }`}>
                                             {isCompleted ? <Check size={16} /> : <span className="text-sm font-medium">{index + 1}</span>}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className={`text-sm font-medium truncate ${isActive ? "text-gray-900 dark:text-gray-100" : "text-gray-500"}`}>
+                                            <p className={`text-sm font-medium truncate ${isActive ? "text-gray-900 dark:text-zinc-100" : "text-gray-500 dark:text-zinc-400"}`}>
                                                 {step.title}
                                             </p>
                                             {isActive && (
@@ -157,21 +157,21 @@ export default function OnboardingFlow({ onComplete }) {
                                 style={{ width: `${((currentStep + 1) / ONBOARDING_STEPS.length) * 100}%` }}
                             />
                         </div>
-                        <p className="text-xs text-gray-500 flex justify-between">
+                        <p className="text-xs text-gray-500 dark:text-zinc-400 flex justify-between">
                             <span>Step {currentStep + 1} of {ONBOARDING_STEPS.length}</span>
-                            <button onClick={handleSkip} className="hover:underline hover:text-gray-700 dark:hover:text-gray-300 transition-colors">Skip Setup</button>
+                            <button onClick={handleSkip} className="hover:underline hover:text-gray-700 dark:hover:text-zinc-300 transition-colors">Skip Setup</button>
                         </p>
                     </div>
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1 flex flex-col relative overflow-hidden bg-white dark:bg-zinc-900">
+                <div className="flex-1 flex flex-col relative overflow-hidden bg-white dark:bg-zinc-950">
                     {/* Header for Mobile/Title */}
                     <div className="p-6 border-b border-gray-100 dark:border-zinc-800 md:hidden flex justify-between items-center">
-                        <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                        <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">
                             {ONBOARDING_STEPS[currentStep].title}
                         </h1>
-                        <button onClick={handleSkip} className="text-sm text-gray-500">Skip</button>
+                        <button onClick={handleSkip} className="text-sm text-gray-500 dark:text-zinc-400">Skip</button>
                     </div>
 
                     <div className="flex-1 p-8 md:p-12 overflow-y-auto custom-scrollbar">
@@ -189,10 +189,10 @@ export default function OnboardingFlow({ onComplete }) {
                                     <span className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-xl text-primary mb-5 ring-4 ring-primary/5">
                                         <CurrentStepIcon size={28} />
                                     </span>
-                                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                                    <h1 className="text-3xl font-bold text-gray-900 dark:text-zinc-100 mb-2">
                                         {ONBOARDING_STEPS[currentStep].title}
                                     </h1>
-                                    <p className="text-gray-500 dark:text-gray-400 text-lg leading-relaxed">
+                                    <p className="text-gray-500 dark:text-zinc-400 text-lg leading-relaxed">
                                         {ONBOARDING_STEPS[currentStep].description}
                                     </p>
                                 </div>
@@ -216,7 +216,7 @@ export default function OnboardingFlow({ onComplete }) {
                                                 ].map((feature) => (
                                                     <div key={feature} className="flex items-center gap-3 p-4 border border-gray-200 dark:border-zinc-800 rounded-xl bg-gray-50/50 dark:bg-zinc-900/50">
                                                         <CheckCircle2 className="text-green-500" size={20} />
-                                                        <span className="font-medium text-gray-700 dark:text-gray-300">{feature}</span>
+                                                        <span className="font-medium text-gray-700 dark:text-zinc-300">{feature}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -226,7 +226,7 @@ export default function OnboardingFlow({ onComplete }) {
                                     {currentStep === 1 && (
                                         <div className="space-y-6 animate-fade-in">
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">School Name</label>
+                                                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">School Name</label>
                                                 <input
                                                     type="text"
                                                     placeholder="Ex: Springfield High School"
@@ -237,7 +237,7 @@ export default function OnboardingFlow({ onComplete }) {
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Address</label>
+                                                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Address</label>
                                                 <textarea
                                                     placeholder="Enter complete school address..."
                                                     className="w-full p-4 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all min-h-[120px] resize-none"
@@ -252,7 +252,7 @@ export default function OnboardingFlow({ onComplete }) {
                                         <div className="space-y-6 animate-fade-in">
                                             <div className="grid grid-cols-2 gap-6">
                                                 <div className="space-y-2">
-                                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Session Start</label>
+                                                    <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Session Start</label>
                                                     <input
                                                         type="date"
                                                         className="w-full p-4 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
@@ -261,7 +261,7 @@ export default function OnboardingFlow({ onComplete }) {
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Session End</label>
+                                                    <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Session End</label>
                                                     <input
                                                         type="date"
                                                         className="w-full p-4 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
@@ -289,8 +289,8 @@ export default function OnboardingFlow({ onComplete }) {
                                                     <User className="text-gray-300" size={40} />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Profile Photo</h4>
-                                                    <p className="text-xs text-gray-500 mb-3">Upload your administrator profile picture.</p>
+                                                    <h4 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-1">Profile Photo</h4>
+                                                    <p className="text-xs text-gray-500 dark:text-zinc-400 mb-3">Upload your administrator profile picture.</p>
                                                     <div className="flex gap-3">
                                                         <button className="px-4 py-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg text-xs font-medium hover:bg-gray-50 transition-colors">Choose File</button>
                                                         <button className="px-4 py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg text-xs font-medium transition-colors">Remove</button>
@@ -298,7 +298,7 @@ export default function OnboardingFlow({ onComplete }) {
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Admin Name</label>
+                                                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Admin Name</label>
                                                 <input
                                                     type="text"
                                                     placeholder="Ex: Dr. John Doe"
@@ -313,7 +313,7 @@ export default function OnboardingFlow({ onComplete }) {
                                     {currentStep === 4 && (
                                         <div className="space-y-6 animate-fade-in">
                                             <div className="space-y-4">
-                                                <label className="text-lg font-medium text-gray-900 dark:text-white">Choose Appearance</label>
+                                                <label className="text-lg font-medium text-gray-900 dark:text-zinc-100">Choose Appearance</label>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <button
                                                         onClick={() => setFormData({ ...formData, theme: 'light' })}
@@ -322,7 +322,7 @@ export default function OnboardingFlow({ onComplete }) {
                                                         <div className="w-full aspect-video rounded-lg bg-gray-100 border border-gray-200 shadow-sm p-2 flex items-center justify-center">
                                                             <div className="w-8 h-8 rounded-full bg-white shadow-md"></div>
                                                         </div>
-                                                        <span className="font-medium text-gray-900 dark:text-gray-100">Light Mode</span>
+                                                        <span className="font-medium text-gray-900 dark:text-zinc-100">Light Mode</span>
                                                     </button>
                                                     <button
                                                         onClick={() => setFormData({ ...formData, theme: 'dark' })}
@@ -331,7 +331,7 @@ export default function OnboardingFlow({ onComplete }) {
                                                         <div className="w-full aspect-video rounded-lg bg-zinc-900 border border-zinc-700 shadow-sm p-2 flex items-center justify-center">
                                                             <div className="w-8 h-8 rounded-full bg-zinc-700 shadow-md"></div>
                                                         </div>
-                                                        <span className="font-medium text-gray-900 dark:text-gray-100">Dark Mode</span>
+                                                        <span className="font-medium text-gray-900 dark:text-zinc-100">Dark Mode</span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -343,11 +343,11 @@ export default function OnboardingFlow({ onComplete }) {
                     </div>
 
                     {/* Footer Actions */}
-                    <div className="p-6 md:p-8 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-900 rounded-br-2xl">
+                    <div className="p-6 md:p-8 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-950 rounded-br-2xl">
                         <button
                             onClick={handleBack}
                             disabled={currentStep === 0}
-                            className={`px-6 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 font-medium transition-colors ${currentStep === 0 ? "opacity-0 cursor-default" : "hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300"
+                            className={`px-6 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 font-medium transition-colors ${currentStep === 0 ? "opacity-0 cursor-default" : "hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300"
                                 }`}
                         >
                             Back
@@ -356,7 +356,7 @@ export default function OnboardingFlow({ onComplete }) {
                         <div className="flex items-center gap-4">
                             <div className="hidden md:flex gap-1">
                                 {ONBOARDING_STEPS.map((_, i) => (
-                                    <div key={i} className={`w-2 h-2 rounded-full transition-all duration-300 ${i === currentStep ? 'bg-primary w-4' : i < currentStep ? 'bg-primary/40' : 'bg-gray-200 dark:bg-zinc-700'}`} />
+                                    <div key={`step-dot-${i}`} className={`w-2 h-2 rounded-full transition-all duration-300 ${i === currentStep ? 'bg-primary w-4' : i < currentStep ? 'bg-primary/40' : 'bg-gray-200 dark:bg-zinc-700'}`} />
                                 ))}
                             </div>
                             <button

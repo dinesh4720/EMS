@@ -59,11 +59,15 @@ export default function ChatSearch({ messages = [], onResultClick }) {
     }
   };
 
+  const escapeHtml = (str) =>
+    str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
   const highlightMatch = (text, query) => {
-    if (!query) return text;
+    const safe = escapeHtml(text);
+    if (!query) return safe;
 
     const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    return text.replace(regex, '<mark class="bg-primary-100 text-primary rounded px-0.5">$1</mark>');
+    return safe.replace(regex, '<mark class="bg-primary-100 dark:bg-primary/20 text-primary rounded px-0.5">$1</mark>');
   };
 
   const clearSearch = () => {

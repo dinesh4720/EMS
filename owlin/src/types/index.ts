@@ -4,7 +4,7 @@ export interface User {
   name: string;
   email: string;
   role: string;
-  loginTime: Date;
+  loginTime: string;
   avatar?: string;
 }
 

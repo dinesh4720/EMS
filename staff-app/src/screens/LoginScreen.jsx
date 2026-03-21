@@ -34,20 +34,16 @@ const LoginScreen = () => {
   useEffect(() => {
     const fetchStaffList = async () => {
       try {
-        console.log('Fetching staff from:', `${BASE_URL}/api/staff/public`);
         const response = await fetch(`${BASE_URL}/api/staff/public`);
-        console.log('Response status:', response.status);
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log('Staff data received:', data.length, 'staff members');
 
         // Filter only active staff
         const activeStaff = data.filter(s => s.status === 'active');
-        console.log('Active staff:', activeStaff.length);
         setStaffList(activeStaff);
       } catch (err) {
         console.error('Error fetching staff list:', err.message);

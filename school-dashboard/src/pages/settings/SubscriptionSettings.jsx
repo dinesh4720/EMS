@@ -194,8 +194,8 @@ export default function SubscriptionSettings() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900">Subscription & Billing</h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">Subscription & Billing</h2>
+          <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
             Manage plan access, usage limits, invoices, and the school billing profile.
           </p>
         </div>
@@ -225,10 +225,10 @@ export default function SubscriptionSettings() {
             <div className="flex items-start gap-3">
               <CreditCard size={24} className="text-primary-600 mt-1" />
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
                   {subscription?.effectivePlanName || "No plan"} plan
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-zinc-400">
                   Base subscription: {subscription?.planName || "Starter"}.
                   {subscription?.effectivePlanKey !== subscription?.planKey ? ` Trial access is currently unlocking ${subscription?.effectivePlanName}.` : ""}
                 </p>
@@ -256,8 +256,8 @@ export default function SubscriptionSettings() {
               >
                 <span className="text-sm">Auto-renew</span>
               </Switch>
-              <div className="text-sm text-gray-500">
-                Billing cycle: <span className="font-medium text-gray-700 capitalize">{subscription?.billingCycle}</span>
+              <div className="text-sm text-gray-500 dark:text-zinc-400">
+                Billing cycle: <span className="font-medium text-gray-700 dark:text-zinc-300 capitalize">{subscription?.billingCycle}</span>
               </div>
             </div>
           </div>
@@ -286,7 +286,7 @@ export default function SubscriptionSettings() {
 
       <Card className="rounded-lg">
         <CardBody className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
             <TrendingUp size={18} />
             Usage & Limits
           </h3>
@@ -296,20 +296,20 @@ export default function SubscriptionSettings() {
               const metric = item.value;
 
               return (
-                <div key={item.key} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                <div key={item.key} className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Icon size={16} className="text-gray-500" />
-                      <span className="text-sm font-medium text-gray-900">{item.label}</span>
+                      <Icon size={16} className="text-gray-500 dark:text-zinc-400" />
+                      <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{item.label}</span>
                     </div>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-gray-500 dark:text-zinc-400">
                       {item.format
                         ? item.format(metric)
                         : `${metric.current} / ${metric.limit ?? "∞"}`}
                     </span>
                   </div>
                   <Progress value={metric.percentage} color={getProgressColor(metric)} size="sm" />
-                  <p className="mt-2 text-xs text-gray-500">
+                  <p className="mt-2 text-xs text-gray-500 dark:text-zinc-400">
                     {metric.limit === null
                       ? "No hard plan cap configured"
                       : `${metric.remaining} ${item.unit} remaining before the limit is reached.`}
@@ -325,7 +325,7 @@ export default function SubscriptionSettings() {
         <CardBody className="p-6">
           <div className="mb-4 flex items-center gap-2">
             <Calendar size={18} />
-            <h3 className="text-lg font-semibold text-gray-900">Plans & Invoices</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Plans & Invoices</h3>
           </div>
           <div className="grid gap-4 lg:grid-cols-[1.35fr,0.95fr]">
             <div className="space-y-4">
@@ -334,25 +334,25 @@ export default function SubscriptionSettings() {
                 const isCommitted = subscription?.planKey === plan.key && subscription?.status === "active";
 
                 return (
-                  <div key={plan.key} className={`rounded-xl border p-4 ${isCurrent ? "border-primary-300 bg-primary-50/50" : "border-gray-100 bg-white"}`}>
+                  <div key={plan.key} className={`rounded-xl border p-4 ${isCurrent ? "border-primary-300 bg-primary-50/50" : "border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950"}`}>
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h4 className="text-lg font-semibold text-gray-900">{plan.name}</h4>
+                          <h4 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{plan.name}</h4>
                           {isCurrent && <Chip size="sm" color="primary" variant="flat">Current access</Chip>}
                           {isCommitted && <Chip size="sm" color="success" variant="flat">Committed</Chip>}
                         </div>
-                        <p className="mt-1 text-sm text-gray-600">{plan.description}</p>
+                        <p className="mt-1 text-sm text-gray-600 dark:text-zinc-400">{plan.description}</p>
                       </div>
                       <div className="text-left md:text-right">
-                        <div className="flex items-center gap-1 text-xl font-semibold text-gray-900 md:justify-end">
+                        <div className="flex items-center gap-1 text-xl font-semibold text-gray-900 dark:text-zinc-100 md:justify-end">
                           <IndianRupee size={18} />
                           {plan.price}
                         </div>
-                        <p className="text-xs text-gray-500">per {billingCycle === "annual" ? "year" : "month"}</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">per {billingCycle === "annual" ? "year" : "month"}</p>
                       </div>
                     </div>
-                    <div className="mt-4 grid gap-2 text-sm text-gray-600 md:grid-cols-2">
+                    <div className="mt-4 grid gap-2 text-sm text-gray-600 dark:text-zinc-400 md:grid-cols-2">
                       <div>Students: {plan.limits.students}</div>
                       <div>Staff: {plan.limits.staff}</div>
                       <div>Storage: {(plan.limits.storageMb / 1024).toFixed(0)} GB</div>
@@ -381,18 +381,18 @@ export default function SubscriptionSettings() {
               })}
             </div>
 
-            <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Recent invoices</h4>
+            <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 p-4">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-zinc-400">Recent invoices</h4>
               <div className="mt-4 space-y-3">
                 {invoices.length === 0 && (
-                  <p className="text-sm text-gray-500">No invoices yet. A record will appear here after checkout is created.</p>
+                  <p className="text-sm text-gray-500 dark:text-zinc-400">No invoices yet. A record will appear here after checkout is created.</p>
                 )}
                 {invoices.map((invoice) => (
-                  <div key={invoice.id} className="rounded-lg border border-gray-100 bg-white p-3">
+                  <div key={invoice.id} className="rounded-lg border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{invoice.invoiceNumber}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{invoice.invoiceNumber}</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">
                           {invoice.planKey} · {invoice.billingCycle} · {formatDate(invoice.createdAt)}
                         </p>
                       </div>
@@ -401,7 +401,7 @@ export default function SubscriptionSettings() {
                       </Chip>
                     </div>
                     <div className="mt-3 flex items-center justify-between">
-                      <span className="text-sm text-gray-600">{formatMoney(invoice.amount, invoice.currency)}</span>
+                      <span className="text-sm text-gray-600 dark:text-zinc-400">{formatMoney(invoice.amount, invoice.currency)}</span>
                       {invoice.hostedUrl ? (
                         <Button
                           size="sm"
@@ -412,7 +412,7 @@ export default function SubscriptionSettings() {
                           Open
                         </Button>
                       ) : (
-                        <span className="text-xs text-gray-400">No hosted link</span>
+                        <span className="text-xs text-gray-400 dark:text-zinc-500">No hosted link</span>
                       )}
                     </div>
                   </div>
@@ -425,8 +425,8 @@ export default function SubscriptionSettings() {
 
       <Card className="rounded-lg">
         <CardBody className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900">School billing account</h3>
-          <p className="mt-1 text-sm text-gray-600">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">School billing account</h3>
+          <p className="mt-1 text-sm text-gray-600 dark:text-zinc-400">
             These contacts are used for invoices, billing requests, and provider checkout setup.
           </p>
 

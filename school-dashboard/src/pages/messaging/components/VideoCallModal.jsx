@@ -171,7 +171,7 @@ export default function VideoCallModal({
 
               {/* Local Video (PiP) */}
               {call.callType === 'video' && localStream && (
-                <div className="absolute top-4 right-4 w-48 h-36 rounded-lg overflow-hidden shadow-2xl border-2 border-white/20 bg-black">
+                <div className="absolute top-4 right-4 w-48 h-36 rounded-lg overflow-hidden shadow-2xl border-2 border-white/20 dark:border-white/15 bg-black">
                   <video
                     ref={localVideoRef}
                     autoPlay
@@ -194,7 +194,7 @@ export default function VideoCallModal({
                   <Button
                     isIconOnly
                     size="lg"
-                    className={`w-14 h-14 rounded-full ${audioEnabled ? 'bg-white/20' : 'bg-danger'}`}
+                    className={`w-14 h-14 rounded-full ${audioEnabled ? 'bg-white/20 dark:bg-white/15' : 'bg-danger'}`}
                     onClick={toggleAudio}
                   >
                     {audioEnabled ? <Mic size={24} className="text-white" /> : <MicOff size={24} />}
@@ -204,7 +204,7 @@ export default function VideoCallModal({
                     <Button
                       isIconOnly
                       size="lg"
-                      className={`w-14 h-14 rounded-full ${videoEnabled ? 'bg-white/20' : 'bg-danger'}`}
+                      className={`w-14 h-14 rounded-full ${videoEnabled ? 'bg-white/20 dark:bg-white/15' : 'bg-danger'}`}
                       onClick={toggleVideo}
                     >
                       {videoEnabled ? <Video size={24} className="text-white" /> : <VideoOff size={24} />}

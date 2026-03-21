@@ -105,36 +105,36 @@ export default function FeeDefaulters() {
     <div className="w-full flex flex-col">
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-4 mb-6 -mx-6 -mt-6 px-6 pt-6">
-        <div className="p-4 border border-gray-200 rounded-lg bg-white">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Total Defaulters</p>
-          <p className="text-2xl font-bold text-gray-900">{filteredDefaulters.length}</p>
+        <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Total Defaulters</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{filteredDefaulters.length}</p>
         </div>
-        <div className="p-4 border border-gray-200 rounded-lg bg-white">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Total Pending</p>
-          <p className="text-2xl font-bold text-gray-900">₹{totalPending.toLocaleString()}</p>
+        <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Total Pending</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">₹{totalPending.toLocaleString()}</p>
         </div>
-        <div className="p-4 border border-gray-200 rounded-lg bg-white">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">30+ Days Overdue</p>
-          <p className="text-2xl font-bold text-gray-900">{defaulters.filter((d) => d.days >= 30).length}</p>
+        <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">30+ Days Overdue</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{defaulters.filter((d) => d.days >= 30).length}</p>
         </div>
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-gray-200 py-4 -mx-6 px-6 mb-6">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-gray-200 dark:border-zinc-800 py-4 -mx-6 px-6 mb-6">
         <div className="flex items-center gap-3 w-full sm:w-auto">
           {/* Search */}
-          <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-white rounded-lg border border-gray-200 hover:border-gray-300 focus-within:border-gray-400 transition-all">
-            <Search size={16} className="text-gray-400" />
+          <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 focus-within:border-gray-400 dark:focus-within:border-zinc-600 transition-all">
+            <Search size={16} className="text-gray-400 dark:text-zinc-500" />
             <input
               type="search"
               placeholder="Search student..."
-              className="flex-1 bg-transparent outline-none text-sm text-gray-900 placeholder:text-gray-400"
+              className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-zinc-100 placeholder:text-gray-400 dark:placeholder:text-zinc-500"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
             {search && (
-              <button onClick={() => setSearch("")} className="p-0.5 hover:bg-gray-100 rounded">
-                <X size={14} className="text-gray-400" />
+              <button onClick={() => setSearch("")} className="p-0.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded">
+                <X size={14} className="text-gray-400 dark:text-zinc-500" />
               </button>
             )}
           </div>
@@ -156,11 +156,11 @@ export default function FeeDefaulters() {
         </div>
 
         <div className="flex gap-2 w-full sm:w-auto">
-          <button onClick={handleSendReminders} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all">
+          <button onClick={handleSendReminders} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all">
             <Bell size={14} />
             <span>Remind All</span>
           </button>
-          <button onClick={handleExportDefaulters} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all">
+          <button onClick={handleExportDefaulters} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all">
             <Download size={14} />
             <span>Export</span>
           </button>
@@ -168,13 +168,13 @@ export default function FeeDefaulters() {
       </div>
 
       {/* Table */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden -mx-6 sm:mx-0">
+      <div className="border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden -mx-6 sm:mx-0">
         <Table
           aria-label="Fee defaulters"
           removeWrapper
           classNames={{
-            th: "bg-gray-50 text-gray-500 font-medium text-xs uppercase tracking-wider h-11 border-b border-gray-200",
-            td: "py-4 border-b border-gray-100",
+            th: "bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-11 border-b border-gray-200 dark:border-zinc-800",
+            td: "py-4 border-b border-gray-100 dark:border-zinc-800",
           }}
         >
           <TableHeader>
@@ -184,33 +184,33 @@ export default function FeeDefaulters() {
             <TableColumn>OVERDUE</TableColumn>
             <TableColumn align="end">ACTIONS</TableColumn>
           </TableHeader>
-          <TableBody emptyContent={<div className="text-center py-8"><p className="text-gray-400 text-sm">No defaulters found</p></div>}>
+          <TableBody emptyContent={<div className="text-center py-8"><p className="text-gray-400 dark:text-zinc-500 text-sm">No defaulters found</p></div>}>
             {visibleDefaulters.map((item) => (
-              <TableRow key={item.id} className="hover:bg-gray-50">
+              <TableRow key={item.id} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                      <span className="text-xs font-medium text-gray-600">{item.student?.charAt(0) || '?'}</span>
+                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                      <span className="text-xs font-medium text-gray-600 dark:text-zinc-400">{item.student?.charAt(0) || '?'}</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900 hover:text-gray-600 cursor-pointer" onClick={() => navigate(`/students/${item.id}`)}>
+                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 hover:text-gray-600 dark:hover:text-zinc-400 cursor-pointer" onClick={() => navigate(`/students/${item.id}`)}>
                         {item.student}
                       </p>
-                      <p className="text-xs text-gray-500">Class {item.class}</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">Class {item.class}</p>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm font-mono text-gray-900">₹{item.pending?.toLocaleString() || 0}</span>
+                  <span className="text-sm font-mono text-gray-900 dark:text-zinc-100">₹{item.pending?.toLocaleString() || 0}</span>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm text-gray-600">{item.dueDate || '—'}</span>
+                  <span className="text-sm text-gray-600 dark:text-zinc-400">{item.dueDate || '—'}</span>
                 </TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border rounded ${
-                    item.days >= 30 ? "border-red-200 bg-red-50 text-red-700" :
-                    item.days >= 15 ? "border-orange-200 bg-orange-50 text-orange-700" :
-                    "border-yellow-200 bg-yellow-50 text-yellow-700"
+                    item.days >= 30 ? "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400" :
+                    item.days >= 15 ? "border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-400" :
+                    "border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-400"
                   }`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${
                       item.days >= 30 ? "bg-red-500" :
@@ -225,7 +225,7 @@ export default function FeeDefaulters() {
                     <button onClick={() => handleCollectFee(item)} className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 border border-gray-900 rounded-lg hover:bg-gray-800 transition-all">
                       Collect
                     </button>
-                    <button onClick={() => handleSendReminder(item)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all">
+                    <button onClick={() => handleSendReminder(item)} className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded transition-all">
                       <Bell size={14} />
                     </button>
                   </div>
@@ -236,10 +236,10 @@ export default function FeeDefaulters() {
         </Table>
 
         {/* Load more */}
-        <div ref={loaderRef} className="flex justify-center py-4 bg-gray-50 border-t border-gray-200">
+        <div ref={loaderRef} className="flex justify-center py-4 bg-gray-50 dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
           {isLoadingMore && <Spinner size="sm" />}
           {!hasMore && filteredDefaulters.length > ITEMS_PER_LOAD && (
-            <span className="text-gray-400 text-xs">All defaulters loaded</span>
+            <span className="text-gray-400 dark:text-zinc-500 text-xs">All defaulters loaded</span>
           )}
         </div>
       </div>

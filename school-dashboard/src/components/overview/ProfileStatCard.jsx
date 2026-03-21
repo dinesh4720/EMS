@@ -3,7 +3,7 @@ import { Card, CardBody, Chip } from '@heroui/react';
 
 function ProfileStatCard({
   icon: Icon,
-  iconColor = 'bg-gray-100 text-gray-600',
+  iconColor = 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400',
   title,
   value,
   label,
@@ -56,7 +56,7 @@ function ProfileStatCard({
           <div className="mt-4 flex items-center justify-between">
             <span className="text-xs text-default-400">{actionButton.hint || 'Click to view details'}</span>
             <span
-              className="text-xs px-3 py-1.5 rounded-lg bg-primary-50 text-primary hover:bg-primary-100 cursor-pointer transition-colors flex items-center gap-1.5"
+              className="text-xs px-3 py-1.5 rounded-lg bg-primary-50 dark:bg-primary-950 text-primary hover:bg-primary-100 dark:hover:bg-primary-900 cursor-pointer transition-colors flex items-center gap-1.5"
               onClick={(e) => {
                 e.stopPropagation();
                 actionButton.onClick?.();

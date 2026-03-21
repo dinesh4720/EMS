@@ -865,7 +865,6 @@ const ChatDetailScreen = () => {
   // Handle incoming messages from socket
   useEffect(() => {
     const handleNewMessage = (data) => {
-      console.log('ChatDetailScreen: New message received via socket', data);
       const msgConvId = data.conversationId || data.message?.conversationId;
       const currentConvId = conversationId || conversation?.id;
 

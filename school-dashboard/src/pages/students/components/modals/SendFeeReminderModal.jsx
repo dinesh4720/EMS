@@ -46,10 +46,10 @@ export default function SendFeeReminderModal({ isOpen, onClose, student }) {
       <ModalHeader>Send Fee Reminder</ModalHeader>
       <ModalBody>
         <div className="space-y-4">
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600">Parent: <span className="font-semibold text-gray-900">{student?.parentName || "N/A"}</span></p>
-            <p className="text-sm text-gray-600">Phone: <span className="font-semibold text-gray-900">{student?.parentPhone || "N/A"}</span></p>
-            <p className="text-sm text-gray-600">Email: <span className="font-semibold text-gray-900">{student?.parentEmail || "N/A"}</span></p>
+          <div className="p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">
+            <p className="text-sm text-gray-600 dark:text-zinc-400">Parent: <span className="font-semibold text-gray-900 dark:text-zinc-100">{student?.parentName || "N/A"}</span></p>
+            <p className="text-sm text-gray-600 dark:text-zinc-400">Phone: <span className="font-semibold text-gray-900 dark:text-zinc-100">{student?.parentPhone || "N/A"}</span></p>
+            <p className="text-sm text-gray-600 dark:text-zinc-400">Email: <span className="font-semibold text-gray-900 dark:text-zinc-100">{student?.parentEmail || "N/A"}</span></p>
           </div>
 
           <Textarea
@@ -64,8 +64,8 @@ export default function SendFeeReminderModal({ isOpen, onClose, student }) {
         </div>
       </ModalBody>
       <ModalFooter>
-        <Button variant="bordered" className="border-gray-200 text-gray-700" onPress={onClose}>Cancel</Button>
-        <Button className="bg-gray-900 hover:bg-gray-800 text-white" startContent={<Send size={16} />} onPress={handleSend} isLoading={isSending}>Send Reminder</Button>
+        <Button variant="bordered" className="border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300" onPress={onClose}>Cancel</Button>
+        <Button className="bg-gray-900 dark:bg-zinc-100 hover:bg-gray-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900" startContent={<Send size={16} />} onPress={handleSend} isLoading={isSending}>Send Reminder</Button>
       </ModalFooter>
     </Modal>
   );

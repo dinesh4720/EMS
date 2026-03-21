@@ -314,28 +314,6 @@ export default function AcademicSettings() {
     setDays(days);
   };
 
-  if (loading || !localSettings) {
-    return (
-      <div className="flex justify-center p-10">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-
-  // Calculate instructional time
-  const instructionalMinutes = (localSettings.periodsPerDay || 0) * (localSettings.periodDuration || 0);
-  const instructionalHours = Math.floor(instructionalMinutes / 60);
-  const instructionalMins = instructionalMinutes % 60;
-
-  // Calculate total school hours
-  const getSchoolHours = () => {
-    if (!localSettings.schoolStartTime || !localSettings.schoolEndTime) return "—";
-    const [sh, sm] = localSettings.schoolStartTime.split(':').map(Number);
-    const [eh, em] = localSettings.schoolEndTime.split(':').map(Number);
-    const total = (eh * 60 + em) - (sh * 60 + sm);
-    return `${Math.floor(total / 60)}h ${total % 60}m`;
-  };
-
   // Fixed classes 1-12
   const ALL_CLASSES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
@@ -383,6 +361,28 @@ export default function AcademicSettings() {
     return ALL_CLASSES.filter(num => classConfig[num]?.enabled).map(num => classConfig[num]);
   }, [classConfig]);
 
+  if (loading || !localSettings) {
+    return (
+      <div className="flex justify-center p-10">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  // Calculate instructional time
+  const instructionalMinutes = (localSettings.periodsPerDay || 0) * (localSettings.periodDuration || 0);
+  const instructionalHours = Math.floor(instructionalMinutes / 60);
+  const instructionalMins = instructionalMinutes % 60;
+
+  // Calculate total school hours
+  const getSchoolHours = () => {
+    if (!localSettings.schoolStartTime || !localSettings.schoolEndTime) return "—";
+    const [sh, sm] = localSettings.schoolStartTime.split(':').map(Number);
+    const [eh, em] = localSettings.schoolEndTime.split(':').map(Number);
+    const total = (eh * 60 + em) - (sh * 60 + sm);
+    return `${Math.floor(total / 60)}h ${total % 60}m`;
+  };
+
   return (
     <div className="max-w-4xl mx-auto pb-10 space-y-8">
       {/* Header */}
@@ -414,7 +414,7 @@ export default function AcademicSettings() {
           <div className="pt-6 space-y-8 animate-fade-in">
 
             {/* Academic Session Card */}
-            <div className="rounded-xl border border-default-200 bg-white hover:border-default-300 transition-colors">
+            <div className="rounded-xl border border-default-200 bg-white dark:bg-zinc-950 hover:border-default-300 transition-colors">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex items-center gap-3">
@@ -446,7 +446,7 @@ export default function AcademicSettings() {
             </div>
 
             {/* School Timings Card */}
-            <div className="rounded-xl border border-default-200 bg-white hover:border-default-300 transition-colors">
+            <div className="rounded-xl border border-default-200 bg-white dark:bg-zinc-950 hover:border-default-300 transition-colors">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex items-center gap-3">
@@ -478,7 +478,7 @@ export default function AcademicSettings() {
             </div>
 
             {/* Period Configuration Card */}
-            <div className="rounded-xl border border-default-200 bg-white hover:border-default-300 transition-colors">
+            <div className="rounded-xl border border-default-200 bg-white dark:bg-zinc-950 hover:border-default-300 transition-colors">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex items-center gap-3">
@@ -520,7 +520,7 @@ export default function AcademicSettings() {
             </div>
 
             {/* Working Days Card */}
-            <div className="rounded-xl border border-default-200 bg-white hover:border-default-300 transition-colors">
+            <div className="rounded-xl border border-default-200 bg-white dark:bg-zinc-950 hover:border-default-300 transition-colors">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex items-center gap-3">
@@ -595,7 +595,7 @@ export default function AcademicSettings() {
                   .map((subject, index) => {
                     const subjectId = subject.id || subject._id;
                     return (
-                      <div key={subjectId || `subject-${index}`} className="group p-4 bg-white border border-default-200 rounded-xl hover:border-primary transition-all duration-200 shadow-sm">
+                      <div key={subjectId || `subject-${index}`} className="group p-4 bg-white dark:bg-zinc-950 border border-default-200 rounded-xl hover:border-primary transition-all duration-200 shadow-sm">
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">
@@ -635,7 +635,7 @@ export default function AcademicSettings() {
                     );
                   })
               ) : (
-                <div className="col-span-full py-12 flex flex-col items-center justify-center text-default-400 bg-white border border-default-200 rounded-xl border-dashed">
+                <div className="col-span-full py-12 flex flex-col items-center justify-center text-default-400 bg-white dark:bg-zinc-950 border border-default-200 rounded-xl border-dashed">
                   <BookOpen size={32} className="mb-3 opacity-50" />
                   <p>No subjects defined yet.</p>
                   <Button
@@ -669,7 +669,7 @@ export default function AcademicSettings() {
             </div>
 
             {/* List View */}
-            <div className="rounded-xl border border-default-200 bg-white overflow-hidden">
+            <div className="rounded-xl border border-default-200 bg-white dark:bg-zinc-950 overflow-hidden">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-default-200 bg-default-50">
@@ -1134,7 +1134,7 @@ function WorkingDaysForm({ settings, onSave, onCancel, saving }) {
             <div
               key={day.key}
               className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-all ${
-                isActive ? 'bg-primary/5 border-primary' : 'bg-white border-default-200 hover:border-default-300'
+                isActive ? 'bg-primary/5 border-primary' : 'bg-white dark:bg-zinc-950 border-default-200 hover:border-default-300'
               }`}
               onClick={() => toggleDay(day.key)}
             >

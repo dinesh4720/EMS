@@ -274,7 +274,7 @@ export function ResponsiveLayoutDemo() {
       <div className="text-xs space-y-1">
         <p>🖥️ <strong>Desktop (≥1024px):</strong> Panel docks, content resizes</p>
         <p>📱 <strong>Tablet (768-1023px):</strong> Panel overlays (80% width)</p>
-        <p>📱 <strong>Mobile (<768px):</strong> Full-screen overlay</p>
+        <p>📱 <strong>Mobile ({'<'}768px):</strong> Full-screen overlay</p>
       </div>
       <p className="text-[10px] text-muted-foreground">
         Resize your browser to see the panel behavior change

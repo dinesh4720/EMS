@@ -4,7 +4,7 @@ export const TransferCertificateTemplate = React.forwardRef(({ data }, ref) => {
     if (!data) return null;
 
     return (
-        <div ref={ref} className="bg-white text-black font-serif w-[210mm] h-[297mm] mx-auto hidden print:block print:w-full print:h-full print:absolute print:top-0 print:left-0 print:z-[9999]" id="tc-document">
+        <div ref={ref} className="print-content bg-white text-black font-serif w-[210mm] h-[297mm] mx-auto hidden print:block print:w-full print:h-full print:absolute print:top-0 print:left-0 print:z-[9999]" id="tc-document">
             <style>{`
                 @media print {
                     @page {

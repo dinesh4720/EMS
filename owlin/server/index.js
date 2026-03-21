@@ -20,6 +20,7 @@ const io = new Server(httpServer, {
 })
 
 const PORT = process.env.PORT || 4001
+const API_KEY = process.env.API_KEY || 'owlin-dev-key'
 const store = getEventStore({ persist: true })
 
 // Middleware
@@ -33,6 +34,21 @@ app.use(express.json())
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`)
   next()
+})
+
+// API Key validation middleware
+const validateApiKey = (req, res, next) => {
+  const apiKey = req.headers['x-api-key']
+  if (!apiKey || apiKey !== API_KEY) {
+    return res.status(401).json({ error: 'Invalid or missing API key' })
+  }
+  next()
+}
+
+// Protect all /api routes except health check
+app.use('/api', (req, res, next) => {
+  if (req.path === '/health') return next()
+  return validateApiKey(req, res, next)
 })
 
 // ===== API ROUTES =====

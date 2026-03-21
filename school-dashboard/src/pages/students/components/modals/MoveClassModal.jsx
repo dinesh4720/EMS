@@ -58,8 +58,8 @@ export default function MoveClassModal({ isOpen, onClose, student, availableClas
         <ModalHeader>Move to Another Class/Section</ModalHeader>
         <ModalBody>
           <div className="space-y-4">
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600">Current Class: <span className="font-semibold text-gray-900">{student?.class || "N/A"}</span></p>
+            <div className="p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-zinc-400">Current Class: <span className="font-semibold text-gray-900 dark:text-zinc-100">{student?.class || "N/A"}</span></p>
             </div>
 
             <Select
@@ -78,7 +78,7 @@ export default function MoveClassModal({ isOpen, onClose, student, availableClas
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="bordered" className="border-gray-200 text-gray-700" onPress={onClose}>Cancel</Button>
+          <Button variant="bordered" className="border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300" onPress={onClose}>Cancel</Button>
           <Button className="bg-gray-900 hover:bg-gray-800 text-white" onPress={handleMove} isLoading={isMoving}>Move Student</Button>
         </ModalFooter>
       </ModalContent>

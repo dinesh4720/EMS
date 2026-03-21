@@ -16,13 +16,13 @@ export default function BasicDetailsTab({
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Academic Information */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex justify-between items-center">
+      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
+        <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-              <GraduationCap size={18} className="text-gray-600" />
+            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+              <GraduationCap size={18} className="text-gray-600 dark:text-zinc-400" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900">Academic Information</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Academic Information</h3>
           </div>
           {onEditSection && (
             <Button 
@@ -30,7 +30,7 @@ export default function BasicDetailsTab({
               size="sm" 
               variant="light" 
               onPress={() => onEditSection("academic")}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300"
             >
               <Edit size={16} />
             </Button>
@@ -45,13 +45,13 @@ export default function BasicDetailsTab({
       </div>
 
       {/* Personal Information */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex justify-between items-center">
+      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
+        <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-              <User size={18} className="text-gray-600" />
+            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+              <User size={18} className="text-gray-600 dark:text-zinc-400" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900">Personal Information</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Personal Information</h3>
           </div>
           {onEditSection && (
             <Button 
@@ -59,7 +59,7 @@ export default function BasicDetailsTab({
               size="sm" 
               variant="light" 
               onPress={() => onEditSection("personal")}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300"
             >
               <Edit size={16} />
             </Button>
@@ -80,13 +80,13 @@ export default function BasicDetailsTab({
       </div>
 
       {/* Contact Details */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex justify-between items-center">
+      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
+        <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-              <Phone size={18} className="text-gray-600" />
+            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+              <Phone size={18} className="text-gray-600 dark:text-zinc-400" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900">Contact Details</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Contact Details</h3>
           </div>
           {onEditSection && (
             <Button 
@@ -94,7 +94,7 @@ export default function BasicDetailsTab({
               size="sm" 
               variant="light" 
               onPress={() => onEditSection("contact")}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300"
             >
               <Edit size={16} />
             </Button>
@@ -113,13 +113,13 @@ export default function BasicDetailsTab({
       </div>
 
       {/* Parent/Guardian */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex justify-between items-center">
+      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
+        <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-              <Users size={18} className="text-gray-600" />
+            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+              <Users size={18} className="text-gray-600 dark:text-zinc-400" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900">Parent / Guardian</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Parent / Guardian</h3>
           </div>
           {onEditSection && (
             <Button 
@@ -127,7 +127,7 @@ export default function BasicDetailsTab({
               size="sm" 
               variant="light" 
               onPress={() => onEditSection("parents")}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300"
             >
               <Edit size={16} />
             </Button>
@@ -153,13 +153,13 @@ export default function BasicDetailsTab({
       </div>
 
       {/* Previous Education */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex justify-between items-center">
+      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
+        <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-              <GraduationCap size={18} className="text-gray-600" />
+            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+              <GraduationCap size={18} className="text-gray-600 dark:text-zinc-400" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900">Previous Education</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Previous Education</h3>
           </div>
           {onEditSection && (
             <Button 
@@ -167,7 +167,7 @@ export default function BasicDetailsTab({
               size="sm" 
               variant="light" 
               onPress={() => onEditSection("education")}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300"
             >
               <Edit size={16} />
             </Button>
@@ -180,13 +180,13 @@ export default function BasicDetailsTab({
       </div>
 
       {/* Additional Information */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex justify-between items-center">
+      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
+        <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-              <FileCheck size={18} className="text-gray-600" />
+            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+              <FileCheck size={18} className="text-gray-600 dark:text-zinc-400" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900">Additional Information</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Additional Information</h3>
           </div>
           {onEditSection && (
             <Button 
@@ -194,7 +194,7 @@ export default function BasicDetailsTab({
               size="sm" 
               variant="light" 
               onPress={() => onEditSection("additional")}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300"
             >
               <Edit size={16} />
             </Button>

@@ -193,7 +193,7 @@ async function testStudentDashboard() {
         // Test 5: Click on Attendance KPI card
         console.log('📍 Test 5: Clicking Attendance KPI card...');
         try {
-          const attendanceCard = await.page.$('text=Attendance');
+          const attendanceCard = await page.$('text=Attendance');
           if (attendanceCard) {
             await attendanceCard.click();
             await new Promise(resolve => setTimeout(resolve, 1500));
@@ -231,7 +231,7 @@ async function testStudentDashboard() {
         // Test 7: Test vertical dot menu
         console.log('📍 Test 7: Testing vertical dot menu...');
         try {
-          const menuButton = await page.$('button[aria-label="More options"], button:has(svg)'), button');
+          const menuButton = await page.$('button[aria-label="More options"], button:has(svg)');
           if (menuButton) {
             await menuButton.click();
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -308,10 +308,6 @@ async function testStudentDashboard() {
       console.log('❌ Error opening student overview:', e.message, '\n');
     }
 
-  } catch (error) {
-    console.error('❌ Fatal error during test:', error);
-  }
-
   // Generate report
   console.log('\n' + '='.repeat(80));
   console.log('📊 TEST SUMMARY');
@@ -360,6 +356,7 @@ async function testStudentDashboard() {
   console.error('❌ Test script error:', error);
 } finally {
   await browser.close();
+}
 }
 
 // Run the test

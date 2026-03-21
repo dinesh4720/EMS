@@ -16,7 +16,6 @@ import {
 } from "@heroui/react";
 import { ShieldAlert, ArrowLeft, Send, CheckCircle } from "lucide-react";
 import toast from "react-hot-toast";
-import { useAuth } from "../context/AuthContext";
 import { usePermissions } from "../context/PermissionContext";
 
 const MODULE_LABELS = {
@@ -44,7 +43,6 @@ const ACTION_LABELS = {
 
 export default function PermissionDenied({ module, action, onRequestSubmitted }) {
   const navigate = useNavigate();
-  // const { user } = useAuth(); // Not strictly needed if usePermissions handles it, but good for uniformity
   const { requestPermission } = usePermissions();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [loading, setLoading] = useState(false);
@@ -106,7 +104,7 @@ export default function PermissionDenied({ module, action, onRequestSubmitted })
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               Access Denied
             </h2>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-gray-600 dark:text-zinc-400">
               You don't have permission to {action ? `${ACTION_LABELS[action].toLowerCase()}` : 'access'} the{" "}
               <span className="font-semibold text-gray-900 dark:text-white">
                 {MODULE_LABELS[module] || module}
@@ -116,8 +114,8 @@ export default function PermissionDenied({ module, action, onRequestSubmitted })
           </div>
 
           {/* Message */}
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-            <p className="text-sm text-gray-700 dark:text-gray-300">
+          <div className="bg-gray-50 dark:bg-zinc-800 rounded-lg p-4">
+            <p className="text-sm text-gray-700 dark:text-zinc-300">
               If you believe you should have access to this module, you can request permission from your administrator.
               Your request will be reviewed and you'll be notified once it's processed.
             </p>
@@ -163,7 +161,7 @@ export default function PermissionDenied({ module, action, onRequestSubmitted })
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                     Request Submitted!
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-400">
+                  <p className="text-gray-600 dark:text-zinc-400">
                     Your permission request has been sent to the administrator.
                     You'll be notified once it's reviewed.
                   </p>
@@ -173,14 +171,14 @@ export default function PermissionDenied({ module, action, onRequestSubmitted })
               <div className="space-y-6">
                 {/* Module Info */}
                 <div className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4">
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <p className="text-sm text-gray-700 dark:text-zinc-300">
                     <span className="font-semibold">Module:</span> {MODULE_LABELS[module]}
                   </p>
                 </div>
 
                 {/* Permissions Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-3">
                     Select Permissions Needed
                   </label>
                   <CheckboxGroup
@@ -208,7 +206,7 @@ export default function PermissionDenied({ module, action, onRequestSubmitted })
                     minRows={4}
                     isRequired
                   />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-2">
                     Provide a clear explanation to help the administrator review your request
                   </p>
                 </div>

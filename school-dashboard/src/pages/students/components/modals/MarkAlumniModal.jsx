@@ -51,12 +51,12 @@ export default function MarkAlumniModal({ isOpen, onClose, student, onMark }) {
       <ModalHeader>Mark as Alumni</ModalHeader>
       <ModalBody>
         <div className="space-y-4">
-          <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg">
             <div className="flex items-start gap-3">
-              <AlertCircle className="text-gray-600 mt-0.5" size={20} />
+              <AlertCircle className="text-gray-600 dark:text-zinc-400 mt-0.5" size={20} />
               <div>
-                <p className="font-semibold text-gray-900">Confirm Action</p>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="font-semibold text-gray-900 dark:text-zinc-100">Confirm Action</p>
+                <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
                   This will change {student?.name}'s status to "Alumni". The student will no longer appear in active student lists.
                 </p>
               </div>
@@ -65,8 +65,8 @@ export default function MarkAlumniModal({ isOpen, onClose, student, onMark }) {
         </div>
       </ModalBody>
       <ModalFooter>
-        <Button variant="bordered" className="border-gray-200 text-gray-700" onPress={onClose}>Cancel</Button>
-        <Button className="bg-gray-900 hover:bg-gray-800 text-white" onPress={handleMarkAsAlumni} isLoading={isMarking}>Confirm</Button>
+        <Button variant="bordered" className="border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300" onPress={onClose}>Cancel</Button>
+        <Button className="bg-gray-900 dark:bg-zinc-100 hover:bg-gray-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900" onPress={handleMarkAsAlumni} isLoading={isMarking}>Confirm</Button>
       </ModalFooter>
     </Modal>
   );

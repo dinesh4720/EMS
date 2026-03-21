@@ -71,12 +71,12 @@ export default function PromoteStudentModal({ isOpen, onClose, student, availabl
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <ModalContent className="bg-white rounded-lg border border-gray-200">
-        <ModalHeader className="text-gray-900 font-medium">Promote Student</ModalHeader>
+      <ModalContent className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800">
+        <ModalHeader className="text-gray-900 dark:text-zinc-100 font-medium">Promote Student</ModalHeader>
         <ModalBody>
           <div className="space-y-4">
             {/* Student Info - Gray container */}
-            <div className="flex items-center gap-3 p-4 bg-default-50 rounded-lg border border-gray-200">
+            <div className="flex items-center gap-3 p-4 bg-default-50 rounded-lg border border-gray-200 dark:border-zinc-800">
               <GraduationCap size={24} className="text-primary" />
               <div>
                 <p className="text-sm text-default-500">Student: <span className="font-semibold text-default-900">{student?.name || 'N/A'}</span></p>
@@ -112,7 +112,7 @@ export default function PromoteStudentModal({ isOpen, onClose, student, availabl
           <Button
             variant="flat"
             onPress={onClose}
-            className="border border-gray-200 hover:bg-gray-50 text-gray-700"
+            className="border border-gray-200 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-900 text-gray-700 dark:text-zinc-300"
           >
             Cancel
           </Button>

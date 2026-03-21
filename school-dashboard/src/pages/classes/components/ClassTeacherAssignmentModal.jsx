@@ -148,7 +148,7 @@ export default function ClassTeacherAssignmentModal({
         scrollBehavior="inside"
         classNames={{
           backdrop: "bg-black/50 backdrop-blur-sm",
-          base: "bg-white dark:bg-gray-900"
+          base: "bg-white dark:bg-zinc-950"
         }}
       >
         <ModalContent>

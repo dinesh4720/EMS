@@ -31,22 +31,18 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const loadStoredUser = async () => {
       try {
-        console.log('Loading stored user data...');
         const storedUser = await Promise.race([
           getUserData(),
           new Promise((_, reject) => 
             setTimeout(() => reject(new Error('Timeout loading user data')), 5000)
           )
         ]);
-        console.log('Stored user data:', storedUser);
         
         if (storedUser && storedUser.id) {
           // ✅ FIXED: Validate session with server before setting user
-          console.log('Validating session with server for user ID:', storedUser.id);
           const validation = await authApi.validateSession(storedUser.id);
           
           if (validation && validation.valid) {
-            console.log('✅ Session validated - user exists and is active');
             // Update user data with fresh data from server
             if (validation.staff) {
               const updatedUser = { ...storedUser, ...validation.staff };
@@ -58,7 +54,6 @@ export const AuthProvider = ({ children }) => {
           } else {
             // ❌ Session invalid - user deleted or inactive
             console.warn('⚠️ Session validation failed:', validation.reason || 'User not found or inactive');
-            console.log('Clearing invalid session data...');
             await removeUserData();
             await authApi.logout(); // Clear auth token as well
             setUser(null);
@@ -73,7 +68,6 @@ export const AuthProvider = ({ children }) => {
           console.error('Error clearing user data:', clearErr);
         }
       } finally {
-        console.log('Auth initialization complete');
         setLoading(false);
       }
     };
@@ -82,17 +76,14 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = useCallback(async (email, password) => {
-    console.log('Login attempt:', email);
     setLoading(true);
     setError(null);
 
     try {
       const userData = await authApi.login(email, password);
-      console.log('Login response:', userData);
 
       if (userData && userData.id) {
         setUser(userData);
-        console.log('Login successful for:', userData.name);
         return { success: true, user: userData };
       } else {
         throw new Error('Invalid response from server');

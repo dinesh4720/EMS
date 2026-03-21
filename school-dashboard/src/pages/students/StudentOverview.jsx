@@ -6,7 +6,8 @@ import {
   Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerFooter, Input, Select, SelectItem, Textarea,
   RadioGroup, Radio, Checkbox, cn, Tooltip, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem
 } from "@heroui/react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useValidatedParams } from "../../hooks/useValidatedParams";
 import {
   ArrowLeft, Phone, Mail, MapPin, Calendar, IndianRupee, User, Users,
   GraduationCap, FileText, Download, Edit, MessageSquare, Clock,
@@ -32,7 +33,8 @@ import {
 import AddStudent from "./AddStudent";
 import TCGeneratorModal from "./TCGeneratorModal";
 import { useApp } from "../../context/AppContext";
-import { uploadApi, classesApi } from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
+import { uploadApi, classesApi, studentsApi, studentFeesApi, feesApi, attendanceApi, request } from "../../services/api";
 import { UnifiedUploadProgress } from "../../components/FileUploadProgress";
 import toast from "react-hot-toast";
 // Import extracted components
@@ -107,25 +109,11 @@ const getNextClass = (currentClass, availableClasses) => {
     return nextClass;
 };
 
-// Helper function to get auth token (same as api.js)
-const getAuthToken = () => {
-  const storedUser = sessionStorage.getItem('app_user');
-  if (storedUser) {
-    try {
-      const userData = JSON.parse(storedUser);
-      return userData.token;
-    } catch (err) {
-      console.error('Failed to parse user data:', err);
-      return null;
-    }
-  }
-  return null;
-};
-
 export default function StudentOverview() {
-  const { id } = useParams();
+  const { params: { id }, isValid } = useValidatedParams({ id: 'objectId' }, { redirectTo: '/students' });
   const navigate = useNavigate();
   const { getStudentById, classesWithTeachers, staff, updateStudent, updateStudentLocal, deleteStudent, loading, currentAcademicYear } = useApp();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "overview");
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -160,21 +148,8 @@ export default function StudentOverview() {
       if (activeTab === 'remarks') {
         setRemarksLoading(true);
         try {
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-          const token = getAuthToken();
-          const response = await fetch(`${API_URL}/students/${id}/remarks?category=${remarksCategoryFilter}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            setRemarks(data);
-          } else {
-            const errorData = await response.json().catch(() => ({}));
-            console.error('Error response:', errorData);
-          }
+          const data = await studentsApi.getRemarks(id, remarksCategoryFilter);
+          setRemarks(data);
         } catch (error) {
           console.error('Error fetching remarks:', error);
         } finally {
@@ -192,21 +167,8 @@ export default function StudentOverview() {
       if (activeTab === 'academics') {
         setResultsLoading(true);
         try {
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-          const token = getAuthToken();
-          const response = await fetch(`${API_URL}/students/${id}/results`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            setResults(data);
-          } else {
-            const errorData = await response.json().catch(() => ({}));
-            console.error('Error response:', errorData);
-          }
+          const data = await studentsApi.getResults(id);
+          setResults(data);
         } catch (error) {
           console.error('Error fetching results:', error);
         } finally {
@@ -277,25 +239,7 @@ export default function StudentOverview() {
             };
 
             // Use dedicated document endpoint to append to array
-            const token = getAuthToken();
-            const headers = {
-              'Content-Type': 'application/json',
-            };
-            if (token) {
-              headers['Authorization'] = `Bearer ${token}`;
-            }
-            const response2 = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${id}/documents`, {
-              method: 'POST',
-              headers,
-              body: JSON.stringify(newDoc)
-            });
-
-            if (!response2.ok) {
-              const error = await response2.json();
-              throw new Error(error.error || 'Failed to save document');
-            }
-
-            const result = await response2.json();
+            const result = await studentsApi.addDocument(id, newDoc);
 
             // Update local state with all documents from server
             setDocuments(result.documents || []);
@@ -355,27 +299,8 @@ export default function StudentOverview() {
     const loadingToast = toast.loading("Deleting document...");
 
     try {
-      const deleteUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${id}/documents/${docIndex}`;
-
-      const token = getAuthToken();
-      const headers = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
       // Call the backend DELETE endpoint with the document index
-      const response = await fetch(deleteUrl, {
-        method: 'DELETE',
-        headers
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('🗑️ DELETE error response:', error);
-        throw new Error(error.error || 'Failed to delete document');
-      }
-
-      const result = await response.json();
+      const result = await studentsApi.deleteDocument(id, docIndex);
 
       // Update local state with the documents array from server
       setDocuments(result.documents || []);
@@ -390,23 +315,8 @@ export default function StudentOverview() {
     const loadingToast = toast.loading("Fixing documents...");
 
     try {
-      const token = getAuthToken();
-      const headers = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
       // Call the fix-documents endpoint which removes corrupted docs and adds IDs
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${id}/fix-documents`, {
-        method: 'POST',
-        headers
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fix documents');
-      }
-
-      const result = await response.json();
+      const result = await studentsApi.fixDocuments(id);
 
       // Update local state with fixed documents
       setDocuments(result.documents || []);
@@ -425,46 +335,29 @@ export default function StudentOverview() {
         // Upload to Cloudinary
         const response = await uploadApi.uploadFile(file);
 
-        const token = getAuthToken();
-        const headers = {
-          'Content-Type': 'application/json',
-        };
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
         // Update student photo using direct MongoDB update
-        const response2 = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${id}`, {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify({
-            photo: response.url,
-            // Include all other fields to prevent data loss
-            name: student.name,
-            admissionId: student.admissionId,
-            classId: student.classId,
-            rollNo: student.rollNo,
-            gender: student.gender,
-            dateOfBirth: student.dateOfBirth,
-            bloodGroup: student.bloodGroup,
-            email: student.email,
-            phone: student.phone,
-            address: student.address,
-            city: student.city || "",
-            state: student.state || "",
-            zipCode: student.zipCode || "",
-            parentName: student.parentName,
-            parentPhone: student.parentPhone,
-            parentEmail: student.parentEmail,
-            status: student.status,
-            feeStatus: student.feeStatus
-          })
+        await studentsApi.update(id, {
+          photo: response.url,
+          // Include all other fields to prevent data loss
+          name: student.name,
+          admissionId: student.admissionId,
+          classId: student.classId,
+          rollNo: student.rollNo,
+          gender: student.gender,
+          dateOfBirth: student.dateOfBirth,
+          bloodGroup: student.bloodGroup,
+          email: student.email,
+          phone: student.phone,
+          address: student.address,
+          city: student.city || "",
+          state: student.state || "",
+          zipCode: student.zipCode || "",
+          parentName: student.parentName,
+          parentPhone: student.parentPhone,
+          parentEmail: student.parentEmail,
+          status: student.status,
+          feeStatus: student.feeStatus
         });
-
-        if (!response2.ok) {
-          const error = await response2.json();
-          throw new Error(error.error || 'Failed to save photo');
-        }
 
         // Update local preview
         setPhotoPreview(response.url);
@@ -497,37 +390,20 @@ export default function StudentOverview() {
 
     try {
       setLoadingFeeStructure(true);
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const token = getAuthToken();
-      const headers = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${API_URL}/student-fees/student/${id}?academicYear=${currentAcademicYear}`, { headers });
-
-      if (response.ok) {
-        const data = await response.json();
-        setStudentFeeStructure(data);
-      } else if (response.status === 404) {
-        // No fee structure yet, initialize it
-        const initHeaders = { 'Content-Type': 'application/json' };
-        if (token) {
-          initHeaders['Authorization'] = `Bearer ${token}`;
-        }
-        const initResponse = await fetch(`${API_URL}/student-fees/initialize/${id}`, {
-          method: 'POST',
-          headers: initHeaders,
-          body: JSON.stringify({ academicYear: student?.academicYear || currentAcademicYear })
-        });
-
-        if (initResponse.ok) {
-          const data = await initResponse.json();
-          setStudentFeeStructure(data);
-        }
-      }
+      const data = await studentFeesApi.getByStudent(id, currentAcademicYear);
+      setStudentFeeStructure(data);
     } catch (error) {
-      console.error('❌ [StudentOverview] Error fetching fee structure:', error);
+      if (error.status === 404) {
+        // No fee structure yet, initialize it
+        try {
+          const data = await studentFeesApi.initialize(id, student?.academicYear || currentAcademicYear);
+          setStudentFeeStructure(data);
+        } catch (initError) {
+          console.error('❌ [StudentOverview] Error initializing fee structure:', initError);
+        }
+      } else {
+        console.error('❌ [StudentOverview] Error fetching fee structure:', error);
+      }
     } finally {
       setLoadingFeeStructure(false);
     }
@@ -539,18 +415,8 @@ export default function StudentOverview() {
 
     try {
       setLoadingPaymentHistory(true);
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const token = getAuthToken();
-      const headers = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      const response = await fetch(`${API_URL}/fees/payments?studentId=${id}`, { headers });
-
-      if (response.ok) {
-        const data = await response.json();
-        setFeeHistory(data);
-      }
+      const data = await feesApi.getPayments({ studentId: id });
+      setFeeHistory(data);
     } catch (error) {
       console.error('Error fetching payment history:', error);
     } finally {
@@ -567,17 +433,9 @@ export default function StudentOverview() {
   useEffect(() => {
     const fetchFreshStudentData = async () => {
       try {
-        const token = getAuthToken();
-        const headers = {};
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${id}`, { headers });
-        if (response.ok) {
-          const freshStudent = await response.json();
-          if (freshStudent.documents) {
-            setDocuments(freshStudent.documents);
-          }
+        const freshStudent = await studentsApi.getById(id);
+        if (freshStudent.documents) {
+          setDocuments(freshStudent.documents);
         }
       } catch (error) {
         console.error('Error fetching fresh student data:', error);
@@ -675,7 +533,7 @@ export default function StudentOverview() {
 
         if (classId) {
           // Check if we need to update roll number to avoid conflicts
-          let updateData = { classId, class: nextClass };
+          const updateData = { classId, class: nextClass };
 
           // Get students from context to check for roll number conflicts
           // Note: In StudentOverview, we don't have direct access to all students,
@@ -863,9 +721,6 @@ export default function StudentOverview() {
     const loadingToast = toast.loading("Recording payment...");
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const token = getAuthToken();
-
       // 1. Distribute payment across pending fee heads (FIFO - First In First Out)
       const feeHeadPayments = [];
       let remainingAmount = paymentAmount;
@@ -893,29 +748,12 @@ export default function StudentOverview() {
         }
       }
 
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
       // 2. Update StudentFeeStructure via backend API (primary operation)
-      const feeStructureResponse = await fetch(`${API_URL}/student-fees/student/${id}/payment`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          amount: paymentAmount,
-          feeHeadPayments,
-          academicYear: studentFeeStructure.academicYear || currentAcademicYear
-        })
+      const updatedStructure = await studentFeesApi.recordPayment(id, {
+        amount: paymentAmount,
+        feeHeadPayments,
+        academicYear: studentFeeStructure.academicYear || currentAcademicYear
       });
-
-      if (!feeStructureResponse.ok) {
-        const errorData = await feeStructureResponse.json();
-        console.error('❌ Payment API error:', errorData);
-        throw new Error(errorData.error || 'Failed to update fee structure');
-      }
-
-      const updatedStructure = await feeStructureResponse.json();
 
       // 3. Try to create payment record (secondary, non-blocking)
       try {
@@ -935,11 +773,7 @@ export default function StudentOverview() {
           receiptNumber: `RCP-${Date.now()}`
         };
 
-        await fetch(`${API_URL}/fees/payments`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(paymentData)
-        });
+        await feesApi.createPayment(paymentData);
       } catch (paymentRecordError) {
         // Non-critical error - payment structure is already updated
         console.warn('⚠️ Could not create payment record:', paymentRecordError);
@@ -977,9 +811,6 @@ export default function StudentOverview() {
     }
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const token = getAuthToken();
-
       const remarkData = {
         title: remarkForm.title.trim(),
         description: remarkForm.description.trim(),
@@ -987,17 +818,12 @@ export default function StudentOverview() {
         sentToParent: remarkForm.sendToParent
       };
 
-      const response = await fetch(`${API_URL}/students/${id}/remarks`, {
+      const savedRemark = await request(`/students/${id}/remarks`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        },
         body: JSON.stringify(remarkData)
       });
 
-      if (response.ok) {
-        const savedRemark = await response.json();
+      if (savedRemark) {
 
         // Add to local state
         setRemarks([savedRemark, ...remarks]);
@@ -1018,14 +844,10 @@ export default function StudentOverview() {
           sendToParent: false
         });
         setIsRemarkOpen(false);
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("Error saving remark:", errorData);
-        toast.error(errorData.error || "Failed to save remark");
       }
     } catch (error) {
       console.error("Error saving remark:", error);
-      toast.error("Failed to save remark");
+      toast.error(error.message || "Failed to save remark");
     }
   };
 
@@ -1077,20 +899,13 @@ export default function StudentOverview() {
       
       setAttendanceLoading(true);
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-        const token = getAuthToken();
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        
         // Get attendance for current year
         const year = new Date().getFullYear();
         const startDate = `${year}-01-01`;
         const endDate = `${year}-12-31`;
-        
-        const response = await fetch(`${API_URL}/attendance/student/${id}?start=${startDate}&end=${endDate}`, { headers });
-        if (response.ok) {
-          const data = await response.json();
-          setAttendanceData(Array.isArray(data) ? data : []);
-        }
+
+        const data = await attendanceApi.getStudentAttendance(id, startDate, endDate);
+        setAttendanceData(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Error fetching attendance:', error);
         setAttendanceData([]);
@@ -1170,7 +985,7 @@ export default function StudentOverview() {
   const handleSendReminder = () => {
     // Generate message based on fee status
     const hasOutstanding = (studentFeeStructure?.totalBalance || 0) > 0;
-    const schoolName = "Your School"; // TODO: Get from config/settings
+    const schoolName = user?.school?.name || "School";
 
     let defaultMessage = "";
     if (hasOutstanding) {
@@ -1191,30 +1006,13 @@ export default function StudentOverview() {
 
     setReminderSending(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const token = getAuthToken();
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
       // Call API to send SMS/Email
-      const response = await fetch(`${API_URL}/students/${id}/send-reminder`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          message: reminderMessage,
-          parentPhone: student.parentPhone,
-          parentEmail: student.parentEmail,
-          studentName: student.name
-        })
+      await studentsApi.sendReminder(id, {
+        message: reminderMessage,
+        parentPhone: student.parentPhone,
+        parentEmail: student.parentEmail,
+        studentName: student.name
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to send reminder');
-      }
 
       toast.success(`Reminder sent to ${student.parentName || 'parent'}`);
       setIsReminderModalOpen(false);
@@ -1230,6 +1028,7 @@ export default function StudentOverview() {
     setIsInvoiceOpen(true);
   };
 
+  if (!isValid) return null;
   if (loading) return <div className="p-8 text-center text-default-500">Loading profile...</div>;
   if (!student) return <div className="p-8 text-center text-default-500">Student not found</div>;
 
@@ -1267,7 +1066,7 @@ export default function StudentOverview() {
             variant="solid"
             classNames={{
               tabList: "gap-1 p-1.5 bg-default-100/50 rounded-2xl border border-default-200 mb-6",
-              cursor: "bg-background rounded-xl shadow-sm ring-1 ring-black/5",
+              cursor: "bg-background rounded-xl shadow-sm dark:shadow-zinc-900/50 ring-1 ring-black/5 dark:ring-white/10",
               tab: "px-6 h-10 transition-all",
               tabContent: "group-data-[selected=true]:text-default-900 group-data-[selected=true]:font-semibold text-default-500 font-medium"
             }}
@@ -1298,11 +1097,11 @@ export default function StudentOverview() {
                     isPressable
                     onPress={() => setActiveTab("academics")}
                     shadow="sm"
-                    className="border border-default-200 bg-background/60 backdrop-blur-md cursor-pointer hover:shadow-md transition-shadow"
+                    className="border border-default-200 bg-background/60 backdrop-blur-md cursor-pointer hover:shadow-md dark:shadow-zinc-900/50 transition-shadow"
                   >
                     <CardBody className="p-6">
                       <div className="flex items-start justify-between mb-4 w-full">
-                        <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
+                        <div className="p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-xl">
                           <Award size={24} />
                         </div>
                         <Chip
@@ -1368,11 +1167,11 @@ export default function StudentOverview() {
                     isPressable
                     onPress={() => setActiveTab("attendance")}
                     shadow="sm"
-                    className="border border-default-200 bg-background/60 backdrop-blur-md cursor-pointer hover:shadow-md transition-shadow"
+                    className="border border-default-200 bg-background/60 backdrop-blur-md cursor-pointer hover:shadow-md dark:shadow-zinc-900/50 transition-shadow"
                   >
                     <CardBody className="p-6">
                       <div className="flex items-start justify-between mb-4 w-full">
-                        <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl">
                           <Clock size={24} />
                         </div>
                         <Chip size="sm" color={attendanceStats.percentage >= 90 ? "success" : attendanceStats.percentage >= 75 ? "primary" : "warning"} variant="flat" className="text-xs font-semibold">
@@ -1414,11 +1213,11 @@ export default function StudentOverview() {
                     isPressable
                     onPress={() => setActiveTab("fees")}
                     shadow="sm"
-                    className="border border-default-200 bg-background/60 backdrop-blur-md cursor-pointer hover:shadow-md transition-shadow"
+                    className="border border-default-200 bg-background/60 backdrop-blur-md cursor-pointer hover:shadow-md dark:shadow-zinc-900/50 transition-shadow"
                   >
                     <CardBody className="p-6">
                       <div className="flex items-start justify-between mb-4 w-full">
-                        <div className={`p-3 rounded-xl ${(studentFeeStructure?.totalBalance || 0) <= 0 ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"}`}>
+                        <div className={`p-3 rounded-xl ${(studentFeeStructure?.totalBalance || 0) <= 0 ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400" : "bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400"}`}>
                           <IndianRupee size={24} />
                         </div>
                         <Chip size="sm" color={(studentFeeStructure?.totalBalance || 0) <= 0 ? "success" : "warning"} variant="flat" className="capitalize text-xs font-semibold">
@@ -1582,7 +1381,7 @@ export default function StudentOverview() {
                   <Card shadow="sm" className="border border-default-200">
                     <CardHeader className="pb-0 pt-6 px-6">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
+                        <div className="p-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg">
                           <TrendingUp size={20} />
                         </div>
                         <div>
@@ -1632,7 +1431,7 @@ export default function StudentOverview() {
                   <Card shadow="sm" className="border border-default-200">
                     <CardHeader className="pb-0 pt-6 px-6">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                        <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg">
                           <BarChart3 size={20} />
                         </div>
                         <div>
@@ -1675,7 +1474,7 @@ export default function StudentOverview() {
                   <Card shadow="sm" className="border border-default-200 lg:col-span-2">
                     <CardHeader className="pb-0 pt-6 px-6">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-green-50 text-green-600 rounded-lg">
+                        <div className="p-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg">
                           <LineChart size={20} />
                         </div>
                         <div>
@@ -1733,7 +1532,7 @@ export default function StudentOverview() {
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                    <div className="p-2.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl">
                       <GraduationCap size={20} />
                     </div>
                     <h3 className="text-lg font-semibold text-default-900">Academic Information</h3>
@@ -1752,7 +1551,7 @@ export default function StudentOverview() {
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                    <div className="p-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl">
                       <User size={20} />
                     </div>
                     <h3 className="text-lg font-semibold text-default-900">Personal Information</h3>
@@ -1776,7 +1575,7 @@ export default function StudentOverview() {
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-green-50 text-green-600 rounded-xl">
+                    <div className="p-2.5 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl">
                       <Phone size={20} />
                     </div>
                     <h3 className="text-lg font-semibold text-default-900">Contact Details</h3>
@@ -1826,7 +1625,7 @@ export default function StudentOverview() {
                 <Card shadow="none" className="border border-default-200">
                   <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
+                      <div className="p-2.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-xl">
                         <Users size={20} />
                       </div>
                       <h3 className="text-lg font-semibold text-default-900">Sibling Information</h3>
@@ -1835,8 +1634,8 @@ export default function StudentOverview() {
                   </CardHeader>
                   <CardBody className="p-8">
                     <div className="space-y-4">
-                      {student.siblings.map((sibling, idx) => (
-                        <div key={idx} className="p-4 bg-default-50 rounded-lg border border-default-200">
+                      {student.siblings.map((sibling) => (
+                        <div key={sibling._id} className="p-4 bg-default-50 rounded-lg border border-default-200">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
@@ -1867,7 +1666,7 @@ export default function StudentOverview() {
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-orange-50 text-orange-600 rounded-xl">
+                    <div className="p-2.5 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-xl">
                       <GraduationCap size={20} />
                     </div>
                     <h3 className="text-lg font-semibold text-default-900">Previous Education</h3>
@@ -1883,7 +1682,7 @@ export default function StudentOverview() {
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100 flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-cyan-50 text-cyan-600 rounded-xl">
+                    <div className="p-2.5 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400 rounded-xl">
                       <FileCheck size={20} />
                     </div>
                     <h3 className="text-lg font-semibold text-default-900">Additional Information</h3>
@@ -1989,7 +1788,7 @@ export default function StudentOverview() {
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                      <div className="p-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl">
                         <CheckCircle size={20} />
                       </div>
                       <h3 className="text-lg font-semibold text-default-900">Mark Today's Attendance</h3>
@@ -2045,7 +1844,7 @@ export default function StudentOverview() {
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
+                    <div className="p-2.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-xl">
                       <BookOpen size={20} />
                     </div>
                     <h3 className="text-lg font-semibold text-default-900">Subject-wise Attendance</h3>
@@ -2067,7 +1866,7 @@ export default function StudentOverview() {
                   <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-cyan-50 text-cyan-600 rounded-xl">
+                        <div className="p-2.5 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400 rounded-xl">
                           <Calendar size={20} />
                         </div>
                         <h3 className="text-lg font-semibold text-default-900">Monthly Overview</h3>
@@ -2098,7 +1897,7 @@ export default function StudentOverview() {
                         const status = i % 5 === 0 ? 'absent' : i % 7 === 0 ? 'leave' : 'present';
                         return (
                           <Tooltip
-                            key={i}
+                            key={`day-${i + 1}`}
                             content={`${i + 1} Dec - ${status === 'present' ? 'Present' : status === 'absent' ? 'Absent' : 'Leave'}`}
                           >
                             <div
@@ -2135,7 +1934,7 @@ export default function StudentOverview() {
                 <Card shadow="none" className="border border-default-200">
                   <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
                     <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-orange-50 text-orange-600 rounded-xl">
+                      <div className="p-2.5 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-xl">
                         <AlertTriangle size={20} />
                       </div>
                       <h3 className="text-lg font-semibold text-default-900">Regularize Attendance</h3>
@@ -2153,8 +1952,8 @@ export default function StudentOverview() {
                           { date: "Dec 15, 2024", status: "Pending", reason: "Medical Leave" },
                           { date: "Dec 10, 2024", status: "Approved", reason: "Family Emergency" },
                           { date: "Dec 5, 2024", status: "Rejected", reason: "No valid reason" }
-                        ].map((request, idx) => (
-                          <div key={idx} className={`p-4 rounded-lg border ${
+                        ].map((request) => (
+                          <div key={request.date} className={`p-4 rounded-lg border ${
                             request.status === 'Pending' ? 'border-warning-200 bg-warning-50/30' :
                             request.status === 'Approved' ? 'border-success-200 bg-success-50/30' :
                             'border-danger-200 bg-danger-50/30'
@@ -2192,7 +1991,7 @@ export default function StudentOverview() {
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-green-50 text-green-600 rounded-xl">
+                    <div className="p-2.5 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl">
                       <Mail size={20} />
                     </div>
                     <h3 className="text-lg font-semibold text-default-900">Send Attendance Report</h3>
@@ -2247,7 +2046,7 @@ export default function StudentOverview() {
               <Card shadow="none" className="border border-default-200">
                 <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                    <div className="p-2.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl">
                       <TrendingUp size={20} />
                     </div>
                     <h3 className="text-lg font-semibold text-default-900">Attendance Trends</h3>
@@ -2260,21 +2059,21 @@ export default function StudentOverview() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-100">
+                      <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border border-blue-100 dark:border-blue-800">
                         <p className="text-xs text-default-600 mb-1">This Month</p>
                         <p className="text-2xl font-bold text-blue-600">
                           {attendanceStats.monthlyTrend?.thisMonth || attendanceStats.percentage}%
                         </p>
                         <p className="text-xs text-default-500 mt-1">Based on actual data</p>
                       </div>
-                      <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-100">
+                      <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-100 dark:border-purple-800">
                         <p className="text-xs text-default-600 mb-1">This Quarter</p>
                         <p className="text-2xl font-bold text-purple-600">
                           {attendanceStats.monthlyTrend?.thisQuarter || attendanceStats.percentage}%
                         </p>
                         <p className="text-xs text-default-500 mt-1">Based on actual data</p>
                       </div>
-                      <div className="p-4 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100">
+                      <div className="p-4 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-100 dark:border-green-800">
                         <p className="text-xs text-default-600 mb-1">This Year</p>
                         <p className="text-2xl font-bold text-green-600">{attendanceStats.percentage}%</p>
                         <p className="text-xs text-default-500 mt-1">Based on {attendanceStats.total} recorded days</p>
@@ -2331,7 +2130,7 @@ export default function StudentOverview() {
         hideCloseButton={true}
         classNames={{
           wrapper: "!z-50",
-          base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]",
+          base: "m-2 rounded-xl shadow-xl dark:shadow-zinc-900/50 h-[calc(100%-1rem)]",
           backdrop: "!z-40"
         }}
       >
@@ -2517,7 +2316,7 @@ export default function StudentOverview() {
         size="sm" 
         classNames={{ 
           wrapper: "!z-50", 
-          base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]",
+          base: "m-2 rounded-xl shadow-xl dark:shadow-zinc-900/50 h-[calc(100%-1rem)]",
           backdrop: "!z-40"
         }}
       >
@@ -2543,7 +2342,7 @@ export default function StudentOverview() {
         size="sm" 
         classNames={{ 
           wrapper: "!z-50", 
-          base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]",
+          base: "m-2 rounded-xl shadow-xl dark:shadow-zinc-900/50 h-[calc(100%-1rem)]",
           backdrop: "!z-40"
         }}
       >
@@ -2569,7 +2368,7 @@ export default function StudentOverview() {
         size="sm" 
         classNames={{ 
           wrapper: "!z-50", 
-          base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]",
+          base: "m-2 rounded-xl shadow-xl dark:shadow-zinc-900/50 h-[calc(100%-1rem)]",
           backdrop: "!z-40"
         }}
       >
@@ -2594,7 +2393,7 @@ export default function StudentOverview() {
         size="md" 
         classNames={{ 
           wrapper: "!z-50", 
-          base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]",
+          base: "m-2 rounded-xl shadow-xl dark:shadow-zinc-900/50 h-[calc(100%-1rem)]",
           backdrop: "!z-40"
         }}
       >
@@ -2603,8 +2402,8 @@ export default function StudentOverview() {
             <>
               <DrawerHeader className="border-b border-default-100">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-50 rounded-xl">
-                    <MessageSquare size={20} className="text-blue-600" />
+                  <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                    <MessageSquare size={20} className="text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">Add Remark</h3>
@@ -2753,7 +2552,7 @@ export default function StudentOverview() {
         size="md" 
         classNames={{ 
           wrapper: "!z-50", 
-          base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]",
+          base: "m-2 rounded-xl shadow-xl dark:shadow-zinc-900/50 h-[calc(100%-1rem)]",
           backdrop: "!z-40"
         }}
       >
@@ -2762,7 +2561,7 @@ export default function StudentOverview() {
             <>
               <DrawerHeader className="border-b border-default-100"><h3 className="text-lg font-semibold">Regularize Attendance</h3></DrawerHeader>
               <DrawerBody className="p-0">
-                <div className="p-6 bg-warning-50/50 border-b border-warning-100">
+                <div className="p-6 bg-warning-50/50 dark:bg-warning-900/20 border-b border-warning-100 dark:border-warning-800">
                   <div className="flex items-center gap-3">
                     <AlertTriangle className="text-warning-600" size={24} />
                     <div>
@@ -2772,8 +2571,8 @@ export default function StudentOverview() {
                   </div>
                 </div>
                 <div className="p-6 space-y-4">
-                  {["Oct 12, 2024", "Oct 15, 2024", "Oct 18, 2024"].map((date, i) => (
-                    <div key={i} className="flex items-center justify-between p-4 border border-default-200 rounded-xl">
+                  {["Oct 12, 2024", "Oct 15, 2024", "Oct 18, 2024"].map((date) => (
+                    <div key={date} className="flex items-center justify-between p-4 border border-default-200 rounded-xl">
                       <div className="flex items-center gap-4">
                         <Checkbox size="sm" />
                         <div className="flex items-center gap-3">
@@ -2813,7 +2612,7 @@ export default function StudentOverview() {
         size="md" 
         classNames={{ 
           wrapper: "!z-50", 
-          base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]",
+          base: "m-2 rounded-xl shadow-xl dark:shadow-zinc-900/50 h-[calc(100%-1rem)]",
           backdrop: "!z-40"
         }}
       >
@@ -2831,11 +2630,11 @@ export default function StudentOverview() {
               </DrawerHeader>
               <DrawerBody className="p-0">
                 <div className="p-6 grid grid-cols-2 gap-4 bg-default-50 border-b border-default-200">
-                  <div className="p-4 bg-white rounded-xl border border-default-200 text-center">
+                  <div className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-default-200 text-center">
                     <span className="text-xs text-default-500 uppercase">Total Score</span>
                     <div className="text-2xl font-bold text-default-900 mt-1">{selectedExam?.score || "-"}</div>
                   </div>
-                  <div className="p-4 bg-white rounded-xl border border-default-200 text-center">
+                  <div className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-default-200 text-center">
                     <span className="text-xs text-default-500 uppercase">Rank</span>
                     <div className="text-2xl font-bold text-primary mt-1">#5</div>
                   </div>
@@ -2844,8 +2643,8 @@ export default function StudentOverview() {
                   <h4 className="font-semibold text-default-900 mb-4">Subject-wise Performance</h4>
                   {results && results.length > 0 ? (
                     <div className="space-y-4">
-                      {results.slice(0, 5).map((r, i) => (
-                        <div key={i} className="flex items-center gap-4">
+                      {results.slice(0, 5).map((r) => (
+                        <div key={r._id} className="flex items-center gap-4">
                           <div className="flex-1">
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-sm font-medium text-default-700">{r.subjectName || 'Subject'}</span>

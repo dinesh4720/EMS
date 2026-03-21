@@ -20,8 +20,8 @@ export default function MinimalCard({
   return (
     <div
       className={cn(
-        "bg-white rounded-lg",
-        border && "border border-gray-100",
+        "bg-white dark:bg-zinc-900 rounded-lg",
+        border && "border border-gray-100 dark:border-zinc-800",
         paddingStyles[padding],
         className
       )}
@@ -36,7 +36,7 @@ export default function MinimalCard({
 MinimalCard.Header = function CardHeader({ children, className, ...props }) {
   return (
     <div
-      className={cn("pb-4 border-b border-gray-100 mb-4", className)}
+      className={cn("pb-4 border-b border-gray-100 dark:border-zinc-800 mb-4", className)}
       {...props}
     >
       {children}
@@ -57,7 +57,7 @@ MinimalCard.Content = function CardContent({ children, className, ...props }) {
 MinimalCard.Footer = function CardFooter({ children, className, ...props }) {
   return (
     <div
-      className={cn("pt-4 border-t border-gray-100 mt-4", className)}
+      className={cn("pt-4 border-t border-gray-100 dark:border-zinc-800 mt-4", className)}
       {...props}
     >
       {children}

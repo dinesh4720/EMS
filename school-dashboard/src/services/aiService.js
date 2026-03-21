@@ -69,7 +69,8 @@ async function aiRequest(endpoint, options = {}) {
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers,
-    credentials: 'include'
+    credentials: 'include',
+    cache: 'no-store',
   });
 
   return parseJsonResponse(response);

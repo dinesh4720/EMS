@@ -81,7 +81,7 @@ export default function MessageActionsMenu({ message, currentUserId, onAction })
         <DropdownMenu
           aria-label="Message actions"
           onAction={(key) => handleAction(key)}
-          className="min-w-48 p-1 rounded-xl border border-gray-200 dark:border-zinc-700"
+          className="min-w-48 p-1 rounded-xl border border-gray-200 dark:border-zinc-700 dark:shadow-zinc-900/50"
           itemClasses={{
             base: "rounded-lg px-3 py-2.5 text-sm data-[hover=true]:bg-gray-100 dark:data-[hover=true]:bg-zinc-700 transition-colors",
           }}

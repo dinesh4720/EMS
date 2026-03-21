@@ -214,18 +214,18 @@ export default function ClassesPage() {
         <DrawerContent>
           {(onClose) => (
             <>
-              <DrawerHeader className="flex justify-between items-center border-b border-gray-100 px-6 py-4">
+              <DrawerHeader className="flex justify-between items-center border-b border-gray-100 dark:border-zinc-800 px-6 py-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-gray-100 rounded-lg">
-                    <BookOpen size={20} className="text-gray-700" />
+                  <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
+                    <BookOpen size={20} className="text-gray-700 dark:text-zinc-300" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Add New Class</h3>
-                    <p className="text-xs text-gray-500">Fill in the class details below</p>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Add New Class</h3>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">Fill in the class details below</p>
                   </div>
                 </div>
                 <Button isIconOnly size="sm" variant="light" onPress={onClose} title="Close">
-                  <X size={20} className="text-gray-500" />
+                  <X size={20} className="text-gray-500 dark:text-zinc-400" />
                 </Button>
               </DrawerHeader>
               <DrawerBody className="py-6 px-6">
@@ -246,7 +246,7 @@ export default function ClassesPage() {
                   </Select>
                 </div>
               </DrawerBody>
-              <DrawerFooter className="border-t border-gray-100 px-6 py-4">
+              <DrawerFooter className="border-t border-gray-100 dark:border-zinc-800 px-6 py-4">
                 <Button variant="flat" onPress={onClose} radius="lg" isDisabled={isSubmitting}>Cancel</Button>
                 <Button color="primary" onPress={handleSave} radius="lg" isLoading={isSubmitting} isDisabled={isSubmitting}>
                   {isSubmitting ? 'Creating...' : 'Add Class'}

@@ -102,17 +102,17 @@ export default function FrontDeskDashboard() {
   };
 
   return (
-    <div className="w-full flex-1 bg-gray-50 p-6 min-h-screen">
+    <div className="w-full flex-1 bg-gray-50 dark:bg-zinc-950 p-6 min-h-screen">
       {/* Tabs Row with Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
         {/* Enclosed Tabs */}
-        <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg overflow-x-auto">
+        <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-zinc-900 rounded-lg overflow-x-auto">
           {tabs.map(tab => (
             <button key={tab.key} onClick={() => setSelectedTab(tab.key)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-all whitespace-nowrap ${
                 selectedTab === tab.key
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 shadow-sm'
+                  : 'text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200'
               }`}>
               {tab.label}
             </button>
@@ -123,20 +123,20 @@ export default function FrontDeskDashboard() {
         <div className="flex items-center gap-2 flex-shrink-0">
           <Dropdown>
             <DropdownTrigger>
-              <Button className="bg-gray-900 text-white hover:bg-gray-800" startContent={<Plus size={16} />}>
+              <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200" startContent={<Plus size={16} />}>
                 New
                 <ChevronDown size={14} className="ml-1" />
               </Button>
             </DropdownTrigger>
             <DropdownMenu className="min-w-[180px]" onAction={handleNewAction}>
               {newActions.map((action) => (
-                <DropdownItem key={action.key} startContent={<action.icon size={14} className="text-gray-400" />}>
+                <DropdownItem key={action.key} startContent={<action.icon size={14} className="text-gray-400 dark:text-zinc-500" />}>
                   {action.label}
                 </DropdownItem>
               ))}
             </DropdownMenu>
           </Dropdown>
-          <Button variant="flat" className="bg-gray-100 text-gray-700" startContent={<Download size={16} />}>
+          <Button variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Download size={16} />}>
             Export
           </Button>
         </div>
@@ -160,28 +160,28 @@ export default function FrontDeskDashboard() {
         {/* RIGHT SIDEBAR - 1/3 */}
         <div className="lg:col-span-1 space-y-4">
           {/* Recent Activity */}
-          <div className="bg-white rounded-lg border border-gray-100 overflow-hidden">
-            <div className="p-4 border-b border-gray-100">
-              <h3 className="text-sm font-medium text-gray-900">Recent Activity</h3>
+          <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 dark:border-zinc-800">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Recent Activity</h3>
             </div>
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y divide-gray-50 dark:divide-zinc-800">
               {[
                 { type: 'visitor', text: 'John Doe checked in', time: '10 min ago' },
                 { type: 'appointment', text: 'Meeting with parent', time: '25 min ago' },
                 { type: 'call', text: 'Incoming call logged', time: '1 hour ago' },
                 { type: 'gatepass', text: 'Gate pass issued', time: '2 hours ago' },
               ].map((activity) => (
-                <div key={activity.text} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
+                <div key={activity.text} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-900/50 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-md bg-gray-100 flex items-center justify-center">
-                      {activity.type === 'visitor' && <Users size={12} className="text-gray-500" />}
-                      {activity.type === 'appointment' && <Calendar size={12} className="text-gray-500" />}
-                      {activity.type === 'call' && <Phone size={12} className="text-gray-500" />}
-                      {activity.type === 'gatepass' && <DoorOpen size={12} className="text-gray-500" />}
+                    <div className="w-7 h-7 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                      {activity.type === 'visitor' && <Users size={12} className="text-gray-500 dark:text-zinc-400" />}
+                      {activity.type === 'appointment' && <Calendar size={12} className="text-gray-500 dark:text-zinc-400" />}
+                      {activity.type === 'call' && <Phone size={12} className="text-gray-500 dark:text-zinc-400" />}
+                      {activity.type === 'gatepass' && <DoorOpen size={12} className="text-gray-500 dark:text-zinc-400" />}
                     </div>
-                    <p className="text-sm text-gray-700">{activity.text}</p>
+                    <p className="text-sm text-gray-700 dark:text-zinc-300">{activity.text}</p>
                   </div>
-                  <span className="text-xs text-gray-400">{activity.time}</span>
+                  <span className="text-xs text-gray-400 dark:text-zinc-500">{activity.time}</span>
                 </div>
               ))}
             </div>

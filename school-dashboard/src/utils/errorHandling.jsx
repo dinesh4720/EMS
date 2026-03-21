@@ -15,6 +15,21 @@ export const ErrorTypes = {
 };
 
 /**
+ * Check whether an error carries a specific message from the server
+ * (as opposed to a generic client-side / network fallback).
+ */
+export function hasSpecificServerMessage(error) {
+  if (!error?.message) return false;
+  if (error.name === 'AbortError') return false;
+  if (error.message === 'Request failed') return false;
+  if (error.message.startsWith('Request failed with status')) return false;
+  if (error.message.includes('Failed to fetch')) return false;
+  if (error.message.includes('Load failed')) return false;
+  if (error.message.includes('timed out')) return false;
+  return true;
+}
+
+/**
  * Parse error object and extract meaningful information
  */
 export function parseError(error) {
@@ -53,11 +68,11 @@ export function parseError(error) {
     };
   }
 
-  // HTTP status-based errors
+  // HTTP status-based errors — prefer the server's message when available
   if (error.status === 401 || error.status === 403) {
     return {
       type: ErrorTypes.AUTHORIZATION,
-      message: 'You do not have permission to perform this action.',
+      message: error.message || 'You do not have permission to perform this action.',
       details: error.details || null,
       status: error.status
     };
@@ -66,7 +81,7 @@ export function parseError(error) {
   if (error.status === 404) {
     return {
       type: ErrorTypes.NOT_FOUND,
-      message: 'The requested resource was not found.',
+      message: error.message || 'The requested resource was not found.',
       details: error.details || null,
       status: error.status
     };
@@ -104,7 +119,11 @@ export function parseError(error) {
  */
 export function showErrorToast(error, customMessage = null) {
   const parsedError = parseError(error);
-  const message = customMessage || parsedError.message;
+  // Prefer server-specific error message over generic custom message.
+  // Fall back to customMessage only when error has no meaningful server message.
+  const message = hasSpecificServerMessage(error)
+    ? parsedError.message
+    : (customMessage || parsedError.message);
 
   const toastOptions = {
     duration: 5000,
@@ -273,8 +292,11 @@ export async function executeWithFeedback(
     return { success: true, data: result };
   } catch (error) {
     const parsedError = parseError(error);
-    const message = errorMessage || parsedError.message;
-    
+    // Prefer server-specific error message over generic errorMessage fallback
+    const message = hasSpecificServerMessage(error)
+      ? parsedError.message
+      : (errorMessage || parsedError.message);
+
     updateToast(toastId, message, 'error');
     
     if (onError) {

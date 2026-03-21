@@ -12,7 +12,11 @@
     "test:debug": "playwright test --debug",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report",
-    "test:install": "playwright install chromium"
+    "test:install": "playwright install chromium",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
@@ -20,21 +24,24 @@
     "@heroui/react": "^2.8.7",
     "@heroui/theme": "^2.4.25",
     "@owlin/tracker-sdk": "file:../owlin/sdk",
-    "@react-three/drei": "^9.122.0",
-    "@react-three/fiber": "^8.18.0",
+    "@react-three/drei": "^10.0.0",
+    "@react-three/fiber": "^9.0.0",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-query-devtools": "^5.91.3",
     "@tanstack/react-virtual": "^3.11.3",
     "date-fns": "^4.1.0",
     "framer-motion": "^11.15.0",
+    "i18next": "^25.10.2",
+    "i18next-browser-languagedetector": "^8.2.1",
     "lucide-react": "^0.468.0",
     "next-themes": "^0.4.6",
     "peerjs": "^1.5.5",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "react-easy-crop": "^5.5.6",
     "react-hot-toast": "^2.6.0",
+    "react-i18next": "^16.6.0",
     "react-router-dom": "^7.10.1",
     "react-to-print": "^3.2.0",
     "recharts": "^2.12.7",
@@ -43,9 +50,15 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.57.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.26",
+    "globals": "^16.5.0",
     "tailwindcss": "^4.1.18",
-    "vite": "^6.0.3"
+    "vite": "^6.0.3",
+    "vitest": "^4.1.0"
   }
 }

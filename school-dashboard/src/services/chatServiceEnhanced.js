@@ -1,17 +1,17 @@
 // Enhanced Chat Service with REST API calls
+import { getAuthHeaders } from '../utils/authSession';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 class ChatServiceEnhanced {
-  getAuthHeaders() {
-    return {
-      'Content-Type': 'application/json',
-    };
+  getHeaders() {
+    return getAuthHeaders({ 'Content-Type': 'application/json' });
   }
 
-  async getPermissions(userId, userType) {
+  async getPermissions() {
     try {
-      const response = await fetch(`${API_URL}/messages/permissions?userId=${userId}&userType=${userType}`, {
-        headers: this.getAuthHeaders(),
+      const response = await fetch(`${API_URL}/messages/permissions`, {
+        headers: this.getHeaders(),
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to get permissions');
@@ -22,10 +22,10 @@ class ChatServiceEnhanced {
     }
   }
 
-  async getConversations(userId, userType) {
+  async getConversations() {
     try {
-      const response = await fetch(`${API_URL}/messages/conversations?userId=${userId}&userType=${userType}`, {
-        headers: this.getAuthHeaders(),
+      const response = await fetch(`${API_URL}/messages/conversations`, {
+        headers: this.getHeaders(),
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to get conversations');
@@ -36,13 +36,13 @@ class ChatServiceEnhanced {
     }
   }
 
-  async createConversation(user1Id, user1Type, user2Id, user2Type) {
+  async createConversation(user2Id, user2Type) {
     try {
       const response = await fetch(`${API_URL}/messages/conversations`, {
         method: 'POST',
-        headers: this.getAuthHeaders(),
+        headers: this.getHeaders(),
         credentials: 'include',
-        body: JSON.stringify({ user1Id, user1Type, user2Id, user2Type })
+        body: JSON.stringify({ user2Id, user2Type })
       });
       if (!response.ok) {
         const error = await response.json();
@@ -61,7 +61,7 @@ class ChatServiceEnhanced {
       if (before) url += `&before=${before}`;
 
       const response = await fetch(url, {
-        headers: this.getAuthHeaders(),
+        headers: this.getHeaders(),
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to get messages');
@@ -74,11 +74,13 @@ class ChatServiceEnhanced {
 
   async sendMessage(data) {
     try {
+      // Strip caller identity fields — backend derives from session
+      const { senderId, senderModel, ...payload } = data;
       const response = await fetch(`${API_URL}/messages`, {
         method: 'POST',
-        headers: this.getAuthHeaders(),
+        headers: this.getHeaders(),
         credentials: 'include',
-        body: JSON.stringify(data)
+        body: JSON.stringify(payload)
       });
       if (!response.ok) throw new Error('Failed to send message');
       return await response.json();
@@ -88,13 +90,13 @@ class ChatServiceEnhanced {
     }
   }
 
-  async markAsRead(conversationId, userId) {
+  async markAsRead(conversationId) {
     try {
       const response = await fetch(`${API_URL}/messages/read`, {
         method: 'PUT',
-        headers: this.getAuthHeaders(),
+        headers: this.getHeaders(),
         credentials: 'include',
-        body: JSON.stringify({ conversationId, userId })
+        body: JSON.stringify({ conversationId })
       });
       if (!response.ok) throw new Error('Failed to mark as read');
       return await response.json();
@@ -104,11 +106,11 @@ class ChatServiceEnhanced {
     }
   }
 
-  async deleteMessage(messageId, userId) {
+  async deleteMessage(messageId) {
     try {
-      const response = await fetch(`${API_URL}/messages/${messageId}?userId=${userId}`, {
+      const response = await fetch(`${API_URL}/messages/${messageId}`, {
         method: 'DELETE',
-        headers: this.getAuthHeaders(),
+        headers: this.getHeaders(),
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to delete message');
@@ -119,10 +121,10 @@ class ChatServiceEnhanced {
     }
   }
 
-  async searchMessages(userId, query, limit = 20) {
+  async searchMessages(query, limit = 20) {
     try {
-      const response = await fetch(`${API_URL}/messages/search?userId=${userId}&query=${encodeURIComponent(query)}&limit=${limit}`, {
-        headers: this.getAuthHeaders(),
+      const response = await fetch(`${API_URL}/messages/search?query=${encodeURIComponent(query)}&limit=${limit}`, {
+        headers: this.getHeaders(),
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to search messages');
@@ -136,7 +138,7 @@ class ChatServiceEnhanced {
   async getUserPresence(userId) {
     try {
       const response = await fetch(`${API_URL}/messages/presence/${userId}`, {
-        headers: this.getAuthHeaders(),
+        headers: this.getHeaders(),
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to get presence');
@@ -150,7 +152,7 @@ class ChatServiceEnhanced {
   async getOnlineUsers() {
     try {
       const response = await fetch(`${API_URL}/messages/presence/online`, {
-        headers: this.getAuthHeaders(),
+        headers: this.getHeaders(),
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to get online users');

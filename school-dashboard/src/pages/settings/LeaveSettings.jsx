@@ -140,40 +140,40 @@ export default function LeaveSettings() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div className="p-4 bg-primary-50 rounded-lg border border-primary-200">
+        <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
           <div className="flex items-center gap-2 mb-2">
-            <UserCheck size={18} className="text-primary-600" />
-            <span className="text-xs text-primary-700 uppercase tracking-wider">Staff Leaves</span>
+            <UserCheck size={18} className="text-primary-600 dark:text-primary-400" />
+            <span className="text-xs text-primary-700 dark:text-primary-300 uppercase tracking-wider">Staff Leaves</span>
           </div>
-          <p className="text-2xl font-semibold text-primary-700">
+          <p className="text-2xl font-semibold text-primary-700 dark:text-primary-300">
             {leaveTypes.filter(lt => lt.applicableTo === "staff" || lt.applicableTo === "both").length}
           </p>
         </div>
 
-        <div className="p-4 bg-secondary-50 rounded-lg border border-secondary-200">
+        <div className="p-4 bg-secondary-50 dark:bg-secondary-900/20 rounded-lg border border-secondary-200 dark:border-secondary-800">
           <div className="flex items-center gap-2 mb-2">
-            <Users size={18} className="text-secondary-600" />
-            <span className="text-xs text-secondary-700 uppercase tracking-wider">Student Leaves</span>
+            <Users size={18} className="text-secondary-600 dark:text-secondary-400" />
+            <span className="text-xs text-secondary-700 dark:text-secondary-300 uppercase tracking-wider">Student Leaves</span>
           </div>
-          <p className="text-2xl font-semibold text-secondary-700">
+          <p className="text-2xl font-semibold text-secondary-700 dark:text-secondary-300">
             {leaveTypes.filter(lt => lt.applicableTo === "students" || lt.applicableTo === "both").length}
           </p>
         </div>
 
-        <div className="p-4 bg-success-50 rounded-lg border border-success-200">
+        <div className="p-4 bg-success-50 dark:bg-success-900/20 rounded-lg border border-success-200 dark:border-success-800">
           <div className="flex items-center gap-2 mb-2">
-            <UserCheck size={18} className="text-success-600" />
-            <span className="text-xs text-success-700 uppercase tracking-wider">Total Types</span>
+            <UserCheck size={18} className="text-success-600 dark:text-success-400" />
+            <span className="text-xs text-success-700 dark:text-success-300 uppercase tracking-wider">Total Types</span>
           </div>
-          <p className="text-2xl font-semibold text-success-700">{leaveTypes.length}</p>
+          <p className="text-2xl font-semibold text-success-700 dark:text-success-300">{leaveTypes.length}</p>
         </div>
 
-        <div className="p-4 bg-warning-50 rounded-lg border border-warning-200">
+        <div className="p-4 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800">
           <div className="flex items-center gap-2 mb-2">
-            <UserCheck size={18} className="text-warning-600" />
-            <span className="text-xs text-warning-700 uppercase tracking-wider">Auto-Approved</span>
+            <UserCheck size={18} className="text-warning-600 dark:text-warning-400" />
+            <span className="text-xs text-warning-700 dark:text-warning-300 uppercase tracking-wider">Auto-Approved</span>
           </div>
-          <p className="text-2xl font-semibold text-warning-700">
+          <p className="text-2xl font-semibold text-warning-700 dark:text-warning-300">
             {leaveTypes.filter(lt => !lt.requiresApproval).length}
           </p>
         </div>

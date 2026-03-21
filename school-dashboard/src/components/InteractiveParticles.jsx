@@ -9,7 +9,7 @@ export default function InteractiveParticles() {
         const ctx = canvas.getContext('2d');
         let width, height;
         let particles = [];
-        let mouse = { x: null, y: null };
+        const mouse = { x: null, y: null };
 
         // Particle configuration
         const particleCount = 150; // Increased count for density
@@ -89,9 +89,9 @@ export default function InteractiveParticles() {
 
                 // Mouse interaction
                 if (mouse.x != null) {
-                    let dx = mouse.x - this.x;
-                    let dy = mouse.y - this.y;
-                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
 
                     if (distance < mouseRepelDistance) {
                         const forceDirectionX = dx / distance;

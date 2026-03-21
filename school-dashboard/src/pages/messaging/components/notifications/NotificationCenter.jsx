@@ -120,10 +120,6 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
   const loadNotifications = async () => {
     setLoading(true);
     try {
-      // In a real app, fetch from API
-      // const data = await notificationsApi.getAll();
-      // setNotifications(data || []);
-
       // Use mock data for now
       setNotifications(MOCK_NOTIFICATIONS.slice(0, isPopover ? 5 : undefined));
     } catch (error) {
@@ -136,9 +132,6 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
 
   const handleMarkAsRead = async (notificationId) => {
     try {
-      // In a real app, call API
-      // await notificationsApi.markAsRead(notificationId);
-
       setNotifications(prev =>
         prev.map(n =>
           n._id === notificationId ? { ...n, read: true } : n
@@ -153,9 +146,6 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
   const handleMarkAllAsRead = async () => {
     setMarkingAll(true);
     try {
-      // In a real app, call API
-      // await notificationsApi.markAllAsRead();
-
       setNotifications(prev =>
         prev.map(n => ({ ...n, read: true }))
       );
@@ -170,9 +160,6 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
 
   const handleDelete = async (notificationId) => {
     try {
-      // In a real app, call API
-      // await notificationsApi.delete(notificationId);
-
       setNotifications(prev => prev.filter(n => n._id !== notificationId));
       toast.success('Notification deleted');
     } catch (error) {
@@ -185,9 +172,6 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
     if (!confirm('Delete all notifications?')) return;
 
     try {
-      // In a real app, call API
-      // await notificationsApi.clearAll();
-
       setNotifications([]);
       toast.success('All notifications cleared');
     } catch (error) {

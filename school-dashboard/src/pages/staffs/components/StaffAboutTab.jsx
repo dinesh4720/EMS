@@ -7,11 +7,11 @@ export default function StaffAboutTab({ staff }) {
   return (
     <div className="space-y-4">
       {/* Personal Information */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+        <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><User size={16} className="text-gray-600" /></div>
-            <h3 className="font-medium text-gray-900 text-sm">Personal Information</h3>
+            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><User size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+            <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Personal Information</h3>
           </div>
         </div>
         <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
@@ -31,11 +31,11 @@ export default function StaffAboutTab({ staff }) {
       </div>
 
       {/* Employment Details */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+        <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><Briefcase size={16} className="text-gray-600" /></div>
-            <h3 className="font-medium text-gray-900 text-sm">Employment Details</h3>
+            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Briefcase size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+            <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Employment Details</h3>
           </div>
         </div>
         <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
@@ -53,15 +53,15 @@ export default function StaffAboutTab({ staff }) {
       </div>
 
       {/* Contact Details */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+        <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><Phone size={16} className="text-gray-600" /></div>
-            <h3 className="font-medium text-gray-900 text-sm">Contact Details</h3>
+            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Phone size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+            <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Contact Details</h3>
           </div>
         </div>
         <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="col-span-full"><p className="text-xs text-gray-400 mb-1">Address</p><p className="text-sm text-gray-900">{staff.address || "—"}</p></div>
+          <div className="col-span-full"><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Address</p><p className="text-sm text-gray-900 dark:text-zinc-100">{staff.address || "—"}</p></div>
           <InfoItem label="City" value={staff.city} />
           <InfoItem label="State" value={staff.state} />
           <InfoItem label="ZIP Code" value={staff.zipCode} />
@@ -71,11 +71,11 @@ export default function StaffAboutTab({ staff }) {
       </div>
 
       {/* Emergency Contact */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+        <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><Mail size={16} className="text-gray-600" /></div>
-            <h3 className="font-medium text-gray-900 text-sm">Emergency Contact</h3>
+            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Mail size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+            <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Emergency Contact</h3>
           </div>
         </div>
         <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
@@ -100,11 +100,11 @@ export default function StaffAboutTab({ staff }) {
       </div>
 
       {/* Bank Account Details */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+        <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><Landmark size={16} className="text-gray-600" /></div>
-            <h3 className="font-medium text-gray-900 text-sm">Bank Account Details</h3>
+            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Landmark size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+            <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Bank Account Details</h3>
           </div>
         </div>
         <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
@@ -122,16 +122,16 @@ export default function StaffAboutTab({ staff }) {
 function InfoItem({ label, value, className = "", icon = null, isLink = null }) {
   return (
     <div className={className}>
-      <p className="text-xs text-gray-400 mb-1 flex items-center gap-1.5">
-        {icon && <span className="text-gray-400">{icon}</span>}
+      <p className="text-xs text-gray-400 dark:text-zinc-500 mb-1 flex items-center gap-1.5">
+        {icon && <span className="text-gray-400 dark:text-zinc-500">{icon}</span>}
         {label}
       </p>
       {isLink && value ? (
-        <a href={isLink} className="text-sm text-gray-900 hover:underline transition-colors">
+        <a href={isLink} className="text-sm text-gray-900 dark:text-zinc-100 hover:underline transition-colors">
           {value || "—"}
         </a>
       ) : (
-        <p className="text-sm text-gray-900">{value || "—"}</p>
+        <p className="text-sm text-gray-900 dark:text-zinc-100">{value || "—"}</p>
       )}
     </div>
   );

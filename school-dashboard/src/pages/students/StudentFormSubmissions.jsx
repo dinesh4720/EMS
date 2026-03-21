@@ -175,7 +175,7 @@ export default function StudentFormSubmissions() {
   };
 
   const renderFieldValue = (field, value) => {
-    if (!value) return <span className="text-gray-400">Not provided</span>;
+    if (!value) return <span className="text-gray-400 dark:text-zinc-500">Not provided</span>;
 
     if (field.type === "file") {
       return (
@@ -222,10 +222,10 @@ export default function StudentFormSubmissions() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
             Student Admission Submissions
           </h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
             Review and approve student admission form submissions
           </p>
         </div>
@@ -257,7 +257,7 @@ export default function StudentFormSubmissions() {
             aria-label="Student form submissions table"
             removeWrapper
             classNames={{
-              th: "bg-gray-50 text-gray-700 font-semibold",
+              th: "bg-gray-50 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-semibold",
               td: "py-4",
             }}
           >
@@ -278,10 +278,10 @@ export default function StudentFormSubmissions() {
               {(submission) => (
                 <TableRow key={submission.id}>
                   <TableCell>
-                    <div className="font-medium text-gray-900">
+                    <div className="font-medium text-gray-900 dark:text-zinc-100">
                       {submission.formName || submission.form?.formName}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 dark:text-zinc-400">
                       {submission.formType || submission.form?.formType}
                     </div>
                   </TableCell>
@@ -363,7 +363,7 @@ export default function StudentFormSubmissions() {
             <div>
               <h3 className="text-xl font-semibold">Review Admission Submission</h3>
               {selectedSubmission && (
-                <p className="text-sm text-gray-600 font-normal mt-1">
+                <p className="text-sm text-gray-600 dark:text-zinc-400 font-normal mt-1">
                   {selectedSubmission.form?.formName || selectedSubmission.formName} -{" "}
                   {getStudentName(selectedSubmission)}
                 </p>
@@ -388,13 +388,13 @@ export default function StudentFormSubmissions() {
                             : "col-span-1"
                         }`}
                       >
-                        <label className="text-sm font-medium text-gray-600 block mb-1">
+                        <label className="text-sm font-medium text-gray-600 dark:text-zinc-400 block mb-1">
                           {field.label}
                           {field.required && (
                             <span className="text-danger ml-1">*</span>
                           )}
                         </label>
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-gray-900 dark:text-zinc-100">
                           {renderFieldValue(
                             field,
                             selectedSubmission.submissionData[
@@ -431,7 +431,7 @@ export default function StudentFormSubmissions() {
                     </h4>
                     <div className="space-y-3">
                       <div>
-                        <label className="text-sm font-medium text-gray-600">
+                        <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
                           Status
                         </label>
                         <div className="mt-1">
@@ -447,7 +447,7 @@ export default function StudentFormSubmissions() {
                         </div>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">
+                        <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
                           Reviewed By
                         </label>
                         <p className="text-sm">
@@ -455,7 +455,7 @@ export default function StudentFormSubmissions() {
                         </p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">
+                        <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
                           Reviewed At
                         </label>
                         <p className="text-sm">
@@ -469,7 +469,7 @@ export default function StudentFormSubmissions() {
                       </div>
                       {selectedSubmission.reviewNotes && (
                         <div>
-                          <label className="text-sm font-medium text-gray-600">
+                          <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
                             Notes
                           </label>
                           <p className="text-sm">
@@ -539,7 +539,7 @@ export default function StudentFormSubmissions() {
               </div>
               <div>
                 <h3 className="text-xl font-semibold">Request Edit & Re-submit</h3>
-                <p className="text-sm text-gray-600 font-normal mt-1">
+                <p className="text-sm text-gray-600 dark:text-zinc-400 font-normal mt-1">
                   Send the form back to parent for corrections
                 </p>
               </div>

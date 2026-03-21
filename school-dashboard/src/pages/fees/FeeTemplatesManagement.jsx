@@ -262,7 +262,7 @@ export default function FeeTemplatesManagement() {
                   sectionTemplates.map((template) => (
                     <div
                       key={template._id}
-                      className="p-4 bg-white border border-default-200 rounded-xl hover:border-primary-300 transition-all"
+                      className="p-4 bg-white dark:bg-zinc-950 border border-default-200 rounded-xl hover:border-primary-300 transition-all"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
@@ -322,7 +322,7 @@ export default function FeeTemplatesManagement() {
 
                       <div className="flex flex-wrap gap-1">
                         {template.feeHeads?.slice(0, 3).map((head, idx) => (
-                          <Chip key={idx} size="sm" variant="flat" className="text-xs">
+                          <Chip key={head._id || head.name} size="sm" variant="flat" className="text-xs">
                             {head.name}
                           </Chip>
                         ))}
@@ -477,7 +477,7 @@ export default function FeeTemplatesManagement() {
                         variant="bordered"
                         size="sm"
                       />
-                      <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-default-200">
+                      <div className="flex items-center gap-3 p-3 bg-white dark:bg-zinc-950 rounded-lg border border-default-200">
                         <Switch
                           size="sm"
                           isSelected={head.mandatory}
@@ -486,7 +486,7 @@ export default function FeeTemplatesManagement() {
                           <span className="text-sm">Mandatory</span>
                         </Switch>
                       </div>
-                      <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-default-200">
+                      <div className="flex items-center gap-3 p-3 bg-white dark:bg-zinc-950 rounded-lg border border-default-200">
                         <Switch
                           size="sm"
                           isSelected={head.refundable}

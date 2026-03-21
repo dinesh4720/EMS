@@ -8,7 +8,7 @@ const FileUploadItem = ({ file, onRemove, onChange }) => {
     const sizeString = `${(file.size * (file.progress / 100)).toFixed(1)} MB of ${file.size} MB`;
 
     return (
-        <Card className="w-full max-w-md shadow-sm border border-default-200 mb-3 bg-white">
+        <Card className="w-full max-w-md shadow-sm border border-default-200 mb-3 bg-white dark:bg-zinc-950">
             <CardBody className="p-4">
                 <div className="flex gap-4 items-start">
                     {/* File Icon */}
@@ -77,7 +77,7 @@ const FileUploadItem = ({ file, onRemove, onChange }) => {
                                         size="sm"
                                         variant="flat"
                                         color="danger"
-                                        className="h-7 min-w-16 bg-red-50 text-red-500 font-medium"
+                                        className="h-7 min-w-16 bg-red-50 dark:bg-red-950/50 text-red-500 dark:text-red-400 font-medium"
                                         onPress={() => onRemove && onRemove(file.id)}
                                     >
                                         Remove
@@ -131,7 +131,7 @@ export const UnifiedUploadProgress = ({ uploads = [], onClose }) => {
                 <CardBody className="p-4">
                     <div className="flex justify-between items-start mb-3">
                         <div className="flex gap-3 items-center">
-                            <div className={`p-2 rounded-full ${isAllCompleted ? 'bg-success-100 text-success-600' : 'bg-primary-100 text-primary-600'}`}>
+                            <div className={`p-2 rounded-full ${isAllCompleted ? 'bg-success-100 dark:bg-success-900/30 text-success-600 dark:text-success-400' : 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'}`}>
                                 {isAllCompleted ? <CheckCircle size={18} /> : <FileText size={18} />}
                             </div>
                             <div className="flex flex-col">

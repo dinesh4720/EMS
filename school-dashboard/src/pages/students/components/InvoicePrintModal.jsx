@@ -50,36 +50,7 @@ export default function InvoicePrintModal({
   const printRef = useRef();
   const schoolConfig = getSchoolConfig();
 
-  // Early return if no student data
-  if (!student) {
-    return (
-      <Modal isOpen={isOpen} onClose={onClose} size="3xl">
-        <ModalContent>
-          <ModalHeader>Fee Invoice</ModalHeader>
-          <ModalBody>
-            <div className="text-center py-8">
-              <p className="text-gray-500">No student data available</p>
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onClose}>
-              Close
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    );
-  }
-
-  const invoiceNumber = generateInvoiceNumber(student.id || student._id, new Date());
-  const invoiceDate = formatDate(new Date());
-  const dueDate = formatDate(new Date(Date.now() + 15 * 24 * 60 * 60 * 1000));
-
-  const feeHeads = studentFeeStructure?.feeHeads || [];
-  const totalFee = studentFeeStructure?.totalFee || 0;
-  const totalPaid = studentFeeStructure?.totalPaid || 0;
-  const totalBalance = studentFeeStructure?.totalBalance || 0;
-  const discount = studentFeeStructure?.discountApplied || 0;
+  const invoiceNumber = generateInvoiceNumber(student?.id || student?._id, new Date());
 
   // Handle print using native method
   const handlePrint = useCallback(() => {
@@ -251,37 +222,67 @@ export default function InvoicePrintModal({
     }, 500);
   }, [invoiceNumber]);
 
+  // Early return if no student data
+  if (!student) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} size="3xl">
+        <ModalContent>
+          <ModalHeader>Fee Invoice</ModalHeader>
+          <ModalBody>
+            <div className="text-center py-8">
+              <p className="text-gray-500 dark:text-zinc-400">No student data available</p>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onClose}>
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    );
+  }
+
+  const invoiceDate = formatDate(new Date());
+  const dueDate = formatDate(new Date(Date.now() + 15 * 24 * 60 * 60 * 1000));
+
+  const feeHeads = studentFeeStructure?.feeHeads || [];
+  const totalFee = studentFeeStructure?.totalFee || 0;
+  const totalPaid = studentFeeStructure?.totalPaid || 0;
+  const totalBalance = studentFeeStructure?.totalBalance || 0;
+  const discount = studentFeeStructure?.discountApplied || 0;
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside">
       <ModalContent>
         <ModalHeader className="flex items-center justify-between">
           <span>Fee Invoice</span>
-          <span className="text-sm font-normal text-gray-500">{invoiceNumber}</span>
+          <span className="text-sm font-normal text-gray-500 dark:text-zinc-400">{invoiceNumber}</span>
         </ModalHeader>
         <ModalBody>
           {/* Printable Invoice */}
-          <div ref={printRef} className="p-6 bg-white text-gray-900">
+          <div ref={printRef} className="print-content p-6 bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100">
             {/* Invoice Header */}
-            <div className="invoice-header border-b border-gray-200 pb-3 mb-4">
+            <div className="invoice-header border-b border-gray-200 dark:border-zinc-800 pb-3 mb-4">
               <div className="flex justify-between items-start">
                 {/* School Info */}
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900 tracking-tight">{schoolConfig.name}</h1>
-                  <p className="text-sm text-gray-500 mt-1">{schoolConfig.address}</p>
-                  <p className="text-sm text-gray-500">{schoolConfig.contact}</p>
+                  <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100 tracking-tight">{schoolConfig.name}</h1>
+                  <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">{schoolConfig.address}</p>
+                  <p className="text-sm text-gray-500 dark:text-zinc-400">{schoolConfig.contact}</p>
                   {schoolConfig.gstin && (
-                    <p className="text-xs text-gray-400 mt-1">{schoolConfig.gstin}</p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">{schoolConfig.gstin}</p>
                   )}
                 </div>
 
                 {/* Invoice Info */}
                 <div className="text-right">
-                  <h2 className="text-lg font-semibold text-gray-700 uppercase tracking-wide">Fee Invoice</h2>
+                  <h2 className="text-lg font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wide">Fee Invoice</h2>
                   <div className="mt-2 space-y-1 text-sm">
-                    <p><span className="text-gray-500">Invoice No:</span> <span className="font-mono font-medium">{invoiceNumber}</span></p>
-                    <p><span className="text-gray-500">Date:</span> <span className="font-medium">{invoiceDate}</span></p>
+                    <p><span className="text-gray-500 dark:text-zinc-400">Invoice No:</span> <span className="font-mono font-medium">{invoiceNumber}</span></p>
+                    <p><span className="text-gray-500 dark:text-zinc-400">Date:</span> <span className="font-medium">{invoiceDate}</span></p>
                     {totalBalance > 0 && (
-                      <p><span className="text-gray-500">Due Date:</span> <span className="font-medium">{dueDate}</span></p>
+                      <p><span className="text-gray-500 dark:text-zinc-400">Due Date:</span> <span className="font-medium">{dueDate}</span></p>
                     )}
                   </div>
                 </div>
@@ -291,23 +292,23 @@ export default function InvoicePrintModal({
             {/* Bill To Section */}
             <div className="bill-to-section grid grid-cols-2 gap-8 mb-4">
               <div>
-                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Bill To</p>
-                <p className="font-semibold text-gray-900">{student.name}</p>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-xs font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Bill To</p>
+                <p className="font-semibold text-gray-900 dark:text-zinc-100">{student.name}</p>
+                <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
                   {student.class}{student.section ? ` - ${student.section}` : ''}
                 </p>
-                <p className="text-sm text-gray-600">Roll No: {student.rollNumber || student.rollNo || 'N/A'}</p>
-                <p className="text-sm text-gray-600">Admission No: {student.admissionNumber || student.admissionNo || 'N/A'}</p>
+                <p className="text-sm text-gray-600 dark:text-zinc-400">Roll No: {student.rollNumber || student.rollNo || 'N/A'}</p>
+                <p className="text-sm text-gray-600 dark:text-zinc-400">Admission No: {student.admissionNumber || student.admissionNo || 'N/A'}</p>
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Academic Year</p>
-                <p className="text-sm text-gray-700">{studentFeeStructure?.academicYear || CURRENT_ACADEMIC_YEAR}</p>
+                <p className="text-xs font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Academic Year</p>
+                <p className="text-sm text-gray-700 dark:text-zinc-300">{studentFeeStructure?.academicYear || CURRENT_ACADEMIC_YEAR}</p>
                 {student.parentName && (
                   <>
-                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2 mt-3">Parent/Guardian</p>
-                    <p className="text-sm text-gray-700">{student.parentName}</p>
+                    <p className="text-xs font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2 mt-3">Parent/Guardian</p>
+                    <p className="text-sm text-gray-700 dark:text-zinc-300">{student.parentName}</p>
                     {student.parentPhone && (
-                      <p className="text-sm text-gray-600">Ph: {student.parentPhone}</p>
+                      <p className="text-sm text-gray-600 dark:text-zinc-400">Ph: {student.parentPhone}</p>
                     )}
                   </>
                 )}
@@ -315,36 +316,36 @@ export default function InvoicePrintModal({
             </div>
 
             {/* Fee Details Table */}
-            <div className="fee-table-section border border-gray-200 rounded-lg overflow-hidden mb-4">
+            <div className="fee-table-section border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden mb-4">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">#</th>
-                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fee Head</th>
-                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Period</th>
-                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
-                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Paid</th>
-                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Balance</th>
+                  <tr className="bg-gray-50 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800">
+                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">#</th>
+                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Fee Head</th>
+                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Period</th>
+                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Amount</th>
+                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Paid</th>
+                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Balance</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100 dark:divide-zinc-700">
                   {feeHeads.length > 0 ? (
                     feeHeads.map((fee, index) => (
                       <tr key={fee._id || fee.name}>
-                        <td className="px-4 py-2 text-sm text-gray-500">{index + 1}</td>
+                        <td className="px-4 py-2 text-sm text-gray-500 dark:text-zinc-400">{index + 1}</td>
                         <td className="px-4 py-2">
-                          <p className="text-sm font-medium text-gray-900">{fee.name}</p>
-                          <p className="text-xs text-gray-400 capitalize">{fee.category}</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fee.name}</p>
+                          <p className="text-xs text-gray-400 dark:text-zinc-500 capitalize">{fee.category}</p>
                         </td>
-                        <td className="px-4 py-2 text-sm text-gray-600 capitalize">{fee.frequency || 'Annual'}</td>
-                        <td className="px-4 py-2 text-sm text-gray-900 text-right font-mono">{formatCurrency(fee.amount)}</td>
-                        <td className="px-4 py-2 text-sm text-gray-600 text-right font-mono">{formatCurrency(fee.paidAmount)}</td>
-                        <td className="px-4 py-2 text-sm text-gray-900 text-right font-mono">{formatCurrency(fee.balanceAmount)}</td>
+                        <td className="px-4 py-2 text-sm text-gray-600 dark:text-zinc-400 capitalize">{fee.frequency || 'Annual'}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-zinc-100 text-right font-mono">{formatCurrency(fee.amount)}</td>
+                        <td className="px-4 py-2 text-sm text-gray-600 dark:text-zinc-400 text-right font-mono">{formatCurrency(fee.paidAmount)}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-zinc-100 text-right font-mono">{formatCurrency(fee.balanceAmount)}</td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" className="px-4 py-6 text-center text-sm text-gray-500">
+                      <td colSpan="6" className="px-4 py-6 text-center text-sm text-gray-500 dark:text-zinc-400">
                         No fee structure assigned
                       </td>
                     </tr>
@@ -358,23 +359,23 @@ export default function InvoicePrintModal({
               <div className="w-60">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Total Fee</span>
-                    <span className="font-mono text-gray-900">{formatCurrency(totalFee)}</span>
+                    <span className="text-gray-500 dark:text-zinc-400">Total Fee</span>
+                    <span className="font-mono text-gray-900 dark:text-zinc-100">{formatCurrency(totalFee)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Amount Paid</span>
-                    <span className="font-mono text-gray-700">{formatCurrency(totalPaid)}</span>
+                    <span className="text-gray-500 dark:text-zinc-400">Amount Paid</span>
+                    <span className="font-mono text-gray-700 dark:text-zinc-300">{formatCurrency(totalPaid)}</span>
                   </div>
                   {discount > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Discount</span>
-                      <span className="font-mono text-gray-600">-{formatCurrency(discount)}</span>
+                      <span className="text-gray-500 dark:text-zinc-400">Discount</span>
+                      <span className="font-mono text-gray-600 dark:text-zinc-400">-{formatCurrency(discount)}</span>
                     </div>
                   )}
-                  <div className="border-t border-gray-200 pt-2 mt-2">
+                  <div className="border-t border-gray-200 dark:border-zinc-800 pt-2 mt-2">
                     <div className="flex justify-between">
-                      <span className="font-semibold text-gray-900">Balance Due</span>
-                      <span className="font-bold text-gray-900 font-mono">{formatCurrency(totalBalance)}</span>
+                      <span className="font-semibold text-gray-900 dark:text-zinc-100">Balance Due</span>
+                      <span className="font-bold text-gray-900 dark:text-zinc-100 font-mono">{formatCurrency(totalBalance)}</span>
                     </div>
                   </div>
                 </div>
@@ -383,25 +384,25 @@ export default function InvoicePrintModal({
 
             {/* Payment History (if any) */}
             {feeHistory && feeHistory.length > 0 && (
-              <div className="payment-history border-t border-gray-200 pt-4 mb-4">
-                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-2">Payment History</h3>
-                <div className="border border-gray-200 rounded overflow-hidden">
+              <div className="payment-history border-t border-gray-200 dark:border-zinc-800 pt-4 mb-4">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider mb-2">Payment History</h3>
+                <div className="border border-gray-200 dark:border-zinc-800 rounded overflow-hidden">
                   <table className="w-full">
                     <thead>
-                      <tr className="bg-gray-50 border-b border-gray-200">
-                        <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Date</th>
-                        <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Receipt No</th>
-                        <th className="text-left px-4 py-2 text-xs font-medium text-gray-500">Mode</th>
-                        <th className="text-right px-4 py-2 text-xs font-medium text-gray-500">Amount</th>
+                      <tr className="bg-gray-50 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800">
+                        <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-400">Date</th>
+                        <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-400">Receipt No</th>
+                        <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-400">Mode</th>
+                        <th className="text-right px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-400">Amount</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-100 dark:divide-zinc-700">
                       {feeHistory.slice(0, 3).map((payment, index) => (
                         <tr key={payment._id || payment.receiptNumber || index}>
-                          <td className="px-4 py-2 text-sm text-gray-600">{formatDate(payment.paymentDate || payment.date)}</td>
-                          <td className="px-4 py-2 text-sm text-gray-600 font-mono">{payment.receiptNumber || `#${index + 1}`}</td>
-                          <td className="px-4 py-2 text-sm text-gray-600 capitalize">{payment.paymentMode || payment.mode || 'Cash'}</td>
-                          <td className="px-4 py-2 text-sm text-gray-900 text-right font-mono">{formatCurrency(payment.amount)}</td>
+                          <td className="px-4 py-2 text-sm text-gray-600 dark:text-zinc-400">{formatDate(payment.paymentDate || payment.date)}</td>
+                          <td className="px-4 py-2 text-sm text-gray-600 dark:text-zinc-400 font-mono">{payment.receiptNumber || `#${index + 1}`}</td>
+                          <td className="px-4 py-2 text-sm text-gray-600 dark:text-zinc-400 capitalize">{payment.paymentMode || payment.mode || 'Cash'}</td>
+                          <td className="px-4 py-2 text-sm text-gray-900 dark:text-zinc-100 text-right font-mono">{formatCurrency(payment.amount)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -411,17 +412,17 @@ export default function InvoicePrintModal({
             )}
 
             {/* Terms & Notes */}
-            <div className="terms-section border-t border-gray-200 pt-4 mb-4">
+            <div className="terms-section border-t border-gray-200 dark:border-zinc-800 pt-4 mb-4">
               <div className="grid grid-cols-2 gap-8">
                 <div>
-                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Notes</p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Notes</p>
+                  <p className="text-sm text-gray-600 dark:text-zinc-400">
                     {studentFeeStructure?.discountReason || 'Thank you for your payment.'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Terms & Conditions</p>
-                  <ul className="text-xs text-gray-500 space-y-1">
+                  <p className="text-xs font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Terms & Conditions</p>
+                  <ul className="text-xs text-gray-500 dark:text-zinc-400 space-y-1">
                     <li>- Fees once paid are non-refundable unless specified otherwise.</li>
                     <li>- Please retain this invoice for future reference.</li>
                   </ul>
@@ -432,37 +433,37 @@ export default function InvoicePrintModal({
             {/* Signature Section */}
             <div className="signature-section grid grid-cols-2 gap-12 pt-2">
               <div>
-                <div className="border-b border-gray-300 mb-2 h-8"></div>
-                <p className="text-xs text-gray-500 text-center">Authorized Signatory</p>
+                <div className="border-b border-gray-300 dark:border-zinc-700 mb-2 h-8"></div>
+                <p className="text-xs text-gray-500 dark:text-zinc-400 text-center">Authorized Signatory</p>
               </div>
               <div>
-                <div className="border-b border-gray-300 mb-2 h-8"></div>
-                <p className="text-xs text-gray-500 text-center">Parent/Guardian Signature</p>
+                <div className="border-b border-gray-300 dark:border-zinc-700 mb-2 h-8"></div>
+                <p className="text-xs text-gray-500 dark:text-zinc-400 text-center">Parent/Guardian Signature</p>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="mt-4 pt-3 border-t border-gray-100 text-center">
-              <p className="text-xs text-gray-400">
+            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-zinc-800 text-center">
+              <p className="text-xs text-gray-400 dark:text-zinc-500">
                 This is a computer-generated invoice and does not require a physical signature.
               </p>
             </div>
           </div>
 
           {/* Instructions */}
-          <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-            <p className="text-sm text-gray-600">
+          <div className="mt-4 p-3 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg">
+            <p className="text-sm text-gray-600 dark:text-zinc-400">
               <strong>Note:</strong> Click "Download / Print" to save this invoice as PDF.
               In the print dialog, select "Save as PDF" as the printer destination.
             </p>
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="light" onPress={onClose} className="text-gray-600">
+          <Button variant="light" onPress={onClose} className="text-gray-600 dark:text-zinc-400">
             Close
           </Button>
           <Button
-            className="bg-gray-900 text-white hover:bg-gray-800"
+            className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200"
             onPress={handlePrint}
             startContent={
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

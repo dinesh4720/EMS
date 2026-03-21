@@ -55,19 +55,19 @@ export default function Overview() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
-          <Card key={stat.title} className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+          <Card key={stat.title} className="border border-gray-100 dark:border-zinc-800 shadow-sm dark:shadow-zinc-900/50 hover:shadow-md dark:hover:shadow-zinc-900/50 transition-shadow">
             <CardBody className="p-5">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-500 mb-1">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-zinc-400 mb-1">{stat.title}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{stat.value}</p>
                   <div className={`flex items-center gap-1 mt-2 text-sm ${
-                    stat.trend === "up" ? "text-green-600" : stat.trend === "down" ? "text-green-600" : "text-gray-500"
+                    stat.trend === "up" ? "text-green-600" : stat.trend === "down" ? "text-green-600" : "text-gray-500 dark:text-zinc-400"
                   }`}>
                     {stat.trend === "up" && <ArrowUpRight size={14} />}
                     {stat.trend === "down" && <ArrowDownRight size={14} />}
                     <span>{stat.change}</span>
-                    <span className="text-gray-400 ml-1">vs last month</span>
+                    <span className="text-gray-400 dark:text-zinc-500 ml-1">vs last month</span>
                   </div>
                 </div>
                 <div className={`p-3 rounded-lg ${stat.iconBg}`}>
@@ -81,70 +81,70 @@ export default function Overview() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Income vs Expenses Chart Placeholder */}
-        <Card className="border border-gray-100 shadow-sm lg:col-span-2">
+        <Card className="border border-gray-100 dark:border-zinc-800 shadow-sm dark:shadow-zinc-900/50 lg:col-span-2">
           <CardBody className="p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Income vs Expenses</h3>
-                <p className="text-sm text-gray-500">Monthly financial overview</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Income vs Expenses</h3>
+                <p className="text-sm text-gray-500 dark:text-zinc-400">Monthly financial overview</p>
               </div>
-              <select className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white">
+              <select className="text-sm border border-gray-200 dark:border-zinc-800 rounded-lg px-3 py-2 bg-white dark:bg-zinc-950 dark:text-zinc-300">
                 <option>Last 6 months</option>
                 <option>Last year</option>
                 <option>All time</option>
               </select>
             </div>
-            
+
             {/* Chart Placeholder */}
-            <div className="h-64 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-200">
+            <div className="h-64 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-zinc-900 dark:to-zinc-800 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-200 dark:border-zinc-700">
               <div className="text-center">
-                <TrendingUp size={48} className="text-gray-300 mx-auto mb-2" />
-                <p className="text-gray-400 font-medium">Financial Charts</p>
-                <p className="text-sm text-gray-400">Charts will be rendered here</p>
+                <TrendingUp size={48} className="text-gray-300 dark:text-zinc-600 mx-auto mb-2" />
+                <p className="text-gray-400 dark:text-zinc-500 font-medium">Financial Charts</p>
+                <p className="text-sm text-gray-400 dark:text-zinc-500">Charts will be rendered here</p>
               </div>
             </div>
           </CardBody>
         </Card>
 
         {/* Quick Actions */}
-        <Card className="border border-gray-100 shadow-sm">
+        <Card className="border border-gray-100 dark:border-zinc-800 shadow-sm dark:shadow-zinc-900/50">
           <CardBody className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4">Quick Actions</h3>
             <div className="space-y-3">
-              <button className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-3">
+              <button className="w-full text-left px-4 py-3 bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors flex items-center gap-3">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <FileText size={18} className="text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Create Invoice</p>
-                  <p className="text-xs text-gray-500">Generate new invoice</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Create Invoice</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400">Generate new invoice</p>
                 </div>
               </button>
-              <button className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-3">
+              <button className="w-full text-left px-4 py-3 bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors flex items-center gap-3">
                 <div className="p-2 bg-amber-100 rounded-lg">
                   <IndianRupee size={18} className="text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Record Expense</p>
-                  <p className="text-xs text-gray-500">Add new expense</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Record Expense</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400">Add new expense</p>
                 </div>
               </button>
-              <button className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-3">
+              <button className="w-full text-left px-4 py-3 bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors flex items-center gap-3">
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <Users size={18} className="text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Process Payroll</p>
-                  <p className="text-xs text-gray-500">Process staff salaries</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Process Payroll</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400">Process staff salaries</p>
                 </div>
               </button>
-              <button className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-3">
+              <button className="w-full text-left px-4 py-3 bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors flex items-center gap-3">
                 <div className="p-2 bg-purple-100 rounded-lg">
                   <TrendingUp size={18} className="text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Generate Report</p>
-                  <p className="text-xs text-gray-500">Create financial report</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Generate Report</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400">Create financial report</p>
                 </div>
               </button>
             </div>
@@ -153,22 +153,22 @@ export default function Overview() {
       </div>
 
       {/* Recent Transactions */}
-      <Card className="border border-gray-100 shadow-sm">
+      <Card className="border border-gray-100 dark:border-zinc-800 shadow-sm dark:shadow-zinc-900/50">
         <CardBody className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Recent Transactions</h3>
-              <p className="text-sm text-gray-500">Latest financial activities</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Recent Transactions</h3>
+              <p className="text-sm text-gray-500 dark:text-zinc-400">Latest financial activities</p>
             </div>
             <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
               View All
             </button>
           </div>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="text-left text-xs font-medium text-gray-500 border-b border-gray-100">
+                <tr className="text-left text-xs font-medium text-gray-500 dark:text-zinc-400 border-b border-gray-100 dark:border-zinc-800">
                   <th className="pb-3">Description</th>
                   <th className="pb-3">Date</th>
                   <th className="pb-3">Status</th>
@@ -177,7 +177,7 @@ export default function Overview() {
               </thead>
               <tbody>
                 {recentTransactions.map((transaction) => (
-                  <tr key={transaction.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
+                  <tr key={transaction.id} className="border-b border-gray-50 dark:border-zinc-800 last:border-0 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors">
                     <td className="py-4">
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${
@@ -189,10 +189,10 @@ export default function Overview() {
                             <TrendingDown size={16} className="text-rose-600" />
                           )}
                         </div>
-                        <span className="text-sm font-medium text-gray-900">{transaction.description}</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{transaction.description}</span>
                       </div>
                     </td>
-                    <td className="py-4 text-sm text-gray-600">{transaction.date}</td>
+                    <td className="py-4 text-sm text-gray-600 dark:text-zinc-400">{transaction.date}</td>
                     <td className="py-4">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                         transaction.status === "completed"

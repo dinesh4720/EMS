@@ -11,6 +11,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import StatCard from "../components/StatCard";
+import { useChartTheme } from "../utils/chartTheme";
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -64,16 +65,16 @@ function getWeekdayLabel(date) {
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white p-3 rounded-lg border border-gray-200">
-        <p className="text-xs font-medium text-gray-500 mb-1">{label}</p>
+      <div className="bg-white p-3 rounded-lg border border-gray-200 dark:bg-zinc-950 dark:border-zinc-800">
+        <p className="text-xs font-medium text-gray-500 dark:text-zinc-500 mb-1">{label}</p>
         {payload.map((entry) => (
           <div key={entry.dataKey} className="flex items-center gap-2 text-sm">
             <div
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: entry.color }}
             />
-            <span className="text-gray-600 capitalize">{entry.name}:</span>
-            <span className="font-medium text-gray-900">{entry.value}</span>
+            <span className="text-gray-600 dark:text-zinc-400 capitalize">{entry.name}:</span>
+            <span className="font-medium text-gray-900 dark:text-zinc-100">{entry.value}</span>
           </div>
         ))}
       </div>
@@ -84,6 +85,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function Analytics() {
   const { students, staff, classesWithTeachers, feeDefaulters, schoolSettings, currentAcademicYear } = useApp();
+  const chart = useChartTheme();
   const [attendanceSummary, setAttendanceSummary] = useState({
     avgAttendance: null,
     weeklyTrend: [],
@@ -315,10 +317,10 @@ export default function Analytics() {
     <div className="min-h-screen pb-8">
       {/* Page Header */}
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
           Analytics
         </h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-gray-500 dark:text-zinc-500 mt-1">
           Comprehensive insights and metrics across all modules
         </p>
       </div>
@@ -336,20 +338,20 @@ export default function Analytics() {
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {/* Student Distribution Chart */}
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <div className="p-5 border-b border-gray-200">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden dark:bg-zinc-950 dark:border-zinc-800">
+              <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center dark:bg-zinc-800">
                       <Activity size={16} className="text-gray-600" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900 text-sm">Student Distribution</h3>
-                      <p className="text-xs text-gray-500">By enrollment status</p>
+                      <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">Student Distribution</h3>
+                      <p className="text-xs text-gray-500 dark:text-zinc-500">By enrollment status</p>
                     </div>
                   </div>
                   <Link to="/students">
-                    <span className="text-xs text-gray-600 hover:text-gray-900 flex items-center gap-1">
+                    <span className="text-xs text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100 flex items-center gap-1">
                       View all
                       <ArrowUpRight size={12} />
                     </span>
@@ -392,20 +394,20 @@ export default function Analytics() {
             </div>
 
             {/* Fee Collection Chart */}
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <div className="p-5 border-b border-gray-200">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden dark:bg-zinc-950 dark:border-zinc-800">
+              <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center dark:bg-zinc-800">
                       <Target size={16} className="text-gray-600" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900 text-sm">Fee Collection Status</h3>
-                      <p className="text-xs text-gray-500">Payment distribution</p>
+                      <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">Fee Collection Status</h3>
+                      <p className="text-xs text-gray-500 dark:text-zinc-500">Payment distribution</p>
                     </div>
                   </div>
                   <Link to="/fees">
-                    <span className="text-xs text-gray-600 hover:text-gray-900 flex items-center gap-1">
+                    <span className="text-xs text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100 flex items-center gap-1">
                       View all
                       <ArrowUpRight size={12} />
                     </span>
@@ -424,18 +426,18 @@ export default function Analytics() {
                       barSize={40}
                       margin={{ top: 5, right: 5, left: -20, bottom: 0 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chart.grid} />
                       <XAxis 
                         dataKey="name" 
                         axisLine={false} 
                         tickLine={false} 
-                        tick={{ fill: '#9ca3af', fontSize: 11 }} 
+                        tick={{ fill: chart.tick, fontSize: 11 }} 
                         dy={10} 
                       />
                       <YAxis 
                         axisLine={false} 
                         tickLine={false} 
-                        tick={{ fill: '#9ca3af', fontSize: 11 }} 
+                        tick={{ fill: chart.tick, fontSize: 11 }} 
                       />
                       <Tooltip content={<CustomTooltip />} />
                       <Bar dataKey="value" fill="#6b7280" radius={[3, 3, 0, 0]} />
@@ -446,20 +448,20 @@ export default function Analytics() {
             </div>
 
             {/* Staff by Role Chart */}
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <div className="p-5 border-b border-gray-200">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden dark:bg-zinc-950 dark:border-zinc-800">
+              <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center dark:bg-zinc-800">
                       <Users size={16} className="text-gray-600" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900 text-sm">Staff by Role</h3>
-                      <p className="text-xs text-gray-500">Role distribution</p>
+                      <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">Staff by Role</h3>
+                      <p className="text-xs text-gray-500 dark:text-zinc-500">Role distribution</p>
                     </div>
                   </div>
                   <Link to="/staffs">
-                    <span className="text-xs text-gray-600 hover:text-gray-900 flex items-center gap-1">
+                    <span className="text-xs text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100 flex items-center gap-1">
                       View all
                       <ArrowUpRight size={12} />
                     </span>
@@ -481,19 +483,19 @@ export default function Analytics() {
                       barSize={20}
                       margin={{ top: 5, right: 5, left: 60, bottom: 0 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={chart.grid} />
                       <XAxis 
                         type="number" 
                         axisLine={false} 
                         tickLine={false} 
-                        tick={{ fill: '#9ca3af', fontSize: 11 }} 
+                        tick={{ fill: chart.tick, fontSize: 11 }} 
                       />
                       <YAxis 
                         type="category" 
                         dataKey="name" 
                         axisLine={false} 
                         tickLine={false} 
-                        tick={{ fill: '#6b7280', fontSize: 10 }} 
+                        tick={{ fill: chart.tick, fontSize: 10 }} 
                         width={50}
                       />
                       <Tooltip content={<CustomTooltip />} />
@@ -505,16 +507,16 @@ export default function Analytics() {
             </div>
 
             {/* Attendance Trends Chart */}
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <div className="p-5 border-b border-gray-200">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden dark:bg-zinc-950 dark:border-zinc-800">
+              <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center dark:bg-zinc-800">
                       <Activity size={16} className="text-gray-600" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900 text-sm">Attendance Trends</h3>
-                      <p className="text-xs text-gray-500">Average by weekday</p>
+                      <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">Attendance Trends</h3>
+                      <p className="text-xs text-gray-500 dark:text-zinc-500">Average by weekday</p>
                     </div>
                   </div>
                 </div>
@@ -537,18 +539,18 @@ export default function Analytics() {
                             <stop offset="95%" stopColor="#6b7280" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chart.grid} />
                         <XAxis 
                           dataKey="day" 
                           axisLine={false} 
                           tickLine={false} 
-                          tick={{ fill: '#9ca3af', fontSize: 11 }} 
+                          tick={{ fill: chart.tick, fontSize: 11 }} 
                           dy={10} 
                         />
                         <YAxis 
                           axisLine={false} 
                           tickLine={false} 
-                          tick={{ fill: '#9ca3af', fontSize: 11 }} 
+                          tick={{ fill: chart.tick, fontSize: 11 }} 
                         />
                         <Tooltip content={<CustomTooltip />} />
                         <Area 
@@ -576,121 +578,121 @@ export default function Analytics() {
         {/* RIGHT SIDEBAR */}
         <div className="xl:col-span-4 space-y-4">
           {/* Performance Summary */}
-          <div className="bg-white rounded-lg border border-gray-200 p-5">
+          <div className="bg-white rounded-lg border border-gray-200 p-5 dark:bg-zinc-950 dark:border-zinc-800">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center dark:bg-zinc-800">
                 <Target size={16} className="text-gray-600" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900 text-sm">Performance Summary</h3>
+                <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">Performance Summary</h3>
                 <p className="text-xs text-gray-500">Key metrics overview</p>
               </div>
             </div>
 
             <div className="space-y-4">
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xs text-gray-500 mb-1">Average Attendance</div>
-                <div className="text-2xl font-semibold text-gray-900">
+              <div className="p-3 bg-gray-50 rounded-lg dark:bg-zinc-900">
+                <div className="text-xs text-gray-500 mb-1 dark:text-zinc-500">Average Attendance</div>
+                <div className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
                   {attendanceSummary.loading
                     ? "..."
                     : analytics.students.avgAttendance != null
                       ? `${analytics.students.avgAttendance}%`
                       : "—"}
                 </div>
-                <div className="text-xs text-gray-400 mt-1">
+                <div className="text-xs text-gray-400 mt-1 dark:text-zinc-500">
                   {attendanceSummary.totalRecordedDays > 0
                     ? `Based on ${attendanceSummary.totalRecordedDays} recorded days`
                     : "Target: 90%"}
                 </div>
               </div>
 
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xs text-gray-500 mb-1">Fee Collection Rate</div>
-                <div className="text-2xl font-semibold text-gray-900">{analytics.fees.collectionRate}%</div>
-                <div className="text-xs text-gray-400 mt-1">Target: 95%</div>
+              <div className="p-3 bg-gray-50 rounded-lg dark:bg-zinc-900">
+                <div className="text-xs text-gray-500 mb-1 dark:text-zinc-500">Fee Collection Rate</div>
+                <div className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{analytics.fees.collectionRate}%</div>
+                <div className="text-xs text-gray-400 mt-1 dark:text-zinc-500">Target: 95%</div>
               </div>
 
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xs text-gray-500 mb-1">Teacher Assignment</div>
-                <div className="text-2xl font-semibold text-gray-900">
+              <div className="p-3 bg-gray-50 rounded-lg dark:bg-zinc-900">
+                <div className="text-xs text-gray-500 mb-1 dark:text-zinc-500">Teacher Assignment</div>
+                <div className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
                   {analytics.classes.total > 0 ? ((analytics.classes.withTeacher / analytics.classes.total) * 100).toFixed(0) : "0"}%
                 </div>
-                <div className="text-xs text-gray-400 mt-1">
+                <div className="text-xs text-gray-400 mt-1 dark:text-zinc-500">
                   {analytics.classes.withTeacher}/{analytics.classes.total} classes
                 </div>
               </div>
 
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xs text-gray-500 mb-1">Overall Health Score</div>
-                <div className="text-2xl font-semibold text-gray-900">85%</div>
-                <div className="text-xs text-gray-400 mt-1">Based on all metrics</div>
+              <div className="p-3 bg-gray-50 rounded-lg dark:bg-zinc-900">
+                <div className="text-xs text-gray-500 mb-1 dark:text-zinc-500">Overall Health Score</div>
+                <div className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">85%</div>
+                <div className="text-xs text-gray-400 mt-1 dark:text-zinc-500">Based on all metrics</div>
               </div>
             </div>
           </div>
 
           {/* Quick Links */}
-          <div className="bg-white rounded-lg border border-gray-200 p-5">
-            <h3 className="font-medium text-gray-900 text-sm mb-4">Quick Actions</h3>
+          <div className="bg-white rounded-lg border border-gray-200 p-5 dark:bg-zinc-950 dark:border-zinc-800">
+            <h3 className="font-medium text-gray-900 text-sm mb-4 dark:text-zinc-100">Quick Actions</h3>
             <div className="space-y-2">
               <Link
                 to="/students"
-                className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors dark:border-zinc-800 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
               >
-                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center dark:bg-zinc-800">
                   <GraduationCap size={14} className="text-gray-600" />
                 </div>
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-700">Manage Students</div>
-                  <div className="text-xs text-gray-400">{analytics.students.total} total</div>
+                  <div className="text-sm font-medium text-gray-700 dark:text-zinc-300">Manage Students</div>
+                  <div className="text-xs text-gray-400 dark:text-zinc-500">{analytics.students.total} total</div>
                 </div>
               </Link>
 
               <Link
                 to="/staffs"
-                className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors dark:border-zinc-800 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
               >
-                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center dark:bg-zinc-800">
                   <Users size={14} className="text-gray-600" />
                 </div>
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-700">Manage Staff</div>
-                  <div className="text-xs text-gray-400">{analytics.staff.total} total</div>
+                  <div className="text-sm font-medium text-gray-700 dark:text-zinc-300">Manage Staff</div>
+                  <div className="text-xs text-gray-400 dark:text-zinc-500">{analytics.staff.total} total</div>
                 </div>
               </Link>
 
               <Link
                 to="/classes"
-                className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors dark:border-zinc-800 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
               >
-                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center dark:bg-zinc-800">
                   <BookOpen size={14} className="text-gray-600" />
                 </div>
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-700">Manage Classes</div>
-                  <div className="text-xs text-gray-400">{analytics.classes.total} total</div>
+                  <div className="text-sm font-medium text-gray-700 dark:text-zinc-300">Manage Classes</div>
+                  <div className="text-xs text-gray-400 dark:text-zinc-500">{analytics.classes.total} total</div>
                 </div>
               </Link>
 
               <Link
                 to="/fees"
-                className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors dark:border-zinc-800 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
               >
-                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center dark:bg-zinc-800">
                   <IndianRupee size={14} className="text-gray-600" />
                 </div>
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-700">Fee Management</div>
-                  <div className="text-xs text-gray-400">{analytics.fees.collectionRate}% collected</div>
+                  <div className="text-sm font-medium text-gray-700 dark:text-zinc-300">Fee Management</div>
+                  <div className="text-xs text-gray-400 dark:text-zinc-500">{analytics.fees.collectionRate}% collected</div>
                 </div>
               </Link>
             </div>
           </div>
 
           {/* Student Breakdown */}
-          <div className="bg-white rounded-lg border border-gray-200 p-5">
+          <div className="bg-white rounded-lg border border-gray-200 p-5 dark:bg-zinc-950 dark:border-zinc-800">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium text-gray-900 text-sm">Student Breakdown</h3>
-              <Link to="/students" className="text-xs text-gray-600 hover:text-gray-900">
+              <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">Student Breakdown</h3>
+              <Link to="/students" className="text-xs text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100">
                 View all
               </Link>
             </div>
@@ -699,83 +701,83 @@ export default function Analytics() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={14} className="text-gray-500" />
-                  <span className="text-sm text-gray-600">Active</span>
+                  <span className="text-sm text-gray-600 dark:text-zinc-400">Active</span>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{analytics.students.active}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{analytics.students.active}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Award size={14} className="text-gray-400" />
-                  <span className="text-sm text-gray-600">Inactive</span>
+                  <span className="text-sm text-gray-600 dark:text-zinc-400">Inactive</span>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{analytics.students.inactive}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{analytics.students.inactive}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Activity size={14} className="text-gray-400" />
-                  <span className="text-sm text-gray-600">Transferred</span>
+                  <span className="text-sm text-gray-600 dark:text-zinc-400">Transferred</span>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{analytics.students.transferred}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{analytics.students.transferred}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Target size={14} className="text-gray-400" />
-                  <span className="text-sm text-gray-600">Alumni</span>
+                  <span className="text-sm text-gray-600 dark:text-zinc-400">Alumni</span>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{analytics.students.alumni}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{analytics.students.alumni}</span>
               </div>
             </div>
 
             {analytics.students.largestClass && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="text-xs text-gray-500 mb-2">Class Information</div>
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-zinc-800">
+                <div className="text-xs text-gray-500 mb-2 dark:text-zinc-500">Class Information</div>
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-500">Largest:</span>
-                  <span className="text-gray-900">{analytics.students.largestClass[0]} ({analytics.students.largestClass[1]})</span>
+                  <span className="text-gray-900 dark:text-zinc-100">{analytics.students.largestClass[0]} ({analytics.students.largestClass[1]})</span>
                 </div>
                 <div className="flex justify-between text-xs mt-1">
-                  <span className="text-gray-500">Smallest:</span>
-                  <span className="text-gray-900">{analytics.students.smallestClass[0]} ({analytics.students.smallestClass[1]})</span>
+                  <span className="text-gray-500 dark:text-zinc-500">Smallest:</span>
+                  <span className="text-gray-900 dark:text-zinc-100">{analytics.students.smallestClass[0]} ({analytics.students.smallestClass[1]})</span>
                 </div>
               </div>
             )}
           </div>
 
           {/* Staff Breakdown */}
-          <div className="bg-white rounded-lg border border-gray-200 p-5">
+          <div className="bg-white rounded-lg border border-gray-200 p-5 dark:bg-zinc-950 dark:border-zinc-800">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium text-gray-900 text-sm">Staff by Role</h3>
-              <Link to="/staffs" className="text-xs text-gray-600 hover:text-gray-900">
+              <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">Staff by Role</h3>
+              <Link to="/staffs" className="text-xs text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100">
                 View all
               </Link>
             </div>
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Teachers</span>
-                <span className="text-sm font-medium text-gray-900">{analytics.staff.teachers}</span>
+                <span className="text-sm text-gray-600 dark:text-zinc-400">Teachers</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{analytics.staff.teachers}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Admins</span>
-                <span className="text-sm font-medium text-gray-900">{analytics.staff.admins}</span>
+                <span className="text-sm text-gray-600 dark:text-zinc-400">Admins</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{analytics.staff.admins}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Accountants</span>
-                <span className="text-sm font-medium text-gray-900">{analytics.staff.accountants}</span>
+                <span className="text-sm text-gray-600 dark:text-zinc-400">Accountants</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{analytics.staff.accountants}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Librarians</span>
-                <span className="text-sm font-medium text-gray-900">{analytics.staff.librarians}</span>
+                <span className="text-sm text-gray-600 dark:text-zinc-400">Librarians</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{analytics.staff.librarians}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Lab Assistants</span>
-                <span className="text-sm font-medium text-gray-900">{analytics.staff.labAssistants}</span>
+                <span className="text-sm text-gray-600 dark:text-zinc-400">Lab Assistants</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{analytics.staff.labAssistants}</span>
               </div>
             </div>
 
             {Object.entries(analytics.staff.byDepartment).length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="text-xs text-gray-500 mb-2">Top Departments</div>
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-zinc-800">
+                <div className="text-xs text-gray-500 mb-2 dark:text-zinc-500">Top Departments</div>
                 {Object.entries(analytics.staff.byDepartment)
                   .sort((a, b) => b[1] - a[1])
                   .slice(0, 3)

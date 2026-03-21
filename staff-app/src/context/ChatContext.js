@@ -4,6 +4,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
+import { getAuthToken } from '../services/api';
 import chatService from '../services/chatService';
 import socketService from '../services/socketService';
 
@@ -34,7 +35,6 @@ export const ChatProvider = ({ children }) => {
 
     setLoading(true);
     try {
-      console.log('ChatContext: Loading chat data...');
       // Load conversations and contacts in parallel with timeout
       const [convs, conts, unread] = await Promise.race([
         Promise.all([
@@ -50,7 +50,6 @@ export const ChatProvider = ({ children }) => {
       setConversations(convs || []);
       setContacts(conts || []);
       setUnreadCount(unread?.count || 0);
-      console.log('ChatContext: Chat data loaded successfully');
     } catch (error) {
       console.error('Error loading chat data:', error);
       // Set empty defaults on error
@@ -69,7 +68,6 @@ export const ChatProvider = ({ children }) => {
     try {
       await socketService.connect(user.id, 'staff');
       setSocketConnected(true);
-      console.log('ChatContext: Socket connected');
     } catch (error) {
       console.error('ChatContext: Socket connection error:', error);
       // Will retry on next action
@@ -80,7 +78,6 @@ export const ChatProvider = ({ children }) => {
   const setupSocketListeners = useCallback(() => {
     // New message notification
     const handleNewMessage = (data) => {
-      console.log('ChatContext: New message received', data);
 
       const message = data.message || data;
       const conversationId = data.conversationId || message.conversationId;
@@ -157,7 +154,6 @@ export const ChatProvider = ({ children }) => {
 
     // Reaction added
     const handleReactionAdded = (data) => {
-      console.log('ChatContext: Reaction added', data);
       if (data.messageId) {
         setMessageReactions(prev => ({
           ...prev,
@@ -168,7 +164,6 @@ export const ChatProvider = ({ children }) => {
 
     // Reaction removed
     const handleReactionRemoved = (data) => {
-      console.log('ChatContext: Reaction removed', data);
       if (data.messageId) {
         setMessageReactions(prev => ({
           ...prev,

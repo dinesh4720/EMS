@@ -57,9 +57,9 @@ export default function StudentProfileHeader({
 
   return (
     <>
-      <div className="w-full bg-white dark:bg-zinc-900 rounded-lg p-6 border border-gray-200 flex flex-col lg:flex-row items-center justify-between gap-6 relative overflow-hidden">
+      <div className="w-full bg-white dark:bg-zinc-900 rounded-lg p-6 border border-gray-200 dark:border-zinc-800 flex flex-col lg:flex-row items-center justify-between gap-6 relative overflow-hidden">
         {/* Background Decoration */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gray-50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gray-50 dark:bg-zinc-800 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
 
         <div className="flex flex-col md:flex-row items-center gap-6 z-10 w-full lg:w-auto">
           {/* Back Button */}
@@ -88,10 +88,10 @@ export default function StudentProfileHeader({
             <Dropdown>
               <DropdownTrigger>
                 <div
-                  className="absolute -bottom-1 -right-1 bg-white rounded-full p-1.5 shadow-sm border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
+                  className="absolute -bottom-1 -right-1 bg-white dark:bg-zinc-900 rounded-full p-1.5 shadow-sm dark:shadow-zinc-900/50 border border-gray-200 dark:border-zinc-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
                   title="Change photo"
                 >
-                  <Camera size={14} className="text-gray-600" />
+                  <Camera size={14} className="text-gray-600 dark:text-zinc-400" />
                 </div>
               </DropdownTrigger>
               <DropdownMenu aria-label="Photo actions">
@@ -124,10 +124,10 @@ export default function StudentProfileHeader({
 
           {/* Student Info */}
           <div className="text-center md:text-left space-y-1">
-            <h1 className="text-2xl font-bold text-gray-900">{student.name}</h1>
-            <div className="flex items-center justify-center md:justify-start gap-3 text-gray-600 font-medium text-sm mt-1">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{student.name}</h1>
+            <div className="flex items-center justify-center md:justify-start gap-3 text-gray-600 dark:text-zinc-400 font-medium text-sm mt-1">
               <span>@{student.admissionId || "Student"}</span>
-              <span className="text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-md">
+              <span className="text-sm font-medium text-gray-700 dark:text-zinc-300 bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 px-2.5 py-0.5 rounded-md">
                 {student.class || "N/A"}
               </span>
               <span>• Roll {student.rollNo || "N/A"}</span>
@@ -136,7 +136,7 @@ export default function StudentProfileHeader({
         </div>
 
         {/* Actions Row */}
-        <div className="flex flex-wrap items-center justify-center lg:justify-end gap-3 z-10 w-full lg:w-auto border-t lg:border-t-0 lg:border-l border-gray-100 pt-4 lg:pt-0 lg:pl-6">
+        <div className="flex flex-wrap items-center justify-center lg:justify-end gap-3 z-10 w-full lg:w-auto border-t lg:border-t-0 lg:border-l border-gray-100 dark:border-zinc-800 pt-4 lg:pt-0 lg:pl-6">
           {/* Call Parent Button - Standalone */}
           <Tooltip content={student.parentName ? `Call ${student.parentName}` : "Call Parent"} placement="bottom">
             <Button
@@ -159,7 +159,7 @@ export default function StudentProfileHeader({
           {/* Edit Profile Button - Standalone */}
           <Button
             variant="bordered"
-            className="border-gray-200 text-gray-700"
+            className="border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300"
             startContent={<Edit size={18} />}
             onPress={onEdit}
           >
@@ -343,7 +343,7 @@ export default function StudentProfileHeader({
       />
 
       {/* Hidden Printable Component */}
-      <div style={{ display: "none" }}>
+      <div className="hidden">
         <PrintableStudentProfile
           ref={printRef}
           student={student}

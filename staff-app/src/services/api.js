@@ -14,7 +14,6 @@ export const setUnauthorizedHandler = (handler) => {
 // Helper function for API requests
 const request = async (endpoint, options = {}) => {
   const url = `${API_URL}${endpoint}`;
-  console.log('API Request:', url, options.method || 'GET');
 
   const reqConfig = {
     headers: {
@@ -32,7 +31,6 @@ const request = async (endpoint, options = {}) => {
 
   try {
     const response = await fetch(url, reqConfig);
-    console.log('API Response status:', response.status);
 
     // Handle 401 – session expired or token invalid
     if (response.status === 401) {
@@ -45,7 +43,6 @@ const request = async (endpoint, options = {}) => {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Network error' }));
-      console.log('API Error response:', error);
       throw new Error(error.error || `HTTP error! status: ${response.status}`);
     }
 

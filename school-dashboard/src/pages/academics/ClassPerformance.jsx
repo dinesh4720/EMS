@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useValidatedParams } from '../../hooks/useValidatedParams';
 import {
   Card, CardBody, CardHeader, Chip, Select, SelectItem,
   Spinner, Button, Progress, Table, TableHeader, TableColumn,
@@ -19,7 +20,7 @@ import { getAuthHeaders } from '../../utils/authSession';
 import { getAcademicYearOptions } from '../../utils/constants';
 
 const ClassPerformance = () => {
-  const { classId } = useParams();
+  const { params: { classId }, isValid } = useValidatedParams({ classId: 'objectId' }, { redirectTo: '/academics' });
   const navigate = useNavigate();
   const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(true);
@@ -151,6 +152,8 @@ const ClassPerformance = () => {
     }
   };
 
+  if (!isValid) return null;
+
   if (loading) {
     return (
       <div className="flex justify-center py-10">
@@ -198,7 +201,7 @@ const ClassPerformance = () => {
         <Card className="border border-default-200">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-blue-100 text-blue-600 rounded-lg">
+              <div className="p-2.5 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-lg">
                 <Users size={20} />
               </div>
               <div>
@@ -211,7 +214,7 @@ const ClassPerformance = () => {
         <Card className="border border-default-200">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-green-100 text-green-600 rounded-lg">
+              <div className="p-2.5 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded-lg">
                 <TrendingUp size={20} />
               </div>
               <div>
@@ -224,7 +227,7 @@ const ClassPerformance = () => {
         <Card className="border border-default-200">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-purple-100 text-purple-600 rounded-lg">
+              <div className="p-2.5 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 rounded-lg">
                 <Trophy size={20} />
               </div>
               <div>
@@ -237,7 +240,7 @@ const ClassPerformance = () => {
         <Card className="border border-default-200">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-emerald-100 text-emerald-600 rounded-lg">
+              <div className="p-2.5 bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 rounded-lg">
                 <Award size={20} />
               </div>
               <div>
@@ -255,7 +258,7 @@ const ClassPerformance = () => {
         <Card shadow="none" className="border border-default-200">
           <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-blue-100 text-blue-600 rounded-lg">
+              <div className="p-2.5 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-lg">
                 <BarChart3 size={20} />
               </div>
               <h3 className="text-lg font-semibold text-default-900">Score Distribution</h3>
@@ -287,7 +290,7 @@ const ClassPerformance = () => {
         <Card shadow="none" className="border border-default-200">
           <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-green-100 text-green-600 rounded-lg">
+              <div className="p-2.5 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded-lg">
                 <BookOpen size={20} />
               </div>
               <h3 className="text-lg font-semibold text-default-900">Subject Averages</h3>
@@ -312,7 +315,7 @@ const ClassPerformance = () => {
         <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-yellow-100 text-yellow-600 rounded-lg">
+              <div className="p-2.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400 rounded-lg">
                 <Trophy size={20} />
               </div>
               <h3 className="text-lg font-semibold text-default-900">Student Rankings</h3>
@@ -350,9 +353,9 @@ const ClassPerformance = () => {
                 <TableRow key={student.id || idx}>
                   <TableCell>
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                      student.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
-                      student.rank === 2 ? 'bg-gray-100 text-gray-700' :
-                      student.rank === 3 ? 'bg-amber-100 text-amber-700' :
+                      student.rank === 1 ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300' :
+                      student.rank === 2 ? 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300' :
+                      student.rank === 3 ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' :
                       'bg-default-100 text-default-600'
                     }`}>
                       {student.rank}
@@ -416,7 +419,7 @@ const ClassPerformance = () => {
       <Card shadow="none" className="border border-default-200">
         <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-purple-100 text-purple-600 rounded-lg">
+            <div className="p-2.5 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 rounded-lg">
               <BookOpen size={20} />
             </div>
             <h3 className="text-lg font-semibold text-default-900">Subject-wise Details</h3>

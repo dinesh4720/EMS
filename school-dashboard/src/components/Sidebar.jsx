@@ -11,7 +11,7 @@ import {
   LayoutDashboard, Users, BookOpen, MessageSquare, IndianRupee, Settings,
   ChevronsLeft, GraduationCap, Calendar, BarChart3, DoorOpen,
   Sun, Moon, LogOut, ChevronRight,
-  Layers, Award
+  Layers, Award, ClipboardList, Package, Building2, Bus, Library
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "../context/AuthContext";
@@ -38,6 +38,7 @@ const modules = {
       title: "Academics",
       items: [
         { icon: Award, label: "Academics", href: "/academics" },
+        { icon: ClipboardList, label: "Homework", href: "/homework" },
       ]
     },
     {
@@ -50,6 +51,15 @@ const modules = {
       title: "Finance",
       items: [
         { icon: IndianRupee, label: "Fee Collection", href: "/fees" },
+      ]
+    },
+    {
+      title: "Operations",
+      items: [
+        { icon: Package, label: "Inventory", href: "/inventory" },
+        { icon: Building2, label: "Hostel", href: "/hostel" },
+        { icon: Bus, label: "Transport", href: "/transport" },
+        { icon: Library, label: "Library", href: "/library" },
       ]
     }
   ],
@@ -86,21 +96,21 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
     <aside
       className={`
         fixed left-0 top-0 h-screen
-        bg-white
-        border-r border-gray-200
+        bg-white dark:bg-zinc-950
+        border-r border-gray-200 dark:border-zinc-800
         flex flex-col z-50
         transition-all duration-300
         ${isSidebarOpen ? 'w-[240px]' : 'w-[64px]'}
       `}
     >
       {/* Brand */}
-      <div className={`flex items-center h-14 border-b border-gray-100 ${isSidebarOpen ? 'px-4 justify-between' : 'justify-center'}`}>
+      <div className={`flex items-center h-14 border-b border-gray-100 dark:border-zinc-800 ${isSidebarOpen ? 'px-4 justify-between' : 'justify-center'}`}>
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
-            <span className="text-white font-bold text-sm">S</span>
+          <div className="w-8 h-8 rounded-lg bg-gray-900 dark:bg-zinc-100 flex items-center justify-center">
+            <span className="text-white dark:text-zinc-900 font-bold text-sm">S</span>
           </div>
           {isSidebarOpen && (
-            <span className="font-semibold text-sm text-gray-900">
+            <span className="font-semibold text-sm text-gray-900 dark:text-zinc-100">
               SchoolSync
             </span>
           )}
@@ -109,7 +119,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
         {isSidebarOpen && (
           <button
             onClick={() => setIsSidebarOpen(false)}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-zinc-500 dark:hover:text-zinc-300 dark:hover:bg-zinc-800 transition-colors"
           >
             <ChevronsLeft size={16} />
           </button>
@@ -136,8 +146,8 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                     ${isSidebarOpen ? 'py-2 px-3 gap-3' : 'h-10 justify-center w-10 mx-auto py-0'}
                     rounded-lg transition-colors
                     ${isActive
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-600 hover:bg-gray-50"}
+                      ? "bg-gray-100 text-gray-900 dark:bg-zinc-800 dark:text-zinc-100"
+                      : "text-gray-600 hover:bg-gray-50 dark:text-zinc-400 dark:hover:bg-zinc-800"}
                   `}>
                     <item.icon size={18} strokeWidth={isActive ? 2.5 : 1.5} />
                     {isSidebarOpen && (
@@ -151,7 +161,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
         </div>
 
         {/* Divider */}
-        <div className={`border-t border-gray-200 mx-3 my-2`} />
+        <div className={`border-t border-gray-200 dark:border-zinc-800 mx-3 my-2`} />
 
         {/* Modules */}
         <div className={`space-y-0.5 ${isSidebarOpen ? "px-3" : "px-2"}`}>
@@ -214,7 +224,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                     {isSidebarOpen && key !== 'FrontDesk' && key !== 'Analytics' && (
                       <ChevronRight
                         size={14}
-                        className={`text-gray-400 transition-transform ${isActive ? 'rotate-90' : ''}`}
+                        className={`text-gray-400 dark:text-zinc-500 transition-transform ${isActive ? 'rotate-90' : ''}`}
                       />
                     )}
                   </button>
@@ -231,7 +241,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                       className="overflow-hidden"
                     >
                       <div className="pt-1 pb-1">
-                        <div className="border-l border-gray-200 ml-4 pl-3 space-y-0.5">
+                        <div className="border-l border-gray-200 dark:border-zinc-800 ml-4 pl-3 space-y-0.5">
                           {groups.map((group) =>
                             group.items.map((item) => {
                               const isItemActive = location.pathname === item.href || (item.href !== "/" && location.pathname.startsWith(item.href));
@@ -243,8 +253,8 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                                   <div className={`
                                     flex items-center py-2 px-2 gap-2 rounded-md transition-colors relative
                                     ${isItemActive
-                                      ? "bg-gray-100 text-gray-900"
-                                      : "text-gray-600 hover:bg-gray-50"}
+                                      ? "bg-gray-100 text-gray-900 dark:bg-zinc-800 dark:text-zinc-100"
+                                      : "text-gray-600 hover:bg-gray-50 dark:text-zinc-400 dark:hover:bg-zinc-800"}
                                   `}>
                                     <item.icon size={15} strokeWidth={isItemActive ? 2.5 : 1.5} />
                                     <span className="text-sm flex-1">{item.label}</span>
@@ -270,13 +280,13 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
       </div>
 
       {/* Bottom Actions */}
-      <div className={`border-t border-gray-200 py-3 space-y-0.5 ${isSidebarOpen ? 'px-3' : 'px-2 flex flex-col items-center'}`}>
+      <div className={`border-t border-gray-200 dark:border-zinc-800 py-3 space-y-0.5 ${isSidebarOpen ? 'px-3' : 'px-2 flex flex-col items-center'}`}>
         {/* Settings */}
         <NavLink to="/settings">
           <div className={`
             flex items-center cursor-pointer
             ${isSidebarOpen ? 'py-2 px-3 gap-3' : 'h-10 justify-center w-10 mx-auto py-0'}
-            rounded-lg transition-colors text-gray-600 hover:bg-gray-100
+            rounded-lg transition-colors text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-800
           `}>
             <Settings size={18} strokeWidth={1.5} />
             {isSidebarOpen && <span className="text-sm font-medium">Settings</span>}
@@ -289,7 +299,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
           className={`
             flex items-center cursor-pointer
             ${isSidebarOpen ? 'py-2 px-3 gap-3' : 'h-10 justify-center w-10 mx-auto py-0'}
-            rounded-lg transition-colors text-gray-600 hover:bg-gray-100
+            rounded-lg transition-colors text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-800
           `}
         >
           {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
@@ -309,22 +319,21 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
               type="button"
               className={`
                 flex items-center w-full
-                ${isSidebarOpen ? 'py-2 px-2 gap-3 hover:bg-gray-100 rounded-lg mt-1' : 'h-10 justify-center w-10 mx-auto rounded-lg hover:bg-gray-100'}
+                ${isSidebarOpen ? 'py-2 px-2 gap-3 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg mt-1' : 'h-10 justify-center w-10 mx-auto rounded-lg hover:bg-gray-100'}
                 transition-all focus:outline-none
               `}
             >
               <Avatar
-                src={`https://i.pravatar.cc/150?u=${user?.id || 'admin'}`}
-                name={user?.name?.[0] || "A"}
+                name={user?.name || "Admin"}
                 size="sm"
                 className="w-7 h-7 text-[10px]"
               />
               {isSidebarOpen && (
                 <div className="flex-1 flex flex-col items-start overflow-hidden">
-                  <span className="text-sm font-medium text-gray-800 truncate">
+                  <span className="text-sm font-medium text-gray-800 dark:text-zinc-200 truncate">
                     {user?.name || "Julia"}
                   </span>
-                  <span className="text-xs text-gray-500 truncate">
+                  <span className="text-xs text-gray-500 dark:text-zinc-400 truncate">
                     Admin
                   </span>
                 </div>
@@ -332,10 +341,10 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
             </button>
           </PopoverTrigger>
           <PopoverContent className="p-0">
-            <div className="min-w-[200px] rounded-lg border border-gray-200 bg-white shadow-sm">
-              <div className="px-4 py-3 border-b border-gray-200">
-                <p className="text-xs text-gray-500">Signed in as</p>
-                <p className="text-sm font-medium text-gray-800 truncate">{user?.email}</p>
+            <div className="min-w-[200px] rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-sm">
+              <div className="px-4 py-3 border-b border-gray-200 dark:border-zinc-700">
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Signed in as</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-zinc-200 truncate">{user?.email}</p>
               </div>
               <div className="py-1">
                 <button
@@ -344,18 +353,18 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                     setIsUserMenuOpen(false);
                     navigate('/settings');
                   }}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
                 >
                   My Settings
                 </button>
-                <div className="h-px bg-gray-200 my-1" />
+                <div className="h-px bg-gray-200 dark:bg-zinc-700 my-1" />
                 <button
                   type="button"
                   onClick={() => {
                     setIsUserMenuOpen(false);
                     logout();
                   }}
-                  className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 transition-colors flex items-center gap-2"
+                  className="w-full text-left px-4 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors flex items-center gap-2"
                 >
                   <LogOut size={14} />
                   Log Out
@@ -370,7 +379,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
       {!isSidebarOpen && (
         <div
           onClick={() => setIsSidebarOpen(true)}
-          className="absolute -right-3 top-20 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform z-50 text-gray-400 hover:text-gray-600"
+          className="absolute -right-3 top-20 w-6 h-6 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-700 rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform z-50 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300"
         >
           <ChevronsLeft size={12} className="rotate-180" />
         </div>

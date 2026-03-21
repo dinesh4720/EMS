@@ -1,7 +1,32 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Building2, RefreshCcw, ShieldCheck, Sparkles, UserPlus } from 'lucide-react';
+import {
+  Activity,
+  BookOpen,
+  Building2,
+  Flag,
+  RefreshCcw,
+  ShieldCheck,
+  Sparkles,
+  TrendingUp,
+  UserPlus,
+  Wrench,
+} from 'lucide-react';
 import { superAdminApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import SchoolHealthPanel from './SchoolHealthPanel';
+import JobsDashboardPanel from './JobsDashboardPanel';
+import FeatureFlagsPanel from './FeatureFlagsPanel';
+import GrowthAnalyticsPanel from './GrowthAnalyticsPanel';
+import ChangelogPanel from './ChangelogPanel';
+
+const TABS = [
+  { key: 'schools', label: 'Schools', icon: Building2 },
+  { key: 'health', label: 'Health', icon: Activity },
+  { key: 'jobs', label: 'Jobs', icon: Wrench },
+  { key: 'flags', label: 'Flags', icon: Flag },
+  { key: 'growth', label: 'Growth', icon: TrendingUp },
+  { key: 'changelog', label: 'Changelog', icon: BookOpen },
+];
 
 const PLAN_OPTIONS = [
   { value: 'starter', label: 'Starter' },
@@ -37,12 +62,12 @@ const INITIAL_FORM = {
 
 function SummaryCard({ icon: Icon, label, value, accent }) {
   return (
-    <div className="rounded-3xl border border-white/70 bg-white/85 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+    <div className="rounded-3xl border border-white/70 bg-white/85 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/85">
       <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl ${accent}`}>
         <Icon size={20} />
       </div>
-      <div className="text-sm text-slate-500">{label}</div>
-      <div className="mt-1 text-3xl font-semibold tracking-tight text-slate-950">{value}</div>
+      <div className="text-sm text-slate-500 dark:text-zinc-400">{label}</div>
+      <div className="mt-1 text-3xl font-semibold tracking-tight text-slate-950 dark:text-zinc-100">{value}</div>
     </div>
   );
 }
@@ -52,7 +77,7 @@ function SelectField({ value, onChange, options }) {
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-sky-400"
+      className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300"
     >
       {options.map((option) => (
         <option key={option.value} value={option.value}>
@@ -63,8 +88,215 @@ function SelectField({ value, onChange, options }) {
   );
 }
 
+function SchoolsPanel({ overview, loadData, loading, tableRows, updateSchoolDraft, handleSaveSchool, handleProvisionSchool, rowSaving, provisioning, form, updateForm, handleCreateSchool, submitting }) {
+  return (
+    <>
+      <div className="mb-8 grid gap-4 md:grid-cols-4">
+        <SummaryCard icon={Building2} label="Total schools" value={overview.totalSchools} accent="bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300" />
+        <SummaryCard icon={Sparkles} label="Active schools" value={overview.activeSchools} accent="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" />
+        <SummaryCard icon={UserPlus} label="Trials running" value={overview.trialingSchools} accent="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" />
+        <SummaryCard icon={RefreshCcw} label="Attention needed" value={overview.attentionNeeded} accent="bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300" />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[1.1fr_1.7fr]">
+        <form
+          onSubmit={handleCreateSchool}
+          className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90"
+        >
+          <div className="mb-5">
+            <h2 className="text-xl font-semibold text-slate-950 dark:text-zinc-100">Onboard a new school</h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+              This creates the school, provisions its settings, and sets up an initial admin account.
+            </p>
+          </div>
+
+          <div className="grid gap-4">
+            <input
+              value={form.schoolName}
+              onChange={(event) => updateForm('schoolName', event.target.value)}
+              placeholder="School name"
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              required
+            />
+            <input
+              value={form.schoolCode}
+              onChange={(event) => updateForm('schoolCode', event.target.value)}
+              placeholder="School code (optional)"
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+            />
+            <div className="grid gap-4 md:grid-cols-2">
+              <input
+                value={form.contactEmail}
+                onChange={(event) => updateForm('contactEmail', event.target.value)}
+                placeholder="Contact email"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              />
+              <input
+                value={form.contactPhone}
+                onChange={(event) => updateForm('contactPhone', event.target.value)}
+                placeholder="Contact phone"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <SelectField value={form.plan} onChange={(value) => updateForm('plan', value)} options={PLAN_OPTIONS} />
+              <SelectField value={form.planStatus} onChange={(value) => updateForm('planStatus', value)} options={PLAN_STATUS_OPTIONS} />
+            </div>
+            <input
+              value={form.adminName}
+              onChange={(event) => updateForm('adminName', event.target.value)}
+              placeholder="Admin full name"
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              required
+            />
+            <input
+              value={form.adminEmail}
+              onChange={(event) => updateForm('adminEmail', event.target.value)}
+              placeholder="Admin email"
+              type="email"
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              required
+            />
+            <input
+              value={form.adminPassword}
+              onChange={(event) => updateForm('adminPassword', event.target.value)}
+              placeholder="Admin password (optional)"
+              type="password"
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+            />
+            <div className="grid gap-4 md:grid-cols-2">
+              <input
+                value={form.frontendUrl}
+                onChange={(event) => updateForm('frontendUrl', event.target.value)}
+                placeholder="Frontend URL"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              />
+              <input
+                value={form.backendUrl}
+                onChange={(event) => updateForm('backendUrl', event.target.value)}
+                placeholder="Backend URL"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="mt-5 w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          >
+            {submitting ? 'Provisioning school...' : 'Create school'}
+          </button>
+        </form>
+
+        <div className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-950 dark:text-zinc-100">School registry</h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Manage plan state and re-run provisioning without touching the database manually.</p>
+            </div>
+            <button
+              type="button"
+              onClick={loadData}
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600"
+            >
+              Refresh
+            </button>
+          </div>
+
+          {loading ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm text-slate-500 dark:border-zinc-700 dark:text-zinc-400">
+              Loading school registry...
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-500 dark:border-zinc-800 dark:text-zinc-400">
+                    <th className="pb-3 font-medium">School</th>
+                    <th className="pb-3 font-medium">Admin</th>
+                    <th className="pb-3 font-medium">Plan</th>
+                    <th className="pb-3 font-medium">Status</th>
+                    <th className="pb-3 font-medium">Provisioning</th>
+                    <th className="pb-3 font-medium text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tableRows.map((school) => (
+                    <tr key={school.id} className="border-b border-slate-100 align-top dark:border-zinc-800">
+                      <td className="py-4 pr-4">
+                        <div className="font-medium text-slate-900 dark:text-zinc-100">{school.name}</div>
+                        <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-zinc-500">{school.code}</div>
+                        <div className="mt-2 text-xs text-slate-500 dark:text-zinc-400">{school.counts?.staff || 0} staff</div>
+                      </td>
+                      <td className="py-4 pr-4">
+                        <div className="font-medium text-slate-800 dark:text-zinc-200">{school.admin?.name || 'Not provisioned'}</div>
+                        <div className="mt-1 text-xs text-slate-500 dark:text-zinc-400">{school.admin?.email || school.contactEmail || 'No admin email'}</div>
+                      </td>
+                      <td className="py-4 pr-4">
+                        <div className="space-y-2">
+                          <SelectField
+                            value={school.draftPlan}
+                            onChange={(value) => updateSchoolDraft(school.id, 'draftPlan', value)}
+                            options={PLAN_OPTIONS}
+                          />
+                          <SelectField
+                            value={school.draftPlanStatus}
+                            onChange={(value) => updateSchoolDraft(school.id, 'draftPlanStatus', value)}
+                            options={PLAN_STATUS_OPTIONS}
+                          />
+                        </div>
+                      </td>
+                      <td className="py-4 pr-4">
+                        <SelectField
+                          value={school.draftStatus}
+                          onChange={(value) => updateSchoolDraft(school.id, 'draftStatus', value)}
+                          options={STATUS_OPTIONS}
+                        />
+                      </td>
+                      <td className="py-4 pr-4">
+                        <div className="font-medium capitalize text-slate-800 dark:text-zinc-200">{school.provisioning?.status || 'pending'}</div>
+                        <div className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+                          {school.provisioning?.lastProvisionedAt
+                            ? new Date(school.provisioning.lastProvisionedAt).toLocaleString()
+                            : 'Not provisioned yet'}
+                        </div>
+                      </td>
+                      <td className="py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleSaveSchool(school)}
+                            disabled={rowSaving[school.id]}
+                            className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600"
+                          >
+                            {rowSaving[school.id] ? 'Saving...' : 'Save'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleProvisionSchool(school)}
+                            disabled={provisioning[school.id]}
+                            className="rounded-2xl bg-sky-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {provisioning[school.id] ? 'Provisioning...' : 'Provision'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function SuperAdminDashboard() {
   const { user, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState('schools');
   const [overview, setOverview] = useState({
     totalSchools: 0,
     activeSchools: 0,
@@ -216,10 +448,43 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const renderPanel = () => {
+    switch (activeTab) {
+      case 'health':
+        return <SchoolHealthPanel />;
+      case 'jobs':
+        return <JobsDashboardPanel />;
+      case 'flags':
+        return <FeatureFlagsPanel />;
+      case 'growth':
+        return <GrowthAnalyticsPanel />;
+      case 'changelog':
+        return <ChangelogPanel />;
+      default:
+        return (
+          <SchoolsPanel
+            overview={overview}
+            loadData={loadData}
+            loading={loading}
+            tableRows={tableRows}
+            updateSchoolDraft={updateSchoolDraft}
+            handleSaveSchool={handleSaveSchool}
+            handleProvisionSchool={handleProvisionSchool}
+            rowSaving={rowSaving}
+            provisioning={provisioning}
+            form={form}
+            updateForm={updateForm}
+            handleCreateSchool={handleCreateSchool}
+            submitting={submitting}
+          />
+        );
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.16),_transparent_28%),linear-gradient(180deg,_#f8fbff_0%,_#eef4ff_48%,_#f8fafc_100%)] text-slate-900">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.16),_transparent_28%),linear-gradient(180deg,_#f8fbff_0%,_#eef4ff_48%,_#f8fafc_100%)] text-slate-900 dark:bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.08),_transparent_28%),linear-gradient(180deg,_#09090b_0%,_#18181b_48%,_#09090b_100%)] dark:text-zinc-100">
       <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">
-        <div className="mb-8 flex flex-col gap-4 rounded-[32px] border border-white/70 bg-slate-950 px-6 py-6 text-white shadow-[0_30px_120px_rgba(15,23,42,0.22)] md:flex-row md:items-end md:justify-between">
+        <div className="mb-8 flex flex-col gap-4 rounded-[32px] border border-white/70 bg-slate-950 px-6 py-6 text-white shadow-[0_30px_120px_rgba(15,23,42,0.22)] dark:border-zinc-800 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-sky-100">
               <ShieldCheck size={14} />
@@ -247,217 +512,38 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
 
-        <div className="mb-8 grid gap-4 md:grid-cols-4">
-          <SummaryCard icon={Building2} label="Total schools" value={overview.totalSchools} accent="bg-sky-100 text-sky-700" />
-          <SummaryCard icon={Sparkles} label="Active schools" value={overview.activeSchools} accent="bg-emerald-100 text-emerald-700" />
-          <SummaryCard icon={UserPlus} label="Trials running" value={overview.trialingSchools} accent="bg-amber-100 text-amber-700" />
-          <SummaryCard icon={RefreshCcw} label="Attention needed" value={overview.attentionNeeded} accent="bg-rose-100 text-rose-700" />
+        {/* Tab navigation */}
+        <div className="mb-6 flex flex-wrap gap-1 rounded-2xl border border-white/70 bg-white/80 p-1.5 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80">
+          {TABS.map(({ key, label, icon: TabIcon }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setActiveTab(key)}
+              className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium transition ${
+                activeTab === key
+                  ? 'bg-slate-950 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-900'
+                  : 'text-slate-600 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+              }`}
+            >
+              <TabIcon size={14} />
+              {label}
+            </button>
+          ))}
         </div>
 
-        {message ? (
-          <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        {message && (
+          <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
             {message}
           </div>
-        ) : null}
+        )}
 
-        {error ? (
-          <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        {error && activeTab === 'schools' && (
+          <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300">
             {error}
           </div>
-        ) : null}
+        )}
 
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_1.7fr]">
-          <form
-            onSubmit={handleCreateSchool}
-            className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur"
-          >
-            <div className="mb-5">
-              <h2 className="text-xl font-semibold text-slate-950">Onboard a new school</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                This creates the school, provisions its settings, and sets up an initial admin account.
-              </p>
-            </div>
-
-            <div className="grid gap-4">
-              <input
-                value={form.schoolName}
-                onChange={(event) => updateForm('schoolName', event.target.value)}
-                placeholder="School name"
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400"
-                required
-              />
-              <input
-                value={form.schoolCode}
-                onChange={(event) => updateForm('schoolCode', event.target.value)}
-                placeholder="School code (optional)"
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400"
-              />
-              <div className="grid gap-4 md:grid-cols-2">
-                <input
-                  value={form.contactEmail}
-                  onChange={(event) => updateForm('contactEmail', event.target.value)}
-                  placeholder="Contact email"
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400"
-                />
-                <input
-                  value={form.contactPhone}
-                  onChange={(event) => updateForm('contactPhone', event.target.value)}
-                  placeholder="Contact phone"
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400"
-                />
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <SelectField value={form.plan} onChange={(value) => updateForm('plan', value)} options={PLAN_OPTIONS} />
-                <SelectField value={form.planStatus} onChange={(value) => updateForm('planStatus', value)} options={PLAN_STATUS_OPTIONS} />
-              </div>
-              <input
-                value={form.adminName}
-                onChange={(event) => updateForm('adminName', event.target.value)}
-                placeholder="Admin full name"
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400"
-                required
-              />
-              <input
-                value={form.adminEmail}
-                onChange={(event) => updateForm('adminEmail', event.target.value)}
-                placeholder="Admin email"
-                type="email"
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400"
-                required
-              />
-              <input
-                value={form.adminPassword}
-                onChange={(event) => updateForm('adminPassword', event.target.value)}
-                placeholder="Admin password (optional)"
-                type="password"
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400"
-              />
-              <div className="grid gap-4 md:grid-cols-2">
-                <input
-                  value={form.frontendUrl}
-                  onChange={(event) => updateForm('frontendUrl', event.target.value)}
-                  placeholder="Frontend URL"
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400"
-                />
-                <input
-                  value={form.backendUrl}
-                  onChange={(event) => updateForm('backendUrl', event.target.value)}
-                  placeholder="Backend URL"
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="mt-5 w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {submitting ? 'Provisioning school...' : 'Create school'}
-            </button>
-          </form>
-
-          <div className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-semibold text-slate-950">School registry</h2>
-                <p className="mt-1 text-sm text-slate-500">Manage plan state and re-run provisioning without touching the database manually.</p>
-              </div>
-              <button
-                type="button"
-                onClick={loadData}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300"
-              >
-                Refresh
-              </button>
-            </div>
-
-            {loading ? (
-              <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm text-slate-500">
-                Loading school registry...
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-slate-500">
-                      <th className="pb-3 font-medium">School</th>
-                      <th className="pb-3 font-medium">Admin</th>
-                      <th className="pb-3 font-medium">Plan</th>
-                      <th className="pb-3 font-medium">Status</th>
-                      <th className="pb-3 font-medium">Provisioning</th>
-                      <th className="pb-3 font-medium text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tableRows.map((school) => (
-                      <tr key={school.id} className="border-b border-slate-100 align-top">
-                        <td className="py-4 pr-4">
-                          <div className="font-medium text-slate-900">{school.name}</div>
-                          <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">{school.code}</div>
-                          <div className="mt-2 text-xs text-slate-500">{school.counts?.staff || 0} staff</div>
-                        </td>
-                        <td className="py-4 pr-4">
-                          <div className="font-medium text-slate-800">{school.admin?.name || 'Not provisioned'}</div>
-                          <div className="mt-1 text-xs text-slate-500">{school.admin?.email || school.contactEmail || 'No admin email'}</div>
-                        </td>
-                        <td className="py-4 pr-4">
-                          <div className="space-y-2">
-                            <SelectField
-                              value={school.draftPlan}
-                              onChange={(value) => updateSchoolDraft(school.id, 'draftPlan', value)}
-                              options={PLAN_OPTIONS}
-                            />
-                            <SelectField
-                              value={school.draftPlanStatus}
-                              onChange={(value) => updateSchoolDraft(school.id, 'draftPlanStatus', value)}
-                              options={PLAN_STATUS_OPTIONS}
-                            />
-                          </div>
-                        </td>
-                        <td className="py-4 pr-4">
-                          <SelectField
-                            value={school.draftStatus}
-                            onChange={(value) => updateSchoolDraft(school.id, 'draftStatus', value)}
-                            options={STATUS_OPTIONS}
-                          />
-                        </td>
-                        <td className="py-4 pr-4">
-                          <div className="font-medium capitalize text-slate-800">{school.provisioning?.status || 'pending'}</div>
-                          <div className="mt-1 text-xs text-slate-500">
-                            {school.provisioning?.lastProvisionedAt
-                              ? new Date(school.provisioning.lastProvisionedAt).toLocaleString()
-                              : 'Not provisioned yet'}
-                          </div>
-                        </td>
-                        <td className="py-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleSaveSchool(school)}
-                              disabled={rowSaving[school.id]}
-                              className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {rowSaving[school.id] ? 'Saving...' : 'Save'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleProvisionSchool(school)}
-                              disabled={provisioning[school.id]}
-                              className="rounded-2xl bg-sky-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {provisioning[school.id] ? 'Provisioning...' : 'Provision'}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
+        {renderPanel()}
       </div>
     </div>
   );

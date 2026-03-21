@@ -12,7 +12,7 @@ interface Session {
   endTime?: string
   duration?: number
   eventCount: number
-  pages: string[]
+  pages?: string[]
   metadata?: Record<string, unknown>
 }
 

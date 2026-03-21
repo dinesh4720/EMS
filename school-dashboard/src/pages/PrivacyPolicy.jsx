@@ -25,71 +25,71 @@ const sections = [
 
 export default function PrivacyPolicy() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-zinc-950 dark:text-zinc-100">
       <div className="mx-auto flex max-w-4xl flex-col gap-8 px-6 py-10 md:px-8">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-medium uppercase tracking-[0.2em] text-teal-700">SchoolSync</p>
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-teal-700 dark:text-teal-400">SchoolSync</p>
             <h1 className="mt-2 text-3xl font-bold">Privacy Policy</h1>
-            <p className="mt-3 max-w-2xl text-sm text-slate-600">
+            <p className="mt-3 max-w-2xl text-sm text-slate-600 dark:text-zinc-400">
               Baseline privacy notice for SchoolSync deployments. This document should be reviewed and approved by the school&apos;s legal or compliance owner before production rollout.
             </p>
           </div>
           <Link
             to="/login"
-            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-teal-300 hover:text-teal-700"
+            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-teal-300 hover:text-teal-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-teal-600 dark:hover:text-teal-400"
           >
             Back to login
           </Link>
         </div>
 
-        <div className="rounded-3xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+        <div className="rounded-3xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
           Schools using this system handle children&apos;s personal data. Legal review is still required for DPDPA 2023, consent collection, and retention rules.
         </div>
 
         <div className="grid gap-4">
           {sections.map((section) => (
-            <section key={section.title} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section key={section.title} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
               <h2 className="text-lg font-semibold">{section.title}</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{section.body}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-zinc-400">{section.body}</p>
             </section>
           ))}
         </div>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
           <h2 className="text-lg font-semibold">Data categories and purposes</h2>
-          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
-            <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-              <thead className="bg-slate-100 text-slate-700">
+          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 dark:border-zinc-800">
+            <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-zinc-800">
+              <thead className="bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Category</th>
                   <th className="px-4 py-3 font-semibold">Examples</th>
                   <th className="px-4 py-3 font-semibold">Purpose</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 bg-white text-slate-600">
+              <tbody className="divide-y divide-slate-200 bg-white text-slate-600 dark:divide-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
                 <tr>
-                  <td className="px-4 py-3 font-medium text-slate-900">Identity</td>
+                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-zinc-100">Identity</td>
                   <td className="px-4 py-3">Student name, admission ID, date of birth</td>
                   <td className="px-4 py-3">Enrollment, roster management, profile matching</td>
                 </tr>
                 <tr>
-                  <td className="px-4 py-3 font-medium text-slate-900">Parent contacts</td>
+                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-zinc-100">Parent contacts</td>
                   <td className="px-4 py-3">Parent name, phone, email, relationship</td>
                   <td className="px-4 py-3">Emergency contact, communication, pickup verification</td>
                 </tr>
                 <tr>
-                  <td className="px-4 py-3 font-medium text-slate-900">Attendance and academics</td>
+                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-zinc-100">Attendance and academics</td>
                   <td className="px-4 py-3">Attendance status, results, remarks, homework submissions</td>
                   <td className="px-4 py-3">Daily school operations and academic reporting</td>
                 </tr>
                 <tr>
-                  <td className="px-4 py-3 font-medium text-slate-900">Financial records</td>
+                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-zinc-100">Financial records</td>
                   <td className="px-4 py-3">Fee structure, payments, refunds</td>
                   <td className="px-4 py-3">Billing, receipt generation, reconciliation</td>
                 </tr>
                 <tr>
-                  <td className="px-4 py-3 font-medium text-slate-900">Health and safety</td>
+                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-zinc-100">Health and safety</td>
                   <td className="px-4 py-3">Medical conditions, emergency contacts, gate pass details</td>
                   <td className="px-4 py-3">Student safety and emergency response</td>
                 </tr>

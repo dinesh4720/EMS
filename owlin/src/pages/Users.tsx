@@ -12,7 +12,7 @@ export default function Users() {
       try {
         const response = await usersApi.getUsers()
         // Handle { success: true, users: [...] } format
-        const data = response.users || response.data || []
+        const data = response.users || []
         setUsers(Array.isArray(data) ? data : [])
       } catch (error) {
         console.error('Failed to fetch users:', error)

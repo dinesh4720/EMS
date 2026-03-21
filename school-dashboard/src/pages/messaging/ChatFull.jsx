@@ -3,6 +3,7 @@ import { Avatar, ScrollShadow, Spinner, Button, Modal, ModalContent, ModalHeader
 import { Send, Search, Phone, Video, MoreVertical, X, Plus, Users, Paperclip, Image as ImageIcon, File as FileIcon, Check, CheckCheck, Download, Mic, Reply, Forward, Pin, Trash2, Edit, Copy, MessageCircle, Play, Pause } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { useAuth } from "../../context/AuthContext";
+import { getStoredAuthToken } from "../../utils/authSession";
 import socketService from "../../services/socketServiceEnhanced";
 import chatService from "../../services/chatServiceEnhanced";
 import { request } from "../../services/api";
@@ -110,7 +111,7 @@ export default function ChatFull() {
 
       // Connect Socket.IO
       try {
-        await socketService.connect(user.id, 'staff');
+        await socketService.connect(getStoredAuthToken());
         setSocketConnected(true);
 
         // Setup socket listeners
@@ -269,7 +270,7 @@ export default function ChatFull() {
 
   const loadConversations = async () => {
     try {
-      const convs = await chatService.getConversations(user.id, 'staff');
+      const convs = await chatService.getConversations();
       setConversations(convs);
 
       // Update online status
@@ -296,7 +297,7 @@ export default function ChatFull() {
         socketService.markAsRead(null, conversation.id);
       } else {
         // Mark as read via REST API
-        await chatService.markAsRead(conversation.id, user.id);
+        await chatService.markAsRead(conversation.id);
       }
 
       // Scroll to bottom
@@ -315,8 +316,6 @@ export default function ChatFull() {
     try {
 
       const conversation = await chatService.createConversation(
-        user.id,
-        'staff',
         contact.id,
         contact.type
       );
@@ -962,7 +961,7 @@ export default function ChatFull() {
 
   const handleDelete = async (message) => {
     try {
-      await chatService.deleteMessage(message.id, user.id);
+      await chatService.deleteMessage(message.id);
       setMessages(prev => prev.filter(m => m.id !== message.id));
       toast.success('Message deleted');
     } catch (error) {
@@ -1160,7 +1159,7 @@ export default function ChatFull() {
   // Handle delete message (with delete for everyone option)
   const handleDeleteMessage = async (messageId, deleteForEveryone = false) => {
     try {
-      await chatService.deleteMessage(messageId, user.id);
+      await chatService.deleteMessage(messageId);
       setMessages(prev => prev.filter(m => m.id !== messageId));
       toast.success(deleteForEveryone ? 'Message deleted for everyone' : 'Message deleted');
     } catch (error) {
@@ -1250,9 +1249,9 @@ export default function ChatFull() {
     const messageElement = document.getElementById(`message-${messageId}`);
     if (messageElement) {
       messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      messageElement.classList.add('bg-yellow-100');
+      messageElement.classList.add('bg-yellow-100', 'dark:bg-yellow-900/30');
       setTimeout(() => {
-        messageElement.classList.remove('bg-yellow-100');
+        messageElement.classList.remove('bg-yellow-100', 'dark:bg-yellow-900/30');
       }, 2000);
     }
   };
@@ -1577,7 +1576,7 @@ export default function ChatFull() {
                             }, 2000);
                           }
                         }}
-                        className="flex-shrink-0 max-w-xs px-3 py-2 bg-white dark:bg-zinc-900 rounded-xl border border-default-200 dark:border-zinc-700 hover:border-primary hover:shadow-md hover:shadow-primary/10 cursor-pointer transition-all duration-200 group"
+                        className="flex-shrink-0 max-w-xs px-3 py-2 bg-white dark:bg-zinc-950 rounded-xl border border-default-200 dark:border-zinc-700 hover:border-primary hover:shadow-md dark:hover:shadow-zinc-900/50 hover:shadow-primary/10 cursor-pointer transition-all duration-200 group"
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-xs font-semibold text-primary truncate group-hover:text-primary-600">
@@ -1615,7 +1614,7 @@ export default function ChatFull() {
                         <div className={`absolute top-1 ${isMe ? '-left-9' : '-right-9'} opacity-0 group-hover:opacity-100 transition-opacity duration-200`}>
                           <button
                             onClick={() => handleMessageAction('react', { message: msg })}
-                            className="w-7 h-7 flex items-center justify-center rounded-full bg-white dark:bg-zinc-800 hover:bg-primary/10 dark:hover:bg-primary/20 text-default-500 hover:text-primary transition-all duration-200 border border-default-200 dark:border-zinc-700 shrink-0 shadow-sm hover:shadow-md"
+                            className="w-7 h-7 flex items-center justify-center rounded-full bg-white dark:bg-zinc-950 hover:bg-primary/10 dark:hover:bg-primary/20 text-default-500 hover:text-primary transition-all duration-200 border border-default-200 dark:border-zinc-700 shrink-0 shadow-sm hover:shadow-md dark:shadow-zinc-900/50"
                             title="Add reaction"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1654,9 +1653,9 @@ export default function ChatFull() {
 
                       {/* Message Bubble - Modern rounded corners and better spacing */}
                       <div
-                        className={`px-4 py-2.5 rounded-2xl overflow-hidden transition-all duration-200 hover:shadow-md ${isMe
+                        className={`px-4 py-2.5 rounded-2xl overflow-hidden transition-all duration-200 hover:shadow-md dark:hover:shadow-zinc-900/50 ${isMe
                             ? "bg-primary text-white rounded-br-md shadow-sm shadow-primary/20"
-                            : "bg-default-100 dark:bg-zinc-800 text-default-900 dark:text-zinc-100 rounded-bl-md shadow-sm"
+                            : "bg-default-100 dark:bg-zinc-800 text-default-900 dark:text-zinc-100 rounded-bl-md shadow-sm dark:shadow-zinc-900/30"
                           }`}
                       >
                         {/* Forwarded indicator */}
@@ -1743,7 +1742,7 @@ export default function ChatFull() {
                                 src={msg.fileUrl}
                                 alt={msg.fileName}
                                 className="max-w-full max-h-80 rounded-xl mb-2 cursor-pointer hover:opacity-95 transition-opacity"
-                                onClick={() => window.open(msg.fileUrl, '_blank')}
+                                onClick={() => window.open(msg.fileUrl, '_blank', 'noopener,noreferrer')}
                               />
                             )}
                             {msg.type === 'video' && msg.fileUrl && (
@@ -1774,7 +1773,7 @@ export default function ChatFull() {
                             )}
                             {msg.type === 'file' && msg.fileUrl && (
                               <div className="flex items-center gap-3 mb-2 p-3 bg-black/10 dark:bg-white/5 rounded-xl hover:bg-black/15 dark:hover:bg-white/10 transition-colors cursor-pointer"
-                                onClick={() => window.open(msg.fileUrl, '_blank')}
+                                onClick={() => window.open(msg.fileUrl, '_blank', 'noopener,noreferrer')}
                               >
                                 <div className="text-2xl">{getFileIcon(msg.fileName)}</div>
                                 <div className="flex-1 min-w-0">
@@ -1822,9 +1821,9 @@ export default function ChatFull() {
                 <div className="flex justify-start">
                   <div className="bg-default-100 dark:bg-zinc-800 px-4 py-3 rounded-2xl rounded-bl-md shadow-sm">
                     <div className="flex gap-1.5 items-center">
-                      <span className="w-2 h-2 bg-default-400 dark:bg-zinc-500 rounded-full animate-bounce" style={{ animationDuration: '600ms' }} />
-                      <span className="w-2 h-2 bg-default-400 dark:bg-zinc-500 rounded-full animate-bounce" style={{ animationDuration: '600ms', animationDelay: '150ms' }} />
-                      <span className="w-2 h-2 bg-default-400 dark:bg-zinc-500 rounded-full animate-bounce" style={{ animationDuration: '600ms', animationDelay: '300ms' }} />
+                      <span className="w-2 h-2 bg-default-400 dark:bg-zinc-500 rounded-full animate-bounce [animation-duration:600ms]" />
+                      <span className="w-2 h-2 bg-default-400 dark:bg-zinc-500 rounded-full animate-bounce [animation-duration:600ms] [animation-delay:150ms]" />
+                      <span className="w-2 h-2 bg-default-400 dark:bg-zinc-500 rounded-full animate-bounce [animation-duration:600ms] [animation-delay:300ms]" />
                     </div>
                   </div>
                 </div>
@@ -1859,7 +1858,7 @@ export default function ChatFull() {
                         </div>
                       </div>
                     ) : (
-                      <div className="w-14 h-14 bg-white dark:bg-zinc-800 rounded-lg flex items-center justify-center text-2xl flex-shrink-0 shadow-md border border-default-200 dark:border-zinc-700">
+                      <div className="w-14 h-14 bg-white dark:bg-zinc-900 rounded-lg flex items-center justify-center text-2xl flex-shrink-0 shadow-md dark:shadow-zinc-900/50 border border-default-200 dark:border-zinc-700">
                         {getFileIcon(selectedFile.name)}
                       </div>
                     )}

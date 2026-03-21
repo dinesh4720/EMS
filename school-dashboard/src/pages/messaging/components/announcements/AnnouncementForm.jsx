@@ -256,7 +256,7 @@ export default function AnnouncementForm({
 
           {/* Recipients */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Recipients</label>
+            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Recipients</label>
             <div className="flex flex-wrap gap-2">
               {[
                 { key: 'all', label: 'Whole School' },
@@ -277,7 +277,7 @@ export default function AnnouncementForm({
 
           {/* Channels */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Send Via</label>
+            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Send Via</label>
             <div className="flex flex-wrap gap-2">
               {[
                 { key: 'inapp', label: 'In-App' },
@@ -320,7 +320,7 @@ export default function AnnouncementForm({
 
           {/* Attachments */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Attachments</label>
+            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Attachments</label>
             <div className="space-y-2">
               {formData.attachments.map((attachment, index) => (
                 <Card key={attachment.name || index} size="sm">

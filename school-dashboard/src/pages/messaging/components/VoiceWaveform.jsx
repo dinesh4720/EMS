@@ -173,7 +173,7 @@ export default function VoiceWaveform({
         } ${
           isOwn
             ? 'bg-white/20 hover:bg-white/30'
-            : 'bg-primary/20 hover:bg-primary/30'
+            : 'bg-primary/20 hover:bg-primary/30 dark:bg-primary/30 dark:hover:bg-primary/40'
         } ${isRecording || !audioSrc ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         {isPlaying ? (
@@ -204,13 +204,13 @@ export default function VoiceWaveform({
 
             return (
               <div
-                key={index}
+                key={`bar-${index}`}
                 className={`rounded-full transition-all duration-75 ${
                   isRecording
-                    ? (isOwn ? 'bg-white/60' : 'bg-primary/60')
+                    ? (isOwn ? 'bg-white/60' : 'bg-primary/60 dark:bg-primary/70')
                     : isPassed
-                      ? (isOwn ? 'bg-white' : 'bg-primary')
-                      : (isOwn ? 'bg-white/40' : 'bg-primary/40')
+                      ? (isOwn ? 'bg-white' : 'bg-primary dark:bg-primary')
+                      : (isOwn ? 'bg-white/40' : 'bg-primary/40 dark:bg-primary/50')
                 }`}
                 style={{
                   width: `${barWidth}px`,
@@ -224,7 +224,7 @@ export default function VoiceWaveform({
       </div>
 
       {/* Time Display */}
-      <div className={`flex-shrink-0 tabular-nums min-w-[32px] text-right ${size === 'small' ? 'text-[10px]' : 'text-xs'} ${isOwn ? 'text-white/80' : 'text-default-500'}`}>
+      <div className={`flex-shrink-0 tabular-nums min-w-[32px] text-right ${size === 'small' ? 'text-[10px]' : 'text-xs'} ${isOwn ? 'text-white/80' : 'text-default-500 dark:text-zinc-400'}`}>
         {isRecording
           ? formatTime(duration)
           : formatTime(isPlaying ? currentTime : (duration || (audioRef.current?.duration || 0)))

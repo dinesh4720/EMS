@@ -351,8 +351,8 @@ export default function RolesAccess() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Roles & Permissions</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">Roles & Permissions</h2>
+          <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
             Manage user roles and granular permissions
           </p>
         </div>
@@ -373,7 +373,7 @@ export default function RolesAccess() {
             aria-label="Roles table"
             removeWrapper
             classNames={{
-              th: "bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold",
+              th: "bg-gray-50 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-semibold",
               td: "py-4",
             }}
           >
@@ -400,7 +400,7 @@ export default function RolesAccess() {
                         <div className="p-1.5 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
                           <Shield size={16} className="text-primary-600 dark:text-primary-400" />
                         </div>
-                        <span className="font-medium text-gray-900 dark:text-white">
+                        <span className="font-medium text-gray-900 dark:text-zinc-100">
                           {role.name}
                         </span>
                       </div>
@@ -414,16 +414,16 @@ export default function RolesAccess() {
                       {lockedCount > 0 ? (
                         <div className="flex items-center gap-2">
                           <Lock size={14} className="text-warning-600" />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                          <span className="text-sm text-gray-700 dark:text-zinc-300">
                             {lockedCount} locked
                           </span>
                         </div>
                       ) : (
-                        <span className="text-gray-400 text-sm">None</span>
+                        <span className="text-gray-400 dark:text-zinc-500 text-sm">None</span>
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm text-gray-700 dark:text-gray-300">
+                      <div className="text-sm text-gray-700 dark:text-zinc-300">
                         {role.userCount} users
                       </div>
                     </TableCell>
@@ -477,8 +477,8 @@ export default function RolesAccess() {
               />
 
               {/* Quick Actions */}
-              <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-zinc-800 rounded-lg">
+                <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">
                   Quick Actions:
                 </span>
                 <div className="flex gap-2">
@@ -513,16 +513,16 @@ export default function RolesAccess() {
 
               {/* Permission Matrix */}
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-4">
                   Permission Matrix
                 </h3>
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <div className="border border-gray-200 dark:border-zinc-700 rounded-lg overflow-hidden">
                   <Table
                     removeWrapper
                     aria-label="Permission matrix"
                     classNames={{
-                      th: "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-xs",
-                      td: "py-3 border-b border-gray-100 dark:border-gray-800",
+                      th: "bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-semibold text-xs",
+                      td: "py-3 border-b border-gray-100 dark:border-zinc-800",
                     }}
                   >
                     <TableHeader>
@@ -537,7 +537,7 @@ export default function RolesAccess() {
                       {MODULES.map((module) => (
                         <TableRow key={module.key}>
                           <TableCell>
-                            <span className="font-medium text-gray-900 dark:text-white">
+                            <span className="font-medium text-gray-900 dark:text-zinc-100">
                               {module.label}
                             </span>
                           </TableCell>
@@ -568,12 +568,12 @@ export default function RolesAccess() {
                                       {isLocked ? (
                                         <Lock size={12} className="text-warning-600" />
                                       ) : (
-                                        <Unlock size={12} className="text-gray-400" />
+                                        <Unlock size={12} className="text-gray-400 dark:text-zinc-500" />
                                       )}
                                     </Button>
                                   </div>
                                 ) : (
-                                  <span className="text-gray-300">-</span>
+                                  <span className="text-gray-300 dark:text-zinc-600">-</span>
                                 )}
                               </TableCell>
                             );
@@ -583,7 +583,7 @@ export default function RolesAccess() {
                     </TableBody>
                   </Table>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-2">
                   <Lock size={12} className="inline mr-1" />
                   Locked permissions cannot be changed by users with this role
                 </p>

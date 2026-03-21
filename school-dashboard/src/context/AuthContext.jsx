@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { clearStoredUser, getAuthHeaders, getStoredUser, saveStoredUser } from "../utils/authSession";
 import { isSuperAdminRole } from "../utils/roleUtils";
+import { clearApiCache } from "../services/api";
 
 const AuthContext = createContext();
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -128,6 +129,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setIsAuthenticated(false);
     clearStoredUser();
+    clearApiCache();
     navigate('/login');
   };
 

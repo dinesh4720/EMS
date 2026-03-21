@@ -11,10 +11,11 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer
 } from 'recharts';
+import { useChartTheme } from '../../utils/chartTheme';
 
 function AnalyticsChartCard({
   icon: Icon,
-  iconColor = 'bg-gray-100 text-gray-600',
+  iconColor = 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400',
   title,
   subtitle,
   chartType = 'line',
@@ -27,12 +28,7 @@ function AnalyticsChartCard({
   emptyMessage = 'No data available',
   className = ''
 }) {
-  const tooltipContentStyle = {
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    border: "1px solid #e5e7eb",
-    borderRadius: "8px",
-    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)"
-  };
+  const chart = useChartTheme();
 
   const defaultFormatter = (value) => [`${value}%`, dataKey.charAt(0).toUpperCase() + dataKey.slice(1)];
 
@@ -49,11 +45,13 @@ function AnalyticsChartCard({
       return (
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-            <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
-            <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} domain={yAxisDomain} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chart.gridAlt} />
+            <XAxis dataKey="name" stroke={chart.axis} fontSize={12} tickLine={false} axisLine={false} />
+            <YAxis stroke={chart.axis} fontSize={12} tickLine={false} axisLine={false} domain={yAxisDomain} />
             <RechartsTooltip
-              contentStyle={tooltipContentStyle}
+              contentStyle={chart.tooltipStyle}
+              itemStyle={chart.tooltipItemStyle}
+              labelStyle={chart.tooltipLabelStyle}
               formatter={tooltipFormatter || defaultFormatter}
             />
             <Bar dataKey={dataKey} fill={barColor} radius={[4, 4, 0, 0]} />
@@ -65,11 +63,13 @@ function AnalyticsChartCard({
     return (
       <ResponsiveContainer width="100%" height={200}>
         <RechartsLineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-          <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
-          <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} domain={yAxisDomain} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chart.gridAlt} />
+          <XAxis dataKey="name" stroke={chart.axis} fontSize={12} tickLine={false} axisLine={false} />
+          <YAxis stroke={chart.axis} fontSize={12} tickLine={false} axisLine={false} domain={yAxisDomain} />
           <RechartsTooltip
-            contentStyle={tooltipContentStyle}
+            contentStyle={chart.tooltipStyle}
+            itemStyle={chart.tooltipItemStyle}
+            labelStyle={chart.tooltipLabelStyle}
             formatter={tooltipFormatter || defaultFormatter}
           />
           <Line

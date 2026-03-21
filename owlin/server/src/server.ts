@@ -87,7 +87,7 @@ app.post('/events/batch', validateApiKey, (req: express.Request<{}, {}, BatchEve
 })
 
 // Get events
-app.get('/events', (req, res) => {
+app.get('/events', validateApiKey, (req, res) => {
   const { limit, userId, sessionId, type } = req.query
   let events = store.getEvents(Number(limit) || 100)
 
@@ -105,31 +105,31 @@ app.get('/events', (req, res) => {
 })
 
 // Get events by session
-app.get('/events/session/:sessionId', (req, res) => {
+app.get('/events/session/:sessionId', validateApiKey, (req, res) => {
   const events = store.getEventsBySession(req.params.sessionId)
   res.json(events)
 })
 
 // Get events by user
-app.get('/events/user/:userId', (req, res) => {
+app.get('/events/user/:userId', validateApiKey, (req, res) => {
   const events = store.getEventsByUser(req.params.userId)
   res.json(events)
 })
 
 // Get active sessions
-app.get('/sessions/active', (req, res) => {
+app.get('/sessions/active', validateApiKey, (req, res) => {
   const sessions = store.getActiveSessions()
   res.json(sessions)
 })
 
 // Get users
-app.get('/users', (req, res) => {
+app.get('/users', validateApiKey, (req, res) => {
   const users = store.getAllUsers()
   res.json(users)
 })
 
 // Get user by ID
-app.get('/users/:userId', (req, res) => {
+app.get('/users/:userId', validateApiKey, (req, res) => {
   const user = store.getUser(req.params.userId)
   if (!user) {
     return res.status(404).json({ error: 'User not found' })
@@ -138,7 +138,7 @@ app.get('/users/:userId', (req, res) => {
 })
 
 // Analytics endpoints
-app.get('/analytics/stats', (req, res) => {
+app.get('/analytics/stats', validateApiKey, (req, res) => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
@@ -153,7 +153,7 @@ app.get('/analytics/stats', (req, res) => {
   })
 })
 
-app.get('/analytics', (req, res) => {
+app.get('/analytics', validateApiKey, (req, res) => {
   res.json({
     totalEvents: store.getEvents().length,
     totalSessions: store.sessionsSize(),

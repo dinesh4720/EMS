@@ -98,8 +98,8 @@ export default function PaymentModal({ isOpen, onClose, student, studentFeeStruc
         }
       }}
     >
-      <ModalContent className="bg-white rounded-lg border border-gray-200">
-        <ModalHeader className="text-gray-900 font-medium">Record Fee Payment</ModalHeader>
+      <ModalContent className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800">
+        <ModalHeader className="text-gray-900 dark:text-zinc-100 font-medium">Record Fee Payment</ModalHeader>
         <ModalBody>
           <div className="space-y-4">
             <Input
@@ -110,7 +110,7 @@ export default function PaymentModal({ isOpen, onClose, student, studentFeeStruc
               startContent="₹"
               variant="bordered"
               classNames={{
-                input: "border border-gray-200 focus:border-gray-300"
+                input: "border border-gray-200 dark:border-zinc-800 focus:border-gray-300 dark:focus:border-zinc-600"
               }}
               description={`Outstanding: ₹${studentFeeStructure?.totalBalance?.toLocaleString() || 0}`}
               isRequired
@@ -144,7 +144,7 @@ export default function PaymentModal({ isOpen, onClose, student, studentFeeStruc
             variant="flat"
             onPress={onClose}
             isDisabled={isLoading}
-            className="border border-gray-200 hover:bg-gray-50 text-gray-700"
+            className="border border-gray-200 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-900 text-gray-700 dark:text-zinc-300"
           >
             Cancel
           </Button>

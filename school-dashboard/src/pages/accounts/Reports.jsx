@@ -33,7 +33,7 @@ export default function Reports() {
           <input
             type="text"
             placeholder="Search reports..."
-            className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-gray-200 dark:border-zinc-800 rounded-lg text-sm bg-white dark:bg-zinc-950 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div className="flex gap-2">
@@ -49,12 +49,12 @@ export default function Reports() {
       {/* Quick Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {quickStats.map((stat) => (
-          <Card key={stat.label} className="border border-gray-100">
+          <Card key={stat.label} className="border border-gray-100 dark:border-zinc-800">
             <CardBody className="p-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <p className="text-sm text-gray-500">{stat.label}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                  <p className="text-sm text-gray-500 dark:text-zinc-400">{stat.label}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mt-1">{stat.value}</p>
                 </div>
                 <div className={`p-3 rounded-lg ${stat.color.split(' ')[0]}`}>
                   <stat.icon size={20} className={stat.color.split(' ')[1]} />
@@ -67,17 +67,17 @@ export default function Reports() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Report Types */}
-        <Card className="border border-gray-100 lg:col-span-1">
+        <Card className="border border-gray-100 dark:border-zinc-800 lg:col-span-1">
           <CardBody className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Report Types</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4">Report Types</h3>
             <div className="space-y-3">
               {reportTypes.map((type) => (
                 <button
                   key={type.name}
-                  className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="w-full text-left px-4 py-3 bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
                 >
-                  <p className="text-sm font-medium text-gray-900">{type.name}</p>
-                  <p className="text-xs text-gray-500 mt-1">{type.description}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{type.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">{type.description}</p>
                 </button>
               ))}
             </div>
@@ -85,13 +85,13 @@ export default function Reports() {
         </Card>
 
         {/* Recent Reports */}
-        <Card className="border border-gray-100 lg:col-span-2">
+        <Card className="border border-gray-100 dark:border-zinc-800 lg:col-span-2">
           <CardBody className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Reports</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4">Recent Reports</h3>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="text-left text-xs font-medium text-gray-500 border-b border-gray-100">
+                  <tr className="text-left text-xs font-medium text-gray-500 dark:text-zinc-400 border-b border-gray-100 dark:border-zinc-800">
                     <th className="pb-3">Report ID</th>
                     <th className="pb-3">Report Name</th>
                     <th className="pb-3">Type</th>
@@ -102,20 +102,20 @@ export default function Reports() {
                 </thead>
                 <tbody>
                   {mockReports.map((report) => (
-                    <tr key={report.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
+                    <tr key={report.id} className="border-b border-gray-50 dark:border-zinc-800 last:border-0 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors">
                       <td className="py-4">
                         <div className="flex items-center gap-2">
                           <div className="p-2 bg-purple-50 rounded-lg">
                             <PieChart size={16} className="text-purple-600" />
                           </div>
-                          <span className="text-sm font-medium text-gray-900">{report.id}</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{report.id}</span>
                         </div>
                       </td>
                       <td className="py-4">
-                        <p className="text-sm font-medium text-gray-900">{report.name}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{report.name}</p>
                       </td>
-                      <td className="py-4 text-sm text-gray-600">{report.type}</td>
-                      <td className="py-4 text-sm text-gray-600">{report.generated}</td>
+                      <td className="py-4 text-sm text-gray-600 dark:text-zinc-400">{report.type}</td>
+                      <td className="py-4 text-sm text-gray-600 dark:text-zinc-400">{report.generated}</td>
                       <td className="py-4">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                           report.status === "completed"
@@ -140,31 +140,31 @@ export default function Reports() {
       </div>
 
       {/* Scheduled Reports */}
-      <Card className="border border-gray-100">
+      <Card className="border border-gray-100 dark:border-zinc-800">
         <CardBody className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Scheduled Reports</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Scheduled Reports</h3>
             <Button variant="flat" size="sm">Add Schedule</Button>
           </div>
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">
               <div>
-                <p className="text-sm font-medium text-gray-900">Monthly Financial Summary</p>
-                <p className="text-xs text-gray-500">Every 1st of the month at 9:00 AM</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Monthly Financial Summary</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Every 1st of the month at 9:00 AM</p>
               </div>
               <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">Active</span>
             </div>
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">
               <div>
-                <p className="text-sm font-medium text-gray-900">Weekly Expense Analysis</p>
-                <p className="text-xs text-gray-500">Every Friday at 5:00 PM</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Weekly Expense Analysis</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Every Friday at 5:00 PM</p>
               </div>
               <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">Active</span>
             </div>
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">
               <div>
-                <p className="text-sm font-medium text-gray-900">Quarterly Revenue Report</p>
-                <p className="text-xs text-gray-500">Every quarter end</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Quarterly Revenue Report</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Every quarter end</p>
               </div>
               <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">Active</span>
             </div>

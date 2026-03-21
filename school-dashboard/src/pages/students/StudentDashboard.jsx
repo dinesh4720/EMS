@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, Suspense } from "react";
+import lazyWithRetry from "../../utils/lazyWithRetry";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import {
@@ -7,7 +8,8 @@ import {
   Drawer, DrawerContent, DrawerHeader, DrawerBody,
   Input, Select, SelectItem, Textarea, Checkbox
 } from "@heroui/react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useValidatedParams } from "../../hooks/useValidatedParams";
 import {
   ArrowLeft, Phone, IndianRupee, User, GraduationCap, FileText, Download, Edit,
   MessageSquare, Clock, CheckCircle2, Award, TrendingUp, Camera, FileCheck,
@@ -23,7 +25,7 @@ import {
 import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
 import { feesApi, studentFeesApi, studentsApi, uploadApi } from "../../services/api";
-const AddStudent = lazy(() => import("./AddStudent"));
+const AddStudent = lazyWithRetry(() => import("./AddStudent"));
 import TCGeneratorModal from "./TCGeneratorModal";
 import PhotoEditorModal from "../../components/PhotoEditorModal";
 import CameraCaptureModal from "../../components/CameraCaptureModal";
@@ -64,13 +66,13 @@ const getNextClass = (currentClass, availableClasses) => {
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-        <p className="text-xs font-medium text-gray-500 mb-1">{label}</p>
+      <div className="bg-white dark:bg-zinc-900 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 shadow-sm dark:shadow-zinc-900/50">
+        <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mb-1">{label}</p>
         {payload.map((entry, i) => (
-          <div key={i} className="flex items-center gap-2 text-sm">
+          <div key={`tooltip-${entry.name}`} className="flex items-center gap-2 text-sm">
             <div className="w-2 h-2 rounded-full bg-gray-500" />
-            <span className="text-gray-600">{entry.name}:</span>
-            <span className="font-medium text-gray-900">{entry.value}%</span>
+            <span className="text-gray-600 dark:text-zinc-400">{entry.name}:</span>
+            <span className="font-medium text-gray-900 dark:text-zinc-100">{entry.value}%</span>
           </div>
         ))}
       </div>
@@ -80,7 +82,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function StudentDashboard() {
-  const { id } = useParams();
+  const { params: { id }, isValid } = useValidatedParams({ id: 'objectId' }, { redirectTo: '/students' });
   const navigate = useNavigate();
   const { getStudentById, classesWithTeachers, staff, updateStudent, deleteStudent, loading, currentAcademicYear } = useApp();
   const queryClient = useQueryClient();
@@ -368,16 +370,18 @@ export default function StudentDashboard() {
 
   const handleDownload = () => window.print();
 
+  if (!isValid) return null;
+
   // Loading/Error states
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="text-gray-400 text-sm">Loading...</div>
+      <div className="text-gray-400 dark:text-zinc-500 text-sm">Loading...</div>
     </div>
   );
 
   if (!student) return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="text-gray-400 text-sm">Student not found</div>
+      <div className="text-gray-400 dark:text-zinc-500 text-sm">Student not found</div>
     </div>
   );
 
@@ -452,33 +456,33 @@ export default function StudentDashboard() {
       {/* Printable content rendered via Portal to body */}
       {createPortal(printContent, document.body)}
       
-      <div className="w-full flex-1 bg-gray-50 p-6 min-h-screen">
+      <div className="w-full flex-1 bg-gray-50 dark:bg-zinc-950 p-6 min-h-screen">
 
       {/* ═══════════════════════════════════════════════════════════════════
           HEADER SECTION
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="mb-6">
-        <button onClick={() => navigate('/students')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors mb-2">
+        <button onClick={() => navigate('/students')} className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors mb-2">
           <ArrowLeft size={16} /><span>Back to Students</span>
         </button>
 
-        <div className="bg-white rounded-lg border border-gray-100 p-5">
+        <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-100 dark:border-zinc-700 p-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4">
             <div className="flex items-center gap-5">
               {/* Avatar */}
               <div className="relative">
                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect} />
-                <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
+                <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-zinc-800 overflow-hidden flex items-center justify-center">
                   {student.photo ? (
                     <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-xl font-medium text-gray-400">{student.name?.charAt(0)?.toUpperCase()}</span>
+                    <span className="text-xl font-medium text-gray-400 dark:text-zinc-500">{student.name?.charAt(0)?.toUpperCase()}</span>
                   )}
                 </div>
                 <Dropdown>
                   <DropdownTrigger>
-                    <button className="absolute -bottom-1 -right-1 w-6 h-6 rounded-md bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50">
-                      <Camera size={12} className="text-gray-500" />
+                    <button className="absolute -bottom-1 -right-1 w-6 h-6 rounded-md bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-zinc-800/50">
+                      <Camera size={12} className="text-gray-500 dark:text-zinc-400" />
                     </button>
                   </DropdownTrigger>
                   <DropdownMenu className="min-w-[140px]">
@@ -491,18 +495,18 @@ export default function StudentDashboard() {
 
               {/* Info */}
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">{student.name}</h1>
-                <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{student.name}</h1>
+                <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-zinc-400">
                   <span>@{student.admissionId}</span>
-                  <span className="text-gray-300">|</span>
+                  <span className="text-gray-300 dark:text-zinc-600">|</span>
                   <span>{student.class}</span>
-                  <span className="text-gray-300">|</span>
+                  <span className="text-gray-300 dark:text-zinc-600">|</span>
                   <span>Roll {student.rollNo}</span>
                 </div>
                 {student.parentPhone && (
-                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-400 dark:text-zinc-500">
                     <Phone size={12} /><span>{student.parentPhone}</span>
-                    <span className="text-gray-300">|</span>
+                    <span className="text-gray-300 dark:text-zinc-600">|</span>
                     <span>{student.parentName || "Parent"}</span>
                   </div>
                 )}
@@ -511,22 +515,22 @@ export default function StudentDashboard() {
 
             {/* Actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
-              <Button variant="flat" className="bg-gray-100 text-gray-700" startContent={<Phone size={16} />}
+              <Button variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Phone size={16} />}
                 onPress={() => { if (student.parentPhone) { window.location.href = `tel:${student.parentPhone}`; toast.success(`Calling...`); } else { toast.error("No phone number"); }}}
                 isDisabled={!student.parentPhone}>Call</Button>
-              <Button className="bg-gray-900 text-white hover:bg-gray-800" startContent={<Edit size={16} />} onPress={onEditOpen}>Edit</Button>
+              <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200" startContent={<Edit size={16} />} onPress={onEditOpen}>Edit</Button>
               <Dropdown>
                 <DropdownTrigger>
-                  <Button isIconOnly variant="light" className="text-gray-400"><MoreVertical size={20} /></Button>
+                  <Button isIconOnly variant="light" className="text-gray-400 dark:text-zinc-500"><MoreVertical size={20} /></Button>
                 </DropdownTrigger>
                 <DropdownMenu className="min-w-[180px]">
-                  <DropdownItem key="promote" startContent={<TrendingUp size={14} className="text-gray-400" />} onPress={onPromoteOpen}>Promote Student</DropdownItem>
-                  <DropdownItem key="move" startContent={<Move size={14} className="text-gray-400" />}>Move to Class</DropdownItem>
-                  <DropdownItem key="tc" startContent={<FileCheck size={14} className="text-gray-400" />} onPress={onTcOpen}>Generate TC</DropdownItem>
-                  <DropdownItem key="progress" startContent={<BarChart3 size={14} className="text-gray-400" />} onPress={onProgressOpen}>Progress Card</DropdownItem>
-                  <DropdownItem key="reminder" startContent={<Bell size={14} className="text-gray-400" />} onPress={handleSendReminder}>Send Reminder</DropdownItem>
-                  <DropdownItem key="download" startContent={<Download size={14} className="text-gray-400" />} onPress={handleDownload}>Download</DropdownItem>
-                  <DropdownItem key="print" startContent={<Printer size={14} className="text-gray-400" />} onPress={handleDownload}>Print</DropdownItem>
+                  <DropdownItem key="promote" startContent={<TrendingUp size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={onPromoteOpen}>Promote Student</DropdownItem>
+                  <DropdownItem key="move" startContent={<Move size={14} className="text-gray-400 dark:text-zinc-500" />}>Move to Class</DropdownItem>
+                  <DropdownItem key="tc" startContent={<FileCheck size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={onTcOpen}>Generate TC</DropdownItem>
+                  <DropdownItem key="progress" startContent={<BarChart3 size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={onProgressOpen}>Progress Card</DropdownItem>
+                  <DropdownItem key="reminder" startContent={<Bell size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={handleSendReminder}>Send Reminder</DropdownItem>
+                  <DropdownItem key="download" startContent={<Download size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={handleDownload}>Download</DropdownItem>
+                  <DropdownItem key="print" startContent={<Printer size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={handleDownload}>Print</DropdownItem>
                   <DropdownItem
                     key="delete"
                     className="text-red-600"
@@ -558,14 +562,14 @@ export default function StudentDashboard() {
           TABS
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="mb-5">
-        <div className="flex items-center gap-1 border-b border-gray-200 overflow-x-auto">
+        <div className="flex items-center gap-1 border-b border-gray-200 dark:border-zinc-700 overflow-x-auto">
           {tabs.map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
               className={`px-4 py-3 text-sm font-medium transition-colors relative whitespace-nowrap ${
-                activeTab === tab.key ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'
+                activeTab === tab.key ? 'text-gray-900 dark:text-zinc-100' : 'text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300'
               }`}>
               {tab.label}
-              {activeTab === tab.key && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />}
+              {activeTab === tab.key && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 dark:bg-zinc-100" />}
             </button>
           ))}
         </div>
@@ -585,32 +589,32 @@ export default function StudentDashboard() {
               {/* Actionable KPI Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {stats.map((stat, i) => (
-                  <div 
-                    key={i} 
+                  <div
+                    key={`stat-${stat.label}`}
                     onClick={() => {
                       if (stat.tab) setActiveTab(stat.tab);
                       else if (stat.navigateTo) navigate(stat.navigateTo);
                     }}
-                    className={`bg-white rounded-lg p-4 border border-gray-100 transition-all cursor-pointer group ${
+                    className={`bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-700 transition-all cursor-pointer group ${
                       (stat.tab || stat.navigateTo)
-                        ? 'hover:border-gray-300 hover:shadow-md active:scale-[0.98]' 
+                        ? 'hover:border-gray-300 dark:hover:border-zinc-600 hover:shadow-md dark:hover:shadow-zinc-900/50 active:scale-[0.98]'
                         : ''
                     }`}
                   >
                     <div className="flex items-start justify-between mb-3">
-                      <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors">
-                        <stat.icon size={16} className="text-gray-600" />
+                      <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors">
+                        <stat.icon size={16} className="text-gray-600 dark:text-zinc-400" />
                       </div>
                       {(stat.tab || stat.navigateTo) && (
-                        <ChevronRight size={16} className="text-gray-300 group-hover:text-gray-500 transition-colors" />
+                        <ChevronRight size={16} className="text-gray-300 dark:text-zinc-600 group-hover:text-gray-500 dark:group-hover:text-zinc-400 transition-colors" />
                       )}
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-800">{stat.value}</h3>
-                    <p className="text-xs font-medium text-gray-500 mt-0.5">{stat.label}</p>
-                    {stat.subtext && <p className="text-xs text-gray-400 mt-2">{stat.subtext}</p>}
+                    <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{stat.value}</h3>
+                    <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{stat.label}</p>
+                    {stat.subtext && <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2">{stat.subtext}</p>}
                     {(stat.tab || stat.navigateTo) && stat.actionLabel && (
-                      <div className="mt-3 pt-3 border-t border-gray-100">
-                        <span className="text-xs font-medium text-gray-600 group-hover:text-gray-900 transition-colors flex items-center gap-1">
+                      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-zinc-700">
+                        <span className="text-xs font-medium text-gray-600 dark:text-zinc-400 group-hover:text-gray-900 dark:group-hover:text-zinc-100 transition-colors flex items-center gap-1">
                           {stat.actionLabel}
                           <ChevronRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                         </span>
@@ -621,11 +625,11 @@ export default function StudentDashboard() {
               </div>
 
               {/* Performance Chart */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="p-5 border-b border-gray-200">
+              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                <div className="p-5 border-b border-gray-200 dark:border-zinc-700">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><TrendingUp size={16} className="text-gray-600" /></div>
-                    <div><h3 className="font-medium text-gray-900 text-sm">Performance Trend</h3><p className="text-xs text-gray-500">Academic performance over time</p></div>
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><TrendingUp size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Performance Trend</h3><p className="text-xs text-gray-500 dark:text-zinc-400">Academic performance over time</p></div>
                   </div>
                 </div>
                 <div className="p-5">
@@ -641,22 +645,22 @@ export default function StudentDashboard() {
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
-                  ) : <div className="h-[200px] flex items-center justify-center text-gray-400 text-sm">No exam data available</div>}
+                  ) : <div className="h-[200px] flex items-center justify-center text-gray-400 dark:text-zinc-500 text-sm">No exam data available</div>}
                 </div>
               </div>
 
               {/* Attendance Chart */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="p-5 border-b border-gray-200">
+              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                <div className="p-5 border-b border-gray-200 dark:border-zinc-700">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><Clock size={16} className="text-gray-600" /></div>
-                    <div><h3 className="font-medium text-gray-900 text-sm">Attendance Trend</h3><p className="text-xs text-gray-500">Monthly attendance</p></div>
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Clock size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Attendance Trend</h3><p className="text-xs text-gray-500 dark:text-zinc-400">Monthly attendance</p></div>
                   </div>
                 </div>
                 <div className="p-5">
                   {attendanceLoading ? (
                     <div className="h-[180px] flex items-center justify-center">
-                      <div className="animate-spin w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full" />
+                      <div className="animate-spin w-6 h-6 border-2 border-gray-300 dark:border-zinc-600 border-t-gray-600 dark:border-t-zinc-300 rounded-full" />
                     </div>
                   ) : attendanceData.length > 0 ? (
                     <div className="h-[180px]">
@@ -671,7 +675,7 @@ export default function StudentDashboard() {
                       </ResponsiveContainer>
                     </div>
                   ) : (
-                    <div className="h-[180px] flex items-center justify-center text-gray-400 text-sm">
+                    <div className="h-[180px] flex items-center justify-center text-gray-400 dark:text-zinc-500 text-sm">
                       No attendance data available
                     </div>
                   )}
@@ -684,107 +688,107 @@ export default function StudentDashboard() {
           {activeTab === "details" && (
             <div className="space-y-4">
               {/* Academic Info */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                <div className="p-5 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><GraduationCap size={16} className="text-gray-600" /></div>
-                    <h3 className="font-medium text-gray-900 text-sm">Academic Information</h3>
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><GraduationCap size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                    <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Academic Information</h3>
                   </div>
-                  <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 rounded-lg"><Edit size={14} className="text-gray-400" /></button>
+                  <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-800/50 rounded-lg"><Edit size={14} className="text-gray-400 dark:text-zinc-500" /></button>
                 </div>
                 <div className="p-5 grid grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div><p className="text-xs text-gray-400 mb-1">Class</p><p className="text-sm text-gray-900">{student.class || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">Roll Number</p><p className="text-sm text-gray-900">{student.rollNo || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">Academic Year</p><p className="text-sm text-gray-900">{student.academicYear || currentAcademicYear}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">Class Teacher</p><p className="text-sm text-gray-900">{classTeacher?.name || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Class</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.class || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Roll Number</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.rollNo || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Academic Year</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.academicYear || currentAcademicYear}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Class Teacher</p><p className="text-sm text-gray-900 dark:text-zinc-100">{classTeacher?.name || "—"}</p></div>
                 </div>
               </div>
 
               {/* Personal Info */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                <div className="p-5 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><User size={16} className="text-gray-600" /></div>
-                    <h3 className="font-medium text-gray-900 text-sm">Personal Information</h3>
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><User size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                    <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Personal Information</h3>
                   </div>
-                  <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 rounded-lg"><Edit size={14} className="text-gray-400" /></button>
+                  <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-800/50 rounded-lg"><Edit size={14} className="text-gray-400 dark:text-zinc-500" /></button>
                 </div>
                 <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div><p className="text-xs text-gray-400 mb-1">Full Name</p><p className="text-sm text-gray-900">{student.name || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">Admission ID</p><p className="text-sm text-gray-900">{student.admissionId || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">Date of Birth</p><p className="text-sm text-gray-900">{student.dateOfBirth || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">Gender</p><p className="text-sm text-gray-900">{student.gender || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">Blood Group</p><p className="text-sm text-gray-900">{student.bloodGroup || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">Religion</p><p className="text-sm text-gray-900">{student.religion || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">Category</p><p className="text-sm text-gray-900">{student.category || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">Mother Tongue</p><p className="text-sm text-gray-900">{student.motherTongue || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">Nationality</p><p className="text-sm text-gray-900">{student.nationality || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Full Name</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.name || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Admission ID</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.admissionId || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Date of Birth</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.dateOfBirth || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Gender</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.gender || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Blood Group</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.bloodGroup || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Religion</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.religion || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Category</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.category || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Mother Tongue</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.motherTongue || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Nationality</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.nationality || "—"}</p></div>
                 </div>
               </div>
 
               {/* Contact Info */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                <div className="p-5 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><Mail size={16} className="text-gray-600" /></div>
-                    <h3 className="font-medium text-gray-900 text-sm">Contact Details</h3>
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Mail size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                    <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Contact Details</h3>
                   </div>
-                  <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 rounded-lg"><Edit size={14} className="text-gray-400" /></button>
+                  <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-800/50 rounded-lg"><Edit size={14} className="text-gray-400 dark:text-zinc-500" /></button>
                 </div>
                 <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="col-span-full"><p className="text-xs text-gray-400 mb-1">Address</p><p className="text-sm text-gray-900">{student.address || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">City</p><p className="text-sm text-gray-900">{student.city || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">State</p><p className="text-sm text-gray-900">{student.state || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">ZIP Code</p><p className="text-sm text-gray-900">{student.zipCode || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">Phone</p><p className="text-sm text-gray-900">{student.phone || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">Email</p><p className="text-sm text-gray-900">{student.email || "—"}</p></div>
+                  <div className="col-span-full"><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Address</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.address || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">City</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.city || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">State</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.state || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">ZIP Code</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.zipCode || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Phone</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.phone || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Email</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.email || "—"}</p></div>
                 </div>
               </div>
 
               {/* Parent Info */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                <div className="p-5 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><Users size={16} className="text-gray-600" /></div>
-                    <h3 className="font-medium text-gray-900 text-sm">Parent / Guardian</h3>
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Users size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                    <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Parent / Guardian</h3>
                   </div>
-                  <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 rounded-lg"><Edit size={14} className="text-gray-400" /></button>
+                  <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-800/50 rounded-lg"><Edit size={14} className="text-gray-400 dark:text-zinc-500" /></button>
                 </div>
                 <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div><p className="text-xs text-gray-400 mb-1">Parent Name</p><p className="text-sm text-gray-900">{student.parentName || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">Parent Phone</p><p className="text-sm text-gray-900">{student.parentPhone || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">Parent Email</p><p className="text-sm text-gray-900">{student.parentEmail || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Parent Name</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentName || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Parent Phone</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentPhone || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Parent Email</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentEmail || "—"}</p></div>
                 </div>
               </div>
 
               {/* Previous Education */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                <div className="p-5 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><GraduationCap size={16} className="text-gray-600" /></div>
-                    <h3 className="font-medium text-gray-900 text-sm">Previous Education</h3>
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><GraduationCap size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                    <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Previous Education</h3>
                   </div>
-                  <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 rounded-lg"><Edit size={14} className="text-gray-400" /></button>
+                  <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-800/50 rounded-lg"><Edit size={14} className="text-gray-400 dark:text-zinc-500" /></button>
                 </div>
                 <div className="p-5 grid grid-cols-2 gap-6">
-                  <div><p className="text-xs text-gray-400 mb-1">Previous School</p><p className="text-sm text-gray-900">{student.previousSchool || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">TC Number</p><p className="text-sm text-gray-900">{student.tcNumber || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Previous School</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.previousSchool || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">TC Number</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.tcNumber || "—"}</p></div>
                 </div>
               </div>
 
               {/* Additional Info */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                <div className="p-5 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><FileCheck size={16} className="text-gray-600" /></div>
-                    <h3 className="font-medium text-gray-900 text-sm">Additional Information</h3>
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><FileCheck size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                    <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Additional Information</h3>
                   </div>
-                  <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 rounded-lg"><Edit size={14} className="text-gray-400" /></button>
+                  <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-800/50 rounded-lg"><Edit size={14} className="text-gray-400 dark:text-zinc-500" /></button>
                 </div>
                 <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div><p className="text-xs text-gray-400 mb-1">Transport Required</p><p className="text-sm text-gray-900">{student.transportRequired ? "Yes" : "No"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">Hostel Required</p><p className="text-sm text-gray-900">{student.hostelRequired ? "Yes" : "No"}</p></div>
-                  <div><p className="text-xs text-gray-400 mb-1">Medical Conditions</p><p className="text-sm text-gray-900">{student.medicalConditions || "None"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Transport Required</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.transportRequired ? "Yes" : "No"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Hostel Required</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.hostelRequired ? "Yes" : "No"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Medical Conditions</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.medicalConditions || "None"}</p></div>
                 </div>
               </div>
             </div>
@@ -795,48 +799,48 @@ export default function StudentDashboard() {
             <div className="space-y-5">
               {/* Academic Summary Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+                <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-700 hover:border-gray-200 dark:hover:border-zinc-600 transition-colors">
                   <div className="flex items-center gap-2 mb-3">
-                    <Award size={16} className="text-gray-400" />
-                    <span className="text-xs text-gray-500 font-medium">Overall Grade</span>
+                    <Award size={16} className="text-gray-400 dark:text-zinc-500" />
+                    <span className="text-xs text-gray-500 dark:text-zinc-400 font-medium">Overall Grade</span>
                   </div>
-                  <p className="text-2xl font-bold text-gray-900">{avgPercentage ? (avgPercentage >= 90 ? 'A+' : avgPercentage >= 80 ? 'A' : avgPercentage >= 70 ? 'B+' : 'B') : '—'}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{avgPercentage ? (avgPercentage >= 90 ? 'A+' : avgPercentage >= 80 ? 'A' : avgPercentage >= 70 ? 'B+' : 'B') : '—'}</p>
                 </div>
-                <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+                <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-700 hover:border-gray-200 dark:hover:border-zinc-600 transition-colors">
                   <div className="flex items-center gap-2 mb-3">
-                    <TrendingUp size={16} className="text-gray-400" />
-                    <span className="text-xs text-gray-500 font-medium">Avg Score</span>
+                    <TrendingUp size={16} className="text-gray-400 dark:text-zinc-500" />
+                    <span className="text-xs text-gray-500 dark:text-zinc-400 font-medium">Avg Score</span>
                   </div>
-                  <p className="text-2xl font-bold text-gray-900">{avgPercentage ? `${avgPercentage}%` : '—'}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{avgPercentage ? `${avgPercentage}%` : '—'}</p>
                 </div>
-                <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+                <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-700 hover:border-gray-200 dark:hover:border-zinc-600 transition-colors">
                   <div className="flex items-center gap-2 mb-3">
-                    <FileText size={16} className="text-gray-400" />
-                    <span className="text-xs text-gray-500 font-medium">Exams</span>
+                    <FileText size={16} className="text-gray-400 dark:text-zinc-500" />
+                    <span className="text-xs text-gray-500 dark:text-zinc-400 font-medium">Exams</span>
                   </div>
-                  <p className="text-2xl font-bold text-gray-900">{results?.length || 0}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{results?.length || 0}</p>
                 </div>
-                <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-gray-200 transition-colors">
+                <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-700 hover:border-gray-200 dark:hover:border-zinc-600 transition-colors">
                   <div className="flex items-center gap-2 mb-3">
-                    <User size={16} className="text-gray-400" />
-                    <span className="text-xs text-gray-500 font-medium">Class Teacher</span>
+                    <User size={16} className="text-gray-400 dark:text-zinc-500" />
+                    <span className="text-xs text-gray-500 dark:text-zinc-400 font-medium">Class Teacher</span>
                   </div>
-                  <p className="text-sm font-semibold text-gray-900 truncate">{classTeacher?.name || '—'}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100 truncate">{classTeacher?.name || '—'}</p>
                 </div>
               </div>
 
               {/* Subject Performance */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-100">
-                  <h3 className="text-sm font-semibold text-gray-900">Subject Performance</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Based on exam results</p>
+              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-700">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Subject Performance</h3>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Based on exam results</p>
                 </div>
                 {resultsLoading ? (
                   <div className="p-8 flex justify-center">
-                    <div className="animate-spin w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full" />
+                    <div className="animate-spin w-6 h-6 border-2 border-gray-300 dark:border-zinc-600 border-t-gray-600 dark:border-t-zinc-300 rounded-full" />
                   </div>
                 ) : results && results.length > 0 ? (
-                  <div className="divide-y divide-gray-50">
+                  <div className="divide-y divide-gray-50 dark:divide-zinc-800">
                     {Object.values(results.reduce((acc, r) => {
                       const subject = r.subjectName || 'Unknown';
                       if (!acc[subject] && r.percentage !== null && r.percentage !== undefined) {
@@ -848,59 +852,59 @@ export default function StudentDashboard() {
                       }
                       return acc;
                     }, {})).slice(0, 6).map((subject, i) => (
-                      <div key={i} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
+                      <div key={`subject-${subject.name}`} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600">
+                          <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-zinc-400">
                             {subject.name.charAt(0)}
                           </div>
-                          <span className="text-sm font-medium text-gray-900">{subject.name}</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{subject.name}</span>
                         </div>
                         <div className="flex items-center gap-4">
-                          <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-gray-800 rounded-full" style={{ width: `${subject.score}%` }} />
+                          <div className="w-24 h-1.5 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-gray-800 dark:bg-zinc-300 rounded-full" style={{ width: `${subject.score}%` }} />
                           </div>
-                          <span className="text-sm font-semibold text-gray-900 w-12 text-right">{subject.score}%</span>
-                          <span className="text-xs font-medium text-gray-500 w-8">{subject.grade}</span>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-zinc-100 w-12 text-right">{subject.score}%</span>
+                          <span className="text-xs font-medium text-gray-500 dark:text-zinc-400 w-8">{subject.grade}</span>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="p-8 text-center">
-                    <BookOpen size={32} className="mx-auto text-gray-200 mb-3" />
-                    <p className="text-sm text-gray-500">No subject results available</p>
-                    <p className="text-xs text-gray-400 mt-1">Results will appear once exams are completed</p>
+                    <BookOpen size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">No subject results available</p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Results will appear once exams are completed</p>
                   </div>
                 )}
               </div>
 
               {/* Exam Results */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-700 flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900">Exam Results</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">Assessment history</p>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Exam Results</h3>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Assessment history</p>
                   </div>
-                  {resultsLoading && <div className="animate-spin w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full" />}
+                  {resultsLoading && <div className="animate-spin w-4 h-4 border-2 border-gray-300 dark:border-zinc-600 border-t-gray-600 dark:border-t-zinc-300 rounded-full" />}
                 </div>
                 {results?.length > 0 ? (
-                  <div className="divide-y divide-gray-50">
+                  <div className="divide-y divide-gray-50 dark:divide-zinc-800">
                     {results.map((result, i) => (
-                      <div key={i} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors cursor-pointer">
+                      <div key={result._id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center">
-                            <FileText size={14} className="text-gray-500" />
+                          <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                            <FileText size={14} className="text-gray-500 dark:text-zinc-400" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900">{result.examId?.name || 'Exam'}</p>
-                            <p className="text-xs text-gray-500">{result.examId?.startDate ? new Date(result.examId.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : ''}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{result.examId?.name || 'Exam'}</p>
+                            <p className="text-xs text-gray-500 dark:text-zinc-400">{result.examId?.startDate ? new Date(result.examId.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : ''}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
-                          <span className={`text-sm font-bold ${result.percentage >= 90 ? 'text-gray-900' : result.percentage >= 75 ? 'text-gray-700' : 'text-gray-500'}`}>
+                          <span className={`text-sm font-bold ${result.percentage >= 90 ? 'text-gray-900 dark:text-zinc-100' : result.percentage >= 75 ? 'text-gray-700 dark:text-zinc-300' : 'text-gray-500 dark:text-zinc-400'}`}>
                             {result.isPublished ? `${Math.round(result.percentage)}%` : '—'}
                           </span>
-                          <span className={`text-xs px-2 py-0.5 rounded-md ${result.isPublished ? 'bg-gray-100 text-gray-600' : 'bg-gray-50 text-gray-400'}`}>
+                          <span className={`text-xs px-2 py-0.5 rounded-md ${result.isPublished ? 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400' : 'bg-gray-50 dark:bg-zinc-800/50 text-gray-400 dark:text-zinc-500'}`}>
                             {result.isPublished ? 'Published' : 'Pending'}
                           </span>
                         </div>
@@ -909,16 +913,16 @@ export default function StudentDashboard() {
                   </div>
                 ) : (
                   <div className="px-5 py-12 text-center">
-                    <FileText size={32} className="mx-auto text-gray-200 mb-3" />
-                    <p className="text-sm text-gray-500">No exam results yet</p>
+                    <FileText size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">No exam results yet</p>
                   </div>
                 )}
               </div>
 
               {/* Achievements */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-100">
-                  <h3 className="text-sm font-semibold text-gray-900">Achievements</h3>
+              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-700">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Achievements</h3>
                 </div>
                 <div className="p-5">
                   <div className="grid grid-cols-2 gap-3">
@@ -927,11 +931,11 @@ export default function StudentDashboard() {
                       { title: "Science Fair Winner", date: "Nov 2024" },
                       { title: "Perfect Attendance", date: "Oct 2024" },
                     ].map((a, i) => (
-                      <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
-                        <Award size={18} className="text-gray-400" />
+                      <div key={`achievement-${a.title}`} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-zinc-800">
+                        <Award size={18} className="text-gray-400 dark:text-zinc-500" />
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{a.title}</p>
-                          <p className="text-xs text-gray-500">{a.date}</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{a.title}</p>
+                          <p className="text-xs text-gray-500 dark:text-zinc-400">{a.date}</p>
                         </div>
                       </div>
                     ))}
@@ -945,35 +949,35 @@ export default function StudentDashboard() {
           {activeTab === "attendance" && (
             <div className="space-y-5">
               {/* Attendance Stats */}
-              <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-5">
                 {attendanceLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full" />
+                    <div className="animate-spin w-6 h-6 border-2 border-gray-300 dark:border-zinc-600 border-t-gray-600 dark:border-t-zinc-300 rounded-full" />
                   </div>
                 ) : (
                   <>
                     <div className="flex items-center justify-between mb-5">
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-900">Attendance Overview</h3>
-                        <p className="text-xs text-gray-500 mt-0.5">Based on {attendanceStats.total} recorded days</p>
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Attendance Overview</h3>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Based on {attendanceStats.total} recorded days</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-3xl font-bold text-gray-900">{attendanceStats.percentage}%</p>
-                        <p className="text-xs text-gray-500">Attendance Rate</p>
+                        <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100">{attendanceStats.percentage}%</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">Attendance Rate</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center p-3 rounded-lg bg-gray-50">
-                        <p className="text-xl font-bold text-gray-900">{attendanceStats.present}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">Present</p>
+                      <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-zinc-800">
+                        <p className="text-xl font-bold text-gray-900 dark:text-zinc-100">{attendanceStats.present}</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Present</p>
                       </div>
-                      <div className="text-center p-3 rounded-lg bg-gray-50">
-                        <p className="text-xl font-bold text-gray-900">{attendanceStats.absent}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">Absent</p>
+                      <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-zinc-800">
+                        <p className="text-xl font-bold text-gray-900 dark:text-zinc-100">{attendanceStats.absent}</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Absent</p>
                       </div>
-                      <div className="text-center p-3 rounded-lg bg-gray-50">
-                        <p className="text-xl font-bold text-gray-900">{attendanceStats.total}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">Total Days</p>
+                      <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-zinc-800">
+                        <p className="text-xl font-bold text-gray-900 dark:text-zinc-100">{attendanceStats.total}</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Total Days</p>
                       </div>
                     </div>
                   </>
@@ -981,61 +985,61 @@ export default function StudentDashboard() {
               </div>
 
               {/* Quick Mark */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-100">
-                  <h3 className="text-sm font-semibold text-gray-900">Mark Attendance</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Today, {format(new Date(), 'dd MMM yyyy')}</p>
+              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-700">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Mark Attendance</h3>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Today, {format(new Date(), 'dd MMM yyyy')}</p>
                 </div>
                 <div className="p-4">
-                  <p className="text-xs text-gray-400 mb-3">
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 mb-3">
                     Note: Attendance is typically marked by teachers through the Staff Mobile App.
                   </p>
                   <div className="grid grid-cols-4 gap-2">
-                    <button onClick={() => toast.success("Marked as Present")} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all">
-                      <CheckCircle2 size={20} className="text-gray-600" />
-                      <span className="text-xs font-medium text-gray-700">Present</span>
+                    <button onClick={() => toast.success("Marked as Present")} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all">
+                      <CheckCircle2 size={20} className="text-gray-600 dark:text-zinc-400" />
+                      <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">Present</span>
                     </button>
-                    <button onClick={() => toast.success("Marked as Absent")} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all">
-                      <XCircle size={20} className="text-gray-600" />
-                      <span className="text-xs font-medium text-gray-700">Absent</span>
+                    <button onClick={() => toast.success("Marked as Absent")} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all">
+                      <XCircle size={20} className="text-gray-600 dark:text-zinc-400" />
+                      <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">Absent</span>
                     </button>
-                    <button onClick={() => toast.success("Marked as Half Day")} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all">
-                      <Clock size={20} className="text-gray-600" />
-                      <span className="text-xs font-medium text-gray-700">Half Day</span>
+                    <button onClick={() => toast.success("Marked as Half Day")} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all">
+                      <Clock size={20} className="text-gray-600 dark:text-zinc-400" />
+                      <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">Half Day</span>
                     </button>
-                    <button onClick={() => toast.success("Marked as Leave")} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all">
-                      <Calendar size={20} className="text-gray-600" />
-                      <span className="text-xs font-medium text-gray-700">Leave</span>
+                    <button onClick={() => toast.success("Marked as Leave")} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all">
+                      <Calendar size={20} className="text-gray-600 dark:text-zinc-400" />
+                      <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">Leave</span>
                     </button>
                   </div>
                 </div>
               </div>
 
               {/* Subject-wise Attendance - Not Available */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-100">
-                  <h3 className="text-sm font-semibold text-gray-900">Subject-wise Attendance</h3>
+              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-700">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Subject-wise Attendance</h3>
                 </div>
                 <div className="p-8 text-center">
-                  <BookOpen size={32} className="mx-auto text-gray-200 mb-3" />
-                  <p className="text-sm text-gray-500">Subject-wise attendance tracking is not currently available.</p>
-                  <p className="text-xs text-gray-400 mt-1">This feature requires per-subject attendance tracking which will be implemented in a future update.</p>
+                  <BookOpen size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
+                  <p className="text-sm text-gray-500 dark:text-zinc-400">Subject-wise attendance tracking is not currently available.</p>
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">This feature requires per-subject attendance tracking which will be implemented in a future update.</p>
                 </div>
               </div>
 
               {/* Send Report */}
-              <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Send size={18} className="text-gray-400" />
+                    <Send size={18} className="text-gray-400 dark:text-zinc-500" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Send Report to Parent</p>
-                      <p className="text-xs text-gray-500">Share attendance summary via email or SMS</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Send Report to Parent</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">Share attendance summary via email or SMS</p>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="flat" className="bg-gray-100 text-gray-700" startContent={<Mail size={14} />} onPress={() => toast.success("Report sent via email")}>Email</Button>
-                    <Button size="sm" variant="flat" className="bg-gray-100 text-gray-700" startContent={<Phone size={14} />} onPress={() => toast.success("Report sent via SMS")}>SMS</Button>
+                    <Button size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Mail size={14} />} onPress={() => toast.success("Report sent via email")}>Email</Button>
+                    <Button size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Phone size={14} />} onPress={() => toast.success("Report sent via SMS")}>SMS</Button>
                   </div>
                 </div>
               </div>
@@ -1046,13 +1050,13 @@ export default function StudentDashboard() {
           {activeTab === "fees" && (
             <div className="space-y-5">
               {/* Fee Summary Hero */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="p-6 border-b border-gray-100">
+              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 dark:border-zinc-700">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                      <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Total Outstanding</p>
-                      <p className="text-4xl font-bold text-gray-900 mt-1">₹{(studentFeeStructure?.totalBalance || 0).toLocaleString()}</p>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium uppercase tracking-wide">Total Outstanding</p>
+                      <p className="text-4xl font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{(studentFeeStructure?.totalBalance || 0).toLocaleString()}</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">
                         {(studentFeeStructure?.totalBalance || 0) <= 0 ? 'All fees cleared' : 'Payment pending'}
                       </p>
                     </div>
@@ -1060,115 +1064,115 @@ export default function StudentDashboard() {
                       {(studentFeeStructure?.totalBalance || 0) > 0 && (
                         <>
                           <Button size="sm" className="bg-gray-900 text-white" startContent={<IndianRupee size={14} />} onPress={onPaymentOpen}>Collect Payment</Button>
-                          <Button size="sm" variant="flat" className="bg-gray-100 text-gray-700" startContent={<Bell size={14} />} onPress={handleSendReminder}>Send Reminder</Button>
+                          <Button size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Bell size={14} />} onPress={handleSendReminder}>Send Reminder</Button>
                         </>
                       )}
-                      <Button size="sm" variant="bordered" className="border-gray-200 text-gray-700" startContent={<Download size={14} />} onPress={() => setIsInvoiceOpen(true)}>Invoice</Button>
+                      <Button size="sm" variant="bordered" className="border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300" startContent={<Download size={14} />} onPress={() => setIsInvoiceOpen(true)}>Invoice</Button>
                     </div>
                   </div>
                 </div>
 
                 {/* Fee Summary Stats */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
+                <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 dark:divide-zinc-700">
                   <div className="p-4 text-center">
-                    <p className="text-xs text-gray-500">Total Fee</p>
-                    <p className="text-lg font-bold text-gray-900 mt-1">₹{(studentFeeStructure?.totalFee || 0).toLocaleString()}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">Total Fee</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{(studentFeeStructure?.totalFee || 0).toLocaleString()}</p>
                   </div>
                   <div className="p-4 text-center">
-                    <p className="text-xs text-gray-500">Paid</p>
-                    <p className="text-lg font-bold text-gray-900 mt-1">₹{(studentFeeStructure?.totalPaid || 0).toLocaleString()}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">Paid</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{(studentFeeStructure?.totalPaid || 0).toLocaleString()}</p>
                   </div>
                   <div className="p-4 text-center">
-                    <p className="text-xs text-gray-500">Discount</p>
-                    <p className="text-lg font-bold text-gray-900 mt-1">₹{(studentFeeStructure?.discountApplied || 0).toLocaleString()}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">Discount</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{(studentFeeStructure?.discountApplied || 0).toLocaleString()}</p>
                   </div>
                   <div className="p-4 text-center">
-                    <p className="text-xs text-gray-500">Balance</p>
-                    <p className="text-lg font-bold text-gray-900 mt-1">₹{(studentFeeStructure?.totalBalance || 0).toLocaleString()}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">Balance</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{(studentFeeStructure?.totalBalance || 0).toLocaleString()}</p>
                   </div>
                 </div>
               </div>
 
               {/* Payment History */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-700 flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900">Payment History</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">{feeHistory?.length || 0} transactions</p>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Payment History</h3>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{feeHistory?.length || 0} transactions</p>
                   </div>
-                  <Button size="sm" variant="light" className="text-gray-500" onPress={() => navigate('/fees')}>View All</Button>
+                  <Button size="sm" variant="light" className="text-gray-500 dark:text-zinc-400" onPress={() => navigate('/fees')}>View All</Button>
                 </div>
                 {feeHistory?.length > 0 ? (
-                  <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
+                  <div className="divide-y divide-gray-50 dark:divide-zinc-800 max-h-64 overflow-y-auto">
                     {feeHistory.slice(0, 5).map((payment, i) => (
-                      <div key={payment.id || i} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
+                      <div key={payment.id || i} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center">
-                            <CheckCircle2 size={14} className="text-gray-500" />
+                          <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                            <CheckCircle2 size={14} className="text-gray-500 dark:text-zinc-400" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900">{payment.paymentPeriod || 'Fee Payment'}</p>
-                            <p className="text-xs text-gray-500">{payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : payment.date} • {payment.paymentMode || payment.mode}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{payment.paymentPeriod || 'Fee Payment'}</p>
+                            <p className="text-xs text-gray-500 dark:text-zinc-400">{payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : payment.date} • {payment.paymentMode || payment.mode}</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-bold text-gray-900">₹{payment.amount?.toLocaleString()}</p>
-                          {payment.receiptNumber && <p className="text-xs text-gray-500">{payment.receiptNumber}</p>}
+                          <p className="text-sm font-bold text-gray-900 dark:text-zinc-100">₹{payment.amount?.toLocaleString()}</p>
+                          {payment.receiptNumber && <p className="text-xs text-gray-500 dark:text-zinc-400">{payment.receiptNumber}</p>}
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="px-5 py-8 text-center">
-                    <IndianRupee size={24} className="mx-auto text-gray-200 mb-2" />
-                    <p className="text-sm text-gray-500">No payment history</p>
+                    <IndianRupee size={24} className="mx-auto text-gray-200 dark:text-zinc-700 mb-2" />
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">No payment history</p>
                   </div>
                 )}
               </div>
 
               {/* Fee Heads Breakdown */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-700 flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900">Fee Breakdown</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">{studentFeeStructure?.feeHeads?.length || 0} fee heads</p>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Fee Breakdown</h3>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{studentFeeStructure?.feeHeads?.length || 0} fee heads</p>
                   </div>
-                  <Button size="sm" variant="light" className="text-gray-500" startContent={<BookOpen size={14} />} onPress={() => navigate('/settings?tab=fee-heads')}>Configure</Button>
+                  <Button size="sm" variant="light" className="text-gray-500 dark:text-zinc-400" startContent={<BookOpen size={14} />} onPress={() => navigate('/settings?tab=fee-heads')}>Configure</Button>
                 </div>
                 {loadingFeeStructure ? (
                   <div className="p-8 text-center">
                     <div className="animate-spin w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full mx-auto" />
                   </div>
                 ) : studentFeeStructure?.feeHeads?.length > 0 ? (
-                  <div className="divide-y divide-gray-50">
+                  <div className="divide-y divide-gray-50 dark:divide-zinc-800">
                     {studentFeeStructure.feeHeads.map((fee, i) => (
-                      <div key={i} className="px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-gray-50/50 transition-colors">
+                      <div key={fee._id || fee.feeHeadId} className="px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center flex-shrink-0">
-                            <FileText size={14} className="text-gray-500" />
+                          <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                            <FileText size={14} className="text-gray-500 dark:text-zinc-400" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900">{fee.name}</p>
-                            <p className="text-xs text-gray-500">{fee.category} • {fee.frequency}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fee.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-zinc-400">{fee.category} • {fee.frequency}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4 pl-11 sm:pl-0">
                           <div className="text-right hidden md:block">
-                            <p className="text-xs text-gray-500">Amount</p>
-                            <p className="text-sm font-medium text-gray-900">₹{fee.amount?.toLocaleString()}</p>
+                            <p className="text-xs text-gray-500 dark:text-zinc-400">Amount</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{fee.amount?.toLocaleString()}</p>
                           </div>
                           <div className="text-right hidden sm:block">
-                            <p className="text-xs text-gray-500">Paid</p>
-                            <p className="text-sm font-medium text-gray-900">₹{fee.paidAmount?.toLocaleString()}</p>
+                            <p className="text-xs text-gray-500 dark:text-zinc-400">Paid</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{fee.paidAmount?.toLocaleString()}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-xs text-gray-500">Balance</p>
-                            <p className="text-sm font-medium text-gray-900">₹{fee.balanceAmount?.toLocaleString()}</p>
+                            <p className="text-xs text-gray-500 dark:text-zinc-400">Balance</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{fee.balanceAmount?.toLocaleString()}</p>
                           </div>
                           <span className={`text-xs px-2 py-0.5 rounded-md ${
-                            fee.status === 'paid' ? 'bg-gray-100 text-gray-600' :
-                            fee.status === 'partial' ? 'bg-gray-100 text-gray-600' :
-                            'bg-gray-50 text-gray-500'
+                            fee.status === 'paid' ? 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400' :
+                            fee.status === 'partial' ? 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400' :
+                            'bg-gray-50 dark:bg-zinc-800/50 text-gray-500 dark:text-zinc-400'
                           }`}>
                             {fee.status === 'paid' ? 'Paid' : fee.status === 'partial' ? 'Partial' : 'Pending'}
                           </span>
@@ -1178,8 +1182,8 @@ export default function StudentDashboard() {
                   </div>
                 ) : (
                   <div className="px-5 py-8 text-center">
-                    <IndianRupee size={24} className="mx-auto text-gray-200 mb-2" />
-                    <p className="text-sm text-gray-500">No fee structure assigned</p>
+                    <IndianRupee size={24} className="mx-auto text-gray-200 dark:text-zinc-700 mb-2" />
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">No fee structure assigned</p>
                   </div>
                 )}
               </div>
@@ -1225,40 +1229,40 @@ export default function StudentDashboard() {
         <div className="lg:col-span-1 space-y-4">
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-lg border border-gray-100 p-5">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">Quick Actions</h3>
+          <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-100 dark:border-zinc-700 p-5">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={onEditOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 hover:bg-gray-100"><Edit size={18} className="text-gray-600" /><span className="text-xs text-gray-600">Edit</span></button>
-              <button onClick={() => student.parentPhone && (window.location.href = `tel:${student.parentPhone}`)} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 hover:bg-gray-100"><Phone size={18} className="text-gray-600" /><span className="text-xs text-gray-600">Call</span></button>
-              <button onClick={onTcOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 hover:bg-gray-100"><FileCheck size={18} className="text-gray-600" /><span className="text-xs text-gray-600">TC</span></button>
-              <button onClick={onProgressOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 hover:bg-gray-100"><BarChart3 size={18} className="text-gray-600" /><span className="text-xs text-gray-600">Progress</span></button>
+              <button onClick={onEditOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><Edit size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">Edit</span></button>
+              <button onClick={() => student.parentPhone && (window.location.href = `tel:${student.parentPhone}`)} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><Phone size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">Call</span></button>
+              <button onClick={onTcOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><FileCheck size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">TC</span></button>
+              <button onClick={onProgressOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><BarChart3 size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">Progress</span></button>
             </div>
           </div>
 
           {/* Alerts */}
           {(attendanceStats.total > 0 && attendanceStats.percentage < 75 || studentFeeStructure?.totalBalance > 0 || (avgPercentage && avgPercentage < 60)) && (
-            <div className="bg-white rounded-lg border border-gray-100 overflow-hidden">
-              <div className="p-4 border-b border-gray-100"><h3 className="text-sm font-medium text-gray-900">Attention Required</h3></div>
-              <div className="divide-y divide-gray-50">
+            <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-100 dark:border-zinc-700 overflow-hidden">
+              <div className="p-4 border-b border-gray-100 dark:border-zinc-700"><h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Attention Required</h3></div>
+              <div className="divide-y divide-gray-50 dark:divide-zinc-800">
                 {attendanceStats.total > 0 && attendanceStats.percentage < 75 && (
-                  <div className="p-4 flex items-center gap-3 hover:bg-gray-50 cursor-pointer">
-                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center"><AlertCircle size={16} className="text-gray-600" /></div>
-                    <div className="flex-1"><p className="text-sm font-medium text-gray-900">Low Attendance</p><p className="text-xs text-gray-500">{attendanceStats.percentage}% (below 75%)</p></div>
-                    <ChevronRight size={16} className="text-gray-400" />
+                  <div className="p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 cursor-pointer">
+                    <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><AlertCircle size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                    <div className="flex-1"><p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Low Attendance</p><p className="text-xs text-gray-500 dark:text-zinc-400">{attendanceStats.percentage}% (below 75%)</p></div>
+                    <ChevronRight size={16} className="text-gray-400 dark:text-zinc-500" />
                   </div>
                 )}
                 {studentFeeStructure?.totalBalance > 0 && (
-                  <div className="p-4 flex items-center gap-3 hover:bg-gray-50 cursor-pointer">
-                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center"><IndianRupee size={16} className="text-gray-600" /></div>
-                    <div className="flex-1"><p className="text-sm font-medium text-gray-900">Pending Fees</p><p className="text-xs text-gray-500">₹{studentFeeStructure.totalBalance.toLocaleString()} due</p></div>
-                    <ChevronRight size={16} className="text-gray-400" />
+                  <div className="p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 cursor-pointer">
+                    <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><IndianRupee size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                    <div className="flex-1"><p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Pending Fees</p><p className="text-xs text-gray-500 dark:text-zinc-400">₹{studentFeeStructure.totalBalance.toLocaleString()} due</p></div>
+                    <ChevronRight size={16} className="text-gray-400 dark:text-zinc-500" />
                   </div>
                 )}
                 {avgPercentage && avgPercentage < 60 && (
-                  <div className="p-4 flex items-center gap-3 hover:bg-gray-50 cursor-pointer">
-                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center"><TrendingUp size={16} className="text-gray-600" /></div>
-                    <div className="flex-1"><p className="text-sm font-medium text-gray-900">Academic Concern</p><p className="text-xs text-gray-500">{avgPercentage}% average</p></div>
-                    <ChevronRight size={16} className="text-gray-400" />
+                  <div className="p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 cursor-pointer">
+                    <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><TrendingUp size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                    <div className="flex-1"><p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Academic Concern</p><p className="text-xs text-gray-500 dark:text-zinc-400">{avgPercentage}% average</p></div>
+                    <ChevronRight size={16} className="text-gray-400 dark:text-zinc-500" />
                   </div>
                 )}
               </div>
@@ -1267,37 +1271,37 @@ export default function StudentDashboard() {
 
           {/* All Clear */}
           {(attendanceStats.total === 0 || attendanceStats.percentage >= 75) && !studentFeeStructure?.totalBalance && (!avgPercentage || avgPercentage >= 60) && (
-            <div className="bg-white rounded-lg border border-gray-100 p-5">
+            <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-100 dark:border-zinc-700 p-5">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center"><CheckCircle2 size={16} className="text-gray-600" /></div>
-                <div><h3 className="text-sm font-medium text-gray-900">All Clear</h3><p className="text-xs text-gray-500">No issues detected</p></div>
+                <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><CheckCircle2 size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                <div><h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">All Clear</h3><p className="text-xs text-gray-500 dark:text-zinc-400">No issues detected</p></div>
               </div>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-zinc-400">
                 This student has no pending issues. All records are up to date.
               </p>
             </div>
           )}
 
           {/* Contact Card */}
-          <div className="bg-white rounded-lg border border-gray-100 p-5">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">Contact Information</h3>
+          <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-100 dark:border-zinc-700 p-5">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Contact Information</h3>
             <div className="space-y-4">
               {student.parentPhone && (
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center"><Phone size={14} className="text-gray-600" /></div>
-                  <div><p className="text-xs text-gray-400">Parent Phone</p><p className="text-sm text-gray-900">{student.parentPhone}</p></div>
+                  <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Phone size={14} className="text-gray-600 dark:text-zinc-400" /></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">Parent Phone</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentPhone}</p></div>
                 </div>
               )}
               {student.parentEmail && (
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center"><Mail size={14} className="text-gray-600" /></div>
-                  <div><p className="text-xs text-gray-400">Parent Email</p><p className="text-sm text-gray-900 truncate">{student.parentEmail}</p></div>
+                  <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Mail size={14} className="text-gray-600 dark:text-zinc-400" /></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">Parent Email</p><p className="text-sm text-gray-900 dark:text-zinc-100 truncate">{student.parentEmail}</p></div>
                 </div>
               )}
               {student.address && (
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0"><Mail size={14} className="text-gray-600" /></div>
-                  <div><p className="text-xs text-gray-400">Address</p><p className="text-sm text-gray-900">{student.address}</p></div>
+                  <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0"><Mail size={14} className="text-gray-600 dark:text-zinc-400" /></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">Address</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.address}</p></div>
                 </div>
               )}
             </div>
@@ -1315,12 +1319,12 @@ export default function StudentDashboard() {
         <DrawerContent>
           {(onClose) => (
             <>
-              <DrawerHeader className="flex items-center gap-3 border-b border-gray-100 p-4">
-                <div className="p-2 bg-gray-100 rounded-lg"><Edit size={18} className="text-gray-600" /></div>
-                <div><h3 className="text-lg font-semibold text-gray-900">Edit Student</h3><p className="text-xs text-gray-500">Update student information</p></div>
+              <DrawerHeader className="flex items-center gap-3 border-b border-gray-100 dark:border-zinc-700 p-4">
+                <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg"><Edit size={18} className="text-gray-600 dark:text-zinc-400" /></div>
+                <div><h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Edit Student</h3><p className="text-xs text-gray-500 dark:text-zinc-400">Update student information</p></div>
               </DrawerHeader>
               <DrawerBody className="p-0 overflow-auto">
-                <Suspense fallback={<div className="flex items-center justify-center h-40"><span className="text-sm text-gray-400">Loading...</span></div>}>
+                <Suspense fallback={<div className="flex items-center justify-center h-40"><span className="text-sm text-gray-400 dark:text-zinc-500">Loading...</span></div>}>
                   <AddStudent onClose={onClose} onSave={(data) => { updateStudent(id, data); onClose(); }} classesWithTeachers={classesWithTeachers || []} classOptions={availableClasses} initialData={student} />
                 </Suspense>
               </DrawerBody>
@@ -1371,13 +1375,13 @@ export default function StudentDashboard() {
           <ModalHeader>Promote Student</ModalHeader>
           <ModalBody>
             <div className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-                <GraduationCap size={24} className="text-gray-600" />
-                <div><p className="text-sm text-gray-500">Student: <span className="font-semibold text-gray-900">{student.name}</span></p><p className="text-sm text-gray-500">Current Class: <span className="font-semibold text-gray-900">{student.class}</span></p></div>
+              <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-zinc-800 rounded-lg">
+                <GraduationCap size={24} className="text-gray-600 dark:text-zinc-400" />
+                <div><p className="text-sm text-gray-500 dark:text-zinc-400">Student: <span className="font-semibold text-gray-900 dark:text-zinc-100">{student.name}</span></p><p className="text-sm text-gray-500 dark:text-zinc-400">Current Class: <span className="font-semibold text-gray-900 dark:text-zinc-100">{student.class}</span></p></div>
               </div>
-              <div className="p-4 bg-gray-100 rounded-lg">
-                <p className="text-xs text-gray-500 mb-1">Auto-calculated next class:</p>
-                <p className="text-lg font-bold text-gray-900">{getNextClass(student.class, availableClasses) || "Unable to calculate"}</p>
+              <div className="p-4 bg-gray-100 dark:bg-zinc-800 rounded-lg">
+                <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Auto-calculated next class:</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-zinc-100">{getNextClass(student.class, availableClasses) || "Unable to calculate"}</p>
               </div>
             </div>
           </ModalBody>
@@ -1394,9 +1398,9 @@ export default function StudentDashboard() {
           <ModalHeader>Student Progress Card</ModalHeader>
           <ModalBody>
             <div className="flex flex-col items-center gap-4 py-6 text-center">
-              <div className="p-4 bg-gray-100 rounded-full"><BarChart3 size={48} className="text-gray-600" /></div>
-              <div><h3 className="text-lg font-semibold text-gray-900">{student.name}</h3><p className="text-sm text-gray-500">Class {student.class} • Roll {student.rollNo}</p></div>
-              <p className="text-sm text-gray-500">Generate and download the detailed academic performance report card.</p>
+              <div className="p-4 bg-gray-100 dark:bg-zinc-800 rounded-full"><BarChart3 size={48} className="text-gray-600 dark:text-zinc-400" /></div>
+              <div><h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{student.name}</h3><p className="text-sm text-gray-500 dark:text-zinc-400">Class {student.class} • Roll {student.rollNo}</p></div>
+              <p className="text-sm text-gray-500 dark:text-zinc-400">Generate and download the detailed academic performance report card.</p>
             </div>
           </ModalBody>
           <ModalFooter>

@@ -66,30 +66,18 @@ export default function Reminders() {
   };
 
   const handleDelete = async (reminderId) => {
-    try {
-      await remindersApi.delete(reminderId);
-      setRefreshKey(prev => prev + 1);
-    } catch (error) {
-      throw error;
-    }
+    await remindersApi.delete(reminderId);
+    setRefreshKey(prev => prev + 1);
   };
 
   const handleToggle = async (reminderId, active) => {
-    try {
-      await remindersApi.toggle(reminderId, active);
-      setRefreshKey(prev => prev + 1);
-    } catch (error) {
-      throw error;
-    }
+    await remindersApi.toggle(reminderId, active);
+    setRefreshKey(prev => prev + 1);
   };
 
   const handleDuplicate = async (reminder) => {
-    try {
-      await remindersApi.duplicate(reminder._id);
-      setRefreshKey(prev => prev + 1);
-    } catch (error) {
-      throw error;
-    }
+    await remindersApi.duplicate(reminder._id);
+    setRefreshKey(prev => prev + 1);
   };
 
   const handleSelectTemplate = (template) => {

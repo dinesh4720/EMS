@@ -183,19 +183,19 @@ const AcademicLayout = () => {
         scrollBehavior="inside"
         classNames={{
           backdrop: 'bg-black/30',
-          base: 'bg-white max-h-[90vh]',
+          base: 'bg-white dark:bg-zinc-950 max-h-[90vh]',
           body: 'py-0'
         }}
       >
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 py-4 px-6">
+          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4 px-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gray-100 rounded-lg">
-                <FileText size={20} className="text-gray-600" />
+              <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
+                <FileText size={20} className="text-gray-600 dark:text-zinc-400" />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-900">Create New Exam</h3>
-                <p className="text-sm text-gray-500 font-normal">Schedule a new examination</p>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Create New Exam</h3>
+                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">Schedule a new examination</p>
               </div>
             </div>
           </ModalHeader>
@@ -216,7 +216,7 @@ const AcademicLayout = () => {
         scrollBehavior="inside"
         classNames={{
           backdrop: 'bg-black/30',
-          base: 'bg-white max-h-[90vh]',
+          base: 'bg-white dark:bg-zinc-950 max-h-[90vh]',
         }}
       >
         <ModalContent>
@@ -239,7 +239,7 @@ const AcademicLayout = () => {
         scrollBehavior="inside"
         classNames={{
           backdrop: 'bg-black/30',
-          base: 'bg-white max-h-[95vh]',
+          base: 'bg-white dark:bg-zinc-950 max-h-[95vh]',
         }}
       >
         <ModalContent>

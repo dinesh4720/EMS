@@ -394,7 +394,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
     return (
         <div className="w-full flex flex-col">
             {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-white border-b border-gray-200 py-4 -mx-6 -mt-6 px-6">
+            <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-white dark:bg-zinc-950 border-b border-gray-200 dark:border-zinc-800 py-4 -mx-6 -mt-6 px-6">
                 {/* Left Side - Status Filter & Search */}
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     {/* Status Filter */}
@@ -406,11 +406,11 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                         }}
                     >
                         <DropdownTrigger>
-                            <button className="flex items-center gap-2 px-3 py-2.5 bg-white rounded-lg border border-gray-200 hover:border-teal-500 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap capitalize">
+                            <button className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-teal-500 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap capitalize">
                                 <span className={`w-2 h-2 rounded-full ${getStatusDotColor(statusFilter)}`}></span>
-                                <span className="text-gray-700">{statusFilter}</span>
-                                <span className="text-gray-500">{statusCounts[statusFilter]}</span>
-                                <ChevronDown size={14} className="text-gray-400" />
+                                <span className="text-gray-700 dark:text-zinc-300">{statusFilter}</span>
+                                <span className="text-gray-500 dark:text-zinc-400">{statusCounts[statusFilter]}</span>
+                                <ChevronDown size={14} className="text-gray-400 dark:text-zinc-500" />
                             </button>
                         </DropdownTrigger>
                         <DropdownMenu
@@ -454,21 +454,21 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                         </DropdownMenu>
                     </Dropdown>
 
-                    <div className="flex items-center gap-2 w-full sm:max-w-[280px] px-3 py-2.5 bg-white rounded-lg border border-gray-200 hover:border-teal-500 hover:bg-gray-50 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all duration-200">
-                        <Search size={16} className="text-gray-400" />
+                    <div className="flex items-center gap-2 w-full sm:max-w-[280px] px-3 py-2.5 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-teal-500 hover:bg-gray-50 dark:hover:bg-zinc-900 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all duration-200">
+                        <Search size={16} className="text-gray-400 dark:text-zinc-500" />
                         <input
                             type="search"
                             name="staff-search-query"
                             placeholder="Search by name, email, or ID..."
-                            className="flex-1 bg-transparent outline-none text-sm text-gray-800 placeholder:text-gray-400"
+                            className="flex-1 bg-transparent outline-none text-sm text-gray-800 dark:text-zinc-200 placeholder:text-gray-400 dark:placeholder:text-zinc-500"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             autoComplete="off"
                             data-form-type="other"
                         />
                         {searchQuery && (
-                            <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-gray-200 rounded cursor-pointer">
-                                <X size={14} className="text-gray-400" />
+                            <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded cursor-pointer">
+                                <X size={14} className="text-gray-400 dark:text-zinc-500" />
                             </button>
                         )}
                     </div>
@@ -637,11 +637,11 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                 }}
                 classNames={{
                     base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0 [&_table]:select-text",
-                    thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12 [&>tr>th:first-child]:sticky [&>tr>th:first-child]:left-0 [&>tr>th:first-child]:z-20 [&>tr>th:first-child]:bg-white [&>tr>th:nth-child(2)]:sticky [&>tr>th:nth-child(2)]:left-12 [&>tr>th:nth-child(2)]:z-20 [&>tr>th:nth-child(2)]:bg-white",
-                    th: "bg-transparent text-gray-500 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 last:pr-6 hover:bg-gray-50 transition-colors first:hover:bg-transparent select-none",
-                    td: "py-5 border-b border-gray-200 group-data-[last=true]:border-none last:pr-6 select-text transition-colors",
-                    tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr>td:first-child]:sticky [&>tr>td:first-child]:left-0 [&>tr>td:first-child]:z-20 [&>tr>td:first-child]:bg-white [&>tr>td:nth-child(2)]:sticky [&>tr>td:nth-child(2)]:left-12 [&>tr>td:nth-child(2)]:z-20 [&>tr>td:nth-child(2)]:bg-white [&>tr:hover>td:first-child]:bg-gray-50 [&>tr:hover>td:nth-child(2)]:bg-gray-50 [&>tr[data-selected=true]>td]:bg-primary-50 [&>tr[data-selected=true]>td:first-child]:bg-primary-50 [&>tr[data-selected=true]>td:nth-child(2)]:bg-primary-50",
-                    tr: "group cursor-pointer transition-colors hover:bg-gray-50 data-[selected=true]:bg-primary-50"
+                    thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12 [&>tr>th:first-child]:sticky [&>tr>th:first-child]:left-0 [&>tr>th:first-child]:z-20 [&>tr>th:first-child]:bg-white [&>tr>th:first-child]:dark:bg-zinc-950 [&>tr>th:nth-child(2)]:sticky [&>tr>th:nth-child(2)]:left-12 [&>tr>th:nth-child(2)]:z-20 [&>tr>th:nth-child(2)]:bg-white [&>tr>th:nth-child(2)]:dark:bg-zinc-950",
+                    th: "bg-transparent text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 dark:border-zinc-800 last:pr-6 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors first:hover:bg-transparent select-none",
+                    td: "py-5 border-b border-gray-200 dark:border-zinc-800 group-data-[last=true]:border-none last:pr-6 select-text transition-colors",
+                    tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr>td:first-child]:sticky [&>tr>td:first-child]:left-0 [&>tr>td:first-child]:z-20 [&>tr>td:first-child]:bg-white [&>tr>td:first-child]:dark:bg-zinc-950 [&>tr>td:nth-child(2)]:sticky [&>tr>td:nth-child(2)]:left-12 [&>tr>td:nth-child(2)]:z-20 [&>tr>td:nth-child(2)]:bg-white [&>tr>td:nth-child(2)]:dark:bg-zinc-950 [&>tr:hover>td:first-child]:bg-gray-50 [&>tr:hover>td:first-child]:dark:bg-zinc-900 [&>tr:hover>td:nth-child(2)]:bg-gray-50 [&>tr:hover>td:nth-child(2)]:dark:bg-zinc-900 [&>tr[data-selected=true]>td]:bg-primary-50 [&>tr[data-selected=true]>td:first-child]:bg-primary-50 [&>tr[data-selected=true]>td:nth-child(2)]:bg-primary-50",
+                    tr: "group cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-zinc-900 data-[selected=true]:bg-primary-50"
                 }}
             >
                 <TableHeader>
@@ -682,11 +682,11 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                                         <Link
                                             to={`/staffs/${s.id}`}
                                             onClick={(e) => e.stopPropagation()}
-                                            className="text-gray-800 font-medium text-base hover:text-teal-600 transition-colors cursor-pointer"
+                                            className="text-gray-800 dark:text-zinc-200 font-medium text-base hover:text-teal-600 transition-colors cursor-pointer"
                                         >
                                             {s.name}
                                         </Link>
-                                        <span className="text-gray-500 text-xs">{s.code}</span>
+                                        <span className="text-gray-500 dark:text-zinc-400 text-xs">{s.code}</span>
                                     </div>
                                 </div>
                             </TableCell>
@@ -694,30 +694,30 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                                 <div className="flex flex-wrap gap-1">
                                     {Array.isArray(s.role) ? (
                                         s.role.map((r, idx) => (
-                                            <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md capitalize">
+                                            <span key={r} className="px-2 py-1 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 text-xs rounded-md capitalize">
                                                 {r}
                                             </span>
                                         ))
                                     ) : (
-                                        <span className="text-gray-800 text-sm">{s.role}</span>
+                                        <span className="text-gray-800 dark:text-zinc-200 text-sm">{s.role}</span>
                                     )}
                                 </div>
                             </TableCell>
                             <TableCell key="contact">
                                 <div className="flex flex-col gap-1">
-                                    <span className="text-gray-800 text-xs">{s.phone || "N/A"}</span>
-                                    <span className="text-gray-500 text-xs">{s.email}</span>
+                                    <span className="text-gray-800 dark:text-zinc-200 text-xs">{s.phone || "N/A"}</span>
+                                    <span className="text-gray-500 dark:text-zinc-400 text-xs">{s.email}</span>
                                 </div>
                             </TableCell>
                             <TableCell key="attendance">
                                 <div className="flex items-center gap-2">
-                                    <div className="flex-1 bg-gray-200 rounded-full h-1.5 w-16">
+                                    <div className="flex-1 bg-gray-200 dark:bg-zinc-700 rounded-full h-1.5 w-16">
                                         <div
                                             className="bg-teal-500 h-1.5 rounded-full transition-all"
                                             style={{ width: `${getAttendancePercentage(s.id)}%` }}
                                         />
                                     </div>
-                                    <span className="text-gray-800 text-xs font-medium min-w-[35px]">
+                                    <span className="text-gray-800 dark:text-zinc-200 text-xs font-medium min-w-[35px]">
                                         {getAttendancePercentage(s.id)}%
                                     </span>
                                 </div>
@@ -757,7 +757,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                                         isIconOnly
                                         size="sm"
                                         variant="light"
-                                        className="text-gray-400 hover:text-teal-600"
+                                        className="text-gray-400 dark:text-zinc-500 hover:text-teal-600"
                                         onPress={() => onStaffEdit ? onStaffEdit(s.id) : onStaffClick(s.id)}
                                     >
                                         <Edit size={16} />
@@ -766,7 +766,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                                         isIconOnly
                                         size="sm"
                                         variant="light"
-                                        className="text-gray-400 hover:text-red-600"
+                                        className="text-gray-400 dark:text-zinc-500 hover:text-red-600"
                                         onPress={async () => {
                                             try {
                                                 await deleteStaff(s.id);

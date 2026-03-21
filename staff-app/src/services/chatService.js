@@ -20,11 +20,11 @@ class ChatService {
     return headers;
   }
 
-  // Get user's chat permissions
-  async getPermissions(userId, userType) {
+  // Get user's chat permissions (identity derived from session)
+  async getPermissions() {
     try {
       const response = await fetch(
-        `${API_URL}/messages/permissions?userId=${userId}&userType=${userType}`,
+        `${API_URL}/messages/permissions`,
         { headers: await this.getAuthHeaders() }
       );
       if (!response.ok) throw new Error('Failed to get permissions');
@@ -35,11 +35,11 @@ class ChatService {
     }
   }
 
-  // Get all conversations for a user
-  async getConversations(userId, userType) {
+  // Get all conversations for a user (identity derived from session)
+  async getConversations() {
     try {
       const response = await fetch(
-        `${API_URL}/messages/conversations?userId=${userId}&userType=${userType}`,
+        `${API_URL}/messages/conversations`,
         { headers: await this.getAuthHeaders() }
       );
       
@@ -75,13 +75,13 @@ class ChatService {
     }
   }
 
-  // Create or get a conversation
-  async createConversation(user1Id, user1Type, user2Id, user2Type) {
+  // Create or get a conversation (caller identity derived from session)
+  async createConversation(user2Id, user2Type) {
     try {
       const response = await fetch(`${API_URL}/messages/conversations`, {
         method: 'POST',
         headers: await this.getAuthHeaders(),
-        body: JSON.stringify({ user1Id, user1Type, user2Id, user2Type })
+        body: JSON.stringify({ user2Id, user2Type })
       });
       if (!response.ok) {
         const error = await response.json();
@@ -122,13 +122,15 @@ class ChatService {
     }
   }
 
-  // Send a message (REST fallback)
+  // Send a message (REST fallback) — caller identity derived from session
   async sendMessage(data) {
     try {
+      // Strip caller identity fields — backend derives from session
+      const { senderId, senderModel, ...payload } = data;
       const response = await fetch(`${API_URL}/messages`, {
         method: 'POST',
         headers: await this.getAuthHeaders(),
-        body: JSON.stringify(data)
+        body: JSON.stringify(payload)
       });
       if (!response.ok) throw new Error('Failed to send message');
       return await response.json();
@@ -191,7 +193,6 @@ class ChatService {
         'Authorization': token ? `Bearer ${token}` : '',
       };
 
-      console.log(`📤 Uploading ${type} file: ${filename || `${type}.${ext}`} (${mimeType})`);
 
       const response = await fetch(`${API_URL}/upload`, {
         method: 'POST',
@@ -206,7 +207,6 @@ class ChatService {
       }
 
       const result = await response.json();
-      console.log(`✅ Upload successful: ${result.url}`);
       return result;
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -214,13 +214,13 @@ class ChatService {
     }
   }
 
-  // Mark messages as read
-  async markAsRead(conversationId, userId) {
+  // Mark messages as read (identity derived from session)
+  async markAsRead(conversationId) {
     try {
       const response = await fetch(`${API_URL}/messages/read`, {
         method: 'PUT',
         headers: await this.getAuthHeaders(),
-        body: JSON.stringify({ conversationId, userId })
+        body: JSON.stringify({ conversationId })
       });
       if (!response.ok) throw new Error('Failed to mark as read');
       return await response.json();
@@ -230,10 +230,10 @@ class ChatService {
     }
   }
 
-  // Delete a message
-  async deleteMessage(messageId, userId) {
+  // Delete a message (identity derived from session)
+  async deleteMessage(messageId) {
     try {
-      const response = await fetch(`${API_URL}/messages/${messageId}?userId=${userId}`, {
+      const response = await fetch(`${API_URL}/messages/${messageId}`, {
         method: 'DELETE',
         headers: await this.getAuthHeaders()
       });
@@ -245,11 +245,11 @@ class ChatService {
     }
   }
 
-  // Delete (or leave) a conversation – removes it from the user's view
-  async deleteConversation(conversationId, userId) {
+  // Delete (or leave) a conversation (identity derived from session)
+  async deleteConversation(conversationId) {
     try {
       const response = await fetch(
-        `${API_URL}/messages/conversations/${conversationId}?userId=${userId}`,
+        `${API_URL}/messages/conversations/${conversationId}`,
         {
           method: 'DELETE',
           headers: await this.getAuthHeaders(),
@@ -329,11 +329,11 @@ class ChatService {
     }
   }
 
-  // Search messages
-  async searchMessages(userId, query, limit = 20) {
+  // Search messages (identity derived from session)
+  async searchMessages(query, limit = 20) {
     try {
       const response = await fetch(
-        `${API_URL}/messages/search?userId=${userId}&query=${encodeURIComponent(query)}&limit=${limit}`,
+        `${API_URL}/messages/search?query=${encodeURIComponent(query)}&limit=${limit}`,
         { headers: await this.getAuthHeaders() }
       );
       if (!response.ok) throw new Error('Failed to search messages');
@@ -409,15 +409,14 @@ class ChatService {
     }
   }
 
-  // Get total unread count
-  async getUnreadCount(userId, userType) {
+  // Get total unread count (identity derived from session)
+  async getUnreadCount() {
     try {
       const response = await fetch(
-        `${API_URL}/messages/unread-count?userId=${userId}&userType=${userType}`,
+        `${API_URL}/messages/unread-count`,
         { headers: await this.getAuthHeaders() }
       );
       if (!response.ok) {
-        console.log('Unread count endpoint not available, returning 0');
         return { count: 0 };
       }
       return await response.json();

@@ -114,13 +114,7 @@ export default function NotificationSettings({ userRole = 'staff' }) {
 
   const loadPreferences = async () => {
     try {
-      // In a real app, fetch from API
-      // const data = await notificationsApi.getPreferences();
-      // setPreferences(data.preferences || DEFAULT_PREFERENCES[userRole]);
-      // setQuietHoursEnabled(data.quietHours?.enabled || false);
-      // setQuietHoursStart(data.quietHours?.start || '22:00');
-      // setQuietHoursEnd(data.quietHours?.end || '08:00');
-      // setDigestFrequency(data.digestFrequency || 'immediate');
+      // TODO: load preferences from API
     } catch (error) {
       console.error('Error loading preferences:', error);
     }
@@ -140,18 +134,6 @@ export default function NotificationSettings({ userRole = 'staff' }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // In a real app, save to API
-      // await notificationsApi.updatePreferences({
-      //   role: userRole,
-      //   preferences,
-      //   quietHours: {
-      //     enabled: quietHoursEnabled,
-      //     start: quietHoursStart,
-      //     end: quietHoursEnd,
-      //   },
-      //   digestFrequency,
-      // });
-
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -169,9 +151,6 @@ export default function NotificationSettings({ userRole = 'staff' }) {
     if (!confirm('Reset all preferences to default?')) return;
 
     try {
-      // In a real app, reset via API
-      // await notificationsApi.resetPreferences(userRole);
-
       setPreferences(DEFAULT_PREFERENCES[userRole]);
       setQuietHoursEnabled(false);
       setQuietHoursStart('22:00');

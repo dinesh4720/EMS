@@ -1,6 +1,6 @@
 import { queryClient } from '../lib/queryClient.js';
 import { requestQueue, retryRequest } from '../utils/requestQueue.js';
-import { clearStoredUser, getAuthHeaders } from '../utils/authSession';
+import { clearStoredUser, getAuthHeaders, saveStoredUser } from '../utils/authSession';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -33,8 +33,6 @@ export async function request(endpoint, options = {}) {
 
   // Create the actual request function
   const makeRequest = async () => {
-    // console.log(`📡 API Request: ${method} ${url}`);
-
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
@@ -49,11 +47,10 @@ export async function request(endpoint, options = {}) {
         headers,
         credentials: options.credentials ?? 'include',
         signal: controller.signal,
+        cache: 'no-store',
       });
 
       clearTimeout(timeoutId);
-
-      // console.log(`✅ API Response: ${response.status} ${url}`);
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: 'Request failed' }));
@@ -90,6 +87,11 @@ export async function request(endpoint, options = {}) {
         const finalError = new Error(error.error || error.message || `Request failed with status ${response.status}`);
         finalError.status = response.status;
         throw finalError;
+      }
+
+      // 204 No Content has no body — return null instead of parsing
+      if (response.status === 204) {
+        return null;
       }
 
       const data = await response.json();
@@ -241,6 +243,18 @@ export const examsApi = {
   publish: (id) => request(`/exams/${id}/publish`, { method: 'POST' }),
   getResults: (id) => request(`/exams/${id}/results`),
   publishResults: (id, publish) => request(`/exams/${id}/publish-results`, { method: 'PUT', body: JSON.stringify({ publish }) }),
+};
+
+// Homework API
+export const homeworkApi = {
+  getAll: (params) => {
+    const queryString = params ? new URLSearchParams(params).toString() : '';
+    return request(`/homework${queryString ? `?${queryString}` : ''}`);
+  },
+  getById: (id) => request(`/homework/${id}`),
+  create: (data) => request('/homework', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/homework/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/homework/${id}`, { method: 'DELETE' }),
 };
 
 // Results API
@@ -603,6 +617,48 @@ export const superAdminApi = {
   createSchool: (data) => request('/super-admin/schools', { method: 'POST', body: JSON.stringify(data) }),
   updateSchool: (id, data) => request(`/super-admin/schools/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   provisionSchool: (id, data) => request(`/super-admin/schools/${id}/provision`, { method: 'POST', body: JSON.stringify(data) }),
+  // School health
+  getSchoolHealth: () => request('/super-admin/school-health'),
+  // Jobs
+  getJobsMetrics: () => request('/super-admin/jobs/metrics'),
+  getJobs: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/super-admin/jobs${qs ? `?${qs}` : ''}`);
+  },
+  getJobDetail: (id) => request(`/super-admin/jobs/${id}`),
+  retryJob: (id) => request(`/super-admin/jobs/${id}/retry`, { method: 'POST' }),
+  cancelJob: (id) => request(`/super-admin/jobs/${id}`, { method: 'DELETE' }),
+  getDeadLetterJobs: () => request('/super-admin/jobs/dead-letter'),
+  scheduleJob: (data) => request('/super-admin/jobs/schedule', { method: 'POST', body: JSON.stringify(data) }),
+  // Growth analytics
+  getGrowthAnalytics: () => request('/super-admin/growth-analytics'),
+  getGrowthFunnel: () => request('/super-admin/growth-analytics/funnel'),
+  getSchoolGrowth: (schoolId) => request(`/super-admin/growth-analytics/${schoolId}`),
+};
+
+// Changelog API (super-admin)
+export const changelogAdminApi = {
+  getAll: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/changelog/admin${qs ? `?${qs}` : ''}`);
+  },
+  create: (data) => request('/changelog/admin', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/changelog/admin/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/changelog/admin/${id}`, { method: 'DELETE' }),
+};
+
+// Feature Flags API (super-admin)
+export const featureFlagsAdminApi = {
+  getAll: () => request('/feature-flags/admin/all'),
+  create: (data) => request('/feature-flags/admin', { method: 'POST', body: JSON.stringify(data) }),
+  update: (key, data) => request(`/feature-flags/admin/${key}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (key) => request(`/feature-flags/admin/${key}`, { method: 'DELETE' }),
+  setOverride: (key, data) => request(`/feature-flags/admin/${key}/override`, { method: 'POST', body: JSON.stringify(data) }),
+  removeOverride: (key, schoolId) => request(`/feature-flags/admin/${key}/override/${schoolId}`, { method: 'DELETE' }),
+  getAuditLogs: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/feature-flags/admin/audit-logs${qs ? `?${qs}` : ''}`);
+  },
 };
 
 // Calendar Events API
@@ -741,28 +797,32 @@ export const payrollApi = {
 // Upload API
 export const uploadApi = {
   uploadFile: async (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
+    return retryRequest(async () => {
+      const formData = new FormData();
+      formData.append('file', file);
 
-    const response = await fetch(`${API_URL}/upload`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-      body: formData,
-      // Content-Type header is skipped so browser can set boundary
-    });
+      const response = await fetch(`${API_URL}/upload`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: formData,
+        // Content-Type header is skipped so browser can set boundary
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
 
-      if (response.status === 401) {
-        console.warn('⚠️ 401 Unauthorized - clearing session');
-        clearStoredUser();
+        if (response.status === 401) {
+          console.warn('⚠️ 401 Unauthorized - clearing session');
+          clearStoredUser();
+        }
+
+        const err = new Error(errorData.error || `Upload failed with status ${response.status}`);
+        err.status = response.status;
+        throw err;
       }
-
-      throw new Error(errorData.error || `Upload failed with status ${response.status}`);
-    }
-    return await response.json();
+      return await response.json();
+    }, 2, 1500); // 2 retries, 1.5s base delay (uploads are slower)
   }
 };
 
@@ -867,6 +927,8 @@ export const frontDeskApi = {
   createAdmission: (data) => request('/front-desk/admissions', { method: 'POST', body: JSON.stringify(data) }),
   updateAdmission: (id, data) => request(`/front-desk/admissions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteAdmission: (id) => request(`/front-desk/admissions/${id}`, { method: 'DELETE' }),
+  convertToStudent: (id) => request(`/front-desk/admissions/${id}/convert-to-student`, { method: 'POST' }),
+  getAdmissionTracker: (id) => request(`/front-desk/admissions/${id}/tracker`),
 
   // Gate Passes
   getGatePassesToday: () => request('/front-desk/gate-passes/today'),
@@ -969,39 +1031,313 @@ export const parentApi = {
   bulkCreate: () => request('/parents/bulk-create', { method: 'POST' }),
 };
 
-export default {
-  staffApi,
-  studentsApi,
-  trashApi,
-  classesApi,
-  classesEnhancedApi,
-  attendanceApi,
-  staffAttendanceApi,
-  timetableApi,
-  teacherAssignmentsApi,
-  teacherTimetableApi,
-  settingsApi,
-  billingApi,
-  intakeFormsApi,
-  publicApi,
-  notificationsApi,
-  feesApi,
-  studentFeesApi,
-  payrollApi,
-  uploadApi,
-  announcementsApi,
-  remindersApi,
-  callsApi,
-  visitorsApi,
-  gatePassesApi,
-  frontDeskApi,
-  examsApi,
-  resultsApi,
-  academicPerformanceApi,
-  subjectsApi,
-  substitutionAlertsApi,
-  lookupPincode
+// Inventory API
+export const inventoryApi = {
+  getStats: () => request('/inventory/stats'),
+  getReports: () => request('/inventory/reports'),
+
+  getAssets: (params = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '' && v !== 'all') query.set(k, v);
+    });
+    const qs = query.toString();
+    return request(`/inventory/assets${qs ? `?${qs}` : ''}`);
+  },
+  getAsset: (id) => request(`/inventory/assets/${id}`),
+  getLowStockAssets: () => request('/inventory/assets/low-stock'),
+  createAsset: (data) => request('/inventory/assets', { method: 'POST', body: JSON.stringify(data) }),
+  updateAsset: (id, data) => request(`/inventory/assets/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteAsset: (id) => request(`/inventory/assets/${id}`, { method: 'DELETE' }),
+  assignAsset: (id, data) => request(`/inventory/assets/${id}/assign`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  getCategories: () => request('/inventory/categories'),
+  createCategory: (data) => request('/inventory/categories', { method: 'POST', body: JSON.stringify(data) }),
+  updateCategory: (id, data) => request(`/inventory/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCategory: (id) => request(`/inventory/categories/${id}`, { method: 'DELETE' }),
+
+  getVendors: (search) => request(`/inventory/vendors${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+  createVendor: (data) => request('/inventory/vendors', { method: 'POST', body: JSON.stringify(data) }),
+  updateVendor: (id, data) => request(`/inventory/vendors/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteVendor: (id) => request(`/inventory/vendors/${id}`, { method: 'DELETE' }),
+
+  getMaintenance: (params = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') query.set(k, v);
+    });
+    const qs = query.toString();
+    return request(`/inventory/maintenance${qs ? `?${qs}` : ''}`);
+  },
+  createMaintenance: (data) => request('/inventory/maintenance', { method: 'POST', body: JSON.stringify(data) }),
+  updateMaintenance: (id, data) => request(`/inventory/maintenance/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  getProcurement: (status) => request(`/inventory/procurement${status ? `?status=${status}` : ''}`),
+  createProcurement: (data) => request('/inventory/procurement', { method: 'POST', body: JSON.stringify(data) }),
+  updateProcurement: (id, data) => request(`/inventory/procurement/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteProcurement: (id) => request(`/inventory/procurement/${id}`, { method: 'DELETE' }),
+
+  getAudits: (status) => request(`/inventory/audits${status ? `?status=${status}` : ''}`),
+  createAudit: (data) => request('/inventory/audits', { method: 'POST', body: JSON.stringify(data) }),
+  updateAudit: (id, data) => request(`/inventory/audits/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteAudit: (id) => request(`/inventory/audits/${id}`, { method: 'DELETE' }),
 };
+
+export const libraryApi = {
+  getStats: () => request('/v1/library/stats'),
+  getReports: () => request('/v1/library/reports'),
+  getBooks: (params = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '' && v !== 'all') query.set(k, v);
+    });
+    const qs = query.toString();
+    return request(`/v1/library/books${qs ? `?${qs}` : ''}`);
+  },
+  getBook: (id) => request(`/v1/library/books/${id}`),
+  createBook: (data) => request('/v1/library/books', { method: 'POST', body: JSON.stringify(data) }),
+  updateBook: (id, data) => request(`/v1/library/books/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteBook: (id) => request(`/v1/library/books/${id}`, { method: 'DELETE' }),
+  getIssues: (params = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '' && v !== 'all') query.set(k, v);
+    });
+    const qs = query.toString();
+    return request(`/v1/library/issues${qs ? `?${qs}` : ''}`);
+  },
+  issueBook: (data) => request('/v1/library/issues', { method: 'POST', body: JSON.stringify(data) }),
+  returnBook: (id, data) => request(`/v1/library/issues/${id}/return`, { method: 'PUT', body: JSON.stringify(data) }),
+  syncOverdue: () => request('/v1/library/sync-overdue', { method: 'POST' }),
+};
+
+// Transport API
+export const transportApi = {
+  // Vehicles
+  getVehicles: (params = {}) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
+    const qs = q.toString();
+    return request(`/transport/vehicles${qs ? `?${qs}` : ''}`);
+  },
+  getVehicle: (id) => request(`/transport/vehicles/${id}`),
+  createVehicle: (data) => request('/transport/vehicles', { method: 'POST', body: JSON.stringify(data) }),
+  updateVehicle: (id, data) => request(`/transport/vehicles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteVehicle: (id) => request(`/transport/vehicles/${id}`, { method: 'DELETE' }),
+
+  // Routes
+  getRoutes: (params = {}) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
+    const qs = q.toString();
+    return request(`/transport/routes${qs ? `?${qs}` : ''}`);
+  },
+  getRoute: (id) => request(`/transport/routes/${id}`),
+  createRoute: (data) => request('/transport/routes', { method: 'POST', body: JSON.stringify(data) }),
+  updateRoute: (id, data) => request(`/transport/routes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteRoute: (id) => request(`/transport/routes/${id}`, { method: 'DELETE' }),
+
+  // Student assignments
+  assignStudent: (routeId, data) => request(`/transport/routes/${routeId}/students`, { method: 'POST', body: JSON.stringify(data) }),
+  removeStudent: (routeId, studentId) => request(`/transport/routes/${routeId}/students/${studentId}`, { method: 'DELETE' }),
+
+  // Reports
+  getReports: (params = {}) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
+    const qs = q.toString();
+    return request(`/transport/reports${qs ? `?${qs}` : ''}`);
+  },
+};
+
+// Reports API
+export const reportsApi = {
+  dashboardMetrics: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/reports/dashboard/metrics${q ? `?${q}` : ''}`);
+  },
+  classResults: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/reports/academic/class-results${q ? `?${q}` : ''}`);
+  },
+  subjectAnalysis: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/reports/academic/subject-analysis${q ? `?${q}` : ''}`);
+  },
+  rankList: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/reports/academic/rank-list${q ? `?${q}` : ''}`);
+  },
+  gradeDistribution: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/reports/academic/grade-distribution${q ? `?${q}` : ''}`);
+  },
+  feeCollection: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/reports/financial/fee-collection${q ? `?${q}` : ''}`);
+  },
+  outstandingDues: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/reports/financial/outstanding-dues${q ? `?${q}` : ''}`);
+  },
+  studentAttendance: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/reports/attendance/student${q ? `?${q}` : ''}`);
+  },
+  classwiseAttendance: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/reports/attendance/class-summary${q ? `?${q}` : ''}`);
+  },
+  staffAttendance: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/reports/staff/attendance-summary${q ? `?${q}` : ''}`);
+  },
+  payrollSummary: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/reports/staff/payroll-summary${q ? `?${q}` : ''}`);
+  },
+  studentStrength: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/reports/operational/student-strength${q ? `?${q}` : ''}`);
+  },
+  admissions: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/reports/operational/admissions${q ? `?${q}` : ''}`);
+  },
+};
+
+// Export API
+export const exportApi = {
+  students: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/export/students${q ? `?${q}` : ''}`);
+  },
+  staff: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/export/staff${q ? `?${q}` : ''}`);
+  },
+  feeCollection: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/export/fee-collection${q ? `?${q}` : ''}`);
+  },
+  attendance: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/export/attendance${q ? `?${q}` : ''}`);
+  },
+  examResults: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/export/exam-results${q ? `?${q}` : ''}`);
+  },
+  payroll: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/export/payroll${q ? `?${q}` : ''}`);
+  },
+  govtUdise: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/export/govt/udise${q ? `?${q}` : ''}`);
+  },
+  govtCbse: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/export/govt/cbse${q ? `?${q}` : ''}`);
+  },
+  govtIcse: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/export/govt/icse${q ? `?${q}` : ''}`);
+  },
+  govtStateBoard: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/export/govt/state-board${q ? `?${q}` : ''}`);
+  },
+  govtAnnualReport: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/export/govt/annual-report${q ? `?${q}` : ''}`);
+  },
+  govtComplianceChecklist: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/export/govt/compliance-checklist${q ? `?${q}` : ''}`);
+  },
+};
+
+// Bulk Import API
+export const bulkImportApi = {
+  downloadTemplate: (type) => request(`/bulk-import/template/${type}`),
+  upload: (formData) => {
+    const headers = getAuthHeaders();
+    delete headers['Content-Type']; // Let browser set multipart boundary
+    return fetch(`${API_URL}/bulk-import/upload`, {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+      body: formData,
+    }).then(async (r) => {
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({ error: 'Upload failed' }));
+        throw new Error(err.error || 'Upload failed');
+      }
+      return r.json();
+    });
+  },
+  preview: (jobId) => request(`/bulk-import/preview/${jobId}`),
+  confirm: (jobId) => request(`/bulk-import/confirm/${jobId}`, { method: 'POST' }),
+};
+
+// Hostel API
+export const hostelApi = {
+  getStats: () => request('/hostel/stats'),
+
+  getHostels: (params) => {
+    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+    return request(`/hostel/hostels${query}`);
+  },
+  getHostel: (id) => request(`/hostel/hostels/${id}`),
+  createHostel: (data) => request('/hostel/hostels', { method: 'POST', body: JSON.stringify(data) }),
+  updateHostel: (id, data) => request(`/hostel/hostels/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteHostel: (id) => request(`/hostel/hostels/${id}`, { method: 'DELETE' }),
+
+  getRooms: (params) => {
+    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+    return request(`/hostel/rooms${query}`);
+  },
+  getRoom: (id) => request(`/hostel/rooms/${id}`),
+  createRoom: (data) => request('/hostel/rooms', { method: 'POST', body: JSON.stringify(data) }),
+  updateRoom: (id, data) => request(`/hostel/rooms/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteRoom: (id) => request(`/hostel/rooms/${id}`, { method: 'DELETE' }),
+
+  getAllocations: (params) => {
+    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+    return request(`/hostel/allocations${query}`);
+  },
+  getAllocation: (id) => request(`/hostel/allocations/${id}`),
+  createAllocation: (data) => request('/hostel/allocations', { method: 'POST', body: JSON.stringify(data) }),
+  vacateAllocation: (id, data) => request(`/hostel/allocations/${id}/vacate`, { method: 'PUT', body: JSON.stringify(data) }),
+};
+
+// Background Jobs API
+export const jobsApi = {
+  list: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/jobs${q ? `?${q}` : ''}`);
+  },
+  stats: () => request('/jobs/stats'),
+  getImportJob: (jobId) => request(`/jobs/import/${jobId}`),
+  cancelJob: (jobId) => request(`/jobs/import/${jobId}`, { method: 'DELETE' }),
+};
+
+// Silent refresh: verify session is still valid and refresh stored user data
+export async function silentRefresh() {
+  try {
+    const response = await fetch(`${API_URL}/auth/session`, {
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+    if (!response.ok) return false;
+    const sessionUser = await response.json();
+    saveStoredUser(sessionUser);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 
 

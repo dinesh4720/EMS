@@ -1,34 +1,45 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import ErrorBoundary from "./components/ErrorBoundary";
-import PublicFormSubmission from "./pages/PublicFormSubmission";
 import { useOwlinTracking } from "./hooks/useOwlinTracking";
+import lazyWithRetry from "./utils/lazyWithRetry";
 
 const isDev = import.meta.env.DEV;
 
-// Lazy load pages for code splitting
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Analytics = lazy(() => import("./pages/Analytics"));
-const FrontDeskPage = lazy(() => import("./pages/front-desk"));
-const StaffsPage = lazy(() => import("./pages/staffs"));
-const StudentsPage = lazy(() => import("./pages/students"));
-const ClassesPage = lazy(() => import("./pages/classes"));
-const CalendarPage = lazy(() => import("./pages/calendar"));
-const MessagingPage = lazy(() => import("./pages/messaging"));
-const FeesPage = lazy(() => import("./pages/fees"));
-const SettingsPage = lazy(() => import("./pages/settings"));
-const AcademicLayout = lazy(() => import("./pages/academics"));
-const FormAssignments = lazy(() => import("./pages/intake-forms/FormAssignments"));
-const FormSubmissions = lazy(() => import("./pages/intake-forms/FormSubmissions"));
-const AiAssistantPage = lazy(() => import("./pages/AiAssistantPage"));
-const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
-const StyleGuide = isDev ? lazy(() => import("./pages/StyleGuide")) : null;
-const TimetableWizardPage = lazy(() => import("./components/TimetableWizardPage"));
-const Login = lazy(() => import("./pages/Login"));
-const Signup = lazy(() => import("./pages/Signup"));
-const SuperAdminDashboard = lazy(() => import("./pages/super-admin"));
+// Lazy load pages for code splitting (with retry on chunk failure)
+const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"));
+const Analytics = lazyWithRetry(() => import("./pages/Analytics"));
+const FrontDeskPage = lazyWithRetry(() => import("./pages/front-desk"));
+const StaffsPage = lazyWithRetry(() => import("./pages/staffs"));
+const StudentsPage = lazyWithRetry(() => import("./pages/students"));
+const ClassesPage = lazyWithRetry(() => import("./pages/classes"));
+const CalendarPage = lazyWithRetry(() => import("./pages/calendar"));
+const MessagingPage = lazyWithRetry(() => import("./pages/messaging"));
+const FeesPage = lazyWithRetry(() => import("./pages/fees"));
+const SettingsPage = lazyWithRetry(() => import("./pages/settings"));
+const AcademicLayout = lazyWithRetry(() => import("./pages/academics"));
+const FormAssignments = lazyWithRetry(() => import("./pages/intake-forms/FormAssignments"));
+const FormSubmissions = lazyWithRetry(() => import("./pages/intake-forms/FormSubmissions"));
+const EnrollmentFunnel = lazyWithRetry(() => import("./pages/intake-forms/EnrollmentFunnel"));
+const HomeworkPage = lazyWithRetry(() => import("./pages/homework"));
+const InventoryPage = lazyWithRetry(() => import("./pages/inventory"));
+const HostelPage = lazyWithRetry(() => import("./pages/hostel"));
+const TransportPage = lazyWithRetry(() => import("./pages/transport"));
+const LibraryPage = lazyWithRetry(() => import("./pages/library"));
+const AiAssistantPage = lazyWithRetry(() => import("./pages/AiAssistantPage"));
+const PrivacyPolicy = lazyWithRetry(() => import("./pages/PrivacyPolicy"));
+const StyleGuide = isDev ? lazyWithRetry(() => import("./pages/StyleGuide")) : null;
+const TimetableWizardPage = lazyWithRetry(() => import("./components/TimetableWizardPage"));
+const Login = lazyWithRetry(() => import("./pages/Login"));
+const Signup = lazyWithRetry(() => import("./pages/Signup"));
+const SuperAdminDashboard = lazyWithRetry(() => import("./pages/super-admin"));
+
+// Lazy load components that aren't needed on initial render
+const PublicFormSubmission = lazyWithRetry(() => import("./pages/PublicFormSubmission"));
+const OnboardingFlow = lazyWithRetry(() => import("./components/onboarding/OnboardingFlow"));
+const PayrollReminder = lazyWithRetry(() => import("./components/PayrollReminder"));
 
 // Loading fallback component
 function PageLoader() {
@@ -42,10 +53,9 @@ import { AppProvider, useApp } from "./context/AppContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ChatNotificationProvider } from "./context/ChatNotificationContext";
 import { PermissionProvider } from "./context/PermissionContext";
-import OnboardingFlow from "./components/onboarding/OnboardingFlow";
 import { AiAssistantProvider, AiAssistantLayout, AiAssistantPanel } from "./components/AiAssistant/AiAssistantPanel";
 import PermissionGuard from "./components/PermissionGuard";
-import PayrollReminder from "./components/PayrollReminder";
+import StructuredData from "./components/StructuredData";
 import { AlertCircle, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { isSuperAdminRole } from "./utils/roleUtils";
@@ -159,8 +169,13 @@ function AuthenticatedApp() {
 
   return (
     <>
+      <StructuredData />
       <div className="flex min-h-screen bg-background font-sans text-foreground">
-        {showOnboarding && <OnboardingFlow onComplete={() => setShowOnboarding(false)} />}
+        {showOnboarding && (
+          <Suspense fallback={null}>
+            <OnboardingFlow onComplete={() => setShowOnboarding(false)} />
+          </Suspense>
+        )}
 
         <ErrorBoundary message="The sidebar encountered an error.">
           <Sidebar isSidebarOpen={effectiveSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
@@ -215,10 +230,35 @@ function AuthenticatedApp() {
                         <FeesPage />
                       </PermissionGuard>
                     } />
+                    <Route path="/inventory/*" element={
+                      <PermissionGuard module="inventory">
+                        <InventoryPage />
+                      </PermissionGuard>
+                    } />
+                    <Route path="/hostel/*" element={
+                      <PermissionGuard module="hostel">
+                        <HostelPage />
+                      </PermissionGuard>
+                    } />
+                    <Route path="/transport/*" element={
+                      <PermissionGuard module="transport">
+                        <TransportPage />
+                      </PermissionGuard>
+                    } />
+                    <Route path="/library/*" element={
+                      <PermissionGuard module="library">
+                        <LibraryPage />
+                      </PermissionGuard>
+                    } />
                     <Route path="/accounts/*" element={<Navigate to="/fees" replace />} />
                     <Route path="/academics/*" element={
                       <PermissionGuard module="academics">
                         <AcademicLayout />
+                      </PermissionGuard>
+                    } />
+                    <Route path="/homework" element={
+                      <PermissionGuard module="academics">
+                        <HomeworkPage />
                       </PermissionGuard>
                     } />
                     <Route path="/settings/*" element={
@@ -228,6 +268,7 @@ function AuthenticatedApp() {
                     } />
                     <Route path="/intake-forms/assignments" element={<FormAssignments />} />
                     <Route path="/intake-forms/submissions" element={<FormSubmissions />} />
+                    <Route path="/intake-forms/funnel" element={<EnrollmentFunnel />} />
                     <Route path="/ai-assistant" element={<AiAssistantPage />} />
                     {isDev && StyleGuide ? (
                       <Route path="/style-guide" element={<StyleGuide />} />
@@ -247,7 +288,9 @@ function AuthenticatedApp() {
       </div>
 
       {/* Payroll Reminder */}
-      <PayrollReminder />
+      <Suspense fallback={null}>
+        <PayrollReminder />
+      </Suspense>
     </>
   );
 }
@@ -265,38 +308,40 @@ function AppRoutes() {
   }
 
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        {/* Public route - accessible without authentication */}
-        <Route path="/form/:token" element={<PublicFormSubmission />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
+    <ErrorBoundary>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* Public route - accessible without authentication */}
+          <Route path="/form/:token" element={<PublicFormSubmission />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
 
-        {/* Authenticated routes */}
-        {!isAuthenticated ? (
-          <>
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </>
-        ) : (
-          <>
-            <Route path="/login" element={<Navigate to={isSuperAdmin ? "/super-admin" : "/"} replace />} />
-            <Route path="/signup" element={<Navigate to={isSuperAdmin ? "/super-admin" : "/"} replace />} />
-            {isSuperAdmin ? (
-              <>
-                <Route path="/super-admin" element={<SuperAdminDashboard />} />
-                <Route path="*" element={<Navigate to="/super-admin" replace />} />
-              </>
-            ) : (
-              <>
-                <Route path="/super-admin" element={<Navigate to="/" replace />} />
-                <Route path="/*" element={<AuthenticatedApp />} />
-              </>
-            )}
-          </>
-        )}
-      </Routes>
-    </Suspense>
+          {/* Authenticated routes */}
+          {!isAuthenticated ? (
+            <>
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </>
+          ) : (
+            <>
+              <Route path="/login" element={<Navigate to={isSuperAdmin ? "/super-admin" : "/"} replace />} />
+              <Route path="/signup" element={<Navigate to={isSuperAdmin ? "/super-admin" : "/"} replace />} />
+              {isSuperAdmin ? (
+                <>
+                  <Route path="/super-admin" element={<SuperAdminDashboard />} />
+                  <Route path="*" element={<Navigate to="/super-admin" replace />} />
+                </>
+              ) : (
+                <>
+                  <Route path="/super-admin" element={<Navigate to="/" replace />} />
+                  <Route path="/*" element={<AuthenticatedApp />} />
+                </>
+              )}
+            </>
+          )}
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
