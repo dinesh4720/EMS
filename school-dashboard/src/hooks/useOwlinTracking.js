@@ -9,7 +9,8 @@ if (typeof window !== 'undefined' && !window.__OWLIN_TRACKER__) {
 
 const OWLIN_ENABLED_KEY = 'owlinTrackerEnabled'
 const OWLIN_ENDPOINT = import.meta.env.VITE_OWLIN_ENDPOINT?.trim() || ''
-const OWLIN_API_BASE = OWLIN_ENDPOINT.replace(/\/api\/events\/?$/, '')
+const OWLIN_API_KEY = import.meta.env.VITE_OWLIN_API_KEY?.trim() || ''
+const OWLIN_API_BASE = OWLIN_ENDPOINT.replace(/\/api\/v1\/events\/batch\/?$/, '').replace(/\/api\/events\/?$/, '')
 const IS_OWLIN_CONFIGURED = Boolean(OWLIN_ENDPOINT)
 
 export function isOwlinEnabled() {
@@ -49,8 +50,9 @@ export function useOwlinTracking() {
     try {
       const tracker = initOwlinTracker({
         endpoint: OWLIN_ENDPOINT,
+        apiKey: OWLIN_API_KEY,
         appName: 'School Dashboard',
-        appVersion: '1.0.0',
+        appVersion: '2.0.0',
         debug: false,
         batchSize: 5,
         flushInterval: 1000,
@@ -88,10 +90,13 @@ export function useOwlinTracking() {
 
           // Register the user immediately so server-side event enrichment has metadata
           // before the next queued batch flushes.
+          const owlinHeaders = { 'Content-Type': 'application/json' }
+          if (OWLIN_API_KEY) owlinHeaders['X-API-Key'] = OWLIN_API_KEY
+
           try {
-            await fetch(`${OWLIN_API_BASE}/api/users/identify`, {
+            await fetch(`${OWLIN_API_BASE}/api/v1/users/identify`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: owlinHeaders,
               body: JSON.stringify({
                 userId: user.id,
                 metadata: { name: userName, email: userEmail, role: userRole },
@@ -102,9 +107,9 @@ export function useOwlinTracking() {
           }
 
           try {
-            await fetch(`${OWLIN_API_BASE}/api/session/start`, {
+            await fetch(`${OWLIN_API_BASE}/api/v1/sessions/start`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: owlinHeaders,
               body: JSON.stringify({
                 userId: user.id,
                 metadata: {
