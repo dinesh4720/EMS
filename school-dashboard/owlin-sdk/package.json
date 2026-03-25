@@ -1,0 +1,36 @@
+{
+  "name": "@owlin/tracker-sdk",
+  "version": "0.1.0",
+  "description": "Owlin event tracking SDK for web applications",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": {
+      "import": "./src/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./bundle": "./owlin-tracker.js"
+  },
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "owlin-tracker.js",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "analytics",
+    "tracking",
+    "events"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
