@@ -1,36 +1,14 @@
 import { defineConfig } from 'vite'
-import { createRequire } from 'module'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-
-const require = createRequire(import.meta.url)
-
-// Stub @owlin/tracker-sdk when not installed (e.g. Vercel builds)
-function owlinOptionalPlugin() {
-  const moduleId = '@owlin/tracker-sdk'
-  const resolvedId = '\0owlin-stub'
-  return {
-    name: 'owlin-optional',
-    resolveId(id) {
-      if (id === moduleId) {
-        try {
-          require.resolve(moduleId)
-        } catch {
-          return resolvedId
-        }
-      }
-    },
-    load(id) {
-      if (id === resolvedId) {
-        return 'export function init() { return null; }\nexport function destroy() {}'
-      }
-    },
-  }
-}
+import path from 'path'
 
 export default defineConfig({
-  plugins: [owlinOptionalPlugin(), react(), tailwindcss()],
+  plugins: [react(), tailwindcss()],
   resolve: {
+    alias: {
+      '@owlin/tracker-sdk': path.resolve(__dirname, 'owlin-sdk/src/index.js'),
+    },
     dedupe: ['react', 'react-dom', 'three'],
   },
   server: {},
