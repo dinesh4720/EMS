@@ -23,7 +23,7 @@
     "@heroui/accordion": "^2.2.26",
     "@heroui/react": "^2.8.7",
     "@heroui/theme": "^2.4.25",
-    "@owlin/tracker-sdk": "file:../owlin/sdk",
+    "@owlin/tracker-sdk": "file:owlin-sdk",
     "@react-three/drei": "^10.0.0",
     "@react-three/fiber": "^9.0.0",
     "@tailwindcss/vite": "^4.1.18",
