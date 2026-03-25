@@ -112,7 +112,7 @@ export default function InvoiceHistory({ formatMoney }) {
           className="w-40"
           selectedKeys={new Set([statusFilter])}
           onSelectionChange={handleFilterChange}
-          aria-label="Filter by status"
+          aria-label={t('aria.menus.filterByStatus')}
         >
           {STATUS_OPTIONS.map((opt) => (
             <SelectItem key={opt.key}>{opt.label}</SelectItem>

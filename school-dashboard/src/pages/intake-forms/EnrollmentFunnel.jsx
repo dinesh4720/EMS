@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { Card, CardBody, Spinner, Chip } from "@heroui/react";
+import { useTranslation } from 'react-i18next';
+import { Card, CardBody, Chip } from "@heroui/react";
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { Users, FileCheck, CheckCircle, XCircle, Clock } from "lucide-react";
 import toast from "react-hot-toast";
 import { intakeFormsApi } from "../../services/api";
@@ -13,6 +15,7 @@ const FUNNEL_STAGES = [
 ];
 
 export default function EnrollmentFunnel() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({
     assigned: 0,
@@ -43,7 +46,7 @@ export default function EnrollmentFunnel() {
       };
       setStats(counts);
     } catch (error) {
-      toast.error("Failed to load funnel data");
+      toast.error(t('toast.error.failedToLoadFunnelData'));
     } finally {
       setLoading(false);
     }
@@ -53,9 +56,7 @@ export default function EnrollmentFunnel() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-20">
-        <Spinner size="lg" />
-      </div>
+      <TablePageSkeleton />
     );
   }
 

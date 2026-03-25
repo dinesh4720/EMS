@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
     Send, Sparkles, AlertCircle, Loader2, Copy, X,
     Paperclip, ChevronDown, MoveUp, Search, UserPlus, FileText,
@@ -10,8 +10,10 @@ import Antigravity from '../components/Antigravity';
 import { Avatar } from '@heroui/react';
 import toast from 'react-hot-toast';
 import { useAiAssistant } from '../components/AiAssistant/AiAssistantPanel';
+import { useTranslation } from 'react-i18next';
 
 export default function AiAssistantPage() {
+  const { t } = useTranslation();
     // Get closePanel from context if available (when used in panel), otherwise undefined (when used as page)
     const aiContext = useAiAssistant();
     
@@ -109,7 +111,7 @@ export default function AiAssistantPage() {
                 try {
                     const transcription = await aiService.transcribeAudio(audioBlob);
                     setInput(prev => prev + (prev ? ' ' : '') + transcription);
-                    toast.success('Voice transcribed!');
+                    toast.success(t('toast.success.voiceTranscribed'));
                     // Adjust height after setting input
                     if (inputRef.current) {
                         setTimeout(() => {
@@ -118,7 +120,7 @@ export default function AiAssistantPage() {
                         }, 0);
                     }
                 } catch (error) {
-                    toast.error('Failed to transcribe audio');
+                    toast.error(t('toast.error.failedToTranscribeAudio'));
                     console.error('Transcription error:', error);
                 } finally {
                     setIsTranscribing(false);
@@ -127,9 +129,9 @@ export default function AiAssistantPage() {
 
             mediaRecorder.start();
             setIsRecording(true);
-            toast.success('Recording started');
+            toast.success(t('toast.success.recordingStarted'));
         } catch (error) {
-            toast.error('Microphone access denied');
+            toast.error(t('toast.error.microphoneAccessDenied'));
             console.error('Recording error:', error);
         }
     };
@@ -152,7 +154,7 @@ export default function AiAssistantPage() {
     const handleSend = async () => {
         if (!input.trim() || isLoading || isRecording || isTranscribing) return;
         if (!selectedModel || !hasAvailableModels) {
-            toast.error('The AI assistant is not configured right now.');
+            toast.error(t('toast.error.theAiAssistantIsNotConfiguredRightNow'));
             return;
         }
 
@@ -271,7 +273,7 @@ export default function AiAssistantPage() {
                                     <button
                                         onClick={closePanel}
                                         className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
-                                        aria-label="Close AI Assistant"
+                                        aria-label={t('aria.buttons.closeAiAssistant')}
                                     >
                                         <X size={18} />
                                     </button>
@@ -284,7 +286,7 @@ export default function AiAssistantPage() {
                             </div>
 
                             {/* Greeting */}
-                            <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 dark:text-white mb-1 text-center">Good Afternoon, Admin</h1>
+                            <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 dark:text-white mb-1 text-center">{t('pages.goodAfternoonAdmin')}</h1>
                             <h2 className="text-2xl md:text-3xl font-semibold text-gray-400 mb-6 text-center">
                                 What's on <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-500">your mind?</span>
                             </h2>
@@ -309,7 +311,7 @@ export default function AiAssistantPage() {
                                 <div className="flex justify-between items-center mt-1 px-1">
                                     <div className="flex items-center gap-2">
                                         <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition flex items-center gap-2 px-3">
-                                            <Paperclip size={18} /> <span className="text-xs font-medium">Attach</span>
+                                            <Paperclip size={18} /> <span className="text-xs font-medium">{t('pages.attach')}</span>
                                         </button>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -415,7 +417,7 @@ export default function AiAssistantPage() {
                                     <button
                                         onClick={closePanel}
                                         className="pointer-events-auto p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
-                                        aria-label="Close AI Assistant"
+                                        aria-label={t('aria.buttons.closeAiAssistant')}
                                     >
                                         <X size={18} />
                                     </button>
@@ -523,7 +525,7 @@ export default function AiAssistantPage() {
                             </div>
                         </div>
                         <div className="text-center mt-2">
-                            <p className="text-xs text-gray-400 dark:text-gray-500">School AI assistant can make mistakes. Verify important information.</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500">{t('pages.schoolAiAssistantCanMakeMistakesVerifyImportantInformation')}</p>
                         </div>
                     </div>
                 )}

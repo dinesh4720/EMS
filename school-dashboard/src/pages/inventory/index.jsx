@@ -12,8 +12,10 @@ import Maintenance from "./Maintenance";
 import Procurement from "./Procurement";
 import Audits from "./Audits";
 import Reports from "./Reports";
+import { useTranslation } from 'react-i18next';
 
 export default function InventoryPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -30,13 +32,13 @@ export default function InventoryPage() {
   const activeTab = getActiveTab();
 
   const tabs = [
-    { key: "dashboard", title: <div className="flex items-center gap-2"><BarChart3 size={16} /><span>Dashboard</span></div> },
-    { key: "assets", title: <div className="flex items-center gap-2"><Package size={16} /><span>Assets</span></div> },
-    { key: "vendors", title: <div className="flex items-center gap-2"><Truck size={16} /><span>Vendors</span></div> },
-    { key: "maintenance", title: <div className="flex items-center gap-2"><Wrench size={16} /><span>Maintenance</span></div> },
-    { key: "procurement", title: <div className="flex items-center gap-2"><ShoppingCart size={16} /><span>Procurement</span></div> },
-    { key: "audits", title: <div className="flex items-center gap-2"><ClipboardCheck size={16} /><span>Audits</span></div> },
-    { key: "reports", title: <div className="flex items-center gap-2"><FileBarChart size={16} /><span>Reports</span></div> },
+    { key: "dashboard", title: <div className="flex items-center gap-2"><BarChart3 size={16} /><span>{t('pages.dashboard1')}</span></div> },
+    { key: "assets", title: <div className="flex items-center gap-2"><Package size={16} /><span>{t('pages.assets')}</span></div> },
+    { key: "vendors", title: <div className="flex items-center gap-2"><Truck size={16} /><span>{t('pages.vendors')}</span></div> },
+    { key: "maintenance", title: <div className="flex items-center gap-2"><Wrench size={16} /><span>{t('pages.maintenance')}</span></div> },
+    { key: "procurement", title: <div className="flex items-center gap-2"><ShoppingCart size={16} /><span>{t('pages.procurement')}</span></div> },
+    { key: "audits", title: <div className="flex items-center gap-2"><ClipboardCheck size={16} /><span>{t('pages.audits')}</span></div> },
+    { key: "reports", title: <div className="flex items-center gap-2"><FileBarChart size={16} /><span>{t('pages.reports1')}</span></div> },
   ];
 
   const handleTabChange = (key) => {
@@ -63,8 +65,8 @@ export default function InventoryPage() {
     <div className="animate-fade-in">
       <div className="mb-4">
         <Breadcrumbs size="sm">
-          <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate("/")}>Home</BreadcrumbItem>
-          <BreadcrumbItem onPress={() => navigate("/inventory")}>Inventory</BreadcrumbItem>
+          <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate("/")}>{t('pages.home')}</BreadcrumbItem>
+          <BreadcrumbItem onPress={() => navigate("/inventory")}>{t('pages.inventory1')}</BreadcrumbItem>
           {tabLabel[activeTab] && <BreadcrumbItem>{tabLabel[activeTab]}</BreadcrumbItem>}
         </Breadcrumbs>
       </div>

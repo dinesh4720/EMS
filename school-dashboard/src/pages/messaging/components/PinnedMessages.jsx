@@ -1,11 +1,13 @@
 import { Pin, X } from 'lucide-react';
 import { ScrollShadow } from '@heroui/react';
+import { useTranslation } from 'react-i18next';
 
 export default function PinnedMessages({ messages = [], onUnpin, onJumpToMessage }) {
+  const { t } = useTranslation();
   if (messages.length === 0) {
     return (
       <div className="h-full flex items-center justify-center text-default-400">
-        <p className="text-sm">No pinned messages yet</p>
+        <p className="text-sm">{t('pages.noPinnedMessagesYet')}</p>
       </div>
     );
   }
@@ -16,7 +18,7 @@ export default function PinnedMessages({ messages = [], onUnpin, onJumpToMessage
       <div className="flex items-center justify-between px-4 py-3 border-b border-default-200">
         <div className="flex items-center gap-2">
           <PushPin size={18} className="text-primary" />
-          <h3 className="font-semibold">Pinned Messages</h3>
+          <h3 className="font-semibold">{t('pages.pinnedMessages')}</h3>
           <span className="text-xs bg-default-100 px-2 py-1 rounded-full">
             {messages.length}
           </span>
@@ -41,7 +43,7 @@ export default function PinnedMessages({ messages = [], onUnpin, onJumpToMessage
                 <button
                   onClick={() => onUnpin(messageId._id)}
                   className="text-default-400 hover:text-danger transition-colors"
-                  title="Unpin message"
+                  title={t('pages.unpinMessage')}
                 >
                   <X size={16} />
                 </button>

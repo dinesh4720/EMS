@@ -23,7 +23,8 @@ import {
   Trash2,
   Clock,
   Users,
-  Activity
+  Activity,
+  Webhook,
 } from "lucide-react";
 
 import InstitutionSettings from "./InstitutionSettings";
@@ -45,8 +46,14 @@ import PermissionRequests from "./PermissionRequests";
 import TrashSettings from "./TrashSettings";
 import TimetableCleanup from "../../components/TimetableCleanup";
 import ParentManagement from "./ParentManagement";
+import WebhooksPage from "./WebhooksPage";
+import NPSAnalyticsPage from "./NPSAnalyticsPage";
+import SCIMSettings from "./SCIMSettings";
+import PromotionRulesSettings from "./PromotionRulesSettings";
+import { useTranslation } from 'react-i18next';
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { setShowOnboarding } = useApp();
@@ -58,12 +65,12 @@ export default function SettingsPage() {
     setOwlinState(next);
     setOwlinEnabled(next);
     if (next) {
-      // Reload to re-initialize the tracker
-      window.location.reload();
+      // Soft reload to re-initialize the tracker
+      navigate(0);
     }
-  }, [owlinEnabled]);
+  }, [owlinEnabled, navigate]);
 
-  const menuCategories = [
+  const menuCategories = useMemo(() => [
     {
       title: "General",
       items: [
@@ -90,6 +97,7 @@ export default function SettingsPage() {
         { key: "holidays", label: "Holiday Calendar", icon: Palmtree, path: "/settings/holidays" },
         { key: "leaves", label: "Leave Types", icon: UserCheck, path: "/settings/leaves" },
         { key: "timetable-cleanup", label: "Timetable Cleanup", icon: Trash2, path: "/settings/timetable-cleanup", isNew: true },
+        { key: "promotion-rules", label: "Promotion Rules", icon: GraduationCap, path: "/settings/promotion-rules", isNew: true },
       ]
     },
     {
@@ -113,6 +121,14 @@ export default function SettingsPage() {
       ]
     },
     {
+      title: "Integrations",
+      items: [
+        { key: "webhooks", label: "Webhooks", icon: Webhook, path: "/settings/webhooks", isNew: true },
+        { key: "scim", label: "SCIM Provisioning", icon: Shield, path: "/settings/scim", isNew: true },
+        { key: "nps", label: "NPS Analytics", icon: Activity, path: "/settings/nps", isNew: true },
+      ]
+    },
+    {
       title: "System",
       items: [
         { key: "subscription", label: "Subscription", icon: CreditCard, path: "/settings/subscription" },
@@ -121,7 +137,8 @@ export default function SettingsPage() {
         { key: "onboarding", label: "Setup Wizard", icon: Zap, isAction: true, onClick: () => setShowOnboarding(true) },
       ]
     }
-  ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], []);
 
   const isActive = (path) => {
     if (path === "/settings") return location.pathname === "/settings";
@@ -150,16 +167,16 @@ export default function SettingsPage() {
       <div className="w-[260px] flex-shrink-0 border-r border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col">
         {/* Header & Search */}
         <div className="p-4 space-y-3 sticky top-0 bg-white dark:bg-zinc-950 z-10">
-          <h1 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Settings</h1>
+          <h1 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.settings2')}</h1>
 
           <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-lg focus-within:border-gray-300 dark:focus-within:border-zinc-600 focus-within:ring-1 focus-within:ring-gray-300 dark:focus-within:ring-zinc-600 transition-colors">
             <Search size={16} className="text-gray-400 dark:text-zinc-500" />
             <input
               type="search"
-              placeholder="Search settings..."
+              placeholder={t('pages.searchSettings')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent outline-none text-gray-900 dark:text-zinc-100 placeholder:text-gray-400 dark:placeholder:text-zinc-500 text-sm"
+              className="flex-1 bg-transparent outline-none text-gray-900 dark:text-zinc-100 placeholder:text-gray-500 dark:placeholder:text-zinc-500 text-sm"
             />
             {searchQuery && (
               <button
@@ -177,7 +194,7 @@ export default function SettingsPage() {
           <div className="space-y-4">
             {filteredCategories.length === 0 ? (
               <div className="text-center py-8 px-3">
-                <p className="text-sm text-gray-500 dark:text-zinc-400">No settings found</p>
+                <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noSettingsFound')}</p>
               </div>
             ) : (
               filteredCategories.map((category) => (
@@ -200,7 +217,7 @@ export default function SettingsPage() {
                           >
                             <span className="truncate">{item.label}</span>
                             {item.isNew && (
-                              <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded font-medium">New</span>
+                              <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded font-medium">{t('pages.new')}</span>
                             )}
                           </button>
                         </li>
@@ -218,7 +235,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Activity size={14} className="text-gray-400 dark:text-zinc-500" />
-              <span className="text-xs text-gray-500 dark:text-zinc-400">Owlin Tracker</span>
+              <span className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.owlinTracker')}</span>
             </div>
             <button
               onClick={handleOwlinToggle}
@@ -260,10 +277,14 @@ export default function SettingsPage() {
             <Route path="payroll" element={<PayrollSettings />} />
             <Route path="subscription" element={<SubscriptionSettings />} />
             <Route path="trash" element={<TrashSettings />} />
+            <Route path="webhooks" element={<WebhooksPage />} />
+            <Route path="scim" element={<SCIMSettings />} />
+            <Route path="promotion-rules" element={<PromotionRulesSettings />} />
+            <Route path="nps" element={<NPSAnalyticsPage />} />
             <Route path="timetable-cleanup" element={
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Timetable Data Cleanup</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{t('pages.timetableDataCleanup1')}</h2>
                   <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
                     Clear all timetable-related data to start fresh
                   </p>
@@ -273,8 +294,8 @@ export default function SettingsPage() {
             } />
             <Route path="*" element={<div className="flex flex-col items-center justify-center h-[50vh] text-gray-400 dark:text-zinc-500">
               <Puzzle size={48} className="mb-4 opacity-50" />
-              <h3 className="text-base font-medium text-gray-900 dark:text-zinc-100">Setting module under development</h3>
-              <p className="text-sm text-gray-500 dark:text-zinc-400">This section will be available in the next update.</p>
+              <h3 className="text-base font-medium text-gray-900 dark:text-zinc-100">{t('pages.settingModuleUnderDevelopment')}</h3>
+              <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.thisSectionWillBeAvailableInTheNextUpdate')}</p>
             </div>} />
           </Routes>
         </div>

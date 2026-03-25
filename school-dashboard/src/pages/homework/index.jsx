@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-  Card, CardBody, Chip, Spinner, Modal, ModalContent, ModalHeader, ModalBody,
+  Card, CardBody, Chip, Modal, ModalContent, ModalHeader, ModalBody,
   ModalFooter, Button, Breadcrumbs, BreadcrumbItem,
 } from '@heroui/react';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import {
   ClipboardList, Calendar, Eye, Trash2, AlertTriangle, Plus, Clock, Users, Home,
 } from 'lucide-react';
@@ -11,7 +12,9 @@ import { homeworkApi, classesApi } from '../../services/api';
 import { PageLayout, MinimalButton } from '../../components/ui';
 import FiltersDropdown from '../../components/FiltersDropdown';
 import CreateHomeworkModal from './CreateHomeworkModal';
+import HomeworkDetailModal from './HomeworkDetailModal';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const STATUS_OPTIONS = ['all', 'active', 'completed', 'cancelled'];
 
@@ -22,12 +25,14 @@ const homeworkCache = {
 };
 
 const HomeworkPage = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [homework, setHomework] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null, title: '' });
+  const [detailId, setDetailId] = useState(null);
   const [filters, setFilters] = useState({ classId: 'all', status: 'all' });
   const initialFetchDone = useRef(false);
 
@@ -92,7 +97,7 @@ const HomeworkPage = () => {
       homeworkCache.timestamp = now;
     } catch (error) {
       console.error('Error fetching homework:', error);
-      toast.error('Failed to load homework');
+      toast.error(t('toast.error.failedToLoadHomework'));
     } finally {
       setLoading(false);
     }
@@ -115,11 +120,11 @@ const HomeworkPage = () => {
     if (!deleteModal.id) return;
     try {
       await homeworkApi.delete(deleteModal.id);
-      toast.success('Homework deleted successfully');
+      toast.success(t('toast.success.homeworkDeletedSuccessfully'));
       refreshHomework();
     } catch (error) {
       console.error('Error deleting homework:', error);
-      toast.error('Failed to delete homework');
+      toast.error(t('toast.error.failedToDeleteHomework'));
     } finally {
       setDeleteModal({ isOpen: false, id: null, title: '' });
     }
@@ -179,16 +184,14 @@ const HomeworkPage = () => {
           <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate('/')}>
             Home
           </BreadcrumbItem>
-          <BreadcrumbItem>Homework</BreadcrumbItem>
+          <BreadcrumbItem>{t('pages.homework')}</BreadcrumbItem>
         </Breadcrumbs>
       </div>
 
       <PageLayout header={header} actions={actions} noPadding>
         <div className="min-h-[500px] p-6">
           {loading ? (
-            <div className="flex justify-center py-20">
-              <Spinner size="lg" />
-            </div>
+            <TablePageSkeleton />
           ) : (
             <div className="space-y-4">
               {/* Filters */}
@@ -207,19 +210,19 @@ const HomeworkPage = () => {
               {/* Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 border border-gray-100 dark:border-zinc-800">
-                  <p className="text-xs text-gray-500 dark:text-zinc-400">Total</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.total2')}</p>
                   <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{stats.total}</p>
                 </div>
                 <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-3 border border-blue-100 dark:border-blue-900">
-                  <p className="text-xs text-blue-600 dark:text-blue-400">Active</p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400">{t('pages.active')}</p>
                   <p className="text-xl font-semibold text-blue-700 dark:text-blue-300">{stats.active}</p>
                 </div>
                 <div className="bg-green-50 dark:bg-green-950 rounded-lg p-3 border border-green-100 dark:border-green-900">
-                  <p className="text-xs text-green-600 dark:text-green-400">Completed</p>
+                  <p className="text-xs text-green-600 dark:text-green-400">{t('pages.completed')}</p>
                   <p className="text-xl font-semibold text-green-700 dark:text-green-300">{stats.completed}</p>
                 </div>
                 <div className="bg-red-50 dark:bg-red-950 rounded-lg p-3 border border-red-100 dark:border-red-900">
-                  <p className="text-xs text-red-600 dark:text-red-400">Overdue</p>
+                  <p className="text-xs text-red-600 dark:text-red-400">{t('pages.overdue1')}</p>
                   <p className="text-xl font-semibold text-red-700 dark:text-red-300">{stats.overdue}</p>
                 </div>
               </div>
@@ -228,7 +231,7 @@ const HomeworkPage = () => {
               {filteredHomework.length === 0 ? (
                 <div className="text-center py-12">
                   <ClipboardList size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-                  <p className="text-gray-500 dark:text-zinc-400 mb-4">No homework found</p>
+                  <p className="text-gray-500 dark:text-zinc-400 mb-4">{t('pages.noHomeworkFound')}</p>
                   {activeFiltersCount > 0 ? (
                     <Button variant="flat" size="sm" onClick={handleClearFilters}>
                       Clear Filters
@@ -286,12 +289,16 @@ const HomeworkPage = () => {
                           <div className="flex items-center gap-4 text-sm">
                             <span className="flex items-center gap-1 text-gray-500 dark:text-zinc-400">
                               <Calendar size={14} />
-                              {hw.dueDate ? new Date(hw.dueDate).toLocaleDateString() : 'No due date'}
+                              {hw.dueDate ? (() => { const d = new Date(hw.dueDate); return isNaN(d.getTime()) ? 'Invalid date' : d.toLocaleDateString(); })() : 'No due date'}
                             </span>
-                            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 text-xs">
+                            <button
+                              onClick={() => setDetailId(id)}
+                              className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 text-xs hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
+                              title="View submissions"
+                            >
                               <Users size={12} />
                               {submissionCount} submitted
-                            </span>
+                            </button>
                           </div>
 
                           {/* Class & Teacher */}
@@ -300,15 +307,15 @@ const HomeworkPage = () => {
                             <div className="flex items-center gap-1">
                               <button
                                 className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
-                                onClick={() => {/* detail view placeholder */}}
-                                title="View Details"
+                                onClick={() => setDetailId(id)}
+                                title={t('pages.viewDetails1')}
                               >
                                 <Eye size={15} className="text-gray-500 dark:text-zinc-400" />
                               </button>
                               <button
                                 className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
                                 onClick={() => handleDeleteClick(id, hw.title)}
-                                title="Delete"
+                                title={t('pages.delete1')}
                               >
                                 <Trash2 size={15} className="text-red-400 dark:text-red-500" />
                               </button>
@@ -344,8 +351,8 @@ const HomeworkPage = () => {
                 <ClipboardList size={20} className="text-gray-600 dark:text-zinc-300" />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Create Homework</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">Assign new homework to students</p>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.createHomework')}</h3>
+                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">{t('pages.assignNewHomeworkToStudents')}</p>
               </div>
             </div>
           </ModalHeader>
@@ -360,6 +367,12 @@ const HomeworkPage = () => {
           </ModalBody>
         </ModalContent>
       </Modal>
+
+      {/* Homework Detail / Grade Modal */}
+      <HomeworkDetailModal
+        homeworkId={detailId}
+        onClose={() => setDetailId(null)}
+      />
 
       {/* Delete Confirmation Modal */}
       <Modal
@@ -378,8 +391,8 @@ const HomeworkPage = () => {
                 <AlertTriangle size={20} className="text-red-500" />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Delete Homework</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">This action cannot be undone</p>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.deleteHomework')}</h3>
+                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">{t('pages.thisActionCannotBeUndone1')}</p>
               </div>
             </div>
           </ModalHeader>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Select, SelectItem, Input, Textarea } from "@heroui/react";
 import toast from "react-hot-toast";
 import { getAuthHeaders } from "../../../../utils/authSession";
+import { useTranslation } from 'react-i18next';
 
 /**
  * WriteRemarkModal - Modal for writing a remark for a student
@@ -13,22 +14,29 @@ import { getAuthHeaders } from "../../../../utils/authSession";
  * - onSave: function - Called after successful save
  */
 export default function WriteRemarkModal({ isOpen, onClose, student, onSave }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     type: "",
     title: "",
     description: "",
     sendToParent: false
   });
+  const [errors, setErrors] = useState({});
   const [isSaving, setIsSaving] = useState(false);
 
+  const validate = () => {
+    const e = {};
+    if (!form.title.trim()) e.title = "Title is required";
+    if (!form.description.trim()) e.description = "Description is required";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
   const handleSave = async () => {
-    if (!form.title.trim() || !form.description.trim()) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
+    if (!validate()) return;
 
     setIsSaving(true);
-    const loadingToast = toast.loading("Saving remark...");
+    const loadingToast = toast.loading(t('toast.loading.savingRemark'));
 
     try {
       const { request } = await import("../../../../services/api");
@@ -51,6 +59,7 @@ export default function WriteRemarkModal({ isOpen, onClose, student, onSave }) {
       }
       onClose();
       setForm({ type: "", title: "", description: "", sendToParent: false });
+      setErrors({});
     } catch (error) {
       console.error("Error saving remark:", error);
       toast.error("Failed to save remark: " + (error.message || "Unknown error"), { id: loadingToast });
@@ -62,46 +71,56 @@ export default function WriteRemarkModal({ isOpen, onClose, student, onSave }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="md">
       <ModalContent>
-        <ModalHeader>Write a Remark</ModalHeader>
+        <ModalHeader>{t('pages.writeARemark')}</ModalHeader>
         <ModalBody>
           <div className="space-y-4">
             <Select
-              label="Remark Type"
-              placeholder="Select type"
+              label={t('pages.remarkType1')}
+              placeholder={t('pages.selectType1')}
               selectedKeys={form.type ? [form.type] : []}
               onSelectionChange={(keys) => setForm({ ...form, type: Array.from(keys)[0] })}
               variant="bordered"
             >
-              <SelectItem key="academic">Academic</SelectItem>
-              <SelectItem key="behavioral">Behavioral</SelectItem>
-              <SelectItem key="achievement">Achievement</SelectItem>
-              <SelectItem key="attendance">Attendance</SelectItem>
-              <SelectItem key="general">General</SelectItem>
+              <SelectItem key="academic">{t('pages.academic1')}</SelectItem>
+              <SelectItem key="behavioral">{t('pages.behavioral1')}</SelectItem>
+              <SelectItem key="achievement">{t('pages.achievement1')}</SelectItem>
+              <SelectItem key="attendance">{t('pages.attendance2')}</SelectItem>
+              <SelectItem key="general">{t('pages.general1')}</SelectItem>
             </Select>
 
             <Input
-              label="Title"
+              label={t('pages.title1')}
               placeholder="e.g. Excellent performance"
               value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, title: e.target.value });
+                if (errors.title) setErrors((p) => ({ ...p, title: "" }));
+              }}
               variant="bordered"
               isRequired
+              isInvalid={!!errors.title}
+              errorMessage={errors.title}
             />
 
             <Textarea
-              label="Description"
-              placeholder="Enter detailed remark..."
+              label={t('pages.description1')}
+              placeholder={t('pages.enterDetailedRemark')}
               minRows={4}
               value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, description: e.target.value });
+                if (errors.description) setErrors((p) => ({ ...p, description: "" }));
+              }}
               variant="bordered"
               isRequired
+              isInvalid={!!errors.description}
+              errorMessage={errors.description}
             />
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="bordered" className="border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300" onPress={onClose}>Cancel</Button>
-          <Button className="bg-gray-900 hover:bg-gray-800 text-white" onPress={handleSave} isLoading={isSaving}>Save Remark</Button>
+          <Button variant="bordered" className="border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300" onPress={onClose}>{t('pages.cancel2')}</Button>
+          <Button className="bg-gray-900 hover:bg-gray-800 text-white" onPress={handleSave} isLoading={isSaving}>{t('pages.saveRemark1')}</Button>
         </ModalFooter>
       </ModalContent>
     </Modal>

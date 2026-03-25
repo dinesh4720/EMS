@@ -1,27 +1,49 @@
-import { Card, CardBody, Button, Progress } from "@heroui/react";
+import { useState, useEffect } from "react";
+import { Card, CardBody, Button, Progress, Spinner } from "@heroui/react";
 import { Users, Plus, Search, Filter, Wallet, Calendar, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { payrollApi } from "../../services/api";
+import { getDateLocale } from '../../i18n/index';
+import { useTranslation } from 'react-i18next';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+
 
 export default function Payroll() {
-  const mockPayroll = [
-    { id: "PAY-001", employee: "John Smith", role: "Teacher", amount: "₹45,000", status: "paid", date: "2024-02-15" },
-    { id: "PAY-002", employee: "Jane Doe", role: "Admin", amount: "₹35,000", status: "paid", date: "2024-02-15" },
-    { id: "PAY-003", employee: "Mike Johnson", role: "Teacher", amount: "₹42,000", status: "pending", date: "2024-02-28" },
-    { id: "PAY-004", employee: "Sarah Wilson", role: "Staff", amount: "₹28,000", status: "pending", date: "2024-02-28" },
-    { id: "PAY-005", employee: "David Brown", role: "Teacher", amount: "₹48,000", status: "processing", date: "2024-02-28" },
-  ];
+  const { t } = useTranslation();
+  const now = new Date();
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [year, setYear] = useState(now.getFullYear());
+  const [dashboard, setDashboard] = useState(null);
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      payrollApi.getDashboard(month, year).catch(() => null),
+      payrollApi.getRecords({ month, year }).catch(() => []),
+    ]).then(([dash, recs]) => {
+      setDashboard(dash);
+      setRecords(Array.isArray(recs) ? recs : (recs?.records || []));
+    }).finally(() => setLoading(false));
+  }, [month, year]);
+
+  const fmt = (n) => n != null ? `₹${Number(n).toLocaleString(getDateLocale())}` : '—';
+
+  const totalPayroll = dashboard?.totalPayroll ?? dashboard?.total ?? 0;
+  const paidAmount = dashboard?.paidAmount ?? dashboard?.paid ?? 0;
+  const pendingAmount = dashboard?.pendingAmount ?? dashboard?.pending ?? 0;
+  const overdueAmount = dashboard?.overdueAmount ?? 0;
+  const completedPct = totalPayroll > 0 ? Math.round((paidAmount / totalPayroll) * 100) : 0;
+  const pendingPct = 100 - completedPct;
 
   const payrollSummary = [
-    { label: "Total Payroll", value: "₹4,50,000", icon: Wallet, color: "bg-blue-100 text-blue-700" },
-    { label: "Paid This Month", value: "₹2,85,000", icon: CheckCircle, color: "bg-green-100 text-green-700" },
-    { label: "Pending Payment", value: "₹1,65,000", icon: Clock, color: "bg-amber-100 text-amber-700" },
-    { label: "Overdue", value: "₹0", icon: AlertCircle, color: "bg-rose-100 text-rose-700" },
+    { label: "Total Payroll", value: fmt(totalPayroll), icon: Wallet, color: "bg-blue-100 text-blue-700" },
+    { label: "Paid This Month", value: fmt(paidAmount), icon: CheckCircle, color: "bg-green-100 text-green-700" },
+    { label: "Pending Payment", value: fmt(pendingAmount), icon: Clock, color: "bg-amber-100 text-amber-700" },
+    { label: "Overdue", value: fmt(overdueAmount), icon: AlertCircle, color: "bg-rose-100 text-rose-700" },
   ];
 
-  const upcomingPayslips = [
-    { employee: "Mike Johnson", amount: "₹42,000", dueDate: "Feb 28, 2024", daysLeft: 10 },
-    { employee: "Sarah Wilson", amount: "₹28,000", dueDate: "Feb 28, 2024", daysLeft: 10 },
-    { employee: "David Brown", amount: "₹48,000", dueDate: "Feb 28, 2024", daysLeft: 10 },
-  ];
+  const pendingRecords = records.filter(r => r.status === 'pending' || r.status === 'processing');
 
   return (
     <div className="p-6 space-y-6">
@@ -31,7 +53,7 @@ export default function Payroll() {
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
           <input
             type="text"
-            placeholder="Search payroll records..."
+            placeholder={t('pages.searchPayrollRecords')}
             className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-zinc-800 rounded-lg text-sm bg-white dark:bg-zinc-950 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -53,7 +75,11 @@ export default function Payroll() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <p className="text-sm text-gray-500 dark:text-zinc-400">{summary.label}</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mt-1">{summary.value}</p>
+                  {loading ? (
+                    <div className="h-7 w-24 bg-gray-100 dark:bg-zinc-800 rounded animate-pulse mt-1" />
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mt-1">{summary.value}</p>
+                  )}
                 </div>
                 <div className={`p-3 rounded-lg ${summary.color.split(' ')[0]}`}>
                   <summary.icon size={20} className={summary.color.split(' ')[1]} />
@@ -69,56 +95,87 @@ export default function Payroll() {
         <Card className="border border-gray-100 dark:border-zinc-800 lg:col-span-1">
           <CardBody className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Monthly Progress</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{t('pages.monthlyProgress')}</h3>
               <Calendar size={18} className="text-gray-400 dark:text-zinc-500" />
             </div>
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">Completed</span>
-                  <span className="text-sm font-semibold text-gray-900 dark:text-zinc-100">65%</span>
-                </div>
-                <Progress value={65} color="success" className="h-2" />
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">₹2,85,000 of ₹4,50,000</p>
+            {loading ? (
+              <div className="animate-pulse space-y-3 py-2">
+                <div className="h-3 bg-gray-200 dark:bg-zinc-700 rounded w-full" />
+                <div className="h-2 bg-gray-100 dark:bg-zinc-800 rounded w-3/4" />
+                <div className="h-3 bg-gray-200 dark:bg-zinc-700 rounded w-full mt-4" />
+                <div className="h-2 bg-gray-100 dark:bg-zinc-800 rounded w-2/3" />
               </div>
-              <div className="pt-4 border-t border-gray-100 dark:border-zinc-800">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">Pending</span>
-                  <span className="text-sm font-semibold text-amber-600">35%</span>
+            ) : totalPayroll > 0 ? (
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('pages.completed')}</span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{completedPct}%</span>
+                  </div>
+                  <Progress value={completedPct} color="success" className="h-2" />
+                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">{fmt(paidAmount)} of {fmt(totalPayroll)}</p>
                 </div>
-                <Progress value={35} color="warning" className="h-2" />
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">₹1,65,000 remaining</p>
+                <div className="pt-4 border-t border-gray-100 dark:border-zinc-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('pages.pending2')}</span>
+                    <span className="text-sm font-semibold text-amber-600">{pendingPct}%</span>
+                  </div>
+                  <Progress value={pendingPct} color="warning" className="h-2" />
+                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">{fmt(pendingAmount)} remaining</p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="text-center py-6 text-gray-400 dark:text-zinc-500">
+                <p className="text-sm">{t('pages.noPayrollDataForThisMonth')}</p>
+              </div>
+            )}
           </CardBody>
         </Card>
 
         {/* Upcoming Payments */}
         <Card className="border border-gray-100 dark:border-zinc-800 lg:col-span-2">
           <CardBody className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4">Upcoming Payments</h3>
-            <div className="space-y-3">
-              {upcomingPayslips.map((payslip) => (
-                <div key={payslip._id || `${payslip.employee}-${payslip.dueDate}`} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 bg-blue-50 rounded-lg">
-                      <Users size={18} className="text-blue-600" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4">{t('pages.upcomingPayments')}</h3>
+            {loading ? (
+              <div className="animate-pulse space-y-3 py-2">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-zinc-900 rounded-lg">
+                    <div className="w-8 h-8 bg-gray-200 dark:bg-zinc-700 rounded-lg shrink-0" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3 bg-gray-200 dark:bg-zinc-700 rounded w-1/2" />
+                      <div className="h-2 bg-gray-100 dark:bg-zinc-800 rounded w-1/3" />
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{payslip.employee}</p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">Due: {payslip.dueDate}</p>
+                    <div className="h-4 w-16 bg-gray-200 dark:bg-zinc-700 rounded" />
+                  </div>
+                ))}
+              </div>
+            ) : pendingRecords.length > 0 ? (
+              <div className="space-y-3">
+                {pendingRecords.slice(0, 5).map((record) => (
+                  <div key={record._id || record.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 bg-blue-50 rounded-lg">
+                        <Users size={18} className="text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{record.staffName || record.employee || '—'}</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">Due: {record.dueDate ? new Date(record.dueDate).toLocaleDateString() : '—'}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
+                        {fmt(record.netPay ?? record.amount ?? record.salary)}
+                      </p>
+                      <Button variant="flat" size="sm">{t('pages.process')}</Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{payslip.amount}</p>
-                      <p className="text-xs text-amber-600">{payslip.daysLeft} days left</p>
-                    </div>
-                    <Button variant="flat" size="sm">Process</Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-gray-400 dark:text-zinc-500">
+                <p className="text-sm">{t('pages.noUpcomingPayments')}</p>
+              </div>
+            )}
           </CardBody>
         </Card>
       </div>
@@ -126,63 +183,78 @@ export default function Payroll() {
       {/* Payroll Records Table */}
       <Card className="border border-gray-100 dark:border-zinc-800">
         <CardBody className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4">Payroll Records</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left text-xs font-medium text-gray-500 dark:text-zinc-400 border-b border-gray-100 dark:border-zinc-800">
-                  <th className="pb-3">Payroll ID</th>
-                  <th className="pb-3">Employee</th>
-                  <th className="pb-3">Role</th>
-                  <th className="pb-3">Amount</th>
-                  <th className="pb-3">Status</th>
-                  <th className="pb-3">Date</th>
-                  <th className="pb-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mockPayroll.map((record) => (
-                  <tr key={record.id} className="border-b border-gray-50 dark:border-zinc-800 last:border-0 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors">
-                    <td className="py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="p-2 bg-purple-50 rounded-lg">
-                          <Wallet size={16} className="text-purple-600" />
-                        </div>
-                        <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{record.id}</span>
-                      </div>
-                    </td>
-                    <td className="py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gray-200 dark:bg-zinc-700 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-medium text-gray-600 dark:text-zinc-400">
-                            {record.employee.split(' ').map(n => n[0]).join('')}
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4">{t('pages.payrollRecords1')}</h3>
+          {loading ? (
+            <TablePageSkeleton kpiCards={0} searchBar={false} rows={5} />
+          ) : records.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-left text-xs font-medium text-gray-500 dark:text-zinc-400 border-b border-gray-100 dark:border-zinc-800">
+                    <th className="pb-3">{t('pages.payrollId')}</th>
+                    <th className="pb-3">{t('pages.employee')}</th>
+                    <th className="pb-3">{t('pages.role1')}</th>
+                    <th className="pb-3">{t('pages.amount1')}</th>
+                    <th className="pb-3">{t('pages.status2')}</th>
+                    <th className="pb-3">{t('pages.date2')}</th>
+                    <th className="pb-3 text-right">{t('pages.actions1')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {records.map((record) => (
+                    <tr key={record._id || record.id} className="border-b border-gray-50 dark:border-zinc-800 last:border-0 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors">
+                      <td className="py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 bg-purple-50 rounded-lg">
+                            <Wallet size={16} className="text-purple-600" />
+                          </div>
+                          <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">
+                            {record.payrollId || record._id?.slice(-6).toUpperCase() || '—'}
                           </span>
                         </div>
-                        <span className="text-sm text-gray-700 dark:text-zinc-300">{record.employee}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 text-sm text-gray-600 dark:text-zinc-400">{record.role}</td>
-                    <td className="py-4 text-sm font-semibold text-gray-900 dark:text-zinc-100">{record.amount}</td>
-                    <td className="py-4">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        record.status === "paid"
-                          ? "bg-green-100 text-green-700"
-                          : record.status === "processing"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-amber-100 text-amber-700"
-                      }`}>
-                        {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
-                      </span>
-                    </td>
-                    <td className="py-4 text-sm text-gray-600 dark:text-zinc-400">{record.date}</td>
-                    <td className="py-4 text-right">
-                      <Button variant="light" size="sm">View</Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      </td>
+                      <td className="py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-gray-200 dark:bg-zinc-700 rounded-full flex items-center justify-center">
+                            <span className="text-xs font-medium text-gray-600 dark:text-zinc-400">
+                              {(record.staffName || record.employee || '?').charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <span className="text-sm text-gray-700 dark:text-zinc-300">{record.staffName || record.employee || '—'}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 text-sm text-gray-600 dark:text-zinc-400">{record.role || record.designation || '—'}</td>
+                      <td className="py-4 text-sm font-semibold text-gray-900 dark:text-zinc-100">
+                        {fmt(record.netPay ?? record.amount ?? record.salary)}
+                      </td>
+                      <td className="py-4">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          record.status === "paid"
+                            ? "bg-green-100 text-green-700"
+                            : record.status === "processing"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-amber-100 text-amber-700"
+                        }`}>
+                          {(record.status || 'pending').charAt(0).toUpperCase() + (record.status || 'pending').slice(1)}
+                        </span>
+                      </td>
+                      <td className="py-4 text-sm text-gray-600 dark:text-zinc-400">
+                        {record.paymentDate ? new Date(record.paymentDate).toLocaleDateString() : '—'}
+                      </td>
+                      <td className="py-4 text-right">
+                        <Button variant="light" size="sm">{t('pages.view1')}</Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-10 text-gray-400 dark:text-zinc-500">
+              <Wallet size={40} className="mx-auto mb-2 opacity-40" />
+              <p className="text-sm">{t('pages.noPayrollRecordsForThisMonth')}</p>
+            </div>
+          )}
         </CardBody>
       </Card>
     </div>

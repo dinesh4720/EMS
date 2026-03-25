@@ -6,8 +6,10 @@ import { settingsApi } from "../../services/api";
 import toast from "react-hot-toast";
 import StaffPayroll from "../../pages/staffs/StaffPayroll";
 import SalaryTemplates from "./SalaryTemplates";
+import { useTranslation } from 'react-i18next';
 
 function SalaryComponents() {
+  const { t } = useTranslation();
     const { salarySettings, updateSalarySettings } = useApp();
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [modalType, setModalType] = useState("earnings");
@@ -41,8 +43,8 @@ function SalaryComponents() {
                                     <IndianRupee size={20} />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-semibold">Earnings Components</h3>
-                                    <p className="text-xs text-default-500">Define salary additions</p>
+                                    <h3 className="text-lg font-semibold">{t('pages.earningsComponents')}</h3>
+                                    <p className="text-xs text-default-500">{t('pages.defineSalaryAdditions')}</p>
                                 </div>
                             </div>
                             <Button size="sm" color="success" variant="flat" startContent={<Plus size={16} />} onPress={() => handleOpenAdd("earnings")}>
@@ -51,7 +53,7 @@ function SalaryComponents() {
                         </div>
 
                         <Table
-                            aria-label="Earnings Table"
+                            aria-label={t('aria.misc.earningsTable')}
                             shadow="none"
                             radius="none"
                             isStriped={false}
@@ -65,15 +67,15 @@ function SalaryComponents() {
                             }}
                         >
                             <TableHeader>
-                                <TableColumn>COMPONENT NAME</TableColumn>
-                                <TableColumn width={80} align="center">ACTIONS</TableColumn>
+                                <TableColumn scope="col">{t('pages.cOMPONENTName')}</TableColumn>
+                                <TableColumn width={80} align="center" scope="col">{t('pages.aCTIONS')}</TableColumn>
                             </TableHeader>
                             <TableBody>
                                 {salarySettings.earnings.map((item) => (
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">{item.name}</TableCell>
                                         <TableCell>
-                                            <Button isIconOnly size="sm" color="danger" variant="light" onPress={() => handleRemove("earnings", item.id)} title="Remove Component">
+                                            <Button isIconOnly size="sm" color="danger" variant="light" onPress={() => handleRemove("earnings", item.id)} title={t('pages.removeComponent')}>
                                                 <Trash2 size={16} />
                                             </Button>
                                         </TableCell>
@@ -93,8 +95,8 @@ function SalaryComponents() {
                                     <AlertCircle size={20} />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-semibold">Deductions Components</h3>
-                                    <p className="text-xs text-default-500">Define salary deductions</p>
+                                    <h3 className="text-lg font-semibold">{t('pages.deductionsComponents')}</h3>
+                                    <p className="text-xs text-default-500">{t('pages.defineSalaryDeductions')}</p>
                                 </div>
                             </div>
                             <Button size="sm" color="danger" variant="flat" startContent={<Plus size={16} />} onPress={() => handleOpenAdd("deductions")}>
@@ -103,7 +105,7 @@ function SalaryComponents() {
                         </div>
 
                         <Table
-                            aria-label="Deductions Table"
+                            aria-label={t('aria.misc.deductionsTable')}
                             shadow="none"
                             radius="none"
                             isStriped={false}
@@ -117,15 +119,15 @@ function SalaryComponents() {
                             }}
                         >
                             <TableHeader>
-                                <TableColumn>COMPONENT NAME</TableColumn>
-                                <TableColumn width={80} align="center">ACTIONS</TableColumn>
+                                <TableColumn scope="col">{t('pages.cOMPONENTName')}</TableColumn>
+                                <TableColumn width={80} align="center" scope="col">{t('pages.aCTIONS')}</TableColumn>
                             </TableHeader>
                             <TableBody>
                                 {salarySettings.deductions.map((item) => (
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">{item.name}</TableCell>
                                         <TableCell>
-                                            <Button isIconOnly size="sm" color="danger" variant="light" onPress={() => handleRemove("deductions", item.id)} title="Remove Component">
+                                            <Button isIconOnly size="sm" color="danger" variant="light" onPress={() => handleRemove("deductions", item.id)} title={t('pages.removeComponent')}>
                                                 <Trash2 size={16} />
                                             </Button>
                                         </TableCell>
@@ -142,7 +144,7 @@ function SalaryComponents() {
                     <ModalHeader>Add {modalType === "earnings" ? "Earning" : "Deduction"} Component</ModalHeader>
                     <ModalBody>
                         <Input
-                            label="Component Name"
+                            label={t('pages.componentName')}
                             placeholder="e.g. Travel Allowance"
                             value={itemName}
                             onValueChange={setItemName}
@@ -151,8 +153,8 @@ function SalaryComponents() {
                         />
                     </ModalBody>
                     <ModalFooter>
-                        <Button variant="light" onPress={onClose}>Cancel</Button>
-                        <Button color="primary" onPress={handleAdd}>Add</Button>
+                        <Button variant="light" onPress={onClose}>{t('pages.cancel2')}</Button>
+                        <Button color="primary" onPress={handleAdd}>{t('pages.add1')}</Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>
@@ -185,14 +187,14 @@ function GeneralPayrollSettings() {
     const handleSave = async () => {
         // Validate input
         if (!disburseDate || disburseDate < 1 || disburseDate > 31) {
-            toast.error('Please enter a valid date between 1 and 31');
+            toast.error(t('toast.error.pleaseEnterAValidDateBetween1And31'));
             return;
         }
 
         setLoading(true);
         try {
             await settingsApi.updatePayrollSettings({ disburseDate: parseInt(disburseDate) });
-            toast.success('Payroll settings saved successfully');
+            toast.success(t('toast.success.payrollSettingsSavedSuccessfully'));
         } catch (error) {
             console.error('Failed to save payroll settings:', error);
             toast.error(error.message || 'Failed to save payroll settings');
@@ -210,18 +212,18 @@ function GeneralPayrollSettings() {
                             <Settings size={20} />
                         </div>
                         <div>
-                            <h3 className="text-lg font-semibold">Payroll Configuration</h3>
-                            <p className="text-xs text-default-500">Configure general payroll settings</p>
+                            <h3 className="text-lg font-semibold">{t('pages.payrollConfiguration')}</h3>
+                            <p className="text-xs text-default-500">{t('pages.configureGeneralPayrollSettings')}</p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-default-700">Payroll Disburse Date</label>
-                            <p className="text-xs text-default-500">Day of the month when payroll is disbursed</p>
+                            <label className="text-sm font-semibold text-default-700">{t('pages.payrollDisburseDate')}</label>
+                            <p className="text-xs text-default-500">{t('pages.dayOfTheMonthWhenPayrollIsDisbursed')}</p>
                             <Input
                                 type="number"
-                                label="Disburse Date"
+                                label={t('pages.disburseDate')}
                                 placeholder="e.g. 1, 15, 30"
                                 min="1"
                                 max="31"
@@ -274,7 +276,7 @@ export default function PayrollSettings() {
                     title={
                         <div className="flex items-center gap-2">
                             <Settings size={16} />
-                            <span>General Settings</span>
+                            <span>{t('pages.generalSettings')}</span>
                         </div>
                     }
                 >
@@ -287,7 +289,7 @@ export default function PayrollSettings() {
                     title={
                         <div className="flex items-center gap-2">
                             <Users size={16} />
-                            <span>Staff Salaries (CTC)</span>
+                            <span>{t('pages.staffSalariesCtc')}</span>
                         </div>
                     }
                 >
@@ -300,7 +302,7 @@ export default function PayrollSettings() {
                     title={
                         <div className="flex items-center gap-2">
                             <FileText size={16} />
-                            <span>Salary Templates</span>
+                            <span>{t('pages.salaryTemplates')}</span>
                         </div>
                     }
                 >
@@ -313,7 +315,7 @@ export default function PayrollSettings() {
                     title={
                         <div className="flex items-center gap-2">
                             <Settings size={16} />
-                            <span>Salary Components</span>
+                            <span>{t('pages.salaryComponents')}</span>
                         </div>
                     }
                 >

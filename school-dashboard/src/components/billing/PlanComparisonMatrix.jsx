@@ -2,6 +2,7 @@ import { Button, Chip } from "@heroui/react";
 import { Check, IndianRupee, Minus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatCurrency } from "../../utils/numberFormatter";
+import { getDateLocale } from "../../i18n/index";
 
 const CAPABILITY_LABELS = {
   parentApp: "Parent Mobile App",
@@ -24,7 +25,7 @@ const LIMIT_LABELS = {
 function formatLimit(key, value) {
   if (value === null || value === undefined) return "Unlimited";
   if (key === "storageMb") return `${(value / 1024).toFixed(0)} GB`;
-  return value.toLocaleString("en-IN");
+  return value.toLocaleString(getDateLocale());
 }
 
 export default function PlanComparisonMatrix({
@@ -70,7 +71,7 @@ export default function PlanComparisonMatrix({
                     )}
                     <div className="flex items-center gap-0.5 mt-1 text-lg font-bold text-gray-900">
                       <IndianRupee size={16} />
-                      {plan.price.toLocaleString("en-IN")}
+                      {plan.price.toLocaleString(getDateLocale())}
                     </div>
                     <span className="text-xs text-gray-500">
                       {plan.price === 0

@@ -1,28 +1,57 @@
-import { Card, CardBody, Button } from "@heroui/react";
+import { useState, useEffect } from "react";
+import { Card, CardBody, Button, Spinner } from "@heroui/react";
 import { PieChart, Download, FileText, TrendingUp, TrendingDown, Calendar } from "lucide-react";
+import { reportsApi } from "../../services/api";
+import { getDateLocale } from '../../i18n/index';
+import { useTranslation } from 'react-i18next';
+
+
+const REPORT_TYPES = [
+  { name: "Financial Summary", description: "Complete financial overview" },
+  { name: "Revenue Report", description: "Income and revenue analysis" },
+  { name: "Expense Analysis", description: "Detailed expense breakdown" },
+  { name: "Payroll Report", description: "Staff salary details" },
+  { name: "Budget Report", description: "Budget vs actual comparison" },
+  { name: "Cash Flow Statement", description: "Cash flow tracking" },
+];
 
 export default function Reports() {
-  const mockReports = [
-    { id: "RPT-001", name: "Monthly Financial Summary", type: "Financial", generated: "2024-02-18", status: "completed" },
-    { id: "RPT-002", name: "Expense Analysis Q1", type: "Expense", generated: "2024-02-15", status: "completed" },
-    { id: "RPT-003", name: "Revenue Report", type: "Revenue", generated: "2024-02-10", status: "completed" },
-    { id: "RPT-004", name: "Payroll Summary", type: "Payroll", generated: "2024-02-08", status: "processing" },
-    { id: "RPT-005", name: "Annual Budget Review", type: "Budget", generated: "2024-02-01", status: "completed" },
-  ];
+  const { t } = useTranslation();
+  const [feeData, setFeeData] = useState(null);
+  const [payrollData, setPayrollData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      reportsApi.feeCollection().catch(() => null),
+      reportsApi.payrollSummary().catch(() => null),
+    ]).then(([fee, payroll]) => {
+      setFeeData(fee);
+      setPayrollData(payroll);
+    }).finally(() => setLoading(false));
+  }, []);
+
+  const fmt = (n) => n != null ? `₹${Number(n).toLocaleString(getDateLocale())}` : '—';
 
   const quickStats = [
-    { label: "Total Reports", value: "156", icon: FileText, color: "bg-blue-100 text-blue-700" },
-    { label: "Revenue Growth", value: "+12.5%", icon: TrendingUp, color: "bg-green-100 text-green-700" },
-    { label: "Expense Reduction", value: "-5.2%", icon: TrendingDown, color: "bg-rose-100 text-rose-700" },
-  ];
-
-  const reportTypes = [
-    { name: "Financial Summary", description: "Complete financial overview" },
-    { name: "Revenue Report", description: "Income and revenue analysis" },
-    { name: "Expense Analysis", description: "Detailed expense breakdown" },
-    { name: "Payroll Report", description: "Staff salary details" },
-    { name: "Budget Report", description: "Budget vs actual comparison" },
-    { name: "Cash Flow Statement", description: "Cash flow tracking" },
+    {
+      label: "Total Collection",
+      value: loading ? null : fmt(feeData?.totalCollected ?? feeData?.total),
+      icon: FileText,
+      color: "bg-blue-100 text-blue-700"
+    },
+    {
+      label: "Outstanding Dues",
+      value: loading ? null : fmt(feeData?.totalOutstanding ?? feeData?.outstanding),
+      icon: TrendingDown,
+      color: "bg-rose-100 text-rose-700"
+    },
+    {
+      label: "Payroll Paid",
+      value: loading ? null : fmt(payrollData?.paidAmount ?? payrollData?.paid),
+      icon: TrendingUp,
+      color: "bg-green-100 text-green-700"
+    },
   ];
 
   return (
@@ -32,7 +61,7 @@ export default function Reports() {
         <div className="relative flex-1 max-w-md">
           <input
             type="text"
-            placeholder="Search reports..."
+            placeholder={t('pages.searchReports')}
             className="w-full px-4 py-2 border border-gray-200 dark:border-zinc-800 rounded-lg text-sm bg-white dark:bg-zinc-950 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -54,7 +83,11 @@ export default function Reports() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <p className="text-sm text-gray-500 dark:text-zinc-400">{stat.label}</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mt-1">{stat.value}</p>
+                  {loading ? (
+                    <div className="h-7 w-24 bg-gray-100 dark:bg-zinc-800 rounded animate-pulse mt-1" />
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mt-1">{stat.value}</p>
+                  )}
                 </div>
                 <div className={`p-3 rounded-lg ${stat.color.split(' ')[0]}`}>
                   <stat.icon size={20} className={stat.color.split(' ')[1]} />
@@ -69,9 +102,9 @@ export default function Reports() {
         {/* Report Types */}
         <Card className="border border-gray-100 dark:border-zinc-800 lg:col-span-1">
           <CardBody className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4">Report Types</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4">{t('pages.reportTypes')}</h3>
             <div className="space-y-3">
-              {reportTypes.map((type) => (
+              {REPORT_TYPES.map((type) => (
                 <button
                   key={type.name}
                   className="w-full text-left px-4 py-3 bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
@@ -87,53 +120,11 @@ export default function Reports() {
         {/* Recent Reports */}
         <Card className="border border-gray-100 dark:border-zinc-800 lg:col-span-2">
           <CardBody className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4">Recent Reports</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-left text-xs font-medium text-gray-500 dark:text-zinc-400 border-b border-gray-100 dark:border-zinc-800">
-                    <th className="pb-3">Report ID</th>
-                    <th className="pb-3">Report Name</th>
-                    <th className="pb-3">Type</th>
-                    <th className="pb-3">Generated</th>
-                    <th className="pb-3">Status</th>
-                    <th className="pb-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mockReports.map((report) => (
-                    <tr key={report.id} className="border-b border-gray-50 dark:border-zinc-800 last:border-0 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors">
-                      <td className="py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="p-2 bg-purple-50 rounded-lg">
-                            <PieChart size={16} className="text-purple-600" />
-                          </div>
-                          <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{report.id}</span>
-                        </div>
-                      </td>
-                      <td className="py-4">
-                        <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{report.name}</p>
-                      </td>
-                      <td className="py-4 text-sm text-gray-600 dark:text-zinc-400">{report.type}</td>
-                      <td className="py-4 text-sm text-gray-600 dark:text-zinc-400">{report.generated}</td>
-                      <td className="py-4">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          report.status === "completed"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-amber-100 text-amber-700"
-                        }`}>
-                          {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
-                        </span>
-                      </td>
-                      <td className="py-4 text-right">
-                        <Button variant="light" size="sm" startContent={<Download size={14} />}>
-                          Download
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4">{t('pages.recentReports')}</h3>
+            <div className="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-zinc-500">
+              <PieChart size={40} className="mb-2 opacity-40" />
+              <p className="text-sm">{t('pages.noReportsGeneratedYet')}</p>
+              <p className="text-xs mt-1">Use "Generate Report" to create your first report</p>
             </div>
           </CardBody>
         </Card>
@@ -143,31 +134,12 @@ export default function Reports() {
       <Card className="border border-gray-100 dark:border-zinc-800">
         <CardBody className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Scheduled Reports</h3>
-            <Button variant="flat" size="sm">Add Schedule</Button>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{t('pages.scheduledReports')}</h3>
+            <Button variant="flat" size="sm">{t('pages.addSchedule')}</Button>
           </div>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">
-              <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Monthly Financial Summary</p>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Every 1st of the month at 9:00 AM</p>
-              </div>
-              <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">Active</span>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">
-              <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Weekly Expense Analysis</p>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Every Friday at 5:00 PM</p>
-              </div>
-              <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">Active</span>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">
-              <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Quarterly Revenue Report</p>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Every quarter end</p>
-              </div>
-              <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">Active</span>
-            </div>
+          <div className="flex flex-col items-center justify-center py-8 text-gray-400 dark:text-zinc-500">
+            <Calendar size={36} className="mb-2 opacity-40" />
+            <p className="text-sm">{t('pages.noScheduledReports')}</p>
           </div>
         </CardBody>
       </Card>

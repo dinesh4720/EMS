@@ -1,13 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { BookOpen, Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
 import { changelogAdminApi } from '../../services/api';
-
-const CATEGORY_LABELS = {
-  new_feature: 'New Feature',
-  improvement: 'Improvement',
-  bug_fix: 'Bug Fix',
-  announcement: 'Announcement',
-};
+import { useTranslation } from 'react-i18next';
 
 const CATEGORY_COLORS = {
   new_feature: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
@@ -19,6 +13,13 @@ const CATEGORY_COLORS = {
 const EMPTY_ENTRY = { title: '', body: '', version: '', category: 'new_feature', isPublished: false };
 
 export default function ChangelogPanel() {
+  const { t } = useTranslation();
+  const CATEGORY_LABELS = useMemo(() => ({
+    new_feature: t('constants.changelog.newFeature'),
+    improvement: t('constants.changelog.improvement'),
+    bug_fix: t('constants.changelog.bugFix'),
+    announcement: t('constants.changelog.announcement'),
+  }), [t]);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -103,7 +104,7 @@ export default function ChangelogPanel() {
     <div className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-slate-950 dark:text-zinc-100">Changelog</h2>
+          <h2 className="text-xl font-semibold text-slate-950 dark:text-zinc-100">{t('pages.changelog')}</h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
             Manage release notes and platform announcements.
           </p>
@@ -129,14 +130,14 @@ export default function ChangelogPanel() {
             <input
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="Title"
+              placeholder={t('pages.title1')}
               required
               className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             />
             <input
               value={form.version}
               onChange={(e) => setForm({ ...form, version: e.target.value })}
-              placeholder="Version (e.g. 2.4.0)"
+              placeholder={t('pages.versionEG240')}
               required
               className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             />
@@ -212,7 +213,7 @@ export default function ChangelogPanel() {
                       {CATEGORY_LABELS[entry.category] || entry.category}
                     </span>
                     {!entry.isPublished && (
-                      <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-500 dark:bg-zinc-700 dark:text-zinc-400">Draft</span>
+                      <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-500 dark:bg-zinc-700 dark:text-zinc-400">{t('pages.draft')}</span>
                     )}
                   </div>
                   <p className="mt-1.5 text-sm text-gray-600 dark:text-zinc-400 line-clamp-2">{entry.body}</p>
@@ -235,7 +236,7 @@ export default function ChangelogPanel() {
                     type="button"
                     onClick={() => openEdit(entry)}
                     className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 dark:text-zinc-500 dark:hover:bg-zinc-800"
-                    title="Edit"
+                    title={t('pages.edit1')}
                   >
                     <Pencil size={14} />
                   </button>
@@ -243,7 +244,7 @@ export default function ChangelogPanel() {
                     type="button"
                     onClick={() => handleDelete(entry._id)}
                     className="rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-600 dark:text-zinc-500 dark:hover:bg-red-900/30 dark:hover:text-red-400"
-                    title="Delete"
+                    title={t('pages.delete1')}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -252,7 +253,7 @@ export default function ChangelogPanel() {
             </div>
           ))}
           {entries.length === 0 && (
-            <div className="py-8 text-center text-sm text-gray-400 dark:text-zinc-500">No changelog entries yet.</div>
+            <div className="py-8 text-center text-sm text-gray-400 dark:text-zinc-500">{t('pages.noChangelogEntriesYet')}</div>
           )}
         </div>
       )}

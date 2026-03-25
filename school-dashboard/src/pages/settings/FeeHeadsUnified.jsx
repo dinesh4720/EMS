@@ -1,4 +1,6 @@
+import { request } from '../../services/api.js';
 import { useState, useEffect, useRef, useMemo } from "react";
+import { z } from "zod";
 import {
   Button,
   Input,
@@ -27,10 +29,22 @@ import {
   Users,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 const categories = ["Academic", "Transport", "Extra-curricular", "Hostel", "Other"];
+
+const feeHeadSchema = z.object({
+  name: z.string().min(1, "Fee head name is required").max(100, "Name too long"),
+  category: z.enum(["Academic", "Transport", "Extra-curricular", "Hostel", "Other"]),
+  amount: z.number().min(0, "Amount must be non-negative"),
+  applicableClasses: z.array(z.string()).min(1, "Select at least one class"),
+  frequency: z.enum(["monthly", "quarterly", "yearly"]),
+  mandatory: z.boolean(),
+  autoApply: z.boolean(),
+  description: z.string(),
+});
 
 const frequencies = [
   { value: "monthly", label: "Monthly" },
@@ -47,6 +61,7 @@ const CLASS_PRESETS = {
 };
 
 export default function FeeHeadsUnified({ embedded = false }) {
+  const { t } = useTranslation();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingFeeHead, setEditingFeeHead] = useState(null);
   const [feeHeads, setFeeHeads] = useState([]);
@@ -80,13 +95,11 @@ export default function FeeHeadsUnified({ embedded = false }) {
   const fetchFeeHeads = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/fee-heads`);
-      if (!response.ok) throw new Error('Failed to fetch fee heads');
-      const data = await response.json();
+      const data = await request('/fee-heads');
       setFeeHeads(data);
     } catch (error) {
       console.error('Error fetching fee heads:', error);
-      toast.error('Failed to load fee heads');
+      toast.error(t('toast.error.failedToLoadFeeHeads'));
     } finally {
       setLoading(false);
     }
@@ -182,42 +195,35 @@ export default function FeeHeadsUnified({ embedded = false }) {
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim()) {
-      toast.error('Fee head name is required');
-      return;
-    }
-    if (formData.applicableClasses.length === 0) {
-      toast.error('Please select at least one class');
+    const payload = {
+      name: formData.name.trim(),
+      category: formData.category,
+      amount: formData.amount,
+      applicableClasses: formData.applicableClasses,
+      frequency: formData.frequency,
+      mandatory: formData.isRequired,
+      autoApply: formData.isRequired,
+      description: ""
+    };
+
+    const result = feeHeadSchema.safeParse(payload);
+    if (!result.success) {
+      const firstError = result.error.errors[0];
+      toast.error(firstError.message);
       return;
     }
 
     setSaving(true);
     try {
-      const payload = {
-        name: formData.name,
-        category: formData.category,
-        amount: formData.amount,
-        applicableClasses: formData.applicableClasses,
-        frequency: formData.frequency,
-        mandatory: formData.isRequired,
-        autoApply: formData.isRequired,
-        description: ""
-      };
 
-      const url = editingFeeHead
-        ? `${API_URL}/fee-heads/${editingFeeHead._id}`
-        : `${API_URL}/fee-heads`;
+      const endpoint = editingFeeHead
+        ? `/fee-heads/${editingFeeHead._id}`
+        : `/fee-heads`;
 
-      const response = await fetch(url, {
+      await request(endpoint, {
         method: editingFeeHead ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to save fee head');
-      }
 
       toast.success(editingFeeHead ? 'Fee head updated' : 'Fee head created');
       await fetchFeeHeads();
@@ -231,25 +237,15 @@ export default function FeeHeadsUnified({ embedded = false }) {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Delete this fee head? It will be removed from all students.")) return;
+    if (!confirm(t('confirm.deleteFeeHead'))) return;
 
-    // Optimistically remove from UI immediately
-    const feeHeadToDelete = feeHeads.find(fh => fh._id === id);
-    setFeeHeads(prev => prev.filter(fh => fh._id !== id));
     setDeletingId(id);
-
     try {
-      const response = await fetch(`${API_URL}/fee-heads/${id}`, { method: 'DELETE' });
-      if (!response.ok) throw new Error('Failed to delete fee head');
-      toast.success('Fee head deleted');
+      await request(`/fee-heads/${id}`, { method: 'DELETE' });
+      setFeeHeads(prev => prev.filter(fh => fh._id !== id));
+      toast.success(t('toast.success.feeHeadDeleted'));
     } catch (error) {
-      toast.error('Failed to delete fee head');
-      // Restore the deleted item on error
-      if (feeHeadToDelete) {
-        setFeeHeads(prev => [...prev, feeHeadToDelete].sort((a, b) =>
-          new Date(b.createdAt) - new Date(a.createdAt)
-        ));
-      }
+      toast.error(t('toast.error.failedToDeleteFeeHead'));
     } finally {
       setDeletingId(null);
     }
@@ -257,14 +253,10 @@ export default function FeeHeadsUnified({ embedded = false }) {
 
   const handleApplyToStudents = async (id) => {
     try {
-      const response = await fetch(`${API_URL}/fee-heads/${id}/apply`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if (!response.ok) throw new Error('Failed to apply fee head');
-      toast.success('Fee head applied to students');
+      await request(`/fee-heads/${id}/apply`, { method: 'POST' });
+      toast.success(t('toast.success.feeHeadAppliedToStudents'));
     } catch (error) {
-      toast.error('Failed to apply fee head');
+      toast.error(t('toast.error.failedToApplyFeeHead'));
     }
   };
 
@@ -284,9 +276,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Spinner size="lg" />
-      </div>
+      <TablePageSkeleton />
     );
   }
 
@@ -295,23 +285,23 @@ export default function FeeHeadsUnified({ embedded = false }) {
       {/* Header */}
       {!embedded && (
         <div className="border-b border-gray-200 dark:border-zinc-800 pb-4">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Fee Heads</h2>
-          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">Configure fee structures for classes</p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100">{t('pages.feeHeads1')}</h2>
+          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">{t('pages.configureFeeStructuresForClasses')}</p>
         </div>
       )}
 
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-4">
         <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
-          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Total Heads</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('pages.totalHeads')}</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mt-1">{feeHeads.length}</p>
         </div>
         <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
-          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Required</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('pages.required1')}</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mt-1">{feeHeads.filter(fh => fh.mandatory).length}</p>
         </div>
         <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
-          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Total Amount</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('pages.totalAmount')}</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{totalFees.toLocaleString()}</p>
         </div>
       </div>
@@ -330,7 +320,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
       {/* Table */}
       <div className="border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden bg-white dark:bg-zinc-950">
         <Table
-          aria-label="Fee Heads"
+          aria-label={t('aria.misc.feeHeads')}
           removeWrapper
           classNames={{
             th: "bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-11 border-b border-gray-200 dark:border-zinc-800",
@@ -338,16 +328,16 @@ export default function FeeHeadsUnified({ embedded = false }) {
           }}
         >
           <TableHeader>
-            <TableColumn>FEE HEAD</TableColumn>
-            <TableColumn>AMOUNT</TableColumn>
-            <TableColumn>CLASSES</TableColumn>
-            <TableColumn>TYPE</TableColumn>
-            <TableColumn align="end">ACTIONS</TableColumn>
+            <TableColumn scope="col">{t('pages.fEEHead')}</TableColumn>
+            <TableColumn scope="col">{t('pages.aMOUNT')}</TableColumn>
+            <TableColumn scope="col">{t('pages.cLASSES')}</TableColumn>
+            <TableColumn scope="col">{t('pages.tYPE')}</TableColumn>
+            <TableColumn align="end" scope="col">{t('pages.aCTIONS')}</TableColumn>
           </TableHeader>
           <TableBody
             emptyContent={
               <div className="text-center py-8">
-                <p className="text-gray-400 dark:text-zinc-500 text-sm">No fee heads configured</p>
+                <p className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.noFeeHeadsConfigured')}</p>
               </div>
             }
           >
@@ -382,7 +372,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
                     <button
                       onClick={() => handleApplyToStudents(feeHead._id)}
                       className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded transition-all"
-                      title="Apply to students"
+                      title={t('pages.applyToStudents')}
                     >
                       <Users size={14} />
                     </button>
@@ -418,7 +408,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
         <div ref={loaderRef} className="flex justify-center py-3 bg-gray-50 dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
           {isLoadingMore && <Spinner size="sm" />}
           {!hasMore && feeHeads.length > ITEMS_PER_LOAD && (
-            <span className="text-gray-400 dark:text-zinc-500 text-xs">All fee heads loaded</span>
+            <span className="text-gray-400 dark:text-zinc-500 text-xs">{t('pages.allFeeHeadsLoaded')}</span>
           )}
         </div>
       </div>
@@ -545,8 +535,8 @@ export default function FeeHeadsUnified({ embedded = false }) {
                 {/* Required Fee Toggle */}
                 <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Required Fee</p>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">Auto-applied to all students in selected classes</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.requiredFee')}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.autoAppliedToAllStudentsInSelectedClasses')}</p>
                   </div>
                   <Switch
                     size="sm"

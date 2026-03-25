@@ -14,6 +14,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, Avatar, Button } from '../components';
 import { formatCurrency, calculatePercentage } from '../utils/helpers';
 import {
+import { useTranslation } from 'react-i18next';
   BookOpen,
   Calendar,
   CreditCard,
@@ -24,6 +25,7 @@ import {
 } from 'lucide-react-native';
 
 const HomeScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   const { student, user, children, selectedChildIndex, switchChild } = useAuth();
   const { attendance, fees, exams, results, fetchAttendance, fetchFees, fetchExams, fetchResults } = useStudent();
   const { themeColors, spacing, typography, borderRadius } = useTheme();
@@ -187,25 +189,25 @@ const HomeScreen = ({ navigation }) => {
           <View style={styles.statsGrid}>
             <QuickStatCard
               icon={Calendar}
-              title="Attendance"
+              title={t('screens.attendance')}
               value={`${attendance?.percentage || 0}%`}
               subtitle={`${attendance?.present || 0} days present`}
             />
             <QuickStatCard
               icon={CreditCard}
-              title="Fees Due"
+              title={t('screens.feesDue')}
               value={formatCurrency(fees?.feeDetails?.balanceAmount || 0)}
               subtitle={`of ${formatCurrency(fees?.feeDetails?.totalFee || 0)}`}
             />
             <QuickStatCard
               icon={FileText}
-              title="Exams"
+              title={t('screens.exams')}
               value={`${exams?.length || 0}`}
               subtitle="completed"
             />
             <QuickStatCard
               icon={TrendingUp}
-              title="Last Result"
+              title={t('screens.lastResult')}
               value={results[0]?.percentage ? `${results[0].percentage}%` : '-'}
               subtitle={results[0]?.grade ? `Grade: ${results[0].grade}` : 'No results'}
             />
@@ -331,21 +333,21 @@ const HomeScreen = ({ navigation }) => {
               onPress={() => navigation.navigate('Timetable')}
             >
               <Clock size={24} color={themeColors.text} />
-              <Text style={[styles.actionText, { color: themeColors.text }]}>Timetable</Text>
+              <Text style={[styles.actionText, { color: themeColors.text }]}>{t('screens.timetable')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, { backgroundColor: themeColors.backgroundSecondary }]}
               onPress={() => navigation.navigate('Chat')}
             >
               <BookOpen size={24} color={themeColors.text} />
-              <Text style={[styles.actionText, { color: themeColors.text }]}>Messages</Text>
+              <Text style={[styles.actionText, { color: themeColors.text }]}>{t('screens.messages')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, { backgroundColor: themeColors.backgroundSecondary }]}
               onPress={() => navigation.navigate('Fees')}
             >
               <CreditCard size={24} color={themeColors.text} />
-              <Text style={[styles.actionText, { color: themeColors.text }]}>Pay Fees</Text>
+              <Text style={[styles.actionText, { color: themeColors.text }]}>{t('screens.payFees')}</Text>
             </TouchableOpacity>
           </View>
         </View>

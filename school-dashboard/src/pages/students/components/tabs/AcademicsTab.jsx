@@ -1,4 +1,5 @@
 import StudentResults from "../StudentResults";
+import { useTranslation } from 'react-i18next';
 
 /**
  * AcademicsTab - Tab wrapper for StudentResults component

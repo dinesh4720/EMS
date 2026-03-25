@@ -9,6 +9,7 @@ import { frontDeskApi, studentsApi, staffApi } from '../../services/api';
 import { validatePhone } from '../../utils/validations';
 import toast from 'react-hot-toast';
 import GatePassPrint from './GatePassPrint.jsx';
+import { useTranslation } from 'react-i18next';
 
 const GATE_PASS_REASONS = [
   { key: 'MEDICAL_EMERGENCY', label: 'Medical Emergency' },
@@ -32,6 +33,7 @@ const APPROVED_BY_OPTIONS = [
 ];
 
 const GatePassLog = forwardRef((props, ref) => {
+  const { t } = useTranslation();
   const [gatePasses, setGatePasses] = useState([]);
   const [students, setStudents] = useState([]);
   const [staff, setStaff] = useState([]);
@@ -104,7 +106,7 @@ const GatePassLog = forwardRef((props, ref) => {
       setGatePasses(response);
     } catch (error) {
       console.error('Failed to load gate passes:', error);
-      toast.error('Failed to load gate passes');
+      toast.error(t('toast.error.failedToLoadGatePasses'));
     }
   };
 
@@ -169,42 +171,42 @@ const GatePassLog = forwardRef((props, ref) => {
       const staffMember = getSelectedStaff();
 
       if (!student) {
-        toast.error('Please select a student');
+        toast.error(t('toast.error.pleaseSelectAStudent'));
         return;
       }
 
       if (!reason) {
-        toast.error('Please select a reason');
+        toast.error(t('toast.error.pleaseSelectAReason'));
         return;
       }
 
       if (reason === 'OTHER' && !otherReason) {
-        toast.error('Please specify the reason');
+        toast.error(t('toast.error.pleaseSpecifyTheReason'));
         return;
       }
 
       if (!leavingWith) {
-        toast.error('Please select who the student is leaving with');
+        toast.error(t('toast.error.pleaseSelectWhoTheStudentIsLeavingWith'));
         return;
       }
 
       if (leavingWith === 'OTHERS' && !escortName) {
-        toast.error('Please enter escort name');
+        toast.error(t('toast.error.pleaseEnterEscortName'));
         return;
       }
 
       if (leavingWith === 'OTHERS' && escortPhone && !validatePhone(escortPhone)) {
-        toast.error('Please enter a valid 10-digit phone number');
+        toast.error(t('toast.error.pleaseEnterAValid10DigitPhoneNumber'));
         return;
       }
 
       if (!approvedBy) {
-        toast.error('Please select who approved this gate pass');
+        toast.error(t('toast.error.pleaseSelectWhoApprovedThisGatePass'));
         return;
       }
 
       if (!approvedByStaffId) {
-        toast.error('Please select a staff member');
+        toast.error(t('toast.error.pleaseSelectAStaffMember'));
         return;
       }
 
@@ -231,10 +233,10 @@ const GatePassLog = forwardRef((props, ref) => {
 
       if (editingId) {
         await frontDeskApi.updateGatePass(editingId, formData);
-        toast.success('Gate pass updated successfully');
+        toast.success(t('toast.success.gatePassUpdatedSuccessfully'));
       } else {
         await frontDeskApi.createGatePass(formData);
-        toast.success('Gate pass issued successfully');
+        toast.success(t('toast.success.gatePassIssuedSuccessfully'));
       }
 
       setIsModalOpen(false);
@@ -284,13 +286,13 @@ const GatePassLog = forwardRef((props, ref) => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this gate pass?')) return;
+    if (!confirm(t('confirm.deleteGatePass'))) return;
     try {
       await frontDeskApi.deleteGatePass(id);
-      toast.success('Gate pass deleted');
+      toast.success(t('toast.success.gatePassDeleted'));
       loadGatePasses();
     } catch (error) {
-      toast.error('Failed to delete gate pass');
+      toast.error(t('toast.error.failedToDeleteGatePass'));
     }
   };
 
@@ -328,15 +330,15 @@ const GatePassLog = forwardRef((props, ref) => {
         </Button>
       </div>
 
-      <Table aria-label="Gate pass log table" removeWrapper>
+      <Table aria-label={t('aria.tables.gatePassLog')} removeWrapper>
         <TableHeader>
-          <TableColumn>NAME</TableColumn>
-          <TableColumn>CLASS</TableColumn>
-          <TableColumn>REASON</TableColumn>
-          <TableColumn>LEFT WITH</TableColumn>
-          <TableColumn>APPROVED BY</TableColumn>
-          <TableColumn>DATE & TIME</TableColumn>
-          <TableColumn>ACTIONS</TableColumn>
+          <TableColumn scope="col">{t('pages.nAME')}</TableColumn>
+          <TableColumn scope="col">{t('pages.cLASS')}</TableColumn>
+          <TableColumn scope="col">{t('pages.rEASON')}</TableColumn>
+          <TableColumn scope="col">{t('pages.lEFTWith')}</TableColumn>
+          <TableColumn scope="col">{t('pages.aPPROVEDBy')}</TableColumn>
+          <TableColumn scope="col">{t('pages.dATETime')}</TableColumn>
+          <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
         </TableHeader>
         <TableBody
           items={gatePasses}
@@ -418,8 +420,8 @@ const GatePassLog = forwardRef((props, ref) => {
             <div className="grid grid-cols-2 gap-4">
               {/* Student Selection */}
               <Autocomplete
-                label="Select Student"
-                placeholder="Search and select student"
+                label={t('pages.selectStudent')}
+                placeholder={t('pages.searchAndSelectStudent')}
                 selectedKey={studentId ? String(studentId) : null}
                 inputValue={studentSearchQuery}
                 onInputChange={setStudentSearchQuery}
@@ -441,17 +443,17 @@ const GatePassLog = forwardRef((props, ref) => {
               {selectedStudent && (
                 <>
                   <div className="col-span-2 bg-default-100 p-3 rounded-lg">
-                    <p className="text-sm"><strong>Student:</strong> {selectedStudent.name}</p>
-                    <p className="text-sm"><strong>Class:</strong> {selectedStudent.class} {selectedStudent.section ? `- ${selectedStudent.section}` : ''}</p>
+                    <p className="text-sm"><strong>{t('pages.student1')}</strong> {selectedStudent.name}</p>
+                    <p className="text-sm"><strong>{t('pages.class2')}</strong> {selectedStudent.class} {selectedStudent.section ? `- ${selectedStudent.section}` : ''}</p>
                     {selectedStudent.admissionId && (
-                      <p className="text-sm"><strong>Admission ID:</strong> {selectedStudent.admissionId}</p>
+                      <p className="text-sm"><strong>{t('pages.admissionId2')}</strong> {selectedStudent.admissionId}</p>
                     )}
                   </div>
 
                   {/* Reason */}
                   <Select
-                    label="Reason"
-                    placeholder="Select reason"
+                    label={t('pages.reason')}
+                    placeholder={t('pages.selectReason2')}
                     selectedKeys={reason ? [reason] : []}
                     onSelectionChange={(keys) => {
                       const selected = Array.from(keys)[0];
@@ -468,8 +470,8 @@ const GatePassLog = forwardRef((props, ref) => {
 
                   {reason === 'OTHER' && (
                     <Input
-                      label="Please Specify Reason"
-                      placeholder="Enter reason"
+                      label={t('pages.pleaseSpecifyReason')}
+                      placeholder={t('pages.enterReason')}
                       value={otherReason}
                       onChange={(e) => setOtherReason(e.target.value)}
                       isRequired
@@ -478,14 +480,14 @@ const GatePassLog = forwardRef((props, ref) => {
 
                   {/* Leaving Date & Time */}
                   <Input
-                    label="Leaving Date"
+                    label={t('pages.leavingDate')}
                     type="date"
                     value={leavingDate}
                     onChange={(e) => setLeavingDate(e.target.value)}
                     isRequired
                   />
                   <Input
-                    label="Leaving Time"
+                    label={t('pages.leavingTime')}
                     type="time"
                     value={leavingTime}
                     onChange={(e) => setLeavingTime(e.target.value)}
@@ -494,13 +496,13 @@ const GatePassLog = forwardRef((props, ref) => {
 
                   {/* Expected Return */}
                   <Input
-                    label="Expected Return Date"
+                    label={t('pages.expectedReturnDate')}
                     type="date"
                     value={expectedReturnDate}
                     onChange={(e) => setExpectedReturnDate(e.target.value)}
                   />
                   <Input
-                    label="Expected Return Time"
+                    label={t('pages.expectedReturnTime')}
                     type="time"
                     value={expectedReturnTime}
                     onChange={(e) => setExpectedReturnTime(e.target.value)}
@@ -508,8 +510,8 @@ const GatePassLog = forwardRef((props, ref) => {
 
                   {/* Leaving With */}
                   <Select
-                    label="Left With"
-                    placeholder="Select who is picking up"
+                    label={t('pages.leftWith')}
+                    placeholder={t('pages.selectWhoIsPickingUp')}
                     selectedKeys={leavingWith ? [leavingWith] : []}
                     onSelectionChange={(keys) => {
                       const selected = Array.from(keys)[0];
@@ -527,21 +529,21 @@ const GatePassLog = forwardRef((props, ref) => {
                   {leavingWith === 'OTHERS' && (
                     <>
                       <Input
-                        label="Escort Name"
-                        placeholder="Enter escort name"
+                        label={t('pages.escortName')}
+                        placeholder={t('pages.enterEscortName')}
                         value={escortName}
                         onChange={(e) => setEscortName(e.target.value)}
                         isRequired
                       />
                       <Input
-                        label="Escort Relation"
+                        label={t('pages.escortRelation')}
                         placeholder="e.g., Uncle, Aunt, Grandparent"
                         value={escortRelation}
                         onChange={(e) => setEscortRelation(e.target.value)}
                       />
                       <Input
-                        label="Escort Phone"
-                        placeholder="Enter phone number"
+                        label={t('pages.escortPhone')}
+                        placeholder={t('pages.enterPhoneNumber')}
                         value={escortPhone}
                         onChange={(e) => {
                           const val = e.target.value.replace(/\D/g, '');
@@ -554,8 +556,8 @@ const GatePassLog = forwardRef((props, ref) => {
 
                   {/* Approved By */}
                   <Select
-                    label="Approved By"
-                    placeholder="Select who approved"
+                    label={t('pages.approvedBy')}
+                    placeholder={t('pages.selectWhoApproved')}
                     selectedKeys={approvedBy ? [approvedBy] : []}
                     onSelectionChange={(keys) => {
                       const selected = Array.from(keys)[0];
@@ -575,7 +577,7 @@ const GatePassLog = forwardRef((props, ref) => {
                   {approvedBy && (
                     <Autocomplete
                       label={`Select ${approvedBy === 'OTHER' ? 'Staff Member' : approvedBy.toLowerCase()}`}
-                      placeholder="Search and select staff member"
+                      placeholder={t('pages.searchAndSelectStaffMember')}
                       selectedKey={approvedByStaffId ? String(approvedByStaffId) : null}
                       onSelectionChange={(key) => {
                         setApprovedByStaffId(key || null);
@@ -592,8 +594,8 @@ const GatePassLog = forwardRef((props, ref) => {
 
                   {/* Notes */}
                   <Textarea
-                    label="Notes"
-                    placeholder="Additional notes (optional)"
+                    label={t('pages.notes1')}
+                    placeholder={t('pages.additionalNotesOptional')}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     className="col-span-2"

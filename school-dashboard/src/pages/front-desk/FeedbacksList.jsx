@@ -1,50 +1,39 @@
-import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle, useMemo } from 'react';
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, Chip, useDisclosure,
   Select, SelectItem, Checkbox, Button, Tabs, Tab
 } from '@heroui/react';
 import { Edit, Trash2, Plus, MessageSquare } from 'lucide-react';
-import { frontDeskApi, staffApi } from '../../services/api';
+import { frontDeskApi, staffApi, announcementsApi } from '../../services/api';
 import { validatePhone } from '../../utils/validations';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
-const FEEDBACK_CATEGORIES = {
-  STAFF: {
-    key: 'STAFF',
-    label: 'Staff Related',
-    subcategories: ['TEACHER', 'ADMIN', 'SUPPORT_STAFF', 'OTHER']
-  },
-  FACILITIES: {
-    key: 'FACILITIES',
-    label: 'Facilities',
-    subcategories: ['CLASSROOM', 'LAB', 'PLAYGROUND', 'SANITATION', 'OTHER']
-  },
-  MANAGEMENT: {
-    key: 'MANAGEMENT',
-    label: 'Management',
-    subcategories: ['PRINCIPAL', 'ADMINISTRATION', 'FEES', 'POLICY', 'OTHER']
-  }
+const FEEDBACK_CATEGORY_KEYS = {
+  STAFF: { key: 'STAFF', subcategories: ['TEACHER', 'ADMIN', 'SUPPORT_STAFF', 'OTHER'], i18nKey: 'staff' },
+  FACILITIES: { key: 'FACILITIES', subcategories: ['CLASSROOM', 'LAB', 'PLAYGROUND', 'SANITATION', 'OTHER'], i18nKey: 'facilities' },
+  MANAGEMENT: { key: 'MANAGEMENT', subcategories: ['PRINCIPAL', 'ADMINISTRATION', 'FEES', 'POLICY', 'OTHER'], i18nKey: 'management' },
 };
-
-const SUBCATEGORY_LABELS = {
-  TEACHER: 'Teacher Issue',
-  ADMIN: 'Admin Staff Issue',
-  SUPPORT_STAFF: 'Support Staff Issue',
-  CLASSROOM: 'Classroom Issue',
-  LAB: 'Laboratory Issue',
-  PLAYGROUND: 'Playground Issue',
-  SANITATION: 'Sanitation/Hygiene Issue',
-  PRINCIPAL: 'Principal Office',
-  ADMINISTRATION: 'Administration',
-  FEES: 'Fee Related',
-  POLICY: 'School Policy',
-  OTHER: 'Other'
+const SUBCATEGORY_I18N_KEYS = {
+  TEACHER: 'teacher', ADMIN: 'admin', SUPPORT_STAFF: 'supportStaff',
+  CLASSROOM: 'classroom', LAB: 'lab', PLAYGROUND: 'playground',
+  SANITATION: 'sanitation', PRINCIPAL: 'principal', ADMINISTRATION: 'administration',
+  FEES: 'fees', POLICY: 'policy', OTHER: 'other',
 };
 
 const SOURCE_OPTIONS = ['PARENT_APP', 'STUDENT_APP', 'TEACHER_APP', 'WALK_IN', 'PHONE', 'EMAIL'];
 
 const FeedbacksList = forwardRef((props, ref) => {
+  const { t } = useTranslation();
+  const FEEDBACK_CATEGORIES = useMemo(() => ({
+    STAFF: { ...FEEDBACK_CATEGORY_KEYS.STAFF, label: t(`constants.feedback.categories.${FEEDBACK_CATEGORY_KEYS.STAFF.i18nKey}`) },
+    FACILITIES: { ...FEEDBACK_CATEGORY_KEYS.FACILITIES, label: t(`constants.feedback.categories.${FEEDBACK_CATEGORY_KEYS.FACILITIES.i18nKey}`) },
+    MANAGEMENT: { ...FEEDBACK_CATEGORY_KEYS.MANAGEMENT, label: t(`constants.feedback.categories.${FEEDBACK_CATEGORY_KEYS.MANAGEMENT.i18nKey}`) },
+  }), [t]);
+  const SUBCATEGORY_LABELS = useMemo(() => Object.fromEntries(
+    Object.entries(SUBCATEGORY_I18N_KEYS).map(([key, i18nKey]) => [key, t(`constants.feedback.subcategories.${i18nKey}`)])
+  ), [t]);
   const [feedbacks, setFeedbacks] = useState([]);
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +75,7 @@ const FeedbacksList = forwardRef((props, ref) => {
       setFeedbacks(response);
     } catch (error) {
       console.error('Failed to load feedbacks:', error);
-      toast.error('Failed to load feedbacks');
+      toast.error(t('toast.error.failedToLoadFeedbacks'));
     } finally {
       setLoading(false);
     }
@@ -131,7 +120,7 @@ const FeedbacksList = forwardRef((props, ref) => {
 
   const handleSubmit = async () => {
     if (!validateForm()) {
-      toast.error('Please fix the errors before submitting');
+      toast.error(t('toast.error.pleaseFixTheErrorsBeforeSubmitting'));
       return;
     }
     try {
@@ -144,27 +133,57 @@ const FeedbacksList = forwardRef((props, ref) => {
 
       if (editingId) {
         await frontDeskApi.updateFeedback(editingId, submitData);
-        toast.success('Feedback updated successfully');
+        toast.success(t('toast.success.feedbackUpdatedSuccessfully'));
       } else {
         await frontDeskApi.createFeedback(submitData);
-        toast.success('Feedback created successfully');
+        toast.success(t('toast.success.feedbackCreatedSuccessfully'));
       }
 
-      if (formData.assignAsTask && formData.assignedStaff) {
-        // TODO: Create task from feedback
-        toast.info('Task creation feature coming soon');
+      if (formData.assignAsTask && formData.assignedStaff && formData.taskTitle?.trim()) {
+        try {
+          const categoryLabel = getCategoryLabel(
+            formData.category && formData.subcategory
+              ? `${formData.category}_${formData.subcategory}`
+              : formData.category
+          );
+          await announcementsApi.create({
+            title: formData.taskTitle,
+            content: `Task assigned from feedback.\n\nFeedback from: ${formData.name}\nCategory: ${categoryLabel}\nPriority: ${formData.taskPriority}\n\n${formData.notes || ''}`.trim(),
+            recipients: [{ type: 'custom', userIds: [formData.assignedStaff] }],
+            channels: ['in_app'],
+          });
+          toast.success('Task notification sent to assigned staff');
+        } catch (taskErr) {
+          console.error('Task creation error:', taskErr);
+          toast.error('Feedback saved but failed to send task notification');
+        }
       }
 
       if (formData.shareWithStaff?.length > 0) {
-        // TODO: Share via internal messaging
-        toast.info('Share feature coming soon');
+        try {
+          const categoryLabel = getCategoryLabel(
+            formData.category && formData.subcategory
+              ? `${formData.category}_${formData.subcategory}`
+              : formData.category
+          );
+          await announcementsApi.create({
+            title: `Feedback Shared: ${categoryLabel}`,
+            content: `A feedback has been shared with you.\n\nFrom: ${formData.name}\nCategory: ${categoryLabel}\nSource: ${formData.source?.replace(/_/g, ' ')}\n\n${formData.notes || ''}`.trim(),
+            recipients: [{ type: 'custom', userIds: formData.shareWithStaff }],
+            channels: ['in_app'],
+          });
+          toast.success(`Feedback shared with ${formData.shareWithStaff.length} staff member(s)`);
+        } catch (shareErr) {
+          console.error('Feedback share error:', shareErr);
+          toast.error('Feedback saved but failed to share with staff');
+        }
       }
 
       onClose();
       resetForm();
       loadFeedbacks();
     } catch (error) {
-      toast.error('Failed to save feedback');
+      toast.error(t('toast.error.failedToSaveFeedback'));
     }
   };
 
@@ -200,13 +219,13 @@ const FeedbacksList = forwardRef((props, ref) => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this feedback?')) return;
+    if (!confirm(t('confirm.deleteFeedback'))) return;
     try {
       await frontDeskApi.deleteFeedback(id);
-      toast.success('Feedback deleted');
+      toast.success(t('toast.success.feedbackDeleted'));
       loadFeedbacks();
     } catch (error) {
-      toast.error('Failed to delete feedback');
+      toast.error(t('toast.error.failedToDeleteFeedback'));
     }
   };
 
@@ -249,25 +268,25 @@ const FeedbacksList = forwardRef((props, ref) => {
     <>
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2 items-center">
-          <Chip size="sm" variant="flat" color="primary">Parent App</Chip>
-          <Chip size="sm" variant="flat" color="secondary">Student App</Chip>
-          <Chip size="sm" variant="flat" color="success">Teacher App</Chip>
-          <span className="text-xs text-default-400 ml-2">Feedbacks from apps sync automatically</span>
+          <Chip size="sm" variant="flat" color="primary">{t('pages.parentApp1')}</Chip>
+          <Chip size="sm" variant="flat" color="secondary">{t('pages.studentApp')}</Chip>
+          <Chip size="sm" variant="flat" color="success">{t('pages.teacherApp')}</Chip>
+          <span className="text-xs text-default-400 ml-2">{t('pages.feedbacksFromAppsSyncAutomatically')}</span>
         </div>
         <Button color="primary" startContent={<Plus size={16} />} onPress={onOpen}>
           New Feedback
         </Button>
       </div>
-      <Table aria-label="Feedbacks table" removeWrapper>
+      <Table aria-label={t('aria.tables.feedbacks')} removeWrapper>
         <TableHeader>
-          <TableColumn>NAME</TableColumn>
-          <TableColumn>PHONE</TableColumn>
-          <TableColumn>DATE</TableColumn>
-          <TableColumn>CATEGORY</TableColumn>
-          <TableColumn>SOURCE</TableColumn>
-          <TableColumn>ASSIGNED TO</TableColumn>
-          <TableColumn>STATUS</TableColumn>
-          <TableColumn>ACTIONS</TableColumn>
+          <TableColumn scope="col">{t('pages.nAME')}</TableColumn>
+          <TableColumn scope="col">{t('pages.pHONE')}</TableColumn>
+          <TableColumn scope="col">{t('pages.dATE')}</TableColumn>
+          <TableColumn scope="col">{t('pages.cATEGORY')}</TableColumn>
+          <TableColumn scope="col">{t('pages.sOURCE')}</TableColumn>
+          <TableColumn scope="col">{t('pages.aSSIGNEDTo')}</TableColumn>
+          <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+          <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
         </TableHeader>
         <TableBody
           items={feedbacks}
@@ -327,11 +346,11 @@ const FeedbacksList = forwardRef((props, ref) => {
           <ModalHeader>{editingId ? 'Edit Feedback' : 'New Feedback'}</ModalHeader>
           <ModalBody>
             <Tabs>
-              <Tab key="basic" title="Basic Info">
+              <Tab key="basic" title={t('pages.basicInfo')}>
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <Input
-                    label="Name"
-                    placeholder="Enter name"
+                    label={t('pages.name1')}
+                    placeholder={t('pages.enterName')}
                     value={formData.name}
                     onChange={(e) => {
                       setFormData({ ...formData, name: e.target.value });
@@ -343,8 +362,8 @@ const FeedbacksList = forwardRef((props, ref) => {
                     startContent={<MessageSquare size={14} />}
                   />
                   <Input
-                    label="Phone Number"
-                    placeholder="Enter phone number"
+                    label={t('pages.phoneNumber')}
+                    placeholder={t('pages.enterPhoneNumber')}
                     value={formData.phoneNumber}
                     onChange={(e) => {
                       const val = e.target.value.replace(/\D/g, '');
@@ -356,8 +375,8 @@ const FeedbacksList = forwardRef((props, ref) => {
                     errorMessage={errors.phoneNumber}
                   />
                   <Select
-                    label="Category"
-                    placeholder="Select category"
+                    label={t('pages.category1')}
+                    placeholder={t('pages.selectCategory')}
                     selectedKeys={formData.category ? [formData.category] : []}
                     onChange={(e) => {
                       setFormData({ ...formData, category: e.target.value, subcategory: '' });
@@ -375,8 +394,8 @@ const FeedbacksList = forwardRef((props, ref) => {
                   </Select>
                   {formData.category && (
                     <Select
-                      label="Subcategory"
-                      placeholder="Select subcategory"
+                      label={t('pages.subcategory')}
+                      placeholder={t('pages.selectSubcategory')}
                       selectedKeys={formData.subcategory ? [formData.subcategory] : []}
                       onChange={(e) => {
                         setFormData({ ...formData, subcategory: e.target.value });
@@ -394,8 +413,8 @@ const FeedbacksList = forwardRef((props, ref) => {
                     </Select>
                   )}
                   <Select
-                    label="Source"
-                    placeholder="Select source"
+                    label={t('pages.source')}
+                    placeholder={t('pages.selectSource')}
                     selectedKeys={[formData.source]}
                     onChange={(e) => setFormData({ ...formData, source: e.target.value })}
                   >
@@ -406,23 +425,23 @@ const FeedbacksList = forwardRef((props, ref) => {
                     ))}
                   </Select>
                   <Select
-                    label="Status"
-                    placeholder="Select status"
+                    label={t('pages.status2')}
+                    placeholder={t('pages.selectStatus1')}
                     selectedKeys={[formData.status]}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   >
-                    <SelectItem key="open" value="open">Open</SelectItem>
-                    <SelectItem key="in_progress" value="in_progress">In Progress</SelectItem>
-                    <SelectItem key="resolved" value="resolved">Resolved</SelectItem>
-                    <SelectItem key="closed" value="closed">Closed</SelectItem>
+                    <SelectItem key="open" value="open">{t('pages.open')}</SelectItem>
+                    <SelectItem key="in_progress" value="in_progress">{t('pages.inProgress')}</SelectItem>
+                    <SelectItem key="resolved" value="resolved">{t('pages.resolved')}</SelectItem>
+                    <SelectItem key="closed" value="closed">{t('pages.closed')}</SelectItem>
                   </Select>
                 </div>
               </Tab>
-              <Tab key="assignment" title="Assignment">
+              <Tab key="assignment" title={t('pages.assignment')}>
                 <div className="grid grid-cols-1 gap-4 mt-4">
                   <Select
-                    label="Assigned Staff"
-                    placeholder="Select staff member"
+                    label={t('pages.assignedStaff')}
+                    placeholder={t('pages.selectStaffMember')}
                     selectedKeys={formData.assignedStaff ? [formData.assignedStaff] : []}
                     onChange={(e) => setFormData({ ...formData, assignedStaff: e.target.value })}
                   >
@@ -447,8 +466,8 @@ const FeedbacksList = forwardRef((props, ref) => {
                   {formData.assignAsTask && (
                     <>
                       <Input
-                        label="Task Title"
-                        placeholder="Enter task title"
+                        label={t('pages.taskTitle')}
+                        placeholder={t('pages.enterTaskTitle')}
                         value={formData.taskTitle}
                         onChange={(e) => {
                           setFormData({ ...formData, taskTitle: e.target.value });
@@ -459,28 +478,41 @@ const FeedbacksList = forwardRef((props, ref) => {
                         errorMessage={errors.taskTitle}
                       />
                       <Select
-                        label="Task Priority"
-                        placeholder="Select priority"
+                        label={t('pages.taskPriority')}
+                        placeholder={t('pages.selectPriority')}
                         selectedKeys={[formData.taskPriority]}
                         onChange={(e) => setFormData({ ...formData, taskPriority: e.target.value })}
                       >
-                        <SelectItem key="low" value="low">Low</SelectItem>
-                        <SelectItem key="medium" value="medium">Medium</SelectItem>
-                        <SelectItem key="high" value="high">High</SelectItem>
-                        <SelectItem key="urgent" value="urgent">Urgent</SelectItem>
+                        <SelectItem key="low" value="low">{t('pages.low')}</SelectItem>
+                        <SelectItem key="medium" value="medium">{t('pages.medium')}</SelectItem>
+                        <SelectItem key="high" value="high">{t('pages.high')}</SelectItem>
+                        <SelectItem key="urgent" value="urgent">{t('pages.urgent')}</SelectItem>
                       </Select>
                     </>
                   )}
                   <Textarea
-                    label="Notes"
-                    placeholder="Enter feedback details"
+                    label={t('pages.notes1')}
+                    placeholder={t('pages.enterFeedbackDetails')}
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     rows={4}
                   />
-                  <div className="bg-secondary-50 border border-secondary-200 p-3 rounded-lg">
-                    <p className="text-sm text-secondary-700">📤 Share to Internal Messaging</p>
-                    <p className="text-xs text-secondary-600 mt-1">Feature coming soon - share feedback with multiple staff members via internal messaging</p>
+                  <div className="border border-default-200 rounded-lg p-3">
+                    <p className="text-sm font-medium text-default-700 mb-2">📤 Share via Internal Messaging</p>
+                    <Select
+                      label={t('pages.shareWithStaff')}
+                      placeholder="Select staff to share with"
+                      selectionMode="multiple"
+                      selectedKeys={new Set(formData.shareWithStaff || [])}
+                      onSelectionChange={(keys) => setFormData({ ...formData, shareWithStaff: Array.from(keys) })}
+                      size="sm"
+                    >
+                      {staff.map((member) => (
+                        <SelectItem key={member._id} value={member._id}>
+                          {member.name} ({member.role})
+                        </SelectItem>
+                      ))}
+                    </Select>
                   </div>
                 </div>
               </Tab>

@@ -15,8 +15,10 @@ import { Plus, NotebookPen, Calendar, ChevronRight, AlertCircle, Clock, CheckCir
 
 import { useExamContext } from '../../context/ExamContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const ExamsScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { exams, loading, error, fetchExams } = useExamContext();
@@ -175,7 +177,7 @@ const ExamsScreen = () => {
       }]}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>Exams</Text>
+            <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>{t('screens.exams')}</Text>
             <Text style={[typography.bodyMedium, { color: colors.onSurfaceVariant }]}>
               {exams.length} exam{exams.length !== 1 ? 's' : ''} scheduled
             </Text>

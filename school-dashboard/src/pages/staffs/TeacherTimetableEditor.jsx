@@ -17,6 +17,7 @@ import {
   formatConflictDetails
 } from "../../utils/errorHandling";
 import { DEFAULT_PERIODS, TIMETABLE_DAYS } from "../../utils/constants";
+import { useTranslation } from 'react-i18next';
 
 const days = TIMETABLE_DAYS;
 const defaultPeriods = DEFAULT_PERIODS;
@@ -39,6 +40,7 @@ const getSubjectColor = (subject) => {
 };
 
 export default function TeacherTimetableEditor({ teacherId, teacherName }) {
+  const { t } = useTranslation();
   const { classesWithTeachers, schoolSettings, currentAcademicYear } = useApp();
   const { user } = useAuth();
   const { hasPermission } = usePermissions();
@@ -466,7 +468,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
   if (!teacherId) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-default-500">No teacher selected</p>
+        <p className="text-default-500">{t('pages.noTeacherSelected')}</p>
       </div>
     );
   }
@@ -532,7 +534,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
       {!loadingAssignments && Array.isArray(teacherAssignments) && teacherAssignments.length > 0 && (
         <Card className="shadow-sm border border-default-200">
           <CardBody className="p-4">
-            <h4 className="text-sm font-semibold text-default-700 mb-3">Assigned Classes & Subjects</h4>
+            <h4 className="text-sm font-semibold text-default-700 mb-3">{t('pages.assignedClassesSubjects')}</h4>
             <div className="flex flex-wrap gap-2">
               {Object.entries(getAssignedClassesDisplay()).map(([className, subjects]) => (
                 <Chip
@@ -557,7 +559,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
             <div className="flex items-start gap-3">
               <AlertTriangle size={20} className="text-primary-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-primary-800">No Subject Assignments Yet</p>
+                <p className="text-sm font-medium text-primary-800">{t('pages.noSubjectAssignmentsYet')}</p>
                 <p className="text-xs text-primary-700 mt-1">
                   Click "Manage Subjects & Classes" to assign which subjects and classes this teacher can teach. 
                   You can still schedule classes without assignments, but assignments help organize and validate schedules.
@@ -575,7 +577,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
             <div className="flex items-center gap-3">
               <AlertTriangle size={20} className="text-warning-600 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium text-warning-800">View-Only Mode</p>
+                <p className="text-sm font-medium text-warning-800">{t('pages.viewOnlyMode')}</p>
                 <p className="text-xs text-warning-700 mt-1">
                   {isOwnTimetable 
                     ? "You can view your timetable but cannot edit it. Contact an administrator to make changes."
@@ -593,7 +595,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
             <div className="flex items-center gap-3">
               <AlertTriangle size={20} className="text-danger-600 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium text-danger-800">Access Denied</p>
+                <p className="text-sm font-medium text-danger-800">{t('pages.accessDenied')}</p>
                 <p className="text-xs text-danger-700 mt-1">
                   You do not have permission to view this teacher's timetable.
                 </p>
@@ -638,7 +640,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
         <div className="overflow-x-auto -mx-6 px-6">
           <div className="min-w-[800px]">
             <Table
-              aria-label="Teacher Timetable"
+              aria-label={t('aria.misc.teacherTimetable')}
               shadow="none"
               isStriped={false}
               radius="none"
@@ -652,9 +654,9 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
               }}
             >
               <TableHeader>
-                <TableColumn className="w-24 sticky left-0 z-10 bg-default-100">Day</TableColumn>
+                <TableColumn className="w-24 sticky left-0 z-10 bg-default-100" scope="col">{t('pages.day2')}</TableColumn>
                 {periods.map((period) => (
-                  <TableColumn key={period.name} className={period.isBreak ? "bg-warning-50/50 w-16" : "w-32"}>
+                  <TableColumn key={period.name} className={period.isBreak ? "bg-warning-50/50 w-16" : "w-32"} scope="col">
                     <div className="flex flex-col items-center justify-center gap-0.5">
                       <span className="text-[11px] font-bold">{period.name}</span>
                       <span className="text-[9px] text-default-400 font-normal">
@@ -753,8 +755,8 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
             <div className="space-y-4">
               {/* Subject Selection */}
               <Select
-                label="Subject"
-                placeholder="Select subject"
+                label={t('pages.subject2')}
+                placeholder={t('pages.selectSubject')}
                 selectedKeys={slotForm.subject ? [slotForm.subject] : []}
                 onSelectionChange={(keys) => {
                   const subject = Array.from(keys)[0] || "";
@@ -785,8 +787,8 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
               {/* Class Selection - show all classes for flexible scheduling */}
               {slotForm.subject && (
                 <Select
-                  label="Class"
-                  placeholder="Select class"
+                  label={t('pages.class1')}
+                  placeholder={t('pages.selectClass2')}
                   selectedKeys={slotForm.classId ? [String(slotForm.classId)] : []}
                   onSelectionChange={(keys) => setSlotForm({ ...slotForm, classId: Array.from(keys)[0] || "" })}
                   variant="bordered"
@@ -819,7 +821,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={onSlotClose}>Cancel</Button>
+            <Button variant="light" onPress={onSlotClose}>{t('pages.cancel2')}</Button>
             <Button
               color="primary"
               onPress={handleClassSwitch}
@@ -838,7 +840,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
           <ModalHeader>
             <div className="flex items-center justify-between w-full pr-6">
               <div>
-                <h3 className="text-lg font-bold">Manage Subjects & Classes</h3>
+                <h3 className="text-lg font-bold">{t('pages.manageSubjectsClasses')}</h3>
                 <p className="text-sm text-default-500 mt-1">
                   Assign which subjects and classes {teacherName || 'this teacher'} can teach
                 </p>
@@ -849,10 +851,10 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
             <div className="space-y-6">
               {/* Current Assignments */}
               <div>
-                <h4 className="text-sm font-semibold text-default-700 mb-3">Current Assignments</h4>
+                <h4 className="text-sm font-semibold text-default-700 mb-3">{t('pages.currentAssignments')}</h4>
                 {!Array.isArray(teacherAssignments) || teacherAssignments.length === 0 ? (
                   <div className="text-center py-8 bg-default-50 rounded-lg border border-dashed border-default-300">
-                    <p className="text-default-500">No assignments yet. Add one below.</p>
+                    <p className="text-default-500">{t('pages.noAssignmentsYetAddOneBelow')}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -899,11 +901,11 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
 
               {/* Add New Assignment */}
               <div className="border-t border-default-200 pt-4">
-                <h4 className="text-sm font-semibold text-default-700 mb-3">Add New Assignment</h4>
+                <h4 className="text-sm font-semibold text-default-700 mb-3">{t('pages.addNewAssignment')}</h4>
                 <div className="space-y-3">
                   <Select
-                    label="Subject"
-                    placeholder="Select a subject"
+                    label={t('pages.subject2')}
+                    placeholder={t('pages.selectASubject')}
                     selectedKeys={newAssignment.subject ? [newAssignment.subject] : []}
                     onSelectionChange={(keys) => {
                       const subject = Array.from(keys)[0] || "";
@@ -920,8 +922,8 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
 
                   {newAssignment.subject && (
                     <Select
-                      label="Classes"
-                      placeholder="Select one or more classes"
+                      label={t('pages.classes2')}
+                      placeholder={t('pages.selectOneOrMoreClasses')}
                       selectionMode="multiple"
                       selectedKeys={newAssignment.classes.map(String)}
                       onSelectionChange={(keys) => {
@@ -969,7 +971,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
         isOpen={isConfirmClearOpen}
         onClose={onConfirmClearClose}
         onConfirm={confirmClearSlot}
-        title="Clear Timetable Slot"
+        title={t('pages.clearTimetableSlot')}
         message="Are you sure you want to clear this slot? This will remove the class assignment from both the teacher and class timetables."
         confirmText="Clear Slot"
         cancelText="Cancel"

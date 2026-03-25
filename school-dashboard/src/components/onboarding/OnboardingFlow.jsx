@@ -1,6 +1,8 @@
+import { safeSetItem } from '../../utils/safeStorage';
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronRight, School, Calendar, User, Settings, CheckCircle2, X } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 // Steps definition
 const ONBOARDING_STEPS = [
@@ -37,6 +39,7 @@ const ONBOARDING_STEPS = [
 ];
 
 export default function OnboardingFlow({ onComplete }) {
+  const { t } = useTranslation();
     const [currentStep, setCurrentStep] = useState(0);
     const [direction, setDirection] = useState(1);
     const [formData, setFormData] = useState({
@@ -66,13 +69,13 @@ export default function OnboardingFlow({ onComplete }) {
 
     const handleComplete = () => {
         // Save completion state
-        localStorage.setItem("hasCompletedOnboarding", "true");
+        safeSetItem("hasCompletedOnboarding", "true");
         if (onComplete) onComplete();
     };
 
     const handleSkip = () => {
         // Mark as completed/skipped so it doesn't show again
-        localStorage.setItem("hasCompletedOnboarding", "true");
+        safeSetItem("hasCompletedOnboarding", "true");
         if (onComplete) onComplete();
     };
 
@@ -97,7 +100,7 @@ export default function OnboardingFlow({ onComplete }) {
                 <button
                     onClick={handleSkip}
                     className="absolute top-4 right-4 z-50 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800"
-                    title="Skip Onboarding"
+                    title={t('components.skipOnboarding')}
                 >
                     <X size={20} />
                 </button>
@@ -110,8 +113,8 @@ export default function OnboardingFlow({ onComplete }) {
                                 <School size={24} />
                             </div>
                             <div>
-                                <h2 className="font-bold text-lg text-gray-900 dark:text-zinc-100">Setup Wizard</h2>
-                                <p className="text-xs text-gray-500 dark:text-zinc-400">Configure your school</p>
+                                <h2 className="font-bold text-lg text-gray-900 dark:text-zinc-100">{t('components.setupWizard')}</h2>
+                                <p className="text-xs text-gray-500 dark:text-zinc-400">{t('components.configureYourSchool')}</p>
                             </div>
                         </div>
 
@@ -159,7 +162,7 @@ export default function OnboardingFlow({ onComplete }) {
                         </div>
                         <p className="text-xs text-gray-500 dark:text-zinc-400 flex justify-between">
                             <span>Step {currentStep + 1} of {ONBOARDING_STEPS.length}</span>
-                            <button onClick={handleSkip} className="hover:underline hover:text-gray-700 dark:hover:text-zinc-300 transition-colors">Skip Setup</button>
+                            <button onClick={handleSkip} className="hover:underline hover:text-gray-700 dark:hover:text-zinc-300 transition-colors">{t('components.skipSetup')}</button>
                         </p>
                     </div>
                 </div>
@@ -171,7 +174,7 @@ export default function OnboardingFlow({ onComplete }) {
                         <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">
                             {ONBOARDING_STEPS[currentStep].title}
                         </h1>
-                        <button onClick={handleSkip} className="text-sm text-gray-500 dark:text-zinc-400">Skip</button>
+                        <button onClick={handleSkip} className="text-sm text-gray-500 dark:text-zinc-400">{t('components.skip')}</button>
                     </div>
 
                     <div className="flex-1 p-8 md:p-12 overflow-y-auto custom-scrollbar">
@@ -202,7 +205,7 @@ export default function OnboardingFlow({ onComplete }) {
                                     {currentStep === 0 && (
                                         <div className="space-y-6">
                                             <div className="p-6 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-2xl">
-                                                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">Welcome to School Dashboard</h3>
+                                                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">{t('components.welcomeToSchoolDashboard')}</h3>
                                                 <p className="text-blue-700 dark:text-blue-300">
                                                     Let's get your digital campus set up in just a few minutes. We'll guide you through the essential configurations.
                                                 </p>
@@ -226,7 +229,7 @@ export default function OnboardingFlow({ onComplete }) {
                                     {currentStep === 1 && (
                                         <div className="space-y-6 animate-fade-in">
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">School Name</label>
+                                                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('components.schoolName')}</label>
                                                 <input
                                                     type="text"
                                                     placeholder="Ex: Springfield High School"
@@ -237,9 +240,9 @@ export default function OnboardingFlow({ onComplete }) {
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Address</label>
+                                                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('components.address1')}</label>
                                                 <textarea
-                                                    placeholder="Enter complete school address..."
+                                                    placeholder={t('components.enterCompleteSchoolAddress')}
                                                     className="w-full p-4 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all min-h-[120px] resize-none"
                                                     value={formData.address}
                                                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
@@ -252,7 +255,7 @@ export default function OnboardingFlow({ onComplete }) {
                                         <div className="space-y-6 animate-fade-in">
                                             <div className="grid grid-cols-2 gap-6">
                                                 <div className="space-y-2">
-                                                    <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Session Start</label>
+                                                    <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('components.sessionStart')}</label>
                                                     <input
                                                         type="date"
                                                         className="w-full p-4 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
@@ -261,7 +264,7 @@ export default function OnboardingFlow({ onComplete }) {
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Session End</label>
+                                                    <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('components.sessionEnd')}</label>
                                                     <input
                                                         type="date"
                                                         className="w-full p-4 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
@@ -273,7 +276,7 @@ export default function OnboardingFlow({ onComplete }) {
                                             <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-100 dark:border-yellow-900/20 rounded-xl flex gap-3 items-start">
                                                 <Calendar className="text-yellow-600 shrink-0 mt-0.5" size={20} />
                                                 <div>
-                                                    <p className="text-sm font-medium text-yellow-800 dark:text-yellow-500 mb-1">Important Note</p>
+                                                    <p className="text-sm font-medium text-yellow-800 dark:text-yellow-500 mb-1">{t('components.importantNote')}</p>
                                                     <p className="text-sm text-yellow-700 dark:text-yellow-400 leading-relaxed">
                                                         Data analytics and attendance records will be organized based on these dates. Ensure they align with your official academic calendar.
                                                     </p>
@@ -289,16 +292,16 @@ export default function OnboardingFlow({ onComplete }) {
                                                     <User className="text-gray-300" size={40} />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <h4 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-1">Profile Photo</h4>
-                                                    <p className="text-xs text-gray-500 dark:text-zinc-400 mb-3">Upload your administrator profile picture.</p>
+                                                    <h4 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-1">{t('components.profilePhoto')}</h4>
+                                                    <p className="text-xs text-gray-500 dark:text-zinc-400 mb-3">{t('components.uploadYourAdministratorProfilePicture')}</p>
                                                     <div className="flex gap-3">
-                                                        <button className="px-4 py-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg text-xs font-medium hover:bg-gray-50 transition-colors">Choose File</button>
-                                                        <button className="px-4 py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg text-xs font-medium transition-colors">Remove</button>
+                                                        <button className="px-4 py-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg text-xs font-medium hover:bg-gray-50 transition-colors">{t('components.chooseFile')}</button>
+                                                        <button className="px-4 py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg text-xs font-medium transition-colors">{t('components.remove')}</button>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Admin Name</label>
+                                                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('components.adminName')}</label>
                                                 <input
                                                     type="text"
                                                     placeholder="Ex: Dr. John Doe"
@@ -313,7 +316,7 @@ export default function OnboardingFlow({ onComplete }) {
                                     {currentStep === 4 && (
                                         <div className="space-y-6 animate-fade-in">
                                             <div className="space-y-4">
-                                                <label className="text-lg font-medium text-gray-900 dark:text-zinc-100">Choose Appearance</label>
+                                                <label className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('components.chooseAppearance')}</label>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <button
                                                         onClick={() => setFormData({ ...formData, theme: 'light' })}
@@ -322,7 +325,7 @@ export default function OnboardingFlow({ onComplete }) {
                                                         <div className="w-full aspect-video rounded-lg bg-gray-100 border border-gray-200 shadow-sm p-2 flex items-center justify-center">
                                                             <div className="w-8 h-8 rounded-full bg-white shadow-md"></div>
                                                         </div>
-                                                        <span className="font-medium text-gray-900 dark:text-zinc-100">Light Mode</span>
+                                                        <span className="font-medium text-gray-900 dark:text-zinc-100">{t('components.lightMode')}</span>
                                                     </button>
                                                     <button
                                                         onClick={() => setFormData({ ...formData, theme: 'dark' })}
@@ -331,7 +334,7 @@ export default function OnboardingFlow({ onComplete }) {
                                                         <div className="w-full aspect-video rounded-lg bg-zinc-900 border border-zinc-700 shadow-sm p-2 flex items-center justify-center">
                                                             <div className="w-8 h-8 rounded-full bg-zinc-700 shadow-md"></div>
                                                         </div>
-                                                        <span className="font-medium text-gray-900 dark:text-zinc-100">Dark Mode</span>
+                                                        <span className="font-medium text-gray-900 dark:text-zinc-100">{t('components.darkMode')}</span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -363,7 +366,7 @@ export default function OnboardingFlow({ onComplete }) {
                                 onClick={handleNext}
                                 className="px-8 py-2.5 rounded-xl bg-primary text-white font-semibold hover:opacity-90 transition-opacity shadow-lg shadow-primary/25 flex items-center gap-2"
                             >
-                                {currentStep === ONBOARDING_STEPS.length - 1 ? <span>Finish Setup</span> : <span>Continue <ChevronRight size={16} className="inline opacity-80" /></span>}
+                                {currentStep === ONBOARDING_STEPS.length - 1 ? <span>{t('components.finishSetup')}</span> : <span>Continue <ChevronRight size={16} className="inline opacity-80" /></span>}
                             </button>
                         </div>
                     </div>

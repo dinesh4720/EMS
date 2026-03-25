@@ -2,8 +2,10 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Progr
 import { CheckCircle, Circle, Clock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { frontDeskApi } from '../../services/api';
+import { useTranslation } from 'react-i18next';
 
 export default function AdmissionTracker({ admission, isOpen, onClose }) {
+  const { t } = useTranslation();
   const [trackerData, setTrackerData] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -29,9 +31,9 @@ export default function AdmissionTracker({ admission, isOpen, onClose }) {
     return (
       <Modal isOpen={isOpen} onClose={onClose} size="2xl">
         <ModalContent>
-          <ModalHeader>Admission Tracker</ModalHeader>
+          <ModalHeader>{t('pages.admissionTracker')}</ModalHeader>
           <ModalBody>
-            <div className="flex justify-center p-8">Loading...</div>
+            <div className="flex justify-center p-8">{t('pages.loading')}</div>
           </ModalBody>
         </ModalContent>
       </Modal>
@@ -49,7 +51,7 @@ export default function AdmissionTracker({ admission, isOpen, onClose }) {
             {/* Progress Bar */}
             <div>
               <div className="flex justify-between mb-2">
-                <span className="text-sm font-medium">Progress</span>
+                <span className="text-sm font-medium">{t('pages.progress')}</span>
                 <span className="text-sm text-default-500">{Math.round(trackerData.progress)}%</span>
               </div>
               <Progress
@@ -118,22 +120,22 @@ export default function AdmissionTracker({ admission, isOpen, onClose }) {
 
             {/* Student Details Summary */}
             <div className="bg-default-50 p-4 rounded-lg">
-              <p className="text-sm font-medium mb-2">Admission Details</p>
+              <p className="text-sm font-medium mb-2">{t('pages.admissionDetails')}</p>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
-                  <span className="text-default-500">Class:</span>
+                  <span className="text-default-500">{t('pages.class2')}</span>
                   <span className="ml-2">{admission.classApplyingFor || '-'}</span>
                 </div>
                 <div>
-                  <span className="text-default-500">Source:</span>
+                  <span className="text-default-500">{t('pages.source1')}</span>
                   <span className="ml-2">{admission.source || '-'}</span>
                 </div>
                 <div>
-                  <span className="text-default-500">Parent:</span>
+                  <span className="text-default-500">{t('pages.parent1')}</span>
                   <span className="ml-2">{admission.parentName || '-'}</span>
                 </div>
                 <div>
-                  <span className="text-default-500">Phone:</span>
+                  <span className="text-default-500">{t('pages.phone2')}</span>
                   <span className="ml-2">{admission.phoneNumber || '-'}</span>
                 </div>
               </div>

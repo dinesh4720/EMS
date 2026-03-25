@@ -11,8 +11,10 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, Loading } from '../components';
 import { formatDate, formatTime } from '../utils/helpers';
 import { Calendar, Clock, FileText } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 const ExamDetailScreen = ({ route }) => {
+  const { t } = useTranslation();
   const { examId } = route.params;
   const { exams, loading } = useStudent();
   const { themeColors, spacing, typography } = useTheme();
@@ -27,7 +29,7 @@ const ExamDetailScreen = ({ route }) => {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: themeColors.textTertiary, fontSize: 16 }}>Exam not found</Text>
+          <Text style={{ color: themeColors.textTertiary, fontSize: 16 }}>{t('screens.examNotFound')}</Text>
         </View>
       </SafeAreaView>
     );

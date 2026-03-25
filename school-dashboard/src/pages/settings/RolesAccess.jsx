@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -30,37 +30,30 @@ import { Plus, Edit, Shield, Lock, Unlock, Copy, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { STAFF_ROLES } from "../../constants/roles";
+import { useTranslation } from 'react-i18next';
 
-// Define all modules and their actions
-const MODULES = [
-  { key: "dashboard", label: "Dashboard", actions: ["view"] },
-  { key: "staff", label: "Staff Management", actions: ["view", "create", "edit", "delete"] },
-  { key: "students", label: "Students Management", actions: ["view", "create", "edit", "delete"] },
-  { key: "classes", label: "Classes Management", actions: ["view", "create", "edit", "delete"] },
-  { key: "academics", label: "Academics & Exams", actions: ["view", "create", "edit", "delete", "publish"] },
-  { key: "attendance", label: "Attendance", actions: ["view", "create", "edit", "delete"] },
-  { key: "timetable", label: "Timetable", actions: ["view", "create", "edit", "delete"] },
-  { key: "fees", label: "Fee Management", actions: ["view", "create", "edit", "delete"] },
-  { key: "payroll", label: "Payroll", actions: ["view", "create", "edit", "delete"] },
-  { key: "communication", label: "Communication", actions: ["view", "create", "edit", "delete"] },
-  { key: "reports", label: "Reports", actions: ["view", "create", "edit", "delete"] },
-  { key: "settings", label: "Settings", actions: ["view", "create", "edit", "delete"] },
+// Define all modules and their actions (keys only — labels are translated in component)
+const MODULES_CONFIG = [
+  { key: "dashboard", actions: ["view"] },
+  { key: "staff", actions: ["view", "create", "edit", "delete"] },
+  { key: "students", actions: ["view", "create", "edit", "delete"] },
+  { key: "classes", actions: ["view", "create", "edit", "delete"] },
+  { key: "academics", actions: ["view", "create", "edit", "delete", "publish"] },
+  { key: "attendance", actions: ["view", "create", "edit", "delete"] },
+  { key: "timetable", actions: ["view", "create", "edit", "delete"] },
+  { key: "fees", actions: ["view", "create", "edit", "delete"] },
+  { key: "payroll", actions: ["view", "create", "edit", "delete"] },
+  { key: "communication", actions: ["view", "create", "edit", "delete"] },
+  { key: "reports", actions: ["view", "create", "edit", "delete"] },
+  { key: "settings", actions: ["view", "create", "edit", "delete"] },
 ];
-
-const ACTION_LABELS = {
-  view: "View",
-  create: "Create",
-  edit: "Edit",
-  delete: "Delete",
-  publish: "Publish",
-};
 
 // Default permission templates - matching backend UserPermission.js
 const PERMISSION_TEMPLATES = {
   admin: {
     name: "Admin",
     description: "Full access to all modules",
-    permissions: MODULES.reduce((acc, module) => {
+    permissions: MODULES_CONFIG.reduce((acc, module) => {
       acc[module.key] = module.actions.reduce((a, action) => ({ ...a, [action]: true }), {});
       return acc;
     }, {}),
@@ -68,7 +61,7 @@ const PERMISSION_TEMPLATES = {
   principal: {
     name: "Principal",
     description: "Full administrative access except settings deletion",
-    permissions: MODULES.reduce((acc, module) => {
+    permissions: MODULES_CONFIG.reduce((acc, module) => {
       if (module.key === 'settings') {
         acc[module.key] = { view: true, create: true, edit: true, delete: false };
       } else {
@@ -166,6 +159,11 @@ const PERMISSION_TEMPLATES = {
 };
 
 export default function RolesAccess() {
+  const { t } = useTranslation();
+  const MODULES = useMemo(() => MODULES_CONFIG.map(m => ({
+    ...m,
+    label: t(`constants.permissions.modules.${m.key}`, m.key),
+  })), [t]);
   const navigate = useNavigate();
   const { staff } = useApp();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -305,7 +303,7 @@ export default function RolesAccess() {
 
   const handleSubmit = () => {
     if (!formData.name.trim()) {
-      toast.error("Role name is required");
+      toast.error(t('toast.error.roleNameIsRequired'));
       return;
     }
 
@@ -313,7 +311,7 @@ export default function RolesAccess() {
     setTimeout(() => {
       if (editingRole) {
         setRoles(prev => prev.map(r => r.id === editingRole.id ? { ...r, ...formData } : r));
-        toast.success("Role updated successfully");
+        toast.success(t('toast.success.roleUpdatedSuccessfully'));
       } else {
         const newRole = {
           id: Date.now(),
@@ -321,7 +319,7 @@ export default function RolesAccess() {
           userCount: 0,
         };
         setRoles(prev => [...prev, newRole]);
-        toast.success("Role created successfully");
+        toast.success(t('toast.success.roleCreatedSuccessfully'));
       }
       setLoading(false);
       onClose();
@@ -329,9 +327,9 @@ export default function RolesAccess() {
   };
 
   const handleDelete = (roleId) => {
-    if (!confirm("Are you sure you want to delete this role?")) return;
+    if (!confirm(t('confirm.deleteRole'))) return;
     setRoles(prev => prev.filter(r => r.id !== roleId));
-    toast.success("Role deleted successfully");
+    toast.success(t('toast.success.roleDeletedSuccessfully'));
   };
 
   const countPermissions = (permissions) => {
@@ -351,7 +349,7 @@ export default function RolesAccess() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">Roles & Permissions</h2>
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{t('pages.rolesPermissions')}</h2>
           <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
             Manage user roles and granular permissions
           </p>
@@ -370,7 +368,7 @@ export default function RolesAccess() {
       <Card className="rounded-lg">
         <CardBody className="p-0">
           <Table
-            aria-label="Roles table"
+            aria-label={t('aria.tables.roles')}
             removeWrapper
             classNames={{
               th: "bg-gray-50 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-semibold",
@@ -378,11 +376,11 @@ export default function RolesAccess() {
             }}
           >
             <TableHeader>
-              <TableColumn>ROLE NAME</TableColumn>
-              <TableColumn>PERMISSIONS</TableColumn>
-              <TableColumn>LOCKED PERMISSIONS</TableColumn>
-              <TableColumn>USERS</TableColumn>
-              <TableColumn>ACTIONS</TableColumn>
+              <TableColumn scope="col">{t('pages.rOLEName')}</TableColumn>
+              <TableColumn scope="col">{t('pages.pERMISSIONS')}</TableColumn>
+              <TableColumn scope="col">{t('pages.lOCKEDPermissions')}</TableColumn>
+              <TableColumn scope="col">{t('pages.uSERS')}</TableColumn>
+              <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
             </TableHeader>
             <TableBody
               items={roles}
@@ -419,7 +417,7 @@ export default function RolesAccess() {
                           </span>
                         </div>
                       ) : (
-                        <span className="text-gray-400 dark:text-zinc-500 text-sm">None</span>
+                        <span className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.none1')}</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -468,7 +466,7 @@ export default function RolesAccess() {
             <div className="space-y-6">
               {/* Role Name */}
               <Input
-                label="Role Name"
+                label={t('pages.roleName')}
                 placeholder="e.g., Teacher, Accountant"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -483,7 +481,7 @@ export default function RolesAccess() {
                 </span>
                 <div className="flex gap-2">
                   <Select
-                    placeholder="Apply template"
+                    placeholder={t('pages.applyTemplate')}
                     size="sm"
                     variant="bordered"
                     className="w-48"
@@ -496,7 +494,7 @@ export default function RolesAccess() {
                     ))}
                   </Select>
                   <Select
-                    placeholder="Copy from role"
+                    placeholder={t('pages.copyFromRole')}
                     size="sm"
                     variant="bordered"
                     className="w-48"
@@ -519,19 +517,19 @@ export default function RolesAccess() {
                 <div className="border border-gray-200 dark:border-zinc-700 rounded-lg overflow-hidden">
                   <Table
                     removeWrapper
-                    aria-label="Permission matrix"
+                    aria-label={t('aria.inputs.permissionMatrix')}
                     classNames={{
                       th: "bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-semibold text-xs",
                       td: "py-3 border-b border-gray-100 dark:border-zinc-800",
                     }}
                   >
                     <TableHeader>
-                      <TableColumn>MODULE</TableColumn>
-                      <TableColumn align="center">VIEW</TableColumn>
-                      <TableColumn align="center">CREATE</TableColumn>
-                      <TableColumn align="center">EDIT</TableColumn>
-                      <TableColumn align="center">DELETE</TableColumn>
-                      <TableColumn align="center">PUBLISH</TableColumn>
+                      <TableColumn scope="col">{t('pages.mODULE')}</TableColumn>
+                      <TableColumn align="center" scope="col">{t('pages.vIEW')}</TableColumn>
+                      <TableColumn align="center" scope="col">{t('pages.cREATE')}</TableColumn>
+                      <TableColumn align="center" scope="col">{t('pages.eDIT')}</TableColumn>
+                      <TableColumn align="center" scope="col">{t('pages.dELETE')}</TableColumn>
+                      <TableColumn align="center" scope="col">{t('pages.pUBLISH')}</TableColumn>
                     </TableHeader>
                     <TableBody>
                       {MODULES.map((module) => (
@@ -550,12 +548,12 @@ export default function RolesAccess() {
                               <TableCell key={action} className="text-center">
                                 {hasAction ? (
                                   <div className="flex items-center justify-center gap-2">
-                                    <Checkbox size="sm"
+                                    <Checkbox
+                                      size="sm"
                                       isSelected={isChecked}
                                       onValueChange={(value) =>
                                         handlePermissionChange(module.key, action, value)
                                       }
-                                      size="sm"
                                       isDisabled={isLocked}
                                     />
                                     <Button

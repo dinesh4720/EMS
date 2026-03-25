@@ -1,9 +1,10 @@
 /**
  * MinimalTabs - Clean tab navigation without gradients
  */
+import { memo } from "react";
 import { cn } from "../../utils/cn";
 
-export default function MinimalTabs({
+const MinimalTabs = memo(function MinimalTabs({
   tabs,
   activeKey,
   onChange,
@@ -68,4 +69,8 @@ export default function MinimalTabs({
       ))}
     </nav>
   );
-}
+});
+
+MinimalTabs.displayName = 'MinimalTabs';
+
+export default MinimalTabs;

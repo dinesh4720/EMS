@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Checkbox, Avatar } from '@heroui/react';
 import { Search, Send, Users } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function ForwardModal({ isOpen, onClose, onForward, conversations = [] }) {
+  const { t } = useTranslation();
   const [selectedConversations, setSelectedConversations] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -46,8 +48,8 @@ export default function ForwardModal({ isOpen, onClose, onForward, conversations
               <Send size={20} className="text-indigo-500" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Forward Message</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Select conversations to forward to</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('pages.forwardMessage')}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('pages.selectConversationsToForwardTo')}</p>
             </div>
           </div>
         </ModalHeader>
@@ -58,10 +60,10 @@ export default function ForwardModal({ isOpen, onClose, onForward, conversations
               <Search size={18} className="text-gray-400 flex-shrink-0" />
               <input
                 type="text"
-                placeholder="Search conversations..."
+                placeholder={t('pages.searchConversations')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-600"
+                className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-zinc-600"
               />
             </div>
           </div>
@@ -71,7 +73,7 @@ export default function ForwardModal({ isOpen, onClose, onForward, conversations
             {filteredConversations.length === 0 ? (
               <div className="text-center py-10">
                 <Users size={40} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-                <p className="text-gray-500 dark:text-gray-400">No conversations found</p>
+                <p className="text-gray-500 dark:text-gray-400">{t('pages.noConversationsFound')}</p>
               </div>
             ) : (
               filteredConversations.map((conv) => {

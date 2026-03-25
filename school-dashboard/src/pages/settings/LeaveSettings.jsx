@@ -3,8 +3,11 @@ import { Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableCol
 import { Plus, Edit, Trash2, UserCheck, Users } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import { useTranslation } from 'react-i18next';
 
 export default function LeaveSettings() {
+  const { t } = useTranslation();
   const { leaveTypes, addLeaveType, updateLeaveType, deleteLeaveType, loading } = useApp();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingLeave, setEditingLeave] = useState(null);
@@ -60,7 +63,13 @@ export default function LeaveSettings() {
   const handleOpen = (leaveType = null) => {
     if (leaveType) {
       setEditingLeave(leaveType);
-      setFormData(leaveType);
+      setFormData({
+        name: leaveType.name || "",
+        applicableTo: leaveType.applicableTo || "both",
+        quota: leaveType.quota ?? 12,
+        requiresApproval: leaveType.requiresApproval ?? true,
+        approver: leaveType.approver || "reporter",
+      });
     } else {
       setEditingLeave(null);
       setFormData({
@@ -81,28 +90,28 @@ export default function LeaveSettings() {
     try {
       if (editingLeave) {
         await updateLeaveType(editingLeave.id, formData);
-        toast.success('Leave type updated successfully');
+        toast.success(t('toast.success.leaveTypeUpdatedSuccessfully'));
       } else {
         await addLeaveType(formData);
-        toast.success('Leave type added successfully');
+        toast.success(t('toast.success.leaveTypeAddedSuccessfully'));
       }
       onClose();
     } catch (error) {
       console.error('Failed to save leave type:', error);
-      toast.error('Failed to save leave type');
+      toast.error(t('toast.error.failedToSaveLeaveType'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this leave type?")) {
+    if (confirm(t('confirm.deleteLeaveType'))) {
       try {
         await deleteLeaveType(id);
-        toast.success('Leave type deleted successfully');
+        toast.success(t('toast.success.leaveTypeDeletedSuccessfully'));
       } catch (error) {
         console.error('Failed to delete leave type:', error);
-        toast.error('Failed to delete leave type');
+        toast.error(t('toast.error.failedToDeleteLeaveType'));
       }
     }
   };
@@ -115,9 +124,7 @@ export default function LeaveSettings() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Spinner size="lg" />
-      </div>
+      <TablePageSkeleton />
     );
   }
 
@@ -125,8 +132,8 @@ export default function LeaveSettings() {
     <div className="w-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-default-800">Leave Configuration</h2>
-          <p className="text-sm text-default-500">Manage leave types and approval workflows</p>
+          <h2 className="text-lg font-semibold text-default-800">{t('pages.leaveConfiguration')}</h2>
+          <p className="text-sm text-default-500">{t('pages.manageLeaveTypesAndApprovalWorkflows')}</p>
         </div>
         <Button 
           color="primary" 
@@ -143,7 +150,7 @@ export default function LeaveSettings() {
         <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
           <div className="flex items-center gap-2 mb-2">
             <UserCheck size={18} className="text-primary-600 dark:text-primary-400" />
-            <span className="text-xs text-primary-700 dark:text-primary-300 uppercase tracking-wider">Staff Leaves</span>
+            <span className="text-xs text-primary-700 dark:text-primary-300 uppercase tracking-wider">{t('pages.staffLeaves')}</span>
           </div>
           <p className="text-2xl font-semibold text-primary-700 dark:text-primary-300">
             {leaveTypes.filter(lt => lt.applicableTo === "staff" || lt.applicableTo === "both").length}
@@ -153,7 +160,7 @@ export default function LeaveSettings() {
         <div className="p-4 bg-secondary-50 dark:bg-secondary-900/20 rounded-lg border border-secondary-200 dark:border-secondary-800">
           <div className="flex items-center gap-2 mb-2">
             <Users size={18} className="text-secondary-600 dark:text-secondary-400" />
-            <span className="text-xs text-secondary-700 dark:text-secondary-300 uppercase tracking-wider">Student Leaves</span>
+            <span className="text-xs text-secondary-700 dark:text-secondary-300 uppercase tracking-wider">{t('pages.studentLeaves')}</span>
           </div>
           <p className="text-2xl font-semibold text-secondary-700 dark:text-secondary-300">
             {leaveTypes.filter(lt => lt.applicableTo === "students" || lt.applicableTo === "both").length}
@@ -163,7 +170,7 @@ export default function LeaveSettings() {
         <div className="p-4 bg-success-50 dark:bg-success-900/20 rounded-lg border border-success-200 dark:border-success-800">
           <div className="flex items-center gap-2 mb-2">
             <UserCheck size={18} className="text-success-600 dark:text-success-400" />
-            <span className="text-xs text-success-700 dark:text-success-300 uppercase tracking-wider">Total Types</span>
+            <span className="text-xs text-success-700 dark:text-success-300 uppercase tracking-wider">{t('pages.totalTypes')}</span>
           </div>
           <p className="text-2xl font-semibold text-success-700 dark:text-success-300">{leaveTypes.length}</p>
         </div>
@@ -171,7 +178,7 @@ export default function LeaveSettings() {
         <div className="p-4 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800">
           <div className="flex items-center gap-2 mb-2">
             <UserCheck size={18} className="text-warning-600 dark:text-warning-400" />
-            <span className="text-xs text-warning-700 dark:text-warning-300 uppercase tracking-wider">Auto-Approved</span>
+            <span className="text-xs text-warning-700 dark:text-warning-300 uppercase tracking-wider">{t('pages.autoApproved')}</span>
           </div>
           <p className="text-2xl font-semibold text-warning-700 dark:text-warning-300">
             {leaveTypes.filter(lt => !lt.requiresApproval).length}
@@ -182,7 +189,7 @@ export default function LeaveSettings() {
       <Card className="shadow-sm border border-default-200 rounded-lg">
         <CardBody className="p-0">
           <Table
-            aria-label="Leave Types"
+            aria-label={t('aria.misc.leaveTypes')}
             removeWrapper
             classNames={{
               base: "overflow-visible",
@@ -192,12 +199,12 @@ export default function LeaveSettings() {
             }}
           >
             <TableHeader>
-              <TableColumn>LEAVE TYPE</TableColumn>
-              <TableColumn>APPLICABLE TO</TableColumn>
-              <TableColumn>QUOTA (DAYS)</TableColumn>
-              <TableColumn>APPROVAL</TableColumn>
-              <TableColumn>APPROVER</TableColumn>
-              <TableColumn align="end">ACTIONS</TableColumn>
+              <TableColumn scope="col">{t('pages.lEAVEType')}</TableColumn>
+              <TableColumn scope="col">{t('pages.aPPLICABLETo')}</TableColumn>
+              <TableColumn scope="col">{t('pages.qUOTADays')}</TableColumn>
+              <TableColumn scope="col">{t('pages.aPPROVAL')}</TableColumn>
+              <TableColumn scope="col">{t('pages.aPPROVER')}</TableColumn>
+              <TableColumn align="end" scope="col">{t('pages.aCTIONS')}</TableColumn>
             </TableHeader>
             <TableBody emptyContent="No leave types configured">
               {visibleLeaveTypes.map((leaveType) => (
@@ -268,29 +275,29 @@ export default function LeaveSettings() {
 
       <Card className="shadow-sm border border-default-200 rounded-lg mt-4">
         <CardHeader className="py-4 px-4 bg-default-50/50 border-b border-default-100">
-          <h3 className="text-sm font-semibold text-default-700">Approval Workflow</h3>
+          <h3 className="text-sm font-semibold text-default-700">{t('pages.approvalWorkflow')}</h3>
         </CardHeader>
         <CardBody className="p-4 space-y-3">
           <div className="flex items-center justify-between p-4 bg-default-50 rounded-lg border border-default-200">
             <div>
-              <p className="text-sm font-medium text-default-800">Reporter</p>
-              <p className="text-xs text-default-500">Direct supervisor or class teacher</p>
+              <p className="text-sm font-medium text-default-800">{t('pages.reporter')}</p>
+              <p className="text-xs text-default-500">{t('pages.directSupervisorOrClassTeacher')}</p>
             </div>
-            <Chip size="sm" color="primary" variant="flat">Level 1</Chip>
+            <Chip size="sm" color="primary" variant="flat">{t('pages.level1')}</Chip>
           </div>
           <div className="flex items-center justify-between p-4 bg-default-50 rounded-lg border border-default-200">
             <div>
-              <p className="text-sm font-medium text-default-800">Principal</p>
-              <p className="text-xs text-default-500">School principal or head</p>
+              <p className="text-sm font-medium text-default-800">{t('pages.principal2')}</p>
+              <p className="text-xs text-default-500">{t('pages.schoolPrincipalOrHead')}</p>
             </div>
-            <Chip size="sm" color="warning" variant="flat">Level 2</Chip>
+            <Chip size="sm" color="warning" variant="flat">{t('pages.level2')}</Chip>
           </div>
           <div className="flex items-center justify-between p-4 bg-default-50 rounded-lg border border-default-200">
             <div>
-              <p className="text-sm font-medium text-default-800">Admin</p>
-              <p className="text-xs text-default-500">System administrator</p>
+              <p className="text-sm font-medium text-default-800">{t('pages.admin2')}</p>
+              <p className="text-xs text-default-500">{t('pages.systemAdministrator')}</p>
             </div>
-            <Chip size="sm" color="danger" variant="flat">Level 3</Chip>
+            <Chip size="sm" color="danger" variant="flat">{t('pages.level3')}</Chip>
           </div>
         </CardBody>
       </Card>
@@ -301,7 +308,7 @@ export default function LeaveSettings() {
           <ModalBody className="gap-4">
             <Input
               size="sm"
-              label="Leave Type Name"
+              label={t('pages.leaveTypeName')}
               placeholder="e.g., Sick Leave"
               value={formData.name}
               onValueChange={(v) => setFormData({ ...formData, name: v })}
@@ -309,19 +316,19 @@ export default function LeaveSettings() {
             />
             <Select
               size="sm"
-              label="Applicable To"
+              label={t('pages.applicableTo')}
               variant="bordered"
               selectedKeys={[formData.applicableTo]}
               onChange={(e) => setFormData({ ...formData, applicableTo: e.target.value })}
             >
-              <SelectItem key="staff" value="staff">Staff Only</SelectItem>
-              <SelectItem key="students" value="students">Students Only</SelectItem>
-              <SelectItem key="both" value="both">Both Staff & Students</SelectItem>
+              <SelectItem key="staff" value="staff">{t('pages.staffOnly')}</SelectItem>
+              <SelectItem key="students" value="students">{t('pages.studentsOnly')}</SelectItem>
+              <SelectItem key="both" value="both">{t('pages.bothStaffStudents')}</SelectItem>
             </Select>
             <Input
               size="sm"
               type="number"
-              label="Annual Quota (Days)"
+              label={t('pages.annualQuotaDays')}
               placeholder="12"
               value={formData.quota}
               onValueChange={(v) => setFormData({ ...formData, quota: parseInt(v) || 0 })}
@@ -329,8 +336,8 @@ export default function LeaveSettings() {
             />
             <div className="flex items-center justify-between p-3 bg-default-50 rounded-lg border border-default-200">
               <div>
-                <p className="text-sm font-medium text-default-700">Requires Approval</p>
-                <p className="text-xs text-default-500">Leave needs approval before granting</p>
+                <p className="text-sm font-medium text-default-700">{t('pages.requiresApproval')}</p>
+                <p className="text-xs text-default-500">{t('pages.leaveNeedsApprovalBeforeGranting')}</p>
               </div>
               <Switch 
                 size="sm" 
@@ -341,19 +348,19 @@ export default function LeaveSettings() {
             {formData.requiresApproval && (
               <Select
                 size="sm"
-                label="Approver"
+                label={t('pages.approver')}
                 variant="bordered"
                 selectedKeys={[formData.approver]}
                 onChange={(e) => setFormData({ ...formData, approver: e.target.value })}
               >
-                <SelectItem key="reporter" value="reporter">Reporter (Direct Supervisor)</SelectItem>
-                <SelectItem key="principal" value="principal">Principal</SelectItem>
-                <SelectItem key="admin" value="admin">Admin</SelectItem>
+                <SelectItem key="reporter" value="reporter">{t('pages.reporterDirectSupervisor')}</SelectItem>
+                <SelectItem key="principal" value="principal">{t('pages.principal2')}</SelectItem>
+                <SelectItem key="admin" value="admin">{t('pages.admin2')}</SelectItem>
               </Select>
             )}
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={onClose}>Cancel</Button>
+            <Button variant="light" onPress={onClose}>{t('pages.cancel2')}</Button>
             <Button 
               color="primary" 
               onPress={handleSave}

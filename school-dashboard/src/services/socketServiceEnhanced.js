@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import { SOCKET_URL } from '../config/api.js';
 
 class SocketServiceEnhanced {
   constructor() {
@@ -12,7 +13,9 @@ class SocketServiceEnhanced {
     this.maxReconnectAttempts = 5;
   }
 
-  connect() {
+  connect(token) {
+    this._authToken = token || this._authToken || null;
+
     // If already connected and authenticated, reuse the connection
     if (this.socket?.connected && this.authenticated) {
       return Promise.resolve();
@@ -33,16 +36,14 @@ class SocketServiceEnhanced {
     }
 
     return new Promise((resolve, reject) => {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const SOCKET_URL = API_URL.replace('/api', '');
-
       this.socket = io(SOCKET_URL, {
         transports: ['websocket', 'polling'],
         withCredentials: true, // Send httpOnly cookies with handshake
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionAttempts: this.maxReconnectAttempts,
-        timeout: 10000
+        timeout: 10000,
+        auth: this._authToken ? { token: this._authToken } : undefined,
       });
 
       // Connection timeout
@@ -68,8 +69,11 @@ class SocketServiceEnhanced {
           }
         });
 
-        // Authenticate — token is in the httpOnly cookie sent with the handshake
-        this.socket.emit('authenticate', { useCookie: true });
+        // Authenticate — use token if provided, otherwise fall back to httpOnly cookie
+        this.socket.emit('authenticate', this._authToken
+          ? { token: this._authToken }
+          : { useCookie: true }
+        );
       });
 
       this.socket.on('authenticated', (data) => {

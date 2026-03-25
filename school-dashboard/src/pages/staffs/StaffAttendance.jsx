@@ -8,14 +8,18 @@ import {
     Textarea, Select, SelectItem, Input,
     Popover, PopoverTrigger, PopoverContent, Calendar
 } from "@heroui/react";
-import { parseDate } from "@internationalized/date";
+import { parseDate, today, getLocalTimeZone } from "@internationalized/date";
 import { Search, Filter, ArrowUpDown, Layers, MoreVertical, Check, X, Clock, ChevronDown, Download, AlertCircle, CalendarDays, ChevronLeft, ChevronRight, UserCheck, UserX, Users } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import PhotoAvatar from "../../components/PhotoAvatar";
+import { getDateLocale } from '../../i18n/index';
+import { useTranslation } from 'react-i18next';
+
 
 const ITEMS_PER_LOAD = 10;
 
 export default function StaffAttendance() {
+  const { t } = useTranslation();
     const { staff, staffAttendance: attendance, markStaffAttendance: markAttendance, fetchStaffAttendanceForDate, markAllStaffAttendance: markBulkAttendance } = useApp();
     const navigate = useNavigate();
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -167,7 +171,7 @@ export default function StaffAttendance() {
         } else {
             // FIXED: Use consistent time based on current time or default
             const now = new Date();
-            const inTime = status === "present" ? now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : "-";
+            const inTime = status === "present" ? now.toLocaleTimeString(getDateLocale(), { hour: '2-digit', minute: '2-digit', hour12: false }) : "-";
             markAttendance(staffId, selectedDate, status, inTime, "-");
         }
     };
@@ -176,7 +180,7 @@ export default function StaffAttendance() {
         if (pendingStatus.staffId && pendingStatus.status) {
             // FIXED: Use consistent time based on current time or default
             const now = new Date();
-            const inTime = pendingStatus.status === "halfday" ? now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : "-";
+            const inTime = pendingStatus.status === "halfday" ? now.toLocaleTimeString(getDateLocale(), { hour: '2-digit', minute: '2-digit', hour12: false }) : "-";
             markAttendance(pendingStatus.staffId, selectedDate, pendingStatus.status, inTime, "-", reason);
         }
         setReasonModalOpen(false);
@@ -192,7 +196,7 @@ export default function StaffAttendance() {
         } else {
             // FIXED: Use consistent time for all staff in bulk operation
             const now = new Date();
-            const inTime = action === "present" ? now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : "-";
+            const inTime = action === "present" ? now.toLocaleTimeString(getDateLocale(), { hour: '2-digit', minute: '2-digit', hour12: false }) : "-";
             const idsToProcess = selectedKeys === "all" ? filteredStaff.map(s => s.id) : Array.from(selectedKeys);
 
             markBulkAttendance(selectedDate, action, idsToProcess, "", inTime, "-");
@@ -204,7 +208,7 @@ export default function StaffAttendance() {
     const handleBulkReasonConfirm = () => {
         // FIXED: Use consistent time for all staff in bulk operation
         const now = new Date();
-        const inTime = pendingStatus.status === "halfday" ? now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : "-";
+        const inTime = pendingStatus.status === "halfday" ? now.toLocaleTimeString(getDateLocale(), { hour: '2-digit', minute: '2-digit', hour12: false }) : "-";
         const idsToProcess = selectedKeys === "all" ? filteredStaff.map(s => s.id) : Array.from(selectedKeys);
 
         markBulkAttendance(selectedDate, pendingStatus.status, idsToProcess, reason, inTime, "-");
@@ -351,8 +355,8 @@ export default function StaffAttendance() {
                             </ModalHeader>
                             <ModalBody>
                                 <Textarea
-                                    label="Reason"
-                                    placeholder="Please provide a reason..."
+                                    label={t('pages.reason')}
+                                    placeholder={t('pages.pleaseProvideAReason')}
                                     value={reason}
                                     onValueChange={setReason}
                                     minRows={3}
@@ -360,7 +364,7 @@ export default function StaffAttendance() {
                                 />
                             </ModalBody>
                             <ModalFooter>
-                                <Button variant="light" onPress={onClose}>Cancel</Button>
+                                <Button variant="light" onPress={onClose}>{t('pages.cancel2')}</Button>
                                 <Button
                                     color="primary"
                                     onPress={pendingStatus.staffId === "bulk" ? handleBulkReasonConfirm : handleConfirmReason}
@@ -378,24 +382,24 @@ export default function StaffAttendance() {
                 <ModalContent>
                     {(onClose) => (
                         <>
-                            <ModalHeader>Download Attendance Report</ModalHeader>
+                            <ModalHeader>{t('pages.downloadAttendanceReport')}</ModalHeader>
                             <ModalBody className="gap-4">
                                 <Select
-                                    label="Report Type"
+                                    label={t('pages.reportType')}
                                     selectedKeys={new Set([downloadType])}
                                     onSelectionChange={(keys) => setDownloadType(Array.from(keys)[0])}
                                     variant="bordered"
                                 >
-                                    <SelectItem key="this_week">This Week</SelectItem>
-                                    <SelectItem key="monthly">Monthly</SelectItem>
-                                    <SelectItem key="yearly">Yearly</SelectItem>
-                                    <SelectItem key="custom">Custom Date Range</SelectItem>
+                                    <SelectItem key="this_week">{t('pages.thisWeek')}</SelectItem>
+                                    <SelectItem key="monthly">{t('pages.monthly')}</SelectItem>
+                                    <SelectItem key="yearly">{t('pages.yearly')}</SelectItem>
+                                    <SelectItem key="custom">{t('pages.customDateRange')}</SelectItem>
                                 </Select>
 
                                 {downloadType === "monthly" && (
                                     <div className="flex gap-3">
                                         <Select
-                                            label="Month"
+                                            label={t('pages.month1')}
                                             selectedKeys={new Set([selectedMonth])}
                                             onSelectionChange={(keys) => setSelectedMonth(Array.from(keys)[0])}
                                             variant="bordered"
@@ -406,7 +410,7 @@ export default function StaffAttendance() {
                                             ))}
                                         </Select>
                                         <Select
-                                            label="Year"
+                                            label={t('pages.year1')}
                                             selectedKeys={new Set([selectedYear])}
                                             onSelectionChange={(keys) => setSelectedYear(Array.from(keys)[0])}
                                             variant="bordered"
@@ -421,7 +425,7 @@ export default function StaffAttendance() {
 
                                 {downloadType === "yearly" && (
                                     <Select
-                                        label="Year"
+                                        label={t('pages.year1')}
                                         selectedKeys={new Set([selectedYear])}
                                         onSelectionChange={(keys) => setSelectedYear(Array.from(keys)[0])}
                                         variant="bordered"
@@ -436,7 +440,7 @@ export default function StaffAttendance() {
                                     <div className="flex gap-3">
                                         <Input
                                             type="date"
-                                            label="Start Date"
+                                            label={t('pages.startDate1')}
                                             value={customStartDate}
                                             onValueChange={setCustomStartDate}
                                             variant="bordered"
@@ -444,7 +448,7 @@ export default function StaffAttendance() {
                                         />
                                         <Input
                                             type="date"
-                                            label="End Date"
+                                            label={t('pages.endDate1')}
                                             value={customEndDate}
                                             onValueChange={setCustomEndDate}
                                             variant="bordered"
@@ -454,7 +458,7 @@ export default function StaffAttendance() {
                                 )}
                             </ModalBody>
                             <ModalFooter>
-                                <Button variant="light" onPress={onClose}>Cancel</Button>
+                                <Button variant="light" onPress={onClose}>{t('pages.cancel2')}</Button>
                                 <Button color="primary" startContent={<Download size={16} />} onPress={handleDownloadReport}>
                                     Download
                                 </Button>
@@ -469,28 +473,28 @@ export default function StaffAttendance() {
                 <div className="p-4 bg-default-50 rounded-lg border border-default-200">
                     <div className="flex items-center gap-2 mb-2">
                         <Users size={18} className="text-default-500" />
-                        <span className="text-xs text-default-500 uppercase tracking-wider">Total Staff</span>
+                        <span className="text-xs text-default-500 uppercase tracking-wider">{t('pages.totalStaff')}</span>
                     </div>
                     <p className="text-2xl font-semibold text-default-900">{kpiStats.total}</p>
                 </div>
                 <div className="p-4 bg-success-50 rounded-lg border border-success-200">
                     <div className="flex items-center gap-2 mb-2">
                         <UserCheck size={18} className="text-success-600" />
-                        <span className="text-xs text-success-700 uppercase tracking-wider">Present</span>
+                        <span className="text-xs text-success-700 uppercase tracking-wider">{t('pages.present2')}</span>
                     </div>
                     <p className="text-2xl font-semibold text-success-700">{kpiStats.present}</p>
                 </div>
                 <div className="p-4 bg-danger-50 rounded-lg border border-danger-200">
                     <div className="flex items-center gap-2 mb-2">
                         <UserX size={18} className="text-danger-600" />
-                        <span className="text-xs text-danger-700 uppercase tracking-wider">Absent</span>
+                        <span className="text-xs text-danger-700 uppercase tracking-wider">{t('pages.absent2')}</span>
                     </div>
                     <p className="text-2xl font-semibold text-danger-700">{kpiStats.absent}</p>
                 </div>
                 <div className="p-4 bg-warning-50 rounded-lg border border-warning-200">
                     <div className="flex items-center gap-2 mb-2">
                         <Clock size={18} className="text-warning-600" />
-                        <span className="text-xs text-warning-700 uppercase tracking-wider">On Leave</span>
+                        <span className="text-xs text-warning-700 uppercase tracking-wider">{t('pages.onLeave1')}</span>
                     </div>
                     <p className="text-2xl font-semibold text-warning-700">{kpiStats.leave}</p>
                 </div>
@@ -515,7 +519,7 @@ export default function StaffAttendance() {
                                         <ChevronLeft size={14} className="text-default-400" />
                                     </div>
                                     <CalendarDays size={16} className="text-default-400 flex-shrink-0" />
-                                    <span>{new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                    <span>{new Date(selectedDate).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                                     <div
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -535,7 +539,8 @@ export default function StaffAttendance() {
                                 <Calendar
                                     value={parseDate(selectedDate)}
                                     onChange={(date) => setSelectedDate(date.toString())}
-                                    aria-label="Select date"
+                                    maxValue={today(getLocalTimeZone())}
+                                    aria-label={t('aria.inputs.selectDate')}
                                 />
                             </PopoverContent>
                         </Popover>
@@ -553,7 +558,7 @@ export default function StaffAttendance() {
                         <Search size={16} className="text-default-400" />
                         <input
                             type="text"
-                            placeholder="Search staff..."
+                            placeholder={t('pages.searchStaff')}
                             className="flex-1 bg-transparent outline-none text-sm"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -571,18 +576,18 @@ export default function StaffAttendance() {
                             </button>
                         </DropdownTrigger>
                         <DropdownMenu
-                            aria-label="Filter by status"
+                            aria-label={t('aria.menus.filterByStatus')}
                             disallowEmptySelection
                             selectionMode="single"
                             selectedKeys={new Set([statusFilter])}
                             onSelectionChange={(keys) => setStatusFilter(Array.from(keys)[0])}
                         >
-                            <DropdownItem key="all">All Status</DropdownItem>
-                            <DropdownItem key="present">Present</DropdownItem>
-                            <DropdownItem key="absent">Absent</DropdownItem>
-                            <DropdownItem key="halfday">Half Day</DropdownItem>
-                            <DropdownItem key="leave">On Leave</DropdownItem>
-                            <DropdownItem key="unmarked">Not Marked</DropdownItem>
+                            <DropdownItem key="all">{t('pages.allStatus1')}</DropdownItem>
+                            <DropdownItem key="present">{t('pages.present2')}</DropdownItem>
+                            <DropdownItem key="absent">{t('pages.absent2')}</DropdownItem>
+                            <DropdownItem key="halfday">{t('pages.halfDay')}</DropdownItem>
+                            <DropdownItem key="leave">{t('pages.onLeave1')}</DropdownItem>
+                            <DropdownItem key="unmarked">{t('pages.notMarked')}</DropdownItem>
                         </DropdownMenu>
                     </Dropdown>
 
@@ -593,14 +598,14 @@ export default function StaffAttendance() {
                             </button>
                         </DropdownTrigger>
                         <DropdownMenu
-                            aria-label="Sort options"
+                            aria-label={t('aria.menus.sortOptions')}
                             disallowEmptySelection
                             selectionMode="single"
                             selectedKeys={new Set([sortDescriptor.column])}
                             onSelectionChange={(keys) => setSortDescriptor({ column: Array.from(keys)[0], direction: sortDescriptor.direction })}
                         >
-                            <DropdownItem key="name">Name</DropdownItem>
-                            <DropdownItem key="department">Department</DropdownItem>
+                            <DropdownItem key="name">{t('pages.name1')}</DropdownItem>
+                            <DropdownItem key="department">{t('pages.department1')}</DropdownItem>
                         </DropdownMenu>
                     </Dropdown>
 
@@ -609,26 +614,26 @@ export default function StaffAttendance() {
                         onClick={() => setDownloadModalOpen(true)}
                     >
                         <Download size={16} className="text-default-400" />
-                        <span>Download Report</span>
+                        <span>{t('pages.downloadReport1')}</span>
                     </button>
 
                     <Dropdown>
                         <DropdownTrigger>
                             <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
                                 <Layers size={16} className="text-default-400" />
-                                <span>Bulk Actions</span>
+                                <span>{t('pages.bulkActions1')}</span>
                                 <ChevronDown size={14} className="text-default-400" />
                             </button>
                         </DropdownTrigger>
                         <DropdownMenu
-                            aria-label="Bulk Actions"
+                            aria-label={t('aria.menus.bulkActionsUpper')}
                             onAction={handleBulkAction}
                         >
-                            <DropdownItem key="present" className="text-success">Mark Selected Present</DropdownItem>
-                            <DropdownItem key="halfday" className="text-secondary">Mark Selected Half Day</DropdownItem>
-                            <DropdownItem key="absent" className="text-danger">Mark Selected Absent</DropdownItem>
-                            <DropdownItem key="leave" className="text-warning">Mark Selected On Leave</DropdownItem>
-                            <DropdownItem key="unmarked">Mark Selected Not Marked</DropdownItem>
+                            <DropdownItem key="present" className="text-success">{t('pages.markSelectedPresent')}</DropdownItem>
+                            <DropdownItem key="halfday" className="text-secondary">{t('pages.markSelectedHalfDay')}</DropdownItem>
+                            <DropdownItem key="absent" className="text-danger">{t('pages.markSelectedAbsent')}</DropdownItem>
+                            <DropdownItem key="leave" className="text-warning">{t('pages.markSelectedOnLeave')}</DropdownItem>
+                            <DropdownItem key="unmarked">{t('pages.markSelectedNotMarked')}</DropdownItem>
                         </DropdownMenu>
                     </Dropdown>
                 </div>
@@ -637,7 +642,7 @@ export default function StaffAttendance() {
 
             {/* Table */}
             <Table
-                aria-label="Staff attendance table"
+                aria-label={t('aria.tables.staffAttendance')}
                 selectionMode="multiple"
                 selectedKeys={selectedKeys}
                 onSelectionChange={setSelectedKeys}
@@ -655,15 +660,15 @@ export default function StaffAttendance() {
                 radius="none"
             >
                 <TableHeader>
-                    <TableColumn key="name" allowsSorting style={{ width: columnWidths.name }}>STAFF MEMBER</TableColumn>
-                    <TableColumn key="status" allowsSorting style={{ width: columnWidths.status }}>STATUS</TableColumn>
-                    <TableColumn key="inTime" style={{ width: columnWidths.inTime }}>
-                        <span className="whitespace-normal leading-tight">CHECK IN</span>
+                    <TableColumn key="name" allowsSorting style={{ width: columnWidths.name }} scope="col">{t('pages.sTAFFMember')}</TableColumn>
+                    <TableColumn key="status" allowsSorting style={{ width: columnWidths.status }} scope="col">{t('pages.sTATUS')}</TableColumn>
+                    <TableColumn key="inTime" style={{ width: columnWidths.inTime }} scope="col">
+                        <span className="whitespace-normal leading-tight">{t('pages.cHECKIn')}</span>
                     </TableColumn>
-                    <TableColumn key="outTime" style={{ width: columnWidths.outTime }}>
-                        <span className="whitespace-normal leading-tight">CHECK OUT</span>
+                    <TableColumn key="outTime" style={{ width: columnWidths.outTime }} scope="col">
+                        <span className="whitespace-normal leading-tight">{t('pages.cHECKOut')}</span>
                     </TableColumn>
-                    <TableColumn key="attendance" style={{ width: columnWidths.attendance, minWidth: columnWidths.attendance }}>
+                    <TableColumn key="attendance" style={{ width: columnWidths.attendance, minWidth: columnWidths.attendance }} scope="col">
                         <Dropdown>
                             <DropdownTrigger>
                                 <div className="flex items-center gap-1 cursor-pointer w-full h-full">
@@ -672,18 +677,18 @@ export default function StaffAttendance() {
                                 </div>
                             </DropdownTrigger>
                             <DropdownMenu
-                                aria-label="Select attendance period"
+                                aria-label={t('aria.inputs.selectAttendancePeriod')}
                                 selectionMode="single"
                                 selectedKeys={new Set([attendancePeriod])}
                                 onSelectionChange={(keys) => setAttendancePeriod(Array.from(keys)[0])}
                             >
-                                <DropdownItem key="this_week">This Week</DropdownItem>
-                                <DropdownItem key="this_month">This Month</DropdownItem>
-                                <DropdownItem key="this_year">This Year</DropdownItem>
+                                <DropdownItem key="this_week">{t('pages.thisWeek')}</DropdownItem>
+                                <DropdownItem key="this_month">{t('pages.thisMonth')}</DropdownItem>
+                                <DropdownItem key="this_year">{t('pages.thisYear')}</DropdownItem>
                             </DropdownMenu>
                         </Dropdown>
                     </TableColumn>
-                    <TableColumn align="end" style={{ width: columnWidths.actions }}>ACTIONS</TableColumn>
+                    <TableColumn align="end" style={{ width: columnWidths.actions }} scope="col">{t('pages.aCTIONS')}</TableColumn>
                 </TableHeader>
                 <TableBody emptyContent="No staff found">
                     {visibleStaff.map((s) => {
@@ -736,14 +741,14 @@ export default function StaffAttendance() {
                                             </div>
                                         </DropdownTrigger>
                                         <DropdownMenu
-                                            aria-label="Change Status"
+                                            aria-label={t('aria.misc.changeStatusUpper')}
                                             onAction={(key) => handleStatusChange(s.id, key)}
                                         >
-                                            <DropdownItem key="present" startContent={<Check size={14} className="text-success" />}>Present</DropdownItem>
-                                            <DropdownItem key="halfday" startContent={<AlertCircle size={14} className="text-secondary" />}>Half Day</DropdownItem>
-                                            <DropdownItem key="absent" startContent={<X size={14} className="text-danger" />}>Absent</DropdownItem>
-                                            <DropdownItem key="leave" startContent={<Clock size={14} className="text-warning" />}>On Leave</DropdownItem>
-                                            <DropdownItem key="unmarked" startContent={<Clock size={14} className="text-default-400" />}>Not Marked</DropdownItem>
+                                            <DropdownItem key="present" startContent={<Check size={14} className="text-success" />}>{t('pages.present2')}</DropdownItem>
+                                            <DropdownItem key="halfday" startContent={<AlertCircle size={14} className="text-secondary" />}>{t('pages.halfDay')}</DropdownItem>
+                                            <DropdownItem key="absent" startContent={<X size={14} className="text-danger" />}>{t('pages.absent2')}</DropdownItem>
+                                            <DropdownItem key="leave" startContent={<Clock size={14} className="text-warning" />}>{t('pages.onLeave1')}</DropdownItem>
+                                            <DropdownItem key="unmarked" startContent={<Clock size={14} className="text-default-400" />}>{t('pages.notMarked')}</DropdownItem>
                                         </DropdownMenu>
                                     </Dropdown>
                                 </TableCell>
@@ -783,9 +788,9 @@ export default function StaffAttendance() {
                                                     <MoreVertical size={18} />
                                                 </Button>
                                             </DropdownTrigger>
-                                            <DropdownMenu aria-label="Actions">
-                                                <DropdownItem key="view" onPress={() => navigate(`/staffs/${s.id}`)}>View Profile</DropdownItem>
-                                                <DropdownItem key="edit">Edit Attendance</DropdownItem>
+                                            <DropdownMenu aria-label={t('aria.menus.actions')}>
+                                                <DropdownItem key="view" onPress={() => navigate(`/staffs/${s.id}`)}>{t('pages.viewProfile')}</DropdownItem>
+                                                <DropdownItem key="edit">{t('pages.editAttendance')}</DropdownItem>
                                             </DropdownMenu>
                                         </Dropdown>
                                     </div>

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { API_URL } from '../../config/api.js';
+import { useState, useMemo } from 'react';
 import { Select, SelectItem, Button } from '@heroui/react';
 import {
   Download, GraduationCap, Users, IndianRupee, UserCheck, FileSpreadsheet,
@@ -6,22 +7,30 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-
-const EXPORT_TYPES = [
-  { key: 'students', label: 'Students', description: 'Complete student master list', icon: GraduationCap, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950' },
-  { key: 'staff', label: 'Staff', description: 'Staff directory with details', icon: Users, color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-950' },
-  { key: 'fee-collection', label: 'Fee Collection', description: 'Payment records and summaries', icon: IndianRupee, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950' },
-  { key: 'attendance', label: 'Attendance', description: 'Student attendance records', icon: UserCheck, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950' },
-  { key: 'exam-results', label: 'Exam Results', description: 'Exam scores and analysis', icon: FileSpreadsheet, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950' },
-  { key: 'payroll', label: 'Payroll', description: 'Staff salary records', icon: Briefcase, color: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-950' },
-];
+const EXPORT_TYPE_ICONS = {
+  students: { icon: GraduationCap, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950' },
+  staff: { icon: Users, color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-950' },
+  'fee-collection': { icon: IndianRupee, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950' },
+  attendance: { icon: UserCheck, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950' },
+  'exam-results': { icon: FileSpreadsheet, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950' },
+  payroll: { icon: Briefcase, color: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-950' },
+};
 
 export default function ExportCenter() {
+  const { t } = useTranslation();
   const { classesWithTeachers, currentAcademicYear } = useApp();
   const [exporting, setExporting] = useState(null);
   const [format, setFormat] = useState('xlsx');
+  const EXPORT_TYPES = useMemo(() => [
+    { key: 'students', label: t('exportCenter.types.students.label'), description: t('exportCenter.types.students.description'), ...EXPORT_TYPE_ICONS.students },
+    { key: 'staff', label: t('exportCenter.types.staff.label'), description: t('exportCenter.types.staff.description'), ...EXPORT_TYPE_ICONS.staff },
+    { key: 'fee-collection', label: t('exportCenter.types.feeCollection.label'), description: t('exportCenter.types.feeCollection.description'), ...EXPORT_TYPE_ICONS['fee-collection'] },
+    { key: 'attendance', label: t('exportCenter.types.attendance.label'), description: t('exportCenter.types.attendance.description'), ...EXPORT_TYPE_ICONS.attendance },
+    { key: 'exam-results', label: t('exportCenter.types.examResults.label'), description: t('exportCenter.types.examResults.description'), ...EXPORT_TYPE_ICONS['exam-results'] },
+    { key: 'payroll', label: t('exportCenter.types.payroll.label'), description: t('exportCenter.types.payroll.description'), ...EXPORT_TYPE_ICONS.payroll },
+  ], [t]);
 
   const handleExport = async (type) => {
     setExporting(type);
@@ -44,7 +53,7 @@ export default function ExportCenter() {
       a.click();
       a.remove();
       URL.revokeObjectURL(downloadUrl);
-      toast.success(`${type} exported successfully`);
+      toast.success(t('exportCenter.exportButton', { format: format.toUpperCase() }) + ' ' + t('common.success', 'successful'));
     } catch (err) {
       toast.error(err.message || 'Export failed');
     } finally {
@@ -57,18 +66,18 @@ export default function ExportCenter() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Export Center</h1>
-          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">Download school data as Excel or CSV files</p>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{t('exportCenter.title')}</h1>
+          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">{t('exportCenter.subtitle')}</p>
         </div>
         <div className="w-36">
           <Select
-            label="Format"
+            label={t('exportCenter.formatLabel')}
             size="sm"
             selectedKeys={[format]}
             onChange={(e) => setFormat(e.target.value)}
           >
-            <SelectItem key="xlsx" textValue="Excel (.xlsx)">Excel (.xlsx)</SelectItem>
-            <SelectItem key="csv" textValue="CSV (.csv)">CSV (.csv)</SelectItem>
+            <SelectItem key="xlsx" textValue="Excel (.xlsx)">{t('pages.excelXlsx')}</SelectItem>
+            <SelectItem key="csv" textValue="CSV (.csv)">{t('pages.cSVCsv')}</SelectItem>
           </Select>
         </div>
       </div>
@@ -98,7 +107,7 @@ export default function ExportCenter() {
                 isLoading={exporting === exp.key}
                 onPress={() => handleExport(exp.key)}
               >
-                {exporting === exp.key ? 'Exporting...' : `Export ${format.toUpperCase()}`}
+                {exporting === exp.key ? t('exportCenter.exporting') : t('exportCenter.exportButton', { format: format.toUpperCase() })}
               </Button>
             </div>
           </div>
@@ -110,10 +119,8 @@ export default function ExportCenter() {
         <div className="flex items-start gap-3">
           <CheckCircle2 size={18} className="text-emerald-500 mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">Exports are scoped to your school</p>
-            <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">
-              All exported data is filtered by your current academic year and school context. Sensitive fields like passwords are never included.
-            </p>
+            <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('exportCenter.scopeInfo')}</p>
+            <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">{t('exportCenter.scopeDetail')}</p>
           </div>
         </div>
       </div>

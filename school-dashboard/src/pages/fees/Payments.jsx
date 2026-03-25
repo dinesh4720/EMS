@@ -7,7 +7,6 @@ import {
   TableBody,
   TableRow,
   TableCell,
-  Spinner,
   Select,
   SelectItem,
   Modal,
@@ -22,8 +21,10 @@ import {
   PopoverContent,
 } from "@heroui/react";
 import { Search, X, IndianRupee, Download, Printer, Bell, SlidersHorizontal } from "lucide-react";
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { feesApi, studentsApi, studentFeesApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 function getCurrentUser() {
   try {
@@ -34,6 +35,7 @@ function getCurrentUser() {
 }
 
 export default function Payments() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
@@ -119,6 +121,7 @@ export default function Payments() {
       }
     } catch (error) {
       console.error('Error fetching students:', error);
+      toast.error(t('toast.error.failedToLoadStudentsPleaseRefresh'));
       setStudents([]);
       setFeeStructures({});
     } finally {
@@ -138,8 +141,12 @@ export default function Payments() {
   const feePayments = useMemo(() => {
     return students.map((s) => {
       const studentId = s.id || s._id;
-      const studentPayments = payments.filter(p => p.studentId?._id === studentId || p.studentId === studentId);
-      const totalPaid = studentPayments.reduce((sum, p) => sum + p.amount, 0);
+      // BUG-24: skip payments without a valid _id to avoid downstream reference errors
+      const studentPayments = payments.filter(p => {
+        if (!p?._id) return false;
+        return p.studentId?._id === studentId || p.studentId === studentId;
+      });
+      const totalPaid = studentPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
       // Use StudentFeeStructure as source of truth; fall back to student.feeDetails; never use hardcoded values
       const sfs = feeStructures[studentId];
@@ -258,7 +265,7 @@ export default function Payments() {
         paymentMode,
         feeHeads: studentFees
           .filter((f) => selectedFees.includes(f.id.toString()))
-          .map(f => ({ name: f.head, amount: f.amount, month: f.month })),
+          .map(f => ({ feeHeadId: f.id, name: f.head, amount: f.amount, month: f.month })),
         collectedBy: currentUser?._id || currentUser?.id || null,
         remarks: "Payment collected via dashboard"
       };
@@ -281,7 +288,7 @@ export default function Payments() {
       setReceiptModalOpen(true);
     } catch (error) {
       console.error('Error creating payment:', error);
-      toast.error('Failed to collect payment. Please try again.');
+      toast.error(t('toast.error.failedToCollectPaymentPleaseTryAgain'));
     } finally {
       setCollectingPayment(false);
     }
@@ -291,8 +298,65 @@ export default function Payments() {
     toast.success(`Reminder will be sent to ${payment.student}'s parents`);
   };
 
-  const handleDownloadReceipt = (_payment) => {
-    toast('Receipt download coming soon', { icon: '📄' });
+  const escapeHtml = (str) => String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+
+  const generateReceiptPDF = (data) => {
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"/><title>Fee Receipt</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;padding:40px;max-width:620px;margin:auto}
+.logo-row{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #111;padding-bottom:16px;margin-bottom:24px}
+.logo-row h1{font-size:20px;font-weight:700}.logo-row p{font-size:12px;color:#666}
+.badge{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;padding:4px 12px;border-radius:99px;font-size:11px;font-weight:600}
+.amount-block{text-align:center;margin:28px 0 20px}
+.amount-block .amt{font-size:48px;font-weight:800}
+.amount-block .lbl{font-size:12px;color:#666;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+.receipt-no{text-align:center;font-size:13px;color:#888;margin-bottom:28px}
+.rows{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px}
+.row{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid #f0f0f0}
+.row:last-child{border-bottom:none}
+.row .lbl{color:#6b7280}.row .val{font-weight:500}
+.footer{text-align:center;font-size:11px;color:#aaa;margin-top:28px}
+@media print{body{padding:20px}}
+</style></head>
+<body>
+<div class="logo-row"><div><h1>Fee Receipt</h1><p>Payment Confirmation</p></div><span class="badge">&#x2713; Paid</span></div>
+<div class="amount-block"><div class="amt">&#8377;${(data.amount||0).toLocaleString()}</div><div class="lbl">Amount Received</div></div>
+<div class="receipt-no">Receipt No: <strong>${escapeHtml(data.receiptNumber||'—')}</strong></div>
+<div class="rows">
+<div class="row"><span class="lbl">Student</span><span class="val">${escapeHtml(data.student)}</span></div>
+<div class="row"><span class="lbl">Class</span><span class="val">${escapeHtml(data.class)}</span></div>
+<div class="row"><span class="lbl">Payment Mode</span><span class="val" style="text-transform:capitalize">${escapeHtml(data.paymentMode)}</span></div>
+<div class="row"><span class="lbl">Date</span><span class="val">${escapeHtml(data.date)}</span></div>
+</div>
+<div class="footer">Thank you — keep this receipt for your records.</div>
+<script>setTimeout(()=>{window.print();},400);<\/script>
+</body></html>`;
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, '_blank', 'width=700,height=580');
+    if (!w) { toast.error('Pop-up blocked. Allow pop-ups to download receipt.'); URL.revokeObjectURL(url); return; }
+    w.addEventListener('afterprint', () => URL.revokeObjectURL(url));
+  };
+
+  const handleDownloadReceipt = (payment) => {
+    const studentPayments = payments.filter(
+      p => p.studentId?._id === payment.id || p.studentId === payment.id
+    );
+    if (studentPayments.length === 0) {
+      toast.error('No payment record found for this student.');
+      return;
+    }
+    const latest = studentPayments[0];
+    generateReceiptPDF({
+      receiptNumber: latest.receiptNumber || latest._id,
+      amount: latest.amount,
+      student: payment.student,
+      class: payment.class,
+      paymentMode: latest.paymentMode || 'cash',
+      date: latest.paymentDate ? new Date(latest.paymentDate).toLocaleDateString() : new Date().toLocaleDateString(),
+    });
   };
 
   const handleExportData = () => {
@@ -329,11 +393,7 @@ export default function Payments() {
   const pendingCount = filteredPayments.filter(p => p.status === "pending").length;
 
   if (loading || studentsLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <Spinner size="lg" />
-      </div>
-    );
+    return <TablePageSkeleton />;
   }
 
   return (
@@ -341,19 +401,19 @@ export default function Payments() {
       {/* Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 -mx-6 -mt-6 px-6 pt-6">
         <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
-          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Collected</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">{t('pages.collected1')}</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">₹{totalCollected.toLocaleString()}</p>
         </div>
         <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
-          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Pending</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">{t('pages.pending2')}</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">₹{totalPending.toLocaleString()}</p>
         </div>
         <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
-          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Overdue Students</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">{t('pages.overdueStudents')}</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{pendingCount}</p>
         </div>
         <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
-          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Total Students</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">{t('pages.totalStudents1')}</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{pagination.totalItems}</p>
         </div>
       </div>
@@ -368,8 +428,8 @@ export default function Payments() {
               name="payments-search"
               autoComplete="off"
               data-form-type="other"
-              placeholder="Search student..."
-              className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-zinc-100 placeholder:text-gray-400 dark:placeholder:text-zinc-500"
+              placeholder={t('pages.searchStudent')}
+              className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-zinc-100 placeholder:text-gray-500 dark:placeholder:text-zinc-500"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -384,7 +444,7 @@ export default function Payments() {
             <PopoverTrigger>
               <button className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 transition-all text-sm">
                 <SlidersHorizontal size={16} className="text-gray-500 dark:text-zinc-400" />
-                <span className="text-gray-600 dark:text-zinc-400">Filters</span>
+                <span className="text-gray-600 dark:text-zinc-400">{t('pages.filters2')}</span>
                 {(dateFrom || dateTo || amountMin || amountMax) && (
                   <span className="w-2 h-2 rounded-full bg-gray-800 dark:bg-zinc-200"></span>
                 )}
@@ -392,20 +452,20 @@ export default function Payments() {
             </PopoverTrigger>
             <PopoverContent className="p-4">
               <div className="space-y-4 w-72">
-                <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Advanced Filters</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.advancedFilters')}</p>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs text-gray-500 dark:text-zinc-400 mb-1 block">Date Range (Last Payment)</label>
+                    <label className="text-xs text-gray-500 dark:text-zinc-400 mb-1 block">{t('pages.dateRangeLastPayment')}</label>
                     <div className="flex gap-2">
                       <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-md dark:bg-zinc-950 dark:text-zinc-100" />
                       <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-md dark:bg-zinc-950 dark:text-zinc-100" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 dark:text-zinc-400 mb-1 block">Pending Amount Range</label>
+                    <label className="text-xs text-gray-500 dark:text-zinc-400 mb-1 block">{t('pages.pendingAmountRange')}</label>
                     <div className="flex gap-2">
-                      <input type="number" value={amountMin} onChange={(e) => setAmountMin(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-md dark:bg-zinc-950 dark:text-zinc-100" placeholder="Min" />
-                      <input type="number" value={amountMax} onChange={(e) => setAmountMax(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-md dark:bg-zinc-950 dark:text-zinc-100" placeholder="Max" />
+                      <input type="number" value={amountMin} onChange={(e) => setAmountMin(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-md dark:bg-zinc-950 dark:text-zinc-100" placeholder={t('pages.min')} />
+                      <input type="number" value={amountMax} onChange={(e) => setAmountMax(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-md dark:bg-zinc-950 dark:text-zinc-100" placeholder={t('pages.max1')} />
                     </div>
                   </div>
                 </div>
@@ -420,7 +480,7 @@ export default function Payments() {
         <div className="flex gap-2 w-full sm:w-auto">
           <Select
             size="sm"
-            placeholder="All Status"
+            placeholder={t('pages.allStatus1')}
             selectedKeys={new Set([statusFilter])}
             onSelectionChange={(keys) => setStatusFilter(Array.from(keys)[0])}
             className="w-full sm:w-[140px]"
@@ -429,9 +489,9 @@ export default function Payments() {
               value: "text-sm",
             }}
           >
-            <SelectItem key="all">All Status</SelectItem>
-            <SelectItem key="paid">Paid</SelectItem>
-            <SelectItem key="pending">Pending</SelectItem>
+            <SelectItem key="all">{t('pages.allStatus1')}</SelectItem>
+            <SelectItem key="paid">{t('pages.paid2')}</SelectItem>
+            <SelectItem key="pending">{t('pages.pending2')}</SelectItem>
           </Select>
 
           <button
@@ -439,7 +499,7 @@ export default function Payments() {
             className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 transition-all text-sm"
           >
             <Download size={14} className="text-gray-500 dark:text-zinc-400" />
-            <span className="text-gray-700 dark:text-zinc-300">Export</span>
+            <span className="text-gray-700 dark:text-zinc-300">{t('pages.export1')}</span>
           </button>
         </div>
       </div>
@@ -447,7 +507,7 @@ export default function Payments() {
       {/* Table */}
       <div className="border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden -mx-6 sm:mx-0">
         <Table
-          aria-label="Fee payments"
+          aria-label={t('aria.misc.feePayments')}
           removeWrapper
           classNames={{
             base: "overflow-visible [&_table]:w-full",
@@ -456,17 +516,17 @@ export default function Payments() {
           }}
         >
           <TableHeader>
-            <TableColumn>STUDENT</TableColumn>
-            <TableColumn>PAID</TableColumn>
-            <TableColumn>PENDING</TableColumn>
-            <TableColumn>STATUS</TableColumn>
-            <TableColumn>LAST PAYMENT</TableColumn>
-            <TableColumn align="end">ACTIONS</TableColumn>
+            <TableColumn scope="col">{t('pages.sTUDENT')}</TableColumn>
+            <TableColumn scope="col">{t('pages.pAID')}</TableColumn>
+            <TableColumn scope="col">{t('pages.pENDING')}</TableColumn>
+            <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+            <TableColumn scope="col">{t('pages.lASTPayment')}</TableColumn>
+            <TableColumn align="end" scope="col">{t('pages.aCTIONS')}</TableColumn>
           </TableHeader>
           <TableBody
             emptyContent={
               <div className="text-center py-8">
-                <p className="text-gray-400 dark:text-zinc-500 text-sm">No payment records found</p>
+                <p className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.noPaymentRecordsFound')}</p>
               </div>
             }
           >
@@ -613,7 +673,7 @@ export default function Payments() {
                 <div className="p-4 bg-gray-50 dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-gray-500 dark:text-zinc-400">Mode:</span>
+                      <span className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.mode')}</span>
                       <div className="flex gap-2">
                         {["cash", "online", "card", "cheque"].map((mode) => (
                           <button
@@ -631,7 +691,7 @@ export default function Payments() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-500 dark:text-zinc-400">Total:</span>
+                      <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.total1')}</span>
                       <span className="text-xl font-bold text-gray-900 dark:text-zinc-100">₹{totalSelected.toLocaleString()}</span>
                     </div>
                   </div>
@@ -663,13 +723,13 @@ export default function Payments() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="border-b border-gray-200 dark:border-zinc-800">Payment Receipt</ModalHeader>
+              <ModalHeader className="border-b border-gray-200 dark:border-zinc-800">{t('pages.paymentReceipt')}</ModalHeader>
               <ModalBody className="py-6">
                 <div className="text-center space-y-3">
                   <div className="w-14 h-14 rounded-full bg-green-50 dark:bg-green-950 flex items-center justify-center mx-auto">
                     <span className="text-2xl text-green-600 dark:text-green-400">✓</span>
                   </div>
-                  <p className="text-gray-600 dark:text-zinc-400 text-sm font-medium">Payment Successful</p>
+                  <p className="text-gray-600 dark:text-zinc-400 text-sm font-medium">{t('pages.paymentSuccessful')}</p>
                   <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100">
                     ₹{receiptData?.amount.toLocaleString()}
                   </p>
@@ -677,19 +737,19 @@ export default function Payments() {
                   <div className="border-t border-gray-200 dark:border-zinc-800 my-4"></div>
                   <div className="text-left space-y-2 bg-gray-50 dark:bg-zinc-900 p-4 rounded-lg border border-gray-200 dark:border-zinc-800">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500 dark:text-zinc-400">Student</span>
+                      <span className="text-gray-500 dark:text-zinc-400">{t('pages.student')}</span>
                       <span className="text-gray-900 dark:text-zinc-100">{receiptData?.student}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500 dark:text-zinc-400">Class</span>
+                      <span className="text-gray-500 dark:text-zinc-400">{t('pages.class1')}</span>
                       <span className="text-gray-900 dark:text-zinc-100">{receiptData?.class}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500 dark:text-zinc-400">Mode</span>
+                      <span className="text-gray-500 dark:text-zinc-400">{t('pages.mode1')}</span>
                       <span className="text-gray-900 dark:text-zinc-100 capitalize">{receiptData?.paymentMode}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500 dark:text-zinc-400">Date</span>
+                      <span className="text-gray-500 dark:text-zinc-400">{t('pages.date2')}</span>
                       <span className="text-gray-900 dark:text-zinc-100">{receiptData?.date}</span>
                     </div>
                   </div>
@@ -701,14 +761,14 @@ export default function Payments() {
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all"
                 >
                   <Printer size={14} />
-                  <span>Print</span>
+                  <span>{t('pages.print')}</span>
                 </button>
                 <button
-                  onClick={() => toast('Receipt download coming soon', { icon: '📄' })}
+                  onClick={() => receiptData && generateReceiptPDF(receiptData)}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all"
                 >
                   <Download size={14} />
-                  <span>Download</span>
+                  <span>{t('pages.download')}</span>
                 </button>
                 <button
                   onClick={onClose}

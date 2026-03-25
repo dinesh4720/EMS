@@ -3,6 +3,7 @@ import { Input, Button, Select, SelectItem, useDisclosure, Modal, ModalContent, 
 import { Plus, Search, DoorOpen, Edit2, Trash2, BedDouble } from "lucide-react";
 import { hostelApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 const INITIAL_FORM = {
   hostelId: "", roomNumber: "", floor: 0, type: "double",
@@ -19,6 +20,7 @@ const ROOM_TYPES = [
 const AMENITY_OPTIONS = ["AC", "WiFi", "Attached Bathroom", "Hot Water", "Balcony", "Study Table", "Wardrobe"];
 
 function SkeletonTable() {
+  const { t } = useTranslation();
   return (
     <div className="space-y-3">
       {Array.from({ length: 6 }).map((_, i) => (
@@ -69,7 +71,7 @@ export default function RoomsList() {
       setRooms(data.rooms || []);
       setTotalPages(data.pages || 1);
     } catch {
-      toast.error("Failed to load rooms");
+      toast.error(t('toast.error.failedToLoadRooms'));
     } finally {
       setIsLoading(false);
     }
@@ -98,10 +100,10 @@ export default function RoomsList() {
       };
       if (editingId) {
         await hostelApi.updateRoom(editingId, payload);
-        toast.success("Room updated");
+        toast.success(t('toast.success.roomUpdated'));
       } else {
         await hostelApi.createRoom(payload);
-        toast.success("Room created");
+        toast.success(t('toast.success.roomCreated'));
       }
       handleClose();
       fetchRooms();
@@ -126,10 +128,10 @@ export default function RoomsList() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this room?")) return;
+    if (!confirm(t('confirm.deleteRoom'))) return;
     try {
       await hostelApi.deleteRoom(id);
-      toast.success("Room deleted");
+      toast.success(t('toast.success.roomDeleted'));
       fetchRooms();
     } catch (err) {
       toast.error(err?.message || "Failed to delete room");
@@ -173,7 +175,7 @@ export default function RoomsList() {
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-3 flex-1 flex-wrap">
           <Input
-            placeholder="Search rooms..."
+            placeholder={t('pages.searchRooms')}
             startContent={<Search size={16} className="text-gray-400 dark:text-zinc-500" />}
             value={searchInput}
             onValueChange={setSearchInput}
@@ -181,7 +183,7 @@ export default function RoomsList() {
             size="sm"
           />
           <Select
-            placeholder="All Hostels"
+            placeholder={t('pages.allHostels')}
             selectedKeys={hostelFilter ? [hostelFilter] : []}
             onSelectionChange={(keys) => { setHostelFilter([...keys][0] || ""); setPage(1); }}
             className="max-w-[180px]"
@@ -190,7 +192,7 @@ export default function RoomsList() {
             {hostels.map(h => <SelectItem key={h._id}>{h.name}</SelectItem>)}
           </Select>
           <Select
-            placeholder="All Types"
+            placeholder={t('pages.allTypes1')}
             selectedKeys={typeFilter ? [typeFilter] : []}
             onSelectionChange={(keys) => { setTypeFilter([...keys][0] || ""); setPage(1); }}
             className="max-w-[150px]"
@@ -208,7 +210,7 @@ export default function RoomsList() {
       {rooms.length === 0 ? (
         <div className="text-center py-12">
           <DoorOpen size={40} className="mx-auto text-gray-400 dark:text-zinc-500 mb-3" />
-          <p className="text-gray-500 dark:text-zinc-400">No rooms found</p>
+          <p className="text-gray-500 dark:text-zinc-400">{t('pages.noRoomsFound')}</p>
         </div>
       ) : (
         <>
@@ -216,13 +218,13 @@ export default function RoomsList() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800">
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">Room</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">Hostel</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">Floor</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">Type</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">Occupancy</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">Fee</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">Actions</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.room')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.hostel1')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.floor')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.type1')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.occupancy')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.fee1')}</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.actions1')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
@@ -262,9 +264,9 @@ export default function RoomsList() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center gap-2">
-              <Button size="sm" variant="flat" isDisabled={page <= 1} onPress={() => setPage(p => p - 1)}>Previous</Button>
+              <Button size="sm" variant="flat" isDisabled={page <= 1} onPress={() => setPage(p => p - 1)}>{t('pages.previous')}</Button>
               <span className="flex items-center text-sm text-gray-600 dark:text-zinc-400">Page {page} of {totalPages}</span>
-              <Button size="sm" variant="flat" isDisabled={page >= totalPages} onPress={() => setPage(p => p + 1)}>Next</Button>
+              <Button size="sm" variant="flat" isDisabled={page >= totalPages} onPress={() => setPage(p => p + 1)}>{t('pages.next')}</Button>
             </div>
           )}
         </>
@@ -278,7 +280,7 @@ export default function RoomsList() {
           </ModalHeader>
           <ModalBody className="gap-4">
             <Select
-              label="Hostel" isRequired
+              label={t('pages.hostel1')} isRequired
               selectedKeys={formData.hostelId ? [formData.hostelId] : []}
               onSelectionChange={(keys) => setFormData(p => ({ ...p, hostelId: [...keys][0] || "" }))}
               isInvalid={!!errors.hostelId} errorMessage={errors.hostelId}
@@ -287,13 +289,13 @@ export default function RoomsList() {
             </Select>
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Room Number" isRequired
+                label={t('pages.roomNumber')} isRequired
                 value={formData.roomNumber}
                 onValueChange={(v) => setFormData(p => ({ ...p, roomNumber: v }))}
                 isInvalid={!!errors.roomNumber} errorMessage={errors.roomNumber}
               />
               <Input
-                label="Floor"
+                label={t('pages.floor')}
                 type="number"
                 value={String(formData.floor)}
                 onValueChange={(v) => setFormData(p => ({ ...p, floor: v }))}
@@ -301,14 +303,14 @@ export default function RoomsList() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Select
-                label="Room Type"
+                label={t('pages.roomType')}
                 selectedKeys={[formData.type]}
                 onSelectionChange={(keys) => setFormData(p => ({ ...p, type: [...keys][0] }))}
               >
                 {ROOM_TYPES.map(t => <SelectItem key={t.key}>{t.label}</SelectItem>)}
               </Select>
               <Input
-                label="Capacity" isRequired type="number" min={1}
+                label={t('pages.capacity')} isRequired type="number" min={1}
                 value={String(formData.capacity)}
                 onValueChange={(v) => setFormData(p => ({ ...p, capacity: v }))}
                 isInvalid={!!errors.capacity} errorMessage={errors.capacity}
@@ -320,7 +322,7 @@ export default function RoomsList() {
               onValueChange={(v) => setFormData(p => ({ ...p, monthlyFee: v }))}
             />
             <div>
-              <p className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">Amenities</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">{t('pages.amenities')}</p>
               <div className="flex flex-wrap gap-2">
                 {AMENITY_OPTIONS.map(a => (
                   <Chip
@@ -336,13 +338,13 @@ export default function RoomsList() {
               </div>
             </div>
             <Input
-              label="Description"
+              label={t('pages.description1')}
               value={formData.description}
               onValueChange={(v) => setFormData(p => ({ ...p, description: v }))}
             />
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={handleClose}>Cancel</Button>
+            <Button variant="flat" onPress={handleClose}>{t('pages.cancel2')}</Button>
             <Button color="primary" onPress={handleSubmit} isLoading={saving}>
               {editingId ? "Update" : "Create"}
             </Button>

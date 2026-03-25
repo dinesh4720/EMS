@@ -7,7 +7,6 @@ import {
   ScrollShadow,
   Tabs,
   Tab,
-  Avatar,
   Divider,
 } from '@heroui/react';
 import {
@@ -26,6 +25,8 @@ import {
   X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { notificationsApi } from '../../../../services/api';
+import { useTranslation } from 'react-i18next';
 
 const NOTIFICATION_ICONS = {
   fee: { icon: DollarSign, color: 'warning' },
@@ -43,74 +44,11 @@ const CHANNEL_ICONS = {
   in_app: { icon: Bell, label: 'In-App' },
 };
 
-// Mock notifications data
-const MOCK_NOTIFICATIONS = [
-  {
-    _id: '1',
-    type: 'fee',
-    title: 'Fee Payment Reminder',
-    message: 'Fee payment of ₹15,000 for John Doe is due on 2026-01-25',
-    channel: 'email',
-    read: false,
-    createdAt: new Date(Date.now() - 30 * 60 * 1000), // 30 mins ago
-    actionUrl: '/fees',
-  },
-  {
-    _id: '2',
-    type: 'attendance',
-    title: 'Attendance Alert',
-    message: 'John Doe was absent for 3 consecutive days',
-    channel: 'sms',
-    read: false,
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-    actionUrl: '/attendance',
-  },
-  {
-    _id: '3',
-    type: 'announcement',
-    title: 'School Closed Tomorrow',
-    message: 'Due to maintenance work, school will remain closed tomorrow',
-    channel: 'in_app',
-    read: true,
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
-    actionUrl: '/announcements',
-  },
-  {
-    _id: '4',
-    type: 'exam',
-    title: 'Exam Schedule Released',
-    message: 'Final exam schedule for Grade 10 has been announced',
-    channel: 'email',
-    read: false,
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-    actionUrl: '/exams',
-  },
-  {
-    _id: '5',
-    type: 'reminder',
-    title: 'Parent-Teacher Meeting',
-    message: 'Reminder: Parent-teacher meeting tomorrow at 10:00 AM',
-    channel: 'whatsapp',
-    read: true,
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-    actionUrl: '/events',
-  },
-  {
-    _id: '6',
-    type: 'fee',
-    title: 'Fee Overdue Notice',
-    message: 'Fee payment for Jane Smith is overdue by 15 days',
-    channel: 'email',
-    read: true,
-    createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000), // 2 days ago
-    actionUrl: '/fees',
-  },
-];
-
 export default function NotificationCenter({ onClose, isPopover = false }) {
+  const { t } = useTranslation();
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState('all');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [markingAll, setMarkingAll] = useState(false);
 
   useEffect(() => {
@@ -120,11 +58,11 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
   const loadNotifications = async () => {
     setLoading(true);
     try {
-      // Use mock data for now
-      setNotifications(MOCK_NOTIFICATIONS.slice(0, isPopover ? 5 : undefined));
+      const data = await notificationsApi.getAll();
+      const list = Array.isArray(data) ? data : [];
+      setNotifications(isPopover ? list.slice(0, 5) : list);
     } catch (error) {
       console.error('Error loading notifications:', error);
-      toast.error('Failed to load notifications');
     } finally {
       setLoading(false);
     }
@@ -132,6 +70,7 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
 
   const handleMarkAsRead = async (notificationId) => {
     try {
+      await notificationsApi.markAsRead(notificationId);
       setNotifications(prev =>
         prev.map(n =>
           n._id === notificationId ? { ...n, read: true } : n
@@ -139,20 +78,21 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
       );
     } catch (error) {
       console.error('Error marking as read:', error);
-      toast.error('Failed to mark as read');
+      toast.error(t('toast.error.failedToMarkAsRead'));
     }
   };
 
   const handleMarkAllAsRead = async () => {
     setMarkingAll(true);
     try {
+      await notificationsApi.markAllAsRead();
       setNotifications(prev =>
         prev.map(n => ({ ...n, read: true }))
       );
-      toast.success('All notifications marked as read');
+      toast.success(t('toast.success.allNotificationsMarkedAsRead'));
     } catch (error) {
       console.error('Error marking all as read:', error);
-      toast.error('Failed to mark all as read');
+      toast.error(t('toast.error.failedToMarkAllAsRead'));
     } finally {
       setMarkingAll(false);
     }
@@ -160,23 +100,25 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
 
   const handleDelete = async (notificationId) => {
     try {
+      await notificationsApi.delete(notificationId);
       setNotifications(prev => prev.filter(n => n._id !== notificationId));
-      toast.success('Notification deleted');
+      toast.success(t('toast.success.notificationDeleted'));
     } catch (error) {
       console.error('Error deleting notification:', error);
-      toast.error('Failed to delete notification');
+      toast.error(t('toast.error.failedToDeleteNotification'));
     }
   };
 
   const handleClearAll = async () => {
-    if (!confirm('Delete all notifications?')) return;
+    if (!confirm(t('confirm.deleteAllNotifications'))) return;
 
     try {
+      await notificationsApi.clearAll();
       setNotifications([]);
-      toast.success('All notifications cleared');
+      toast.success(t('toast.success.allNotificationsCleared'));
     } catch (error) {
       console.error('Error clearing notifications:', error);
-      toast.error('Failed to clear notifications');
+      toast.error(t('toast.error.failedToClearNotifications'));
     }
   };
 
@@ -296,7 +238,7 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
             ) : filteredNotifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <Bell size={48} className="text-default-300 mb-3" />
-                <p className="text-default-400 font-medium">No notifications</p>
+                <p className="text-default-400 font-medium">{t('pages.noNotifications')}</p>
                 <p className="text-sm text-default-500">
                   {filter === 'unread' ? 'No unread notifications' : 'You\'re all caught up!'}
                 </p>
@@ -307,7 +249,7 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
                 {groupedNotifications.today.length > 0 && (
                   <>
                     <div className="px-4 py-2 bg-default-50">
-                      <p className="text-xs font-semibold text-default-500 uppercase">Today</p>
+                      <p className="text-xs font-semibold text-default-500 uppercase">{t('pages.today1')}</p>
                     </div>
                     {groupedNotifications.today.map(notification => (
                       <NotificationItem
@@ -325,7 +267,7 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
                 {groupedNotifications.yesterday.length > 0 && (
                   <>
                     <div className="px-4 py-2 bg-default-50">
-                      <p className="text-xs font-semibold text-default-500 uppercase">Yesterday</p>
+                      <p className="text-xs font-semibold text-default-500 uppercase">{t('pages.yesterday')}</p>
                     </div>
                     {groupedNotifications.yesterday.map(notification => (
                       <NotificationItem
@@ -343,7 +285,7 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
                 {groupedNotifications.older.length > 0 && (
                   <>
                     <div className="px-4 py-2 bg-default-50">
-                      <p className="text-xs font-semibold text-default-500 uppercase">Older</p>
+                      <p className="text-xs font-semibold text-default-500 uppercase">{t('pages.older')}</p>
                     </div>
                     {groupedNotifications.older.map(notification => (
                       <NotificationItem
@@ -431,7 +373,7 @@ function NotificationItem({ notification, onMarkAsRead, onDelete, formatTime }) 
             color="danger"
             onPress={(e) => {
               e.stopPropagation();
-              if (confirm('Delete this notification?')) {
+              if (confirm(t('confirm.deleteNotification'))) {
                 onDelete(notification._id);
               }
             }}

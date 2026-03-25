@@ -1,12 +1,13 @@
+import { request } from '../../services/api.js';
 import { useState, useEffect } from "react";
 import { Card, CardBody, Input, Button, Switch, Select, SelectItem, Divider, Slider, Chip, Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/react";
 import { Layers, Calendar, AlertCircle, DollarSign, Save, CheckCircle, Info } from "lucide-react";
 import toast from "react-hot-toast";
-import { getAuthHeaders } from "../../utils/authSession";
+import { useTranslation } from 'react-i18next';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 export default function FeeCollectionSettings() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({
@@ -29,10 +30,7 @@ export default function FeeCollectionSettings() {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/school-settings`, {
-        headers: getAuthHeaders()
-      });
-      const data = await response.json();
+      const data = await request('/school-settings');
       
       if (data && data.feeCollection) {
         setSettings({
@@ -91,12 +89,8 @@ export default function FeeCollectionSettings() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const response = await fetch(`${API_URL}/school-settings`, {
+      await request('/school-settings', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        },
         body: JSON.stringify({
           feeCollection: {
             collectionMode: settings.collectionMode,
@@ -113,19 +107,17 @@ export default function FeeCollectionSettings() {
             requireApproval: settings.discountRequireApproval,
             maxDiscountPercentage: settings.maxDiscountPercentage
           },
-          paymentModes: settings.paymentModes.map(mode => ({ 
-            name: mode.charAt(0).toUpperCase() + mode.slice(1), 
-            enabled: true 
+          paymentModes: settings.paymentModes.map(mode => ({
+            name: mode.charAt(0).toUpperCase() + mode.slice(1),
+            enabled: true
           }))
         })
       });
 
-      if (!response.ok) throw new Error('Failed to save fee settings');
-
-      toast.success('Fee collection settings saved successfully');
+      toast.success(t('toast.success.feeCollectionSettingsSavedSuccessfully'));
     } catch (error) {
       console.error('Failed to save fee settings:', error);
-      toast.error('Failed to save fee settings');
+      toast.error(t('toast.error.failedToSaveFeeSettings'));
     } finally {
       setSaving(false);
     }
@@ -135,7 +127,7 @@ export default function FeeCollectionSettings() {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-center">
-          <p className="text-default-500">Loading fee settings...</p>
+          <p className="text-default-500">{t('pages.loadingFeeSettings')}</p>
         </div>
       </div>
     );
@@ -146,8 +138,8 @@ export default function FeeCollectionSettings() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-default-200 pb-6">
         <div>
-          <h2 className="text-2xl font-bold text-default-900">Fee Collection Settings</h2>
-          <p className="text-sm text-default-500 mt-1">Configure how fees are collected, late fees, and discount policies</p>
+          <h2 className="text-2xl font-bold text-default-900">{t('pages.feeCollectionSettings')}</h2>
+          <p className="text-sm text-default-500 mt-1">{t('pages.configureHowFeesAreCollectedLateFeesAndDiscountPolicies')}</p>
         </div>
         <Button
           color="primary"
@@ -169,8 +161,8 @@ export default function FeeCollectionSettings() {
               <Layers size={24} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-default-900">Collection Mode</h3>
-              <p className="text-sm text-default-500">Configure how fees will be collected from students</p>
+              <h3 className="text-lg font-bold text-default-900">{t('pages.collectionMode')}</h3>
+              <p className="text-sm text-default-500">{t('pages.configureHowFeesWillBeCollectedFromStudents')}</p>
             </div>
           </div>
 
@@ -178,7 +170,7 @@ export default function FeeCollectionSettings() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3">
-              <label className="text-sm font-medium text-default-600 block">Collection Frequency</label>
+              <label className="text-sm font-medium text-default-600 block">{t('pages.collectionFrequency')}</label>
               <Select
                 selectedKeys={[settings.collectionMode]}
                 onChange={(e) => {
@@ -193,26 +185,26 @@ export default function FeeCollectionSettings() {
               >
                 <SelectItem key="term" value="term">
                   <div className="flex flex-col">
-                    <span className="font-medium">Term-wise</span>
-                    <span className="text-xs text-default-500">Fees divided by academic terms (most common in India)</span>
+                    <span className="font-medium">{t('pages.termWise')}</span>
+                    <span className="text-xs text-default-500">{t('pages.feesDividedByAcademicTermsMostCommonInIndia')}</span>
                   </div>
                 </SelectItem>
                 <SelectItem key="monthly" value="monthly">
                   <div className="flex flex-col">
-                    <span className="font-medium">Monthly</span>
+                    <span className="font-medium">{t('pages.monthly')}</span>
                     <span className="text-xs text-default-500">12 monthly installments</span>
                   </div>
                 </SelectItem>
                 <SelectItem key="quarterly" value="quarterly">
                   <div className="flex flex-col">
-                    <span className="font-medium">Quarterly</span>
+                    <span className="font-medium">{t('pages.quarterly')}</span>
                     <span className="text-xs text-default-500">4 quarterly installments</span>
                   </div>
                 </SelectItem>
                 <SelectItem key="yearly" value="yearly">
                   <div className="flex flex-col">
-                    <span className="font-medium">Yearly (One-time)</span>
-                    <span className="text-xs text-default-500">Full payment at admission</span>
+                    <span className="font-medium">{t('pages.yearlyOneTime')}</span>
+                    <span className="text-xs text-default-500">{t('pages.fullPaymentAtAdmission')}</span>
                   </div>
                 </SelectItem>
               </Select>
@@ -220,7 +212,7 @@ export default function FeeCollectionSettings() {
 
             {settings.collectionMode === 'term' && (
               <div className="space-y-3">
-                <label className="text-sm font-medium text-default-600 block">Number of Terms</label>
+                <label className="text-sm font-medium text-default-600 block">{t('pages.numberOfTerms')}</label>
                 <div className="flex items-center gap-4">
                   <Slider
                     size="md"
@@ -253,8 +245,8 @@ export default function FeeCollectionSettings() {
                 <Calendar size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-default-900">Term Schedule</h3>
-                <p className="text-sm text-default-500">Configure start and end dates for each term</p>
+                <h3 className="text-lg font-bold text-default-900">{t('pages.termSchedule')}</h3>
+                <p className="text-sm text-default-500">{t('pages.configureStartAndEndDatesForEachTerm')}</p>
               </div>
             </div>
 
@@ -268,7 +260,7 @@ export default function FeeCollectionSettings() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-xs text-default-500 block">Start Date</label>
+                      <label className="text-xs text-default-500 block">{t('pages.startDate1')}</label>
                       <Input
                         type="date"
                         value={term.startDate}
@@ -278,7 +270,7 @@ export default function FeeCollectionSettings() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs text-default-500 block">End Date</label>
+                      <label className="text-xs text-default-500 block">{t('pages.endDate1')}</label>
                       <Input
                         type="date"
                         value={term.endDate}
@@ -290,7 +282,7 @@ export default function FeeCollectionSettings() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs text-default-500 block">Fee Due Date</label>
+                    <label className="text-xs text-default-500 block">{t('pages.feeDueDate')}</label>
                     <Input
                       type="date"
                       value={term.dueDate}
@@ -316,8 +308,8 @@ export default function FeeCollectionSettings() {
                 <AlertCircle size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-default-900">Late Fee Settings</h3>
-                <p className="text-sm text-default-500">Configure penalties for late payments</p>
+                <h3 className="text-lg font-bold text-default-900">{t('pages.lateFeeSettings')}</h3>
+                <p className="text-sm text-default-500">{t('pages.configurePenaltiesForLatePayments')}</p>
               </div>
             </div>
             <Switch
@@ -342,7 +334,7 @@ export default function FeeCollectionSettings() {
               </div>
 
               <div className="space-y-3">
-                <label className="text-sm font-medium text-default-600 block">Grace Period (Days)</label>
+                <label className="text-sm font-medium text-default-600 block">{t('pages.gracePeriodDays')}</label>
                 <Input
                   type="number"
                   value={settings.gracePeriodDays}
@@ -365,8 +357,8 @@ export default function FeeCollectionSettings() {
                 <DollarSign size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-default-900">Discount Settings</h3>
-                <p className="text-sm text-default-500">Configure fee discount rules and approval workflow</p>
+                <h3 className="text-lg font-bold text-default-900">{t('pages.discountSettings')}</h3>
+                <p className="text-sm text-default-500">{t('pages.configureFeeDiscountRulesAndApprovalWorkflow')}</p>
               </div>
             </div>
             <Switch
@@ -398,7 +390,7 @@ export default function FeeCollectionSettings() {
               </div>
 
               <div className="space-y-3">
-                <label className="text-sm font-medium text-default-600 block">Approval Required</label>
+                <label className="text-sm font-medium text-default-600 block">{t('pages.approvalRequired')}</label>
                 <div className="p-4 bg-default-50 rounded-xl border border-default-200">
                   <Switch
                     isSelected={settings.discountRequireApproval}
@@ -428,8 +420,8 @@ export default function FeeCollectionSettings() {
               <DollarSign size={24} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-default-900">Accepted Payment Modes</h3>
-              <p className="text-sm text-default-500">Select which payment methods are accepted</p>
+              <h3 className="text-lg font-bold text-default-900">{t('pages.acceptedPaymentModes')}</h3>
+              <p className="text-sm text-default-500">{t('pages.selectWhichPaymentMethodsAreAccepted')}</p>
             </div>
           </div>
 
@@ -473,7 +465,7 @@ export default function FeeCollectionSettings() {
       <div className="p-4 bg-info-50 rounded-xl border border-info-200 flex items-start gap-3">
         <Info size={20} className="text-info-600 flex-shrink-0 mt-0.5" />
         <div className="flex-1">
-          <p className="text-sm font-medium text-info-900">About Fee Collection Settings</p>
+          <p className="text-sm font-medium text-info-900">{t('pages.aboutFeeCollectionSettings')}</p>
           <p className="text-xs text-info-700 mt-1">
             These settings will be used as defaults when creating fee templates and structures. 
             You can customize these for individual classes or students as needed.

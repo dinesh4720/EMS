@@ -16,8 +16,10 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Avatar, Loading } from '../components';
 import { Send, Paperclip, Smile, Check, CheckCheck, Clock } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 const getRoleTag = (role) => {
+  const { t } = useTranslation();
   if (!role) return null;
   const r = role.toLowerCase();
   if (r.includes('admin') || r.includes('principal')) return 'Admin';
@@ -99,7 +101,7 @@ const ChatDetailScreen = ({ route, navigation }) => {
               </View>
             )}
             {participantOnline && (
-              <Text style={[styles.headerOnline, { color: '#22c55e' }]}>Online</Text>
+              <Text style={[styles.headerOnline, { color: '#22c55e' }]}>{t('screens.online')}</Text>
             )}
           </View>
         </View>
@@ -291,7 +293,7 @@ const ChatDetailScreen = ({ route, navigation }) => {
             <TextInput
               value={inputText}
               onChangeText={setInputText}
-              placeholder="Type a message..."
+              placeholder={t('screens.typeAMessage')}
               placeholderTextColor={themeColors.textTertiary}
               style={[styles.input, { color: themeColors.text }]}
               multiline

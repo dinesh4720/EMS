@@ -6,10 +6,13 @@ import {
 import { Plus, Trash2, GripVertical } from "lucide-react";
 import { transportApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
-const EMPTY_STOP = { name: "", address: "", pickupTime: "", dropTime: "" };
+let _stopCounter = 0;
+const makeStop = () => ({ _key: `stop-${++_stopCounter}`, name: "", address: "", pickupTime: "", dropTime: "" });
 
 export default function RouteModal({ isOpen, onClose, route, vehicles, academicYear, onSaved }) {
+  const { t } = useTranslation();
   const isEdit = !!route;
 
   const [form, setForm] = useState({
@@ -21,9 +24,11 @@ export default function RouteModal({ isOpen, onClose, route, vehicles, academicY
     stops: [],
   });
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (isOpen) {
+      setErrors({});
       if (route) {
         setForm({
           routeName: route.routeName || "",
@@ -32,6 +37,7 @@ export default function RouteModal({ isOpen, onClose, route, vehicles, academicY
           status: route.status || "active",
           notes: route.notes || "",
           stops: route.stops?.map((s) => ({
+            _key: `stop-${++_stopCounter}`,
             name: s.name || "",
             address: s.address || "",
             pickupTime: s.pickupTime || "",
@@ -40,11 +46,15 @@ export default function RouteModal({ isOpen, onClose, route, vehicles, academicY
         });
       } else {
         setForm({ routeName: "", routeNumber: "", vehicleId: "", status: "active", notes: "", stops: [] });
+        _stopCounter = 0;
       }
     }
   }, [isOpen, route]);
 
-  const updateField = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+  const updateField = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    setErrors((e) => ({ ...e, [field]: '' }));
+  };
 
   const updateStop = (index, field, value) => {
     setForm((prev) => {
@@ -54,15 +64,19 @@ export default function RouteModal({ isOpen, onClose, route, vehicles, academicY
     });
   };
 
-  const addStop = () => setForm((prev) => ({ ...prev, stops: [...prev.stops, { ...EMPTY_STOP }] }));
+  const addStop = () => setForm((prev) => ({ ...prev, stops: [...prev.stops, makeStop()] }));
 
   const removeStop = (index) => {
     setForm((prev) => ({ ...prev, stops: prev.stops.filter((_, i) => i !== index) }));
   };
 
   const handleSave = async () => {
-    if (!form.routeName.trim() || !form.routeNumber.trim()) {
-      toast.error("Route name and number are required");
+    const newErrors = {};
+    if (!form.routeName.trim()) newErrors.routeName = t('toast.error.routeNameAndNumberAreRequired');
+    if (!form.routeNumber.trim()) newErrors.routeNumber = t('toast.error.routeNameAndNumberAreRequired');
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error(t('toast.error.routeNameAndNumberAreRequired'));
       return;
     }
 
@@ -82,10 +96,10 @@ export default function RouteModal({ isOpen, onClose, route, vehicles, academicY
 
       if (isEdit) {
         await transportApi.updateRoute(route._id, payload);
-        toast.success("Route updated");
+        toast.success(t('toast.success.routeUpdated'));
       } else {
         await transportApi.createRoute(payload);
-        toast.success("Route created");
+        toast.success(t('toast.success.routeCreated'));
       }
       onSaved?.();
       onClose();
@@ -97,31 +111,35 @@ export default function RouteModal({ isOpen, onClose, route, vehicles, academicY
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
+    <Modal isOpen={isOpen} onClose={() => { onClose(); setErrors({}); }} size="2xl" scrollBehavior="inside">
       <ModalContent>
         <ModalHeader>{isEdit ? "Edit Route" : "Add Route"}</ModalHeader>
         <ModalBody className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="Route Name"
+              label={t('pages.routeName')}
               placeholder="e.g. North Route"
               value={form.routeName}
               onValueChange={(v) => updateField("routeName", v)}
               isRequired
+              isInvalid={!!errors.routeName}
+              errorMessage={errors.routeName}
             />
             <Input
-              label="Route Number"
+              label={t('pages.routeNumber')}
               placeholder="e.g. R001"
               value={form.routeNumber}
               onValueChange={(v) => updateField("routeNumber", v)}
               isRequired
+              isInvalid={!!errors.routeNumber}
+              errorMessage={errors.routeNumber}
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
-              label="Vehicle"
-              placeholder="Select vehicle"
+              label={t('pages.vehicle')}
+              placeholder={t('pages.selectVehicle')}
               selectedKeys={form.vehicleId ? [form.vehicleId] : []}
               onSelectionChange={(keys) => updateField("vehicleId", [...keys][0] || "")}
             >
@@ -132,18 +150,18 @@ export default function RouteModal({ isOpen, onClose, route, vehicles, academicY
               ))}
             </Select>
             <Select
-              label="Status"
+              label={t('pages.status2')}
               selectedKeys={[form.status]}
               onSelectionChange={(keys) => updateField("status", [...keys][0])}
             >
-              <SelectItem key="active">Active</SelectItem>
-              <SelectItem key="inactive">Inactive</SelectItem>
+              <SelectItem key="active">{t('pages.active')}</SelectItem>
+              <SelectItem key="inactive">{t('pages.inactive')}</SelectItem>
             </Select>
           </div>
 
           <Textarea
-            label="Notes"
-            placeholder="Optional notes about this route"
+            label={t('pages.notes1')}
+            placeholder={t('pages.optionalNotesAboutThisRoute')}
             value={form.notes}
             onValueChange={(v) => updateField("notes", v)}
             minRows={2}
@@ -154,44 +172,44 @@ export default function RouteModal({ isOpen, onClose, route, vehicles, academicY
           {/* Stops */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Stops</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.stops')}</h3>
               <Button size="sm" variant="flat" startContent={<Plus size={14} />} onPress={addStop}>
                 Add Stop
               </Button>
             </div>
 
             {form.stops.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-zinc-500 text-center py-4">No stops added yet</p>
+              <p className="text-sm text-gray-400 dark:text-zinc-500 text-center py-4">{t('pages.noStopsAddedYet')}</p>
             ) : (
               <div className="space-y-3">
                 {form.stops.map((stop, index) => (
-                  <div key={index} className="flex gap-2 items-start bg-gray-50 dark:bg-zinc-900 rounded-lg p-3">
+                  <div key={stop._key} className="flex gap-2 items-start bg-gray-50 dark:bg-zinc-900 rounded-lg p-3">
                     <div className="pt-2 text-gray-400">
                       <GripVertical size={14} />
                     </div>
                     <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <Input
                         size="sm"
-                        placeholder="Stop name"
+                        placeholder={t('pages.stopName')}
                         value={stop.name}
                         onValueChange={(v) => updateStop(index, "name", v)}
                       />
                       <Input
                         size="sm"
-                        placeholder="Address"
+                        placeholder={t('pages.address2')}
                         value={stop.address}
                         onValueChange={(v) => updateStop(index, "address", v)}
                       />
                       <Input
                         size="sm"
-                        placeholder="Pickup time"
+                        placeholder={t('pages.pickupTime')}
                         type="time"
                         value={stop.pickupTime}
                         onValueChange={(v) => updateStop(index, "pickupTime", v)}
                       />
                       <Input
                         size="sm"
-                        placeholder="Drop time"
+                        placeholder={t('pages.dropTime')}
                         type="time"
                         value={stop.dropTime}
                         onValueChange={(v) => updateStop(index, "dropTime", v)}
@@ -214,7 +232,7 @@ export default function RouteModal({ isOpen, onClose, route, vehicles, academicY
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="flat" onPress={onClose}>Cancel</Button>
+          <Button variant="flat" onPress={onClose}>{t('pages.cancel2')}</Button>
           <Button color="primary" onPress={handleSave} isLoading={saving}>
             {isEdit ? "Update" : "Create"}
           </Button>

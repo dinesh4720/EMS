@@ -50,6 +50,7 @@ import { useChat } from '../context/ChatContext';
 import { useTheme } from '../context/ThemeContext';
 import chatService from '../services/chatService';
 import socketService from '../services/socketService';
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -58,6 +59,7 @@ const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡'];
 
 // Generate gradient colors based on name
 const getAvatarGradient = (name) => {
+  const { t } = useTranslation();
   const gradients = [
     ['#667eea', '#764ba2'],
     ['#f093fb', '#f5576c'],
@@ -474,7 +476,7 @@ const MessageBubble = ({
             ) : (
               <View style={styles.imagePlaceholder}>
                 <ImageIcon size={32} color={colors.onSurfaceVariant} />
-                <Text style={[styles.imagePlaceholderText, typography.bodyMedium, { color: colors.onSurfaceVariant }]}>Image</Text>
+                <Text style={[styles.imagePlaceholderText, typography.bodyMedium, { color: colors.onSurfaceVariant }]}>{t('screens.image')}</Text>
               </View>
             )}
             {message.content && (
@@ -805,7 +807,7 @@ const VoiceRecordingButton = ({ onRecordingComplete, disabled }) => {
         <Animated.View style={[styles.recordingPulse, { backgroundColor: colors.error, transform: [{ scale: pulseAnim }] }]} />
         <View style={[styles.recordingDot, { backgroundColor: colors.error }]} />
         <Text style={[styles.recordingTime, typography.labelMedium, { color: colors.onErrorContainer }]}>{formatTime(recordingTime)}</Text>
-        <Text style={[styles.recordingHint, typography.labelSmall, { color: colors.onErrorContainer }]}>Tap to stop</Text>
+        <Text style={[styles.recordingHint, typography.labelSmall, { color: colors.onErrorContainer }]}>{t('screens.tapToStop')}</Text>
       </TouchableOpacity>
     );
   }
@@ -1147,7 +1149,7 @@ const ChatDetailScreen = () => {
               {conversationName}
             </Text>
             {isOtherUserTyping ? (
-              <Text style={[styles.headerStatus, typography.bodySmall, { color: colors.primary }]}>Typing...</Text>
+              <Text style={[styles.headerStatus, typography.bodySmall, { color: colors.primary }]}>{t('screens.typing')}</Text>
             ) : (
               <Text style={[styles.headerStatus, typography.bodySmall, { color: colors.onSurfaceVariant }]}>
                 Online
@@ -1229,7 +1231,7 @@ const ChatDetailScreen = () => {
                 style={[styles.textInput, typography.bodyLarge, { color: colors.onSurface }]}
                 value={inputText}
                 onChangeText={handleTyping}
-                placeholder="Message..."
+                placeholder={t('screens.message')}
                 placeholderTextColor={colors.onSurfaceVariant}
                 multiline
                 maxLength={1000}

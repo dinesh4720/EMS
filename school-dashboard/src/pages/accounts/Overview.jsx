@@ -1,53 +1,58 @@
+import { useState, useEffect } from "react";
 import { Card, CardBody } from "@heroui/react";
 import { IndianRupee, TrendingUp, TrendingDown, FileText, Users, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { reportsApi } from "../../services/api";
+import { getDateLocale } from '../../i18n/index';
+import { useTranslation } from 'react-i18next';
+
 
 export default function Overview() {
-  // Mock data - in production this would come from API
+  const { t } = useTranslation();
+  const [feeData, setFeeData] = useState(null);
+  const [payrollData, setPayrollData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      reportsApi.feeCollection().catch(() => null),
+      reportsApi.payrollSummary().catch(() => null),
+    ]).then(([fee, payroll]) => {
+      setFeeData(fee);
+      setPayrollData(payroll);
+    }).finally(() => setLoading(false));
+  }, []);
+
+  const fmt = (n) => n != null ? `₹${Number(n).toLocaleString(getDateLocale())}` : '—';
+
   const stats = [
     {
       title: "Total Revenue",
-      value: "₹24,50,000",
-      change: "+12.5%",
-      trend: "up",
+      value: feeData ? fmt(feeData.totalCollected ?? feeData.totalRevenue ?? feeData.total) : '—',
       icon: IndianRupee,
       color: "bg-green-50 text-green-700",
       iconBg: "bg-green-100",
     },
     {
-      title: "Pending Invoices",
-      value: "₹3,85,000",
-      change: "-8.2%",
-      trend: "down",
+      title: "Pending Dues",
+      value: feeData ? fmt(feeData.totalOutstanding ?? feeData.outstanding ?? feeData.pending) : '—',
       icon: FileText,
       color: "bg-amber-50 text-amber-700",
       iconBg: "bg-amber-100",
     },
     {
-      title: "Total Expenses",
-      value: "₹18,25,000",
-      change: "+5.3%",
-      trend: "up",
-      icon: TrendingDown,
-      color: "bg-rose-50 text-rose-700",
-      iconBg: "bg-rose-100",
-    },
-    {
       title: "Payroll Due",
-      value: "₹4,50,000",
-      change: "0%",
-      trend: "neutral",
+      value: payrollData ? fmt(payrollData.totalPayroll ?? payrollData.total ?? payrollData.pendingAmount) : '—',
       icon: Users,
       color: "bg-blue-50 text-blue-700",
       iconBg: "bg-blue-100",
     },
-  ];
-
-  const recentTransactions = [
-    { id: 1, type: "income", description: "Fee Collection - Class 10-A", amount: "₹45,000", date: "2024-02-18", status: "completed" },
-    { id: 2, type: "expense", description: "Office Supplies", amount: "₹12,500", date: "2024-02-17", status: "completed" },
-    { id: 3, type: "income", description: "Fee Collection - Class 9-B", amount: "₹32,000", date: "2024-02-17", status: "completed" },
-    { id: 4, type: "expense", description: "Salary Payment - Staff", amount: "₹2,50,000", date: "2024-02-15", status: "completed" },
-    { id: 5, type: "income", description: "Fee Collection - Class 8-A", amount: "₹28,500", date: "2024-02-14", status: "pending" },
+    {
+      title: "Total Expenses",
+      value: '—',
+      icon: TrendingDown,
+      color: "bg-rose-50 text-rose-700",
+      iconBg: "bg-rose-100",
+    },
   ];
 
   return (
@@ -60,18 +65,14 @@ export default function Overview() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-500 dark:text-zinc-400 mb-1">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{stat.value}</p>
-                  <div className={`flex items-center gap-1 mt-2 text-sm ${
-                    stat.trend === "up" ? "text-green-600" : stat.trend === "down" ? "text-green-600" : "text-gray-500 dark:text-zinc-400"
-                  }`}>
-                    {stat.trend === "up" && <ArrowUpRight size={14} />}
-                    {stat.trend === "down" && <ArrowDownRight size={14} />}
-                    <span>{stat.change}</span>
-                    <span className="text-gray-400 dark:text-zinc-500 ml-1">vs last month</span>
-                  </div>
+                  {loading ? (
+                    <div className="h-7 w-28 bg-gray-100 dark:bg-zinc-800 rounded animate-pulse mt-1" />
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{stat.value}</p>
+                  )}
                 </div>
                 <div className={`p-3 rounded-lg ${stat.iconBg}`}>
-                  <stat.icon size={20} className={stat.color.replace("bg-", "").replace("text-", "")} />
+                  <stat.icon size={20} className={stat.color.split(' ')[1]} />
                 </div>
               </div>
             </CardBody>
@@ -85,22 +86,16 @@ export default function Overview() {
           <CardBody className="p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Income vs Expenses</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400">Monthly financial overview</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{t('pages.incomeVsExpenses')}</h3>
+                <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.monthlyFinancialOverview')}</p>
               </div>
-              <select className="text-sm border border-gray-200 dark:border-zinc-800 rounded-lg px-3 py-2 bg-white dark:bg-zinc-950 dark:text-zinc-300">
-                <option>Last 6 months</option>
-                <option>Last year</option>
-                <option>All time</option>
-              </select>
             </div>
 
-            {/* Chart Placeholder */}
             <div className="h-64 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-zinc-900 dark:to-zinc-800 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-200 dark:border-zinc-700">
               <div className="text-center">
                 <TrendingUp size={48} className="text-gray-300 dark:text-zinc-600 mx-auto mb-2" />
-                <p className="text-gray-400 dark:text-zinc-500 font-medium">Financial Charts</p>
-                <p className="text-sm text-gray-400 dark:text-zinc-500">Charts will be rendered here</p>
+                <p className="text-gray-400 dark:text-zinc-500 font-medium">{t('pages.financialCharts')}</p>
+                <p className="text-sm text-gray-400 dark:text-zinc-500">{t('pages.chartsWillBeRenderedHere')}</p>
               </div>
             </div>
           </CardBody>
@@ -109,15 +104,15 @@ export default function Overview() {
         {/* Quick Actions */}
         <Card className="border border-gray-100 dark:border-zinc-800 shadow-sm dark:shadow-zinc-900/50">
           <CardBody className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4">Quick Actions</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4">{t('pages.quickActions1')}</h3>
             <div className="space-y-3">
               <button className="w-full text-left px-4 py-3 bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors flex items-center gap-3">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <FileText size={18} className="text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Create Invoice</p>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400">Generate new invoice</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.createInvoice')}</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.generateNewInvoice')}</p>
                 </div>
               </button>
               <button className="w-full text-left px-4 py-3 bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors flex items-center gap-3">
@@ -125,8 +120,8 @@ export default function Overview() {
                   <IndianRupee size={18} className="text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Record Expense</p>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400">Add new expense</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.recordExpense')}</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.addNewExpense')}</p>
                 </div>
               </button>
               <button className="w-full text-left px-4 py-3 bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors flex items-center gap-3">
@@ -134,8 +129,8 @@ export default function Overview() {
                   <Users size={18} className="text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Process Payroll</p>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400">Process staff salaries</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.processPayroll')}</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.processStaffSalaries')}</p>
                 </div>
               </button>
               <button className="w-full text-left px-4 py-3 bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors flex items-center gap-3">
@@ -143,8 +138,8 @@ export default function Overview() {
                   <TrendingUp size={18} className="text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Generate Report</p>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400">Create financial report</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.generateReport')}</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.createFinancialReport')}</p>
                 </div>
               </button>
             </div>
@@ -157,60 +152,15 @@ export default function Overview() {
         <CardBody className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Recent Transactions</h3>
-              <p className="text-sm text-gray-500 dark:text-zinc-400">Latest financial activities</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{t('pages.recentTransactions')}</h3>
+              <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.latestFinancialActivities')}</p>
             </div>
-            <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-              View All
-            </button>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left text-xs font-medium text-gray-500 dark:text-zinc-400 border-b border-gray-100 dark:border-zinc-800">
-                  <th className="pb-3">Description</th>
-                  <th className="pb-3">Date</th>
-                  <th className="pb-3">Status</th>
-                  <th className="pb-3 text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentTransactions.map((transaction) => (
-                  <tr key={transaction.id} className="border-b border-gray-50 dark:border-zinc-800 last:border-0 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors">
-                    <td className="py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${
-                          transaction.type === "income" ? "bg-green-100" : "bg-rose-100"
-                        }`}>
-                          {transaction.type === "income" ? (
-                            <IndianRupee size={16} className="text-green-600" />
-                          ) : (
-                            <TrendingDown size={16} className="text-rose-600" />
-                          )}
-                        </div>
-                        <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{transaction.description}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 text-sm text-gray-600 dark:text-zinc-400">{transaction.date}</td>
-                    <td className="py-4">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        transaction.status === "completed"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-amber-100 text-amber-700"
-                      }`}>
-                        {transaction.status}
-                      </span>
-                    </td>
-                    <td className={`py-4 text-right text-sm font-semibold ${
-                      transaction.type === "income" ? "text-green-600" : "text-rose-600"
-                    }`}>
-                      {transaction.type === "income" ? "+" : "-"}{transaction.amount}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-zinc-500">
+            <IndianRupee size={40} className="mb-2 opacity-40" />
+            <p className="text-sm">{t('pages.noTransactionsToDisplay')}</p>
+            <p className="text-xs mt-1">{t('pages.transactionHistoryWillAppearHereOnceTheModuleIsConfigured')}</p>
           </div>
         </CardBody>
       </Card>

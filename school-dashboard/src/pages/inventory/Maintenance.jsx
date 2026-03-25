@@ -7,6 +7,7 @@ import { Plus, Edit3 } from "lucide-react";
 import { MinimalButton } from "../../components/ui";
 import { inventoryApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 const TYPES = ["PREVENTIVE", "CORRECTIVE", "INSPECTION"];
 const STATUSES = ["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
@@ -24,6 +25,7 @@ const emptyForm = {
 };
 
 export default function Maintenance() {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState([]);
   const [assets, setAssets] = useState([]);
   const [vendors, setVendors] = useState([]);
@@ -33,6 +35,7 @@ export default function Maintenance() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const fetchData = async () => {
     try {
@@ -45,13 +48,13 @@ export default function Maintenance() {
       setLogs(Array.isArray(logsData) ? logsData : []);
       setAssets(assetsData?.data || []);
       setVendors(Array.isArray(vendorData) ? vendorData : []);
-    } catch { toast.error("Failed to load maintenance logs"); }
+    } catch { toast.error(t('toast.error.failedToLoadMaintenanceLogs')); }
     finally { setLoading(false); }
   };
 
   useEffect(() => { fetchData(); }, [filterStatus]);
 
-  const openCreate = () => { setEditing(null); setForm(emptyForm); setIsOpen(true); };
+  const openCreate = () => { setEditing(null); setForm(emptyForm); setErrors({}); setIsOpen(true); };
   const openEdit = (log) => {
     setEditing(log);
     setForm({
@@ -66,13 +69,21 @@ export default function Maintenance() {
       performedBy: log.performedBy || "",
       notes: log.notes || "",
     });
+    setErrors({});
     setIsOpen(true);
   };
 
   const handleSave = async () => {
-    if (!form.assetId) return toast.error("Asset is required");
-    if (!form.description.trim()) return toast.error("Description is required");
-    if (!form.scheduledDate) return toast.error("Scheduled date is required");
+    const newErrors = {};
+    if (!form.assetId) newErrors.assetId = t('toast.error.assetIsRequired');
+    if (!form.description.trim()) newErrors.description = t('toast.error.descriptionIsRequired');
+    if (!form.scheduledDate) newErrors.scheduledDate = t('toast.error.scheduledDateIsRequired');
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      if (newErrors.assetId) return toast.error(t('toast.error.assetIsRequired'));
+      if (newErrors.description) return toast.error(t('toast.error.descriptionIsRequired'));
+      return toast.error(t('toast.error.scheduledDateIsRequired'));
+    }
     try {
       setSaving(true);
       const payload = {
@@ -83,10 +94,10 @@ export default function Maintenance() {
       };
       if (editing) {
         await inventoryApi.updateMaintenance(editing._id, payload);
-        toast.success("Maintenance log updated");
+        toast.success(t('toast.success.maintenanceLogUpdated'));
       } else {
         await inventoryApi.createMaintenance(payload);
-        toast.success("Maintenance log created");
+        toast.success(t('toast.success.maintenanceLogCreated'));
       }
       setIsOpen(false);
       fetchData();
@@ -95,7 +106,10 @@ export default function Maintenance() {
     } finally { setSaving(false); }
   };
 
-  const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+  const set = (key, val) => {
+    setForm((f) => ({ ...f, [key]: val }));
+    setErrors((e) => ({ ...e, [key]: '' }));
+  };
 
   if (loading) {
     return (
@@ -116,7 +130,7 @@ export default function Maintenance() {
           onChange={(e) => setFilterStatus(e.target.value)}
           className="text-sm rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 px-3 py-2"
         >
-          <option value="all">All Statuses</option>
+          <option value="all">{t('pages.allStatuses')}</option>
           {STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
         </select>
         <MinimalButton variant="primary" size="sm" icon={<Plus size={16} />} onClick={openCreate}>
@@ -137,7 +151,7 @@ export default function Maintenance() {
             </thead>
             <tbody>
               {logs.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-12 text-gray-500 dark:text-zinc-400">No maintenance logs</td></tr>
+                <tr><td colSpan={7} className="text-center py-12 text-gray-500 dark:text-zinc-400">{t('pages.noMaintenanceLogs')}</td></tr>
               ) : (
                 logs.map((log) => (
                   <tr key={log._id} className="border-b border-gray-50 dark:border-zinc-800 hover:bg-gray-50/50 dark:hover:bg-zinc-900/50">
@@ -164,33 +178,33 @@ export default function Maintenance() {
       </div>
 
       {/* Create/Edit Modal */}
-      <Modal isOpen={isOpen} onOpenChange={setIsOpen} size="xl" scrollBehavior="inside">
+      <Modal isOpen={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) setErrors({}); }} size="xl" scrollBehavior="inside">
         <ModalContent>
           <ModalHeader>{editing ? "Edit Maintenance Log" : "New Maintenance Log"}</ModalHeader>
           <ModalBody>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Select label="Asset" isRequired selectedKeys={form.assetId ? [form.assetId] : []} onSelectionChange={(keys) => set("assetId", [...keys][0] || "")}>
+              <Select label={t('pages.asset')} isRequired selectedKeys={form.assetId ? [form.assetId] : []} onSelectionChange={(keys) => set("assetId", [...keys][0] || "")} isInvalid={!!errors.assetId} errorMessage={errors.assetId}>
                 {assets.map((a) => <SelectItem key={a._id}>{a.name}{a.assetTag ? ` (${a.assetTag})` : ""}</SelectItem>)}
               </Select>
-              <Select label="Type" selectedKeys={[form.maintenanceType]} onSelectionChange={(keys) => set("maintenanceType", [...keys][0])}>
+              <Select label={t('pages.type1')} selectedKeys={[form.maintenanceType]} onSelectionChange={(keys) => set("maintenanceType", [...keys][0])}>
                 {TYPES.map((t) => <SelectItem key={t}>{t}</SelectItem>)}
               </Select>
-              <Input label="Scheduled Date" isRequired type="date" value={form.scheduledDate} onValueChange={(v) => set("scheduledDate", v)} />
-              <Input label="Completed Date" type="date" value={form.completedDate} onValueChange={(v) => set("completedDate", v)} />
-              <Select label="Status" selectedKeys={[form.status]} onSelectionChange={(keys) => set("status", [...keys][0])}>
+              <Input label={t('pages.scheduledDate')} isRequired type="date" value={form.scheduledDate} onValueChange={(v) => set("scheduledDate", v)} isInvalid={!!errors.scheduledDate} errorMessage={errors.scheduledDate} />
+              <Input label={t('pages.completedDate')} type="date" value={form.completedDate} onValueChange={(v) => set("completedDate", v)} />
+              <Select label={t('pages.status2')} selectedKeys={[form.status]} onSelectionChange={(keys) => set("status", [...keys][0])}>
                 {STATUSES.map((s) => <SelectItem key={s}>{s.replace(/_/g, " ")}</SelectItem>)}
               </Select>
-              <Input label="Cost" type="number" value={String(form.cost)} onValueChange={(v) => set("cost", v)} startContent="₹" />
-              <Select label="Vendor" selectedKeys={form.vendorId ? [form.vendorId] : []} onSelectionChange={(keys) => set("vendorId", [...keys][0] || "")}>
+              <Input label={t('pages.cost')} type="number" value={String(form.cost)} onValueChange={(v) => set("cost", v)} startContent="₹" />
+              <Select label={t('pages.vendor')} selectedKeys={form.vendorId ? [form.vendorId] : []} onSelectionChange={(keys) => set("vendorId", [...keys][0] || "")}>
                 {vendors.map((v) => <SelectItem key={v._id}>{v.name}</SelectItem>)}
               </Select>
-              <Input label="Performed By" value={form.performedBy} onValueChange={(v) => set("performedBy", v)} />
+              <Input label={t('pages.performedBy')} value={form.performedBy} onValueChange={(v) => set("performedBy", v)} />
             </div>
-            <Textarea label="Description" isRequired value={form.description} onValueChange={(v) => set("description", v)} className="mt-2" />
-            <Textarea label="Notes" value={form.notes} onValueChange={(v) => set("notes", v)} />
+            <Textarea label={t('pages.description1')} isRequired value={form.description} onValueChange={(v) => set("description", v)} className="mt-2" isInvalid={!!errors.description} errorMessage={errors.description} />
+            <Textarea label={t('pages.notes1')} value={form.notes} onValueChange={(v) => set("notes", v)} />
           </ModalBody>
           <ModalFooter>
-            <MinimalButton variant="ghost" onClick={() => setIsOpen(false)}>Cancel</MinimalButton>
+            <MinimalButton variant="ghost" onClick={() => setIsOpen(false)}>{t('pages.cancel2')}</MinimalButton>
             <MinimalButton variant="primary" onClick={handleSave} loading={saving}>{editing ? "Update" : "Create"}</MinimalButton>
           </ModalFooter>
         </ModalContent>

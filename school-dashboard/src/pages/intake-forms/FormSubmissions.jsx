@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import {
   Card,
   CardBody,
@@ -36,6 +39,9 @@ import { intakeFormsApi } from "../../services/api";
 import { format } from "date-fns";
 
 export default function FormSubmissions() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const {
     isOpen: isReviewOpen,
     onOpen: onReviewOpen,
@@ -57,9 +63,9 @@ export default function FormSubmissions() {
       setLoading(true);
       const status = filterStatus === "all" ? null : filterStatus;
       const data = await intakeFormsApi.getSubmissions(null, status);
-      setSubmissions(data);
+      setSubmissions(Array.isArray(data) ? data : []);
     } catch (error) {
-      toast.error("Failed to load submissions");
+      toast.error(t('formSubmissions.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -72,7 +78,7 @@ export default function FormSubmissions() {
       setReviewNotes(data.reviewNotes || "");
       onReviewOpen();
     } catch (error) {
-      toast.error("Failed to load submission details");
+      toast.error(t('formSubmissions.loadDetailsFailed'));
     }
   };
 
@@ -80,7 +86,7 @@ export default function FormSubmissions() {
     if (!selectedSubmission) return;
 
     if (status === "rejected" && !reviewNotes.trim()) {
-      toast.error("Please provide a reason for rejection");
+      toast.error(t('formSubmissions.rejectionReasonRequired'));
       return;
     }
 
@@ -89,13 +95,13 @@ export default function FormSubmissions() {
       await intakeFormsApi.reviewSubmission(selectedSubmission.id, {
         reviewStatus: status,
         reviewNotes: reviewNotes,
-        reviewedBy: "admin", // TODO: Get from auth context
+        reviewedBy: user?.id || user?.name || user?.email,
       });
 
       toast.success(
         status === "approved"
-          ? "Submission approved! Staff record created."
-          : "Submission rejected"
+          ? t('formSubmissions.approvedSuccess')
+          : t('formSubmissions.rejectedSuccess')
       );
 
       onReviewClose();
@@ -103,7 +109,7 @@ export default function FormSubmissions() {
       setSelectedSubmission(null);
       setReviewNotes("");
     } catch (error) {
-      toast.error(error.message || "Failed to review submission");
+      toast.error(error.message || t('formSubmissions.reviewFailed'));
     } finally {
       setLoading(false);
     }
@@ -119,7 +125,7 @@ export default function FormSubmissions() {
   };
 
   const renderFieldValue = (field, value) => {
-    if (!value) return <span className="text-gray-400 dark:text-zinc-500">Not provided</span>;
+    if (!value) return <span className="text-gray-400 dark:text-zinc-500">{t('formSubmissions.notProvided')}</span>;
 
     if (field.type === "file") {
       return (
@@ -149,10 +155,10 @@ export default function FormSubmissions() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
-            Form Submissions
+            {t('formSubmissions.title')}
           </h2>
           <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
-            Review and approve staff onboarding submissions
+            {t('formSubmissions.subtitle')}
           </p>
         </div>
       </div>
@@ -167,7 +173,7 @@ export default function FormSubmissions() {
             color={filterStatus === status ? "primary" : "default"}
             onPress={() => setFilterStatus(status)}
           >
-            {status.charAt(0).toUpperCase() + status.slice(1)}
+            {t(`formSubmissions.status.${status}`)}
           </Button>
         ))}
       </div>
@@ -176,7 +182,7 @@ export default function FormSubmissions() {
       <Card>
         <CardBody className="p-0">
           <Table
-            aria-label="Form submissions table"
+            aria-label={t('aria.tables.formSubmissions')}
             removeWrapper
             classNames={{
               th: "bg-gray-50 dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 font-semibold",
@@ -184,16 +190,16 @@ export default function FormSubmissions() {
             }}
           >
             <TableHeader>
-              <TableColumn>FORM NAME</TableColumn>
-              <TableColumn>SUBMITTED BY</TableColumn>
-              <TableColumn>SUBMITTED DATE</TableColumn>
-              <TableColumn>STATUS</TableColumn>
-              <TableColumn>REVIEWED BY</TableColumn>
-              <TableColumn>ACTIONS</TableColumn>
+              <TableColumn scope="col">{t('formSubmissions.colFormName')}</TableColumn>
+              <TableColumn scope="col">{t('formSubmissions.colSubmittedBy')}</TableColumn>
+              <TableColumn scope="col">{t('formSubmissions.colSubmittedDate')}</TableColumn>
+              <TableColumn scope="col">{t('formSubmissions.colStatus')}</TableColumn>
+              <TableColumn scope="col">{t('formSubmissions.colReviewedBy')}</TableColumn>
+              <TableColumn scope="col">{t('formSubmissions.colActions')}</TableColumn>
             </TableHeader>
             <TableBody
               items={submissions}
-              emptyContent="No submissions found"
+              emptyContent={t('formSubmissions.noSubmissions')}
               loadingContent={<Spinner />}
               isLoading={loading}
             >
@@ -239,23 +245,23 @@ export default function FormSubmissions() {
                           <MoreVertical size={16} />
                         </Button>
                       </DropdownTrigger>
-                      <DropdownMenu aria-label="Submission actions">
+                      <DropdownMenu aria-label={t('aria.menus.submissionActions')}>
                         <DropdownItem
                           key="view"
                           startContent={<Eye size={16} />}
                           onPress={() => handleViewSubmission(submission.id)}
                         >
-                          Review Submission
+                          {t('formSubmissions.reviewSubmission')}
                         </DropdownItem>
                         {submission.staffId && (
                           <DropdownItem
                             key="staff"
                             startContent={<User size={16} />}
                             onPress={() =>
-                              (window.location.href = `/staff/${submission.staffId}`)
+                              navigate(`/staff/${submission.staffId}`)
                             }
                           >
-                            View Staff Record
+                            {t('formSubmissions.viewStaffRecord')}
                           </DropdownItem>
                         )}
                       </DropdownMenu>
@@ -278,7 +284,7 @@ export default function FormSubmissions() {
         <ModalContent>
           <ModalHeader>
             <div>
-              <h3 className="text-xl font-semibold">Review Submission</h3>
+              <h3 className="text-xl font-semibold">{t('formSubmissions.modalTitle')}</h3>
               {selectedSubmission && (
                 <p className="text-sm text-gray-600 dark:text-zinc-400 font-normal mt-1">
                   {selectedSubmission.form?.formName} - Submitted by{" "}
@@ -293,7 +299,7 @@ export default function FormSubmissions() {
                 {/* Submission Data */}
                 <div>
                   <h4 className="text-lg font-semibold mb-4">
-                    Submitted Information
+                    {t('formSubmissions.submittedInfo')}
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
                     {selectedSubmission.form?.fields?.map((field) => (
@@ -326,11 +332,11 @@ export default function FormSubmissions() {
                 {selectedSubmission.reviewStatus === "pending" && (
                   <div className="border-t pt-6">
                     <h4 className="text-lg font-semibold mb-4">
-                      Review Decision
+                      {t('formSubmissions.reviewDecision')}
                     </h4>
                     <Textarea
-                      label="Review Notes"
-                      placeholder="Add notes about this submission (required for rejection)"
+                      label={t('formSubmissions.reviewNotesLabel')}
+                      placeholder={t('formSubmissions.reviewNotesPlaceholder')}
                       value={reviewNotes}
                       onChange={(e) => setReviewNotes(e.target.value)}
                       minRows={3}
@@ -342,12 +348,12 @@ export default function FormSubmissions() {
                 {selectedSubmission.reviewStatus !== "pending" && (
                   <div className="border-t pt-6">
                     <h4 className="text-lg font-semibold mb-4">
-                      Review Information
+                      {t('formSubmissions.reviewInfo')}
                     </h4>
                     <div className="space-y-3">
                       <div>
                         <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
-                          Status
+                          {t('formSubmissions.colStatus')}
                         </label>
                         <div className="mt-1">
                           <Chip
@@ -363,7 +369,7 @@ export default function FormSubmissions() {
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
-                          Reviewed By
+                          {t('formSubmissions.colReviewedBy')}
                         </label>
                         <p className="text-sm">
                           {selectedSubmission.reviewedBy}
@@ -371,7 +377,7 @@ export default function FormSubmissions() {
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
-                          Reviewed At
+                          {t('formSubmissions.reviewedAt')}
                         </label>
                         <p className="text-sm">
                           {format(
@@ -383,7 +389,7 @@ export default function FormSubmissions() {
                       {selectedSubmission.reviewNotes && (
                         <div>
                           <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
-                            Notes
+                            {t('formSubmissions.reviewNotesLabel')}
                           </label>
                           <p className="text-sm">
                             {selectedSubmission.reviewNotes}
@@ -400,7 +406,7 @@ export default function FormSubmissions() {
             {selectedSubmission?.reviewStatus === "pending" ? (
               <>
                 <Button variant="light" onPress={onReviewClose}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   color="danger"
@@ -409,7 +415,7 @@ export default function FormSubmissions() {
                   onPress={() => handleReview("rejected")}
                   isLoading={loading}
                 >
-                  Reject
+                  {t('formSubmissions.reject')}
                 </Button>
                 <Button
                   color="success"
@@ -417,11 +423,11 @@ export default function FormSubmissions() {
                   onPress={() => handleReview("approved")}
                   isLoading={loading}
                 >
-                  Approve & Create Staff
+                  {t('formSubmissions.approveAndCreate')}
                 </Button>
               </>
             ) : (
-              <Button onPress={onReviewClose}>Close</Button>
+              <Button onPress={onReviewClose}>{t('common.close')}</Button>
             )}
           </ModalFooter>
         </ModalContent>

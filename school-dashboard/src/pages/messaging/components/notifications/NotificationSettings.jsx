@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Card,
   CardBody,
@@ -23,12 +23,36 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+import { notificationsApi } from '../../../../services/api';
 
 const CHANNEL_ICONS = {
   email: { icon: Mail, color: 'primary', label: 'Email' },
   sms: { icon: MessageSquare, color: 'secondary', label: 'SMS' },
   whatsapp: { icon: Phone, color: 'success', label: 'WhatsApp' },
   inApp: { icon: Bell, color: 'warning', label: 'In-App' },
+};
+
+// Maps frontend category keys to backend category enum values
+const CATEGORY_MAP = {
+  fee_reminders: 'payment',
+  attendance_alerts: 'attendance',
+  announcement_updates: 'announcement',
+  exam_results: 'academic',
+  homework_notifications: 'work',
+  event_reminders: 'event',
+  meeting_reminders: 'work',
+  student_attendance: 'attendance',
+  payroll_notifications: 'salary',
+  holiday_calendars: 'event',
+  assignment_reminders: 'work',
+  exam_schedules: 'academic',
+  event_notifications: 'event',
+  system_alerts: 'emergency',
+  enrollment_notifications: 'academic',
+  staff_updates: 'work',
+  payment_alerts: 'payment',
+  daily_reports: 'work',
 };
 
 const DEFAULT_PREFERENCES = {
@@ -67,39 +91,40 @@ const DEFAULT_PREFERENCES = {
   },
 };
 
-const NOTIFICATION_LABELS = {
-  parent: {
-    fee_reminders: 'Fee Payment Reminders',
-    attendance_alerts: 'Attendance Alerts',
-    announcement_updates: 'School Announcements',
-    exam_results: 'Exam Results',
-    homework_notifications: 'Homework Notifications',
-    event_reminders: 'Event Reminders',
-  },
-  staff: {
-    announcement_updates: 'School Announcements',
-    meeting_reminders: 'Meeting Reminders',
-    student_attendance: 'Student Attendance Updates',
-    payroll_notifications: 'Payroll Notifications',
-    holiday_calendars: 'Holiday Calendars',
-  },
-  student: {
-    assignment_reminders: 'Assignment Reminders',
-    exam_schedules: 'Exam Schedules',
-    attendance_alerts: 'Attendance Alerts',
-    announcement_updates: 'School Announcements',
-    event_notifications: 'Event Notifications',
-  },
-  admin: {
-    system_alerts: 'System Alerts',
-    enrollment_notifications: 'New Enrollments',
-    staff_updates: 'Staff Updates',
-    payment_alerts: 'Payment Alerts',
-    daily_reports: 'Daily Reports',
-  },
-};
 
 export default function NotificationSettings({ userRole = 'staff' }) {
+  const { t } = useTranslation();
+  const NOTIFICATION_LABELS = useMemo(() => ({
+    parent: {
+      fee_reminders: t('constants.notifications.labels.parent.feeReminders'),
+      attendance_alerts: t('constants.notifications.labels.parent.attendanceAlerts'),
+      announcement_updates: t('constants.notifications.labels.parent.announcementUpdates'),
+      exam_results: t('constants.notifications.labels.parent.examResults'),
+      homework_notifications: t('constants.notifications.labels.parent.homeworkNotifications'),
+      event_reminders: t('constants.notifications.labels.parent.eventReminders'),
+    },
+    staff: {
+      announcement_updates: t('constants.notifications.labels.staff.announcementUpdates'),
+      meeting_reminders: t('constants.notifications.labels.staff.meetingReminders'),
+      student_attendance: t('constants.notifications.labels.staff.studentAttendance'),
+      payroll_notifications: t('constants.notifications.labels.staff.payrollNotifications'),
+      holiday_calendars: t('constants.notifications.labels.staff.holidayCalendars'),
+    },
+    student: {
+      assignment_reminders: t('constants.notifications.labels.student.assignmentReminders'),
+      exam_schedules: t('constants.notifications.labels.student.examSchedules'),
+      attendance_alerts: t('constants.notifications.labels.student.attendanceAlerts'),
+      announcement_updates: t('constants.notifications.labels.student.announcementUpdates'),
+      event_notifications: t('constants.notifications.labels.student.eventNotifications'),
+    },
+    admin: {
+      system_alerts: t('constants.notifications.labels.admin.systemAlerts'),
+      enrollment_notifications: t('constants.notifications.labels.admin.enrollmentNotifications'),
+      staff_updates: t('constants.notifications.labels.admin.staffUpdates'),
+      payment_alerts: t('constants.notifications.labels.admin.paymentAlerts'),
+      daily_reports: t('constants.notifications.labels.admin.dailyReports'),
+    },
+  }), [t]);
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES[userRole] || DEFAULT_PREFERENCES.staff);
   const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
   const [quietHoursStart, setQuietHoursStart] = useState('22:00');
@@ -112,13 +137,46 @@ export default function NotificationSettings({ userRole = 'staff' }) {
     loadPreferences();
   }, [userRole]);
 
-  const loadPreferences = async () => {
+  const loadPreferences = useCallback(async () => {
     try {
-      // TODO: load preferences from API
+      const data = await notificationsApi.getPreferences();
+      if (data) {
+        // Parse backend preferences array into frontend { category: { channel: bool } } format.
+        // Each notification entry is stored with type = frontend category key.
+        if (data.preferences && data.preferences.length > 0) {
+          const roleDefaults = DEFAULT_PREFERENCES[userRole] || DEFAULT_PREFERENCES.staff;
+          const rolePrefs = { ...roleDefaults };
+          data.preferences.forEach(({ notifications }) => {
+            if (!notifications) return;
+            notifications.forEach(({ type, channels }) => {
+              if (type && rolePrefs[type] && channels) {
+                rolePrefs[type] = {
+                  email: channels.email ?? false,
+                  sms: channels.sms ?? false,
+                  whatsapp: channels.whatsapp ?? false,
+                  inApp: channels.inapp ?? true,
+                };
+              }
+            });
+          });
+          setPreferences(rolePrefs);
+        }
+        if (data.quietHours) {
+          setQuietHoursEnabled(data.quietHours.enabled ?? false);
+          // Backend uses startTime/endTime field names
+          setQuietHoursStart(data.quietHours.startTime || '22:00');
+          setQuietHoursEnd(data.quietHours.endTime || '08:00');
+        }
+        if (data.digestFrequency) {
+          // Backend enum uses 'instant', frontend UI uses 'immediate'
+          setDigestFrequency(data.digestFrequency === 'instant' ? 'immediate' : data.digestFrequency);
+        }
+      }
     } catch (error) {
       console.error('Error loading preferences:', error);
+      // Fall back to defaults — don't show error toast since this is non-critical
     }
-  };
+  }, [userRole]);
 
   const handleChannelToggle = (category, channel) => {
     setPreferences(prev => ({
@@ -134,34 +192,57 @@ export default function NotificationSettings({ userRole = 'staff' }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Convert frontend { category: { channel: bool } } to backend array format.
+      // Each entry uses the frontend category key as notification type for round-trip fidelity.
+      const prefArray = Object.entries(preferences).map(([frontendCat, channels]) => ({
+        category: CATEGORY_MAP[frontendCat] || 'announcement',
+        notifications: [{
+          type: frontendCat,
+          channels: {
+            email: channels.email,
+            sms: channels.sms,
+            whatsapp: channels.whatsapp,
+            inapp: channels.inApp,  // backend field is 'inapp' (lowercase)
+          },
+          enabled: true,
+        }],
+      }));
 
-      toast.success('Notification preferences saved successfully');
+      await notificationsApi.updatePreferences({
+        preferences: prefArray,
+        quietHours: {
+          enabled: quietHoursEnabled,
+          startTime: quietHoursStart,  // backend uses startTime/endTime
+          endTime: quietHoursEnd,
+        },
+        // Backend enum uses 'instant'; frontend UI uses 'immediate'
+        digestFrequency: digestFrequency === 'immediate' ? 'instant' : digestFrequency,
+      });
+      toast.success(t('toast.success.notificationPreferencesSavedSuccessfully'));
       setHasChanges(false);
     } catch (error) {
       console.error('Error saving preferences:', error);
-      toast.error('Failed to save preferences');
+      toast.error(t('toast.error.failedToSavePreferences'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleReset = async () => {
-    if (!confirm('Reset all preferences to default?')) return;
+    if (!confirm(t('confirm.resetPreferences'))) return;
 
     try {
-      setPreferences(DEFAULT_PREFERENCES[userRole]);
+      await notificationsApi.resetPreferences();
+      setPreferences(DEFAULT_PREFERENCES[userRole] || DEFAULT_PREFERENCES.staff);
       setQuietHoursEnabled(false);
       setQuietHoursStart('22:00');
       setQuietHoursEnd('08:00');
       setDigestFrequency('immediate');
-
-      toast.success('Preferences reset to default');
+      toast.success(t('toast.success.preferencesResetToDefault'));
       setHasChanges(false);
     } catch (error) {
       console.error('Error resetting preferences:', error);
-      toast.error('Failed to reset preferences');
+      toast.error(t('toast.error.failedToResetPreferences'));
     }
   };
 
@@ -170,7 +251,7 @@ export default function NotificationSettings({ userRole = 'staff' }) {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-semibold">Notification Settings</h2>
+          <h2 className="text-xl font-semibold">{t('pages.notificationSettings')}</h2>
           <p className="text-sm text-default-500 mt-1">
             Customize how you receive notifications
           </p>
@@ -205,7 +286,7 @@ export default function NotificationSettings({ userRole = 'staff' }) {
                 <Clock size={20} className="text-warning" />
               </div>
               <div>
-                <h3 className="font-semibold">Quiet Hours</h3>
+                <h3 className="font-semibold">{t('pages.quietHours')}</h3>
                 <p className="text-sm text-default-500">
                   Disable notifications during specific hours
                 </p>
@@ -213,7 +294,7 @@ export default function NotificationSettings({ userRole = 'staff' }) {
             </div>
             <Switch
               isSelected={quietHoursEnabled}
-              onValueChange={setQuietHoursEnabled}
+              onValueChange={(v) => { setQuietHoursEnabled(v); setHasChanges(true); }}
               size="lg"
             >
               {quietHoursEnabled ? 'Enabled' : 'Disabled'}
@@ -224,16 +305,16 @@ export default function NotificationSettings({ userRole = 'staff' }) {
             <div className="grid grid-cols-2 gap-4 mt-2">
               <Input
                 type="time"
-                label="Start Time"
+                label={t('pages.startTime1')}
                 value={quietHoursStart}
-                onValueChange={setQuietHoursStart}
+                onValueChange={(v) => { setQuietHoursStart(v); setHasChanges(true); }}
                 variant="bordered"
               />
               <Input
                 type="time"
-                label="End Time"
+                label={t('pages.endTime1')}
                 value={quietHoursEnd}
-                onValueChange={setQuietHoursEnd}
+                onValueChange={(v) => { setQuietHoursEnd(v); setHasChanges(true); }}
                 variant="bordered"
               />
             </div>
@@ -245,13 +326,13 @@ export default function NotificationSettings({ userRole = 'staff' }) {
       <Card className="border border-default-200">
         <CardBody className="gap-4">
           <div>
-            <h3 className="font-semibold mb-2">Digest Frequency</h3>
+            <h3 className="font-semibold mb-2">{t('pages.digestFrequency')}</h3>
             <p className="text-sm text-default-500 mb-4">
               Choose how often you receive notification summaries
             </p>
             <Select
-              label="Frequency"
-              placeholder="Select frequency"
+              label={t('pages.frequency')}
+              placeholder={t('pages.selectFrequency')}
               selectedKeys={[digestFrequency]}
               onSelectionChange={(keys) => {
                 const value = Array.from(keys)[0];
@@ -261,10 +342,10 @@ export default function NotificationSettings({ userRole = 'staff' }) {
               variant="bordered"
               className="max-w-xs"
             >
-              <SelectItem key="immediate">Immediate</SelectItem>
-              <SelectItem key="hourly">Hourly Digest</SelectItem>
-              <SelectItem key="daily">Daily Digest</SelectItem>
-              <SelectItem key="weekly">Weekly Digest</SelectItem>
+              <SelectItem key="immediate">{t('pages.immediate')}</SelectItem>
+              <SelectItem key="hourly">{t('pages.hourlyDigest')}</SelectItem>
+              <SelectItem key="daily">{t('pages.dailyDigest')}</SelectItem>
+              <SelectItem key="weekly">{t('pages.weeklyDigest')}</SelectItem>
             </Select>
           </div>
         </CardBody>
@@ -274,7 +355,7 @@ export default function NotificationSettings({ userRole = 'staff' }) {
       <Card className="border border-default-200">
         <CardBody className="gap-6">
           <div>
-            <h3 className="font-semibold mb-4">Notification Channels</h3>
+            <h3 className="font-semibold mb-4">{t('pages.notificationChannels')}</h3>
             <p className="text-sm text-default-500">
               Select which channels to use for each notification type
             </p>
@@ -342,7 +423,7 @@ export default function NotificationSettings({ userRole = 'staff' }) {
           <CardBody className="flex items-center gap-3">
             <Save size={20} className="text-warning flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-medium text-sm">You have unsaved changes</p>
+              <p className="font-medium text-sm">{t('pages.youHaveUnsavedChanges')}</p>
               <p className="text-xs text-default-500">
                 Don't forget to save your notification preferences
               </p>

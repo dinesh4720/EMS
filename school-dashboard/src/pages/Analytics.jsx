@@ -11,7 +11,10 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import StatCard from "../components/StatCard";
-import { useChartTheme } from "../utils/chartTheme";
+import { useChartTheme, CHART_COLORS } from "../utils/chartTheme";
+import { getDateLocale } from '../i18n/index';
+import { useTranslation } from 'react-i18next';
+
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -59,7 +62,7 @@ function getWeekdayLabel(date) {
     return null;
   }
 
-  return parsedDate.toLocaleDateString("en-US", { weekday: "short" });
+  return parsedDate.toLocaleDateString(getDateLocale(), { weekday: "short" });
 }
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -84,6 +87,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function Analytics() {
+  const { t } = useTranslation();
   const { students, staff, classesWithTeachers, feeDefaulters, schoolSettings, currentAcademicYear } = useApp();
   const chart = useChartTheme();
   const [attendanceSummary, setAttendanceSummary] = useState({
@@ -97,7 +101,7 @@ export default function Analytics() {
     let cancelled = false;
 
     const loadAttendanceSummary = async () => {
-      const activeStudents = students.filter((student) => student?.status === "active" && student?.id);
+      const activeStudents = (students || []).filter((student) => student?.status === "active" && student?.id);
 
       if (!activeStudents.length) {
         setAttendanceSummary({
@@ -202,47 +206,51 @@ export default function Analytics() {
 
   // Calculate comprehensive analytics
   const analytics = useMemo(() => {
+    const safeStudents = students || [];
+    const safeStaff = staff || [];
+    const safeClasses = classesWithTeachers || [];
+
     // Student Analytics
-    const activeStudents = students.filter(s => s.status === "active").length;
-    const inactiveStudents = students.filter(s => s.status === "inactive").length;
-    const transferredStudents = students.filter(s => s.status === "transferred").length;
-    const alumniStudents = students.filter(s => s.status === "alumni").length;
-    
+    const activeStudents = safeStudents.filter(s => s.status === "active").length;
+    const inactiveStudents = safeStudents.filter(s => s.status === "inactive").length;
+    const transferredStudents = safeStudents.filter(s => s.status === "transferred").length;
+    const alumniStudents = safeStudents.filter(s => s.status === "alumni").length;
+
     const studentsByClass = {};
-    students.forEach(s => {
+    safeStudents.forEach(s => {
       studentsByClass[s.class] = (studentsByClass[s.class] || 0) + 1;
     });
     const largestClass = Object.entries(studentsByClass).sort((a, b) => b[1] - a[1])[0];
     const smallestClass = Object.entries(studentsByClass).sort((a, b) => a[1] - b[1])[0];
 
     // Fee Analytics
-    const paidFees = students.filter(s => s.feeStatus === "paid").length;
-    const pendingFees = students.filter(s => s.feeStatus === "pending").length;
-    const overdueFees = students.filter(s => s.feeStatus === "overdue").length;
-    const feeCollectionRate = students.length > 0 ? ((paidFees / students.length) * 100).toFixed(1) : "0.0";
+    const paidFees = safeStudents.filter(s => s.feeStatus === "paid").length;
+    const pendingFees = safeStudents.filter(s => s.feeStatus === "pending").length;
+    const overdueFees = safeStudents.filter(s => s.feeStatus === "overdue").length;
+    const feeCollectionRate = safeStudents.length > 0 ? ((paidFees / safeStudents.length) * 100).toFixed(1) : "0.0";
 
     // Staff Analytics
-    const activeStaff = staff.filter(s => s.status === "active").length;
-    const teachers = staff.filter(s => s.role === "Teacher").length;
-    const admins = staff.filter(s => s.role === "Admin").length;
-    const accountants = staff.filter(s => s.role === "Accountant").length;
-    const librarians = staff.filter(s => s.role === "Librarian").length;
-    const labAssistants = staff.filter(s => s.role === "Lab Assistant").length;
+    const activeStaff = safeStaff.filter(s => s.status === "active").length;
+    const teachers = safeStaff.filter(s => s.role === "Teacher").length;
+    const admins = safeStaff.filter(s => s.role === "Admin").length;
+    const accountants = safeStaff.filter(s => s.role === "Accountant").length;
+    const librarians = safeStaff.filter(s => s.role === "Librarian").length;
+    const labAssistants = safeStaff.filter(s => s.role === "Lab Assistant").length;
 
     const staffByDepartment = {};
-    staff.forEach(s => {
+    safeStaff.forEach(s => {
       staffByDepartment[s.department] = (staffByDepartment[s.department] || 0) + 1;
     });
 
     // Class Analytics
-    const totalClasses = classesWithTeachers.length;
-    const classesWithTeacher = classesWithTeachers.filter(c => c.classTeacherId).length;
+    const totalClasses = safeClasses.length;
+    const classesWithTeacher = safeClasses.filter(c => c.classTeacherId).length;
     const classesWithoutTeacher = totalClasses - classesWithTeacher;
-    const avgClassSize = totalClasses > 0 ? (students.length / totalClasses).toFixed(1) : "0";
+    const avgClassSize = totalClasses > 0 ? (safeStudents.length / totalClasses).toFixed(1) : "0";
 
     return {
       students: {
-        total: students.length,
+        total: safeStudents.length,
         active: activeStudents,
         inactive: inactiveStudents,
         transferred: transferredStudents,
@@ -346,8 +354,8 @@ export default function Analytics() {
                       <Activity size={16} className="text-gray-600" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">Student Distribution</h3>
-                      <p className="text-xs text-gray-500 dark:text-zinc-500">By enrollment status</p>
+                      <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">{t('pages.studentDistribution')}</h3>
+                      <p className="text-xs text-gray-500 dark:text-zinc-500">{t('pages.byEnrollmentStatus')}</p>
                     </div>
                   </div>
                   <Link to="/students">
@@ -374,7 +382,7 @@ export default function Analytics() {
                         labelLine={false}
                         label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                         outerRadius={70}
-                        fill="#8884d8"
+                        fill={CHART_COLORS.chart1}
                         dataKey="value"
                       >
                         {[
@@ -402,8 +410,8 @@ export default function Analytics() {
                       <Target size={16} className="text-gray-600" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">Fee Collection Status</h3>
-                      <p className="text-xs text-gray-500 dark:text-zinc-500">Payment distribution</p>
+                      <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">{t('pages.feeCollectionStatus')}</h3>
+                      <p className="text-xs text-gray-500 dark:text-zinc-500">{t('pages.paymentDistribution')}</p>
                     </div>
                   </div>
                   <Link to="/fees">
@@ -440,7 +448,7 @@ export default function Analytics() {
                         tick={{ fill: chart.tick, fontSize: 11 }} 
                       />
                       <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="value" fill="#6b7280" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="value" fill={CHART_COLORS.neutral} radius={[3, 3, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -456,8 +464,8 @@ export default function Analytics() {
                       <Users size={16} className="text-gray-600" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">Staff by Role</h3>
-                      <p className="text-xs text-gray-500 dark:text-zinc-500">Role distribution</p>
+                      <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">{t('pages.staffByRole')}</h3>
+                      <p className="text-xs text-gray-500 dark:text-zinc-500">{t('pages.roleDistribution')}</p>
                     </div>
                   </div>
                   <Link to="/staffs">
@@ -499,7 +507,7 @@ export default function Analytics() {
                         width={50}
                       />
                       <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="value" fill="#6b7280" radius={[0, 3, 3, 0]} />
+                      <Bar dataKey="value" fill={CHART_COLORS.neutral} radius={[0, 3, 3, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -515,8 +523,8 @@ export default function Analytics() {
                       <Activity size={16} className="text-gray-600" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">Attendance Trends</h3>
-                      <p className="text-xs text-gray-500 dark:text-zinc-500">Average by weekday</p>
+                      <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">{t('pages.attendanceTrends1')}</h3>
+                      <p className="text-xs text-gray-500 dark:text-zinc-500">{t('pages.averageByWeekday')}</p>
                     </div>
                   </div>
                 </div>
@@ -584,14 +592,14 @@ export default function Analytics() {
                 <Target size={16} className="text-gray-600" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">Performance Summary</h3>
-                <p className="text-xs text-gray-500">Key metrics overview</p>
+                <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">{t('pages.performanceSummary')}</h3>
+                <p className="text-xs text-gray-500">{t('pages.keyMetricsOverview')}</p>
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="p-3 bg-gray-50 rounded-lg dark:bg-zinc-900">
-                <div className="text-xs text-gray-500 mb-1 dark:text-zinc-500">Average Attendance</div>
+                <div className="text-xs text-gray-500 mb-1 dark:text-zinc-500">{t('pages.averageAttendance')}</div>
                 <div className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
                   {attendanceSummary.loading
                     ? "..."
@@ -607,13 +615,13 @@ export default function Analytics() {
               </div>
 
               <div className="p-3 bg-gray-50 rounded-lg dark:bg-zinc-900">
-                <div className="text-xs text-gray-500 mb-1 dark:text-zinc-500">Fee Collection Rate</div>
+                <div className="text-xs text-gray-500 mb-1 dark:text-zinc-500">{t('pages.feeCollectionRate')}</div>
                 <div className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{analytics.fees.collectionRate}%</div>
                 <div className="text-xs text-gray-400 mt-1 dark:text-zinc-500">Target: 95%</div>
               </div>
 
               <div className="p-3 bg-gray-50 rounded-lg dark:bg-zinc-900">
-                <div className="text-xs text-gray-500 mb-1 dark:text-zinc-500">Teacher Assignment</div>
+                <div className="text-xs text-gray-500 mb-1 dark:text-zinc-500">{t('pages.teacherAssignment')}</div>
                 <div className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
                   {analytics.classes.total > 0 ? ((analytics.classes.withTeacher / analytics.classes.total) * 100).toFixed(0) : "0"}%
                 </div>
@@ -623,16 +631,16 @@ export default function Analytics() {
               </div>
 
               <div className="p-3 bg-gray-50 rounded-lg dark:bg-zinc-900">
-                <div className="text-xs text-gray-500 mb-1 dark:text-zinc-500">Overall Health Score</div>
+                <div className="text-xs text-gray-500 mb-1 dark:text-zinc-500">{t('pages.overallHealthScore')}</div>
                 <div className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">85%</div>
-                <div className="text-xs text-gray-400 mt-1 dark:text-zinc-500">Based on all metrics</div>
+                <div className="text-xs text-gray-400 mt-1 dark:text-zinc-500">{t('pages.basedOnAllMetrics')}</div>
               </div>
             </div>
           </div>
 
           {/* Quick Links */}
           <div className="bg-white rounded-lg border border-gray-200 p-5 dark:bg-zinc-950 dark:border-zinc-800">
-            <h3 className="font-medium text-gray-900 text-sm mb-4 dark:text-zinc-100">Quick Actions</h3>
+            <h3 className="font-medium text-gray-900 text-sm mb-4 dark:text-zinc-100">{t('pages.quickActions1')}</h3>
             <div className="space-y-2">
               <Link
                 to="/students"
@@ -642,7 +650,7 @@ export default function Analytics() {
                   <GraduationCap size={14} className="text-gray-600" />
                 </div>
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-700 dark:text-zinc-300">Manage Students</div>
+                  <div className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('pages.manageStudents')}</div>
                   <div className="text-xs text-gray-400 dark:text-zinc-500">{analytics.students.total} total</div>
                 </div>
               </Link>
@@ -655,7 +663,7 @@ export default function Analytics() {
                   <Users size={14} className="text-gray-600" />
                 </div>
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-700 dark:text-zinc-300">Manage Staff</div>
+                  <div className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('pages.manageStaff')}</div>
                   <div className="text-xs text-gray-400 dark:text-zinc-500">{analytics.staff.total} total</div>
                 </div>
               </Link>
@@ -668,7 +676,7 @@ export default function Analytics() {
                   <BookOpen size={14} className="text-gray-600" />
                 </div>
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-700 dark:text-zinc-300">Manage Classes</div>
+                  <div className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('pages.manageClasses')}</div>
                   <div className="text-xs text-gray-400 dark:text-zinc-500">{analytics.classes.total} total</div>
                 </div>
               </Link>
@@ -681,7 +689,7 @@ export default function Analytics() {
                   <IndianRupee size={14} className="text-gray-600" />
                 </div>
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-700 dark:text-zinc-300">Fee Management</div>
+                  <div className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('pages.feeManagement')}</div>
                   <div className="text-xs text-gray-400 dark:text-zinc-500">{analytics.fees.collectionRate}% collected</div>
                 </div>
               </Link>
@@ -691,7 +699,7 @@ export default function Analytics() {
           {/* Student Breakdown */}
           <div className="bg-white rounded-lg border border-gray-200 p-5 dark:bg-zinc-950 dark:border-zinc-800">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">Student Breakdown</h3>
+              <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">{t('pages.studentBreakdown')}</h3>
               <Link to="/students" className="text-xs text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100">
                 View all
               </Link>
@@ -701,28 +709,28 @@ export default function Analytics() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={14} className="text-gray-500" />
-                  <span className="text-sm text-gray-600 dark:text-zinc-400">Active</span>
+                  <span className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.active')}</span>
                 </div>
                 <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{analytics.students.active}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Award size={14} className="text-gray-400" />
-                  <span className="text-sm text-gray-600 dark:text-zinc-400">Inactive</span>
+                  <span className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.inactive')}</span>
                 </div>
                 <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{analytics.students.inactive}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Activity size={14} className="text-gray-400" />
-                  <span className="text-sm text-gray-600 dark:text-zinc-400">Transferred</span>
+                  <span className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.transferred')}</span>
                 </div>
                 <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{analytics.students.transferred}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Target size={14} className="text-gray-400" />
-                  <span className="text-sm text-gray-600 dark:text-zinc-400">Alumni</span>
+                  <span className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.alumni')}</span>
                 </div>
                 <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{analytics.students.alumni}</span>
               </div>
@@ -730,13 +738,13 @@ export default function Analytics() {
 
             {analytics.students.largestClass && (
               <div className="mt-4 pt-4 border-t border-gray-200 dark:border-zinc-800">
-                <div className="text-xs text-gray-500 mb-2 dark:text-zinc-500">Class Information</div>
+                <div className="text-xs text-gray-500 mb-2 dark:text-zinc-500">{t('pages.classInformation')}</div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">Largest:</span>
+                  <span className="text-gray-500">{t('pages.largest')}</span>
                   <span className="text-gray-900 dark:text-zinc-100">{analytics.students.largestClass[0]} ({analytics.students.largestClass[1]})</span>
                 </div>
                 <div className="flex justify-between text-xs mt-1">
-                  <span className="text-gray-500 dark:text-zinc-500">Smallest:</span>
+                  <span className="text-gray-500 dark:text-zinc-500">{t('pages.smallest')}</span>
                   <span className="text-gray-900 dark:text-zinc-100">{analytics.students.smallestClass[0]} ({analytics.students.smallestClass[1]})</span>
                 </div>
               </div>
@@ -746,7 +754,7 @@ export default function Analytics() {
           {/* Staff Breakdown */}
           <div className="bg-white rounded-lg border border-gray-200 p-5 dark:bg-zinc-950 dark:border-zinc-800">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">Staff by Role</h3>
+              <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">{t('pages.staffByRole')}</h3>
               <Link to="/staffs" className="text-xs text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100">
                 View all
               </Link>
@@ -754,30 +762,30 @@ export default function Analytics() {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-zinc-400">Teachers</span>
+                <span className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.teachers')}</span>
                 <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{analytics.staff.teachers}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-zinc-400">Admins</span>
+                <span className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.admins')}</span>
                 <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{analytics.staff.admins}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-zinc-400">Accountants</span>
+                <span className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.accountants')}</span>
                 <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{analytics.staff.accountants}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-zinc-400">Librarians</span>
+                <span className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.librarians')}</span>
                 <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{analytics.staff.librarians}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-zinc-400">Lab Assistants</span>
+                <span className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.labAssistants')}</span>
                 <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{analytics.staff.labAssistants}</span>
               </div>
             </div>
 
             {Object.entries(analytics.staff.byDepartment).length > 0 && (
               <div className="mt-4 pt-4 border-t border-gray-200 dark:border-zinc-800">
-                <div className="text-xs text-gray-500 mb-2 dark:text-zinc-500">Top Departments</div>
+                <div className="text-xs text-gray-500 mb-2 dark:text-zinc-500">{t('pages.topDepartments')}</div>
                 {Object.entries(analytics.staff.byDepartment)
                   .sort((a, b) => b[1] - a[1])
                   .slice(0, 3)

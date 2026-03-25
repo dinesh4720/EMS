@@ -1,3 +1,4 @@
+import { API_URL } from '../../config/api.js';
 import { useState } from 'react';
 import { Button, Select, SelectItem } from '@heroui/react';
 import {
@@ -5,8 +6,8 @@ import {
   BookOpen, GraduationCap,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 const GOVT_TEMPLATES = [
   {
@@ -66,6 +67,7 @@ const GOVT_TEMPLATES = [
 ];
 
 export default function GovtExportPage() {
+  const { t } = useTranslation();
   const [exporting, setExporting] = useState(null);
   const [format, setFormat] = useState('xlsx');
 
@@ -103,20 +105,20 @@ export default function GovtExportPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Government Exports</h1>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{t('pages.governmentExports')}</h1>
           <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
             Download data in formats required by education boards and regulatory bodies
           </p>
         </div>
         <div className="w-36">
           <Select
-            label="Format"
+            label={t('pages.format')}
             size="sm"
             selectedKeys={[format]}
             onChange={(e) => setFormat(e.target.value)}
           >
-            <SelectItem key="xlsx" textValue="Excel (.xlsx)">Excel (.xlsx)</SelectItem>
-            <SelectItem key="csv" textValue="CSV (.csv)">CSV (.csv)</SelectItem>
+            <SelectItem key="xlsx" textValue="Excel (.xlsx)">{t('pages.excelXlsx')}</SelectItem>
+            <SelectItem key="csv" textValue="CSV (.csv)">{t('pages.cSVCsv')}</SelectItem>
           </Select>
         </div>
       </div>

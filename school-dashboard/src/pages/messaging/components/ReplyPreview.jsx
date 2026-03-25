@@ -1,4 +1,5 @@
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function ReplyPreview({ message, onCancel }) {
   if (!message) return null;

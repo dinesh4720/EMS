@@ -24,6 +24,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import StudentStatCard from "../shared/StudentStatCard";
+import { CHART_COLORS } from "../../../../utils/chartTheme";
+import { useTranslation } from 'react-i18next';
 
 /**
  * OverviewTab - Main overview tab for student dashboard
@@ -49,6 +51,7 @@ function OverviewTab({
   onSendReminder,
   classTeacher,
 }) {
+  const { t } = useTranslation();
   // Calculate average percentage for academics
   const avgPercentage =
     results.length > 0
@@ -128,8 +131,8 @@ function OverviewTab({
       {/* KPI Cards Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-default-900">Overview</h3>
-          <span className="text-sm text-default-500">Last updated today</span>
+          <h3 className="text-lg font-semibold text-default-900">{t('pages.overview1')}</h3>
+          <span className="text-sm text-default-500">{t('pages.lastUpdatedToday')}</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -163,12 +166,12 @@ function OverviewTab({
               </div>
               <div className="mt-4 pt-4 border-t border-gray-100 dark:border-zinc-800 space-y-2">
                 <div className="flex items-center gap-3 text-xs text-default-500">
-                  <span className="font-medium">Exams Taken:</span>
+                  <span className="font-medium">{t('pages.examsTaken')}</span>
                   <span className="font-bold text-default-700">{results.length}</span>
                 </div>
               </div>
               <div className="mt-4 flex items-center justify-between">
-                <span className="text-xs text-default-400">Click to view details</span>
+                <span className="text-xs text-default-400">{t('pages.clickToViewDetails')}</span>
                 <span
                   className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700 cursor-pointer transition-colors flex items-center gap-1.5"
                   onClick={(e) => {
@@ -213,20 +216,20 @@ function OverviewTab({
                 <h4 className="text-2xl font-semibold text-default-900">
                   {attendanceStats.percentage}%
                 </h4>
-                <p className="text-sm font-medium text-default-500">Average Attendance</p>
+                <p className="text-sm font-medium text-default-500">{t('pages.averageAttendance')}</p>
               </div>
               <div className="mt-4 pt-4 border-t border-gray-100 dark:border-zinc-800 space-y-2">
                 <div className="flex items-center gap-3 text-xs text-default-500">
-                  <span className="font-medium">Present Days:</span>
+                  <span className="font-medium">{t('pages.presentDays1')}</span>
                   <span className="font-bold text-default-700">{attendanceStats.present}</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-red-500">
-                  <span className="font-medium">Absent Days:</span>
+                  <span className="font-medium">{t('pages.absentDays')}</span>
                   <span className="font-bold">{attendanceStats.absent}</span>
                 </div>
               </div>
               <div className="mt-4 flex items-center justify-between">
-                <span className="text-xs text-default-400">Click to view details</span>
+                <span className="text-xs text-default-400">{t('pages.clickToViewDetails')}</span>
                 <span
                   className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700 cursor-pointer transition-colors flex items-center gap-1.5"
                   onClick={(e) => {
@@ -278,7 +281,7 @@ function OverviewTab({
                 <div className="flex items-center gap-3 text-xs text-default-500">
                   {totalBalance > 0 && (
                     <>
-                      <span className="font-medium text-default-600">Total Fee:</span>
+                      <span className="font-medium text-default-600">{t('pages.totalFee2')}</span>
                       <span className="font-bold text-default-700">
                         ₹{(studentFeeStructure?.totalFee || 0).toLocaleString()}
                       </span>
@@ -301,7 +304,7 @@ function OverviewTab({
                 )}
               </div>
               <div className="mt-4 flex items-center justify-between">
-                <span className="text-xs text-default-400">Click to view details</span>
+                <span className="text-xs text-default-400">{t('pages.clickToViewDetails')}</span>
               </div>
             </CardBody>
           </Card>
@@ -310,7 +313,7 @@ function OverviewTab({
 
       {/* Action Needed Section */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-default-900">Action Needed</h3>
+        <h3 className="text-lg font-semibold text-default-900">{t('pages.actionNeeded1')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Low Attendance Alert */}
           {attendanceStats.percentage < 75 && (
@@ -325,7 +328,7 @@ function OverviewTab({
                     <AlertTriangle size={18} className="text-gray-600 dark:text-zinc-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-default-900">Low Attendance</p>
+                    <p className="text-sm font-semibold text-default-900">{t('pages.lowAttendance1')}</p>
                     <p className="text-xs text-default-500">
                       Attendance is {attendanceStats.percentage}% (below 75%)
                     </p>
@@ -349,7 +352,7 @@ function OverviewTab({
                     <IndianRupee size={18} className="text-gray-600 dark:text-zinc-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-default-900">Pending Fees</p>
+                    <p className="text-sm font-semibold text-default-900">{t('pages.pendingFees1')}</p>
                     <p className="text-xs text-default-500">
                       ₹{totalBalance.toLocaleString()} outstanding
                     </p>
@@ -373,7 +376,7 @@ function OverviewTab({
                     <AlertTriangle size={18} className="text-gray-600 dark:text-zinc-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-default-900">Poor Performance</p>
+                    <p className="text-sm font-semibold text-default-900">{t('pages.poorPerformance')}</p>
                     <p className="text-xs text-default-500">
                       Average is {Math.round(avgPercentage)}% - needs attention
                     </p>
@@ -395,7 +398,7 @@ function OverviewTab({
                       <CheckCircle size={18} className="text-gray-600 dark:text-zinc-400" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-default-900">All Good!</p>
+                      <p className="text-sm font-semibold text-default-900">{t('pages.allGood1')}</p>
                       <p className="text-xs text-default-500">
                         No immediate actions required
                       </p>
@@ -409,7 +412,7 @@ function OverviewTab({
 
       {/* Analytics Section */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-default-900">Analytics</h3>
+        <h3 className="text-lg font-semibold text-default-900">{t('pages.analytics')}</h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Performance Trend Chart */}
           <Card className="border border-gray-200 dark:border-zinc-800">
@@ -419,8 +422,8 @@ function OverviewTab({
                   <TrendingUp size={18} className="text-gray-600 dark:text-zinc-400" />
                 </div>
                 <div>
-                  <h4 className="text-base font-semibold text-default-900">Performance Trend</h4>
-                  <p className="text-xs text-default-500">Academic performance over time</p>
+                  <h4 className="text-base font-semibold text-default-900">{t('pages.performanceTrend1')}</h4>
+                  <p className="text-xs text-default-500">{t('pages.academicPerformanceOverTime')}</p>
                 </div>
               </div>
             </CardHeader>
@@ -466,8 +469,8 @@ function OverviewTab({
                   <BarChart3 size={18} className="text-gray-600 dark:text-zinc-400" />
                 </div>
                 <div>
-                  <h4 className="text-base font-semibold text-default-900">Subject-wise Performance</h4>
-                  <p className="text-xs text-default-500">Latest exam results by subject</p>
+                  <h4 className="text-base font-semibold text-default-900">{t('pages.subjectWisePerformance1')}</h4>
+                  <p className="text-xs text-default-500">{t('pages.latestExamResultsBySubject')}</p>
                 </div>
               </div>
             </CardHeader>
@@ -487,7 +490,7 @@ function OverviewTab({
                       }}
                       formatter={(value) => [`${value}`, "Marks"]}
                     />
-                    <Bar dataKey="marks" fill="#6b7280" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="marks" fill={CHART_COLORS.neutral} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -506,8 +509,8 @@ function OverviewTab({
                   <LineChartIcon size={18} className="text-gray-600 dark:text-zinc-400" />
                 </div>
                 <div>
-                  <h4 className="text-base font-semibold text-default-900">Attendance Trend</h4>
-                  <p className="text-xs text-default-500">Monthly attendance overview</p>
+                  <h4 className="text-base font-semibold text-default-900">{t('pages.attendanceTrend')}</h4>
+                  <p className="text-xs text-default-500">{t('pages.monthlyAttendanceOverview')}</p>
                 </div>
               </div>
             </CardHeader>

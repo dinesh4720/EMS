@@ -1,52 +1,61 @@
 /*
- * Component-level print utilities.
- * Import this file in components that use the .print-only class
- * to get print-optimized page breaks, images, tables, and color handling.
+ * CSS-09: Shared print utilities — imported by index.css.
+ * Covers .print-only and .printable-profile (legacy) wrappers.
  *
- * Each component should define its own @page rule for margins/size
- * since different print contexts need different page settings.
+ * Structural app-level print rules (hide #root, show .print-only, @page)
+ * remain in index.css because they affect the whole document layout.
+ *
+ * !important is required here — print styles have lower specificity than
+ * screen Tailwind utilities, so without !important they are silently ignored.
  */
 
 @media print {
   /* Page break handling */
-  .print-only > div {
+  .print-only > div,
+  .printable-profile > div {
     page-break-inside: avoid;
   }
 
   /* Ensure colors print correctly */
-  .print-only * {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-    color-adjust: exact;
+  .print-only *,
+  .printable-profile * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
   }
 
   /* Strip visual effects that don't translate to print */
-  .print-only * {
-    box-shadow: none;
-    text-shadow: none;
-    transition: none;
+  .print-only *,
+  .printable-profile * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    transition: none !important;
   }
 
   /* Image handling */
-  .print-only img {
-    max-width: 100%;
-    height: auto;
-    display: block;
+  .print-only img,
+  .printable-profile img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block !important;
   }
 
   /* Table handling */
-  .print-only table {
+  .print-only table,
+  .printable-profile table {
     page-break-inside: avoid;
-    width: 100%;
+    width: 100% !important;
   }
 
-  .print-only tr {
+  .print-only tr,
+  .printable-profile tr {
     page-break-inside: avoid;
     page-break-after: auto;
   }
 
   /* Suppress link URL decoration */
-  .print-only a[href]:after {
-    content: none;
+  .print-only a[href]:after,
+  .printable-profile a[href]:after {
+    content: none !important;
   }
 }

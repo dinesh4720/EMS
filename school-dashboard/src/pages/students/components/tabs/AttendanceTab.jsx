@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardBody, CardHeader, Button, Input, Select, SelectItem, Chip, Progress, Tooltip } from "@heroui/react";
 import { Activity, CheckCircle, XCircle, Calendar, BookOpen, AlertTriangle, Mail, Phone, Download, Plus, Clock, TrendingUp, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
-import { attendanceApi } from "../../../../services/api.js";
+import { attendanceApi, studentsApi } from "../../../../services/api.js";
+import { useTranslation } from 'react-i18next';
 
 /**
  * AttendanceTab - Student attendance overview and management
@@ -12,6 +13,7 @@ export default function AttendanceTab({
   attendanceStats,
   onRegularizeOpen
 }) {
+  const { t } = useTranslation();
   const [attendanceData, setAttendanceData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString('default', { month: 'long' }).toLowerCase());
@@ -32,7 +34,7 @@ export default function AttendanceTab({
         setAttendanceData(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Error fetching attendance:', error);
-        toast.error('Failed to load attendance data');
+        toast.error(t('toast.error.failedToLoadAttendanceData'));
         setAttendanceData([]);
       } finally {
         setLoading(false);
@@ -162,7 +164,8 @@ export default function AttendanceTab({
         studentId: student.id,
         classId: student.classId,
         date: selectedDate,
-        status
+        status,
+        clientTimestamp: new Date().toISOString()
       });
       toast.success(`Marked as ${status.charAt(0).toUpperCase() + status.slice(1)}`);
 
@@ -173,7 +176,55 @@ export default function AttendanceTab({
       setAttendanceData(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error marking attendance:', error);
-      toast.error('Failed to mark attendance');
+      toast.error(t('toast.error.failedToMarkAttendance'));
+    }
+  };
+
+  // Download attendance report as CSV (MF-17)
+  const handleDownloadReport = () => {
+    if (!attendanceData.length) {
+      toast.error('No attendance data to download');
+      return;
+    }
+    const rows = [
+      ['Date', 'Status', 'In Time', 'Out Time'],
+      ...attendanceData.map(a => [
+        a.date,
+        a.status || 'unknown',
+        a.inTime || '-',
+        a.outTime || '-'
+      ])
+    ];
+    const csv = rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `attendance-${student?.name?.replace(/\s+/g, '-') || 'student'}-${new Date().getFullYear()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Attendance report downloaded');
+  };
+
+  // Send attendance report to parent (MF-18)
+  const handleSendToParent = async (channel) => {
+    if (!student?.id) return;
+    const loadingToast = toast.loading(`Sending via ${channel === 'email' ? 'Email' : 'SMS'}...`);
+    try {
+      const message = `Attendance Report for ${student.name}: ${calculatedStats.percentage}% attendance (${calculatedStats.present} present, ${calculatedStats.absent} absent out of ${calculatedStats.total} days this year).`;
+      await studentsApi.sendReminder(student.id, {
+        message,
+        channel,
+        parentPhone: student.parentPhone,
+        parentEmail: student.parentEmail,
+        studentName: student.name,
+        type: 'attendance_report'
+      });
+      toast.success(`Report sent via ${channel === 'email' ? 'Email' : 'SMS'}`, { id: loadingToast });
+    } catch (error) {
+      toast.error(`Failed to send: ${error.message || 'Unknown error'}`, { id: loadingToast });
     }
   };
 
@@ -209,7 +260,7 @@ export default function AttendanceTab({
                 <Activity size={18} className="text-gray-600 dark:text-zinc-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Average Attendance</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.averageAttendance')}</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{calculatedStats.percentage}%</p>
               </div>
             </div>
@@ -221,7 +272,7 @@ export default function AttendanceTab({
                 <CheckCircle size={18} className="text-gray-600 dark:text-zinc-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Present Days</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.presentDays')}</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{calculatedStats.present}</p>
               </div>
             </div>
@@ -233,7 +284,7 @@ export default function AttendanceTab({
                 <XCircle size={18} className="text-gray-600 dark:text-zinc-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Absent Days</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.absentDays1')}</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{calculatedStats.absent}</p>
               </div>
             </div>
@@ -245,7 +296,7 @@ export default function AttendanceTab({
                 <Calendar size={18} className="text-gray-600 dark:text-zinc-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Total Days</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.totalDays2')}</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{calculatedStats.total}</p>
               </div>
             </div>
@@ -261,7 +312,7 @@ export default function AttendanceTab({
               <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
                 <CheckCircle size={18} className="text-gray-600 dark:text-zinc-400" />
               </div>
-              <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Mark Today's Attendance</h3>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">{t('pages.markTodaySAttendance')}</h3>
             </div>
             <Input
               type="date"
@@ -313,15 +364,22 @@ export default function AttendanceTab({
             <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
               <BookOpen size={18} className="text-gray-600 dark:text-zinc-400" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Subject-wise Attendance</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">{t('pages.subjectWiseAttendance')}</h3>
           </div>
         </div>
         <div className="p-6">
           {subjectAttendance.length === 0 ? (
-            <div className="text-center py-8">
-              <BookOpen size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
-              <p className="text-sm text-gray-500 dark:text-zinc-400">Subject-wise attendance tracking is not currently available.</p>
-              <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">This feature requires per-subject attendance tracking which will be implemented in a future update.</p>
+            <div className="flex flex-col items-center justify-center py-10 gap-3">
+              <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                <BookOpen size={22} className="text-gray-400 dark:text-zinc-500" />
+              </div>
+              <div className="text-center max-w-xs">
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('pages.subjectWiseAttendanceTrackingIsNotCurrentlyAvailable')}</p>
+                  <span className="text-xs font-medium px-1.5 py-0.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded">{t('pages.comingSoon')}</span>
+                </div>
+                <p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.subjectWiseAttendanceComingSoonDesc')}</p>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
@@ -367,10 +425,10 @@ export default function AttendanceTab({
                 <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
                   <Calendar size={18} className="text-gray-600 dark:text-zinc-400" />
                 </div>
-                <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Monthly Overview</h3>
+                <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">{t('pages.monthlyOverview')}</h3>
               </div>
               <Select 
-                aria-label="Select month"
+                aria-label={t('aria.inputs.selectMonth')}
                 size="sm" 
                 variant="bordered" 
                 selectedKeys={selectedMonth ? [selectedMonth] : []}
@@ -416,15 +474,15 @@ export default function AttendanceTab({
             <div className="flex items-center justify-center gap-4 mt-6 pt-4 border-t border-gray-100 dark:border-zinc-800">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded bg-gray-400"></div>
-                <span className="text-xs text-gray-600 dark:text-zinc-400">Present</span>
+                <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.present2')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded bg-gray-600"></div>
-                <span className="text-xs text-gray-600 dark:text-zinc-400">Absent</span>
+                <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.absent2')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded bg-gray-300"></div>
-                <span className="text-xs text-gray-600 dark:text-zinc-400">Leave</span>
+                <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.leave')}</span>
               </div>
             </div>
           </div>
@@ -437,7 +495,7 @@ export default function AttendanceTab({
               <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
                 <AlertTriangle size={18} className="text-gray-600 dark:text-zinc-400" />
               </div>
-              <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Regularize Attendance</h3>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">{t('pages.regularizeAttendance1')}</h3>
             </div>
           </div>
           <div className="p-6">
@@ -448,8 +506,8 @@ export default function AttendanceTab({
             {regularizationRequests.length === 0 ? (
               <div className="text-center py-8">
                 <AlertTriangle size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
-                <p className="text-sm text-gray-500 dark:text-zinc-400">No regularization requests</p>
-                <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Regularization requests will appear here once submitted.</p>
+                <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noRegularizationRequests')}</p>
+                <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">{t('pages.regularizationRequestsWillAppearHereOnceSubmitted')}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -490,7 +548,7 @@ export default function AttendanceTab({
             <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
               <TrendingUp size={18} className="text-gray-600 dark:text-zinc-400" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Attendance Trends</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">{t('pages.attendanceTrends1')}</h3>
           </div>
         </div>
         <div className="p-6">
@@ -506,22 +564,64 @@ export default function AttendanceTab({
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-800">
-                <p className="text-xs text-gray-600 dark:text-zinc-400 mb-1">This Month</p>
+                <p className="text-xs text-gray-600 dark:text-zinc-400 mb-1">{t('pages.thisMonth')}</p>
                 <p className="text-2xl font-bold text-gray-800 dark:text-zinc-200">{trends.thisMonth}%</p>
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">Based on actual attendance data</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">{t('pages.basedOnActualAttendanceData')}</p>
               </div>
               <div className="p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-800">
-                <p className="text-xs text-gray-600 dark:text-zinc-400 mb-1">This Quarter</p>
+                <p className="text-xs text-gray-600 dark:text-zinc-400 mb-1">{t('pages.thisQuarter')}</p>
                 <p className="text-2xl font-bold text-gray-800 dark:text-zinc-200">{trends.thisQuarter}%</p>
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">Based on actual attendance data</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">{t('pages.basedOnActualAttendanceData')}</p>
               </div>
               <div className="p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-800">
-                <p className="text-xs text-gray-600 dark:text-zinc-400 mb-1">This Year</p>
+                <p className="text-xs text-gray-600 dark:text-zinc-400 mb-1">{t('pages.thisYear')}</p>
                 <p className="text-2xl font-bold text-gray-800 dark:text-zinc-200">{trends.thisYear}%</p>
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">Based on actual attendance data</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">{t('pages.basedOnActualAttendanceData')}</p>
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Download & Send Report Actions (MF-17, MF-18) */}
+      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800 p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.attendanceReport') || 'Attendance Report'}</p>
+            <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Download or share this student's attendance summary</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="flat"
+              className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300"
+              startContent={<Download size={14} />}
+              onPress={handleDownloadReport}
+              isDisabled={loading || !attendanceData.length}
+            >
+              Download CSV
+            </Button>
+            <Button
+              size="sm"
+              variant="flat"
+              className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300"
+              startContent={<Mail size={14} />}
+              onPress={() => handleSendToParent('email')}
+              isDisabled={!student?.parentEmail}
+            >
+              Email to Parent
+            </Button>
+            <Button
+              size="sm"
+              variant="flat"
+              className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300"
+              startContent={<Phone size={14} />}
+              onPress={() => handleSendToParent('sms')}
+              isDisabled={!student?.parentPhone}
+            >
+              SMS to Parent
+            </Button>
+          </div>
         </div>
       </div>
     </div>

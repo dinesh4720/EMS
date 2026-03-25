@@ -1,8 +1,12 @@
 import { useState } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
 import { CheckCircle2, Users, BookOpen } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from 'react-i18next';
 
 const ClassSubjectManagementModal = ({ isOpen, onClose, staffId, staffName }) => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const [showStepModal, setShowStepModal] = useState(false);
 
   const handleManageClick = () => {
@@ -14,16 +18,18 @@ const ClassSubjectManagementModal = ({ isOpen, onClose, staffId, staffName }) =>
     onClose();
   };
 
+  // Navigate to the staff profile page (has class assignment tab) — MF-26
   const handleManageClasses = () => {
-    // TODO: Navigate to class management or open class assignment modal
-    // You can add navigation logic here
     handleStepModalClose();
+    if (staffId) {
+      navigate(`/staffs/${staffId}`);
+    }
   };
 
+  // Navigate to the bulk subject assignment page — MF-26
   const handleManageSubjects = () => {
-    // TODO: Navigate to subject management or open subject assignment modal
-    // You can add navigation logic here
     handleStepModalClose();
+    navigate('/staffs/bulk-subjects', { state: { preselectedStaffId: staffId } });
   };
 
   return (
@@ -34,7 +40,7 @@ const ClassSubjectManagementModal = ({ isOpen, onClose, staffId, staffName }) =>
           <ModalHeader className="flex gap-2 items-center">
             <CheckCircle2 size={24} className="text-success" />
             <div>
-              <span className="text-lg font-semibold">Staff Created Successfully!</span>
+              <span className="text-lg font-semibold">{t('pages.staffCreatedSuccessfully')}</span>
               <p className="text-sm text-default-500 mt-1">
                 Would you like to manage class details and subjects for this staff member?
               </p>
@@ -55,7 +61,7 @@ const ClassSubjectManagementModal = ({ isOpen, onClose, staffId, staffName }) =>
       <Modal isOpen={showStepModal} onClose={handleStepModalClose} size="lg">
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">
-            <span className="text-lg font-semibold">Manage Class & Subject Details</span>
+            <span className="text-lg font-semibold">{t('pages.manageClassSubjectDetails')}</span>
             <p className="text-sm text-default-500 font-normal">
               Configure class assignments and subjects for {staffName}
             </p>
@@ -76,7 +82,7 @@ const ClassSubjectManagementModal = ({ isOpen, onClose, staffId, staffName }) =>
                       <span className="text-xs font-bold text-primary-600 bg-primary-100 px-2 py-0.5 rounded">
                         STEP 1
                       </span>
-                      <h3 className="text-base font-semibold text-default-900">Manage Classes</h3>
+                      <h3 className="text-base font-semibold text-default-900">{t('pages.manageClasses')}</h3>
                     </div>
                     <p className="text-sm text-default-600">
                       Assign this staff member to specific classes and sections
@@ -99,7 +105,7 @@ const ClassSubjectManagementModal = ({ isOpen, onClose, staffId, staffName }) =>
                       <span className="text-xs font-bold text-primary-600 bg-primary-100 px-2 py-0.5 rounded">
                         STEP 2
                       </span>
-                      <h3 className="text-base font-semibold text-default-900">Manage Subjects</h3>
+                      <h3 className="text-base font-semibold text-default-900">{t('pages.manageSubjects')}</h3>
                     </div>
                     <p className="text-sm text-default-600">
                       Configure which subjects this staff member will teach

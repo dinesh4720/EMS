@@ -9,8 +9,10 @@ import LibraryDashboard from "./LibraryDashboard";
 import BooksList from "./BooksList";
 import IssuedBooksList from "./IssuedBooksList";
 import LibraryReports from "./LibraryReports";
+import { useTranslation } from 'react-i18next';
 
 export default function LibraryPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,10 +26,10 @@ export default function LibraryPage() {
   const activeTab = getActiveTab();
 
   const tabs = [
-    { key: "dashboard", title: <div className="flex items-center gap-2"><BarChart3 size={16} /><span>Dashboard</span></div> },
-    { key: "books", title: <div className="flex items-center gap-2"><BookOpen size={16} /><span>Books</span></div> },
-    { key: "issued", title: <div className="flex items-center gap-2"><BookUp size={16} /><span>Issued Books</span></div> },
-    { key: "reports", title: <div className="flex items-center gap-2"><FileBarChart size={16} /><span>Reports</span></div> },
+    { key: "dashboard", title: <div className="flex items-center gap-2"><BarChart3 size={16} /><span>{t('pages.dashboard1')}</span></div> },
+    { key: "books", title: <div className="flex items-center gap-2"><BookOpen size={16} /><span>{t('pages.books')}</span></div> },
+    { key: "issued", title: <div className="flex items-center gap-2"><BookUp size={16} /><span>{t('pages.issuedBooks')}</span></div> },
+    { key: "reports", title: <div className="flex items-center gap-2"><FileBarChart size={16} /><span>{t('pages.reports1')}</span></div> },
   ];
 
   const handleTabChange = (key) => {
@@ -50,8 +52,8 @@ export default function LibraryPage() {
     <div className="animate-fade-in">
       <div className="mb-4">
         <Breadcrumbs size="sm">
-          <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate("/")}>Home</BreadcrumbItem>
-          <BreadcrumbItem onPress={() => navigate("/library")}>Library</BreadcrumbItem>
+          <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate("/")}>{t('pages.home')}</BreadcrumbItem>
+          <BreadcrumbItem onPress={() => navigate("/library")}>{t('pages.library1')}</BreadcrumbItem>
           {tabLabel[activeTab] && <BreadcrumbItem>{tabLabel[activeTab]}</BreadcrumbItem>}
         </Breadcrumbs>
       </div>

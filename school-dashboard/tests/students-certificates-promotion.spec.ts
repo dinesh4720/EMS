@@ -454,21 +454,21 @@ test.describe('Students — Bulk Promotion', () => {
 
     // Student with 25% attendance (below threshold)
     const lowAtt = seedStudent(state, { name: 'Low Attendance Student', classId: CLASS_10A_ID });
-    state.attendance.set(lowAtt.id, [
-      { studentId: lowAtt.id, classId: CLASS_10A_ID, date: '2026-01-08', status: 'present' },
-      { studentId: lowAtt.id, classId: CLASS_10A_ID, date: '2026-01-09', status: 'absent' },
-      { studentId: lowAtt.id, classId: CLASS_10A_ID, date: '2026-01-10', status: 'absent' },
-      { studentId: lowAtt.id, classId: CLASS_10A_ID, date: '2026-01-11', status: 'absent' },
-    ]);
+    state.attendance.push(
+      { _id: `att-${lowAtt.id}-08`, id: `att-${lowAtt.id}-08`, studentId: lowAtt.id, classId: CLASS_10A_ID, date: '2026-01-08', status: 'present', schoolId: state.user.schoolId },
+      { _id: `att-${lowAtt.id}-09`, id: `att-${lowAtt.id}-09`, studentId: lowAtt.id, classId: CLASS_10A_ID, date: '2026-01-09', status: 'absent', schoolId: state.user.schoolId },
+      { _id: `att-${lowAtt.id}-10`, id: `att-${lowAtt.id}-10`, studentId: lowAtt.id, classId: CLASS_10A_ID, date: '2026-01-10', status: 'absent', schoolId: state.user.schoolId },
+      { _id: `att-${lowAtt.id}-11`, id: `att-${lowAtt.id}-11`, studentId: lowAtt.id, classId: CLASS_10A_ID, date: '2026-01-11', status: 'absent', schoolId: state.user.schoolId },
+    );
 
     // Student with 100% attendance (above threshold)
     const highAtt = seedStudent(state, { name: 'High Attendance Student', classId: CLASS_10A_ID });
-    state.attendance.set(highAtt.id, [
-      { studentId: highAtt.id, classId: CLASS_10A_ID, date: '2026-01-08', status: 'present' },
-      { studentId: highAtt.id, classId: CLASS_10A_ID, date: '2026-01-09', status: 'present' },
-      { studentId: highAtt.id, classId: CLASS_10A_ID, date: '2026-01-10', status: 'present' },
-      { studentId: highAtt.id, classId: CLASS_10A_ID, date: '2026-01-11', status: 'present' },
-    ]);
+    state.attendance.push(
+      { _id: `att-${highAtt.id}-08`, id: `att-${highAtt.id}-08`, studentId: highAtt.id, classId: CLASS_10A_ID, date: '2026-01-08', status: 'present', schoolId: state.user.schoolId },
+      { _id: `att-${highAtt.id}-09`, id: `att-${highAtt.id}-09`, studentId: highAtt.id, classId: CLASS_10A_ID, date: '2026-01-09', status: 'present', schoolId: state.user.schoolId },
+      { _id: `att-${highAtt.id}-10`, id: `att-${highAtt.id}-10`, studentId: highAtt.id, classId: CLASS_10A_ID, date: '2026-01-10', status: 'present', schoolId: state.user.schoolId },
+      { _id: `att-${highAtt.id}-11`, id: `att-${highAtt.id}-11`, studentId: highAtt.id, classId: CLASS_10A_ID, date: '2026-01-11', status: 'present', schoolId: state.user.schoolId },
+    );
 
     await installPromotionMockApi(page, state);
 

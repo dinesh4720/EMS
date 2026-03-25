@@ -20,6 +20,7 @@ import { Card, Button } from '../components';
 import { formatCurrency } from '../utils/helpers';
 import api from '../services/api';
 import {
+import { useTranslation } from 'react-i18next';
   CreditCard,
   CheckCircle,
   Shield,
@@ -35,6 +36,7 @@ const getDefaultAcademicYear = (referenceDate = new Date()) => {
 };
 
 const PaymentScreen = ({ navigation, route }) => {
+  const { t } = useTranslation();
   const { themeColors } = useTheme();
   const { fees, fetchFees } = useStudent();
   const { student, user } = useAuth();
@@ -239,13 +241,13 @@ const PaymentScreen = ({ navigation, route }) => {
         </head>
         <body>
           <div class="card">
-            <div class="dev-badge">Development Mode</div>
-            <h2>Fee Payment</h2>
+            <div class="dev-badge">{t('screens.developmentMode')}</div>
+            <h2>{t('screens.feePayment')}</h2>
             <p class="info">Student: ${studentName || ''}</p>
             <div class="amount">₹${(amountInPaise / 100).toLocaleString('en-IN')}</div>
-            <p class="info">This is a test payment. In production, Razorpay checkout will appear here.</p>
-            <button class="btn btn-primary" onclick="simulateSuccess()">Simulate Successful Payment</button>
-            <button class="btn btn-secondary" onclick="simulateFailure()">Cancel</button>
+            <p class="info">{t('screens.thisIsATestPaymentInProductionRazorpayCheckoutWillAppearHere')}</p>
+            <button class="btn btn-primary" onclick="simulateSuccess()">{t('screens.simulateSuccessfulPayment')}</button>
+            <button class="btn btn-secondary" onclick="simulateFailure()">{t('screens.cancel1')}</button>
           </div>
           <script>
             function simulateSuccess() {
@@ -284,7 +286,7 @@ const PaymentScreen = ({ navigation, route }) => {
       </head>
       <body>
         <div class="loading">
-          <p>Opening payment gateway...</p>
+          <p>{t('screens.openingPaymentGateway')}</p>
         </div>
         <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
         <script>
@@ -372,43 +374,43 @@ const PaymentScreen = ({ navigation, route }) => {
 
           <Card style={styles.receiptCard}>
             <View style={styles.receiptRow}>
-              <Text style={[styles.receiptLabel, { color: themeColors.textSecondary }]}>Amount Paid</Text>
+              <Text style={[styles.receiptLabel, { color: themeColors.textSecondary }]}>{t('screens.amountPaid')}</Text>
               <Text style={[styles.receiptValue, styles.receiptAmount, { color: themeColors.success || '#22c55e' }]}>
                 {formatCurrency(payment?.amount)}
               </Text>
             </View>
             <View style={[styles.receiptDivider, { backgroundColor: themeColors.border }]} />
             <View style={styles.receiptRow}>
-              <Text style={[styles.receiptLabel, { color: themeColors.textSecondary }]}>Receipt No.</Text>
+              <Text style={[styles.receiptLabel, { color: themeColors.textSecondary }]}>{t('screens.receiptNo')}</Text>
               <Text style={[styles.receiptValue, { color: themeColors.text }]}>
                 {payment?.receiptNumber || '-'}
               </Text>
             </View>
             <View style={[styles.receiptDivider, { backgroundColor: themeColors.border }]} />
             <View style={styles.receiptRow}>
-              <Text style={[styles.receiptLabel, { color: themeColors.textSecondary }]}>Transaction ID</Text>
+              <Text style={[styles.receiptLabel, { color: themeColors.textSecondary }]}>{t('screens.transactionId')}</Text>
               <Text style={[styles.receiptValue, { color: themeColors.text }]} numberOfLines={1}>
                 {payment?.transactionId || '-'}
               </Text>
             </View>
             <View style={[styles.receiptDivider, { backgroundColor: themeColors.border }]} />
             <View style={styles.receiptRow}>
-              <Text style={[styles.receiptLabel, { color: themeColors.textSecondary }]}>Date</Text>
+              <Text style={[styles.receiptLabel, { color: themeColors.textSecondary }]}>{t('screens.date')}</Text>
               <Text style={[styles.receiptValue, { color: themeColors.text }]}>
                 {payment?.paymentDate || new Date().toLocaleDateString()}
               </Text>
             </View>
             <View style={[styles.receiptDivider, { backgroundColor: themeColors.border }]} />
             <View style={styles.receiptRow}>
-              <Text style={[styles.receiptLabel, { color: themeColors.textSecondary }]}>Payment Mode</Text>
-              <Text style={[styles.receiptValue, { color: themeColors.text }]}>Online</Text>
+              <Text style={[styles.receiptLabel, { color: themeColors.textSecondary }]}>{t('screens.paymentMode')}</Text>
+              <Text style={[styles.receiptValue, { color: themeColors.text }]}>{t('screens.online')}</Text>
             </View>
 
             {paymentSuccess.updatedFeeDetails && (
               <>
                 <View style={[styles.receiptDivider, { backgroundColor: themeColors.border, marginVertical: 12 }]} />
                 <View style={styles.receiptRow}>
-                  <Text style={[styles.receiptLabel, { color: themeColors.textSecondary }]}>Remaining Balance</Text>
+                  <Text style={[styles.receiptLabel, { color: themeColors.textSecondary }]}>{t('screens.remainingBalance')}</Text>
                   <Text style={[styles.receiptValue, {
                     color: paymentSuccess.updatedFeeDetails.balanceAmount > 0
                       ? (themeColors.error || '#ef4444')
@@ -423,7 +425,7 @@ const PaymentScreen = ({ navigation, route }) => {
           </Card>
 
           <Button
-            title="Back to Fees"
+            title={t('screens.backToFees')}
             onPress={() => navigation.goBack()}
             style={styles.doneButton}
           />
@@ -437,11 +439,11 @@ const PaymentScreen = ({ navigation, route }) => {
       <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
         <View style={styles.emptyContainer}>
           <CheckCircle size={48} color={themeColors.success || '#22c55e'} />
-          <Text style={[styles.emptyTitle, { color: themeColors.text }]}>All Fees Paid!</Text>
+          <Text style={[styles.emptyTitle, { color: themeColors.text }]}>{t('screens.allFeesPaid')}</Text>
           <Text style={[styles.emptySubtitle, { color: themeColors.textSecondary }]}>
             There are no pending fees to pay.
           </Text>
-          <Button title="Go Back" onPress={() => navigation.goBack()} style={{ marginTop: 24 }} />
+          <Button title={t('screens.goBack')} onPress={() => navigation.goBack()} style={{ marginTop: 24 }} />
         </View>
       </SafeAreaView>
     );
@@ -582,7 +584,7 @@ const PaymentScreen = ({ navigation, route }) => {
                         <TouchableOpacity
                           onPress={() => setCustomAmounts(prev => ({ ...prev, [headId]: balance.toString() }))}
                         >
-                          <Text style={[styles.fullAmountBtn, { color: themeColors.text }]}>Full</Text>
+                          <Text style={[styles.fullAmountBtn, { color: themeColors.text }]}>{t('screens.full')}</Text>
                         </TouchableOpacity>
                       </View>
                     )}
@@ -600,7 +602,7 @@ const PaymentScreen = ({ navigation, route }) => {
 
             {payFullBalance ? (
               <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, { color: themeColors.textSecondary }]}>Full Balance</Text>
+                <Text style={[styles.summaryLabel, { color: themeColors.textSecondary }]}>{t('screens.fullBalance')}</Text>
                 <Text style={[styles.summaryValue, { color: themeColors.text }]}>{formatCurrency(feeData.balance)}</Text>
               </View>
             ) : (
@@ -614,7 +616,7 @@ const PaymentScreen = ({ navigation, route }) => {
 
             <View style={[styles.summaryDivider, { backgroundColor: themeColors.border }]} />
             <View style={styles.summaryRow}>
-              <Text style={[styles.summaryTotalLabel, { color: themeColors.text }]}>Total to Pay</Text>
+              <Text style={[styles.summaryTotalLabel, { color: themeColors.text }]}>{t('screens.totalToPay')}</Text>
               <Text style={[styles.summaryTotalValue, { color: themeColors.text }]}>
                 {formatCurrency(selectedAmount)}
               </Text>
@@ -634,7 +636,7 @@ const PaymentScreen = ({ navigation, route }) => {
       {/* Bottom Pay Button */}
       <View style={[styles.bottomBar, { backgroundColor: themeColors.surface, borderTopColor: themeColors.border }]}>
         <View style={styles.bottomInfo}>
-          <Text style={[styles.bottomLabel, { color: themeColors.textSecondary }]}>Total</Text>
+          <Text style={[styles.bottomLabel, { color: themeColors.textSecondary }]}>{t('screens.total')}</Text>
           <Text style={[styles.bottomAmount, { color: themeColors.text }]}>{formatCurrency(selectedAmount)}</Text>
         </View>
         <Button
@@ -667,7 +669,7 @@ const PaymentScreen = ({ navigation, route }) => {
             >
               <X size={24} color={themeColors.text} />
             </TouchableOpacity>
-            <Text style={[styles.webViewTitle, { color: themeColors.text }]}>Secure Payment</Text>
+            <Text style={[styles.webViewTitle, { color: themeColors.text }]}>{t('screens.securePayment')}</Text>
             <View style={styles.closeBtn} />
           </View>
 

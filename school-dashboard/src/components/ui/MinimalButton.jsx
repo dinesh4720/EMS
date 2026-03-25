@@ -1,9 +1,10 @@
 /**
  * MinimalButton - Clean button component
  */
+import { memo } from "react";
 import { cn } from "../../utils/cn";
 
-export default function MinimalButton({
+const MinimalButton = memo(function MinimalButton({
   children,
   variant = "primary", // primary, secondary, ghost, danger
   size = "md", // sm, md, lg
@@ -20,11 +21,23 @@ export default function MinimalButton({
     lg: "px-5 py-2.5 text-base gap-2",
   };
 
+  /*
+   * Uses CSS design tokens from @theme (index.css) instead of hardcoded
+   * Tailwind gray/zinc classes. This ensures MinimalButton stays in sync
+   * with the single color system and responds to dark-mode token overrides.
+   *
+   * Color system hierarchy (CSS-03):
+   *   1. CSS custom properties (@theme / html.dark overrides) ← source of truth
+   *   2. Tailwind utilities that reference those vars (text-[var(--color-*)])
+   *   3. HeroUI tokens (used by HeroUI Button only — not here)
+   *
+   * Do not add hardcoded hex or Tailwind gray-* classes to this component.
+   */
   const variantStyles = {
-    primary: "bg-gray-900 text-white hover:bg-gray-800",
-    secondary: "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700",
-    ghost: "bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200",
-    danger: "bg-red-500 text-white hover:bg-red-600",
+    primary: "bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]",
+    secondary: "bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border-strong)]",
+    ghost: "bg-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-primary)]",
+    danger: "bg-[var(--color-error)] text-white hover:opacity-90",
   };
 
   return (
@@ -62,4 +75,8 @@ export default function MinimalButton({
       {!loading && icon && iconPosition === "right" && icon}
     </button>
   );
-}
+});
+
+MinimalButton.displayName = 'MinimalButton';
+
+export default MinimalButton;

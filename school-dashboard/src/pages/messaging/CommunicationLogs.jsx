@@ -1,4 +1,5 @@
 import { Clock, Inbox } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 export default function CommunicationLogs() {
   return (

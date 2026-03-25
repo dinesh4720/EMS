@@ -1,4 +1,5 @@
 import StudentRatingSystem from "../StudentRatingSystem";
+import { useTranslation } from 'react-i18next';
 
 /**
  * RatingsTab - Tab wrapper for StudentRatingSystem component

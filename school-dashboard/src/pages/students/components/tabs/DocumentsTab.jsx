@@ -1,4 +1,5 @@
 import StudentDocuments from "../StudentDocuments";
+import { useTranslation } from 'react-i18next';
 
 /**
  * DocumentsTab - Tab wrapper for StudentDocuments component

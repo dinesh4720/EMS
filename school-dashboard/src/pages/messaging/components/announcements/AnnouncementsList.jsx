@@ -34,8 +34,13 @@ import {
 } from 'lucide-react';
 import { announcementsApi } from '../../../../services/api';
 import toast from 'react-hot-toast';
+import { getDateLocale } from '../../../../i18n/index';
+import { useTranslation } from 'react-i18next';
 
-export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
+
+export default function AnnouncementsList({
+  onView, onEdit, onRefresh }) {
+  const { t } = useTranslation();
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -102,16 +107,16 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
   }, [announcements, searchQuery, statusFilter, channelFilter, dateFilter]);
 
   const handleDelete = async (announcementId) => {
-    if (!confirm('Are you sure you want to delete this announcement?')) return;
+    if (!confirm(t('confirm.deleteAnnouncement'))) return;
 
     try {
       await announcementsApi.delete(announcementId);
-      toast.success('Announcement deleted');
+      toast.success(t('toast.success.announcementDeleted'));
       loadAnnouncements();
       onRefresh?.();
     } catch (error) {
       console.error('Error deleting announcement:', error);
-      toast.error('Failed to delete announcement');
+      toast.error(t('toast.error.failedToDeleteAnnouncement'));
     }
   };
 
@@ -126,30 +131,30 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
       };
 
       await announcementsApi.create(duplicate);
-      toast.success('Announcement duplicated');
+      toast.success(t('toast.success.announcementDuplicated'));
       loadAnnouncements();
       onRefresh?.();
     } catch (error) {
       console.error('Error duplicating announcement:', error);
-      toast.error('Failed to duplicate announcement');
+      toast.error(t('toast.error.failedToDuplicateAnnouncement'));
     }
   };
 
   const handleResend = async (announcementId) => {
     try {
       await announcementsApi.resend(announcementId);
-      toast.success('Announcement resent successfully');
+      toast.success(t('toast.success.announcementResentSuccessfully'));
       loadAnnouncements();
       onRefresh?.();
     } catch (error) {
       console.error('Error resending announcement:', error);
-      toast.error('Failed to resend announcement');
+      toast.error(t('toast.error.failedToResendAnnouncement'));
     }
   };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(getDateLocale(), {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -257,16 +262,21 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
   );
 
   if (loading) {
+    // MF-23: skeleton loader instead of spinner
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-4">
-        <div className="relative">
-          <div className="w-16 h-16 rounded-full border-4 border-gray-200 dark:border-zinc-700" />
-          <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin" />
-        </div>
-        <div className="text-center">
-          <p className="text-gray-600 dark:text-zinc-300 font-medium">Loading announcements...</p>
-          <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">This should only take a moment</p>
-        </div>
+      <div className="space-y-4 animate-pulse">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl p-5">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-zinc-700 shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-gray-200 dark:bg-zinc-700 rounded w-3/4" />
+                <div className="h-3 bg-gray-100 dark:bg-zinc-800 rounded w-1/2" />
+                <div className="h-3 bg-gray-100 dark:bg-zinc-800 rounded w-full" />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -280,7 +290,7 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
           </svg>
         </div>
         <div className="text-center">
-          <p className="text-lg font-semibold text-red-600 dark:text-red-400">Failed to load announcements</p>
+          <p className="text-lg font-semibold text-red-600 dark:text-red-400">{t('pages.failedToLoadAnnouncements')}</p>
           <p className="text-sm text-gray-500 dark:text-zinc-400 max-w-md text-center mt-2">{error}</p>
         </div>
         <Button
@@ -321,7 +331,7 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
               />
               <input
                 type="text"
-                placeholder="Search announcements..."
+                placeholder={t('pages.searchAnnouncements')}
                 className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -388,7 +398,7 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
                 className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
               >
                 <X size={14} />
-                <span>Clear</span>
+                <span>{t('pages.clear1')}</span>
               </button>
             )}
           </div>
@@ -407,7 +417,7 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
       {/* Table */}
       <div className="w-full overflow-x-auto rounded-xl border border-gray-100 dark:border-zinc-800">
         <Table
-          aria-label="Announcements"
+          aria-label={t('aria.misc.announcements')}
           removeWrapper
           classNames={{
             th: "bg-gray-50 dark:bg-zinc-800/50 text-gray-600 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider",
@@ -416,19 +426,19 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
           }}
         >
           <TableHeader>
-            <TableColumn>ANNOUNCEMENT</TableColumn>
-            <TableColumn>RECIPIENTS</TableColumn>
-            <TableColumn>CHANNELS</TableColumn>
-            <TableColumn>STATUS</TableColumn>
-            <TableColumn>DATE</TableColumn>
-            <TableColumn align="end">ACTIONS</TableColumn>
+            <TableColumn scope="col">{t('pages.aNNOUNCEMENT')}</TableColumn>
+            <TableColumn scope="col">{t('pages.rECIPIENTS')}</TableColumn>
+            <TableColumn scope="col">{t('pages.cHANNELS')}</TableColumn>
+            <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+            <TableColumn scope="col">{t('pages.dATE')}</TableColumn>
+            <TableColumn align="end" scope="col">{t('pages.aCTIONS')}</TableColumn>
           </TableHeader>
           <TableBody
             emptyContent={
               <div className="text-center py-16">
                 <Megaphone size={48} className="mx-auto mb-4 text-gray-300 dark:text-zinc-600" />
-                <p className="text-gray-500 dark:text-zinc-400 font-medium">No announcements found</p>
-                <p className="text-sm text-gray-400 dark:text-zinc-500 mt-1">Try adjusting your filters</p>
+                <p className="text-gray-500 dark:text-zinc-400 font-medium">{t('pages.noAnnouncementsFound')}</p>
+                <p className="text-sm text-gray-400 dark:text-zinc-500 mt-1">{t('pages.tryAdjustingYourFilters')}</p>
               </div>
             }
           >
@@ -588,7 +598,7 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
           <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center">
             <Search size={32} className="text-gray-400 dark:text-zinc-500" />
           </div>
-          <p className="text-gray-600 dark:text-zinc-300 font-medium text-lg">No matching announcements</p>
+          <p className="text-gray-600 dark:text-zinc-300 font-medium text-lg">{t('pages.noMatchingAnnouncements')}</p>
           <p className="text-sm text-gray-400 dark:text-zinc-500 mt-2 max-w-sm mx-auto">
             We couldn't find any announcements matching your current filters. Try adjusting your search criteria.
           </p>
@@ -610,7 +620,7 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
           </div>
           <div className="flex items-center justify-center gap-2 mb-2">
             <Sparkles size={16} className="text-amber-500" />
-            <p className="text-gray-700 dark:text-zinc-200 font-semibold text-lg">No announcements yet</p>
+            <p className="text-gray-700 dark:text-zinc-200 font-semibold text-lg">{t('pages.noAnnouncementsYet')}</p>
           </div>
           <p className="text-sm text-gray-500 dark:text-zinc-400 mt-2 max-w-sm mx-auto">
             Create your first announcement to start communicating with your school community.

@@ -4,6 +4,7 @@ import { Plus, Search, BookOpen } from "lucide-react";
 import { libraryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import AddBookModal from "./AddBookModal";
+import { useTranslation } from 'react-i18next';
 
 const CATEGORIES = [
   { key: "all", label: "All Categories" },
@@ -17,6 +18,7 @@ const CATEGORIES = [
 ];
 
 export default function BooksList() {
+  const { t } = useTranslation();
   const [books, setBooks] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -38,7 +40,7 @@ export default function BooksList() {
       setBooks(data.books || []);
       setTotal(data.total || 0);
     } catch {
-      toast.error("Failed to load books");
+      toast.error(t('toast.error.failedToLoadBooks'));
     } finally {
       setLoading(false);
     }
@@ -54,10 +56,10 @@ export default function BooksList() {
   }, [searchInput]);
 
   const handleDelete = async (id) => {
-    if (!confirm("Delete this book?")) return;
+    if (!confirm(t('confirm.deleteBook'))) return;
     try {
       await libraryApi.deleteBook(id);
-      toast.success("Book deleted");
+      toast.success(t('toast.success.bookDeleted'));
       fetchBooks();
     } catch (err) {
       toast.error(err.message || "Failed to delete");
@@ -88,7 +90,7 @@ export default function BooksList() {
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-3 flex-1 w-full sm:w-auto">
           <Input
-            placeholder="Search books..."
+            placeholder={t('pages.searchBooks')}
             value={searchInput}
             onValueChange={setSearchInput}
             startContent={<Search size={16} className="text-gray-400 dark:text-zinc-500" />}
@@ -117,13 +119,13 @@ export default function BooksList() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800">
-                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">Title</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">Author</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">Category</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">Total</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">Available</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">ISBN</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">Actions</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">{t('pages.title1')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">{t('pages.author')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">{t('pages.category1')}</th>
+                <th className="text-center px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">{t('pages.total2')}</th>
+                <th className="text-center px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">{t('pages.available')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">{t('pages.iSBN')}</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">{t('pages.actions1')}</th>
               </tr>
             </thead>
             <tbody>
@@ -139,7 +141,7 @@ export default function BooksList() {
                 <tr>
                   <td colSpan={7} className="text-center py-12">
                     <BookOpen size={40} className="mx-auto text-gray-300 dark:text-zinc-600 mb-3" />
-                    <p className="text-gray-500 dark:text-zinc-400">No books found</p>
+                    <p className="text-gray-500 dark:text-zinc-400">{t('pages.noBooksFound')}</p>
                   </td>
                 </tr>
               ) : (
@@ -166,8 +168,8 @@ export default function BooksList() {
                     <td className="px-4 py-3 text-gray-500 dark:text-zinc-400">{book.isbn || "—"}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex gap-1 justify-end">
-                        <Button size="sm" variant="light" onPress={() => handleEdit(book)}>Edit</Button>
-                        <Button size="sm" variant="light" color="danger" onPress={() => handleDelete(book._id)}>Delete</Button>
+                        <Button size="sm" variant="light" onPress={() => handleEdit(book)}>{t('pages.edit1')}</Button>
+                        <Button size="sm" variant="light" color="danger" onPress={() => handleDelete(book._id)}>{t('pages.delete1')}</Button>
                       </div>
                     </td>
                   </tr>
@@ -182,9 +184,9 @@ export default function BooksList() {
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-zinc-800">
             <p className="text-sm text-gray-500 dark:text-zinc-400">{total} books total</p>
             <div className="flex gap-1">
-              <Button size="sm" variant="flat" isDisabled={page <= 1} onPress={() => setPage(page - 1)}>Prev</Button>
+              <Button size="sm" variant="flat" isDisabled={page <= 1} onPress={() => setPage(page - 1)}>{t('pages.prev')}</Button>
               <span className="text-sm text-gray-600 dark:text-zinc-400 flex items-center px-2">{page} / {totalPages}</span>
-              <Button size="sm" variant="flat" isDisabled={page >= totalPages} onPress={() => setPage(page + 1)}>Next</Button>
+              <Button size="sm" variant="flat" isDisabled={page >= totalPages} onPress={() => setPage(page + 1)}>{t('pages.next')}</Button>
             </div>
           </div>
         )}

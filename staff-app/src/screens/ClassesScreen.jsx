@@ -25,8 +25,10 @@ import {
 } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useClassContext } from '../context/ClassContext';
+import { useTranslation } from 'react-i18next';
 
 const ClassCard = ({ classItem, onPress, onActionPress, theme }) => {
+  const { t } = useTranslation();
   const { colors, typography, shape, spacing } = theme;
   const attendancePercentage = classItem.attendancePercentage || 85;
 
@@ -106,7 +108,7 @@ const ClassCard = ({ classItem, onPress, onActionPress, theme }) => {
           onPress={() => onActionPress('attendance')}
         >
           <ClipboardList size={18} color={colors.primary} style={{ marginRight: spacing.xs }} />
-          <Text style={[typography.labelLarge, { color: colors.primary, marginLeft: spacing.xs }]}>Attendance</Text>
+          <Text style={[typography.labelLarge, { color: colors.primary, marginLeft: spacing.xs }]}>{t('screens.attendance1')}</Text>
         </Pressable>
 
         <Pressable
@@ -121,7 +123,7 @@ const ClassCard = ({ classItem, onPress, onActionPress, theme }) => {
           onPress={() => onActionPress('students')}
         >
           <Users size={18} color={colors.primary} style={{ marginRight: spacing.xs }} />
-          <Text style={[typography.labelLarge, { color: colors.primary, marginLeft: spacing.xs }]}>Students</Text>
+          <Text style={[typography.labelLarge, { color: colors.primary, marginLeft: spacing.xs }]}>{t('screens.students1')}</Text>
         </Pressable>
 
         <Pressable
@@ -136,7 +138,7 @@ const ClassCard = ({ classItem, onPress, onActionPress, theme }) => {
           onPress={() => onActionPress('history')}
         >
           <History size={18} color={colors.primary} style={{ marginRight: spacing.xs }} />
-          <Text style={[typography.labelLarge, { color: colors.primary, marginLeft: spacing.xs }]}>History</Text>
+          <Text style={[typography.labelLarge, { color: colors.primary, marginLeft: spacing.xs }]}>{t('screens.history')}</Text>
         </Pressable>
       </View>
     </Pressable>
@@ -225,7 +227,7 @@ const ClassesScreen = () => {
     return (
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.surface }]}>
         <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.outlineVariant }]}>
-          <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>My Classes</Text>
+          <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>{t('screens.myClasses1')}</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -241,7 +243,7 @@ const ClassesScreen = () => {
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.surface }]}>
       {/* Header */}
       <View style={[styles.header, { paddingHorizontal: spacing.md }]}>
-        <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>My Classes</Text>
+        <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>{t('screens.myClasses1')}</Text>
         <View
           style={[
             styles.searchBar,
@@ -255,7 +257,7 @@ const ClassesScreen = () => {
           <Search size={20} color={colors.onSurfaceVariant} style={{ marginLeft: spacing.sm }} />
           <TextInput
             style={[styles.searchInput, typography.bodyLarge, { color: colors.onSurface }]}
-            placeholder="Search classes..."
+            placeholder={t('screens.searchClasses')}
             placeholderTextColor={colors.onSurfaceVariant}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -267,17 +269,17 @@ const ClassesScreen = () => {
       <View style={[styles.statsContainer, { backgroundColor: colors.surface, borderBottomColor: colors.outlineVariant }]}>
         <View style={styles.statItem}>
           <Text style={[typography.headlineMedium, { color: colors.primary }]}>{totalClasses}</Text>
-          <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>Classes</Text>
+          <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>{t('screens.classes')}</Text>
         </View>
         <View style={[styles.statDivider, { backgroundColor: colors.outlineVariant }]} />
         <View style={styles.statItem}>
           <Text style={[typography.headlineMedium, { color: colors.primary }]}>{totalStudents}</Text>
-          <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>Students</Text>
+          <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>{t('screens.students1')}</Text>
         </View>
         <View style={[styles.statDivider, { backgroundColor: colors.outlineVariant }]} />
         <View style={styles.statItem}>
           <Text style={[typography.headlineMedium, { color: colors.primary }]}>{uniqueSubjects}</Text>
-          <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>Subjects</Text>
+          <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>{t('screens.subjects')}</Text>
         </View>
       </View>
 

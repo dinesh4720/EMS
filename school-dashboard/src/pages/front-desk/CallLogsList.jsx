@@ -8,6 +8,7 @@ import { Edit, Trash2, Eye, Plus, Phone } from 'lucide-react';
 import { frontDeskApi } from '../../services/api';
 import { validatePhone, validateFutureDate } from '../../utils/validations';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const CALL_PURPOSES = [
   { key: 'ADMISSION_INQUIRY', label: 'Admission Inquiry' },
@@ -21,6 +22,7 @@ const CALL_PURPOSES = [
 ];
 
 const CallLogsList = forwardRef((props, ref) => {
+  const { t } = useTranslation();
   const [callLogs, setCallLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState({});
@@ -61,7 +63,7 @@ const CallLogsList = forwardRef((props, ref) => {
       setCallLogs(response);
     } catch (error) {
       console.error('Failed to load call logs:', error);
-      toast.error('Failed to load call logs');
+      toast.error(t('toast.error.failedToLoadCallLogs'));
     } finally {
       setLoading(false);
     }
@@ -96,7 +98,7 @@ const CallLogsList = forwardRef((props, ref) => {
 
   const handleSubmit = async () => {
     if (!validateForm()) {
-      toast.error('Please fix the errors before submitting');
+      toast.error(t('toast.error.pleaseFixTheErrorsBeforeSubmitting'));
       return;
     }
     try {
@@ -107,16 +109,16 @@ const CallLogsList = forwardRef((props, ref) => {
 
       if (editingId) {
         await frontDeskApi.updateCallLog(editingId, submitData);
-        toast.success('Call log updated successfully');
+        toast.success(t('toast.success.callLogUpdatedSuccessfully'));
       } else {
         await frontDeskApi.createCallLog(submitData);
-        toast.success('Call log created successfully');
+        toast.success(t('toast.success.callLogCreatedSuccessfully'));
       }
       onClose();
       resetForm();
       loadCallLogs();
     } catch (error) {
-      toast.error('Failed to save call log');
+      toast.error(t('toast.error.failedToSaveCallLog'));
     }
   };
 
@@ -125,7 +127,7 @@ const CallLogsList = forwardRef((props, ref) => {
     setFormData({
       callerName: log.callerName || '',
       phoneNumber: log.phoneNumber || '',
-      dateTime: log.dateTime,
+      dateTime: log.dateTime || '',
       purpose: log.purpose || '',
       otherPurpose: log.otherPurpose || '',
       intent: log.intent || '',
@@ -145,13 +147,13 @@ const CallLogsList = forwardRef((props, ref) => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this call log?')) return;
+    if (!confirm(t('confirm.deleteCallLog'))) return;
     try {
       await frontDeskApi.deleteCallLog(id);
-      toast.success('Call log deleted');
+      toast.success(t('toast.success.callLogDeleted'));
       loadCallLogs();
     } catch (error) {
-      toast.error('Failed to delete call log');
+      toast.error(t('toast.error.failedToDeleteCallLog'));
     }
   };
 
@@ -186,14 +188,14 @@ const CallLogsList = forwardRef((props, ref) => {
           Log New Call
         </Button>
       </div>
-      <Table aria-label="Call logs table" removeWrapper>
+      <Table aria-label={t('aria.tables.callLogs')} removeWrapper>
         <TableHeader>
-          <TableColumn>CALLER NAME</TableColumn>
-          <TableColumn>PHONE</TableColumn>
-          <TableColumn>PURPOSE</TableColumn>
-          <TableColumn>DATE & TIME</TableColumn>
-          <TableColumn>CALLBACK</TableColumn>
-          <TableColumn>ACTIONS</TableColumn>
+          <TableColumn scope="col">{t('pages.cALLERName')}</TableColumn>
+          <TableColumn scope="col">{t('pages.pHONE')}</TableColumn>
+          <TableColumn scope="col">{t('pages.pURPOSE')}</TableColumn>
+          <TableColumn scope="col">{t('pages.dATETime')}</TableColumn>
+          <TableColumn scope="col">{t('pages.cALLBACK')}</TableColumn>
+          <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
         </TableHeader>
         <TableBody
           items={callLogs}
@@ -261,8 +263,8 @@ const CallLogsList = forwardRef((props, ref) => {
           <ModalBody>
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Caller Name"
-                placeholder="Enter caller name"
+                label={t('pages.callerName')}
+                placeholder={t('pages.enterCallerName')}
                 value={formData.callerName}
                 onChange={(e) => {
                   setFormData({ ...formData, callerName: e.target.value });
@@ -274,8 +276,8 @@ const CallLogsList = forwardRef((props, ref) => {
                 startContent={<Phone size={14} />}
               />
               <Input
-                label="Phone Number"
-                placeholder="Enter 10-digit phone number"
+                label={t('pages.phoneNumber')}
+                placeholder={t('pages.enter10DigitPhoneNumber')}
                 value={formData.phoneNumber}
                 onChange={(e) => {
                   const val = e.target.value.replace(/\D/g, '');
@@ -288,8 +290,8 @@ const CallLogsList = forwardRef((props, ref) => {
                 errorMessage={errors.phoneNumber}
               />
               <Select
-                label="Purpose"
-                placeholder="Select purpose"
+                label={t('pages.purpose1')}
+                placeholder={t('pages.selectPurpose')}
                 selectedKeys={formData.purpose ? [formData.purpose] : []}
                 onChange={(e) => {
                   setFormData({ ...formData, purpose: e.target.value });
@@ -307,15 +309,15 @@ const CallLogsList = forwardRef((props, ref) => {
               </Select>
               {formData.purpose === 'OTHER' && (
                 <Input
-                  label="Please Specify Purpose"
-                  placeholder="Enter purpose"
+                  label={t('pages.pleaseSpecifyPurpose')}
+                  placeholder={t('pages.enterPurpose')}
                   value={formData.otherPurpose}
                   onChange={(e) => setFormData({ ...formData, otherPurpose: e.target.value })}
                   isRequired
                 />
               )}
               <Input
-                label="Date & Time"
+                label={t('pages.dateTime')}
                 type="datetime-local"
                 value={formData.dateTime}
                 onChange={(e) => {
@@ -328,30 +330,30 @@ const CallLogsList = forwardRef((props, ref) => {
                 className="col-span-2"
               />
               <Input
-                label="Title (Optional)"
-                placeholder="Brief title for the call"
+                label={t('pages.titleOptional')}
+                placeholder={t('pages.briefTitleForTheCall')}
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 className="col-span-2"
               />
               <Input
-                label="Intent"
-                placeholder="What was the caller's intent?"
+                label={t('pages.intent')}
+                placeholder={t('pages.whatWasTheCallerSIntent')}
                 value={formData.intent}
                 onChange={(e) => setFormData({ ...formData, intent: e.target.value })}
                 className="col-span-2"
               />
               <Textarea
-                label="Key Notes"
-                placeholder="Enter key points from the conversation"
+                label={t('pages.keyNotes')}
+                placeholder={t('pages.enterKeyPointsFromTheConversation')}
                 value={formData.keyNotes}
                 onChange={(e) => setFormData({ ...formData, keyNotes: e.target.value })}
                 className="col-span-2"
                 rows={3}
               />
               <Textarea
-                label="Summary"
-                placeholder="Enter call summary"
+                label={t('pages.summary1')}
+                placeholder={t('pages.enterCallSummary')}
                 value={formData.summary}
                 onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
                 className="col-span-2"
@@ -368,7 +370,7 @@ const CallLogsList = forwardRef((props, ref) => {
               {formData.callbackRequired && (
                 <>
                   <Input
-                    label="Callback Date"
+                    label={t('pages.callbackDate')}
                     type="date"
                     value={formData.callbackDate}
                     onChange={(e) => {
@@ -386,7 +388,7 @@ const CallLogsList = forwardRef((props, ref) => {
                     errorMessage={errors.callbackDate}
                   />
                   <Input
-                    label="Callback Time"
+                    label={t('pages.callbackTime')}
                     type="time"
                     value={formData.callbackTime}
                     onChange={(e) => setFormData({ ...formData, callbackTime: e.target.value })}
@@ -409,44 +411,44 @@ const CallLogsList = forwardRef((props, ref) => {
       {/* Detail View Modal */}
       <Modal isOpen={isDetailOpen} onClose={onDetailClose} size="2xl">
         <ModalContent>
-          <ModalHeader>Call Log Details</ModalHeader>
+          <ModalHeader>{t('pages.callLogDetails')}</ModalHeader>
           <ModalBody>
             {selectedLog && (
               <div className="space-y-4">
                 {selectedLog.title && (
                   <div>
-                    <p className="text-sm text-default-500">Title</p>
+                    <p className="text-sm text-default-500">{t('pages.title1')}</p>
                     <p className="font-medium">{selectedLog.title}</p>
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-default-500">Caller Name</p>
+                    <p className="text-sm text-default-500">{t('pages.callerName')}</p>
                     <p className="font-medium">{selectedLog.callerName || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-default-500">Phone Number</p>
+                    <p className="text-sm text-default-500">{t('pages.phoneNumber')}</p>
                     <p className="font-medium">{selectedLog.phoneNumber || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-default-500">Date & Time</p>
+                    <p className="text-sm text-default-500">{t('pages.dateTime')}</p>
                     <p className="font-medium">{new Date(selectedLog.dateTime).toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-default-500">Purpose</p>
+                    <p className="text-sm text-default-500">{t('pages.purpose1')}</p>
                     <p className="font-medium">{getPurposeLabel(selectedLog.purpose)}</p>
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm text-default-500">Intent</p>
+                  <p className="text-sm text-default-500">{t('pages.intent')}</p>
                   <p className="font-medium">{selectedLog.intent || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-default-500">Key Notes</p>
+                  <p className="text-sm text-default-500">{t('pages.keyNotes')}</p>
                   <p className="font-medium whitespace-pre-wrap">{selectedLog.keyNotes || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-default-500">Summary</p>
+                  <p className="text-sm text-default-500">{t('pages.summary1')}</p>
                   <p className="font-medium whitespace-pre-wrap">{selectedLog.summary || '-'}</p>
                 </div>
                 {selectedLog.callbackRequired && (

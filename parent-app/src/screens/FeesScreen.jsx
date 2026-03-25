@@ -17,6 +17,7 @@ import { Card, Button, Loading, EmptyState } from '../components';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import { useNavigation } from '@react-navigation/native';
 import {
+import { useTranslation } from 'react-i18next';
   CreditCard,
   CheckCircle,
   Clock,
@@ -27,6 +28,7 @@ import {
 } from 'lucide-react-native';
 
 const FeesScreen = () => {
+  const { t } = useTranslation();
   const { fees, loading, fetchFees } = useStudent();
   const { themeColors } = useTheme();
   const navigation = useNavigation();
@@ -106,7 +108,7 @@ const FeesScreen = () => {
       <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]} edges={['left', 'right']}>
         <View style={styles.emptyContainer}>
           <EmptyState
-            title="No Fee Data"
+            title={t('screens.noFeeData')}
             message="Fee information will appear here once it is available."
             icon={<CreditCard size={48} color={themeColors.textTertiary} />}
           />
@@ -255,10 +257,10 @@ const FeesScreen = () => {
                 <Card style={styles.feeStructureCard}>
                   {/* Header */}
                   <View style={[styles.feeStructureRow, styles.feeStructureHeader, { borderBottomColor: themeColors.border }]}>
-                    <Text style={[styles.feeHeadName, styles.feeHeaderText, { color: themeColors.textSecondary }]}>Fee Head</Text>
-                    <Text style={[styles.feeHeadAmount, styles.feeHeaderText, { color: themeColors.textSecondary }]}>Amount</Text>
-                    <Text style={[styles.feeHeadPaid, styles.feeHeaderText, { color: themeColors.textSecondary }]}>Paid</Text>
-                    <Text style={[styles.feeHeadStatus, styles.feeHeaderText, { color: themeColors.textSecondary }]}>Status</Text>
+                    <Text style={[styles.feeHeadName, styles.feeHeaderText, { color: themeColors.textSecondary }]}>{t('screens.feeHead')}</Text>
+                    <Text style={[styles.feeHeadAmount, styles.feeHeaderText, { color: themeColors.textSecondary }]}>{t('screens.amount1')}</Text>
+                    <Text style={[styles.feeHeadPaid, styles.feeHeaderText, { color: themeColors.textSecondary }]}>{t('screens.paid1')}</Text>
+                    <Text style={[styles.feeHeadStatus, styles.feeHeaderText, { color: themeColors.textSecondary }]}>{t('screens.status')}</Text>
                   </View>
 
                   {feeData.feeHeads.map((head, index) => (
@@ -297,7 +299,7 @@ const FeesScreen = () => {
 
                   {/* Total Row */}
                   <View style={[styles.feeStructureRow, styles.feeTotalRow, { borderTopColor: themeColors.border }]}>
-                    <Text style={[styles.feeHeadName, styles.feeTotalText, { color: themeColors.text }]}>Total</Text>
+                    <Text style={[styles.feeHeadName, styles.feeTotalText, { color: themeColors.text }]}>{t('screens.total')}</Text>
                     <Text style={[styles.feeHeadAmount, styles.feeTotalText, { color: themeColors.text }]}>
                       {formatCurrency(feeData.totalFee)}
                     </Text>

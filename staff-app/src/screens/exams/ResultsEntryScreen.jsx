@@ -17,8 +17,10 @@ import { ArrowLeft, Save, CheckCircle, AlertCircle, Search } from 'lucide-react-
 
 import { useExamContext } from '../../context/ExamContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const ResultsEntryScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute();
   const insets = useSafeAreaInsets();
@@ -253,7 +255,7 @@ const ResultsEntryScreen = () => {
           <ArrowLeft size={24} color={colors.onSurface} />
         </Pressable>
         <View style={styles.headerTitleContainer}>
-          <Text style={[typography.titleLarge, { color: colors.onSurface }]}>Enter Results</Text>
+          <Text style={[typography.titleLarge, { color: colors.onSurface }]}>{t('screens.enterResults1')}</Text>
           <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>{selectedExam?.name}</Text>
         </View>
         <Pressable
@@ -271,7 +273,7 @@ const ResultsEntryScreen = () => {
           {saving ? (
             <ActivityIndicator size="small" color={colors.onPrimary} />
           ) : (
-            <Text style={[typography.labelLarge, { color: colors.onPrimary }]}>Save</Text>
+            <Text style={[typography.labelLarge, { color: colors.onPrimary }]}>{t('screens.save1')}</Text>
           )}
         </Pressable>
       </View>
@@ -285,7 +287,7 @@ const ResultsEntryScreen = () => {
         <Search size={20} color={colors.onSurfaceVariant} />
         <TextInput
           style={[styles.searchInput, { color: colors.onSurface, marginLeft: spacing.sm }]}
-          placeholder="Search student..."
+          placeholder={t('screens.searchStudent')}
           placeholderTextColor={colors.onSurfaceVariant}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -306,7 +308,7 @@ const ResultsEntryScreen = () => {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={[typography.bodyLarge, { color: colors.onSurfaceVariant }]}>No students found</Text>
+            <Text style={[typography.bodyLarge, { color: colors.onSurfaceVariant }]}>{t('screens.noStudentsFound')}</Text>
           </View>
         }
       />

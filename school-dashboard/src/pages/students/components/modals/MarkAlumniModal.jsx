@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
 import { AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 /**
  * MarkAlumniModal - Modal for marking a student as alumni
@@ -13,11 +14,12 @@ import toast from "react-hot-toast";
  * - onMark: function - Called after successful mark
  */
 export default function MarkAlumniModal({ isOpen, onClose, student, onMark }) {
+  const { t } = useTranslation();
   const [isMarking, setIsMarking] = useState(false);
 
   const handleMarkAsAlumni = async () => {
     setIsMarking(true);
-    const loadingToast = toast.loading("Marking student as alumni...");
+    const loadingToast = toast.loading(t('toast.loading.markingStudentAsAlumni'));
 
     try {
       const { request } = await import("../../../../services/api");
@@ -48,14 +50,14 @@ export default function MarkAlumniModal({ isOpen, onClose, student, onMark }) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="sm">
-      <ModalHeader>Mark as Alumni</ModalHeader>
+      <ModalHeader>{t('pages.markAsAlumni')}</ModalHeader>
       <ModalBody>
         <div className="space-y-4">
           <div className="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg">
             <div className="flex items-start gap-3">
               <AlertCircle className="text-gray-600 dark:text-zinc-400 mt-0.5" size={20} />
               <div>
-                <p className="font-semibold text-gray-900 dark:text-zinc-100">Confirm Action</p>
+                <p className="font-semibold text-gray-900 dark:text-zinc-100">{t('pages.confirmAction1')}</p>
                 <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
                   This will change {student?.name}'s status to "Alumni". The student will no longer appear in active student lists.
                 </p>
@@ -65,8 +67,8 @@ export default function MarkAlumniModal({ isOpen, onClose, student, onMark }) {
         </div>
       </ModalBody>
       <ModalFooter>
-        <Button variant="bordered" className="border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300" onPress={onClose}>Cancel</Button>
-        <Button className="bg-gray-900 dark:bg-zinc-100 hover:bg-gray-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900" onPress={handleMarkAsAlumni} isLoading={isMarking}>Confirm</Button>
+        <Button variant="bordered" className="border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300" onPress={onClose}>{t('pages.cancel2')}</Button>
+        <Button className="bg-gray-900 dark:bg-zinc-100 hover:bg-gray-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900" onPress={handleMarkAsAlumni} isLoading={isMarking}>{t('pages.confirm')}</Button>
       </ModalFooter>
     </Modal>
   );

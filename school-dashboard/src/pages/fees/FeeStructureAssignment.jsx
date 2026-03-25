@@ -1,11 +1,14 @@
+import { request } from '../../services/api.js';
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardBody, Button, Select, SelectItem, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Divider, Textarea, Spinner, Chip, Badge, ButtonGroup } from "@heroui/react";
 import { Save, Users, CheckCircle, AlertCircle, IndianRupee, Info, FileText, Copy } from "lucide-react";
 import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
 import { getAcademicYearOptions } from "../../utils/constants";
+import { getDateLocale } from '../../i18n/index';
+import { useTranslation } from 'react-i18next';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 
 const COLLECTION_MODES = [
   { key: 'term', label: 'Term-wise' },
@@ -26,6 +29,7 @@ const buildAcademicYearDate = (academicYear, month, day, useNextYear = false) =>
 };
 
 export default function FeeStructureAssignment({ classes, onAssignmentComplete }) {
+  const { t } = useTranslation();
   const { currentAcademicYear } = useApp();
   const academicYearOptions = useMemo(
     () => getAcademicYearOptions(currentAcademicYear, { past: 2, future: 2 }),
@@ -33,6 +37,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
   );
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [templateError, setTemplateError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [applying, setApplying] = useState(false);
   
@@ -61,19 +66,21 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
   }, []);
 
   useEffect(() => {
-    if (selectedClass) {
+    // BUG-29: guard prevents API call with academicYear=undefined
+    if (selectedClass && academicYear) {
       fetchExistingStructure();
     }
   }, [selectedClass, academicYear]);
 
   const fetchTemplates = async () => {
+    setTemplateError(null);
     try {
-      const response = await fetch(`${API_URL}/fee-templates`);
-      const data = await response.json();
+      const data = await request('/fee-templates');
       setTemplates(data);
     } catch (error) {
       console.error('Failed to fetch templates:', error);
-      toast.error('Failed to load templates');
+      setTemplateError(error.message || 'Failed to load fee templates');
+      toast.error(t('toast.error.failedToLoadTemplates'));
     }
   };
 
@@ -81,33 +88,28 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
     if (!selectedClass) return;
 
     try {
-      const response = await fetch(`${API_URL}/fee-structure/class/${selectedClass}?academicYear=${academicYear}`);
-
-      if (response.ok) {
-        const data = await response.json();
-        setExistingStructure(data);
-        setFormData({
-          templateId: data.templateId?._id || data.templateId || '',
-          feeHeads: data.feeHeads || [],
-          collectionSchedule: data.collectionSchedule || { mode: 'term', installments: [] },
-          totalAnnualFee: data.totalAnnualFee || 0
-        });
-        if (data.templateId?._id) {
-          setSelectedTemplate(data.templateId._id);
-        }
-      } else {
-        // 404 = no structure yet, that's fine
-        setExistingStructure(null);
-        setSelectedTemplate('');
-        setFormData({
-          templateId: '',
-          feeHeads: [],
-          collectionSchedule: { mode: 'term', installments: [] },
-          totalAnnualFee: 0
-        });
+      const yearParam = academicYear ? `?academicYear=${academicYear}` : '';
+      const data = await request(`/fee-structure/class/${selectedClass}${yearParam}`);
+      setExistingStructure(data);
+      setFormData({
+        templateId: data.templateId?._id || data.templateId || '',
+        feeHeads: data.feeHeads || [],
+        collectionSchedule: data.collectionSchedule || { mode: 'term', installments: [] },
+        totalAnnualFee: data.totalAnnualFee || 0
+      });
+      if (data.templateId?._id) {
+        setSelectedTemplate(data.templateId._id);
       }
     } catch (error) {
-      console.error('Failed to fetch structure:', error);
+      // 404 = no structure yet, that's fine
+      setExistingStructure(null);
+      setSelectedTemplate('');
+      setFormData({
+        templateId: '',
+        feeHeads: [],
+        collectionSchedule: { mode: 'term', installments: [] },
+        totalAnnualFee: 0
+      });
     }
   };
 
@@ -171,7 +173,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
 
   const handleSaveStructure = async () => {
     if (!selectedClass || formData.feeHeads.length === 0) {
-      toast.error('Please select a class and add fee heads');
+      toast.error(t('toast.error.pleaseSelectAClassAndAddFeeHeads'));
       return;
     }
 
@@ -183,15 +185,12 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
         ...formData
       };
 
-      const response = await fetch(`${API_URL}/fee-structure`, {
+      await request('/fee-structure', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
-      if (!response.ok) throw new Error('Failed to save structure');
-
-      toast.success('Fee structure saved successfully');
+      toast.success(t('toast.success.feeStructureSavedSuccessfully'));
       fetchExistingStructure();
       
       if (onAssignmentComplete) {
@@ -199,7 +198,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
       }
     } catch (error) {
       console.error('Failed to save structure:', error);
-      toast.error('Failed to save fee structure');
+      toast.error(t('toast.error.failedToSaveFeeStructure'));
     } finally {
       setSaving(false);
     }
@@ -209,45 +208,39 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
     if (!selectedClass) return;
 
     try {
-      const response = await fetch(`${API_URL}/students/class/${selectedClass}/fee-status?academicYear=${academicYear}`);
-      const data = await response.json();
+      const data = await request(`/students/class/${selectedClass}/fee-status?academicYear=${academicYear}`);
       setPreviewStudents(data);
       onPreviewOpen();
     } catch (error) {
       console.error('Failed to fetch students:', error);
-      toast.error('Failed to load student list');
+      toast.error(t('toast.error.failedToLoadStudentList'));
     }
   };
 
   const handleApplyToStudents = async () => {
     if (!selectedClass) {
-      toast.error('Please select a class first');
+      toast.error(t('toast.error.pleaseSelectAClassFirst'));
       return;
     }
 
-    if (!confirm(`Are you sure you want to apply this fee structure to all students in this class?\n\nThis will update fee details for all active students.`)) {
+    if (!confirm(t('confirm.applyFeeStructure'))) {
       return;
     }
 
     setApplying(true);
     try {
-      const response = await fetch(`${API_URL}/fee-structure/apply-to-students`, {
+      const result = await request('/fee-structure/apply-to-students', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           classId: selectedClass,
           academicYear
         })
       });
-
-      if (!response.ok) throw new Error('Failed to apply structure');
-
-      const result = await response.json();
       toast.success(result.message || `Fee structure applied to all students`);
       onPreviewClose();
     } catch (error) {
       console.error('Failed to apply structure:', error);
-      toast.error('Failed to apply fee structure to students');
+      toast.error(t('toast.error.failedToApplyFeeStructureToStudents'));
     } finally {
       setApplying(false);
     }
@@ -283,8 +276,8 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-bold text-default-900">Assign Fee Structure to Class</h3>
-            <p className="text-sm text-default-500">Create or update fee structure for a specific class</p>
+            <h3 className="text-lg font-bold text-default-900">{t('pages.assignFeeStructureToClass')}</h3>
+            <p className="text-sm text-default-500">{t('pages.createOrUpdateFeeStructureForASpecificClass')}</p>
           </div>
           {existingStructure && (
             <Chip color="success" variant="flat" startContent={<CheckCircle size={16} />}>
@@ -298,8 +291,8 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
         {/* Class Selection */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Select
-            label="Select Class"
-            placeholder="Choose a class"
+            label={t('pages.selectClass1')}
+            placeholder={t('pages.chooseAClass')}
             selectedKeys={selectedClass ? [selectedClass] : []}
             onChange={(e) => setSelectedClass(e.target.value)}
             variant="bordered"
@@ -312,7 +305,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
           </Select>
 
           <Select
-            label="Academic Year"
+            label={t('pages.academicYear1')}
             variant="bordered"
             selectedKeys={[academicYear]}
             onChange={(e) => {
@@ -330,17 +323,29 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
           <>
             <Divider />
 
+            {/* Template load error */}
+            {templateError && (
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800">
+                <AlertCircle size={18} className="text-red-500 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-red-800 dark:text-red-200">Failed to load fee templates</p>
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{templateError}</p>
+                </div>
+                <Button size="sm" variant="flat" color="danger" onPress={fetchTemplates}>Retry</Button>
+              </div>
+            )}
+
             {/* Template Selection */}
             <div>
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h4 className="font-semibold text-default-900">Select Fee Template</h4>
-                  <p className="text-xs text-default-500">Choose from existing templates or create custom structure</p>
+                  <h4 className="font-semibold text-default-900">{t('pages.selectFeeTemplate')}</h4>
+                  <p className="text-xs text-default-500">{t('pages.chooseFromExistingTemplatesOrCreateCustomStructure')}</p>
                 </div>
               </div>
 
               <Select
-                placeholder="Select a template (optional)"
+                placeholder={t('pages.selectATemplateOptional')}
                 selectedKeys={selectedTemplate ? [selectedTemplate] : []}
                 onChange={(e) => handleTemplateChange(e.target.value)}
                 variant="bordered"
@@ -367,8 +372,8 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h4 className="font-semibold text-default-900">Fee Heads</h4>
-                      <p className="text-xs text-default-500">Review and customize amounts if needed</p>
+                      <h4 className="font-semibold text-default-900">{t('pages.feeHeads1')}</h4>
+                      <p className="text-xs text-default-500">{t('pages.reviewAndCustomizeAmountsIfNeeded')}</p>
                     </div>
                     <Badge color="primary" variant="flat" size="lg">
                       ₹{formData.totalAnnualFee.toLocaleString()}/year
@@ -391,7 +396,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                         <div className="flex items-center gap-3">
                           <Input
                             type="number"
-                            label="Amount"
+                            label={t('pages.amount1')}
                             value={head.amount}
                             onValueChange={(v) => updateFeeHeadAmount(index, v)}
                             variant="bordered"
@@ -421,8 +426,8 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h4 className="font-semibold text-default-900">Collection Schedule</h4>
-                      <p className="text-xs text-default-500">Configure how fees will be collected</p>
+                      <h4 className="font-semibold text-default-900">{t('pages.collectionSchedule')}</h4>
+                      <p className="text-xs text-default-500">{t('pages.configureHowFeesWillBeCollected')}</p>
                     </div>
                     <Select
                       size="sm"
@@ -451,7 +456,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                       <div key={installment._id || installment.name} className="p-4 bg-primary-50 rounded-xl border border-primary-200">
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-semibold text-primary-900">{installment.name}</span>
-                          <Chip size="sm" color="primary" variant="flat">Due: {new Date(installment.dueDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</Chip>
+                          <Chip size="sm" color="primary" variant="flat">Due: {new Date(installment.dueDate).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric' })}</Chip>
                         </div>
                         <p className="text-2xl font-bold text-primary-700">₹{installment.amount.toLocaleString()}</p>
                       </div>
@@ -501,7 +506,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
         {!selectedClass && (
           <div className="text-center py-12">
             <Info size={48} className="mx-auto text-default-300 mb-4" />
-            <p className="text-default-500">Please select a class to assign fee structure</p>
+            <p className="text-default-500">{t('pages.pleaseSelectAClassToAssignFeeStructure')}</p>
           </div>
         )}
       </CardBody>
@@ -513,8 +518,8 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
             <div className="flex items-center gap-3">
               <Users size={24} className="text-primary" />
               <div>
-                <h3 className="text-lg font-bold">Students in Class</h3>
-                <p className="text-xs text-default-500">Review before applying fee structure</p>
+                <h3 className="text-lg font-bold">{t('pages.studentsInClass')}</h3>
+                <p className="text-xs text-default-500">{t('pages.reviewBeforeApplyingFeeStructure')}</p>
               </div>
             </div>
           </ModalHeader>
@@ -523,15 +528,15 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="p-4 bg-default-50 rounded-xl text-center">
                 <p className="text-2xl font-bold text-default-900">{previewStudents.length}</p>
-                <p className="text-xs text-default-500 uppercase tracking-wider">Total Students</p>
+                <p className="text-xs text-default-500 uppercase tracking-wider">{t('pages.totalStudents1')}</p>
               </div>
               <div className="p-4 bg-warning-50 rounded-xl text-center">
                 <p className="text-2xl font-bold text-warning-700">{previewStudents.filter(s => s.status === 'pending').length}</p>
-                <p className="text-xs text-warning-600 uppercase tracking-wider">Pending</p>
+                <p className="text-xs text-warning-600 uppercase tracking-wider">{t('pages.pending2')}</p>
               </div>
               <div className="p-4 bg-success-50 rounded-xl text-center">
                 <p className="text-2xl font-bold text-success-700">{previewStudents.filter(s => s.status === 'paid').length}</p>
-                <p className="text-xs text-success-600 uppercase tracking-wider">Fully Paid</p>
+                <p className="text-xs text-success-600 uppercase tracking-wider">{t('pages.fullyPaid')}</p>
               </div>
             </div>
 

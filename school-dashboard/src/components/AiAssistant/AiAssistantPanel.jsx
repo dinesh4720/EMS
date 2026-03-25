@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { X, Sparkles } from 'lucide-react';
 import './AiAssistantPanel.css';
+import { useTranslation } from 'react-i18next';
 
 // ============================================
 // CONTEXT: Global AI Panel State Management
@@ -8,6 +9,7 @@ import './AiAssistantPanel.css';
 const AiAssistantContext = createContext(null);
 
 export const useAiAssistant = () => {
+  const { t } = useTranslation();
   const context = useContext(AiAssistantContext);
   if (!context) {
     throw new Error('useAiAssistant must be used within AiAssistantProvider');
@@ -126,7 +128,7 @@ export function AiAssistantPanel({ children }) {
         className={`ai-assistant-panel ${isOpen ? 'ai-assistant-panel--open' : ''}`}
         onKeyDown={handleKeyDown}
         tabIndex={-1}
-        aria-label="AI Assistant"
+        aria-label={t('aria.misc.aiAssistant')}
         role="complementary"
         aria-hidden={!isOpen}
       >

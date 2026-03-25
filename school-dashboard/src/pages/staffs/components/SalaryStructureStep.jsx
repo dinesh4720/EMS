@@ -45,10 +45,10 @@ function SalaryStructureStep({
         <SectionHeader icon={Building2} title={t('staff.form.bankAccountDetails')} />
         <p className="text-xs text-gray-500 -mt-1">{t('staff.form.bankAccountHint')}</p>
         <div className="grid grid-cols-2 gap-4">
-          <Input label={t('staff.form.accountNumberLabel')} labelPlacement="outside" placeholder="Enter account number" value={formData.accountNumber} onValueChange={v => updateField("accountNumber", v)} variant="bordered" radius="sm" classNames={inputStyles} />
+          <Input label={t('staff.form.accountNumberLabel')} labelPlacement="outside" placeholder={t('pages.enterAccountNumber')} value={formData.accountNumber} onValueChange={v => updateField("accountNumber", v)} variant="bordered" radius="sm" classNames={inputStyles} />
           <Input label={t('staff.form.ifscCodeLabel')} labelPlacement="outside" placeholder="e.g. SBIN0001234" value={formData.ifscCode} onValueChange={v => updateField("ifscCode", v)} variant="bordered" radius="sm" isInvalid={!!errors.ifscCode} errorMessage={errors.ifscCode} classNames={inputStyles} />
-          <Input label={t('staff.form.bankNameLabel')} labelPlacement="outside" placeholder="Enter bank name" value={formData.bankName} onValueChange={v => updateField("bankName", v)} variant="bordered" radius="sm" classNames={inputStyles} />
-          <Input label={t('staff.form.branchNameLabel')} labelPlacement="outside" placeholder="Enter branch name" value={formData.branchName} onValueChange={v => updateField("branchName", v)} variant="bordered" radius="sm" classNames={inputStyles} />
+          <Input label={t('staff.form.bankNameLabel')} labelPlacement="outside" placeholder={t('pages.enterBankName')} value={formData.bankName} onValueChange={v => updateField("bankName", v)} variant="bordered" radius="sm" classNames={inputStyles} />
+          <Input label={t('staff.form.branchNameLabel')} labelPlacement="outside" placeholder={t('pages.enterBranchName')} value={formData.branchName} onValueChange={v => updateField("branchName", v)} variant="bordered" radius="sm" classNames={inputStyles} />
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff, Send, Trash2 } from 'lucide-react';
 import { Button, Progress } from '@heroui/react';
+import { useTranslation } from 'react-i18next';
 
 export default function VoiceMessageRecorder({ onSend, onCancel }) {
   const [isRecording, setIsRecording] = useState(false);

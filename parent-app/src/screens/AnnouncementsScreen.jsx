@@ -12,8 +12,10 @@ import { Card, Loading, EmptyState } from '../components';
 import { formatDate } from '../utils/helpers';
 import api from '../services/api';
 import { Bell, Calendar } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 const AnnouncementsScreen = () => {
+  const { t } = useTranslation();
   const { themeColors } = useTheme();
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -117,7 +119,7 @@ const AnnouncementsScreen = () => {
             ))
           ) : !error ? (
             <EmptyState
-              title="No Announcements"
+              title={t('screens.noAnnouncements1')}
               message="School announcements will appear here."
               icon={<Bell size={48} color={themeColors.textTertiary} />}
             />

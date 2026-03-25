@@ -13,8 +13,10 @@ import {
 import { ArrowLeft, Calendar as CalendarIcon, Check, X, AlertCircle, Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 export default function StaffAttendanceRegularize() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { staff, staffAttendance, markStaffAttendance, fetchStaffAttendanceByStaff } = useApp();
   const [selectedStaffId, setSelectedStaffId] = useState("");
@@ -124,7 +126,7 @@ export default function StaffAttendanceRegularize() {
       regularizeData.reason
     );
 
-    toast.success("Attendance regularized successfully");
+    toast.success(t('toast.success.attendanceRegularizedSuccessfully'));
     setRegularizeModalOpen(false);
     setSelectedDate(null);
   };
@@ -200,8 +202,8 @@ export default function StaffAttendanceRegularize() {
             <ArrowLeft size={20} />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-default-900">Regularize Attendance</h1>
-            <p className="text-sm text-default-500 mt-1">View and regularize staff attendance records</p>
+            <h1 className="text-2xl font-bold text-default-900">{t('pages.regularizeAttendance1')}</h1>
+            <p className="text-sm text-default-500 mt-1">{t('pages.viewAndRegularizeStaffAttendanceRecords')}</p>
           </div>
         </div>
       </div>
@@ -210,8 +212,8 @@ export default function StaffAttendanceRegularize() {
       <Card shadow="none" className="border border-default-200 mb-6">
         <CardBody className="p-6">
           <Select
-            label="Select Staff Member"
-            placeholder="Choose a staff member to view attendance"
+            label={t('pages.selectStaffMember1')}
+            placeholder={t('pages.chooseAStaffMemberToViewAttendance')}
             selectedKeys={selectedStaffId ? [selectedStaffId] : []}
             onSelectionChange={(keys) => setSelectedStaffId(Array.from(keys)[0])}
             variant="bordered"
@@ -237,7 +239,7 @@ export default function StaffAttendanceRegularize() {
                 <CalendarIcon size={40} className="text-primary-500" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-default-900 mb-2">Select a Staff Member</h3>
+                <h3 className="text-lg font-semibold text-default-900 mb-2">{t('pages.selectAStaffMember1')}</h3>
                 <p className="text-sm text-default-500 max-w-md">
                   Choose a staff member from the dropdown above to view their attendance calendar and regularize any records.
                 </p>
@@ -245,23 +247,23 @@ export default function StaffAttendanceRegularize() {
               <div className="flex flex-wrap gap-4 mt-4 text-xs text-default-500">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-success-500" />
-                  <span>Present</span>
+                  <span>{t('pages.present2')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-danger-500" />
-                  <span>Absent</span>
+                  <span>{t('pages.absent2')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-warning-500" />
-                  <span>On Leave</span>
+                  <span>{t('pages.onLeave1')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-secondary-500" />
-                  <span>Half Day</span>
+                  <span>{t('pages.halfDay')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-default-300" />
-                  <span>Unmarked</span>
+                  <span>{t('pages.unmarked')}</span>
                 </div>
               </div>
             </div>
@@ -294,7 +296,7 @@ export default function StaffAttendanceRegularize() {
               <CardBody className="p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Check size={16} className="text-success-600" />
-                  <span className="text-xs text-success-700 uppercase tracking-wider">Present</span>
+                  <span className="text-xs text-success-700 uppercase tracking-wider">{t('pages.present2')}</span>
                 </div>
                 <p className="text-2xl font-semibold text-success-700">{getMonthStats.present}</p>
               </CardBody>
@@ -303,7 +305,7 @@ export default function StaffAttendanceRegularize() {
               <CardBody className="p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <X size={16} className="text-danger-600" />
-                  <span className="text-xs text-danger-700 uppercase tracking-wider">Absent</span>
+                  <span className="text-xs text-danger-700 uppercase tracking-wider">{t('pages.absent2')}</span>
                 </div>
                 <p className="text-2xl font-semibold text-danger-700">{getMonthStats.absent}</p>
               </CardBody>
@@ -312,7 +314,7 @@ export default function StaffAttendanceRegularize() {
               <CardBody className="p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Clock size={16} className="text-warning-600" />
-                  <span className="text-xs text-warning-700 uppercase tracking-wider">Leave</span>
+                  <span className="text-xs text-warning-700 uppercase tracking-wider">{t('pages.leave')}</span>
                 </div>
                 <p className="text-2xl font-semibold text-warning-700">{getMonthStats.leave}</p>
               </CardBody>
@@ -321,7 +323,7 @@ export default function StaffAttendanceRegularize() {
               <CardBody className="p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <AlertCircle size={16} className="text-secondary-600" />
-                  <span className="text-xs text-secondary-700 uppercase tracking-wider">Half Day</span>
+                  <span className="text-xs text-secondary-700 uppercase tracking-wider">{t('pages.halfDay')}</span>
                 </div>
                 <p className="text-2xl font-semibold text-secondary-700">{getMonthStats.halfday}</p>
               </CardBody>
@@ -330,7 +332,7 @@ export default function StaffAttendanceRegularize() {
               <CardBody className="p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Clock size={16} className="text-default-500" />
-                  <span className="text-xs text-default-600 uppercase tracking-wider">Unmarked</span>
+                  <span className="text-xs text-default-600 uppercase tracking-wider">{t('pages.unmarked')}</span>
                 </div>
                 <p className="text-2xl font-semibold text-default-700">{getMonthStats.unmarked}</p>
               </CardBody>
@@ -369,23 +371,23 @@ export default function StaffAttendanceRegularize() {
               <div className="flex flex-wrap gap-4 mb-6 pb-4 border-b border-default-200">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-success-500" />
-                  <span className="text-xs text-default-600">Present</span>
+                  <span className="text-xs text-default-600">{t('pages.present2')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-danger-500" />
-                  <span className="text-xs text-default-600">Absent</span>
+                  <span className="text-xs text-default-600">{t('pages.absent2')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-warning-500" />
-                  <span className="text-xs text-default-600">On Leave</span>
+                  <span className="text-xs text-default-600">{t('pages.onLeave1')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-secondary-500" />
-                  <span className="text-xs text-default-600">Half Day</span>
+                  <span className="text-xs text-default-600">{t('pages.halfDay')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-default-300" />
-                  <span className="text-xs text-default-600">Unmarked</span>
+                  <span className="text-xs text-default-600">{t('pages.unmarked')}</span>
                 </div>
               </div>
 
@@ -431,7 +433,7 @@ export default function StaffAttendanceRegularize() {
           {(onClose) => (
             <>
               <ModalHeader className="flex flex-col gap-1">
-                <h3 className="text-lg font-semibold">Regularize Attendance</h3>
+                <h3 className="text-lg font-semibold">{t('pages.regularizeAttendance1')}</h3>
                 <p className="text-sm text-default-500 font-normal">
                   {selectedStaff?.name} - {selectedDate?.dateStr}
                 </p>
@@ -440,7 +442,7 @@ export default function StaffAttendanceRegularize() {
               <ModalBody className="py-6">
                 <div className="space-y-4">
                   <Select
-                    label="Status"
+                    label={t('pages.status2')}
                     selectedKeys={[regularizeData.status]}
                     onSelectionChange={(keys) => setRegularizeData({ ...regularizeData, status: Array.from(keys)[0] })}
                     variant="bordered"
@@ -463,14 +465,14 @@ export default function StaffAttendanceRegularize() {
                     <div className="grid grid-cols-2 gap-4">
                       <Input
                         type="time"
-                        label="Check In Time"
+                        label={t('pages.checkInTime')}
                         value={regularizeData.inTime}
                         onValueChange={(value) => setRegularizeData({ ...regularizeData, inTime: value })}
                         variant="bordered"
                       />
                       <Input
                         type="time"
-                        label="Check Out Time"
+                        label={t('pages.checkOutTime')}
                         value={regularizeData.outTime}
                         onValueChange={(value) => setRegularizeData({ ...regularizeData, outTime: value })}
                         variant="bordered"
@@ -480,7 +482,7 @@ export default function StaffAttendanceRegularize() {
 
                   <Textarea
                     label="Reason / Notes"
-                    placeholder="Enter reason for regularization..."
+                    placeholder={t('pages.enterReasonForRegularization')}
                     value={regularizeData.reason}
                     onValueChange={(value) => setRegularizeData({ ...regularizeData, reason: value })}
                     variant="bordered"
@@ -489,13 +491,13 @@ export default function StaffAttendanceRegularize() {
 
                   {selectedDate?.attendance && (
                     <div className="p-4 bg-default-50 rounded-lg border border-default-200">
-                      <p className="text-xs text-default-500 mb-2">Current Record:</p>
+                      <p className="text-xs text-default-500 mb-2">{t('pages.currentRecord')}</p>
                       <div className="space-y-1 text-sm">
-                        <p><span className="font-medium">Status:</span> {selectedDate.attendance.status}</p>
-                        <p><span className="font-medium">In:</span> {selectedDate.attendance.inTime}</p>
-                        <p><span className="font-medium">Out:</span> {selectedDate.attendance.outTime}</p>
+                        <p><span className="font-medium">{t('pages.status3')}</span> {selectedDate.attendance.status}</p>
+                        <p><span className="font-medium">{t('pages.in')}</span> {selectedDate.attendance.inTime}</p>
+                        <p><span className="font-medium">{t('pages.out')}</span> {selectedDate.attendance.outTime}</p>
                         {selectedDate.attendance.reason && (
-                          <p><span className="font-medium">Reason:</span> {selectedDate.attendance.reason}</p>
+                          <p><span className="font-medium">{t('pages.reason1')}</span> {selectedDate.attendance.reason}</p>
                         )}
                       </div>
                     </div>

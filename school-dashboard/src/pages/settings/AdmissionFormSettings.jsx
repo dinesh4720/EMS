@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
-import { Card, Button, Input, Select, SelectItem, Switch, Tabs, Tab, Chip, Divider, Spinner, RadioGroup, Radio } from "@heroui/react";
+import { Card, Button, Input, Select, SelectItem, Switch, Tabs, Tab, Chip, Divider, RadioGroup, Radio } from "@heroui/react";
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { Save, Plus, Trash2, Hash, FileText } from "lucide-react";
 import { settingsApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 const yearFormatOptions = [
   { value: 'YYYY', label: 'Full Year (2024)' },
@@ -30,6 +32,7 @@ const uploadTypeOptions = [
 ];
 
 export default function AdmissionFormSettings() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("admission-id");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -106,7 +109,7 @@ export default function AdmissionFormSettings() {
       }
     } catch (error) {
       console.error('Error loading configurations:', error);
-      toast.error('Failed to load configurations');
+      toast.error(t('toast.error.failedToLoadConfigurations'));
     } finally {
       setLoading(false);
     }
@@ -116,10 +119,10 @@ export default function AdmissionFormSettings() {
     setSaving(true);
     try {
       await settingsApi.updateAdmissionIdConfig(admissionIdConfig);
-      toast.success('Admission ID configuration saved successfully');
+      toast.success(t('toast.success.admissionIdConfigurationSavedSuccessfully'));
     } catch (error) {
       console.error('Error saving admission ID config:', error);
-      toast.error('Failed to save configuration');
+      toast.error(t('toast.error.failedToSaveConfiguration'));
     } finally {
       setSaving(false);
     }
@@ -129,10 +132,10 @@ export default function AdmissionFormSettings() {
     setSaving(true);
     try {
       await settingsApi.updateRollNumberConfig(rollNumberConfig);
-      toast.success('Roll number configuration saved successfully');
+      toast.success(t('toast.success.rollNumberConfigurationSavedSuccessfully'));
     } catch (error) {
       console.error('Error saving roll number config:', error);
-      toast.error('Failed to save configuration');
+      toast.error(t('toast.error.failedToSaveConfiguration'));
     } finally {
       setSaving(false);
     }
@@ -153,11 +156,11 @@ export default function AdmissionFormSettings() {
         }
       }
       
-      toast.success('Document configuration saved successfully');
+      toast.success(t('toast.success.documentConfigurationSavedSuccessfully'));
       await loadConfigurations();
     } catch (error) {
       console.error('Error saving document config:', error);
-      toast.error('Failed to save configuration');
+      toast.error(t('toast.error.failedToSaveConfiguration'));
     } finally {
       setSaving(false);
     }
@@ -190,16 +193,14 @@ export default function AdmissionFormSettings() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner size="lg" />
-      </div>
+      <TablePageSkeleton />
     );
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-default-900">Admission Form Configuration</h2>
+        <h2 className="text-2xl font-semibold text-default-900">{t('pages.admissionFormConfiguration')}</h2>
         <p className="text-sm text-default-500 mt-1">
           Configure admission ID format and document requirements for student admissions
         </p>
@@ -221,14 +222,14 @@ export default function AdmissionFormSettings() {
           title={
             <div className="flex items-center gap-2">
               <Hash size={18} />
-              <span>Admission ID Format</span>
+              <span>{t('pages.admissionIdFormat')}</span>
             </div>
           }
         >
           <Card className="p-6 mt-6">
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-default-900 mb-2">Admission ID Configuration</h3>
+                <h3 className="text-lg font-semibold text-default-900 mb-2">{t('pages.admissionIdConfiguration')}</h3>
                 <p className="text-sm text-default-500">
                   Configure how admission IDs are generated for new students
                 </p>
@@ -238,7 +239,7 @@ export default function AdmissionFormSettings() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
-                  label="Prefix"
+                  label={t('pages.prefix')}
                   placeholder="e.g., ADM, STU"
                   value={admissionIdConfig.prefix}
                   onValueChange={(value) => setAdmissionIdConfig({ ...admissionIdConfig, prefix: value })}
@@ -247,8 +248,8 @@ export default function AdmissionFormSettings() {
                 />
 
                 <Select
-                  label="Year Format"
-                  placeholder="Select year format"
+                  label={t('pages.yearFormat')}
+                  placeholder={t('pages.selectYearFormat')}
                   selectedKeys={[admissionIdConfig.yearFormat]}
                   onSelectionChange={(keys) => setAdmissionIdConfig({ ...admissionIdConfig, yearFormat: Array.from(keys)[0] })}
                   variant="bordered"
@@ -260,8 +261,8 @@ export default function AdmissionFormSettings() {
                 </Select>
 
                 <Select
-                  label="Separator"
-                  placeholder="Select separator"
+                  label={t('pages.separator')}
+                  placeholder={t('pages.selectSeparator')}
                   selectedKeys={[admissionIdConfig.separator]}
                   onSelectionChange={(keys) => setAdmissionIdConfig({ ...admissionIdConfig, separator: Array.from(keys)[0] })}
                   variant="bordered"
@@ -274,7 +275,7 @@ export default function AdmissionFormSettings() {
 
                 <Input
                   type="number"
-                  label="Number Padding"
+                  label={t('pages.numberPadding')}
                   placeholder="4"
                   value={String(admissionIdConfig.numberPadding)}
                   onValueChange={(value) => setAdmissionIdConfig({ ...admissionIdConfig, numberPadding: parseInt(value) || 4 })}
@@ -286,7 +287,7 @@ export default function AdmissionFormSettings() {
 
                 <Input
                   type="number"
-                  label="Starting Number"
+                  label={t('pages.startingNumber')}
                   placeholder="1"
                   value={String(admissionIdConfig.startingNumber)}
                   onValueChange={(value) => setAdmissionIdConfig({ ...admissionIdConfig, startingNumber: parseInt(value) || 1 })}
@@ -296,8 +297,8 @@ export default function AdmissionFormSettings() {
                 />
 
                 <Select
-                  label="Reset Frequency"
-                  placeholder="Select reset frequency"
+                  label={t('pages.resetFrequency')}
+                  placeholder={t('pages.selectResetFrequency')}
                   selectedKeys={[admissionIdConfig.resetFrequency]}
                   onSelectionChange={(keys) => setAdmissionIdConfig({ ...admissionIdConfig, resetFrequency: Array.from(keys)[0] })}
                   variant="bordered"
@@ -314,8 +315,8 @@ export default function AdmissionFormSettings() {
               <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-default-700">Preview</p>
-                    <p className="text-xs text-default-500 mt-1">Next admission ID will be:</p>
+                    <p className="text-sm font-medium text-default-700">{t('pages.preview1')}</p>
+                    <p className="text-xs text-default-500 mt-1">{t('pages.nextAdmissionIdWillBe')}</p>
                   </div>
                   <Chip size="lg" color="primary" variant="flat" className="font-mono text-lg px-4">
                     {previewId}
@@ -348,14 +349,14 @@ export default function AdmissionFormSettings() {
           title={
             <div className="flex items-center gap-2">
               <Hash size={18} />
-              <span>Roll Number Format</span>
+              <span>{t('pages.rollNumberFormat')}</span>
             </div>
           }
         >
           <Card className="p-6 mt-6">
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-default-900 mb-2">Roll Number Configuration</h3>
+                <h3 className="text-lg font-semibold text-default-900 mb-2">{t('pages.rollNumberConfiguration')}</h3>
                 <p className="text-sm text-default-500">
                   Configure how roll numbers are assigned to students
                 </p>
@@ -365,21 +366,21 @@ export default function AdmissionFormSettings() {
 
               <div className="space-y-6">
                 <div>
-                  <label className="text-sm font-medium text-default-700 mb-2 block">Format Type</label>
+                  <label className="text-sm font-medium text-default-700 mb-2 block">{t('pages.formatType')}</label>
                   <RadioGroup
                     value={rollNumberConfig.format}
                     onValueChange={(value) => setRollNumberConfig({ ...rollNumberConfig, format: value })}
                   >
                     <Radio value="sequential">
                       <div>
-                        <div className="font-medium">Sequential</div>
-                        <div className="text-xs text-default-500">Roll numbers assigned sequentially (1, 2, 3...)</div>
+                        <div className="font-medium">{t('pages.sequential')}</div>
+                        <div className="text-xs text-default-500">{t('pages.rollNumbersAssignedSequentially123')}</div>
                       </div>
                     </Radio>
                     <Radio value="class-based">
                       <div>
-                        <div className="font-medium">Class-Based</div>
-                        <div className="text-xs text-default-500">Roll numbers based on class (e.g., 10A-001, 10A-002)</div>
+                        <div className="font-medium">{t('pages.classBased')}</div>
+                        <div className="text-xs text-default-500">{t('pages.rollNumbersBasedOnClassEG10a00110a002')}</div>
                       </div>
                     </Radio>
                   </RadioGroup>
@@ -387,7 +388,7 @@ export default function AdmissionFormSettings() {
 
                 <Input
                   type="number"
-                  label="Starting Number"
+                  label={t('pages.startingNumber')}
                   labelPlacement="outside"
                   placeholder="1"
                   value={rollNumberConfig.startingNumber.toString()}
@@ -401,13 +402,13 @@ export default function AdmissionFormSettings() {
                   onValueChange={(value) => setRollNumberConfig({ ...rollNumberConfig, resetPerClass: value })}
                 >
                   <div>
-                    <div className="font-medium">Reset per Class</div>
-                    <div className="text-xs text-default-500">Start roll numbers from beginning for each class</div>
+                    <div className="font-medium">{t('pages.resetPerClass')}</div>
+                    <div className="text-xs text-default-500">{t('pages.startRollNumbersFromBeginningForEachClass')}</div>
                   </div>
                 </Switch>
 
                 <div className="bg-default-100 p-4 rounded-lg">
-                  <p className="text-sm font-medium text-default-700 mb-2">Preview</p>
+                  <p className="text-sm font-medium text-default-700 mb-2">{t('pages.preview1')}</p>
                   <p className="text-xs text-default-500 mb-2">
                     Example roll numbers for Class 10-A:
                   </p>
@@ -446,7 +447,7 @@ export default function AdmissionFormSettings() {
           title={
             <div className="flex items-center gap-2">
               <FileText size={18} />
-              <span>Document Requirements</span>
+              <span>{t('pages.documentRequirements')}</span>
             </div>
           }
         >
@@ -454,7 +455,7 @@ export default function AdmissionFormSettings() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-default-900 mb-2">Document Configuration</h3>
+                  <h3 className="text-lg font-semibold text-default-900 mb-2">{t('pages.documentConfiguration')}</h3>
                   <p className="text-sm text-default-500">
                     Configure which documents are required during student admission
                   </p>
@@ -477,7 +478,7 @@ export default function AdmissionFormSettings() {
                     <div className="space-y-4">
                       <div className="flex items-start justify-between gap-4">
                         <Input
-                          label="Document Name"
+                          label={t('pages.documentName')}
                           placeholder="e.g., Birth Certificate"
                           value={doc.documentName}
                           onValueChange={(value) => updateDocumentConfig(index, 'documentName', value)}
@@ -498,8 +499,8 @@ export default function AdmissionFormSettings() {
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <Select
-                          label="Upload Type"
-                          placeholder="Select type"
+                          label={t('pages.uploadType')}
+                          placeholder={t('pages.selectType1')}
                           selectedKeys={[doc.uploadType]}
                           onSelectionChange={(keys) => updateDocumentConfig(index, 'uploadType', Array.from(keys)[0])}
                           variant="bordered"
@@ -511,7 +512,7 @@ export default function AdmissionFormSettings() {
 
                         <Input
                           type="number"
-                          label="Max File Size (MB)"
+                          label={t('pages.maxFileSizeMb')}
                           value={String(Math.round(doc.maxFileSize / 1048576))}
                           onValueChange={(value) => updateDocumentConfig(index, 'maxFileSize', parseInt(value) * 1048576 || 5242880)}
                           variant="bordered"
@@ -524,14 +525,14 @@ export default function AdmissionFormSettings() {
                             isSelected={doc.isRequired}
                             onValueChange={(value) => updateDocumentConfig(index, 'isRequired', value)}
                           >
-                            <span className="text-sm">Required</span>
+                            <span className="text-sm">{t('pages.required1')}</span>
                           </Switch>
                         </div>
                       </div>
 
                       <Input
-                        label="Description"
-                        placeholder="Brief description of this document"
+                        label={t('pages.description1')}
+                        placeholder={t('pages.briefDescriptionOfThisDocument')}
                         value={doc.description}
                         onValueChange={(value) => updateDocumentConfig(index, 'description', value)}
                         variant="bordered"
@@ -543,7 +544,7 @@ export default function AdmissionFormSettings() {
                 {documentConfigs.length === 0 && (
                   <div className="text-center py-12 text-default-400">
                     <FileText size={48} className="mx-auto mb-3 opacity-50" />
-                    <p>No documents configured</p>
+                    <p>{t('pages.noDocumentsConfigured')}</p>
                     <p className="text-sm mt-1">Click "Add Document" to create a new document requirement</p>
                   </div>
                 )}

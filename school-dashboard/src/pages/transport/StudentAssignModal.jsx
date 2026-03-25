@@ -7,8 +7,11 @@ import { Search, UserPlus, Trash2 } from "lucide-react";
 import { transportApi } from "../../services/api";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
-export default function StudentAssignModal({ isOpen, onClose, route, onSaved }) {
+export default function StudentAssignModal({
+  isOpen, onClose, route, onSaved }) {
+  const { t } = useTranslation();
   const { students: allStudents } = useApp();
 
   const [routeDetail, setRouteDetail] = useState(null);
@@ -29,7 +32,7 @@ export default function StudentAssignModal({ isOpen, onClose, route, onSaved }) 
       const res = await transportApi.getRoute(route._id);
       setRouteDetail(res?.data || null);
     } catch {
-      toast.error("Failed to load route details");
+      toast.error(t('toast.error.failedToLoadRouteDetails'));
     } finally {
       setLoading(false);
     }
@@ -64,7 +67,7 @@ export default function StudentAssignModal({ isOpen, onClose, route, onSaved }) 
 
   const handleAssign = async () => {
     if (!selectedStudentId) {
-      toast.error("Select a student");
+      toast.error(t('toast.error.selectAStudent'));
       return;
     }
     setAssigning(true);
@@ -77,7 +80,7 @@ export default function StudentAssignModal({ isOpen, onClose, route, onSaved }) 
       };
       const res = await transportApi.assignStudent(route._id, payload);
       if (res?.warning) toast(res.warning, { icon: "⚠️" });
-      else toast.success("Student assigned");
+      else toast.success(t('toast.success.studentAssigned'));
       setSelectedStudentId("");
       setSelectedStopId("");
       fetchRouteDetail();
@@ -90,14 +93,14 @@ export default function StudentAssignModal({ isOpen, onClose, route, onSaved }) 
   };
 
   const handleRemove = async (studentId) => {
-    if (!window.confirm("Remove this student from the route?")) return;
+    if (!confirm(t('confirm.removeStudentFromRoute'))) return;
     try {
       await transportApi.removeStudent(route._id, studentId);
-      toast.success("Student removed");
+      toast.success(t('toast.success.studentRemoved'));
       fetchRouteDetail();
       onSaved?.();
     } catch {
-      toast.error("Failed to remove student");
+      toast.error(t('toast.error.failedToRemoveStudent'));
     }
   };
 
@@ -120,11 +123,11 @@ export default function StudentAssignModal({ isOpen, onClose, route, onSaved }) 
             <>
               {/* Add student form */}
               <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 space-y-3">
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Add Student</h4>
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.addStudent')}</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Select
-                    label="Student"
-                    placeholder="Search & select student"
+                    label={t('pages.student')}
+                    placeholder={t('pages.searchSelectStudent')}
                     selectedKeys={selectedStudentId ? [selectedStudentId] : []}
                     onSelectionChange={(keys) => setSelectedStudentId([...keys][0] || "")}
                   >
@@ -136,8 +139,8 @@ export default function StudentAssignModal({ isOpen, onClose, route, onSaved }) 
                   </Select>
                   {stops.length > 0 && (
                     <Select
-                      label="Stop (optional)"
-                      placeholder="Select stop"
+                      label={t('pages.stopOptional')}
+                      placeholder={t('pages.selectStop')}
                       selectedKeys={selectedStopId ? [selectedStopId] : []}
                       onSelectionChange={(keys) => setSelectedStopId([...keys][0] || "")}
                     >
@@ -177,7 +180,7 @@ export default function StudentAssignModal({ isOpen, onClose, route, onSaved }) 
                   </h4>
                   {assignedStudents.length > 5 && (
                     <Input
-                      placeholder="Filter..."
+                      placeholder={t('pages.filter')}
                       value={search}
                       onValueChange={setSearch}
                       startContent={<Search size={14} />}
@@ -188,7 +191,7 @@ export default function StudentAssignModal({ isOpen, onClose, route, onSaved }) 
                 </div>
 
                 {assignedStudents.length === 0 ? (
-                  <p className="text-sm text-gray-400 dark:text-zinc-500 text-center py-6">No students assigned to this route yet.</p>
+                  <p className="text-sm text-gray-400 dark:text-zinc-500 text-center py-6">{t('pages.noStudentsAssignedToThisRouteYet')}</p>
                 ) : (
                   <div className="space-y-2 max-h-[300px] overflow-y-auto">
                     {assignedStudents.map((assignment) => {
@@ -213,10 +216,10 @@ export default function StudentAssignModal({ isOpen, onClose, route, onSaved }) 
                                 </Chip>
                               )}
                               {assignment.pickupActive && (
-                                <Chip size="sm" variant="flat" color="success" className="h-5 text-[10px]">Pickup</Chip>
+                                <Chip size="sm" variant="flat" color="success" className="h-5 text-[10px]">{t('pages.pickup')}</Chip>
                               )}
                               {assignment.dropActive && (
-                                <Chip size="sm" variant="flat" color="secondary" className="h-5 text-[10px]">Drop</Chip>
+                                <Chip size="sm" variant="flat" color="secondary" className="h-5 text-[10px]">{t('pages.drop')}</Chip>
                               )}
                             </div>
                           </div>
@@ -239,7 +242,7 @@ export default function StudentAssignModal({ isOpen, onClose, route, onSaved }) 
           )}
         </ModalBody>
         <ModalFooter>
-          <Button variant="flat" onPress={onClose}>Close</Button>
+          <Button variant="flat" onPress={onClose}>{t('pages.close2')}</Button>
         </ModalFooter>
       </ModalContent>
     </Modal>

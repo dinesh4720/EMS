@@ -1,8 +1,15 @@
+import { safeGetItem, safeSetItem } from '../utils/safeStorage';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
 import en from './locales/en.json';
+
+// ──────────────────────────────────────────────────────────────
+// i18n is DISABLED for now. Set this to true to re-enable
+// multi-language support, language detection, and lazy loading.
+// ──────────────────────────────────────────────────────────────
+const I18N_ENABLED = false;
 
 const LOCALE_MAP = {
   en: 'en-IN',
@@ -33,6 +40,7 @@ const LOCALE_LOADERS = {
 };
 
 async function loadLocale(lang) {
+  if (!I18N_ENABLED) return; // i18n disabled
   if (lang === 'en' || i18n.hasResourceBundle(lang, 'translation')) return;
   const loader = LOCALE_LOADERS[lang];
   if (!loader) return;
@@ -40,31 +48,46 @@ async function loadLocale(lang) {
   i18n.addResourceBundle(lang, 'translation', mod.default, true, true);
 }
 
-i18n
-  .use(LanguageDetector)
-  .use(initReactI18next)
-  .init({
-    resources: {
-      en: { translation: en },
-    },
-    fallbackLng: 'en',
-    interpolation: { escapeValue: false },
-    detection: {
-      order: ['localStorage', 'navigator'],
-      lookupLocalStorage: STORAGE_KEY,
-      caches: ['localStorage'],
-      cacheUserLanguage: false, // we manage persistence ourselves
-    },
-  });
+if (I18N_ENABLED) {
+  i18n
+    .use(LanguageDetector)
+    .use(initReactI18next)
+    .init({
+      resources: {
+        en: { translation: en },
+      },
+      fallbackLng: 'en',
+      interpolation: { escapeValue: false },
+      detection: {
+        order: ['localStorage', 'navigator'],
+        lookupLocalStorage: STORAGE_KEY,
+        caches: ['localStorage'],
+        cacheUserLanguage: false,
+      },
+    });
 
-// Lazy-load the detected language bundle on startup
-loadLocale(i18n.language);
+  // Lazy-load the detected language bundle on startup
+  loadLocale(i18n.language);
+} else {
+  // Disabled mode: English only, no language detection
+  i18n
+    .use(initReactI18next)
+    .init({
+      resources: {
+        en: { translation: en },
+      },
+      lng: 'en',
+      fallbackLng: 'en',
+      interpolation: { escapeValue: false },
+    });
+}
 
 /**
  * Returns the BCP-47 locale tag for the current i18n language.
  * Used by Intl.DateTimeFormat / Intl.NumberFormat throughout the app.
  */
 export function getDateLocale() {
+  if (!I18N_ENABLED) return 'en-IN';
   const lang = i18n.language || 'en';
   return LOCALE_MAP[lang] || 'en-IN';
 }
@@ -75,8 +98,9 @@ export function getDateLocale() {
  * user hasn't explicitly chosen a language via setLanguage().
  */
 export async function syncSchoolLanguage(defaultLanguage) {
+  if (!I18N_ENABLED) return; // i18n disabled
   if (!defaultLanguage || !LOCALE_MAP[defaultLanguage]) return;
-  const userChose = localStorage.getItem(STORAGE_KEY);
+  const userChose = safeGetItem(STORAGE_KEY);
   if (userChose) return;
   if (i18n.language !== defaultLanguage) {
     await loadLocale(defaultLanguage);
@@ -84,10 +108,34 @@ export async function syncSchoolLanguage(defaultLanguage) {
   }
 }
 
+/**
+ * Apply dir="rtl"|"ltr" and lang attribute to the document root.
+ * Called on startup and whenever the language changes.
+ */
+function applyDocumentDirection(lang) {
+  if (!I18N_ENABLED) return; // i18n disabled — always ltr
+  if (typeof document === 'undefined') return;
+  const entry = SUPPORTED_LANGUAGES.find((l) => l.code === lang);
+  const dir = entry?.dir || 'ltr';
+  document.documentElement.setAttribute('dir', dir);
+  document.documentElement.setAttribute('lang', lang);
+}
+
+if (I18N_ENABLED) {
+  // Apply on initial load
+  applyDocumentDirection(i18n.language || 'en');
+
+  // Re-apply whenever i18next changes language
+  i18n.on('languageChanged', (lang) => {
+    applyDocumentDirection(lang);
+  });
+}
+
 /** Set language explicitly (user action) — persists to localStorage. */
 export async function setLanguage(lang) {
+  if (!I18N_ENABLED) return; // i18n disabled
   if (!LOCALE_MAP[lang]) return;
-  localStorage.setItem(STORAGE_KEY, lang);
+  safeSetItem(STORAGE_KEY, lang);
   await loadLocale(lang);
   i18n.changeLanguage(lang);
 }

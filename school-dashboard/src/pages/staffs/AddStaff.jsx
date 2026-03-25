@@ -11,6 +11,7 @@ import { usePermissions } from "../../context/PermissionContext";
 import { useApp } from "../../context/AppContext";
 import { classesApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 // Minimal design constants matching login page style
 const minimalInputClasses = "bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 hover:border-teal-500 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all duration-200";
@@ -58,6 +59,7 @@ const emptyForm = {
 };
 
 const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
+  const { t } = useTranslation();
   const { hasPermission } = usePermissions();
   const { staff: allStaff } = useApp();
   const canEdit = editingStaff ? hasPermission('staff', 'edit') : hasPermission('staff', 'create');
@@ -200,6 +202,17 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       case "mobile":
         if (!value.trim()) newError = "Required";
         else if (!/^\d{10}$/.test(value)) newError = "Invalid";
+        else {
+          // BUG-19: check for duplicate phone among existing staff
+          const editingId = editingStaff?._id || editingStaff?.id;
+          const phoneDupe = Array.isArray(allStaff) && allStaff.find(s =>
+            s.mobile && s.mobile === value.trim() &&
+            (s._id || s.id) !== editingId
+          );
+          if (phoneDupe) {
+            newError = `Phone already used by ${phoneDupe.name}${phoneDupe.code ? ` (${phoneDupe.code})` : ''}`;
+          }
+        }
         break;
       case "email":
         if (value.trim()) {
@@ -674,7 +687,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
 
       {/* Type Selection */}
       <div className="space-y-3">
-        <label className="text-sm font-semibold text-gray-900">Employment Type</label>
+        <label className="text-sm font-semibold text-gray-900">{t('pages.employmentType1')}</label>
         <div className="grid grid-cols-3 gap-3">
           {employmentTypes.map((type) => {
             const isSelected = formData.employmentType === type.value;
@@ -703,11 +716,11 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       {/* Name Field */}
       <div className="space-y-4">
         <div className="space-y-1.5">
-          <label className="text-sm font-semibold text-default-900">Personal Information</label>
+          <label className="text-sm font-semibold text-default-900">{t('pages.personalInformation1')}</label>
           <Input
-            label="Full Name"
+            label={t('pages.fullName1')}
             labelPlacement="outside"
-            placeholder="Enter full name"
+            placeholder={t('pages.enterFullName')}
             value={formData.fullName}
             onValueChange={v => updateField("fullName", v)}
             isInvalid={!!errors.fullName}
@@ -722,8 +735,8 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
 
         <div className="grid grid-cols-2 gap-4">
           <DatePicker
-            aria-label="Date of Birth"
-            label="Date of Birth"
+            aria-label={t('aria.inputs.dateOfBirth')}
+            label={t('pages.dateOfBirth2')}
             labelPlacement="outside"
             value={(() => {
               if (!formData.dob) return null;
@@ -773,10 +786,10 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
           />
 
           <Select
-            aria-label="Gender"
-            label="Gender"
+            aria-label={t('aria.inputs.gender')}
+            label={t('pages.gender1')}
             labelPlacement="outside"
-            placeholder="Select..."
+            placeholder={t('pages.select1')}
             selectedKeys={formData.gender ? [formData.gender] : []}
             onSelectionChange={keys => updateField("gender", Array.from(keys)[0])}
             variant="bordered"
@@ -787,9 +800,9 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             {genders.map(g => <SelectItem key={g}>{g}</SelectItem>)}
           </Select>
           <Input
-            label="Father's Name"
+            label={t('pages.fatherSName1')}
             labelPlacement="outside"
-            placeholder="Full Name"
+            placeholder={t('pages.fullName1')}
             value={formData.fatherName}
             onValueChange={v => updateField("fatherName", v)}
             variant="bordered"
@@ -800,10 +813,10 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             classNames={{ label: "text-xs font-medium text-default-600 mb-1", inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
           />
           <Select
-            aria-label="Marital Status"
-            label="Marital Status"
+            aria-label={t('aria.inputs.maritalStatus')}
+            label={t('pages.maritalStatus1')}
             labelPlacement="outside"
-            placeholder="Select..."
+            placeholder={t('pages.select1')}
             selectedKeys={formData.maritalStatus ? [formData.maritalStatus] : []}
             onSelectionChange={keys => updateField("maritalStatus", Array.from(keys)[0])}
             variant="bordered"
@@ -813,10 +826,10 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             {maritalStatuses.map(ms => <SelectItem key={ms}>{ms}</SelectItem>)}
           </Select>
           <Select
-            aria-label="Blood Group"
-            label="Blood Group"
+            aria-label={t('aria.inputs.bloodGroup')}
+            label={t('pages.bloodGroup1')}
             labelPlacement="outside"
-            placeholder="Select..."
+            placeholder={t('pages.select1')}
             selectedKeys={formData.bloodGroup ? [formData.bloodGroup] : []}
             onSelectionChange={keys => updateField("bloodGroup", Array.from(keys)[0])}
             variant="bordered"
@@ -830,10 +843,10 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
 
       {/* Contact Info */}
       <div className="space-y-4 pt-4 border-t border-dashed border-default-200">
-        <label className="text-sm font-semibold text-default-900 block">Contact Details</label>
+        <label className="text-sm font-semibold text-default-900 block">{t('pages.contactDetails1')}</label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            label="Mobile Number"
+            label={t('pages.mobileNumber')}
             labelPlacement="outside"
             startContent={<span className="text-default-400 text-xs">+91</span>}
             placeholder="10-digit number"
@@ -851,10 +864,10 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
 
           <div className="space-y-2">
             <Input
-              label="WhatsApp Number"
+              label={t('pages.whatsAppNumber')}
               labelPlacement="outside"
               startContent={<span className="text-default-400 text-xs">+91</span>}
-              placeholder="WhatsApp Number"
+              placeholder={t('pages.whatsAppNumber')}
               value={formData.whatsappNumber}
               onValueChange={v => updateField("whatsappNumber", v)}
               variant="bordered"
@@ -877,9 +890,9 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
 
 
           <Input
-            label="Email Address"
+            label={t('pages.emailAddress')}
             labelPlacement="outside"
-            placeholder="Email Address"
+            placeholder={t('pages.emailAddress')}
             value={formData.email}
             onValueChange={v => updateField("email", v)}
             variant="bordered"
@@ -895,9 +908,9 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
 
       {/* Address */}
       <div className="space-y-1">
-        <label className="text-sm font-semibold text-default-900">Address</label>
+        <label className="text-sm font-semibold text-default-900">{t('pages.address2')}</label>
         <Textarea
-          placeholder="Full Residential Address"
+          placeholder={t('pages.fullResidentialAddress1')}
           value={formData.address}
           onValueChange={v => updateField("address", v)}
           maxLength={200}
@@ -912,7 +925,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       {/* Emergency Contacts */}
       <div className="space-y-3 pt-4 border-t border-dashed border-default-200">
         <div className="flex justify-between items-center">
-          <label className="text-sm font-semibold text-default-900">Emergency Contacts</label>
+          <label className="text-sm font-semibold text-default-900">{t('pages.emergencyContacts1')}</label>
           <Button size="sm" variant="light" color="primary" onPress={addEmergencyContact} startContent={<Plus size={14} />}>
             Add Contact
           </Button>
@@ -930,7 +943,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             )}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <Input
-                placeholder="Contact Name"
+                placeholder={t('pages.contactName')}
                 value={contact.name}
                 onValueChange={v => handleEmergencyContactChange(index, "name", v)}
                 size="sm"
@@ -939,7 +952,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
                 classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-9" }}
               />
               <Input
-                placeholder="Relationship"
+                placeholder={t('pages.relationship')}
                 value={contact.relationship}
                 onValueChange={v => handleEmergencyContactChange(index, "relationship", v)}
                 size="sm"
@@ -948,7 +961,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
                 classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-9" }}
               />
               <Input
-                placeholder="Phone Number"
+                placeholder={t('pages.phoneNumber')}
                 value={contact.phone}
                 onValueChange={v => handleEmergencyContactChange(index, "phone", v)}
                 size="sm"
@@ -979,15 +992,15 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
   const renderStep2 = () => (
     <div className="space-y-6 animate-fade-in text-left">
       <div className="space-y-4">
-        <label className="text-sm font-semibold text-default-900 block">Job Details</label>
+        <label className="text-sm font-semibold text-default-900 block">{t('pages.jobDetails')}</label>
 
         {/* Role Selection - Multiple */}
         <div className="space-y-2">
           <Select
-            aria-label="Staff Roles"
-            label="Staff Roles"
+            aria-label={t('aria.inputs.staffRoles')}
+            label={t('pages.staffRoles1')}
             labelPlacement="outside"
-            placeholder="Select one or more roles"
+            placeholder={t('pages.selectOneOrMoreRoles')}
             selectedKeys={new Set(formData.staffType ? (Array.isArray(formData.staffType) ? formData.staffType : [formData.staffType]) : [])}
             onSelectionChange={(keys) => {
               const selectedRoles = Array.from(keys);
@@ -1025,14 +1038,14 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
               ))}
             </div>
           )}
-          <p className="text-xs text-default-500">Select all applicable roles for this staff member</p>
+          <p className="text-xs text-default-500">{t('pages.selectAllApplicableRolesForThisStaffMember')}</p>
         </div>
 
         <div className="space-y-4">
           <Input
             label="Staff ID / Number"
             labelPlacement="outside"
-            placeholder="Auto-generated"
+            placeholder={t('pages.autoGenerated')}
             value={formData.staffNumber}
             isReadOnly
             variant="bordered"
@@ -1043,9 +1056,9 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
           />
 
           <Select
-            label="Department"
+            label={t('pages.department1')}
             labelPlacement="outside"
-            placeholder="Select Department"
+            placeholder={t('pages.selectDepartment')}
             selectedKeys={formData.department ? [formData.department] : []}
             onSelectionChange={(keys) => updateField("department", Array.from(keys)[0])}
             variant="bordered"
@@ -1067,8 +1080,8 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             <div className="flex flex-col gap-2 p-4 border border-default-200 rounded-xl bg-default-50/50">
               <div className="flex justify-between items-center">
                 <div className="flex flex-col">
-                  <span className="text-sm font-semibold text-default-900">As Class Teacher</span>
-                  <span className="text-xs text-default-500">Is this staff member a class teacher?</span>
+                  <span className="text-sm font-semibold text-default-900">{t('pages.asClassTeacher')}</span>
+                  <span className="text-xs text-default-500">{t('pages.isThisStaffMemberAClassTeacher')}</span>
                 </div>
                 <Switch
                   size="sm"
@@ -1080,7 +1093,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
               {formData.isClassTeacher && (
                 <Select
                   className="mt-2"
-                  label="Select Class"
+                  label={t('pages.selectClass1')}
                   placeholder={loadingClasses ? "Loading classes..." : "Select class"}
                   selectedKeys={formData.classTeacherOf ? [formData.classTeacherOf] : []}
                   onSelectionChange={(keys) => updateField("classTeacherOf", Array.from(keys)[0])}
@@ -1099,7 +1112,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
 
             {/* Then Show Assign Classes for subject teaching */}
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-default-900">Assign Classes for Subject Teaching</label>
+              <label className="text-sm font-semibold text-default-900">{t('pages.assignClassesForSubjectTeaching')}</label>
               <Select
                 selectionMode="multiple"
                 placeholder={loadingClasses ? "Loading classes..." : "Select classes"}
@@ -1125,7 +1138,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
     <div className="space-y-6 animate-fade-in text-left">
       <div className="flex justify-between items-end mb-2 border-b border-default-100 pb-2">
         <div>
-          <h3 className="text-sm font-semibold text-default-900">Education Details</h3>
+          <h3 className="text-sm font-semibold text-default-900">{t('pages.educationDetails')}</h3>
           <p className="text-xs text-danger-500 mt-0.5">* At least one degree is required</p>
         </div>
         {formData.professionalQualifications.length > 0 && (
@@ -1155,7 +1168,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
                 <Autocomplete
                   label="Degree / Certificate"
                   labelPlacement="outside"
-                  placeholder="Select or type degree"
+                  placeholder={t('pages.selectOrTypeDegree')}
                   defaultItems={degreeOptions}
                   inputValue={qual.name}
                   onInputChange={(v) => updateQualification(i, "name", v)}
@@ -1176,9 +1189,9 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
               </div>
               <div className="col-span-4">
                 <Input
-                  label="Year"
+                  label={t('pages.year1')}
                   labelPlacement="outside"
-                  placeholder="Year"
+                  placeholder={t('pages.year1')}
                   value={qual.year}
                   onValueChange={v => {
                     if (v.length <= 4 && /^\d*$/.test(v)) updateQualification(i, "year", v);
@@ -1268,15 +1281,15 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       </div>
 
       <div className="space-y-4 pt-6 border-t border-dashed border-default-200">
-        <label className="text-sm font-semibold text-default-900 block">Experience</label>
+        <label className="text-sm font-semibold text-default-900 block">{t('pages.experience')}</label>
 
         <div className="space-y-3">
           {/* Row 1: Org Name (Flex) and Years (Fixed small width) */}
           <div className="flex gap-4">
             <Input
-              label="Previous Organization"
+              label={t('pages.previousOrganization')}
               labelPlacement="outside"
-              placeholder="Organization Name"
+              placeholder={t('pages.organizationName')}
               value={formData.previousOrganization}
               onValueChange={v => updateField("previousOrganization", v)}
               variant="bordered"
@@ -1285,7 +1298,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
               classNames={{ label: "text-xs font-medium text-default-600 mb-1", inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
             />
             <Input
-              label="Exp. (Years)"
+              label={t('pages.expYears')}
               labelPlacement="outside"
               placeholder="0"
               value={formData.totalExperience}
@@ -1326,7 +1339,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       <div className="space-y-6 animate-fade-in text-left">
         {/* Identity Docs & Proofs */}
         <div className="space-y-3">
-          <label className="text-sm font-semibold text-default-900">Documents & Proofs</label>
+          <label className="text-sm font-semibold text-default-900">{t('pages.documentsProofs')}</label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {idProofTypes.map((type) => {
               const doc = findDocByType(type);
@@ -1362,7 +1375,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
           </div>
 
           <div className="space-y-2 pt-2">
-            <label className="text-sm font-semibold text-default-900">Other Certificates</label>
+            <label className="text-sm font-semibold text-default-900">{t('pages.otherCertificates1')}</label>
             <div
               className="border border-dashed border-default-300 rounded-xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-default-50 transition-colors text-center"
               onClick={() => qualDocsInputRef.current?.click()}
@@ -1370,7 +1383,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
               <div className="w-8 h-8 rounded-full bg-default-100 flex items-center justify-center text-default-500">
                 <Upload size={16} />
               </div>
-              <span className="text-xs text-default-600">Click to upload scanned documents</span>
+              <span className="text-xs text-default-600">{t('pages.clickToUploadScannedDocuments')}</span>
               <input ref={qualDocsInputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden"
                 onChange={(e) => handleFileUpload("qualificationDocs", e.target.files)} />
             </div>
@@ -1416,21 +1429,21 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       <div className="space-y-6 animate-fade-in text-left">
         {/* Bank Details */}
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-default-900">Bank Details</label>
+          <label className="text-sm font-semibold text-default-900">{t('pages.bankDetails')}</label>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Account Number" labelPlacement="outside" placeholder="Account No" value={formData.accountNumber} onValueChange={v => updateField("accountNumber", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
-            <Input label="IFSC Code" labelPlacement="outside" placeholder="IFSC (e.g., SBIN0001234)" value={formData.ifscCode} onValueChange={v => updateField("ifscCode", v)} variant="bordered" radius="sm" errorMessage={errors.ifscCode} classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
-            <Input label="Bank Name" labelPlacement="outside" placeholder="Bank Name" value={formData.bankName} onValueChange={v => updateField("bankName", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
-            <Input label="Branch Name" labelPlacement="outside" placeholder="Branch" value={formData.branchName} onValueChange={v => updateField("branchName", v)} variant="bordered" radius="sm" classNames={{ label: "text-xs font-medium text-default-600 mb-1", inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
+            <Input label={t('pages.accountNumber')} labelPlacement="outside" placeholder={t('pages.accountNo')} value={formData.accountNumber} onValueChange={v => updateField("accountNumber", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
+            <Input label={t('pages.iFSCCode')} labelPlacement="outside" placeholder={t('pages.iFSCEGSbin0001234')} value={formData.ifscCode} onValueChange={v => updateField("ifscCode", v)} variant="bordered" radius="sm" errorMessage={errors.ifscCode} classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
+            <Input label={t('pages.bankName')} labelPlacement="outside" placeholder={t('pages.bankName')} value={formData.bankName} onValueChange={v => updateField("bankName", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
+            <Input label={t('pages.branchName')} labelPlacement="outside" placeholder={t('pages.branch')} value={formData.branchName} onValueChange={v => updateField("branchName", v)} variant="bordered" radius="sm" classNames={{ label: "text-xs font-medium text-default-600 mb-1", inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
           </div>
         </div>
 
         <div className="space-y-2 pt-4 border-t border-dashed border-default-200">
           <div className="flex justify-between items-center">
-            <label className="text-sm font-semibold text-default-900">Salary Structure</label>
+            <label className="text-sm font-semibold text-default-900">{t('pages.salaryStructure1')}</label>
             <Select
               size="sm"
-              placeholder="Load Template"
+              placeholder={t('pages.loadTemplate')}
               className="w-32"
               selectedKeys={formData.salaryTemplate ? [formData.salaryTemplate] : []}
               onSelectionChange={keys => handleTemplateChange(Array.from(keys)[0])}
@@ -1450,7 +1463,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
                   value={item.component}
                   onValueChange={v => updateBreakdownItem(i, "component", v)}
                   variant="flat"
-                  placeholder="Enter component name"
+                  placeholder={t('pages.enterComponentName')}
                   classNames={{ inputWrapper: "bg-transparent shadow-none" }}
                 />
                 <Input
@@ -1470,7 +1483,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
           </div>
 
           <div className="flex justify-between items-center px-2 pt-2">
-            <span className="text-sm font-medium text-default-600">Total Salary</span>
+            <span className="text-sm font-medium text-default-600">{t('pages.totalSalary')}</span>
             <span className="text-lg font-bold text-default-900">₹{totalSalary.toLocaleString()}</span>
           </div>
         </div>
@@ -1584,7 +1597,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         <ModalContent>
           <ModalHeader className="flex gap-2 items-center">
             <AlertTriangle size={20} className="text-warning" />
-            <span>Unsaved Changes</span>
+            <span>{t('pages.unsavedChanges')}</span>
           </ModalHeader>
           <ModalBody>
             <p className="text-sm text-default-600">

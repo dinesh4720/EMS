@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Card, CardBody, CardHeader, Chip, Spinner, Button
+  Card, CardBody, CardHeader, Chip, Button
 } from '@heroui/react';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import {
   FileText, Calendar, Trophy, TrendingUp, Users, BookOpen,
   Download, ArrowRight, Award, BarChart3
@@ -17,7 +18,8 @@ import StatCard from '../../components/StatCard';
 import FiltersDropdown from '../../components/FiltersDropdown';
 import { MinimalButton } from '../../components/ui';
 import { getAcademicYearOptions } from '../../utils/constants';
-import { useChartTheme } from '../../utils/chartTheme';
+import { useChartTheme, CHART_COLORS } from '../../utils/chartTheme';
+import { useTranslation } from 'react-i18next';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -30,6 +32,7 @@ const dashboardCache = {
 };
 
 const PerformanceDashboard = ({ onCreateExam }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { currentAcademicYear } = useApp();
   const chart = useChartTheme();
@@ -146,7 +149,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
     setFilters({ class: 'all', year: null });
   };
 
-  // Build mock class comparison data if no real data
+  // Build class comparison data — only from real data
   const buildClassComparisonData = () => {
     if (classPerformance.length > 0) {
       return classPerformance.map(c => ({
@@ -154,41 +157,42 @@ const PerformanceDashboard = ({ onCreateExam }) => {
         average: c.averagePercentage
       }));
     }
-
-    // Mock data based on classes
-    const classIds = [...new Set(exams.map(e => e.classId))];
-    return classIds.slice(0, 6).map((classId, idx) => ({
-      class: classId?.replace('-', ' ') || `Class ${idx + 1}`,
-      average: 65 + Math.random() * 25
-    }));
+    return [];
   };
 
-  // Build subject averages
+  // Build subject averages — only from real data
   const buildSubjectAverages = () => {
-    const subjects = {};
-    exams.forEach(exam => {
-      if (!subjects[exam.subjectName]) {
-        subjects[exam.subjectName] = { total: 0, count: 0 };
-      }
-      subjects[exam.subjectName].count++;
-    });
-
-    return Object.entries(subjects).map(([name, data]) => ({
-      subject: name,
-      average: 60 + Math.random() * 30 // Mock data
-    })).slice(0, 6);
+    if (classPerformance.length > 0 && classPerformance[0]?.subjectWisePerformance?.length > 0) {
+      const subjectMap = {};
+      classPerformance.forEach(cp => {
+        (cp.subjectWisePerformance || []).forEach(s => {
+          if (!subjectMap[s.subjectName]) {
+            subjectMap[s.subjectName] = { total: 0, count: 0 };
+          }
+          subjectMap[s.subjectName].total += s.average || 0;
+          subjectMap[s.subjectName].count += 1;
+        });
+      });
+      return Object.entries(subjectMap).map(([name, d]) => ({
+        subject: name,
+        average: d.count > 0 ? d.total / d.count : 0
+      })).slice(0, 6);
+    }
+    return [];
   };
 
-  // Build grade distribution
+  // Grade distribution — only from real data
   const buildGradeDistribution = () => {
-    return [
-      { name: 'A+', value: 15, color: '#10b981' },
-      { name: 'A', value: 25, color: '#3b82f6' },
-      { name: 'B+', value: 20, color: '#8b5cf6' },
-      { name: 'B', value: 18, color: '#f59e0b' },
-      { name: 'C', value: 12, color: '#ef4444' },
-      { name: 'D/F', value: 10, color: '#6b7280' },
-    ];
+    if (classPerformance.length === 0) return [];
+    const gradeColors = { 'A+': '#10b981', 'A': '#3b82f6', 'B+': '#8b5cf6', 'B': '#f59e0b', 'C': '#ef4444', 'D': '#6b7280', 'F': '#374151' };
+    const gradeCounts = {};
+    classPerformance.forEach(p => {
+      const g = p.overallGrade || 'N/A';
+      gradeCounts[g] = (gradeCounts[g] || 0) + 1;
+    });
+    return Object.entries(gradeCounts).map(([name, value]) => ({
+      name, value, color: gradeColors[name] || '#6b7280'
+    }));
   };
 
   const stats = {
@@ -198,8 +202,10 @@ const PerformanceDashboard = ({ onCreateExam }) => {
     published: exams.filter(e => e.isPublished).length,
     avgScore: classPerformance.length > 0
       ? (classPerformance.reduce((sum, c) => sum + (c.averagePercentage || 0), 0) / classPerformance.length).toFixed(1)
-      : '78.5',
-    passingRate: '92%'
+      : '—',
+    passingRate: classPerformance.length > 0
+      ? `${Math.round((classPerformance.filter(p => (p.overallPercentage || 0) >= 33).length / classPerformance.length) * 100)}%`
+      : '—'
   };
 
   const classComparisonData = buildClassComparisonData();
@@ -208,9 +214,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
+      <TablePageSkeleton />
     );
   }
 
@@ -232,33 +236,33 @@ const PerformanceDashboard = ({ onCreateExam }) => {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatCard
-          label="Total Exams"
+          label={t('pages.totalExams')}
           value={stats.totalExams.toString()}
           icon={FileText}
         />
         <StatCard
-          label="Scheduled"
+          label={t('pages.scheduled')}
           value={stats.scheduled.toString()}
           icon={Calendar}
         />
         <StatCard
-          label="Completed"
+          label={t('pages.completed')}
           value={stats.completed.toString()}
           icon={Trophy}
         />
         <StatCard
-          label="Published"
+          label={t('pages.published1')}
           value={stats.published.toString()}
           icon={Award}
         />
         <StatCard
-          label="Avg Score"
+          label={t('pages.avgScore1')}
           value={`${stats.avgScore}%`}
           icon={TrendingUp}
           trend={{ value: '+2.5%', positive: true }}
         />
         <StatCard
-          label="Pass Rate"
+          label={t('pages.passRate')}
           value={stats.passingRate}
           icon={Users}
           trend={{ value: '+1.2%', positive: true }}
@@ -274,7 +278,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
               <div className="p-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
                 <BarChart3 size={20} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Class-wise Performance</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.classWisePerformance')}</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
@@ -285,7 +289,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                   <XAxis dataKey="class" tick={{ fill: chart.tick, fontSize: 11 }} />
                   <YAxis domain={[0, 100]} tick={{ fill: chart.tick, fontSize: 11 }} />
                   <Tooltip contentStyle={chart.tooltipStyle} itemStyle={chart.tooltipItemStyle} />
-                  <Bar dataKey="average" fill="#374151" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="average" fill={CHART_COLORS.primary} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -303,7 +307,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
               <div className="p-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
                 <BookOpen size={20} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Subject Averages</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.subjectAverages')}</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
@@ -314,7 +318,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                   <XAxis type="number" domain={[0, 100]} tick={{ fill: chart.tick, fontSize: 11 }} />
                   <YAxis dataKey="subject" type="category" tick={{ fill: chart.tick, fontSize: 11 }} width={80} />
                   <Tooltip contentStyle={chart.tooltipStyle} itemStyle={chart.tooltipItemStyle} />
-                  <Bar dataKey="average" fill="#6b7280" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="average" fill={CHART_COLORS.neutral} radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -335,7 +339,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
               <div className="p-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
                 <Trophy size={20} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Top Performers</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.topPerformers')}</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
@@ -361,25 +365,9 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                 ))}
               </div>
             ) : (
-              <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map(idx => (
-                  <div key={`placeholder-${idx}`} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-zinc-900">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-                        idx === 1 ? 'bg-yellow-500' : idx === 2 ? 'bg-gray-400' : idx === 3 ? 'bg-amber-600' : 'bg-gray-300'
-                      }`}>
-                        {idx}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-zinc-100">Student {idx}</p>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">Class {(idx % 5) + 5}-A</p>
-                      </div>
-                    </div>
-                    <Chip size="sm" color="success" variant="flat">
-                      {(95 - idx * 2)}%
-                    </Chip>
-                  </div>
-                ))}
+              <div className="flex flex-col items-center justify-center py-8 text-gray-400 dark:text-zinc-500">
+                <Trophy size={36} className="mb-2 opacity-40" />
+                <p className="text-sm">{t('pages.noPerformanceDataYet')}</p>
               </div>
             )}
           </CardBody>
@@ -392,7 +380,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
               <div className="p-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
                 <Award size={20} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Grade Distribution</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.gradeDistribution')}</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
@@ -432,7 +420,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
               <div className="p-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
                 <FileText size={20} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Quick Actions</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.quickActions1')}</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
@@ -443,8 +431,8 @@ const PerformanceDashboard = ({ onCreateExam }) => {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-gray-900 dark:text-zinc-100">Create New Exam</div>
-                    <div className="text-sm text-gray-500 dark:text-zinc-400">Schedule a new exam for any class</div>
+                    <div className="font-medium text-gray-900 dark:text-zinc-100">{t('pages.createNewExam')}</div>
+                    <div className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.scheduleANewExamForAnyClass')}</div>
                   </div>
                   <ArrowRight size={18} className="text-gray-400 dark:text-zinc-500" />
                 </div>
@@ -455,8 +443,8 @@ const PerformanceDashboard = ({ onCreateExam }) => {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-gray-900 dark:text-zinc-100">Enter Results</div>
-                    <div className="text-sm text-gray-500 dark:text-zinc-400">Enter marks for completed exams</div>
+                    <div className="font-medium text-gray-900 dark:text-zinc-100">{t('pages.enterResults')}</div>
+                    <div className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.enterMarksForCompletedExams')}</div>
                   </div>
                   <ArrowRight size={18} className="text-gray-400 dark:text-zinc-500" />
                 </div>
@@ -467,8 +455,8 @@ const PerformanceDashboard = ({ onCreateExam }) => {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-gray-900 dark:text-zinc-100">View Results</div>
-                    <div className="text-sm text-gray-500 dark:text-zinc-400">Review and publish results</div>
+                    <div className="font-medium text-gray-900 dark:text-zinc-100">{t('pages.viewResults')}</div>
+                    <div className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.reviewAndPublishResults')}</div>
                   </div>
                   <ArrowRight size={18} className="text-gray-400 dark:text-zinc-500" />
                 </div>
@@ -485,7 +473,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
             <div className="p-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
               <Calendar size={20} />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Recent Exams</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.recentExams')}</h3>
           </div>
           <Button
             size="sm"
@@ -500,7 +488,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
           {exams.length === 0 ? (
             <div className="text-center py-8 text-gray-500 dark:text-zinc-400">
               <FileText size={40} className="mx-auto mb-3 opacity-50" />
-              <p>No exams created yet</p>
+              <p>{t('pages.noExamsCreatedYet')}</p>
               <MinimalButton className="mt-4" onClick={() => onCreateExam?.()}>
                 Create First Exam
               </MinimalButton>

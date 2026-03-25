@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -16,6 +16,7 @@ import LoginScreen from './src/screens/LoginScreen';
 import TabNavigator from './src/navigation/TabNavigator';
 import EditProfileScreen from './src/screens/EditProfileScreen';
 import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
+import { initI18n } from './src/i18n';
 
 const Stack = createNativeStackNavigator();
 
@@ -81,6 +82,20 @@ const RootNavigator = () => {
 };
 
 export default function App() {
+  const [i18nReady, setI18nReady] = useState(false);
+
+  useEffect(() => {
+    initI18n().then(() => setI18nReady(true));
+  }, []);
+
+  if (!i18nReady) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={styles.container}>

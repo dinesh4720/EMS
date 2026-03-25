@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Card, CardBody, Button, Progress, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Input, Select, SelectItem, Checkbox, Spinner, Chip, User
+  Input, Select, SelectItem, Checkbox, Chip, User
 } from "@heroui/react";
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { useNavigate } from "react-router-dom";
 import { useValidatedParams } from "../../hooks/useValidatedParams";
 import {
@@ -11,8 +12,10 @@ import {
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 export default function Subjects() {
+  const { t } = useTranslation();
   const { params: { id }, isValid } = useValidatedParams({ id: 'objectId' }, { redirectTo: '/classes' });
   const navigate = useNavigate();
   const { classesEnhancedApi, staff, classes } = useApp();
@@ -46,13 +49,13 @@ export default function Subjects() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold text-default-800">Subjects & Teachers</h2>
-          <p className="text-default-500 mt-1">Manage subjects, chapter progress, and teacher assignments</p>
+          <h2 className="text-2xl font-bold text-default-800">{t('pages.subjectsTeachers')}</h2>
+          <p className="text-default-500 mt-1">{t('pages.manageSubjectsChapterProgressAndTeacherAssignments')}</p>
         </div>
         <Card className="border-default-200">
           <CardBody className="py-12 text-center">
             <BookOpen size={48} className="mx-auto text-default-300 mb-4" />
-            <p className="text-default-500">Please select a class to view its subjects</p>
+            <p className="text-default-500">{t('pages.pleaseSelectAClassToViewItsSubjects')}</p>
             <Button
               color="primary"
               variant="flat"
@@ -133,7 +136,7 @@ export default function Subjects() {
 
       setEditChapterModal(false);
       loadSubjects();
-      toast.success('Chapter progress updated successfully');
+      toast.success(t('toast.success.chapterProgressUpdatedSuccessfully'));
     } catch (error) {
       console.error('Error updating chapter:', error);
       toast.error(error.response?.data?.message || error.message || 'Failed to update chapter progress');
@@ -159,9 +162,7 @@ export default function Subjects() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-20">
-        <Spinner size="lg" color="primary" />
-      </div>
+      <TablePageSkeleton />
     );
   }
 
@@ -171,7 +172,7 @@ export default function Subjects() {
       <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-background border-b border-default-200 py-4 -mx-6 -mt-6 px-6 mb-4">
         {/* Left Side */}
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-default-800">Subjects & Teachers</h2>
+          <h2 className="text-lg font-semibold text-default-800">{t('pages.subjectsTeachers')}</h2>
           <Chip size="sm" variant="flat">{subjects.length} Subjects</Chip>
         </div>
 
@@ -192,7 +193,7 @@ export default function Subjects() {
       {subjects.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center bg-default-50/50 rounded-lg border border-dashed border-default-200">
           <BookOpen size={48} className="text-default-300 mb-4" />
-          <p className="text-default-500 font-medium">No subjects assigned yet</p>
+          <p className="text-default-500 font-medium">{t('pages.noSubjectsAssignedYet')}</p>
           <Button
             color="primary"
             variant="flat"
@@ -205,7 +206,7 @@ export default function Subjects() {
         </div>
       ) : (
         <Table
-          aria-label="Subjects table"
+          aria-label={t('aria.tables.subjects')}
           removeWrapper
           radius="none"
           classNames={{
@@ -218,11 +219,11 @@ export default function Subjects() {
           }}
         >
           <TableHeader>
-            <TableColumn>SUBJECT</TableColumn>
-            <TableColumn>TEACHER</TableColumn>
-            <TableColumn>PROGRESS</TableColumn>
-            <TableColumn>CHAPTERS</TableColumn>
-            <TableColumn align="center">ACTIONS</TableColumn>
+            <TableColumn scope="col">{t('pages.sUBJECT')}</TableColumn>
+            <TableColumn scope="col">{t('pages.tEACHER')}</TableColumn>
+            <TableColumn scope="col">{t('pages.pROGRESS')}</TableColumn>
+            <TableColumn scope="col">{t('pages.cHAPTERS')}</TableColumn>
+            <TableColumn align="center" scope="col">{t('pages.aCTIONS')}</TableColumn>
           </TableHeader>
           <TableBody items={subjects}>
             {(subject) => (
@@ -248,14 +249,14 @@ export default function Subjects() {
                         }}
                       />
                     ) : (
-                      <Chip size="sm" color="warning" variant="flat">Unassigned</Chip>
+                      <Chip size="sm" color="warning" variant="flat">{t('pages.unassigned1')}</Chip>
                     )}
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="py-4 w-full max-w-[140px]">
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-default-500">Completed</span>
+                      <span className="text-default-500">{t('pages.completed')}</span>
                       <span className="font-medium">{subject.overallProgress || 0}%</span>
                     </div>
                     <Progress
@@ -300,10 +301,10 @@ export default function Subjects() {
       {/* Add Subject Modal */}
       <Modal isOpen={addSubjectModal} onClose={() => setAddSubjectModal(false)} size="md">
         <ModalContent>
-          <ModalHeader>Add Subject</ModalHeader>
+          <ModalHeader>{t('pages.addSubject1')}</ModalHeader>
           <ModalBody className="space-y-4">
             <Input
-              label="Subject Name"
+              label={t('pages.subjectName1')}
               placeholder="e.g., Mathematics"
               value={newSubject.subjectName}
               onValueChange={(val) => setNewSubject(prev => ({ ...prev, subjectName: val }))}
@@ -312,8 +313,8 @@ export default function Subjects() {
             />
 
             <Select
-              label="Assign Teacher"
-              placeholder="Select a teacher"
+              label={t('pages.assignTeacher')}
+              placeholder={t('pages.selectATeacher')}
               selectedKeys={newSubject.teacherId ? [newSubject.teacherId] : []}
               onSelectionChange={(keys) => setNewSubject(prev => ({ ...prev, teacherId: Array.from(keys)[0] }))}
               variant="bordered"
@@ -326,7 +327,7 @@ export default function Subjects() {
             </Select>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Assign to Students</label>
+              <label className="text-sm font-medium">{t('pages.assignToStudents')}</label>
               <div className="flex gap-4">
                 <Checkbox size="sm"
                   isSelected={newSubject.assignTo === 'all'}
@@ -372,7 +373,7 @@ export default function Subjects() {
       {/* Edit Chapter Progress Modal */}
       <Modal isOpen={editChapterModal} onClose={() => setEditChapterModal(false)} size="lg">
         <ModalContent>
-          <ModalHeader>Update Chapter Progress</ModalHeader>
+          <ModalHeader>{t('pages.updateChapterProgress')}</ModalHeader>
           <ModalBody>
             {selectedSubject && (
               <div className="space-y-4">
@@ -405,7 +406,7 @@ export default function Subjects() {
                                 type="number"
                                 min="0"
                                 max="100"
-                                label="Progress"
+                                label={t('pages.progress')}
                                 value={chapter.progressPercentage}
                                 onValueChange={(val) => {
                                   const newChapters = [...selectedSubject.chapters];
@@ -427,7 +428,7 @@ export default function Subjects() {
                 ) : (
                   <div className="text-center py-8 bg-default-50 rounded-lg">
                     <AlertCircle size={24} className="mx-auto text-default-300 mb-2" />
-                    <p className="text-default-500">No chapters found</p>
+                    <p className="text-default-500">{t('pages.noChaptersFound')}</p>
                   </div>
                 )}
               </div>

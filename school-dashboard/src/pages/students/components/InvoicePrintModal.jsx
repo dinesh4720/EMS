@@ -1,6 +1,9 @@
 import { CURRENT_ACADEMIC_YEAR } from "../../../utils/constants";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from '@heroui/react';
 import { useRef, useCallback } from 'react';
+import { getDateLocale } from '../../../i18n/index';
+import { useTranslation } from 'react-i18next';
+
 
 // School configuration
 const getSchoolConfig = () => ({
@@ -21,7 +24,7 @@ const generateInvoiceNumber = (studentId, date) => {
 
 // Format currency
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-IN', {
+  return new Intl.NumberFormat(getDateLocale(), {
     style: 'currency',
     currency: 'INR',
     minimumFractionDigits: 0,
@@ -32,7 +35,7 @@ const formatCurrency = (amount) => {
 // Format date
 const formatDate = (date) => {
   if (!date) return '-';
-  return new Date(date).toLocaleDateString('en-IN', {
+  return new Date(date).toLocaleDateString(getDateLocale(), {
     day: '2-digit',
     month: 'short',
     year: 'numeric'
@@ -47,35 +50,30 @@ export default function InvoicePrintModal({
   feeHistory,
   selectedPayment = null
 }) {
+  const { t } = useTranslation();
   const printRef = useRef();
   const schoolConfig = getSchoolConfig();
 
   const invoiceNumber = generateInvoiceNumber(student?.id || student?._id, new Date());
 
-  // Handle print using native method
+  // Handle print using Blob URL to avoid document.write XSS
   const handlePrint = useCallback(() => {
     if (!printRef.current) {
       console.error('Print content not ready');
       return;
     }
 
-    // Create a new window for printing
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
-
-    if (!printWindow) {
-      alert('Please allow popups to print the invoice');
-      return;
-    }
-
-    // Get the content HTML
+    // Get the content HTML (already React-rendered, safe from script injection at render time)
     const content = printRef.current.innerHTML;
 
-    // Write to the new window
-    printWindow.document.write(`
+    // Sanitize the invoice number to be safe inside HTML title text
+    const safeTitle = `Invoice ${String(invoiceNumber).replace(/[<>"&]/g, '')}`;
+
+    const printHtml = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Invoice ${invoiceNumber}</title>
+        <title>${safeTitle}</title>
         <style>
           * {
             margin: 0;
@@ -203,23 +201,37 @@ export default function InvoicePrintModal({
         ${content}
       </body>
       </html>
-    `);
+    `;
 
-    printWindow.document.close();
+    // Use Blob URL instead of document.write to avoid script injection via template literal
+    const blob = new Blob([printHtml], { type: 'text/html' });
+    const blobUrl = URL.createObjectURL(blob);
+
+    const printWindow = window.open(blobUrl, '_blank', 'width=800,height=600');
+
+    if (!printWindow) {
+      URL.revokeObjectURL(blobUrl);
+      alert('Please allow popups to print the invoice');
+      return;
+    }
 
     // Wait for content to load then print
     printWindow.onload = function() {
       printWindow.focus();
       printWindow.print();
+      URL.revokeObjectURL(blobUrl);
       printWindow.close();
     };
 
     // Fallback for browsers that don't fire onload
     setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-      printWindow.close();
-    }, 500);
+      if (!printWindow.closed) {
+        printWindow.focus();
+        printWindow.print();
+        URL.revokeObjectURL(blobUrl);
+        printWindow.close();
+      }
+    }, 800);
   }, [invoiceNumber]);
 
   // Early return if no student data
@@ -227,10 +239,10 @@ export default function InvoicePrintModal({
     return (
       <Modal isOpen={isOpen} onClose={onClose} size="3xl">
         <ModalContent>
-          <ModalHeader>Fee Invoice</ModalHeader>
+          <ModalHeader>{t('pages.feeInvoice')}</ModalHeader>
           <ModalBody>
             <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-zinc-400">No student data available</p>
+              <p className="text-gray-500 dark:text-zinc-400">{t('pages.noStudentDataAvailable')}</p>
             </div>
           </ModalBody>
           <ModalFooter>
@@ -256,7 +268,7 @@ export default function InvoicePrintModal({
     <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside">
       <ModalContent>
         <ModalHeader className="flex items-center justify-between">
-          <span>Fee Invoice</span>
+          <span>{t('pages.feeInvoice')}</span>
           <span className="text-sm font-normal text-gray-500 dark:text-zinc-400">{invoiceNumber}</span>
         </ModalHeader>
         <ModalBody>
@@ -277,12 +289,12 @@ export default function InvoicePrintModal({
 
                 {/* Invoice Info */}
                 <div className="text-right">
-                  <h2 className="text-lg font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wide">Fee Invoice</h2>
+                  <h2 className="text-lg font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wide">{t('pages.feeInvoice')}</h2>
                   <div className="mt-2 space-y-1 text-sm">
-                    <p><span className="text-gray-500 dark:text-zinc-400">Invoice No:</span> <span className="font-mono font-medium">{invoiceNumber}</span></p>
-                    <p><span className="text-gray-500 dark:text-zinc-400">Date:</span> <span className="font-medium">{invoiceDate}</span></p>
+                    <p><span className="text-gray-500 dark:text-zinc-400">{t('pages.invoiceNo')}</span> <span className="font-mono font-medium">{invoiceNumber}</span></p>
+                    <p><span className="text-gray-500 dark:text-zinc-400">{t('pages.date3')}</span> <span className="font-medium">{invoiceDate}</span></p>
                     {totalBalance > 0 && (
-                      <p><span className="text-gray-500 dark:text-zinc-400">Due Date:</span> <span className="font-medium">{dueDate}</span></p>
+                      <p><span className="text-gray-500 dark:text-zinc-400">{t('pages.dueDate1')}</span> <span className="font-medium">{dueDate}</span></p>
                     )}
                   </div>
                 </div>
@@ -292,7 +304,7 @@ export default function InvoicePrintModal({
             {/* Bill To Section */}
             <div className="bill-to-section grid grid-cols-2 gap-8 mb-4">
               <div>
-                <p className="text-xs font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Bill To</p>
+                <p className="text-xs font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2">{t('pages.billTo')}</p>
                 <p className="font-semibold text-gray-900 dark:text-zinc-100">{student.name}</p>
                 <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
                   {student.class}{student.section ? ` - ${student.section}` : ''}
@@ -301,7 +313,7 @@ export default function InvoicePrintModal({
                 <p className="text-sm text-gray-600 dark:text-zinc-400">Admission No: {student.admissionNumber || student.admissionNo || 'N/A'}</p>
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Academic Year</p>
+                <p className="text-xs font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2">{t('pages.academicYear1')}</p>
                 <p className="text-sm text-gray-700 dark:text-zinc-300">{studentFeeStructure?.academicYear || CURRENT_ACADEMIC_YEAR}</p>
                 {student.parentName && (
                   <>
@@ -321,11 +333,11 @@ export default function InvoicePrintModal({
                 <thead>
                   <tr className="bg-gray-50 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800">
                     <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">#</th>
-                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Fee Head</th>
-                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Period</th>
-                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Amount</th>
-                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Paid</th>
-                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Balance</th>
+                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('pages.feeHead')}</th>
+                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('pages.period2')}</th>
+                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('pages.amount1')}</th>
+                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('pages.paid2')}</th>
+                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('pages.balance1')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-zinc-700">
@@ -359,22 +371,22 @@ export default function InvoicePrintModal({
               <div className="w-60">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-zinc-400">Total Fee</span>
+                    <span className="text-gray-500 dark:text-zinc-400">{t('pages.totalFee3')}</span>
                     <span className="font-mono text-gray-900 dark:text-zinc-100">{formatCurrency(totalFee)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-zinc-400">Amount Paid</span>
+                    <span className="text-gray-500 dark:text-zinc-400">{t('pages.amountPaid')}</span>
                     <span className="font-mono text-gray-700 dark:text-zinc-300">{formatCurrency(totalPaid)}</span>
                   </div>
                   {discount > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500 dark:text-zinc-400">Discount</span>
+                      <span className="text-gray-500 dark:text-zinc-400">{t('pages.discount1')}</span>
                       <span className="font-mono text-gray-600 dark:text-zinc-400">-{formatCurrency(discount)}</span>
                     </div>
                   )}
                   <div className="border-t border-gray-200 dark:border-zinc-800 pt-2 mt-2">
                     <div className="flex justify-between">
-                      <span className="font-semibold text-gray-900 dark:text-zinc-100">Balance Due</span>
+                      <span className="font-semibold text-gray-900 dark:text-zinc-100">{t('pages.balanceDue')}</span>
                       <span className="font-bold text-gray-900 dark:text-zinc-100 font-mono">{formatCurrency(totalBalance)}</span>
                     </div>
                   </div>
@@ -385,15 +397,15 @@ export default function InvoicePrintModal({
             {/* Payment History (if any) */}
             {feeHistory && feeHistory.length > 0 && (
               <div className="payment-history border-t border-gray-200 dark:border-zinc-800 pt-4 mb-4">
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider mb-2">Payment History</h3>
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider mb-2">{t('pages.paymentHistory')}</h3>
                 <div className="border border-gray-200 dark:border-zinc-800 rounded overflow-hidden">
                   <table className="w-full">
                     <thead>
                       <tr className="bg-gray-50 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800">
-                        <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-400">Date</th>
-                        <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-400">Receipt No</th>
-                        <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-400">Mode</th>
-                        <th className="text-right px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-400">Amount</th>
+                        <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-400">{t('pages.date2')}</th>
+                        <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-400">{t('pages.receiptNo')}</th>
+                        <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-400">{t('pages.mode1')}</th>
+                        <th className="text-right px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-400">{t('pages.amount1')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-zinc-700">
@@ -415,13 +427,13 @@ export default function InvoicePrintModal({
             <div className="terms-section border-t border-gray-200 dark:border-zinc-800 pt-4 mb-4">
               <div className="grid grid-cols-2 gap-8">
                 <div>
-                  <p className="text-xs font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Notes</p>
+                  <p className="text-xs font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2">{t('pages.notes1')}</p>
                   <p className="text-sm text-gray-600 dark:text-zinc-400">
                     {studentFeeStructure?.discountReason || 'Thank you for your payment.'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Terms & Conditions</p>
+                  <p className="text-xs font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2">{t('pages.termsConditions')}</p>
                   <ul className="text-xs text-gray-500 dark:text-zinc-400 space-y-1">
                     <li>- Fees once paid are non-refundable unless specified otherwise.</li>
                     <li>- Please retain this invoice for future reference.</li>
@@ -434,7 +446,7 @@ export default function InvoicePrintModal({
             <div className="signature-section grid grid-cols-2 gap-12 pt-2">
               <div>
                 <div className="border-b border-gray-300 dark:border-zinc-700 mb-2 h-8"></div>
-                <p className="text-xs text-gray-500 dark:text-zinc-400 text-center">Authorized Signatory</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400 text-center">{t('pages.authorizedSignatory')}</p>
               </div>
               <div>
                 <div className="border-b border-gray-300 dark:border-zinc-700 mb-2 h-8"></div>
@@ -453,7 +465,7 @@ export default function InvoicePrintModal({
           {/* Instructions */}
           <div className="mt-4 p-3 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg">
             <p className="text-sm text-gray-600 dark:text-zinc-400">
-              <strong>Note:</strong> Click "Download / Print" to save this invoice as PDF.
+              <strong>{t('pages.note1')}</strong> Click "Download / Print" to save this invoice as PDF.
               In the print dialog, select "Save as PDF" as the printer destination.
             </p>
           </div>

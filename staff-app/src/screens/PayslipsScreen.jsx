@@ -23,8 +23,10 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { payslipsApi } from '../services/api';
+import { useTranslation } from 'react-i18next';
 
 const PayslipCard = ({ payslip, onPress, theme }) => {
+  const { t } = useTranslation();
   const { colors, typography, shape, spacing } = theme;
 
   const getStatusColor = () => {
@@ -210,7 +212,7 @@ const PayslipsScreen = () => {
     return (
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.surface }]}>
         <View style={[styles.titleBar, { backgroundColor: colors.surface, borderBottomColor: colors.outlineVariant }]}>
-          <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>Payslips</Text>
+          <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>{t('screens.payslips')}</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -225,7 +227,7 @@ const PayslipsScreen = () => {
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.surface }]}>
       <View style={[styles.titleBar, { backgroundColor: colors.surface, borderBottomColor: colors.outlineVariant }]}>
-        <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>Payslips</Text>
+        <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>{t('screens.payslips')}</Text>
       </View>
 
       {error && (

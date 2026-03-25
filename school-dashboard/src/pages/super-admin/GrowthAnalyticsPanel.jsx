@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BarChart3, TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import { superAdminApi } from '../../services/api';
+import { useTranslation } from 'react-i18next';
 
 const RISK_BG = {
   low: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
@@ -33,6 +34,7 @@ function FunnelBar({ label, value, max }) {
 }
 
 export default function GrowthAnalyticsPanel() {
+  const { t } = useTranslation();
   const [report, setReport] = useState(null);
   const [funnel, setFunnel] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -67,7 +69,7 @@ export default function GrowthAnalyticsPanel() {
       <div className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
         <div className="mb-4 flex items-center gap-2">
           <BarChart3 size={18} className="text-sky-600 dark:text-sky-400" />
-          <h2 className="text-lg font-semibold text-slate-950 dark:text-zinc-100">Feature Activation Funnel</h2>
+          <h2 className="text-lg font-semibold text-slate-950 dark:text-zinc-100">{t('pages.featureActivationFunnel')}</h2>
         </div>
 
         {loading ? (
@@ -81,14 +83,14 @@ export default function GrowthAnalyticsPanel() {
             ))}
           </div>
         ) : (
-          <div className="py-6 text-center text-sm text-gray-400 dark:text-zinc-500">No funnel data available.</div>
+          <div className="py-6 text-center text-sm text-gray-400 dark:text-zinc-500">{t('pages.noFunnelDataAvailable')}</div>
         )}
       </div>
 
       {/* Schools growth table */}
       <div className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-950 dark:text-zinc-100">School Growth Scores</h2>
+          <h2 className="text-lg font-semibold text-slate-950 dark:text-zinc-100">{t('pages.schoolGrowthScores')}</h2>
           <button
             type="button"
             onClick={load}
@@ -113,13 +115,13 @@ export default function GrowthAnalyticsPanel() {
             <table className="min-w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-gray-500 dark:border-zinc-800 dark:text-zinc-400">
-                  <th className="pb-3 font-medium">School</th>
-                  <th className="pb-3 font-medium">Health Score</th>
-                  <th className="pb-3 font-medium">Churn Risk</th>
-                  <th className="pb-3 font-medium">Trend</th>
-                  <th className="pb-3 font-medium">DAU (7d)</th>
-                  <th className="pb-3 font-medium">Features Used</th>
-                  <th className="pb-3 font-medium">Activated</th>
+                  <th className="pb-3 font-medium">{t('pages.school1')}</th>
+                  <th className="pb-3 font-medium">{t('pages.healthScore')}</th>
+                  <th className="pb-3 font-medium">{t('pages.churnRisk')}</th>
+                  <th className="pb-3 font-medium">{t('pages.trend')}</th>
+                  <th className="pb-3 font-medium">{t('pages.dAU7d')}</th>
+                  <th className="pb-3 font-medium">{t('pages.featuresUsed')}</th>
+                  <th className="pb-3 font-medium">{t('pages.activated')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -148,7 +150,7 @@ export default function GrowthAnalyticsPanel() {
                     <td className="py-3 pr-4 text-gray-700 dark:text-zinc-300">{school.featuresUsedCount ?? '—'}</td>
                     <td className="py-3 pr-4">
                       {school.isFullyActivated ? (
-                        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Yes</span>
+                        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">{t('pages.yes1')}</span>
                       ) : (
                         <span className="text-xs text-gray-400 dark:text-zinc-500">No</span>
                       )}
@@ -158,7 +160,7 @@ export default function GrowthAnalyticsPanel() {
               </tbody>
             </table>
             {schools.length === 0 && (
-              <div className="py-8 text-center text-sm text-gray-400 dark:text-zinc-500">No growth data available.</div>
+              <div className="py-8 text-center text-sm text-gray-400 dark:text-zinc-500">{t('pages.noGrowthDataAvailable')}</div>
             )}
           </div>
         )}

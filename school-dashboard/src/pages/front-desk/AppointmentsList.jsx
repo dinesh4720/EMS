@@ -4,12 +4,14 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, Chip, useDisclosure, Select, SelectItem, Checkbox, Button
 } from '@heroui/react';
 import { Edit, Trash2, Plus } from 'lucide-react';
-import { frontDeskApi, staffApi } from '../../services/api';
+import { frontDeskApi, staffApi, announcementsApi } from '../../services/api';
 import FormInput from '../../components/FormInput';
 import { validatePhone, validateFutureDate, validateDateRange } from '../../utils/validations';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const AppointmentsList = forwardRef((props, ref) => {
+  const { t } = useTranslation();
   const [appointments, setAppointments] = useState([]);
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +53,7 @@ const AppointmentsList = forwardRef((props, ref) => {
       setAppointments(response);
     } catch (error) {
       console.error('Failed to load appointments:', error);
-      toast.error('Failed to load appointments');
+      toast.error(t('toast.error.failedToLoadAppointments'));
     } finally {
       setLoading(false);
     }
@@ -135,42 +137,68 @@ const AppointmentsList = forwardRef((props, ref) => {
 
   const handleSubmit = async () => {
     if (!validateForm()) {
-      toast.error('Please fix the errors before submitting');
+      toast.error(t('toast.error.pleaseFixTheErrorsBeforeSubmitting'));
       return;
     }
     try {
       if (editingId) {
         await frontDeskApi.updateAppointment(editingId, formData);
-        toast.success('Appointment updated successfully');
+        toast.success(t('toast.success.appointmentUpdatedSuccessfully'));
       } else {
         await frontDeskApi.createAppointment(formData);
-        toast.success('Appointment created successfully');
+        toast.success(t('toast.success.appointmentCreatedSuccessfully'));
       }
 
-      if (formData.assignAsTask) {
-        toast.info('Task will be created for the assigned staff member');
+      if (formData.assignAsTask && formData.taskTitle?.trim()) {
+        try {
+          const meetingStaff = staff.find(s => s.name === formData.meetingWith);
+          const assignedStaff = formData.assignedTo || meetingStaff?._id;
+          if (assignedStaff) {
+            await announcementsApi.create({
+              title: formData.taskTitle,
+              content: `Appointment task assigned to you.\n\nVisitor: ${formData.visitorName}\nPurpose: ${formData.purpose || 'N/A'}\nFrom: ${formData.fromDateTime ? new Date(formData.fromDateTime).toLocaleString() : 'N/A'}\nTo: ${formData.toDateTime ? new Date(formData.toDateTime).toLocaleString() : 'N/A'}\nPriority: ${formData.taskPriority}`.trim(),
+              recipients: [{ type: 'custom', userIds: [assignedStaff] }],
+              channels: ['in_app'],
+            });
+            toast.success('Task notification sent to assigned staff');
+          }
+        } catch (taskErr) {
+          console.error('Appointment task error:', taskErr);
+          toast.error('Appointment saved but failed to send task notification');
+        }
       }
 
       if (formData.shareWithStaff?.length > 0) {
-        toast.info(`Appointment will be shared with ${formData.shareWithStaff.length} staff member(s)`);
+        try {
+          await announcementsApi.create({
+            title: `Appointment: ${formData.visitorName}`,
+            content: `An appointment has been shared with you.\n\nVisitor: ${formData.visitorName}\nPhone: ${formData.phoneNumber || 'N/A'}\nPurpose: ${formData.purpose || 'N/A'}\nFrom: ${formData.fromDateTime ? new Date(formData.fromDateTime).toLocaleString() : 'N/A'}\nTo: ${formData.toDateTime ? new Date(formData.toDateTime).toLocaleString() : 'N/A'}\nMeeting With: ${formData.meetingWith || 'N/A'}`.trim(),
+            recipients: [{ type: 'custom', userIds: formData.shareWithStaff }],
+            channels: ['in_app'],
+          });
+          toast.success(`Appointment shared with ${formData.shareWithStaff.length} staff member(s)`);
+        } catch (shareErr) {
+          console.error('Appointment share error:', shareErr);
+          toast.error('Appointment saved but failed to share with staff');
+        }
       }
 
       onClose();
       resetForm();
       loadAppointments();
     } catch (error) {
-      toast.error('Failed to save appointment');
+      toast.error(t('toast.error.failedToSaveAppointment'));
     }
   };
 
   const handleEdit = (appointment) => {
     setEditingId(appointment._id);
     setFormData({
-      visitorName: appointment.visitorName,
+      visitorName: appointment.visitorName || '',
       phoneNumber: appointment.phoneNumber || '',
       purpose: appointment.purpose || '',
-      fromDateTime: appointment.fromDateTime,
-      toDateTime: appointment.toDateTime,
+      fromDateTime: appointment.fromDateTime || '',
+      toDateTime: appointment.toDateTime || '',
       meetingWith: appointment.meetingWith || '',
       notes: appointment.notes || '',
       status: appointment.status || 'scheduled',
@@ -179,13 +207,13 @@ const AppointmentsList = forwardRef((props, ref) => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this appointment?')) return;
+    if (!confirm(t('confirm.deleteAppointment'))) return;
     try {
       await frontDeskApi.deleteAppointment(id);
-      toast.success('Appointment deleted');
+      toast.success(t('toast.success.appointmentDeleted'));
       loadAppointments();
     } catch (error) {
-      toast.error('Failed to delete appointment');
+      toast.error(t('toast.error.failedToDeleteAppointment'));
     }
   };
 
@@ -225,16 +253,16 @@ const AppointmentsList = forwardRef((props, ref) => {
           New Appointment
         </Button>
       </div>
-      <Table aria-label="Appointments table" removeWrapper>
+      <Table aria-label={t('aria.tables.appointments')} removeWrapper>
         <TableHeader>
-          <TableColumn>VISITOR NAME</TableColumn>
-          <TableColumn>PHONE</TableColumn>
-          <TableColumn>PURPOSE</TableColumn>
-          <TableColumn>FROM</TableColumn>
-          <TableColumn>TO</TableColumn>
-          <TableColumn>MEETING WITH</TableColumn>
-          <TableColumn>STATUS</TableColumn>
-          <TableColumn>ACTIONS</TableColumn>
+          <TableColumn scope="col">{t('pages.vISITORName')}</TableColumn>
+          <TableColumn scope="col">{t('pages.pHONE')}</TableColumn>
+          <TableColumn scope="col">{t('pages.pURPOSE')}</TableColumn>
+          <TableColumn scope="col">{t('pages.fROM')}</TableColumn>
+          <TableColumn scope="col">TO</TableColumn>
+          <TableColumn scope="col">{t('pages.mEETINGWith')}</TableColumn>
+          <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+          <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
         </TableHeader>
         <TableBody
           items={appointments}
@@ -291,8 +319,8 @@ const AppointmentsList = forwardRef((props, ref) => {
           <ModalBody>
             <div className="grid grid-cols-2 gap-4">
               <FormInput
-                label="Visitor Name"
-                placeholder="Enter visitor name"
+                label={t('pages.visitorName')}
+                placeholder={t('pages.enterVisitorName')}
                 value={formData.visitorName}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -303,8 +331,8 @@ const AppointmentsList = forwardRef((props, ref) => {
                 error={errors.visitorName}
               />
               <FormInput
-                label="Phone Number"
-                placeholder="Enter 10-digit phone number"
+                label={t('pages.phoneNumber')}
+                placeholder={t('pages.enter10DigitPhoneNumber')}
                 value={formData.phoneNumber}
                 onChange={(e) => {
                   const val = e.target.value.replace(/\D/g, '');
@@ -315,14 +343,14 @@ const AppointmentsList = forwardRef((props, ref) => {
                 error={errors.phoneNumber}
               />
               <FormInput
-                label="Purpose"
-                placeholder="Enter purpose"
+                label={t('pages.purpose1')}
+                placeholder={t('pages.enterPurpose')}
                 value={formData.purpose}
                 onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
                 wrapperClassName="col-span-2"
               />
               <FormInput
-                label="From Date & Time"
+                label={t('pages.fromDateTime')}
                 type="datetime-local"
                 value={formData.fromDateTime}
                 onChange={(e) => {
@@ -334,7 +362,7 @@ const AppointmentsList = forwardRef((props, ref) => {
                 error={errors.fromDateTime}
               />
               <FormInput
-                label="To Date & Time"
+                label={t('pages.toDateTime')}
                 type="datetime-local"
                 value={formData.toDateTime}
                 onChange={(e) => {
@@ -346,8 +374,8 @@ const AppointmentsList = forwardRef((props, ref) => {
                 error={errors.toDateTime}
               />
               <Select
-                label="Meeting With"
-                placeholder="Select staff member"
+                label={t('pages.meetingWith1')}
+                placeholder={t('pages.selectStaffMember')}
                 selectedKeys={formData.meetingWith ? [formData.meetingWith] : []}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -365,25 +393,25 @@ const AppointmentsList = forwardRef((props, ref) => {
                 ))}
               </Select>
               <Select
-                label="Status"
-                placeholder="Select status"
+                label={t('pages.status2')}
+                placeholder={t('pages.selectStatus1')}
                 selectedKeys={[formData.status]}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
               >
-                <SelectItem key="scheduled" value="scheduled">Scheduled</SelectItem>
-                <SelectItem key="completed" value="completed">Completed</SelectItem>
-                <SelectItem key="cancelled" value="cancelled">Cancelled</SelectItem>
+                <SelectItem key="scheduled" value="scheduled">{t('pages.scheduled')}</SelectItem>
+                <SelectItem key="completed" value="completed">{t('pages.completed')}</SelectItem>
+                <SelectItem key="cancelled" value="cancelled">{t('pages.cancelled')}</SelectItem>
               </Select>
               <Textarea
-                label="Notes"
-                placeholder="Enter notes (optional)"
+                label={t('pages.notes1')}
+                placeholder={t('pages.enterNotesOptional')}
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 className="col-span-2"
                 rows={2}
               />
               <div className="col-span-2 border-t border-default-200 pt-4 mt-2">
-                <p className="text-sm font-medium text-default-700 mb-3">Additional Options</p>
+                <p className="text-sm font-medium text-default-700 mb-3">{t('pages.additionalOptions')}</p>
                 <div className="space-y-3">
                   <Checkbox size="sm"
                     isSelected={formData.assignAsTask}
@@ -394,28 +422,41 @@ const AppointmentsList = forwardRef((props, ref) => {
                   {formData.assignAsTask && (
                     <div className="grid grid-cols-2 gap-4 pl-6">
                       <FormInput
-                        label="Task Title"
-                        placeholder="Enter task title"
+                        label={t('pages.taskTitle')}
+                        placeholder={t('pages.enterTaskTitle')}
                         value={formData.taskTitle}
                         onChange={(e) => setFormData({ ...formData, taskTitle: e.target.value })}
                         required={formData.assignAsTask}
                       />
                       <Select
-                        label="Task Priority"
-                        placeholder="Select priority"
+                        label={t('pages.taskPriority')}
+                        placeholder={t('pages.selectPriority')}
                         selectedKeys={[formData.taskPriority]}
                         onChange={(e) => setFormData({ ...formData, taskPriority: e.target.value })}
                       >
-                        <SelectItem key="low" value="low">Low</SelectItem>
-                        <SelectItem key="medium" value="medium">Medium</SelectItem>
-                        <SelectItem key="high" value="high">High</SelectItem>
-                        <SelectItem key="urgent" value="urgent">Urgent</SelectItem>
+                        <SelectItem key="low" value="low">{t('pages.low')}</SelectItem>
+                        <SelectItem key="medium" value="medium">{t('pages.medium')}</SelectItem>
+                        <SelectItem key="high" value="high">{t('pages.high')}</SelectItem>
+                        <SelectItem key="urgent" value="urgent">{t('pages.urgent')}</SelectItem>
                       </Select>
                     </div>
                   )}
-                  <div className="bg-secondary-50 border border-secondary-200 p-3 rounded-lg">
-                    <p className="text-sm text-secondary-700">📤 Share to Internal Messaging</p>
-                    <p className="text-xs text-secondary-600 mt-1">Feature coming soon - share appointment with multiple staff members</p>
+                  <div className="border border-default-200 rounded-lg p-3">
+                    <p className="text-sm font-medium text-default-700 mb-2">📤 Share via Internal Messaging</p>
+                    <Select
+                      label="Share with staff members"
+                      placeholder="Select staff to notify"
+                      selectionMode="multiple"
+                      selectedKeys={new Set(formData.shareWithStaff || [])}
+                      onSelectionChange={(keys) => setFormData({ ...formData, shareWithStaff: Array.from(keys) })}
+                      size="sm"
+                    >
+                      {staff.map((member) => (
+                        <SelectItem key={member._id} value={member._id}>
+                          {member.name} {member.role ? `(${member.role})` : ''}
+                        </SelectItem>
+                      ))}
+                    </Select>
                   </div>
                 </div>
               </div>

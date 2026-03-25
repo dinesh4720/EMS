@@ -1,8 +1,10 @@
+import { request } from '../../../services/api.js';
 import { useState, useEffect, useRef } from "react";
 import {
-  Card, CardBody, CardHeader, Chip, Progress, Spinner, Button,
+  Card, CardBody, CardHeader, Chip, Progress, Button,
   Select, SelectItem, Divider
 } from "@heroui/react";
+import { TablePageSkeleton } from '../../../components/skeletons/PageSkeletons';
 import {
   Award, TrendingUp, Users, User, BookOpen, FileText,
   Download, Calendar, BarChart3, ArrowUpRight, ArrowDownRight, Minus
@@ -16,28 +18,20 @@ import { useReactToPrint } from "react-to-print";
 import ReportCardTemplate from "../../../components/ReportCardTemplate";
 import { useApp } from "../../../context/AppContext";
 import { getAcademicYearOptions } from "../../../utils/constants";
+import { CHART_COLORS } from "../../../utils/chartTheme";
+import { getDateLocale } from '../../../i18n/index';
+import { useTranslation } from 'react-i18next';
 
-// Helper function to get auth token
-const getAuthToken = () => {
-  const storedUser = sessionStorage.getItem('app_user');
-  if (storedUser) {
-    try {
-      const userData = JSON.parse(storedUser);
-      return userData.token;
-    } catch (err) {
-      return null;
-    }
-  }
-  return null;
-};
 
 export default function StudentAcademics({
+  const { t } = useTranslation();
   studentId,
   student,
   classTeacher
 }) {
   const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [performance, setPerformance] = useState(null);
   const [results, setResults] = useState([]);
   const [trends, setTrends] = useState([]);
@@ -51,66 +45,50 @@ export default function StudentAcademics({
 
   // Reference for the printable report card
   const reportCardRef = useRef(null);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
   useEffect(() => {
-    fetchAcademicData();
+    const controller = new AbortController();
+    fetchAcademicData(controller.signal);
+    return () => controller.abort();
   }, [studentId, selectedYear, selectedTerm]);
 
-  const fetchAcademicData = async () => {
+  const fetchAcademicData = async (signal) => {
     setLoading(true);
-    const token = getAuthToken();
-    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-
+    setError(null);
     try {
-      // Fetch performance data
-      const perfUrl = `${API_URL}/academic-performance/student/${studentId}?academicYear=${selectedYear}${selectedTerm !== 'all' ? `&term=${selectedTerm}` : ''}`;
-      const perfRes = await fetch(perfUrl, { headers });
-      if (perfRes.ok) {
-        const perfData = await perfRes.json();
-        setPerformance(perfData[0] || null);
+      const [perfResult, resultsResult, trendsResult] = await Promise.allSettled([
+        request(`/academic-performance/student/${studentId}?academicYear=${selectedYear}${selectedTerm !== 'all' ? `&term=${selectedTerm}` : ''}`, { signal }),
+        request(`/results/student/${studentId}`, { signal }),
+        request(`/academic-performance/trends/${studentId}`, { signal })
+      ]);
+
+      if (signal?.aborted) return;
+      if (perfResult.status === 'fulfilled') {
+        setPerformance(perfResult.value[0] || null);
+      }
+      if (resultsResult.status === 'fulfilled') {
+        setResults(resultsResult.value);
+      }
+      if (trendsResult.status === 'fulfilled') {
+        setTrends(trendsResult.value);
       }
 
-      // Fetch results
-      const resultsUrl = `${API_URL}/results/student/${studentId}`;
-      const resultsRes = await fetch(resultsUrl, { headers });
-      if (resultsRes.ok) {
-        const resultsData = await resultsRes.json();
-        // Filter by academic year if needed
-        const filteredResults = selectedYear !== 'all'
-          ? resultsData.filter(r => {
-              // We'd need exam data to filter by year, for now show all
-              return true;
-            })
-          : resultsData;
-        setResults(filteredResults);
-      }
-
-      // Fetch trends
-      const trendsUrl = `${API_URL}/academic-performance/trends/${studentId}`;
-      const trendsRes = await fetch(trendsUrl, { headers });
-      if (trendsRes.ok) {
-        const trendsData = await trendsRes.json();
-        setTrends(trendsData);
-      }
-
-      // Fetch upcoming exams for student's class
-      if (student?.class) {
+      if (student?.class && !signal?.aborted) {
         const classId = student.class.replace(' ', '-');
-        const examsUrl = `${API_URL}/exams/class/${classId}`;
-        const examsRes = await fetch(examsUrl, { headers });
-        if (examsRes.ok) {
-          const examsData = await examsRes.json();
+        try {
+          const examsData = await request(`/exams/class/${classId}`, { signal });
           const upcoming = examsData.filter(e =>
             new Date(e.date) >= new Date() && e.status === 'scheduled'
           ).slice(0, 5);
           setUpcomingExams(upcoming);
-        }
+        } catch (_) { /* no exams is fine */ }
       }
-    } catch (error) {
-      console.error('Error fetching academic data:', error);
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      console.error('Error fetching academic data:', err);
+      setError(err.message || 'Failed to load academic data');
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   };
 
@@ -293,8 +271,19 @@ export default function StudentAcademics({
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-20">
-        <Spinner size="lg" />
+      <TablePageSkeleton />
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-4">
+        <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950 flex items-center justify-center">
+          <Award size={24} className="text-red-500" />
+        </div>
+        <p className="text-sm font-medium text-gray-800 dark:text-zinc-200">Failed to load academic data</p>
+        <p className="text-xs text-gray-500 dark:text-zinc-400 max-w-xs text-center">{error}</p>
+        <Button size="sm" variant="flat" onPress={() => fetchAcademicData()}>Retry</Button>
       </div>
     );
   }
@@ -312,7 +301,7 @@ export default function StudentAcademics({
               setSelectedYearOverride(nextYear === currentAcademicYear ? null : nextYear);
             }}
             className="w-36"
-            label="Academic Year"
+            label={t('pages.academicYear1')}
           >
             {academicYearOptions.map(year => (
               <SelectItem key={year} value={year}>{year === 'all' ? 'All Years' : year}</SelectItem>
@@ -323,7 +312,7 @@ export default function StudentAcademics({
             selectedKeys={[selectedTerm]}
             onSelectionChange={(keys) => setSelectedTerm(Array.from(keys)[0])}
             className="w-32"
-            label="Term"
+            label={t('pages.term')}
           >
             {['all', 'Term 1', 'Term 2', 'Term 3', 'Final'].map(term => (
               <SelectItem key={term} value={term}>{term === 'all' ? 'All Terms' : term}</SelectItem>
@@ -350,7 +339,7 @@ export default function StudentAcademics({
                 <Award size={20} />
               </div>
               <div>
-                <p className="text-xs text-blue-600">Overall Grade</p>
+                <p className="text-xs text-blue-600">{t('pages.overallGrade1')}</p>
                 <p className="text-2xl font-bold text-blue-900">{metrics.overallGrade}</p>
               </div>
             </div>
@@ -365,7 +354,7 @@ export default function StudentAcademics({
               </div>
               <div className="flex items-center gap-2">
                 <div>
-                  <p className="text-xs text-green-600">Average Score</p>
+                  <p className="text-xs text-green-600">{t('pages.averageScore')}</p>
                   <p className="text-2xl font-bold text-green-900">
                     {metrics.averageScore > 0 ? `${metrics.averageScore.toFixed(1)}%` : 'N/A'}
                   </p>
@@ -383,7 +372,7 @@ export default function StudentAcademics({
                 <Users size={20} />
               </div>
               <div>
-                <p className="text-xs text-purple-600">Class Rank</p>
+                <p className="text-xs text-purple-600">{t('pages.classRank1')}</p>
                 <p className="text-2xl font-bold text-purple-900">
                   {typeof metrics.classRank === 'number' ? `#${metrics.classRank}` : metrics.classRank}
                   {metrics.totalStudents > 0 && (
@@ -402,7 +391,7 @@ export default function StudentAcademics({
                 <User size={20} />
               </div>
               <div>
-                <p className="text-xs text-orange-600">Class Teacher</p>
+                <p className="text-xs text-orange-600">{t('pages.classTeacher2')}</p>
                 <p className="text-sm font-bold text-orange-900 truncate">
                   {classTeacher?.name || "Not Assigned"}
                 </p>
@@ -421,7 +410,7 @@ export default function StudentAcademics({
               <div className="p-2.5 bg-blue-100 text-blue-600 rounded-lg">
                 <BarChart3 size={20} />
               </div>
-              <h3 className="text-lg font-semibold text-default-900">Performance Trend</h3>
+              <h3 className="text-lg font-semibold text-default-900">{t('pages.performanceTrend1')}</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
@@ -451,7 +440,7 @@ export default function StudentAcademics({
               <div className="p-2.5 bg-purple-100 text-purple-600 rounded-lg">
                 <BookOpen size={20} />
               </div>
-              <h3 className="text-lg font-semibold text-default-900">Subject Analysis</h3>
+              <h3 className="text-lg font-semibold text-default-900">{t('pages.subjectAnalysis')}</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
@@ -463,8 +452,8 @@ export default function StudentAcademics({
                 <Radar
                   name="Score"
                   dataKey="score"
-                  stroke="#8b5cf6"
-                  fill="#8b5cf6"
+                  stroke={CHART_COLORS.chart1}
+                  fill={CHART_COLORS.chart1}
                   fillOpacity={0.4}
                 />
               </RadarChart>
@@ -480,7 +469,7 @@ export default function StudentAcademics({
             <div className="p-2.5 bg-green-100 text-green-600 rounded-lg">
               <BookOpen size={20} />
             </div>
-            <h3 className="text-lg font-semibold text-default-900">Subject-wise Performance</h3>
+            <h3 className="text-lg font-semibold text-default-900">{t('pages.subjectWisePerformance1')}</h3>
           </div>
         </CardHeader>
         <CardBody className="p-6">
@@ -493,7 +482,7 @@ export default function StudentAcademics({
                       <span className="text-2xl">{getSubjectIcon(subject.subjectName)}</span>
                       <div>
                         <h4 className="font-semibold text-default-900">{subject.subjectName}</h4>
-                        <p className="text-xs text-default-500">Current Term</p>
+                        <p className="text-xs text-default-500">{t('pages.currentTerm')}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -527,8 +516,8 @@ export default function StudentAcademics({
           ) : (
             <div className="text-center py-8 text-default-500">
               <BookOpen size={40} className="mx-auto mb-3 opacity-50" />
-              <p>No subject data available yet</p>
-              <p className="text-sm">Results will appear here once exams are completed</p>
+              <p>{t('pages.noSubjectDataAvailableYet')}</p>
+              <p className="text-sm">{t('pages.resultsWillAppearHereOnceExamsAreCompleted')}</p>
             </div>
           )}
         </CardBody>
@@ -542,7 +531,7 @@ export default function StudentAcademics({
               <div className="p-2.5 bg-orange-100 text-orange-600 rounded-lg">
                 <Calendar size={20} />
               </div>
-              <h3 className="text-lg font-semibold text-default-900">Upcoming Exams</h3>
+              <h3 className="text-lg font-semibold text-default-900">{t('pages.upcomingExams')}</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
@@ -560,7 +549,7 @@ export default function StudentAcademics({
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-default-900">
-                      {new Date(exam.date).toLocaleDateString('en-US', {
+                      {new Date(exam.date).toLocaleDateString(getDateLocale(), {
                         weekday: 'short',
                         month: 'short',
                         day: 'numeric'
@@ -582,7 +571,7 @@ export default function StudentAcademics({
             <div className="p-2.5 bg-primary-100 text-primary-600 rounded-lg">
               <FileText size={20} />
             </div>
-            <h3 className="text-lg font-semibold text-default-900">Exam Results</h3>
+            <h3 className="text-lg font-semibold text-default-900">{t('pages.examResults1')}</h3>
           </div>
         </CardHeader>
         <CardBody className="p-6">
@@ -607,19 +596,19 @@ export default function StudentAcademics({
                     <Divider className="my-3" />
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <p className="text-default-500">Marks</p>
+                        <p className="text-default-500">{t('pages.marks')}</p>
                         <p className="font-semibold">{result.marksObtained}/{result.maxMarks}</p>
                       </div>
                       <div>
-                        <p className="text-default-500">Percentage</p>
+                        <p className="text-default-500">{t('pages.percentage2')}</p>
                         <p className="font-semibold">{result.percentage?.toFixed(1)}%</p>
                       </div>
                       <div>
-                        <p className="text-default-500">Grade</p>
+                        <p className="text-default-500">{t('pages.grade2')}</p>
                         <p className="font-semibold">{result.grade}</p>
                       </div>
                       <div>
-                        <p className="text-default-500">GPA</p>
+                        <p className="text-default-500">{t('pages.gPA1')}</p>
                         <p className="font-semibold">{result.gpa?.toFixed(2)}</p>
                       </div>
                     </div>
@@ -630,15 +619,15 @@ export default function StudentAcademics({
           ) : (
             <div className="text-center py-8 text-default-500">
               <FileText size={40} className="mx-auto mb-3 opacity-50" />
-              <p>No published results yet</p>
-              <p className="text-sm">Results will appear here once exams are graded and published</p>
+              <p>{t('pages.noPublishedResultsYet')}</p>
+              <p className="text-sm">{t('pages.resultsWillAppearHereOnceExamsAreGradedAndPublished')}</p>
             </div>
           )}
         </CardBody>
       </Card>
 
-      {/* Hidden Print Container for Report Card */}
-      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', visibility: showPrintPreview ? 'visible' : 'hidden' }}>
+      {/* Hidden Print Container for Report Card — uses .print-only utility from index.css */}
+      <div className="print-only" style={{ visibility: showPrintPreview ? 'visible' : 'hidden' }}>
         <div ref={reportCardRef}>
           <ReportCardTemplate
             student={{

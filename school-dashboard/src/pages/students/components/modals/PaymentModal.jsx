@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem } from "@heroui/react";
 import toast from "react-hot-toast";
 import { useApp } from "../../../../context/AppContext";
+import { getDateLocale } from '../../../../i18n/index';
+import { useTranslation } from 'react-i18next';
+
 
 /**
  * PaymentModal - Modal for recording fee payments
@@ -13,9 +16,12 @@ import { useApp } from "../../../../context/AppContext";
  * - studentFeeStructure: object - Fee structure with totalBalance
  * - onPaymentComplete: function - Called after successful payment
  */
-export default function PaymentModal({ isOpen, onClose, student, studentFeeStructure, onPaymentComplete }) {
+export default function PaymentModal({
+  isOpen, onClose, student, studentFeeStructure, onPaymentComplete }) {
+  const { t } = useTranslation();
   const { currentAcademicYear } = useApp();
   const [isLoading, setIsLoading] = useState(false);
+  const [amountError, setAmountError] = useState("");
   const [paymentForm, setPaymentForm] = useState({
     amount: "",
     paymentMode: "cash",
@@ -34,19 +40,15 @@ export default function PaymentModal({ isOpen, onClose, student, studentFeeStruc
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRecordPayment = async () => {
-    if (!paymentForm.amount || !paymentForm.paymentMode) {
-      toast.error("Please enter amount and select payment method");
-      return;
-    }
-
     const paymentAmount = parseInt(paymentForm.amount);
-    if (paymentAmount <= 0) {
-      toast.error("Please enter a valid amount");
+    if (!paymentForm.amount || isNaN(paymentAmount) || paymentAmount <= 0) {
+      setAmountError("Please enter a valid amount greater than 0");
       return;
     }
+    setAmountError("");
 
     setIsLoading(true);
-    const loadingToast = toast.loading("Processing payment...");
+    const loadingToast = toast.loading(t('toast.loading.processingPayment'));
 
     try {
       // Import api dynamically to avoid circular dependencies
@@ -61,7 +63,7 @@ export default function PaymentModal({ isOpen, onClose, student, studentFeeStruc
         amount: paymentAmount,
         paymentMode: paymentForm.paymentMode,
         feeHeads: [{
-          period: new Date(paymentForm.date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          period: new Date(paymentForm.date).toLocaleDateString(getDateLocale(), { month: 'long', year: 'numeric' }),
           amount: paymentAmount
         }],
         remarks: `Fee payment via ${paymentForm.paymentMode}`,
@@ -99,14 +101,14 @@ export default function PaymentModal({ isOpen, onClose, student, studentFeeStruc
       }}
     >
       <ModalContent className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800">
-        <ModalHeader className="text-gray-900 dark:text-zinc-100 font-medium">Record Fee Payment</ModalHeader>
+        <ModalHeader className="text-gray-900 dark:text-zinc-100 font-medium">{t('pages.recordFeePayment1')}</ModalHeader>
         <ModalBody>
           <div className="space-y-4">
             <Input
-              label="Amount"
+              label={t('pages.amount1')}
               type="number"
               value={paymentForm.amount}
-              onValueChange={(v) => setPaymentForm({ ...paymentForm, amount: v })}
+              onValueChange={(v) => { setPaymentForm({ ...paymentForm, amount: v }); if (amountError) setAmountError(""); }}
               startContent="₹"
               variant="bordered"
               classNames={{
@@ -114,24 +116,26 @@ export default function PaymentModal({ isOpen, onClose, student, studentFeeStruc
               }}
               description={`Outstanding: ₹${studentFeeStructure?.totalBalance?.toLocaleString() || 0}`}
               isRequired
+              isInvalid={!!amountError}
+              errorMessage={amountError}
             />
             <Select
-              aria-label="Payment method"
-              label="Payment Method"
-              placeholder="Select payment method"
+              aria-label={t('aria.inputs.paymentMethod')}
+              label={t('pages.paymentMethod1')}
+              placeholder={t('pages.selectPaymentMethod1')}
               selectedKeys={[paymentForm.paymentMode]}
               onSelectionChange={(keys) => setPaymentForm({ ...paymentForm, paymentMode: Array.from(keys)[0] })}
               variant="bordered"
               isRequired
             >
-              <SelectItem key="cash">Cash</SelectItem>
+              <SelectItem key="cash">{t('pages.cash1')}</SelectItem>
               <SelectItem key="online">Online/UPI</SelectItem>
-              <SelectItem key="card">Card</SelectItem>
-              <SelectItem key="cheque">Cheque</SelectItem>
-              <SelectItem key="bank_transfer">Bank Transfer</SelectItem>
+              <SelectItem key="card">{t('pages.card1')}</SelectItem>
+              <SelectItem key="cheque">{t('pages.cheque1')}</SelectItem>
+              <SelectItem key="bank_transfer">{t('pages.bankTransfer1')}</SelectItem>
             </Select>
             <Input
-              label="Payment Date"
+              label={t('pages.paymentDate1')}
               type="date"
               value={paymentForm.date}
               onValueChange={(v) => setPaymentForm({ ...paymentForm, date: v })}

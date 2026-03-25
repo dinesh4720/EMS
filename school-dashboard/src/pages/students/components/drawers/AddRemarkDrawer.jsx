@@ -24,30 +24,19 @@ export default function AddRemarkDrawer({
     description: "",
     sendToParent: false
   });
+  const [errors, setErrors] = useState({});
 
   const resetForm = () => {
-    setRemarkForm({
-      type: "",
-      customType: "",
-      title: "",
-      description: "",
-      sendToParent: false
-    });
+    setRemarkForm({ type: "", customType: "", title: "", description: "", sendToParent: false });
+    setErrors({});
   };
 
   const handleSaveRemark = async () => {
-    if (!remarkForm.title.trim()) {
-      toast.error(t('students.profile.remarks.enterTitle', 'Please enter a title'));
-      return;
-    }
-    if (!remarkForm.type && !remarkForm.customType.trim()) {
-      toast.error(t('students.profile.remarks.enterType', 'Please select or enter a remark type'));
-      return;
-    }
-    if (!remarkForm.description.trim()) {
-      toast.error(t('students.profile.remarks.enterDescription', 'Please enter a description'));
-      return;
-    }
+    const e = {};
+    if (!remarkForm.title.trim()) e.title = t('students.profile.remarks.enterTitle', 'Please enter a title');
+    if (!remarkForm.type && !remarkForm.customType.trim()) e.type = t('students.profile.remarks.enterType', 'Please select or enter a remark type');
+    if (!remarkForm.description.trim()) e.description = t('students.profile.remarks.enterDescription', 'Please enter a description');
+    if (Object.keys(e).length > 0) { setErrors(e); return; }
 
     try {
       const remarkData = {
@@ -112,10 +101,13 @@ export default function AddRemarkDrawer({
                   label={t('students.profile.remarks.remarkType', 'Remark Type')}
                   placeholder={t('students.profile.remarks.selectType', 'Select type or enter custom')}
                   variant="bordered"
+                  isInvalid={!!errors.type}
+                  errorMessage={errors.type}
                   selectedKeys={remarkForm.type ? [remarkForm.type] : []}
                   onSelectionChange={(keys) => {
                     const selected = Array.from(keys)[0];
                     setRemarkForm({ ...remarkForm, type: selected, customType: "" });
+                    setErrors(prev => ({ ...prev, type: undefined }));
                   }}
                 >
                   <SelectItem key="academic">{t('students.profile.remarks.categories.academic', 'Academic')}</SelectItem>
@@ -146,10 +138,15 @@ export default function AddRemarkDrawer({
                 placeholder={t('students.profile.remarks.titlePlaceholder', 'e.g. Excellent Performance in Mathematics')}
                 variant="bordered"
                 value={remarkForm.title}
-                onChange={(e) => setRemarkForm({ ...remarkForm, title: e.target.value })}
+                onChange={(e) => {
+                  setRemarkForm({ ...remarkForm, title: e.target.value });
+                  setErrors(prev => ({ ...prev, title: undefined }));
+                }}
                 maxLength={100}
                 description={`${remarkForm.title.length}/100 characters`}
                 isRequired
+                isInvalid={!!errors.title}
+                errorMessage={errors.title}
               />
 
               {/* Description */}
@@ -159,10 +156,15 @@ export default function AddRemarkDrawer({
                 minRows={5}
                 variant="bordered"
                 value={remarkForm.description}
-                onChange={(e) => setRemarkForm({ ...remarkForm, description: e.target.value })}
+                onChange={(e) => {
+                  setRemarkForm({ ...remarkForm, description: e.target.value });
+                  setErrors(prev => ({ ...prev, description: undefined }));
+                }}
                 maxLength={500}
                 description={`${remarkForm.description.length}/500 characters`}
                 isRequired
+                isInvalid={!!errors.description}
+                errorMessage={errors.description}
               />
 
               {/* Send to Parent */}

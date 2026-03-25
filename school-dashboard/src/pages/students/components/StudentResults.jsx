@@ -1,6 +1,10 @@
 import { useMemo } from "react";
 import { Card, CardBody, CardHeader, Chip, Progress, Spinner } from "@heroui/react";
 import { Award, TrendingUp, Users, User, BookOpen, FileText } from "lucide-react";
+import { getDateLocale } from '../../../i18n/index';
+import { useTranslation } from 'react-i18next';
+import { TablePageSkeleton } from '../../../components/skeletons/PageSkeletons';
+
 
 // Helper function to determine grade from percentage
 const getGradeFromPercentage = (percentage) => {
@@ -36,6 +40,7 @@ export default function StudentResults({
   classTeacher,
   onExamSelect
 }) {
+  const { t } = useTranslation();
   // Calculate metrics from actual results
   const metrics = useMemo(() => {
     if (!results || results.length === 0) {
@@ -123,7 +128,7 @@ export default function StudentResults({
                 <Award size={20} />
               </div>
               <div>
-                <p className="text-xs text-gray-600 dark:text-zinc-400">Overall Grade</p>
+                <p className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.overallGrade1')}</p>
                 <p className="text-lg font-bold text-gray-900 dark:text-zinc-100">{metrics.overallGrade}</p>
               </div>
             </div>
@@ -137,7 +142,7 @@ export default function StudentResults({
                 <TrendingUp size={20} />
               </div>
               <div>
-                <p className="text-xs text-gray-600 dark:text-zinc-400">Average Score</p>
+                <p className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.averageScore')}</p>
                 <p className="text-lg font-bold text-gray-900 dark:text-zinc-100">
                   {metrics.averageScore > 0 ? `${metrics.averageScore.toFixed(1)}%` : 'N/A'}
                 </p>
@@ -153,7 +158,7 @@ export default function StudentResults({
                 <Users size={20} />
               </div>
               <div>
-                <p className="text-xs text-gray-600 dark:text-zinc-400">Subjects</p>
+                <p className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.subjects1')}</p>
                 <p className="text-lg font-bold text-gray-900 dark:text-zinc-100">{metrics.totalSubjects}</p>
               </div>
             </div>
@@ -167,7 +172,7 @@ export default function StudentResults({
                 <User size={20} />
               </div>
               <div>
-                <p className="text-xs text-gray-600 dark:text-zinc-400">Class Teacher</p>
+                <p className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.classTeacher2')}</p>
                 <p className="text-sm font-bold text-gray-900 dark:text-zinc-100 truncate">{classTeacher?.name || "Not Assigned"}</p>
               </div>
             </div>
@@ -182,7 +187,7 @@ export default function StudentResults({
             <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg dark:bg-zinc-800 dark:text-zinc-400">
               <BookOpen size={20} />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Subject-wise Performance</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{t('pages.subjectWisePerformance1')}</h3>
           </div>
         </CardHeader>
         <CardBody className="p-6">
@@ -230,8 +235,8 @@ export default function StudentResults({
           ) : (
             <div className="text-center py-8 text-gray-500 dark:text-zinc-400">
               <BookOpen size={40} className="mx-auto mb-3 opacity-50" />
-              <p>No subject data available yet</p>
-              <p className="text-sm">Results will appear here once exams are completed and published</p>
+              <p>{t('pages.noSubjectDataAvailableYet')}</p>
+              <p className="text-sm">{t('pages.resultsWillAppearHereOnceExamsAreCompletedAndPublished')}</p>
             </div>
           )}
         </CardBody>
@@ -244,15 +249,15 @@ export default function StudentResults({
             <div className="p-2.5 bg-gray-100 text-gray-600 rounded-lg dark:bg-zinc-800 dark:text-zinc-400">
               <FileText size={20} />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Exam Overview</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{t('pages.examOverview')}</h3>
           </div>
           {resultsLoading && <Spinner size="sm" />}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {resultsLoading ? (
-            <div className="col-span-full flex justify-center py-8">
-              <Spinner size="lg" />
+            <div className="col-span-full">
+              <TablePageSkeleton kpiCards={0} searchBar={false} rows={4} />
             </div>
           ) : results.length > 0 ? (
             results.map((result) => {
@@ -285,7 +290,7 @@ export default function StudentResults({
                       </Chip>
                     </div>
                     <h4 className="text-base font-semibold text-gray-900 dark:text-zinc-100 mb-1">{exam?.name || result.subjectName || 'Exam'}</h4>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400 mb-4">{exam?.startDate ? new Date(exam.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'No date'}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 mb-4">{exam?.startDate ? new Date(exam.startDate).toLocaleDateString(getDateLocale(), { month: 'short', year: 'numeric' }) : 'No date'}</p>
                     {result.isPublished && result.percentage > 0 && (
                       <Progress
                         aria-label={`Overall percentage for ${exam?.name || 'exam'}`}
@@ -297,7 +302,7 @@ export default function StudentResults({
                       />
                     )}
                     <div className="flex items-center justify-between text-sm pt-3 border-t border-gray-100 dark:border-zinc-800">
-                      <span className="text-gray-500 dark:text-zinc-400">Score</span>
+                      <span className="text-gray-500 dark:text-zinc-400">{t('pages.score')}</span>
                       <span className={`font-bold ${result.percentage >= 90 ? "text-success" : result.percentage >= 75 ? "text-primary" : "text-default-900"}`}>
                         {scoreDisplay}
                       </span>
@@ -309,8 +314,8 @@ export default function StudentResults({
           ) : (
             <div className="col-span-full text-center py-8 text-gray-500 dark:text-zinc-400">
               <FileText size={40} className="mx-auto mb-3 opacity-50" />
-              <p>No exam results available yet</p>
-              <p className="text-sm">Results will appear here once exams are completed and published</p>
+              <p>{t('pages.noExamResultsAvailableYet')}</p>
+              <p className="text-sm">{t('pages.resultsWillAppearHereOnceExamsAreCompletedAndPublished')}</p>
             </div>
           )}
         </div>
@@ -323,11 +328,11 @@ export default function StudentResults({
             <div className="p-2.5 bg-yellow-50 text-yellow-600 rounded-xl">
               <Award size={20} />
             </div>
-            <h3 className="text-lg font-semibold text-default-900">Achievements & Awards</h3>
+            <h3 className="text-lg font-semibold text-default-900">{t('pages.achievementsAwards')}</h3>
           </div>
         </CardHeader>
         <CardBody className="p-6">
-          <p className="text-sm text-default-500">No achievements recorded</p>
+          <p className="text-sm text-default-500">{t('pages.noAchievementsRecorded')}</p>
         </CardBody>
       </Card>
     </div>

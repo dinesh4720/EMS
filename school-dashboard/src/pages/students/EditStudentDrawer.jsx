@@ -3,6 +3,7 @@ import { X, GraduationCap } from "lucide-react";
 import AddStudent from "./AddStudent";
 import toast from "react-hot-toast";
 import { studentsApi } from "../../services/api";
+import { useTranslation } from 'react-i18next';
 
 /**
  * EditStudentDrawer - A drawer component for editing existing students
@@ -24,6 +25,7 @@ export default function EditStudentDrawer({
   classOptions = [],
   classesWithTeachers = []
 }) {
+  const { t } = useTranslation();
   /**
    * Handles saving the updated student data
    * Calls the studentsApi.update endpoint and triggers the onUpdate callback
@@ -34,7 +36,7 @@ export default function EditStudentDrawer({
       const response = await studentsApi.update(student.id, studentData);
 
       // Show success toast
-      toast.success('Student updated successfully!');
+      toast.success(t('toast.success.studentUpdatedSuccessfully'));
 
       // Call the parent's update callback
       if (onUpdate) {
@@ -86,7 +88,7 @@ export default function EditStudentDrawer({
                   <GraduationCap size={20} className="text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-default-900">Edit Student</h2>
+                  <h2 className="text-lg font-semibold text-default-900">{t('pages.editStudent1')}</h2>
                   <p className="text-xs text-default-500">
                     {student?.name ? `Editing ${student.name}` : 'Update student information'}
                   </p>

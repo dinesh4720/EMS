@@ -3,6 +3,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from
 import { GraduationCap, AlertTriangle } from "lucide-react";
 import toast from "react-hot-toast";
 import { getNextClass } from "../../utils/studentHelpers";
+import { useTranslation } from 'react-i18next';
 
 /**
  * PromoteStudentModal - Modal for promoting a student to the next class
@@ -15,11 +16,12 @@ import { getNextClass } from "../../utils/studentHelpers";
  * - onPromote: function - Called to initiate promotion (optional)
  */
 export default function PromoteStudentModal({ isOpen, onClose, student, availableClasses, onPromote }) {
+  const { t } = useTranslation();
   const [isPromoting, setIsPromoting] = useState(false);
 
   const handlePromote = async () => {
     if (!student?.class) {
-      toast.error("Unable to determine current class");
+      toast.error(t('toast.error.unableToDetermineCurrentClass'));
       return;
     }
 
@@ -27,7 +29,7 @@ export default function PromoteStudentModal({ isOpen, onClose, student, availabl
     const nextClass = getNextClass(student.class, availableClasses);
 
     if (!nextClass) {
-      toast.error("Unable to calculate next class. Please update class manually.");
+      toast.error(t('toast.error.unableToCalculateNextClassPleaseUpdateClassManually'));
       return;
     }
 
@@ -72,7 +74,7 @@ export default function PromoteStudentModal({ isOpen, onClose, student, availabl
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <ModalContent className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800">
-        <ModalHeader className="text-gray-900 dark:text-zinc-100 font-medium">Promote Student</ModalHeader>
+        <ModalHeader className="text-gray-900 dark:text-zinc-100 font-medium">{t('pages.promoteStudent')}</ModalHeader>
         <ModalBody>
           <div className="space-y-4">
             {/* Student Info - Gray container */}
@@ -87,7 +89,7 @@ export default function PromoteStudentModal({ isOpen, onClose, student, availabl
             {/* Auto-calculated next class - Success colored container */}
             <div className="p-4 bg-success-50 border border-success-200 rounded-lg">
               <p className="text-sm text-success-700 mb-1">
-                <span className="font-semibold">Auto-calculated next class:</span>
+                <span className="font-semibold">{t('pages.autoCalculatedNextClass')}</span>
               </p>
               <p className="text-lg font-bold text-success-900">
                 {nextClass || "Unable to calculate"}

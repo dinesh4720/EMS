@@ -13,8 +13,10 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, Avatar, Button } from '../components';
 import { formatDate } from '../utils/helpers';
 import { User, Phone, Mail, MapPin, Building, LogOut, ChevronRight, Bell, BookOpen, Hash } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 const ProfileScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   // navigation is passed in from TabNavigator
   const { student, user, logout } = useAuth();
   const { themeColors, spacing, typography, borderRadius } = useTheme();
@@ -102,13 +104,13 @@ const ProfileScreen = ({ navigation }) => {
             Student Details
           </Text>
           <Card style={styles.detailsCard}>
-            <InfoItem icon={User} label="Date of Birth" value={formatDate(student?.dateOfBirth)} />
-            <InfoItem icon={Building} label="Gender" value={student?.gender} />
-            <InfoItem icon={MapPin} label="Blood Group" value={student?.bloodGroup} />
-            <InfoItem icon={Hash} label="Roll Number" value={student?.rollNo?.toString()} />
-            <InfoItem icon={MapPin} label="Address" value={student?.address} />
-            <InfoItem icon={Phone} label="Phone" value={student?.phone} />
-            <InfoItem icon={Mail} label="Email" value={student?.email} />
+            <InfoItem icon={User} label={t('screens.dateOfBirth')} value={formatDate(student?.dateOfBirth)} />
+            <InfoItem icon={Building} label={t('screens.gender')} value={student?.gender} />
+            <InfoItem icon={MapPin} label={t('screens.bloodGroup')} value={student?.bloodGroup} />
+            <InfoItem icon={Hash} label={t('screens.rollNumber')} value={student?.rollNo?.toString()} />
+            <InfoItem icon={MapPin} label={t('screens.address')} value={student?.address} />
+            <InfoItem icon={Phone} label={t('screens.phone1')} value={student?.phone} />
+            <InfoItem icon={Mail} label={t('screens.email1')} value={student?.email} />
           </Card>
 
           {/* Parent Details */}
@@ -131,15 +133,15 @@ const ProfileScreen = ({ navigation }) => {
                     <InfoItem icon={Mail} label={`${parent.relationship || 'Parent'}'s Email`} value={parent.email} />
                   )}
                   {parent.occupation && (
-                    <InfoItem icon={Building} label="Occupation" value={parent.occupation} />
+                    <InfoItem icon={Building} label={t('screens.occupation')} value={parent.occupation} />
                   )}
                 </React.Fragment>
               ))
             ) : (
               <>
-                <InfoItem icon={User} label="Parent Name" value={student?.parentName || user?.name} />
-                <InfoItem icon={Phone} label="Parent Phone" value={student?.parentPhone || user?.phone} />
-                <InfoItem icon={Mail} label="Parent Email" value={student?.parentEmail || user?.email} />
+                <InfoItem icon={User} label={t('screens.parentName')} value={student?.parentName || user?.name} />
+                <InfoItem icon={Phone} label={t('screens.parentPhone')} value={student?.parentPhone || user?.phone} />
+                <InfoItem icon={Mail} label={t('screens.parentEmail')} value={student?.parentEmail || user?.email} />
               </>
             )}
           </Card>
@@ -151,27 +153,27 @@ const ProfileScreen = ({ navigation }) => {
           <Card style={styles.menuCard} variant="outlined">
             <MenuItem
               icon={Bell}
-              title="Notifications"
-              subtitle="Manage notification preferences"
+              title={t('screens.notifications')}
+              subtitle={t('screens.manageNotificationPreferences')}
               onPress={() => navigation.navigate('NotificationSettings')}
             />
             <MenuItem
               icon={User}
-              title="Edit Profile"
-              subtitle="Update your information"
+              title={t('screens.editProfile1')}
+              subtitle={t('screens.updateYourInformation')}
               onPress={() => navigation.navigate('EditProfile')}
             />
             <MenuItem
               icon={BookOpen}
-              title="Remarks"
-              subtitle="View teacher feedback"
+              title={t('screens.remarks')}
+              subtitle={t('screens.viewTeacherFeedback')}
               onPress={() => navigation.navigate('Remarks')}
             />
           </Card>
 
           {/* Logout Button */}
           <Button
-            title="Logout"
+            title={t('screens.logout1')}
             variant="outline"
             onPress={handleLogout}
             style={styles.logoutButton}

@@ -19,12 +19,14 @@ import Attendance from "./Attendance";
 import Timetable from "./Timetable";
 import ClassSettingsPanel from "./ClassSettingsPanel";
 import ClassTeacherAssignmentModal from "./components/ClassTeacherAssignmentModal";
+import { useTranslation } from 'react-i18next';
 
 export default function ClassDashboard() {
+  const { t } = useTranslation();
   const { params: { id }, isValid } = useValidatedParams({ id: 'objectId' }, { redirectTo: '/classes' });
   const navigate = useNavigate();
   const location = useLocation();
-  const { classesWithTeachers, students, classesEnhancedApi, classesApi, refetch } = useApp();
+  const { classesWithTeachers, students, classesEnhancedApi, classesApi, refetch, loading } = useApp();
 
   // Get tab from URL query parameter or default to "overview"
   const searchParams = new URLSearchParams(location.search);
@@ -65,20 +67,22 @@ export default function ClassDashboard() {
 
   // Load class settings
   useEffect(() => {
-    if (id && classesApi) {
-      loadClassSettings();
-    }
+    if (!id || !classesApi) return;
+    const controller = new AbortController();
+    loadClassSettings(controller.signal);
+    return () => controller.abort();
   }, [id, classesApi]);
 
-  const loadClassSettings = async () => {
+  const loadClassSettings = async (signal) => {
     try {
       setSettingsLoading(true);
       const settings = await classesApi.getSettings(id);
-      setClassSettings(settings);
+      if (!signal?.aborted) setClassSettings(settings);
     } catch (error) {
+      if (error.name === 'AbortError') return;
       console.error("Error loading class settings:", error);
     } finally {
-      setSettingsLoading(false);
+      if (!signal?.aborted) setSettingsLoading(false);
     }
   };
 
@@ -96,16 +100,22 @@ export default function ClassDashboard() {
 
   if (!isValid) return null;
 
+  if (loading && !cls) return (
+    <div className="w-full flex-1 bg-gray-50 dark:bg-zinc-950 p-6 min-h-screen flex items-center justify-center">
+      <div className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.loadingClassData')}</div>
+    </div>
+  );
+
   if (!cls && classesWithTeachers.length > 0) {
     return (
       <div className="w-full flex-1 bg-gray-50 dark:bg-zinc-950 p-6 min-h-screen">
         <button onClick={() => navigate('/classes')} className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors mb-4">
-          <ArrowLeft size={16} /><span>Back to Classes</span>
+          <ArrowLeft size={16} /><span>{t('pages.backToClasses')}</span>
         </button>
         <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-8 text-center">
           <AlertCircle size={40} className="mx-auto text-red-400 mb-3" />
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-zinc-200 mb-1">Class Not Found</h2>
-          <p className="text-sm text-gray-500 dark:text-zinc-400">The class you're looking for doesn't exist or has been removed.</p>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-zinc-200 mb-1">{t('pages.classNotFound1')}</h2>
+          <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.theClassYouReLookingForDoesnTExistOrHasBeenRemoved')}</p>
           <button onClick={() => navigate('/classes')} className="mt-4 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-lg text-sm text-gray-700 dark:text-zinc-300 transition-colors">
             View All Classes
           </button>
@@ -121,7 +131,7 @@ export default function ClassDashboard() {
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="mb-6">
         <button onClick={() => navigate('/classes')} className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors mb-2">
-          <ArrowLeft size={16} /><span>Back to Classes</span>
+          <ArrowLeft size={16} /><span>{t('pages.backToClasses')}</span>
         </button>
 
         <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
@@ -154,12 +164,12 @@ export default function ClassDashboard() {
                       {cls?.teacher || 'Class Teacher'}
                     </span>
                     <span className="text-gray-300 dark:text-zinc-600">|</span>
-                    <span>Class Teacher</span>
+                    <span>{t('pages.classTeacher2')}</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 mt-2 text-xs text-gray-400 dark:text-zinc-500">
                     <AlertCircle size={12} />
-                    <span>No class teacher assigned</span>
+                    <span>{t('pages.noClassTeacherAssigned')}</span>
                     <button
                       onClick={() => setIsAssignTeacherModalOpen(true)}
                       className="ml-2 text-xs font-medium text-blue-600 hover:text-blue-800 underline"
@@ -174,17 +184,17 @@ export default function ClassDashboard() {
             {/* Actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
               <Button variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<MessageSquare size={16} />}
-                onPress={() => toast.success("Opening messages...")}>Message</Button>
+                onPress={() => navigate('/messaging')}>{t('pages.message1')}</Button>
               <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200" startContent={<Edit size={16} />}
-                onPress={() => setActiveTab("settings")}>Settings</Button>
+                onPress={() => setActiveTab("settings")}>{t('pages.settings2')}</Button>
               <Dropdown>
                 <DropdownTrigger>
                   <Button isIconOnly variant="light" className="text-gray-400 dark:text-zinc-500"><MoreVertical size={20} /></Button>
                 </DropdownTrigger>
                 <DropdownMenu className="min-w-[180px]">
-                  <DropdownItem key="export" startContent={<Download size={14} className="text-gray-400 dark:text-zinc-500" />}>Export Report</DropdownItem>
-                  <DropdownItem key="notice" startContent={<Send size={14} className="text-gray-400 dark:text-zinc-500" />}>Send Notice</DropdownItem>
-                  <DropdownItem key="timetable" startContent={<Clock size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={() => setActiveTab("timetable")}>View Timetable</DropdownItem>
+                  <DropdownItem key="export" startContent={<Download size={14} className="text-gray-400 dark:text-zinc-500" />}>{t('pages.exportReport')}</DropdownItem>
+                  <DropdownItem key="notice" startContent={<Send size={14} className="text-gray-400 dark:text-zinc-500" />}>{t('pages.sendNotice')}</DropdownItem>
+                  <DropdownItem key="timetable" startContent={<Clock size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={() => setActiveTab("timetable")}>{t('pages.viewTimetable')}</DropdownItem>
                 </DropdownMenu>
               </Dropdown>
             </div>
@@ -258,23 +268,23 @@ export default function ClassDashboard() {
 
           {/* Quick Actions */}
           <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Quick Actions</h3>
+            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">{t('pages.quickActions1')}</h3>
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => setActiveTab("students")} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800">
                 <Users size={18} className="text-gray-600 dark:text-zinc-400" />
-                <span className="text-xs text-gray-600 dark:text-zinc-400">Students</span>
+                <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.students1')}</span>
               </button>
               <button onClick={() => setActiveTab("attendance")} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800">
                 <CheckCircle2 size={18} className="text-gray-600 dark:text-zinc-400" />
-                <span className="text-xs text-gray-600 dark:text-zinc-400">Attendance</span>
+                <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.attendance2')}</span>
               </button>
               <button onClick={() => setActiveTab("fees")} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800">
                 <IndianRupee size={18} className="text-gray-600 dark:text-zinc-400" />
-                <span className="text-xs text-gray-600 dark:text-zinc-400">Fees</span>
+                <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.fees1')}</span>
               </button>
               <button onClick={() => setActiveTab("timetable")} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800">
                 <Clock size={18} className="text-gray-600 dark:text-zinc-400" />
-                <span className="text-xs text-gray-600 dark:text-zinc-400">Timetable</span>
+                <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.timetable2')}</span>
               </button>
             </div>
           </div>
@@ -282,7 +292,7 @@ export default function ClassDashboard() {
           {/* Class Teacher Card */}
           {cls?.classTeacherId && (
             <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Class Teacher</h3>
+              <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">{t('pages.classTeacher2')}</h3>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
                   <span className="text-sm font-medium text-gray-600 dark:text-zinc-400">
@@ -291,7 +301,7 @@ export default function ClassDashboard() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{cls?.teacher || 'Teacher'}</p>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400">Class Teacher</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.classTeacher2')}</p>
                 </div>
                 <button
                   onClick={() => navigate(`/messages?to=${cls.classTeacherId}`)}
@@ -306,7 +316,7 @@ export default function ClassDashboard() {
           {/* Assigned Subjects */}
           {!settingsLoading && classSettings?.assignedSubjects && classSettings.assignedSubjects.length > 0 && (
             <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Assigned Subjects</h3>
+              <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">{t('pages.assignedSubjects')}</h3>
               <div className="flex flex-wrap gap-2">
                 {classSettings.assignedSubjects.map((subject) => (
                   <span
@@ -341,6 +351,7 @@ export default function ClassDashboard() {
 // --- Sub-components ---
 
 function OverviewTab({ id, cls, classesEnhancedApi }) {
+  const { t } = useTranslation();
   const { classesApi } = useApp();
   const [todayStatus, setTodayStatus] = useState(null);
   const [todayStatusLoading, setTodayStatusLoading] = useState(false);
@@ -352,6 +363,7 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
   // Fetch data
   useEffect(() => {
     if (!id || !classesEnhancedApi) return;
+    const controller = new AbortController();
 
     const fetchData = async () => {
       setTodayStatusLoading(true);
@@ -360,27 +372,28 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
 
       try {
         const status = await classesEnhancedApi.getTodayStatus(id);
-        setTodayStatus(status);
+        if (!controller.signal.aborted) setTodayStatus(status);
       } catch (e) {
-        console.error('Error loading today status:', e);
-      } finally { setTodayStatusLoading(false); }
+        if (!controller.signal.aborted) console.error('Error loading today status:', e);
+      } finally { if (!controller.signal.aborted) setTodayStatusLoading(false); }
 
       try {
         const perf = await classesEnhancedApi.getAcademicPerformance(id);
-        setAcademicPerformance(perf);
+        if (!controller.signal.aborted) setAcademicPerformance(perf);
       } catch (e) {
-        console.error('Error loading academic performance:', e);
-      } finally { setAcademicPerformanceLoading(false); }
+        if (!controller.signal.aborted) console.error('Error loading academic performance:', e);
+      } finally { if (!controller.signal.aborted) setAcademicPerformanceLoading(false); }
 
       try {
         const rating = await classesEnhancedApi.getRating(id);
-        setClassRating(rating);
+        if (!controller.signal.aborted) setClassRating(rating);
       } catch (e) {
-        console.error('Error loading class rating:', e);
-      } finally { setRatingLoading(false); }
+        if (!controller.signal.aborted) console.error('Error loading class rating:', e);
+      } finally { if (!controller.signal.aborted) setRatingLoading(false); }
     };
 
     fetchData();
+    return () => controller.abort();
   }, [id, classesEnhancedApi]);
 
   const renderStars = (rating) => {
@@ -432,7 +445,7 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
                 <AlertTriangle size={16} className="text-gray-600 dark:text-zinc-400" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Action Needed</h3>
+                <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.actionNeeded1')}</h3>
                 <p className="text-xs text-gray-500 dark:text-zinc-400">Attendance is below 75%</p>
               </div>
             </div>
@@ -441,7 +454,7 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
             <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-zinc-900">
               <AlertCircle size={18} className="text-gray-500 dark:text-zinc-400" />
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Low Attendance Alert</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.lowAttendanceAlert')}</p>
                 <p className="text-xs text-gray-500 dark:text-zinc-400">Current: {attendancePercentage}% (target: 75%)</p>
               </div>
             </div>
@@ -458,8 +471,8 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
                 <Award size={16} className="text-gray-600 dark:text-zinc-400" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Academic Overview</h3>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Top performers & improvements</p>
+                <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.academicOverview')}</h3>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.topPerformersImprovements')}</p>
               </div>
             </div>
           </div>
@@ -471,7 +484,7 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
             ) : (
               <div className="space-y-4">
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400 mb-2">Top Performers</p>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400 mb-2">{t('pages.topPerformers')}</p>
                   {academicPerformance?.topPerformers?.slice(0, 3).map((s) => (
                     <div key={s._id || s.name} className="flex justify-between items-center py-2 border-b border-gray-50 dark:border-zinc-800 last:border-0">
                       <span className="text-sm text-gray-700 dark:text-zinc-300">{s.name}</span>
@@ -479,11 +492,11 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
                     </div>
                   ))}
                   {(!academicPerformance?.topPerformers || academicPerformance.topPerformers.length === 0) && (
-                    <p className="text-xs text-gray-400 dark:text-zinc-500">No data available</p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.noDataAvailable')}</p>
                   )}
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400 mb-2">Needs Improvement</p>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400 mb-2">{t('pages.needsImprovement')}</p>
                   {academicPerformance?.needsImprovement?.slice(0, 3).map((s) => (
                     <div key={s._id || s.name} className="flex justify-between items-center py-2 border-b border-gray-50 dark:border-zinc-800 last:border-0">
                       <span className="text-sm text-gray-700 dark:text-zinc-300">{s.name}</span>
@@ -491,7 +504,7 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
                     </div>
                   ))}
                   {(!academicPerformance?.needsImprovement || academicPerformance.needsImprovement.length === 0) && (
-                    <p className="text-xs text-gray-400 dark:text-zinc-500">No data available</p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.noDataAvailable')}</p>
                   )}
                 </div>
               </div>
@@ -507,8 +520,8 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
                 <Star size={16} className="text-gray-600 dark:text-zinc-400" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Class Ratings</h3>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Detailed breakdown</p>
+                <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.classRatings')}</h3>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.detailedBreakdown')}</p>
               </div>
             </div>
           </div>
@@ -534,7 +547,7 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
                   </div>
                 ))}
                 {(!classRating?.breakdown || Object.keys(classRating.breakdown).length === 0) && (
-                  <p className="text-xs text-gray-400 dark:text-zinc-500 text-center py-4">No ratings available</p>
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 text-center py-4">{t('pages.noRatingsAvailable')}</p>
                 )}
               </div>
             )}
@@ -546,6 +559,7 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
 }
 
 function StudentsTab({ id, cls, navigate }) {
+  const { t } = useTranslation();
   const { students } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("all");
@@ -574,7 +588,7 @@ function StudentsTab({ id, cls, navigate }) {
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
             <input
               type="text"
-              placeholder="Search students..."
+              placeholder={t('pages.searchStudents')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:border-gray-400 dark:focus:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
@@ -600,7 +614,7 @@ function StudentsTab({ id, cls, navigate }) {
       <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Class Students</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.classStudents')}</h3>
             <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{filteredStudents.length} students</p>
           </div>
         </div>
@@ -616,7 +630,7 @@ function StudentsTab({ id, cls, navigate }) {
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
                     {student.photo ? (
-                      <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
+                      <img src={student.photo} alt={student.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     ) : (
                       <span className="text-xs font-medium text-gray-600 dark:text-zinc-400">{student.name?.charAt(0)}</span>
                     )}
@@ -646,7 +660,7 @@ function StudentsTab({ id, cls, navigate }) {
         ) : (
           <div className="px-5 py-12 text-center">
             <Users size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
-            <p className="text-sm text-gray-500 dark:text-zinc-400">No students found</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noStudentsFound')}</p>
           </div>
         )}
       </div>
@@ -655,6 +669,7 @@ function StudentsTab({ id, cls, navigate }) {
 }
 
 function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
+  const { t } = useTranslation();
   const [feesOverview, setFeesOverview] = useState(null);
   const { students } = useApp();
 
@@ -700,7 +715,7 @@ function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
       <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Defaulters List</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.defaultersList')}</h3>
             <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{pendingStudents.length} pending payments</p>
           </div>
         </div>
@@ -712,7 +727,7 @@ function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
                     {student.photo ? (
-                      <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
+                      <img src={student.photo} alt={student.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     ) : (
                       <span className="text-xs font-medium text-gray-600 dark:text-zinc-400">{student.name?.charAt(0)}</span>
                     )}
@@ -724,7 +739,7 @@ function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{student.pendingFees || "5,000"}</span>
-                  <Button size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" onPress={() => navigate(`/fees/collect?student=${student.id}`)}>Collect</Button>
+                  <Button size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" onPress={() => navigate(`/fees/collect?student=${student.id}`)}>{t('pages.collect')}</Button>
                 </div>
               </div>
             ))}
@@ -732,7 +747,7 @@ function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
         ) : (
           <div className="px-5 py-12 text-center">
             <IndianRupee size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
-            <p className="text-sm text-gray-500 dark:text-zinc-400">No pending fees</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noPendingFees')}</p>
           </div>
         )}
       </div>
@@ -741,26 +756,31 @@ function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
 }
 
 function AcademicsTab({ id, cls, classesEnhancedApi }) {
+  const { t } = useTranslation();
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   // Fetch exams for this class
   useEffect(() => {
+    if (!id) return;
+    const controller = new AbortController();
     const fetchExams = async () => {
-      if (!id) return;
       setLoading(true);
       try {
         const data = await examsApi.getByClass(id);
-        setExams(data || []);
+        if (!controller.signal.aborted) setExams(data || []);
       } catch (error) {
-        console.error('Error fetching exams:', error);
-        toast.error('Failed to load exams');
+        if (!controller.signal.aborted) {
+          console.error('Error fetching exams:', error);
+          toast.error(t('toast.error.failedToLoadExams'));
+        }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
     fetchExams();
+    return () => controller.abort();
   }, [id]);
 
   // Get status color
@@ -788,19 +808,19 @@ function AcademicsTab({ id, cls, classesEnhancedApi }) {
       {/* Stats Row */}
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-gray-500 dark:text-zinc-400">Total Exams</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.totalExams')}</p>
           <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{exams.length}</p>
         </div>
         <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-blue-600">Scheduled</p>
+          <p className="text-xs text-blue-600">{t('pages.scheduled')}</p>
           <p className="text-xl font-semibold text-blue-700">{examsByStatus.scheduled.length}</p>
         </div>
         <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-amber-600">Ongoing</p>
+          <p className="text-xs text-amber-600">{t('pages.ongoing')}</p>
           <p className="text-xl font-semibold text-amber-700">{examsByStatus.ongoing.length}</p>
         </div>
         <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-green-600">Completed</p>
+          <p className="text-xs text-green-600">{t('pages.completed')}</p>
           <p className="text-xl font-semibold text-green-700">{examsByStatus.completed.length}</p>
         </div>
       </div>
@@ -813,8 +833,8 @@ function AcademicsTab({ id, cls, classesEnhancedApi }) {
               <FileText size={16} className="text-gray-600 dark:text-zinc-400" />
             </div>
             <div>
-              <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Class Exams</h3>
-              <p className="text-xs text-gray-500 dark:text-zinc-400">All scheduled and completed exams</p>
+              <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.classExams')}</h3>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.allScheduledAndCompletedExams')}</p>
             </div>
           </div>
           <Button
@@ -834,7 +854,7 @@ function AcademicsTab({ id, cls, classesEnhancedApi }) {
         ) : exams.length === 0 ? (
           <div className="p-8 text-center">
             <FileText size={40} className="mx-auto text-gray-200 dark:text-zinc-700 mb-4" />
-            <p className="text-sm text-gray-500 dark:text-zinc-400">No exams scheduled for this class yet.</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noExamsScheduledForThisClassYet')}</p>
             <Button
               className="mt-4 bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
               startContent={<FileText size={16} />}

@@ -1,13 +1,16 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner, Select, SelectItem, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@heroui/react";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Select, SelectItem, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@heroui/react";
+import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
 import { Search, X, Download, Bell, MoreVertical, CreditCard } from "lucide-react";
 import { feesApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 const ITEMS_PER_LOAD = 10;
 
 export default function FeeDefaulters() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -98,7 +101,7 @@ export default function FeeDefaulters() {
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center min-h-[400px]"><Spinner size="lg" /></div>;
+    return <TablePageSkeleton kpiCards={3} columns={6} rows={8} />;
   }
 
   return (
@@ -106,11 +109,11 @@ export default function FeeDefaulters() {
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-4 mb-6 -mx-6 -mt-6 px-6 pt-6">
         <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
-          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Total Defaulters</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">{t('pages.totalDefaulters')}</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{filteredDefaulters.length}</p>
         </div>
         <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
-          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Total Pending</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">{t('pages.totalPending')}</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">₹{totalPending.toLocaleString()}</p>
         </div>
         <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
@@ -127,8 +130,8 @@ export default function FeeDefaulters() {
             <Search size={16} className="text-gray-400 dark:text-zinc-500" />
             <input
               type="search"
-              placeholder="Search student..."
-              className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-zinc-100 placeholder:text-gray-400 dark:placeholder:text-zinc-500"
+              placeholder={t('pages.searchStudent')}
+              className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-zinc-100 placeholder:text-gray-500 dark:placeholder:text-zinc-500"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -142,13 +145,13 @@ export default function FeeDefaulters() {
           {/* Filter Dropdown */}
           <Select
             size="sm"
-            placeholder="Filter by days"
+            placeholder={t('pages.filterByDays')}
             selectedKeys={new Set([filter])}
             onSelectionChange={(keys) => setFilter(Array.from(keys)[0])}
             className="w-36"
             classNames={{ trigger: "h-9 bg-white border-gray-200 hover:border-gray-300" }}
           >
-            <SelectItem key="all">All</SelectItem>
+            <SelectItem key="all">{t('pages.all1')}</SelectItem>
             <SelectItem key="7">7+ Days</SelectItem>
             <SelectItem key="15">15+ Days</SelectItem>
             <SelectItem key="30">30+ Days</SelectItem>
@@ -158,11 +161,11 @@ export default function FeeDefaulters() {
         <div className="flex gap-2 w-full sm:w-auto">
           <button onClick={handleSendReminders} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all">
             <Bell size={14} />
-            <span>Remind All</span>
+            <span>{t('pages.remindAll')}</span>
           </button>
           <button onClick={handleExportDefaulters} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all">
             <Download size={14} />
-            <span>Export</span>
+            <span>{t('pages.export1')}</span>
           </button>
         </div>
       </div>
@@ -170,7 +173,7 @@ export default function FeeDefaulters() {
       {/* Table */}
       <div className="border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden -mx-6 sm:mx-0">
         <Table
-          aria-label="Fee defaulters"
+          aria-label={t('aria.misc.feeDefaulters')}
           removeWrapper
           classNames={{
             th: "bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-11 border-b border-gray-200 dark:border-zinc-800",
@@ -178,13 +181,13 @@ export default function FeeDefaulters() {
           }}
         >
           <TableHeader>
-            <TableColumn>STUDENT</TableColumn>
-            <TableColumn>PENDING</TableColumn>
-            <TableColumn>DUE DATE</TableColumn>
-            <TableColumn>OVERDUE</TableColumn>
-            <TableColumn align="end">ACTIONS</TableColumn>
+            <TableColumn scope="col">{t('pages.sTUDENT')}</TableColumn>
+            <TableColumn scope="col">{t('pages.pENDING')}</TableColumn>
+            <TableColumn scope="col">{t('pages.dUEDate')}</TableColumn>
+            <TableColumn scope="col">{t('pages.oVERDUE')}</TableColumn>
+            <TableColumn align="end" scope="col">{t('pages.aCTIONS')}</TableColumn>
           </TableHeader>
-          <TableBody emptyContent={<div className="text-center py-8"><p className="text-gray-400 dark:text-zinc-500 text-sm">No defaulters found</p></div>}>
+          <TableBody emptyContent={<div className="text-center py-8"><p className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.noDefaultersFound')}</p></div>}>
             {visibleDefaulters.map((item) => (
               <TableRow key={item.id} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
                 <TableCell>
@@ -239,7 +242,7 @@ export default function FeeDefaulters() {
         <div ref={loaderRef} className="flex justify-center py-4 bg-gray-50 dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
           {isLoadingMore && <Spinner size="sm" />}
           {!hasMore && filteredDefaulters.length > ITEMS_PER_LOAD && (
-            <span className="text-gray-400 dark:text-zinc-500 text-xs">All defaulters loaded</span>
+            <span className="text-gray-400 dark:text-zinc-500 text-xs">{t('pages.allDefaultersLoaded')}</span>
           )}
         </div>
       </div>

@@ -2,15 +2,18 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Button, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  useDisclosure, Chip, Input, Spinner, Card, CardBody
+  useDisclosure, Chip, Input, Card, CardBody
 } from '@heroui/react';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { UserCheck, Calendar, Clock, Plus, Search, Filter, X, UserPlus, RefreshCw, UserMinus } from 'lucide-react';
 import { request } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useApp } from '../../context/AppContext';
 import { DEFAULT_PERIODS } from '../../utils/constants';
+import { useTranslation } from 'react-i18next';
 
 export default function Substitution() {
+  const { t } = useTranslation();
   const { teachers, classes, schoolSettings } = useApp();
   const [substitutions, setSubstitutions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +33,7 @@ export default function Substitution() {
     reason: '',
     type: 'auto'
   });
+  const [formErrors, setFormErrors] = useState({});
 
   // Additional modals for assign/change teacher
   const { isOpen: isAssignOpen, onOpen: onAssignOpen, onClose: onAssignClose } = useDisclosure();
@@ -98,14 +102,19 @@ export default function Substitution() {
   }, [substitutions, searchQuery, statusFilter]);
 
   const handleSubmit = async () => {
-    if (!formData.classId || !formData.period || !formData.substituteTeacherId) {
-      toast.error('Please fill all required fields');
+    const newErrors = {};
+    if (!formData.classId) newErrors.classId = t('toast.error.pleaseFillAllRequiredFields');
+    if (!formData.period) newErrors.period = t('toast.error.pleaseFillAllRequiredFields');
+    if (!formData.substituteTeacherId) newErrors.substituteTeacherId = t('toast.error.pleaseFillAllRequiredFields');
+    if (Object.keys(newErrors).length > 0) {
+      setFormErrors(newErrors);
+      toast.error(t('toast.error.pleaseFillAllRequiredFields'));
       return;
     }
 
     try {
       await request('/substitutions', { method: 'POST', body: JSON.stringify(formData) });
-      toast.success('Substitution assigned successfully');
+      toast.success(t('toast.success.substitutionAssignedSuccessfully'));
       onClose();
       resetForm();
       loadSubstitutions();
@@ -115,13 +124,13 @@ export default function Substitution() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to remove this substitution?')) return;
+    if (!confirm(t('confirm.removeSubstitution'))) return;
     try {
       await request(`/substitutions/${id}`, { method: 'DELETE' });
-      toast.success('Substitution removed');
+      toast.success(t('toast.success.substitutionRemoved'));
       loadSubstitutions();
     } catch (error) {
-      toast.error('Failed to remove substitution');
+      toast.error(t('toast.error.failedToRemoveSubstitution'));
     }
   };
 
@@ -133,13 +142,13 @@ export default function Substitution() {
         method: 'PUT',
         body: JSON.stringify({ substituteTeacherId: selectedTeacher, status: 'assigned' })
       });
-      toast.success('Teacher assigned successfully');
+      toast.success(t('toast.success.teacherAssignedSuccessfully'));
       onAssignClose();
       setSelectedSubstitution(null);
       setSelectedTeacher("");
       loadSubstitutions();
     } catch (error) {
-      toast.error('Failed to assign teacher');
+      toast.error(t('toast.error.failedToAssignTeacher'));
     }
   };
 
@@ -151,13 +160,13 @@ export default function Substitution() {
         method: 'PUT',
         body: JSON.stringify({ substituteTeacherId: selectedTeacher })
       });
-      toast.success('Teacher changed successfully');
+      toast.success(t('toast.success.teacherChangedSuccessfully'));
       onChangeClose();
       setSelectedSubstitution(null);
       setSelectedTeacher("");
       loadSubstitutions();
     } catch (error) {
-      toast.error('Failed to change teacher');
+      toast.error(t('toast.error.failedToChangeTeacher'));
     }
   };
 
@@ -171,6 +180,7 @@ export default function Substitution() {
       reason: '',
       type: 'auto'
     });
+    setFormErrors({});
   };
 
   const getTeacherName = (teacherId) => {
@@ -187,11 +197,11 @@ export default function Substitution() {
   const getStatusChip = (status) => {
     switch (status) {
       case 'assigned':
-        return <Chip size="sm" color="success" variant="flat">Assigned</Chip>;
+        return <Chip size="sm" color="success" variant="flat">{t('pages.assigned1')}</Chip>;
       case 'not_assigned':
-        return <Chip size="sm" color="warning" variant="flat">Not Assigned</Chip>;
+        return <Chip size="sm" color="warning" variant="flat">{t('pages.notAssigned1')}</Chip>;
       case 'completed':
-        return <Chip size="sm" color="default" variant="flat">Completed</Chip>;
+        return <Chip size="sm" color="default" variant="flat">{t('pages.completed')}</Chip>;
       default:
         return <Chip size="sm" color="default" variant="flat">{status || 'Pending'}</Chip>;
     }
@@ -215,7 +225,7 @@ export default function Substitution() {
         {/* Left Side - Search & Filters */}
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto bg-background">
           <Input
-            placeholder="Search substitutions..."
+            placeholder={t('pages.searchSubstitutions')}
             size="sm"
             startContent={<Search size={16} />}
             value={searchQuery}
@@ -230,7 +240,7 @@ export default function Substitution() {
           />
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Select
-              placeholder="Status"
+              placeholder={t('pages.status2')}
               selectedKeys={[statusFilter]}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-36"
@@ -240,9 +250,9 @@ export default function Substitution() {
                 trigger: "bg-default-100 data-[hover=true]:bg-default-200",
               }}
             >
-              <SelectItem key="all">All Status</SelectItem>
-              <SelectItem key="assigned">Assigned</SelectItem>
-              <SelectItem key="not_assigned">Not Assigned</SelectItem>
+              <SelectItem key="all">{t('pages.allStatus1')}</SelectItem>
+              <SelectItem key="assigned">{t('pages.assigned1')}</SelectItem>
+              <SelectItem key="not_assigned">{t('pages.notAssigned1')}</SelectItem>
             </Select>
 
             <Input
@@ -315,14 +325,12 @@ export default function Substitution() {
 
       {/* Substitutions Table */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Spinner size="lg" color="primary" />
-        </div>
+        <TablePageSkeleton />
       ) : filteredSubstitutions.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center bg-default-50/50 rounded-lg border border-dashed border-default-200">
           <Calendar size={48} className="text-default-300 mb-4" />
-          <p className="text-default-500 font-medium">No substitutions found</p>
-          <p className="text-default-400 text-sm mt-1">Try changing the date or filters</p>
+          <p className="text-default-500 font-medium">{t('pages.noSubstitutionsFound')}</p>
+          <p className="text-default-400 text-sm mt-1">{t('pages.tryChangingTheDateOrFilters')}</p>
           <Button
             color="primary"
             variant="flat"
@@ -335,7 +343,7 @@ export default function Substitution() {
         </div>
       ) : (
         <Table
-          aria-label="Substitutions table"
+          aria-label={t('aria.tables.substitutions')}
           removeWrapper
           radius="none"
           classNames={{
@@ -348,12 +356,12 @@ export default function Substitution() {
           }}
         >
           <TableHeader>
-            <TableColumn>CLASS</TableColumn>
-            <TableColumn>PERIOD / SUBJECT</TableColumn>
-            <TableColumn>TEACHER ABSENT</TableColumn>
-            <TableColumn>STATUS</TableColumn>
-            <TableColumn>REASON</TableColumn>
-            <TableColumn align="center">ACTIONS</TableColumn>
+            <TableColumn scope="col">{t('pages.cLASS')}</TableColumn>
+            <TableColumn scope="col">PERIOD / SUBJECT</TableColumn>
+            <TableColumn scope="col">{t('pages.tEACHERAbsent')}</TableColumn>
+            <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+            <TableColumn scope="col">{t('pages.rEASON')}</TableColumn>
+            <TableColumn align="center" scope="col">{t('pages.aCTIONS')}</TableColumn>
           </TableHeader>
           <TableBody items={filteredSubstitutions}>
             {(sub) => (
@@ -436,27 +444,30 @@ export default function Substitution() {
         </Table>
       )}
 
-      <Modal isOpen={isOpen} onClose={onClose} size="2xl">
+      <Modal isOpen={isOpen} onClose={() => { onClose(); setFormErrors({}); }} size="2xl">
         <ModalContent>
-          <ModalHeader>Create Substitution</ModalHeader>
+          <ModalHeader>{t('pages.createSubstitution')}</ModalHeader>
           <ModalBody>
             <div className="grid grid-cols-2 gap-4">
               <Input
                 type="date"
-                label="Date"
+                label={t('pages.date2')}
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                 isRequired
               />
               <Select
-                label="Class"
-                placeholder="Select class"
+                label={t('pages.class1')}
+                placeholder={t('pages.selectClass2')}
                 selectedKeys={formData.classId ? [formData.classId] : []}
                 onSelectionChange={(keys) => {
                   const selectedId = Array.from(keys)[0];
                   setFormData({ ...formData, classId: selectedId || '' });
+                  setFormErrors(prev => ({ ...prev, classId: '' }));
                 }}
                 isRequired
+                isInvalid={!!formErrors.classId}
+                errorMessage={formErrors.classId}
               >
                 {classes.map((cls) => (
                   <SelectItem key={cls.id} value={cls.id}>
@@ -465,14 +476,17 @@ export default function Substitution() {
                 ))}
               </Select>
               <Select
-                label="Period"
-                placeholder="Select period"
+                label={t('pages.period2')}
+                placeholder={t('pages.selectPeriod')}
                 selectedKeys={formData.period ? [formData.period] : []}
                 onSelectionChange={(keys) => {
                   const selectedPeriod = Array.from(keys)[0];
                   setFormData({ ...formData, period: selectedPeriod || '' });
+                  setFormErrors(prev => ({ ...prev, period: '' }));
                 }}
                 isRequired
+                isInvalid={!!formErrors.period}
+                errorMessage={formErrors.period}
               >
                 {periods.map((p) => (
                   <SelectItem key={p} value={p}>
@@ -481,8 +495,8 @@ export default function Substitution() {
                 ))}
               </Select>
               <Select
-                label="Absent Teacher (Optional)"
-                placeholder="Select teacher"
+                label={t('pages.absentTeacherOptional')}
+                placeholder={t('pages.selectTeacher')}
                 selectedKeys={formData.absentTeacherId ? [formData.absentTeacherId] : []}
                 onSelectionChange={(keys) => {
                   const selectedId = Array.from(keys)[0];
@@ -499,15 +513,18 @@ export default function Substitution() {
                 ))}
               </Select>
               <Select
-                label="Substitute Teacher"
-                placeholder="Select substitute"
+                label={t('pages.substituteTeacher')}
+                placeholder={t('pages.selectSubstitute')}
                 selectedKeys={formData.substituteTeacherId ? [formData.substituteTeacherId] : []}
                 onSelectionChange={(keys) => {
                   const selectedId = Array.from(keys)[0];
                   setFormData({ ...formData, substituteTeacherId: selectedId || '' });
+                  setFormErrors(prev => ({ ...prev, substituteTeacherId: '' }));
                 }}
                 isRequired
                 className="col-span-2"
+                isInvalid={!!formErrors.substituteTeacherId}
+                errorMessage={formErrors.substituteTeacherId}
               >
                 {teachers.filter(t => {
                   const roles = Array.isArray(t.role) ? t.role : (t.role ? [t.role] : []);
@@ -519,8 +536,8 @@ export default function Substitution() {
                 ))}
               </Select>
               <Input
-                label="Reason"
-                placeholder="Enter reason for substitution"
+                label={t('pages.reason')}
+                placeholder={t('pages.enterReasonForSubstitution')}
                 value={formData.reason}
                 onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                 className="col-span-2"
@@ -541,19 +558,19 @@ export default function Substitution() {
       {/* Assign Teacher Modal */}
       <Modal isOpen={isAssignOpen} onClose={onAssignClose}>
         <ModalContent>
-          <ModalHeader>Assign Substitute Teacher</ModalHeader>
+          <ModalHeader>{t('pages.assignSubstituteTeacher1')}</ModalHeader>
           <ModalBody className="space-y-4">
             {selectedSubstitution && (
               <>
                 <div className="bg-default-50 rounded-lg p-4 space-y-2">
-                  <p><strong>Class:</strong> {getClassName(selectedSubstitution.classId)}</p>
-                  <p><strong>Period:</strong> {selectedSubstitution.period}</p>
-                  <p><strong>Absent Teacher:</strong> {getTeacherName(selectedSubstitution.absentTeacherId)}</p>
+                  <p><strong>{t('pages.class2')}</strong> {getClassName(selectedSubstitution.classId)}</p>
+                  <p><strong>{t('pages.period3')}</strong> {selectedSubstitution.period}</p>
+                  <p><strong>{t('pages.absentTeacher1')}</strong> {getTeacherName(selectedSubstitution.absentTeacherId)}</p>
                 </div>
 
                 <Select
-                  label="Select Substitute Teacher"
-                  placeholder="Choose a teacher"
+                  label={t('pages.selectSubstituteTeacher')}
+                  placeholder={t('pages.chooseATeacher')}
                   selectedKeys={selectedTeacher ? [selectedTeacher] : []}
                   onSelectionChange={(keys) => setSelectedTeacher(Array.from(keys)[0])}
                   isRequired
@@ -585,19 +602,19 @@ export default function Substitution() {
       {/* Change Teacher Modal */}
       <Modal isOpen={isChangeOpen} onClose={onChangeClose}>
         <ModalContent>
-          <ModalHeader>Change Substitute Teacher</ModalHeader>
+          <ModalHeader>{t('pages.changeSubstituteTeacher')}</ModalHeader>
           <ModalBody className="space-y-4">
             {selectedSubstitution && (
               <>
                 <div className="bg-default-50 rounded-lg p-4 space-y-2">
-                  <p><strong>Class:</strong> {getClassName(selectedSubstitution.classId)}</p>
-                  <p><strong>Current Substitute:</strong> {getTeacherName(selectedSubstitution.substituteTeacherId)}</p>
-                  <p><strong>Absent Teacher:</strong> {getTeacherName(selectedSubstitution.absentTeacherId)}</p>
+                  <p><strong>{t('pages.class2')}</strong> {getClassName(selectedSubstitution.classId)}</p>
+                  <p><strong>{t('pages.currentSubstitute')}</strong> {getTeacherName(selectedSubstitution.substituteTeacherId)}</p>
+                  <p><strong>{t('pages.absentTeacher1')}</strong> {getTeacherName(selectedSubstitution.absentTeacherId)}</p>
                 </div>
 
                 <Select
-                  label="Select New Teacher"
-                  placeholder="Choose a new teacher"
+                  label={t('pages.selectNewTeacher')}
+                  placeholder={t('pages.chooseANewTeacher')}
                   selectedKeys={selectedTeacher ? [selectedTeacher] : []}
                   onSelectionChange={(keys) => setSelectedTeacher(Array.from(keys)[0])}
                   isRequired

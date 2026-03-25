@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Package, Wrench, ShoppingCart, Truck, AlertTriangle, CheckCircle } from "lucide-react";
 import { inventoryApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 function StatCard({ icon: Icon, label, value, color, onClick }) {
   const colorMap = {
@@ -61,6 +62,7 @@ function LowStockItem({ asset }) {
 }
 
 export default function InventoryDashboard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [lowStock, setLowStock] = useState([]);
@@ -80,7 +82,7 @@ export default function InventoryDashboard() {
         setLowStock(Array.isArray(lowStockData) ? lowStockData : []);
         setRecentMaintenance(Array.isArray(maintenanceData) ? maintenanceData.slice(0, 5) : []);
       } catch (err) {
-        toast.error("Failed to load inventory data");
+        toast.error(t('toast.error.failedToLoadInventoryData'));
       } finally {
         setLoading(false);
       }
@@ -108,12 +110,12 @@ export default function InventoryDashboard() {
     <div className="space-y-6">
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatCard icon={Package} label="Total Assets" value={stats?.totalAssets ?? 0} color="blue" onClick={() => navigate("/inventory/assets")} />
-        <StatCard icon={CheckCircle} label="Active" value={stats?.activeAssets ?? 0} color="green" onClick={() => navigate("/inventory/assets")} />
-        <StatCard icon={Wrench} label="Under Maintenance" value={stats?.underMaintenance ?? 0} color="yellow" onClick={() => navigate("/inventory/maintenance")} />
-        <StatCard icon={ShoppingCart} label="Pending Procurement" value={stats?.pendingProcurements ?? 0} color="purple" onClick={() => navigate("/inventory/procurement")} />
-        <StatCard icon={Truck} label="Active Vendors" value={stats?.totalVendors ?? 0} color="gray" onClick={() => navigate("/inventory/vendors")} />
-        <StatCard icon={AlertTriangle} label="Low Stock" value={stats?.lowStockAssets ?? 0} color="red" onClick={() => {}} />
+        <StatCard icon={Package} label={t('pages.totalAssets')} value={stats?.totalAssets ?? 0} color="blue" onClick={() => navigate("/inventory/assets")} />
+        <StatCard icon={CheckCircle} label={t('pages.active')} value={stats?.activeAssets ?? 0} color="green" onClick={() => navigate("/inventory/assets")} />
+        <StatCard icon={Wrench} label={t('pages.underMaintenance')} value={stats?.underMaintenance ?? 0} color="yellow" onClick={() => navigate("/inventory/maintenance")} />
+        <StatCard icon={ShoppingCart} label={t('pages.pendingProcurement')} value={stats?.pendingProcurements ?? 0} color="purple" onClick={() => navigate("/inventory/procurement")} />
+        <StatCard icon={Truck} label={t('pages.activeVendors')} value={stats?.totalVendors ?? 0} color="gray" onClick={() => navigate("/inventory/vendors")} />
+        <StatCard icon={AlertTriangle} label={t('pages.lowStock')} value={stats?.lowStockAssets ?? 0} color="red" onClick={() => navigate("/inventory/assets?filter=lowStock")} />
       </div>
 
       {/* Bottom Panels */}
@@ -121,12 +123,12 @@ export default function InventoryDashboard() {
         {/* Low Stock Alerts */}
         <div className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl shadow-sm dark:shadow-zinc-900/50">
           <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Low Stock Alerts</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.lowStockAlerts')}</h3>
             <span className="text-xs text-gray-500 dark:text-zinc-400">{lowStock.length} items</span>
           </div>
           <div className="px-5 py-2 max-h-72 overflow-y-auto">
             {lowStock.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-zinc-400 py-6 text-center">No low stock items</p>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 py-6 text-center">{t('pages.noLowStockItems')}</p>
             ) : (
               lowStock.map((asset) => <LowStockItem key={asset._id} asset={asset} />)
             )}
@@ -136,7 +138,7 @@ export default function InventoryDashboard() {
         {/* Upcoming Maintenance */}
         <div className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl shadow-sm dark:shadow-zinc-900/50">
           <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Scheduled Maintenance</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.scheduledMaintenance')}</h3>
             <button
               onClick={() => navigate("/inventory/maintenance")}
               className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
@@ -146,7 +148,7 @@ export default function InventoryDashboard() {
           </div>
           <div className="px-5 py-2 max-h-72 overflow-y-auto">
             {recentMaintenance.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-zinc-400 py-6 text-center">No scheduled maintenance</p>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 py-6 text-center">{t('pages.noScheduledMaintenance')}</p>
             ) : (
               recentMaintenance.map((log) => (
                 <div key={log._id} className="flex items-center justify-between py-3 border-b border-gray-50 dark:border-zinc-800 last:border-0">

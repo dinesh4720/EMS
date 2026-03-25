@@ -17,10 +17,12 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '../context/AuthContext';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../theme';
 import { API_BASE_URL } from '../config';
+import { useTranslation } from 'react-i18next';
 
 const BASE_URL = API_BASE_URL;
 
 const LoginScreen = () => {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { login, loading, error, clearError } = useAuth();
 
@@ -114,17 +116,17 @@ const LoginScreen = () => {
               </View>
             </View>
 
-            <Text style={styles.title}>Staff Portal</Text>
-            <Text style={styles.subtitle}>Sign in to access your dashboard</Text>
+            <Text style={styles.title}>{t('screens.staffPortal')}</Text>
+            <Text style={styles.subtitle}>{t('screens.signInToAccessYourDashboard')}</Text>
           </LinearGradient>
 
           {/* Login Form */}
           <View style={styles.formContainer}>
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Email</Text>
+              <Text style={styles.inputLabel}>{t('screens.email1')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Enter your email"
+                placeholder={t('screens.enterYourEmail')}
                 placeholderTextColor={Colors.gray.dark}
                 value={email}
                 onChangeText={setEmail}
@@ -136,11 +138,11 @@ const LoginScreen = () => {
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Password</Text>
+              <Text style={styles.inputLabel}>{t('screens.password1')}</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={[styles.input, styles.passwordInput]}
-                  placeholder="Enter your password"
+                  placeholder={t('screens.enterYourPassword')}
                   placeholderTextColor={Colors.gray.dark}
                   value={password}
                   onChangeText={setPassword}
@@ -177,22 +179,22 @@ const LoginScreen = () => {
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
-                <Text style={styles.loginButtonText}>Sign In</Text>
+                <Text style={styles.loginButtonText}>{t('screens.signIn')}</Text>
               )}
             </TouchableOpacity>
 
             {/* Staff Quick Login */}
             <View style={styles.staffContainer}>
-              <Text style={styles.staffTitle}>Select Staff - Tap to fill email</Text>
+              <Text style={styles.staffTitle}>{t('screens.selectStaffTapToFillEmail')}</Text>
 
               {loadingStaff ? (
                 <View style={styles.loadingStaff}>
                   <ActivityIndicator size="small" color="#007AFF" />
-                  <Text style={styles.loadingText}>Loading staff...</Text>
+                  <Text style={styles.loadingText}>{t('screens.loadingStaff')}</Text>
                 </View>
               ) : staffList.length === 0 ? (
                 <View style={styles.loadingStaff}>
-                  <Text style={styles.errorText}>Unable to load staff. Check if server is running.</Text>
+                  <Text style={styles.errorText}>{t('screens.unableToLoadStaffCheckIfServerIsRunning')}</Text>
                 </View>
               ) : (
                 <ScrollView

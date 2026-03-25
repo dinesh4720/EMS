@@ -2,21 +2,23 @@ import { useEffect, useMemo, useState } from "react";
 import { Button, Card, CardBody, Chip, Divider, Input, Progress, Skeleton, Switch } from "@heroui/react";
 import {
   AlertTriangle,
-  Calendar,
-  CheckCircle2,
   CreditCard,
-  ExternalLink,
   HardDrive,
-  IndianRupee,
   MessageSquare,
-  ShieldCheck,
   TrendingUp,
   Users
 } from "lucide-react";
 import { billingApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { getDateLocale } from '../../i18n/index';
+import { useTranslation } from 'react-i18next';
+import InvoiceHistory from "../../components/billing/InvoiceHistory";
+import PlanComparisonMatrix from "../../components/billing/PlanComparisonMatrix";
+import CouponInput from "../../components/billing/CouponInput";
+
 
 export default function SubscriptionSettings() {
+  const { t } = useTranslation();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [savingAccount, setSavingAccount] = useState(false);
@@ -91,7 +93,7 @@ export default function SubscriptionSettings() {
   }, [summary]);
 
   const formatMoney = (amount, currency = "INR") =>
-    new Intl.NumberFormat("en-IN", {
+    new Intl.NumberFormat(getDateLocale(), {
       style: "currency",
       currency,
       maximumFractionDigits: 0,
@@ -99,7 +101,7 @@ export default function SubscriptionSettings() {
 
   const formatDate = (value) => {
     if (!value) return "—";
-    return new Date(value).toLocaleDateString("en-IN", {
+    return new Date(value).toLocaleDateString(getDateLocale(), {
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -131,7 +133,7 @@ export default function SubscriptionSettings() {
     setSavingAccount(true);
     try {
       await billingApi.updateAccount(accountForm);
-      toast.success("Billing account updated");
+      toast.success(t('toast.success.billingAccountUpdated'));
       await loadSummary(true);
     } catch (error) {
       toast.error(error.message || "Failed to update billing account");
@@ -159,10 +161,16 @@ export default function SubscriptionSettings() {
     }
   };
 
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+
   const handleCheckout = async (planKey) => {
     setCheckoutLoading(planKey);
     try {
-      const response = await billingApi.createCheckout({ planKey, billingCycle });
+      const response = await billingApi.createCheckout({
+        planKey,
+        billingCycle,
+        ...(appliedCoupon ? { couponCode: appliedCoupon.code } : {}),
+      });
       if (response.checkoutUrl) {
         window.open(response.checkoutUrl, "_blank", "noopener,noreferrer");
       }
@@ -187,14 +195,13 @@ export default function SubscriptionSettings() {
 
   const subscription = summary?.subscription;
   const plans = summary?.plans || [];
-  const invoices = summary?.invoices || [];
   const warnings = summary?.warnings || [];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">Subscription & Billing</h2>
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{t('pages.subscriptionBilling')}</h2>
           <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
             Manage plan access, usage limits, invoices, and the school billing profile.
           </p>
@@ -254,7 +261,7 @@ export default function SubscriptionSettings() {
                 onValueChange={handleAutoRenew}
                 size="sm"
               >
-                <span className="text-sm">Auto-renew</span>
+                <span className="text-sm">{t('pages.autoRenew')}</span>
               </Switch>
               <div className="text-sm text-gray-500 dark:text-zinc-400">
                 Billing cycle: <span className="font-medium text-gray-700 dark:text-zinc-300 capitalize">{subscription?.billingCycle}</span>
@@ -323,109 +330,32 @@ export default function SubscriptionSettings() {
 
       <Card className="rounded-lg">
         <CardBody className="p-6">
-          <div className="mb-4 flex items-center gap-2">
-            <Calendar size={18} />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Plans & Invoices</h3>
-          </div>
-          <div className="grid gap-4 lg:grid-cols-[1.35fr,0.95fr]">
-            <div className="space-y-4">
-              {plans.map((plan) => {
-                const isCurrent = subscription?.effectivePlanKey === plan.key;
-                const isCommitted = subscription?.planKey === plan.key && subscription?.status === "active";
-
-                return (
-                  <div key={plan.key} className={`rounded-xl border p-4 ${isCurrent ? "border-primary-300 bg-primary-50/50" : "border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950"}`}>
-                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{plan.name}</h4>
-                          {isCurrent && <Chip size="sm" color="primary" variant="flat">Current access</Chip>}
-                          {isCommitted && <Chip size="sm" color="success" variant="flat">Committed</Chip>}
-                        </div>
-                        <p className="mt-1 text-sm text-gray-600 dark:text-zinc-400">{plan.description}</p>
-                      </div>
-                      <div className="text-left md:text-right">
-                        <div className="flex items-center gap-1 text-xl font-semibold text-gray-900 dark:text-zinc-100 md:justify-end">
-                          <IndianRupee size={18} />
-                          {plan.price}
-                        </div>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">per {billingCycle === "annual" ? "year" : "month"}</p>
-                      </div>
-                    </div>
-                    <div className="mt-4 grid gap-2 text-sm text-gray-600 dark:text-zinc-400 md:grid-cols-2">
-                      <div>Students: {plan.limits.students}</div>
-                      <div>Staff: {plan.limits.staff}</div>
-                      <div>Storage: {(plan.limits.storageMb / 1024).toFixed(0)} GB</div>
-                      <div>SMS credits: {plan.limits.smsCredits}</div>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {Object.entries(plan.capabilities || {}).map(([key, enabled]) => (
-                        <Chip key={key} size="sm" variant="flat" color={enabled ? "success" : "default"}>
-                          {enabled ? <CheckCircle2 size={12} /> : <ShieldCheck size={12} />}
-                          <span className="ml-1">{key}</span>
-                        </Chip>
-                      ))}
-                    </div>
-                    <div className="mt-4">
-                      <Button
-                        color={isCurrent ? "default" : "primary"}
-                        isDisabled={checkoutLoading === plan.key || isCommitted}
-                        isLoading={checkoutLoading === plan.key}
-                        onPress={() => handleCheckout(plan.key)}
-                      >
-                        {isCommitted ? "Current plan" : isCurrent ? "Keep this plan" : `Switch to ${plan.name}`}
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 p-4">
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-zinc-400">Recent invoices</h4>
-              <div className="mt-4 space-y-3">
-                {invoices.length === 0 && (
-                  <p className="text-sm text-gray-500 dark:text-zinc-400">No invoices yet. A record will appear here after checkout is created.</p>
-                )}
-                {invoices.map((invoice) => (
-                  <div key={invoice.id} className="rounded-lg border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{invoice.invoiceNumber}</p>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">
-                          {invoice.planKey} · {invoice.billingCycle} · {formatDate(invoice.createdAt)}
-                        </p>
-                      </div>
-                      <Chip size="sm" variant="flat" color={invoice.status === "paid" ? "success" : invoice.status === "issued" ? "primary" : "warning"}>
-                        {invoice.status}
-                      </Chip>
-                    </div>
-                    <div className="mt-3 flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-zinc-400">{formatMoney(invoice.amount, invoice.currency)}</span>
-                      {invoice.hostedUrl ? (
-                        <Button
-                          size="sm"
-                          variant="light"
-                          endContent={<ExternalLink size={14} />}
-                          onPress={() => window.open(invoice.hostedUrl, "_blank", "noopener,noreferrer")}
-                        >
-                          Open
-                        </Button>
-                      ) : (
-                        <span className="text-xs text-gray-400 dark:text-zinc-500">No hosted link</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{t('pages.plansComparison', 'Compare Plans')}</h3>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-500 dark:text-zinc-400">{t('billing.havePromoCode', 'Have a promo code?')}</span>
+              <CouponInput onApply={setAppliedCoupon} />
             </div>
           </div>
+          <PlanComparisonMatrix
+            plans={plans}
+            currentPlanKey={subscription?.effectivePlanKey}
+            billingCycle={billingCycle}
+            checkoutLoading={checkoutLoading}
+            onCheckout={handleCheckout}
+          />
         </CardBody>
       </Card>
 
       <Card className="rounded-lg">
         <CardBody className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">School billing account</h3>
+          <InvoiceHistory formatMoney={formatMoney} />
+        </CardBody>
+      </Card>
+
+      <Card className="rounded-lg">
+        <CardBody className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{t('pages.schoolBillingAccount')}</h3>
           <p className="mt-1 text-sm text-gray-600 dark:text-zinc-400">
             These contacts are used for invoices, billing requests, and provider checkout setup.
           </p>
@@ -434,27 +364,27 @@ export default function SubscriptionSettings() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <Input
-              label="School contact email"
+              label={t('pages.schoolContactEmail')}
               value={accountForm.contactEmail}
               onValueChange={(value) => handleAccountChange("contactEmail", value)}
             />
             <Input
-              label="School contact phone"
+              label={t('pages.schoolContactPhone')}
               value={accountForm.contactPhone}
               onValueChange={(value) => handleAccountChange("contactPhone", value)}
             />
             <Input
-              label="Billing contact name"
+              label={t('pages.billingContactName')}
               value={accountForm.billingContactName}
               onValueChange={(value) => handleAccountChange("billingContactName", value)}
             />
             <Input
-              label="Billing email"
+              label={t('pages.billingEmail')}
               value={accountForm.billingEmail}
               onValueChange={(value) => handleAccountChange("billingEmail", value)}
             />
             <Input
-              label="Billing phone"
+              label={t('pages.billingPhone')}
               value={accountForm.billingPhone}
               onValueChange={(value) => handleAccountChange("billingPhone", value)}
             />
@@ -464,34 +394,34 @@ export default function SubscriptionSettings() {
               onValueChange={(value) => handleAccountChange("taxId", value)}
             />
             <Input
-              label="Address line 1"
+              label={t('pages.addressLine1')}
               value={accountForm.billingAddress.line1}
               onValueChange={(value) => handleAddressChange("line1", value)}
               className="md:col-span-2"
             />
             <Input
-              label="Address line 2"
+              label={t('pages.addressLine2')}
               value={accountForm.billingAddress.line2}
               onValueChange={(value) => handleAddressChange("line2", value)}
               className="md:col-span-2"
             />
             <Input
-              label="City"
+              label={t('pages.city1')}
               value={accountForm.billingAddress.city}
               onValueChange={(value) => handleAddressChange("city", value)}
             />
             <Input
-              label="State"
+              label={t('pages.state1')}
               value={accountForm.billingAddress.state}
               onValueChange={(value) => handleAddressChange("state", value)}
             />
             <Input
-              label="Postal code"
+              label={t('pages.postalCode')}
               value={accountForm.billingAddress.postalCode}
               onValueChange={(value) => handleAddressChange("postalCode", value)}
             />
             <Input
-              label="Country"
+              label={t('pages.country')}
               value={accountForm.billingAddress.country}
               onValueChange={(value) => handleAddressChange("country", value)}
             />

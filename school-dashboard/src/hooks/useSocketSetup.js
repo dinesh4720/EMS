@@ -35,12 +35,15 @@ export function useSocketSetup({
 
       const handleAuthenticated = () => {
         if (mounted) setSocketConnected(true);
+        window.dispatchEvent(new CustomEvent('socket:connected'));
       };
       const handleDisconnected = () => {
         if (mounted) setSocketConnected(false);
+        window.dispatchEvent(new CustomEvent('socket:disconnected'));
       };
       const handleReconnectFailed = () => {
         if (mounted) setSocketConnected(false);
+        window.dispatchEvent(new CustomEvent('socket:disconnected'));
       };
       const handleConnectError = (error) => {
         console.error('Socket connection error:', error);

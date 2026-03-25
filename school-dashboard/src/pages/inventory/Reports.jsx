@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { inventoryApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 const conditionColors = {
   GOOD: "bg-green-500",
@@ -37,13 +38,14 @@ function BarChart({ data, colorMap, label }) {
             </div>
           </div>
         ))}
-        {data.length === 0 && <p className="text-sm text-gray-500 dark:text-zinc-400 text-center py-4">No data</p>}
+        {data.length === 0 && <p className="text-sm text-gray-500 dark:text-zinc-400 text-center py-4">{t('pages.noData')}</p>}
       </div>
     </div>
   );
 }
 
 export default function Reports() {
+  const { t } = useTranslation();
   const [reports, setReports] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +55,7 @@ export default function Reports() {
         setLoading(true);
         const data = await inventoryApi.getReports();
         setReports(data);
-      } catch { toast.error("Failed to load reports"); }
+      } catch { toast.error(t('toast.error.failedToLoadReports')); }
       finally { setLoading(false); }
     };
     load();
@@ -91,7 +93,7 @@ export default function Reports() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Category Breakdown */}
         <div className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl shadow-sm dark:shadow-zinc-900/50 p-5">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-4">By Category</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-4">{t('pages.byCategory')}</h3>
           <div className="space-y-3">
             {(reports?.categoryBreakdown || []).map((cat) => {
               const maxCount = Math.max(...(reports?.categoryBreakdown || []).map((c) => c.count)) || 1;
@@ -108,7 +110,7 @@ export default function Reports() {
               );
             })}
             {(reports?.categoryBreakdown || []).length === 0 && (
-              <p className="text-sm text-gray-500 dark:text-zinc-400 text-center py-4">No data</p>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 text-center py-4">{t('pages.noData')}</p>
             )}
           </div>
         </div>
@@ -117,28 +119,28 @@ export default function Reports() {
         <BarChart
           data={reports?.conditionSummary || []}
           colorMap={conditionColors}
-          label="By Condition"
+          label={t('pages.byCondition')}
         />
 
         {/* Status Summary */}
         <BarChart
           data={reports?.statusSummary || []}
           colorMap={statusColors}
-          label="By Status"
+          label={t('pages.byStatus')}
         />
 
         {/* Depreciation Note */}
         <div className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl shadow-sm dark:shadow-zinc-900/50 p-5">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-4">Depreciation Overview</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-4">{t('pages.depreciationOverview')}</h3>
           {totals.totalPurchaseValue > 0 ? (
             <div className="space-y-3">
               <div className="flex justify-between items-end">
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400">Purchase Value</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.purchaseValue')}</p>
                   <p className="text-lg font-semibold text-gray-900 dark:text-zinc-100">₹{(totals.totalPurchaseValue || 0).toLocaleString()}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-gray-500 dark:text-zinc-400">Current Value</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.currentValue')}</p>
                   <p className="text-lg font-semibold text-gray-900 dark:text-zinc-100">₹{(totals.totalCurrentValue || 0).toLocaleString()}</p>
                 </div>
               </div>
@@ -153,7 +155,7 @@ export default function Reports() {
               </p>
             </div>
           ) : (
-            <p className="text-sm text-gray-500 dark:text-zinc-400 text-center py-4">No purchase value data available</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 text-center py-4">{t('pages.noPurchaseValueDataAvailable')}</p>
           )}
         </div>
       </div>

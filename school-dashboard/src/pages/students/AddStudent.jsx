@@ -1,14 +1,17 @@
+import { request } from '../../services/api.js';
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { parseDate } from "@internationalized/date";
 import { Button, Input, Select, SelectItem, Checkbox, Textarea, Chip, Avatar, RadioGroup, Radio, cn, Divider, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, DatePicker, Popover, PopoverTrigger, PopoverContent, Calendar as CalendarIcon } from "@heroui/react";
 import { ArrowLeft, ArrowRight, Upload, X, Plus, User, FileText, Users, GraduationCap, Check, Heart, Bus, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, getDaysInMonth, isValid, parse } from "date-fns";
 import { studentsApi, settingsApi, uploadApi, lookupPincode, classesApi } from "../../services/api";
+import { z } from "zod";
 import toast from "react-hot-toast";
 import PhotoEditorModal from "../../components/PhotoEditorModal";
 import CameraCaptureModal from "../../components/CameraCaptureModal";
 import { GENDERS, BLOOD_GROUPS, PARENT_RELATIONSHIPS, GUARDIAN_RELATIONSHIPS, RELIGIONS, CATEGORIES, MOTHER_TONGUES, DEFAULT_STUDENT_FORM } from "../../constants/studentConstants";
 import { INDIAN_STATES, normalizeStateName } from "../../constants/states";
+import { useTranslation } from 'react-i18next';
 
 // Note: Constants now imported from constants/ folder
 
@@ -220,6 +223,7 @@ function CustomCalendar({ selectedDate, onSelect, onClose }) {
 }
 
 export default function AddStudent({ onClose, onSave, classOptions = [], classesWithTeachers = [], initialData = null }) {
+  const { t } = useTranslation();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -362,9 +366,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           const selectedClass = classesWithTeachers.find(c => c.name === formData.classGrade && c.section === formData.section);
           if (selectedClass) {
             // Use optimized API endpoint
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-            const response = await fetch(`${API_URL}/classes/${selectedClass.id}/next-roll-number`);
-            const data = await response.json();
+            const data = await request(`/classes/${selectedClass.id}/next-roll-number`);
             updateField("rollNumber", data.rollNumber.toString());
           }
         } catch (error) {
@@ -609,14 +611,32 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       if (!formData.section) newErrors.section = "Required";
     }
     if (stepNum === 2) {
+      const parentSchema = z.object({
+        name: z.string().min(1, "Parent name is required"),
+        phone: z.string().regex(/^\d{10}$/, "Phone must be 10 digits"),
+        email: z.string().email("Invalid email").or(z.literal("")).optional(),
+      });
       if (formData.parents.length === 0 || !formData.parents[0].name.trim()) {
         newErrors.parentName = "At least one parent/guardian is required";
+      } else {
+        const result = parentSchema.safeParse(formData.parents[0]);
+        if (!result.success) {
+          result.error.errors.forEach(err => {
+            if (err.path[0] === 'name') newErrors.parentName = err.message;
+            if (err.path[0] === 'phone') newErrors.parentPhone = err.message;
+            if (err.path[0] === 'email') newErrors.parentEmail = err.message;
+          });
+        }
       }
-      if (formData.parents[0] && !formData.parents[0].phone.trim()) {
-        newErrors.parentPhone = "Phone is required";
-      } else if (formData.parents[0] && !/^\d{10}$/.test(formData.parents[0].phone)) {
-        newErrors.parentPhone = "Invalid phone (10 digits)";
-      }
+      // Validate additional parents' phone numbers if provided
+      formData.parents.slice(1).forEach((parent, i) => {
+        if (parent.phone && !/^\d{10}$/.test(parent.phone)) {
+          newErrors[`additionalParentPhone_${i + 1}`] = "Phone must be 10 digits";
+        }
+        if (parent.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parent.email)) {
+          newErrors[`additionalParentEmail_${i + 1}`] = "Invalid email format";
+        }
+      });
     }
     setErrors(newErrors);
     return { isValid: Object.keys(newErrors).length === 0, errors: newErrors };
@@ -802,12 +822,12 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       if (!step1Validation.isValid) {
         setStep(1);
         scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-        toast.error('Please fill in all required fields in Personal Information');
+        toast.error(t('toast.error.pleaseFillInAllRequiredFieldsInPersonalInformation'));
         scrollToError(1, step1Validation.errors);
       } else if (!step2Validation.isValid) {
         setStep(2);
         scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-        toast.error('Please fill in all required parent/guardian information');
+        toast.error(t('toast.error.pleaseFillInAllRequiredParentGuardianInformation'));
         scrollToError(2, step2Validation.errors);
       }
       return;
@@ -822,14 +842,14 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         console.error('❌ Selected class not found!');
         console.error('❌ Looking for classGrade:', formData.classGrade, 'section:', formData.section);
         console.error('❌ Available classes:', classesWithTeachers.map(c => ({ id: c.id, name: c.name, section: c.section })));
-        toast.error('Selected class not found');
+        toast.error(t('toast.error.selectedClassNotFound'));
         setIsSubmitting(false);
         return;
       }
 
       if (!selectedClass.id) {
         console.error('❌ Selected class has no ID!', selectedClass);
-        toast.error('Class ID is missing. Please refresh and try again.');
+        toast.error(t('toast.error.classIdIsMissingPleaseRefreshAndTryAgain'));
         setIsSubmitting(false);
         return;
       }
@@ -855,7 +875,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       // Upload photo to Cloudinary if it's a File object
       let photoUrl = null;
       if (formData.picture instanceof File) {
-        const loadingToast = toast.loading("Uploading photo...");
+        const loadingToast = toast.loading(t('toast.loading.uploadingPhoto'));
         try {
           const uploadResponse = await uploadApi.uploadFile(formData.picture);
           photoUrl = uploadResponse.url;
@@ -880,7 +900,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       };
 
       // Show loading toast for document uploads
-      const docsLoadingToast = toast.loading("Uploading documents...");
+      const docsLoadingToast = toast.loading(t('toast.loading.uploadingDocuments'));
 
       try {
         // Upload Birth Certificate
@@ -1013,7 +1033,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           admissionId = response.admissionId;
         } catch (error) {
           console.error('❌ Failed to get admission ID:', error);
-          toast.error('Failed to generate admission ID');
+          toast.error(t('toast.error.failedToGenerateAdmissionId'));
           setIsSubmitting(false);
           return;
         }
@@ -1030,7 +1050,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         name: formData.fullName,
         admissionId: admissionId,
         academicYear: academicYear,
-        classId: selectedClass?.id,
+        classId: selectedClass?._id || selectedClass?.id,
         rollNo: formData.rollNumber ? parseInt(formData.rollNumber) : null,
         gender: formData.gender,
         dateOfBirth: formattedDateOfBirth,
@@ -1172,13 +1192,13 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
       {/* Personal Information - Full Name & Date of Birth in same row */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Personal Information</h3>
+        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.personalInformation1')}</h3>
         <div className="grid grid-cols-2 gap-4">
           <div ref={fullNameRef}>
             <Input
-              label="Full Name"
+              label={t('pages.fullName1')}
               labelPlacement="outside"
-              placeholder="Enter student's full name"
+              placeholder={t('pages.enterStudentSFullName')}
               value={formData.fullName}
               onValueChange={v => updateField("fullName", v.replace(/[0-9]/g, ''))}
               isInvalid={!!errors.fullName}
@@ -1453,14 +1473,14 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
       {/* Class Info */}
       <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-700">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Class Information</h3>
+        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.classInformation')}</h3>
         <div className="grid grid-cols-2 gap-4">
           {/* Class Selection */}
           <div ref={classRef}>
             <Select
-              label="Class"
+              label={t('pages.class1')}
               labelPlacement="outside"
-              placeholder="Select class"
+              placeholder={t('pages.selectClass2')}
               selectedKeys={formData.classGrade ? [formData.classGrade] : []}
               onSelectionChange={keys => {
                 const selectedClass = classesWithTeachers.find(c => c.name === Array.from(keys)[0]);
@@ -1484,9 +1504,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           {/* Section Selection */}
           <div>
             <Select
-              label="Section"
+              label={t('pages.section1')}
               labelPlacement="outside"
-              placeholder="Select section"
+              placeholder={t('pages.selectSection')}
               selectedKeys={formData.section ? [formData.section] : []}
               onSelectionChange={keys => updateField("section", Array.from(keys)[0])}
               isRequired
@@ -1505,11 +1525,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         </div>
         <div className="grid grid-cols-1 gap-4 mt-4">
           <Input
-            label="Roll Number"
+            label={t('pages.rollNumber2')}
             labelPlacement="outside"
-            placeholder="Auto-generated"
+            placeholder={t('pages.autoGenerated')}
             value={formData.rollNumber}
-            // onValueChange={v => updateField("rollNumber", v)} // REMOVED - cannot be edited
             variant="bordered"
             radius="sm"
             isReadOnly
@@ -1521,14 +1540,14 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
       {/* Contact Info */}
       <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-700">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Contact Details</h3>
+        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.contactDetails1')}</h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Input
-              label="Mobile Number"
+              label={t('pages.mobileNumber')}
               labelPlacement="outside"
               startContent={<span className="text-default-400 text-xs">+91</span>}
-              placeholder="Student's mobile (if any)"
+              placeholder={t('pages.studentSMobileIfAny')}
               value={formData.mobile}
               onValueChange={v => {
                 const digitsOnly = v.replace(/\D/g, '').slice(0, 10);
@@ -1545,7 +1564,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             </Checkbox>
           </div>
           <Input
-            label="Email Address"
+            label={t('pages.emailAddress')}
             labelPlacement="outside"
             placeholder="student@email.com"
             value={formData.email}
@@ -1556,10 +1575,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           />
           {!formData.isWhatsapp && (
             <Input
-              label="WhatsApp Number"
+              label={t('pages.whatsAppNumber')}
               labelPlacement="outside"
               startContent={<span className="text-default-400 text-xs">+91</span>}
-              placeholder="WhatsApp Number"
+              placeholder={t('pages.whatsAppNumber')}
               value={formData.whatsappNumber}
               onValueChange={v => updateField("whatsappNumber", v)}
               variant="bordered"
@@ -1569,9 +1588,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           )}
         </div>
         <Textarea
-          label="Address"
+          label={t('pages.address2')}
           labelPlacement="outside"
-          placeholder="Full residential address"
+          placeholder={t('pages.fullResidentialAddress')}
           value={formData.address}
           onValueChange={v => updateField("address", v)}
           variant="bordered"
@@ -1582,9 +1601,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         />
         <div className="grid grid-cols-3 gap-4">
           <Input
-            label="City"
+            label={t('pages.city1')}
             labelPlacement="outside"
-            placeholder="City"
+            placeholder={t('pages.city1')}
             value={formData.city}
             onValueChange={v => {
               updateField("city", v);
@@ -1598,9 +1617,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           <div className="relative">
             <Select
               key="state-select"
-              label="State"
+              label={t('pages.state1')}
               labelPlacement="outside"
-              placeholder="Select state"
+              placeholder={t('pages.selectState')}
               selectedKeys={stateSelectedKeys}
               onSelectionChange={keys => {
                 updateField("state", Array.from(keys)[0]);
@@ -1615,9 +1634,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           </div>
           <div className="relative">
             <Input
-              label="ZIP Code"
+              label={t('pages.zIPCode')}
               labelPlacement="outside"
-              placeholder="PIN Code"
+              placeholder={t('pages.pINCode')}
               value={formData.zipCode}
               onValueChange={v => {
                 const digitsOnly = v.replace(/\D/g, '').slice(0, 6);
@@ -1680,11 +1699,11 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
       {/* Optional Fields */}
       <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-700">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Optional Information</h3>
-        <p className="text-xs text-gray-500 dark:text-zinc-400 -mt-1">These fields are optional and can be filled later</p>
+        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.optionalInformation')}</h3>
+        <p className="text-xs text-gray-500 dark:text-zinc-400 -mt-1">{t('pages.theseFieldsAreOptionalAndCanBeFilledLater')}</p>
         <div className="grid grid-cols-2 gap-4">
           <Input
-            label="Aadhaar Number"
+            label={t('pages.aadhaarNumber')}
             labelPlacement="outside"
             placeholder="12 digit Aadhaar"
             value={formData.aadhaarNumber}
@@ -1695,9 +1714,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           />
           <Select
-            label="Blood Group"
+            label={t('pages.bloodGroup1')}
             labelPlacement="outside"
-            placeholder="Select..."
+            placeholder={t('pages.select1')}
             selectedKeys={formData.bloodGroup ? [formData.bloodGroup] : []}
             onSelectionChange={keys => updateField("bloodGroup", Array.from(keys)[0])}
             variant="bordered"
@@ -1707,7 +1726,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             {BLOOD_GROUPS.map(b => <SelectItem key={b}>{b}</SelectItem>)}
           </Select>
           <Input
-            label="Nationality"
+            label={t('pages.nationality1')}
             labelPlacement="outside"
             placeholder="e.g., Indian"
             value={formData.nationality}
@@ -1717,9 +1736,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           />
           <Select
-            label="Religion"
+            label={t('pages.religion1')}
             labelPlacement="outside"
-            placeholder="Select..."
+            placeholder={t('pages.select1')}
             selectedKeys={formData.religion ? [formData.religion] : []}
             onSelectionChange={keys => updateField("religion", Array.from(keys)[0])}
             variant="bordered"
@@ -1729,9 +1748,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             {RELIGIONS.map(r => <SelectItem key={r}>{r}</SelectItem>)}
           </Select>
           <Select
-            label="Category"
+            label={t('pages.category1')}
             labelPlacement="outside"
-            placeholder="Select..."
+            placeholder={t('pages.select1')}
             selectedKeys={formData.category ? [formData.category] : []}
             onSelectionChange={keys => updateField("category", Array.from(keys)[0])}
             variant="bordered"
@@ -1741,9 +1760,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             {CATEGORIES.map(c => <SelectItem key={c}>{c}</SelectItem>)}
           </Select>
           <Select
-            label="Mother Tongue"
+            label={t('pages.motherTongue1')}
             labelPlacement="outside"
-            placeholder="Select..."
+            placeholder={t('pages.select1')}
             selectedKeys={formData.motherTongue ? [formData.motherTongue] : []}
             onSelectionChange={keys => updateField("motherTongue", Array.from(keys)[0])}
             variant="bordered"
@@ -1753,9 +1772,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             {MOTHER_TONGUES.map(m => <SelectItem key={m}>{m}</SelectItem>)}
           </Select>
           <Input
-            label="Previous School"
+            label={t('pages.previousSchool1')}
             labelPlacement="outside"
-            placeholder="Name of previous school"
+            placeholder={t('pages.nameOfPreviousSchool')}
             value={formData.previousSchool}
             onValueChange={v => updateField("previousSchool", v)}
             variant="bordered"
@@ -1764,9 +1783,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           />
           <Input
-            label="Transfer Certificate No."
+            label={t('pages.transferCertificateNo')}
             labelPlacement="outside"
-            placeholder="TC Number"
+            placeholder={t('pages.tCNumber')}
             value={formData.tcNumber}
             onValueChange={v => updateField("tcNumber", v.replace(/\D/g, ''))}
             variant="bordered"
@@ -1787,7 +1806,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       <div className="space-y-5 animate-fade-in text-left">
         {/* Parent Details */}
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Parent Details</h3>
+          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.parentDetails')}</h3>
 
           {parents.map((parent, idx) => {
             const index = formData.parents.findIndex(p => p === parent);
@@ -1806,9 +1825,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                 <div className="grid grid-cols-2 gap-4">
                   <div ref={index === 0 ? parentNameRef : null}>
                     <Input
-                      label="Full Name"
+                      label={t('pages.fullName1')}
                       labelPlacement="outside"
-                      placeholder="Parent name"
+                      placeholder={t('pages.parentName1')}
                       value={parent.name}
                       onValueChange={v => updateParent(index, "name", v)}
                       isInvalid={index === 0 && !!errors.parentName}
@@ -1820,9 +1839,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                     />
                   </div>
                   <Select
-                    label="Relationship"
+                    label={t('pages.relationship')}
                     labelPlacement="outside"
-                    placeholder="Select..."
+                    placeholder={t('pages.select1')}
                     selectedKeys={parent.relationship ? [parent.relationship] : []}
                     onSelectionChange={keys => updateParent(index, "relationship", Array.from(keys)[0])}
                     variant="bordered"
@@ -1833,7 +1852,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                   </Select>
                   <div className="space-y-2" ref={index === 0 ? parentPhoneRef : null}>
                     <Input
-                      label="Phone Number"
+                      label={t('pages.phoneNumber')}
                       labelPlacement="outside"
                       startContent={<span className="text-default-400 text-xs">+91</span>}
                       placeholder="10 digit number"
@@ -1857,7 +1876,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                     </Checkbox>
                   </div>
                   <Input
-                    label="Email"
+                    label={t('pages.email1')}
                     labelPlacement="outside"
                     placeholder="parent@email.com"
                     value={parent.email}
@@ -1867,7 +1886,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                     classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                   />
                   <Input
-                    label="Occupation"
+                    label={t('pages.occupation')}
                     labelPlacement="outside"
                     placeholder="e.g., Engineer, Doctor"
                     value={parent.occupation}
@@ -1897,7 +1916,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         {/* Guardian Details */}
         <div className="space-y-4 pt-5 border-t border-gray-100 dark:border-zinc-700">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Guardian Details</h3>
+            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.guardianDetails')}</h3>
             <span className="text-xs text-gray-400 dark:text-zinc-500">(Optional)</span>
           </div>
 
@@ -1915,9 +1934,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <Input
-                    label="Full Name"
+                    label={t('pages.fullName1')}
                     labelPlacement="outside"
-                    placeholder="Guardian name"
+                    placeholder={t('pages.guardianName')}
                     value={guardian.name}
                     onValueChange={v => updateParent(index, "name", v)}
                     variant="bordered"
@@ -1925,9 +1944,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                     classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                   />
                   <Select
-                    label="Relationship"
+                    label={t('pages.relationship')}
                     labelPlacement="outside"
-                    placeholder="Select..."
+                    placeholder={t('pages.select1')}
                     selectedKeys={guardian.relationship ? [guardian.relationship] : []}
                     onSelectionChange={keys => updateParent(index, "relationship", Array.from(keys)[0])}
                     variant="bordered"
@@ -1938,7 +1957,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                   </Select>
                   <div className="space-y-2">
                     <Input
-                      label="Phone Number"
+                      label={t('pages.phoneNumber')}
                       labelPlacement="outside"
                       startContent={<span className="text-default-400 text-xs">+91</span>}
                       placeholder="10 digit number"
@@ -1958,7 +1977,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                     </Checkbox>
                   </div>
                   <Input
-                    label="Email"
+                    label={t('pages.email1')}
                     labelPlacement="outside"
                     placeholder="guardian@email.com"
                     value={guardian.email}
@@ -1968,7 +1987,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                     classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                   />
                   <Input
-                    label="Occupation"
+                    label={t('pages.occupation')}
                     labelPlacement="outside"
                     placeholder="e.g., Engineer, Doctor"
                     value={guardian.occupation}
@@ -1998,7 +2017,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         {/* Sibling Details */}
         <div className="space-y-4 pt-5 border-t border-gray-100 dark:border-zinc-700">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Sibling Details</h3>
+            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.siblingDetails')}</h3>
             <span className="text-xs text-gray-400 dark:text-zinc-500">(Siblings in same school only)</span>
           </div>
 
@@ -2014,9 +2033,9 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="Sibling Name"
+                  label={t('pages.siblingName')}
                   labelPlacement="outside"
-                  placeholder="Sibling's full name"
+                  placeholder={t('pages.siblingSFullName')}
                   value={sibling.name}
                   onValueChange={v => updateSibling(idx, "name", v)}
                   variant="bordered"
@@ -2031,14 +2050,14 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                       if (!v) updateSibling(idx, "classId", "");
                     }}
                   >
-                    <span className="text-sm text-default-700">Is sibling in this school?</span>
+                    <span className="text-sm text-default-700">{t('pages.isSiblingInThisSchool')}</span>
                   </Checkbox>
                 </div>
                 {sibling.inSameSchool && (
                   <Select
-                    label="Class"
+                    label={t('pages.class1')}
                     labelPlacement="outside"
-                    placeholder="Select class"
+                    placeholder={t('pages.selectClass2')}
                     selectedKeys={sibling.classId ? [sibling.classId] : []}
                     onSelectionChange={keys => updateSibling(idx, "classId", Array.from(keys)[0])}
                     variant="bordered"
@@ -2066,11 +2085,11 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
         {/* Health & Safety */}
         <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-700">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Health & Safety</h3>
+          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.healthSafety')}</h3>
           <Textarea
-            label="Medical Conditions"
+            label={t('pages.medicalConditions1')}
             labelPlacement="outside"
-            placeholder="Any allergies, medical conditions, or special needs (optional)"
+            placeholder={t('pages.anyAllergiesMedicalConditionsOrSpecialNeedsOptional')}
             value={formData.medicalConditions}
             onValueChange={v => updateField("medicalConditions", v)}
             variant="bordered"
@@ -2082,7 +2101,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
         {/* Transport & Hostel */}
         <div className="space-y-4 pt-5 border-t border-gray-100 dark:border-zinc-700">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Additional Requirements</h3>
+          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.additionalRequirements')}</h3>
           <div className="grid grid-cols-2 gap-4">
             <div className={cn(
               "cursor-pointer rounded-xl border-2 p-4 flex items-center gap-3 transition-all",
@@ -2098,7 +2117,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                 <span className={cn("text-sm font-medium", formData.transportRequired ? "text-primary-700" : "text-default-600")}>
                   Transport Required
                 </span>
-                <p className="text-xs text-default-500">School bus facility</p>
+                <p className="text-xs text-default-500">{t('pages.schoolBusFacility')}</p>
               </div>
             </div>
             <div className={cn(
@@ -2115,7 +2134,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                 <span className={cn("text-sm font-medium", formData.hostelRequired ? "text-primary-700" : "text-default-600")}>
                   Hostel Required
                 </span>
-                <p className="text-xs text-default-500">Boarding facility</p>
+                <p className="text-xs text-default-500">{t('pages.boardingFacility')}</p>
               </div>
             </div>
           </div>
@@ -2127,13 +2146,13 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
   const renderStep3 = () => (
     <div className="space-y-5 animate-fade-in text-left">
       <div className="space-y-2">
-        <label className="text-sm font-semibold text-default-900">Document Uploads</label>
-        <p className="text-xs text-default-500">Upload required documents. All documents are optional and can be uploaded later.</p>
+        <label className="text-sm font-semibold text-default-900">{t('pages.documentUploads')}</label>
+        <p className="text-xs text-default-500">{t('pages.uploadRequiredDocumentsAllDocumentsAreOptionalAndCanBeUploadedLater')}</p>
       </div>
 
       {/* Birth Certificate */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-default-600">Birth Certificate</label>
+        <label className="text-xs font-medium text-default-600">{t('pages.birthCertificate')}</label>
         <div
           className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors"
           onClick={() => birthCertRef.current?.click()}
@@ -2143,7 +2162,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             {formData.birthCertificate ? (
               <span className="text-sm text-default-700">{formData.birthCertificate.name}</span>
             ) : (
-              <span className="text-sm text-default-500">Click to upload birth certificate</span>
+              <span className="text-sm text-default-500">{t('pages.clickToUploadBirthCertificate')}</span>
             )}
           </div>
           {formData.birthCertificate ? (
@@ -2160,7 +2179,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
       {/* Transfer Certificate */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-default-600">Transfer Certificate (TC)</label>
+        <label className="text-xs font-medium text-default-600">{t('pages.transferCertificateTc')}</label>
         <div
           className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors"
           onClick={() => tcRef.current?.click()}
@@ -2170,7 +2189,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             {formData.transferCertificate ? (
               <span className="text-sm text-default-700">{formData.transferCertificate.name}</span>
             ) : (
-              <span className="text-sm text-default-500">Click to upload transfer certificate</span>
+              <span className="text-sm text-default-500">{t('pages.clickToUploadTransferCertificate')}</span>
             )}
           </div>
           {formData.transferCertificate ? (
@@ -2187,8 +2206,8 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
       {/* Aadhaar Card (Front & Back) */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-default-600">Aadhaar Card (Front & Back)</label>
-        <p className="text-xs text-default-500">Upload both sides of the Aadhaar card</p>
+        <label className="text-xs font-medium text-default-600">{t('pages.aadhaarCardFrontBack')}</label>
+        <p className="text-xs text-default-500">{t('pages.uploadBothSidesOfTheAadhaarCard')}</p>
 
         {/* Front Side */}
         <div
@@ -2200,7 +2219,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             {formData.aadhaarFront ? (
               <span className="text-sm text-default-700">Front: {formData.aadhaarFront.name}</span>
             ) : (
-              <span className="text-sm text-default-500">Click to upload FRONT side</span>
+              <span className="text-sm text-default-500">{t('pages.clickToUploadFrontSide')}</span>
             )}
           </div>
           {formData.aadhaarFront ? (
@@ -2224,7 +2243,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             {formData.aadhaarBack ? (
               <span className="text-sm text-default-700">Back: {formData.aadhaarBack.name}</span>
             ) : (
-              <span className="text-sm text-default-500">Click to upload BACK side</span>
+              <span className="text-sm text-default-500">{t('pages.clickToUploadBackSide')}</span>
             )}
           </div>
           {formData.aadhaarBack ? (
@@ -2241,14 +2260,14 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
       {/* Other Documents */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-default-600">Other Documents</label>
+        <label className="text-xs font-medium text-default-600">{t('pages.otherDocuments')}</label>
         <p className="text-xs text-default-500">Upload any other relevant documents (medical records, previous report cards, etc.)</p>
         <div
           className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-center gap-2 cursor-pointer hover:bg-default-50 transition-colors"
           onClick={() => otherDocsRef.current?.click()}
         >
           <Upload size={14} className="text-default-500" />
-          <span className="text-sm text-default-600">Upload additional documents</span>
+          <span className="text-sm text-default-600">{t('pages.uploadAdditionalDocuments')}</span>
         </div>
         <input ref={otherDocsRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden"
           onChange={(e) => handleMultiFileUpload("otherDocuments", e.target.files)} />
@@ -2385,7 +2404,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       >
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">
-            <h3 className="text-lg font-semibold">Unsaved Changes</h3>
+            <h3 className="text-lg font-semibold">{t('pages.unsavedChanges')}</h3>
           </ModalHeader>
           <ModalBody>
             <p className="text-sm text-default-600">

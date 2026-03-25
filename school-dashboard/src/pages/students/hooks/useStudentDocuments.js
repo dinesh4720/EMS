@@ -1,14 +1,16 @@
-import { useState, useCallback } from "react";
-import { getAuthToken, formatFileSize } from "../utils/studentHelpers";
+import { request } from '../../../services/api.js';
+import { useState, useCallback, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
+import { formatFileSize } from "../utils/studentHelpers";
 import { uploadApi } from "../../../services/api";
 import toast from "react-hot-toast";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
 
 /**
  * Custom hook for managing student documents
  */
 export function useStudentDocuments(studentId) {
+  const { t } = useTranslation();
   const [documents, setDocuments] = useState([]);
   const [activeUploads, setActiveUploads] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -21,17 +23,9 @@ export function useStudentDocuments(studentId) {
 
     setLoading(true);
     try {
-      const token = getAuthToken();
-      const headers = {};
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
-      const response = await fetch(`${API_URL}/students/${studentId}`, { headers });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.documents) {
-          setDocuments(data.documents);
-        }
+      const data = await request(`/students/${studentId}`);
+      if (data.documents) {
+        setDocuments(data.documents);
       }
     } catch (err) {
       console.error("Error fetching documents:", err);
@@ -39,6 +33,11 @@ export function useStudentDocuments(studentId) {
       setLoading(false);
     }
   }, [studentId]);
+
+  // Auto-fetch documents when studentId changes (fixes stale closure — AP-11)
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
 
   /**
    * Handle document upload
@@ -87,21 +86,10 @@ export function useStudentDocuments(studentId) {
           uploadDate: new Date().toISOString()
         };
 
-        const token = getAuthToken();
-        const headers = { "Content-Type": "application/json" };
-        if (token) headers["Authorization"] = `Bearer ${token}`;
-
-        const saveResponse = await fetch(`${API_URL}/students/${studentId}/documents`, {
+        const result = await request(`/students/${studentId}/documents`, {
           method: 'POST',
-          headers,
           body: JSON.stringify(newDoc)
         });
-
-        if (!saveResponse.ok) {
-          throw new Error('Failed to save document');
-        }
-
-        const result = await saveResponse.json();
         setDocuments(result.documents || []);
 
         setActiveUploads(prev => prev.map(u =>
@@ -114,7 +102,7 @@ export function useStudentDocuments(studentId) {
         console.error(`Upload error for ${file.name}:`, error);
 
         setActiveUploads(prev => prev.map(u =>
-          u.id === uploadId ? { ...u, status: 'error', progress: 0 } : u
+          u.id === uploadId ? { ...u, status: 'error', progress: 0, errorMsg: error.message } : u
         ));
 
         failCount++;
@@ -124,7 +112,7 @@ export function useStudentDocuments(studentId) {
     if (failCount === 0) {
       setTimeout(() => {
         setActiveUploads([]);
-        toast.success("All documents uploaded successfully");
+        toast.success(t('toast.success.allDocumentsUploadedSuccessfully'));
       }, 3000);
     } else {
       toast.error(`Uploaded ${successCount}, Failed ${failCount}`);
@@ -144,34 +132,23 @@ export function useStudentDocuments(studentId) {
     }
 
     if (docIndex === -1 || docIndex >= documents.length) {
-      toast.error("Document not found");
+      toast.error(t('toast.error.documentNotFound'));
       return false;
     }
 
-    const loadingToast = toast.loading("Deleting document...");
+    const loadingToast = toast.loading(t('toast.loading.deletingDocument'));
 
     try {
-      const token = getAuthToken();
-      const headers = {};
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
-      const response = await fetch(
-        `${API_URL}/students/${studentId}/documents/${docIndex}`,
-        { method: 'DELETE', headers }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to delete document');
-      }
-
-      const result = await response.json();
+      const result = await request(`/students/${studentId}/documents/${docIndex}`, {
+        method: 'DELETE'
+      });
       setDocuments(result.documents || []);
       toast.success("Document deleted successfully", { id: loadingToast });
 
       return true;
     } catch (error) {
       console.error("Delete error:", error);
-      toast.error("Failed to delete document", { id: loadingToast });
+      toast.error(error.message || "Failed to delete document", { id: loadingToast });
       return false;
     }
   }, [studentId, documents]);
@@ -180,30 +157,19 @@ export function useStudentDocuments(studentId) {
    * Fix corrupted documents
    */
   const handleFixCorrupted = useCallback(async () => {
-    const loadingToast = toast.loading("Fixing documents...");
+    const loadingToast = toast.loading(t('toast.loading.fixingDocuments'));
 
     try {
-      const token = getAuthToken();
-      const headers = {};
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
-      const response = await fetch(
-        `${API_URL}/students/${studentId}/fix-documents`,
-        { method: 'POST', headers }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fix documents');
-      }
-
-      const result = await response.json();
+      const result = await request(`/students/${studentId}/fix-documents`, {
+        method: 'POST'
+      });
       setDocuments(result.documents || []);
       toast.success("Documents fixed successfully", { id: loadingToast });
 
       return true;
     } catch (error) {
       console.error("Fix error:", error);
-      toast.error("Failed to fix documents", { id: loadingToast });
+      toast.error(error.message || "Failed to fix documents", { id: loadingToast });
       return false;
     }
   }, [studentId]);

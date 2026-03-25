@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 /**
  * Reusable hook for managing settings forms with standardized state pattern
@@ -27,6 +28,7 @@ import toast from "react-hot-toast";
  * });
  */
 export function useSettingsForm({
+  const { t } = useTranslation();
   fetchFn,
   saveFn,
   deleteFn,
@@ -135,7 +137,7 @@ export function useSettingsForm({
       return false;
     }
 
-    if (!confirm("Are you sure you want to delete this item?")) {
+    if (!confirm(t('confirm.deleteItem'))) {
       return false;
     }
 
@@ -267,7 +269,7 @@ export function useSettingsList({
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete this ${itemName}?`)) {
+    if (!confirm(t('confirm.deleteItemNamed', { name: itemName }))) {
       return;
     }
 

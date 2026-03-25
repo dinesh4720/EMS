@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Select, SelectItem } from "@heroui/react";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 /**
  * MoveClassModal - Modal for moving a student to another class/section
@@ -13,17 +14,19 @@ import toast from "react-hot-toast";
  * - onMove: function - Called after successful move with new class
  */
 export default function MoveClassModal({ isOpen, onClose, student, availableClasses = [], onMove }) {
+  const { t } = useTranslation();
   const [newClass, setNewClass] = useState("");
+  const [classError, setClassError] = useState("");
   const [isMoving, setIsMoving] = useState(false);
 
   const handleMove = async () => {
     if (!newClass) {
-      toast.error("Please select a new class");
+      setClassError("Please select a new class");
       return;
     }
 
     setIsMoving(true);
-    const loadingToast = toast.loading("Moving student to new class...");
+    const loadingToast = toast.loading(t('toast.loading.movingStudentToNewClass'));
 
     try {
       const { request } = await import("../../../../services/api");
@@ -63,11 +66,16 @@ export default function MoveClassModal({ isOpen, onClose, student, availableClas
             </div>
 
             <Select
-              label="Select New Class"
-              placeholder="Choose a class"
+              label={t('pages.selectNewClass')}
+              placeholder={t('pages.chooseAClass')}
               selectedKeys={newClass ? [newClass] : []}
-              onSelectionChange={(keys) => setNewClass(Array.from(keys)[0])}
+              onSelectionChange={(keys) => {
+                setNewClass(Array.from(keys)[0]);
+                setClassError("");
+              }}
               variant="bordered"
+              isInvalid={!!classError}
+              errorMessage={classError}
             >
               {availableClasses.map((cls) => (
                 <SelectItem key={cls} value={cls}>
@@ -78,8 +86,8 @@ export default function MoveClassModal({ isOpen, onClose, student, availableClas
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="bordered" className="border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300" onPress={onClose}>Cancel</Button>
-          <Button className="bg-gray-900 hover:bg-gray-800 text-white" onPress={handleMove} isLoading={isMoving}>Move Student</Button>
+          <Button variant="bordered" className="border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300" onPress={onClose}>{t('pages.cancel2')}</Button>
+          <Button className="bg-gray-900 hover:bg-gray-800 text-white" onPress={handleMove} isLoading={isMoving}>{t('pages.moveStudent')}</Button>
         </ModalFooter>
       </ModalContent>
     </Modal>

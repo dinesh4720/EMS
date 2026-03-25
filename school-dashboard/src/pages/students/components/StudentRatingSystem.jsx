@@ -2,6 +2,9 @@ import { useState, useMemo } from "react";
 import { Button, Textarea } from "@heroui/react";
 import { Star, Award, Clock, Edit3, Save, X } from "lucide-react";
 import toast from "react-hot-toast";
+import { getDateLocale } from '../../../i18n/index';
+import { useTranslation } from 'react-i18next';
+
 
 const RATING_DIMENSIONS = [
   { key: "behaviour", label: "Behaviour", icon: Award, description: "Conduct and attitude" },
@@ -56,6 +59,7 @@ export default function StudentRatingSystem({
   editable = true,
   isEditing: externalIsEditing = false
 }) {
+  const { t } = useTranslation();
   const [internalEditing, setInternalEditing] = useState(false);
   const [tempRatings, setTempRatings] = useState({});
   const [tempComments, setTempComments] = useState({});
@@ -109,13 +113,13 @@ export default function StudentRatingSystem({
     );
 
     if (hasEmptyRatings) {
-      toast.error("Please rate all dimensions before saving");
+      toast.error(t('toast.error.pleaseRateAllDimensionsBeforeSaving'));
       return;
     }
 
     onRatingChange(tempRatings);
     setInternalEditing(false);
-    toast.success("Ratings updated successfully");
+    toast.success(t('toast.success.ratingsUpdatedSuccessfully'));
   };
 
   // Calculate overall rating
@@ -155,8 +159,8 @@ export default function StudentRatingSystem({
             <Award size={18} className="text-gray-600 dark:text-zinc-400" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Student Rating</h3>
-            <p className="text-xs text-gray-500 dark:text-zinc-400">Overall performance assessment</p>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.studentRating')}</h3>
+            <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.overallPerformanceAssessment')}</p>
           </div>
         </div>
 
@@ -169,7 +173,7 @@ export default function StudentRatingSystem({
           {lastUpdated && (
             <p className="text-xs text-gray-400 dark:text-zinc-500 flex items-center justify-end gap-1 mt-0.5">
               <Clock size={12} />
-              {lastUpdated.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              {lastUpdated.toLocaleDateString(getDateLocale(), { month: "short", day: "numeric", year: "numeric" })}
             </p>
           )}
         </div>

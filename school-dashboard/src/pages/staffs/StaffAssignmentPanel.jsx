@@ -5,12 +5,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import { usePermissions } from "../../context/PermissionContext";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import { useTranslation } from 'react-i18next';
 import {
   showErrorToast,
   executeWithFeedback
 } from "../../utils/errorHandling";
 
 export default function StaffAssignmentPanel({ staffId }) {
+  const { t } = useTranslation();
   const { teacherAssignmentsApi, classesApi, schoolSettings, classesWithTeachers, getStaffById } = useApp();
   const { hasPermission } = usePermissions();
   const navigate = useNavigate();
@@ -210,7 +212,7 @@ export default function StaffAssignmentPanel({ staffId }) {
       <div className="flex items-center justify-center py-12">
         <div className="flex flex-col items-center gap-3">
           <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full"></div>
-          <p className="text-sm text-gray-500">Loading assignments...</p>
+          <p className="text-sm text-gray-500">{t('pages.loadingAssignments')}</p>
         </div>
       </div>
     );
@@ -228,7 +230,7 @@ export default function StaffAssignmentPanel({ staffId }) {
                 <GraduationCap size={16} className="text-gray-600" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900 text-sm">Class Teacher Assignment</h3>
+                <h3 className="font-medium text-gray-900 text-sm">{t('pages.classTeacherAssignment')}</h3>
                 <p className="text-xs text-gray-500">
                   {classTeacherAssignments.length > 0 ? 'Class assigned as class teacher (homeroom)' : 'Not assigned to any class'}
                 </p>
@@ -264,8 +266,8 @@ export default function StaffAssignmentPanel({ staffId }) {
                 <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
                   <GraduationCap size={20} className="text-gray-400" />
                 </div>
-                <p className="text-sm text-gray-500 mb-1">No class has been assigned yet</p>
-                <p className="text-xs text-gray-400 mb-4">This staff member is not a class teacher for any class.</p>
+                <p className="text-sm text-gray-500 mb-1">{t('pages.noClassHasBeenAssignedYet')}</p>
+                <p className="text-xs text-gray-400 mb-4">{t('pages.thisStaffMemberIsNotAClassTeacherForAnyClass')}</p>
                 <Link
                   to="/classes"
                   className="text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors no-underline"
@@ -284,9 +286,9 @@ export default function StaffAssignmentPanel({ staffId }) {
               <AlertCircle size={16} className="text-gray-600" />
             </div>
             <p className="text-sm text-gray-600">
-              <strong>Note:</strong> The section below manages <strong>subject assignments</strong> (which subjects and classes this teacher can teach in the timetable).
+              <strong>{t('pages.note1')}</strong> The section below manages <strong>subject assignments</strong> (which subjects and classes this teacher can teach in the timetable).
               {classTeacherAssignments.length > 0 ? ' The class teacher assignments shown above are managed from the ' : ' To assign a class teacher, go to the '}
-              <Link to="/classes" className="text-gray-900 hover:underline">Classes section</Link>.
+              <Link to="/classes" className="text-gray-900 hover:underline">{t('pages.classesSection')}</Link>.
             </p>
           </div>
         </div>
@@ -299,8 +301,8 @@ export default function StaffAssignmentPanel({ staffId }) {
                 <BookOpen size={16} className="text-gray-600" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900 text-sm">Subject Assignments</h3>
-                <p className="text-xs text-gray-500">Manage which subjects and classes this teacher can teach</p>
+                <h3 className="font-medium text-gray-900 text-sm">{t('pages.subjectAssignments')}</h3>
+                <p className="text-xs text-gray-500">{t('pages.manageWhichSubjectsAndClassesThisTeacherCanTeach')}</p>
               </div>
             </div>
             <button
@@ -328,7 +330,7 @@ export default function StaffAssignmentPanel({ staffId }) {
                 <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
                   <BookOpen size={20} className="text-gray-400" />
                 </div>
-                <h4 className="text-sm font-medium text-gray-900 mb-2">No Assignments Yet</h4>
+                <h4 className="text-sm font-medium text-gray-900 mb-2">{t('pages.noAssignmentsYet')}</h4>
                 <p className="text-sm text-gray-500 mb-4">
                   This teacher hasn't been assigned any subjects or classes yet.
                 </p>
@@ -370,7 +372,7 @@ export default function StaffAssignmentPanel({ staffId }) {
                                 </span>
                               ))
                             ) : (
-                              <span className="text-sm text-gray-500">No classes assigned</span>
+                              <span className="text-sm text-gray-500">{t('pages.noClassesAssigned')}</span>
                             )}
                           </div>
                         </div>
@@ -397,7 +399,7 @@ export default function StaffAssignmentPanel({ staffId }) {
             <div className="flex items-center justify-between">
               {classTeacherAssignments.length > 0 && (
                 <div className="text-center">
-                  <p className="text-xs font-medium text-gray-500 mb-1">Class Teacher</p>
+                  <p className="text-xs font-medium text-gray-500 mb-1">{t('pages.classTeacher2')}</p>
                   <p className="text-2xl font-bold text-gray-900">
                     {classTeacherAssignments.length}
                   </p>
@@ -405,14 +407,14 @@ export default function StaffAssignmentPanel({ staffId }) {
                 </div>
               )}
               <div className="text-center">
-                <p className="text-xs font-medium text-gray-500 mb-1">Subject Assignments</p>
+                <p className="text-xs font-medium text-gray-500 mb-1">{t('pages.subjectAssignments')}</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {assignments.length}
                 </p>
                 <p className="text-xs text-gray-500">subjects</p>
               </div>
               <div className="text-center">
-                <p className="text-xs font-medium text-gray-500 mb-1">Total Classes</p>
+                <p className="text-xs font-medium text-gray-500 mb-1">{t('pages.totalClasses1')}</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {totalClassesAssigned + classTeacherAssignments.length}
                 </p>
@@ -440,8 +442,8 @@ export default function StaffAssignmentPanel({ staffId }) {
                 <BookOpen size={16} className="text-gray-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Add Subject Assignment</h3>
-                <p className="text-sm text-gray-500 font-normal">Assign subjects and classes to this teacher</p>
+                <h3 className="text-lg font-semibold text-gray-900">{t('pages.addSubjectAssignment')}</h3>
+                <p className="text-sm text-gray-500 font-normal">{t('pages.assignSubjectsAndClassesToThisTeacher')}</p>
               </div>
             </div>
           </ModalHeader>
@@ -453,7 +455,7 @@ export default function StaffAssignmentPanel({ staffId }) {
                   Subject <span className="text-red-500">*</span>
                 </label>
                 <Select
-                  placeholder="Select a subject"
+                  placeholder={t('pages.selectASubject')}
                   selectedKeys={newAssignment.subject ? new Set([newAssignment.subject]) : new Set()}
                   onSelectionChange={(keys) => {
                     const subject = Array.from(keys)[0];
@@ -486,8 +488,8 @@ export default function StaffAssignmentPanel({ staffId }) {
                   Classes <span className="text-red-500">*</span>
                 </label>
                 <Select
-                  label="Select classes"
-                  placeholder="Choose one or more classes"
+                  label={t('pages.selectClasses')}
+                  placeholder={t('pages.chooseOneOrMoreClasses')}
                   selectionMode="multiple"
                   selectedKeys={newAssignment.classIds}
                   onSelectionChange={(keys) => {
@@ -547,7 +549,7 @@ export default function StaffAssignmentPanel({ staffId }) {
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex gap-3">
                 <AlertCircle size={18} className="text-gray-500 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-gray-600">
-                  <strong>Note:</strong> This assignment will allow the teacher to be selected when creating timetables for the selected classes and subject.
+                  <strong>{t('pages.note1')}</strong> This assignment will allow the teacher to be selected when creating timetables for the selected classes and subject.
                 </p>
               </div>
             </div>
@@ -586,7 +588,7 @@ export default function StaffAssignmentPanel({ staffId }) {
         isOpen={isConfirmDeleteOpen}
         onClose={onConfirmDeleteClose}
         onConfirm={confirmRemoveAssignment}
-        title="Remove Assignment"
+        title={t('pages.removeAssignment')}
         message="Are you sure you want to remove this assignment? This will prevent the teacher from being assigned to these classes for this subject in the timetable."
         confirmText="Remove Assignment"
         cancelText="Cancel"

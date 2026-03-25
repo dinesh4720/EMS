@@ -15,8 +15,10 @@ import {
   TrendingUp,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 
 const StudentDetailScreen = () => {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute();
@@ -101,7 +103,7 @@ const StudentDetailScreen = () => {
       </View>
       {onPress && (
         <View style={[styles.actionBadge, { backgroundColor: '#4285F4' + '20', borderRadius: shape.pill }]}>
-          <Text style={[typography.labelSmall, { color: '#4285F4' }]}>Open</Text>
+          <Text style={[typography.labelSmall, { color: '#4285F4' }]}>{t('screens.open')}</Text>
         </View>
       )}
     </Pressable>
@@ -185,10 +187,10 @@ const StudentDetailScreen = () => {
           Performance
         </Text>
         <View style={styles.performanceGrid}>
-          <InfoCard icon={TrendingUp} label="Attendance" value={performance.attendance} color="#34A853" />
-          <InfoCard icon={Award} label="Avg. Grade" value={performance.averageGrade} color="#4285F4" />
-          <InfoCard icon={GraduationCap} label="Class Rank" value={performance.rank} color="#FBBC04" />
-          <InfoCard icon={BookOpen} label="Total Marks" value={performance.totalMarks} color="#EA4335" />
+          <InfoCard icon={TrendingUp} label={t('screens.attendance1')} value={performance.attendance} color="#34A853" />
+          <InfoCard icon={Award} label={t('screens.avgGrade')} value={performance.averageGrade} color="#4285F4" />
+          <InfoCard icon={GraduationCap} label={t('screens.classRank')} value={performance.rank} color="#FBBC04" />
+          <InfoCard icon={BookOpen} label={t('screens.totalMarks1')} value={performance.totalMarks} color="#EA4335" />
         </View>
 
         {/* Contact Details */}
@@ -196,8 +198,8 @@ const StudentDetailScreen = () => {
           Contact Information
         </Text>
         <View style={[styles.detailsSection, { backgroundColor: colors.surfaceContainer, borderRadius: shape.cornerLarge }]}>
-          <DetailRow icon={Phone} label="Phone" value={student.phone} onPress={handleCall} />
-          <DetailRow icon={Mail} label="Email" value={student.email} onPress={handleEmail} />
+          <DetailRow icon={Phone} label={t('screens.phone1')} value={student.phone} onPress={handleCall} />
+          <DetailRow icon={Mail} label={t('screens.email1')} value={student.email} onPress={handleEmail} />
         </View>
 
         {/* Academic Details */}
@@ -205,8 +207,8 @@ const StudentDetailScreen = () => {
           Academic Details
         </Text>
         <View style={[styles.detailsSection, { backgroundColor: colors.surfaceContainer, borderRadius: shape.cornerLarge }]}>
-          <DetailRow icon={GraduationCap} label="Class" value={student.class} />
-          <DetailRow icon={User} label="Roll Number" value={student.rollNo} />
+          <DetailRow icon={GraduationCap} label={t('screens.class')} value={student.class} />
+          <DetailRow icon={User} label={t('screens.rollNumber')} value={student.rollNo} />
         </View>
       </ScrollView>
     </View>

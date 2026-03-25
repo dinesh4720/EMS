@@ -1,3 +1,4 @@
+import { safeGetItem, safeSetItem } from '../utils/safeStorage';
 import { useEffect, useRef } from 'react'
 import { init as initOwlinTracker, destroy as destroyOwlinTracker } from '@owlin/tracker-sdk'
 import { useAuth } from '../context/AuthContext'
@@ -16,12 +17,12 @@ export function isOwlinEnabled() {
     return false
   }
 
-  const stored = localStorage.getItem(OWLIN_ENABLED_KEY)
+  const stored = safeGetItem(OWLIN_ENABLED_KEY)
   return stored === null ? true : stored === 'true'
 }
 
 export function setOwlinEnabled(enabled) {
-  localStorage.setItem(OWLIN_ENABLED_KEY, String(enabled))
+  safeSetItem(OWLIN_ENABLED_KEY, String(enabled))
   if (!enabled) {
     destroyTracker()
   }

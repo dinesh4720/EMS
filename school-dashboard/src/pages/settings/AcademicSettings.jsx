@@ -1,14 +1,17 @@
+import { safeGetItem, safeSetItem } from '../../utils/safeStorage';
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Tabs, Tab, Card, CardBody, Input, Button, Chip, Divider, Switch,
-  Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Tooltip
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Tooltip
 } from "@heroui/react";
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import {
   BookOpen, Calendar, Clock, GraduationCap, Plus, Save, Trash2,
   Edit2, AlertCircle, Check, Users, Layers
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 // Validation functions
 const validateSettings = (settings) => {
@@ -68,13 +71,16 @@ const DataField = ({ label, value }) => (
 );
 
 export default function AcademicSettings() {
+  const { t } = useTranslation();
   const { schoolSettings, updateSchoolSettings, addSubject, updateSubject, deleteSubject, classes, addClass, updateClass, deleteClass, loading } = useApp();
   const [activeTab, setActiveTab] = useState(() => {
-    return localStorage.getItem('academicSettingsTab') || "schedule";
+    return safeGetItem('academicSettingsTab') || "schedule";
   });
   const [localSettings, setLocalSettings] = useState(schoolSettings);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [subjectErrors, setSubjectErrors] = useState({});
+  const [sectionError, setSectionError] = useState('');
 
   // Modal states
   const academicYearModal = useDisclosure();
@@ -99,7 +105,7 @@ export default function AcademicSettings() {
 
   // Tab persistence
   useEffect(() => {
-    localStorage.setItem('academicSettingsTab', activeTab);
+    safeSetItem('academicSettingsTab', activeTab);
   }, [activeTab]);
 
   // Generic save handler for modals
@@ -116,12 +122,12 @@ export default function AcademicSettings() {
       await updateSchoolSettings(updated);
       setLocalSettings(updated);
       setSaveSuccess(true);
-      toast.success('Settings saved successfully');
+      toast.success(t('toast.success.settingsSavedSuccessfully'));
       setTimeout(() => setSaveSuccess(false), 2000);
       closeModal();
     } catch (error) {
       console.error('Failed to save settings:', error);
-      toast.error('Failed to save settings');
+      toast.error(t('toast.error.failedToSaveSettings'));
     } finally {
       setSaving(false);
     }
@@ -129,18 +135,22 @@ export default function AcademicSettings() {
 
   // Subject handlers
   const handleAddSubject = async () => {
-    if (!newSubject.name.trim() || !newSubject.code.trim()) {
-      toast.error('Subject name and code are required');
+    const newSubjectErrors = {};
+    if (!newSubject.name.trim()) newSubjectErrors.name = t('toast.error.subjectNameAndCodeAreRequired');
+    if (!newSubject.code.trim()) newSubjectErrors.code = t('toast.error.subjectNameAndCodeAreRequired');
+    if (Object.keys(newSubjectErrors).length > 0) {
+      setSubjectErrors(newSubjectErrors);
+      toast.error(t('toast.error.subjectNameAndCodeAreRequired'));
       return;
     }
     try {
       await addSubject(newSubject);
       setNewSubject({ name: "", code: "", assignedClasses: [] });
       subjectModal.onClose();
-      toast.success('Subject added successfully');
+      toast.success(t('toast.success.subjectAddedSuccessfully'));
     } catch (error) {
       console.error('Failed to add subject:', error);
-      toast.error('Failed to add subject');
+      toast.error(t('toast.error.failedToAddSubject'));
     }
   };
 
@@ -155,8 +165,12 @@ export default function AcademicSettings() {
   };
 
   const handleUpdateSubject = async () => {
-    if (!editingSubject || !newSubject.name.trim() || !newSubject.code.trim()) {
-      toast.error('Subject name and code are required');
+    const newSubjectErrors = {};
+    if (!newSubject.name.trim()) newSubjectErrors.name = t('toast.error.subjectNameAndCodeAreRequired');
+    if (!newSubject.code.trim()) newSubjectErrors.code = t('toast.error.subjectNameAndCodeAreRequired');
+    if (!editingSubject || Object.keys(newSubjectErrors).length > 0) {
+      setSubjectErrors(newSubjectErrors);
+      toast.error(t('toast.error.subjectNameAndCodeAreRequired'));
       return;
     }
     try {
@@ -164,39 +178,41 @@ export default function AcademicSettings() {
       setEditingSubject(null);
       setNewSubject({ name: "", code: "", assignedClasses: [] });
       subjectModal.onClose();
-      toast.success('Subject updated successfully');
+      toast.success(t('toast.success.subjectUpdatedSuccessfully'));
     } catch (error) {
       console.error('Failed to update subject:', error);
-      toast.error('Failed to update subject');
+      toast.error(t('toast.error.failedToUpdateSubject'));
     }
   };
 
   const handleDeleteSubject = async (subject) => {
     const subjectId = subject.id || subject._id;
     if (!subjectId) {
-      toast.error('Cannot delete subject: missing ID');
+      toast.error(t('toast.error.cannotDeleteSubjectMissingId'));
       return;
     }
-    if (!confirm(`Delete "${subject.name}"? This action cannot be undone.`)) return;
+    if (!confirm(t('confirm.deleteSubject', { name: subject.name }))) return;
     try {
       await deleteSubject(subjectId);
-      toast.success('Subject deleted successfully');
+      toast.success(t('toast.success.subjectDeletedSuccessfully'));
     } catch (error) {
       console.error('Failed to delete subject:', error);
-      toast.error('Failed to delete subject');
+      toast.error(t('toast.error.failedToDeleteSubject'));
     }
   };
 
   const handleSubjectModalClose = () => {
     setEditingSubject(null);
     setNewSubject({ name: "", code: "", assignedClasses: [] });
+    setSubjectErrors({});
     subjectModal.onClose();
   };
 
   // Section handlers
   const handleAddSection = async () => {
     if (!selectedClassNum || !newSection.trim()) {
-      toast.error('Please enter a section letter');
+      setSectionError(t('toast.error.pleaseEnterASectionLetter'));
+      toast.error(t('toast.error.pleaseEnterASectionLetter'));
       return;
     }
     try {
@@ -209,7 +225,7 @@ export default function AcademicSettings() {
       toast.success(`Section ${newSection.toUpperCase()} added to Class ${selectedClassNum}`);
     } catch (error) {
       console.error('Failed to add section:', error);
-      toast.error('Failed to add section');
+      toast.error(t('toast.error.failedToAddSection'));
     }
   };
 
@@ -221,7 +237,8 @@ export default function AcademicSettings() {
 
   const handleUpdateSection = async () => {
     if (!editingSection || !newSection.trim()) {
-      toast.error('Please enter a section letter');
+      setSectionError(t('toast.error.pleaseEnterASectionLetter'));
+      toast.error(t('toast.error.pleaseEnterASectionLetter'));
       return;
     }
     try {
@@ -232,31 +249,31 @@ export default function AcademicSettings() {
       setEditingSection(null);
       setNewSection("");
       classModal.onClose();
-      toast.success('Section updated successfully');
+      toast.success(t('toast.success.sectionUpdatedSuccessfully'));
     } catch (error) {
       console.error('Failed to update section:', error);
-      toast.error('Failed to update section');
+      toast.error(t('toast.error.failedToUpdateSection'));
     }
   };
 
   const handleDeleteSection = async (cls) => {
     const classId = cls.id || cls._id;
     if (!classId) {
-      toast.error('Cannot delete section: missing ID');
+      toast.error(t('toast.error.cannotDeleteSectionMissingId'));
       return;
     }
     const classNum = cls.name?.replace(/\D/g, '') || '?';
-    if (!confirm(`Delete Class ${classNum} - Section ${cls.section}? This action cannot be undone.`)) return;
+    if (!confirm(t('confirm.deleteClass', { classNum, section: cls.section }))) return;
     try {
       await deleteClass(classId);
-      toast.success('Section deleted successfully');
+      toast.success(t('toast.success.sectionDeletedSuccessfully'));
     } catch (error) {
       console.error('Failed to delete section:', error);
       // Check for specific error message
       if (error.message?.includes('students')) {
-        toast.error('Cannot delete: Students are enrolled in this section');
+        toast.error(t('toast.error.cannotDeleteStudentsAreEnrolledInThisSection'));
       } else {
-        toast.error('Failed to delete section');
+        toast.error(t('toast.error.failedToDeleteSection'));
       }
     }
   };
@@ -273,7 +290,7 @@ export default function AcademicSettings() {
       return;
     }
 
-    if (!confirm(`Disable Class ${classNum}? This will remove all sections.`)) return;
+    if (!confirm(t('confirm.disableClass', { classNum }))) return;
 
     try {
       // Delete sections one by one
@@ -284,9 +301,9 @@ export default function AcademicSettings() {
     } catch (error) {
       console.error('Failed to disable class:', error);
       if (error.message?.includes('students')) {
-        toast.error('Cannot disable: Students are enrolled in this class');
+        toast.error(t('toast.error.cannotDisableStudentsAreEnrolledInThisClass'));
       } else {
-        toast.error('Failed to disable class');
+        toast.error(t('toast.error.failedToDisableClass'));
       }
     }
   };
@@ -295,6 +312,7 @@ export default function AcademicSettings() {
     setEditingSection(null);
     setNewSection("");
     setSelectedClassNum(null);
+    setSectionError('');
     classModal.onClose();
   };
 
@@ -363,9 +381,7 @@ export default function AcademicSettings() {
 
   if (loading || !localSettings) {
     return (
-      <div className="flex justify-center p-10">
-        <Spinner size="lg" />
-      </div>
+      <TablePageSkeleton />
     );
   }
 
@@ -388,8 +404,8 @@ export default function AcademicSettings() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-default-200 pb-6">
         <div>
-          <h2 className="text-2xl font-bold text-default-900">Academic Configuration</h2>
-          <p className="text-sm text-default-500 mt-1">Manage academic sessions, timings, subjects, and class structures.</p>
+          <h2 className="text-2xl font-bold text-default-900">{t('pages.academicConfiguration')}</h2>
+          <p className="text-sm text-default-500 mt-1">{t('pages.manageAcademicSessionsTimingsSubjectsAndClassStructures')}</p>
         </div>
       </div>
 
@@ -408,7 +424,7 @@ export default function AcademicSettings() {
         <Tab key="schedule" title={
           <div className="flex items-center gap-2">
             <Calendar size={18} />
-            <span>Schedule & Timings</span>
+            <span>{t('pages.scheduleTimings')}</span>
           </div>
         }>
           <div className="pt-6 space-y-8 animate-fade-in">
@@ -422,8 +438,8 @@ export default function AcademicSettings() {
                       <Calendar size={24} />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-default-900">Academic Session</h3>
-                      <p className="text-xs text-default-500">Current academic year configuration</p>
+                      <h3 className="text-lg font-bold text-default-900">{t('pages.academicSession')}</h3>
+                      <p className="text-xs text-default-500">{t('pages.currentAcademicYearConfiguration')}</p>
                     </div>
                   </div>
                   <Button
@@ -438,9 +454,9 @@ export default function AcademicSettings() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <DataField label="Session Name" value={localSettings.academicYear} />
-                  <DataField label="Start Date" value={localSettings.academicYearStart} />
-                  <DataField label="End Date" value={localSettings.academicYearEnd} />
+                  <DataField label={t('pages.sessionName')} value={localSettings.academicYear} />
+                  <DataField label={t('pages.startDate1')} value={localSettings.academicYearStart} />
+                  <DataField label={t('pages.endDate1')} value={localSettings.academicYearEnd} />
                 </div>
               </div>
             </div>
@@ -454,8 +470,8 @@ export default function AcademicSettings() {
                       <Clock size={24} />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-default-900">School Timings</h3>
-                      <p className="text-xs text-default-500">Daily school start and end times</p>
+                      <h3 className="text-lg font-bold text-default-900">{t('pages.schoolTimings')}</h3>
+                      <p className="text-xs text-default-500">{t('pages.dailySchoolStartAndEndTimes')}</p>
                     </div>
                   </div>
                   <Button
@@ -470,9 +486,9 @@ export default function AcademicSettings() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <DataField label="School Starts" value={localSettings.schoolStartTime} />
-                  <DataField label="School Ends" value={localSettings.schoolEndTime} />
-                  <DataField label="Total School Hours" value={getSchoolHours()} />
+                  <DataField label={t('pages.schoolStarts')} value={localSettings.schoolStartTime} />
+                  <DataField label={t('pages.schoolEnds')} value={localSettings.schoolEndTime} />
+                  <DataField label={t('pages.totalSchoolHours')} value={getSchoolHours()} />
                 </div>
               </div>
             </div>
@@ -486,8 +502,8 @@ export default function AcademicSettings() {
                       <Clock size={24} />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-default-900">Period Configuration</h3>
-                      <p className="text-xs text-default-500">Period duration and count per day</p>
+                      <h3 className="text-lg font-bold text-default-900">{t('pages.periodConfiguration')}</h3>
+                      <p className="text-xs text-default-500">{t('pages.periodDurationAndCountPerDay')}</p>
                     </div>
                   </div>
                   <Button
@@ -502,9 +518,9 @@ export default function AcademicSettings() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <DataField label="Period Duration" value={localSettings.periodDuration ? `${localSettings.periodDuration} minutes` : null} />
-                  <DataField label="Periods per Day" value={localSettings.periodsPerDay} />
-                  <DataField label="Instructional Time" value={`${instructionalHours}h ${instructionalMins}m`} />
+                  <DataField label={t('pages.periodDuration1')} value={localSettings.periodDuration ? `${localSettings.periodDuration} minutes` : null} />
+                  <DataField label={t('pages.periodsPerDay1')} value={localSettings.periodsPerDay} />
+                  <DataField label={t('pages.instructionalTime1')} value={`${instructionalHours}h ${instructionalMins}m`} />
                 </div>
 
                 <div className="mt-4 p-4 bg-default-50 rounded-lg">
@@ -528,8 +544,8 @@ export default function AcademicSettings() {
                       <Calendar size={24} />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-default-900">Working Days</h3>
-                      <p className="text-xs text-default-500">Days the school operates</p>
+                      <h3 className="text-lg font-bold text-default-900">{t('pages.workingDays')}</h3>
+                      <p className="text-xs text-default-500">{t('pages.daysTheSchoolOperates')}</p>
                     </div>
                   </div>
                   <Button
@@ -568,13 +584,13 @@ export default function AcademicSettings() {
         <Tab key="subjects" title={
           <div className="flex items-center gap-2">
             <BookOpen size={18} />
-            <span>Subjects</span>
+            <span>{t('pages.subjects1')}</span>
           </div>
         }>
           <div className="pt-6 space-y-6 animate-fade-in">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-bold text-default-900">Subject Repository</h3>
+                <h3 className="text-lg font-bold text-default-900">{t('pages.subjectRepository')}</h3>
                 <p className="text-sm text-default-500">{localSettings.subjects?.length || 0} subjects configured</p>
               </div>
               <Button
@@ -620,7 +636,7 @@ export default function AcademicSettings() {
                           <div className="mt-3 pt-3 border-t border-default-100">
                             <div className="flex items-center gap-2 mb-2">
                               <Layers size={12} className="text-default-400" />
-                              <span className="text-xs font-medium text-default-500">Assigned to Classes:</span>
+                              <span className="text-xs font-medium text-default-500">{t('pages.assignedToClasses')}</span>
                             </div>
                             <div className="flex flex-wrap gap-1">
                               {subject.assignedClasses.sort((a, b) => a - b).map(cls => (
@@ -637,7 +653,7 @@ export default function AcademicSettings() {
               ) : (
                 <div className="col-span-full py-12 flex flex-col items-center justify-center text-default-400 bg-white dark:bg-zinc-950 border border-default-200 rounded-xl border-dashed">
                   <BookOpen size={32} className="mb-3 opacity-50" />
-                  <p>No subjects defined yet.</p>
+                  <p>{t('pages.noSubjectsDefinedYet')}</p>
                   <Button
                     color="primary"
                     variant="light"
@@ -657,14 +673,14 @@ export default function AcademicSettings() {
         <Tab key="classes" title={
           <div className="flex items-center gap-2">
             <GraduationCap size={18} />
-            <span>Classes & Sections</span>
+            <span>{t('pages.classesSections')}</span>
           </div>
         }>
           <div className="pt-6 space-y-4 animate-fade-in">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-bold text-default-900">Classes & Sections</h3>
-                <p className="text-sm text-default-500">Enable classes and manage sections</p>
+                <h3 className="text-lg font-bold text-default-900">{t('pages.classesSections')}</h3>
+                <p className="text-sm text-default-500">{t('pages.enableClassesAndManageSections')}</p>
               </div>
             </div>
 
@@ -673,10 +689,10 @@ export default function AcademicSettings() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-default-200 bg-default-50">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider w-16">Class</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider">Sections</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider w-24">Students</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider w-20">Enabled</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider w-16">{t('pages.class1')}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.sections1')}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider w-24">{t('pages.students1')}</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider w-20">{t('pages.enabled')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -783,7 +799,7 @@ export default function AcademicSettings() {
       {/* Academic Session Modal */}
       <Modal isOpen={academicYearModal.isOpen} onClose={academicYearModal.onClose} size="2xl">
         <ModalContent>
-          <ModalHeader>Edit Academic Session</ModalHeader>
+          <ModalHeader>{t('pages.editAcademicSession')}</ModalHeader>
           <ModalBody>
             <AcademicYearForm
               settings={localSettings}
@@ -798,7 +814,7 @@ export default function AcademicSettings() {
       {/* School Timings Modal */}
       <Modal isOpen={schoolTimingsModal.isOpen} onClose={schoolTimingsModal.onClose} size="2xl">
         <ModalContent>
-          <ModalHeader>Edit School Timings</ModalHeader>
+          <ModalHeader>{t('pages.editSchoolTimings')}</ModalHeader>
           <ModalBody>
             <SchoolTimingsForm
               settings={localSettings}
@@ -813,7 +829,7 @@ export default function AcademicSettings() {
       {/* Period Configuration Modal */}
       <Modal isOpen={periodConfigModal.isOpen} onClose={periodConfigModal.onClose} size="2xl">
         <ModalContent>
-          <ModalHeader>Edit Period Configuration</ModalHeader>
+          <ModalHeader>{t('pages.editPeriodConfiguration')}</ModalHeader>
           <ModalBody>
             <PeriodConfigForm
               settings={localSettings}
@@ -828,7 +844,7 @@ export default function AcademicSettings() {
       {/* Working Days Modal */}
       <Modal isOpen={workingDaysModal.isOpen} onClose={workingDaysModal.onClose} size="2xl">
         <ModalContent>
-          <ModalHeader>Edit Working Days</ModalHeader>
+          <ModalHeader>{t('pages.editWorkingDays')}</ModalHeader>
           <ModalBody>
             <WorkingDaysForm
               settings={localSettings}
@@ -847,26 +863,30 @@ export default function AcademicSettings() {
           <ModalBody>
             <div className="space-y-4 py-2">
               <Input
-                label="Subject Name"
+                label={t('pages.subjectName1')}
                 placeholder="e.g., Mathematics"
                 value={newSubject.name}
-                onValueChange={(v) => setNewSubject({ ...newSubject, name: v })}
+                onValueChange={(v) => { setNewSubject({ ...newSubject, name: v }); setSubjectErrors(prev => ({ ...prev, name: '' })); }}
                 variant="bordered"
                 labelPlacement="outside"
+                isInvalid={!!subjectErrors.name}
+                errorMessage={subjectErrors.name}
               />
               <Input
-                label="Subject Code"
+                label={t('pages.subjectCode1')}
                 placeholder="e.g., MATH"
                 value={newSubject.code}
-                onValueChange={(v) => setNewSubject({ ...newSubject, code: v.toUpperCase() })}
+                onValueChange={(v) => { setNewSubject({ ...newSubject, code: v.toUpperCase() }); setSubjectErrors(prev => ({ ...prev, code: '' })); }}
                 variant="bordered"
                 labelPlacement="outside"
+                isInvalid={!!subjectErrors.code}
+                errorMessage={subjectErrors.code}
               />
 
               {/* Class Assignment */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-default-700">Assign to Classes</label>
+                  <label className="text-sm font-medium text-default-700">{t('pages.assignToClasses1')}</label>
                   <div className="flex gap-2">
                     <Button
                       size="sm"
@@ -917,7 +937,7 @@ export default function AcademicSettings() {
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={handleSubjectModalClose}>Cancel</Button>
+            <Button variant="light" onPress={handleSubjectModalClose}>{t('pages.cancel2')}</Button>
             <Button
               color="primary"
               onPress={editingSubject ? handleUpdateSubject : handleAddSubject}
@@ -943,19 +963,21 @@ export default function AcademicSettings() {
           <ModalBody>
             <div className="space-y-4 py-2">
               <Input
-                label="Section"
+                label={t('pages.section1')}
                 placeholder="e.g., A"
                 value={newSection}
-                onValueChange={(v) => setNewSection(v.toUpperCase().slice(0, 1))}
+                onValueChange={(v) => { setNewSection(v.toUpperCase().slice(0, 1)); setSectionError(''); }}
                 variant="bordered"
                 labelPlacement="outside"
                 description="Enter section letter (A-Z)"
                 autoFocus
+                isInvalid={!!sectionError}
+                errorMessage={sectionError}
               />
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={handleClassModalClose}>Cancel</Button>
+            <Button variant="light" onPress={handleClassModalClose}>{t('pages.cancel2')}</Button>
             <Button
               color="primary"
               onPress={editingSection ? handleUpdateSection : handleAddSection}
@@ -982,7 +1004,7 @@ function AcademicYearForm({ settings, onSave, onCancel, saving }) {
   return (
     <div className="space-y-6 py-4">
       <Input
-        label="Session Name"
+        label={t('pages.sessionName')}
         labelPlacement="outside"
         placeholder="e.g., 2024-2025"
         value={formData.academicYear}
@@ -993,7 +1015,7 @@ function AcademicYearForm({ settings, onSave, onCancel, saving }) {
       <div className="grid grid-cols-2 gap-4">
         <Input
           type="date"
-          label="Start Date"
+          label={t('pages.startDate1')}
           labelPlacement="outside"
           value={formData.academicYearStart}
           onValueChange={(v) => setFormData({ ...formData, academicYearStart: v })}
@@ -1001,7 +1023,7 @@ function AcademicYearForm({ settings, onSave, onCancel, saving }) {
         />
         <Input
           type="date"
-          label="End Date"
+          label={t('pages.endDate1')}
           labelPlacement="outside"
           value={formData.academicYearEnd}
           onValueChange={(v) => setFormData({ ...formData, academicYearEnd: v })}
@@ -1009,7 +1031,7 @@ function AcademicYearForm({ settings, onSave, onCancel, saving }) {
         />
       </div>
       <div className="flex justify-end gap-2 pt-4">
-        <Button variant="light" onPress={onCancel} disabled={saving}>Cancel</Button>
+        <Button variant="light" onPress={onCancel} disabled={saving}>{t('pages.cancel2')}</Button>
         <Button color="primary" onPress={() => onSave(formData)} isLoading={saving}>
           Save Changes
         </Button>
@@ -1029,7 +1051,7 @@ function SchoolTimingsForm({ settings, onSave, onCancel, saving }) {
       <div className="grid grid-cols-2 gap-4">
         <Input
           type="time"
-          label="School Starts"
+          label={t('pages.schoolStarts')}
           labelPlacement="outside"
           value={formData.schoolStartTime}
           onValueChange={(v) => setFormData({ ...formData, schoolStartTime: v })}
@@ -1037,7 +1059,7 @@ function SchoolTimingsForm({ settings, onSave, onCancel, saving }) {
         />
         <Input
           type="time"
-          label="School Ends"
+          label={t('pages.schoolEnds')}
           labelPlacement="outside"
           value={formData.schoolEndTime}
           onValueChange={(v) => setFormData({ ...formData, schoolEndTime: v })}
@@ -1045,7 +1067,7 @@ function SchoolTimingsForm({ settings, onSave, onCancel, saving }) {
         />
       </div>
       <div className="flex justify-end gap-2 pt-4">
-        <Button variant="light" onPress={onCancel} disabled={saving}>Cancel</Button>
+        <Button variant="light" onPress={onCancel} disabled={saving}>{t('pages.cancel2')}</Button>
         <Button color="primary" onPress={() => onSave(formData)} isLoading={saving}>
           Save Changes
         </Button>
@@ -1070,7 +1092,7 @@ function PeriodConfigForm({ settings, onSave, onCancel, saving }) {
       <div className="grid grid-cols-2 gap-4">
         <Input
           type="number"
-          label="Period Duration (minutes)"
+          label={t('pages.periodDurationMinutes')}
           labelPlacement="outside"
           value={String(formData.periodDuration)}
           onValueChange={(v) => setFormData({ ...formData, periodDuration: parseInt(v) || 0 })}
@@ -1080,7 +1102,7 @@ function PeriodConfigForm({ settings, onSave, onCancel, saving }) {
         />
         <Input
           type="number"
-          label="Periods per Day"
+          label={t('pages.periodsPerDay1')}
           labelPlacement="outside"
           value={String(formData.periodsPerDay)}
           onValueChange={(v) => setFormData({ ...formData, periodsPerDay: parseInt(v) || 0 })}
@@ -1091,12 +1113,12 @@ function PeriodConfigForm({ settings, onSave, onCancel, saving }) {
       </div>
       <div className="p-4 bg-default-50 rounded-lg">
         <p className="text-sm text-default-600">
-          <span className="font-medium">Instructional Time:</span> {hours}h {minutes}m
+          <span className="font-medium">{t('pages.instructionalTime')}</span> {hours}h {minutes}m
           <span className="text-default-400 ml-2">({formData.periodsPerDay} periods × {formData.periodDuration} minutes)</span>
         </p>
       </div>
       <div className="flex justify-end gap-2 pt-4">
-        <Button variant="light" onPress={onCancel} disabled={saving}>Cancel</Button>
+        <Button variant="light" onPress={onCancel} disabled={saving}>{t('pages.cancel2')}</Button>
         <Button color="primary" onPress={() => onSave(formData)} isLoading={saving}>
           Save Changes
         </Button>
@@ -1149,7 +1171,7 @@ function WorkingDaysForm({ settings, onSave, onCancel, saving }) {
         })}
       </div>
       <div className="flex justify-end gap-2 pt-4">
-        <Button variant="light" onPress={onCancel} disabled={saving}>Cancel</Button>
+        <Button variant="light" onPress={onCancel} disabled={saving}>{t('pages.cancel2')}</Button>
         <Button color="primary" onPress={() => onSave({ workingDays })} isLoading={saving}>
           Save Changes
         </Button>

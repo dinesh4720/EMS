@@ -4,10 +4,13 @@ import { Card, CardBody, Table, TableHeader, TableColumn, TableBody, TableRow, T
 import { Download, Check, X, Lock, Bell, AlertTriangle, Users, Clock, TrendingUp } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { attendanceApi } from "../../services/api";
+import { useTranslation } from 'react-i18next';
 
 const ITEMS_PER_LOAD = 10;
 
-export default function Attendance({ classId }) {
+export default function Attendance({
+  classId }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { students, classesWithTeachers } = useApp();
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -32,18 +35,25 @@ export default function Attendance({ classId }) {
   useEffect(() => {
     if (!classId && !selectedClass && classesWithTeachers.length > 0) {
       const first = classesWithTeachers[0];
-      setSelectedClass(`${first.name}-${first.section}`);
+      // Use class ID as key to avoid issues with hyphens in class names
+      setSelectedClass(first.id || first._id || `${first.name}-${first.section}`);
     }
   }, [classId, selectedClass, classesWithTeachers]);
 
   // Resolve the actual class ID for API calls
   const resolvedClassId = useMemo(() => {
     if (classId) return classId; // ObjectId from ClassDashboard
-    // Find the class object matching the selected "name-section" string
-    const parts = selectedClass.split('-');
-    if (parts.length >= 2) {
-      const cls = classesWithTeachers.find(c => c.name === parts[0] && c.section === parts[1]);
-      return cls?.id || null;
+    if (!selectedClass) return null;
+    // selectedClass is now a class ID; fall back to name-section lookup for legacy values
+    const directMatch = classesWithTeachers.find(c => (c.id || c._id) === selectedClass);
+    if (directMatch) return directMatch.id || directMatch._id;
+    // Legacy fallback: name-section string
+    const lastDash = selectedClass.lastIndexOf('-');
+    if (lastDash > 0) {
+      const name = selectedClass.slice(0, lastDash);
+      const section = selectedClass.slice(lastDash + 1);
+      const cls = classesWithTeachers.find(c => c.name === name && c.section === section);
+      return cls?.id || cls?._id || null;
     }
     return null;
   }, [classId, selectedClass, classesWithTeachers]);
@@ -73,13 +83,14 @@ export default function Attendance({ classId }) {
       if (data && Array.isArray(data) && data.length > 0) {
         const existingAttendance = {};
         data.forEach(record => {
-          const studentId = record.studentId?._id || record.studentId;
-          existingAttendance[studentId] = record.status || "present";
+          const studentId = String(record.studentId?._id || record.studentId || '');
+          if (studentId) existingAttendance[studentId] = record.status || "present";
         });
         // Merge: set fetched data, default remaining students to "unmarked"
         const merged = {};
         classStudents.forEach(s => {
-          merged[s.id] = existingAttendance[s.id] || "unmarked";
+          const sid = String(s.id || s._id || '');
+          merged[sid] = existingAttendance[sid] || "unmarked";
         });
         setAttendance(prev => ({ ...prev, ...merged }));
       } else {
@@ -191,7 +202,8 @@ export default function Attendance({ classId }) {
       const response = await attendanceApi.markBulk({
         classId: resolvedClassId,
         date: date,
-        attendance: attendanceData
+        attendance: attendanceData,
+        clientTimestamp: new Date().toISOString()
       });
 
       // Show success message with unmarked warning if applicable
@@ -236,7 +248,7 @@ export default function Attendance({ classId }) {
               selectedKeys={selectedClass ? [selectedClass] : []}
               onChange={(e) => { setSelectedClass(e.target.value); }}
               className="w-[180px]"
-              aria-label="Class"
+              aria-label={t('pages.class1')}
               variant="flat"
               classNames={{
                 trigger: "bg-default-100 data-[hover=true]:bg-default-200",
@@ -261,7 +273,7 @@ export default function Attendance({ classId }) {
 
         {/* Right Side - Actions */}
         <div className="flex gap-2 w-full sm:w-auto justify-end">
-          <Button size="sm" color="success" variant="flat" startContent={<Check size={14} />} onPress={markAllPresent} isDisabled={isLocked}>Mark All Present</Button>
+          <Button size="sm" color="success" variant="flat" startContent={<Check size={14} />} onPress={markAllPresent} isDisabled={isLocked}>{t('pages.markAllPresent')}</Button>
           {absentCount > 0 && <Button size="sm" color="warning" variant="flat" startContent={<Bell size={14} />}>Notify Parents ({absentCount})</Button>}
         </div>
       </div>
@@ -269,7 +281,7 @@ export default function Attendance({ classId }) {
       {isLocked && (
         <div className="flex items-center gap-2 p-3 bg-warning-50 text-warning-700 rounded-lg mb-4 mx-1">
           <Lock size={16} />
-          <span className="text-sm font-medium">Attendance is locked. Unlock in settings to make changes.</span>
+          <span className="text-sm font-medium">{t('pages.attendanceIsLockedUnlockInSettingsToMakeChanges')}</span>
         </div>
       )}
 
@@ -283,7 +295,7 @@ export default function Attendance({ classId }) {
             </div>
           </div>
           <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{classStudents.length}</h3>
-          <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">Total</p>
+          <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.total2')}</p>
         </div>
 
         {/* Present */}
@@ -294,7 +306,7 @@ export default function Attendance({ classId }) {
             </div>
           </div>
           <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{presentCount}</h3>
-          <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">Present</p>
+          <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.present2')}</p>
         </div>
 
         {/* Absent */}
@@ -305,7 +317,7 @@ export default function Attendance({ classId }) {
             </div>
           </div>
           <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{absentCount}</h3>
-          <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">Absent</p>
+          <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.absent2')}</p>
         </div>
 
         {/* Unmarked */}
@@ -317,7 +329,7 @@ export default function Attendance({ classId }) {
               </div>
             </div>
             <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{unmarkedCount}</h3>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">Unmarked</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.unmarked')}</p>
           </div>
         )}
 
@@ -331,7 +343,7 @@ export default function Attendance({ classId }) {
           <h3 className={`text-xl font-semibold ${markedCount === 0 ? "text-gray-400 dark:text-zinc-500" : attendancePercent >= 75 ? "text-green-600" : "text-red-600"}`}>
             {markedCount === 0 ? "—" : `${attendancePercent}%`}
           </h3>
-          <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">Attendance Rate</p>
+          <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.attendanceRate')}</p>
         </div>
       </div>
 
@@ -356,7 +368,7 @@ export default function Attendance({ classId }) {
 
       {/* Main Table */}
       <Table
-        aria-label="Student attendance"
+        aria-label={t('aria.misc.studentAttendanceProgress')}
         radius="none"
         removeWrapper
         classNames={{
@@ -369,10 +381,10 @@ export default function Attendance({ classId }) {
         }}
       >
         <TableHeader>
-          <TableColumn>ROLL</TableColumn>
-          <TableColumn>NAME</TableColumn>
-          <TableColumn>STATUS</TableColumn>
-          <TableColumn>ACTIONS</TableColumn>
+          <TableColumn scope="col">{t('pages.rOLL')}</TableColumn>
+          <TableColumn scope="col">{t('pages.nAME')}</TableColumn>
+          <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+          <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
         </TableHeader>
         <TableBody emptyContent={
           isLoadingAttendance
@@ -454,7 +466,7 @@ export default function Attendance({ classId }) {
               <div className="p-1.5 bg-danger-100 rounded-md">
                 <AlertTriangle size={16} className="text-danger-600" />
               </div>
-              <span className="text-sm font-semibold text-danger-700">Absentees Today</span>
+              <span className="text-sm font-semibold text-danger-700">{t('pages.absenteesToday')}</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {defaulters.map(s => (

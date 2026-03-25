@@ -1,11 +1,14 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea } from "@heroui/react";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea } from "@heroui/react";
+import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
 import { Search, X, Plus, Download } from "lucide-react";
 import { feesApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 export default function Refunds() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -17,6 +20,8 @@ export default function Refunds() {
   const [newRefundOpen, setNewRefundOpen] = useState(false);
   const [newRefundForm, setNewRefundForm] = useState({ studentId: "", classId: "", amount: "", reason: "", refundMode: "cash", remarks: "" });
   const [savingRefund, setSavingRefund] = useState(false);
+  // BUG-30: track total paid for the selected student to prevent over-refund
+  const [studentTotalPaid, setStudentTotalPaid] = useState(null);
 
   useEffect(() => {
     fetchRefunds();
@@ -29,7 +34,7 @@ export default function Refunds() {
       setRefunds(data);
     } catch (error) {
       console.error('Error fetching refunds:', error);
-      toast.error('Failed to load refunds');
+      toast.error(t('toast.error.failedToLoadRefunds'));
     } finally {
       setLoading(false);
     }
@@ -39,10 +44,10 @@ export default function Refunds() {
     setActionLoading(refund._id);
     try {
       await feesApi.approveRefund(refund._id, {});
-      toast.success('Refund approved');
+      toast.success(t('toast.success.refundApproved'));
       fetchRefunds();
     } catch (error) {
-      toast.error('Failed to approve refund');
+      toast.error(t('toast.error.failedToApproveRefund'));
     } finally {
       setActionLoading(null);
     }
@@ -52,32 +57,68 @@ export default function Refunds() {
     setActionLoading(refund._id);
     try {
       await feesApi.processRefund(refund._id, {});
-      toast.success('Refund processed');
+      toast.success(t('toast.success.refundProcessed'));
       fetchRefunds();
     } catch (error) {
-      toast.error('Failed to process refund');
+      toast.error(t('toast.error.failedToProcessRefund'));
     } finally {
       setActionLoading(null);
     }
   };
 
+  const OBJECT_ID_REGEX = /^[a-fA-F0-9]{24}$/;
+
+  // BUG-30: fetch student total paid when a valid studentId is entered
+  useEffect(() => {
+    if (!OBJECT_ID_REGEX.test(newRefundForm.studentId)) {
+      setStudentTotalPaid(null);
+      return;
+    }
+    feesApi.getPayments({ studentId: newRefundForm.studentId })
+      .then(data => {
+        const total = Array.isArray(data)
+          ? data.reduce((sum, p) => sum + (p.amount || 0), 0)
+          : 0;
+        setStudentTotalPaid(total);
+      })
+      .catch(() => setStudentTotalPaid(null));
+  }, [newRefundForm.studentId]);
+
   const handleCreateRefund = async () => {
     if (!newRefundForm.studentId || !newRefundForm.classId || !newRefundForm.amount || !newRefundForm.reason || !newRefundForm.refundMode) {
-      toast.error('Please fill all required fields');
+      toast.error(t('toast.error.pleaseFillAllRequiredFields'));
+      return;
+    }
+    if (!OBJECT_ID_REGEX.test(newRefundForm.studentId)) {
+      toast.error(t('toast.error.invalidStudentIdFormat'));
+      return;
+    }
+    if (!OBJECT_ID_REGEX.test(newRefundForm.classId)) {
+      toast.error(t('toast.error.invalidClassIdFormat'));
+      return;
+    }
+    const parsedAmount = parseFloat(newRefundForm.amount);
+    if (!parsedAmount || parsedAmount <= 0) {
+      toast.error(t('toast.error.refundAmountMustBeGreaterThanZero'));
+      return;
+    }
+    // BUG-30: prevent refund amount from exceeding total paid
+    if (studentTotalPaid !== null && parsedAmount > studentTotalPaid) {
+      toast.error(`Refund amount (₹${parsedAmount}) cannot exceed total paid (₹${studentTotalPaid})`);
       return;
     }
     setSavingRefund(true);
     try {
       await feesApi.createRefund({
         ...newRefundForm,
-        amount: parseFloat(newRefundForm.amount),
+        amount: parsedAmount,
       });
-      toast.success('Refund request created');
+      toast.success(t('toast.success.refundRequestCreated'));
       setNewRefundOpen(false);
       setNewRefundForm({ studentId: "", classId: "", amount: "", reason: "", refundMode: "cash", remarks: "" });
       fetchRefunds();
     } catch (error) {
-      toast.error('Failed to create refund');
+      toast.error(t('toast.error.failedToCreateRefund'));
     } finally {
       setSavingRefund(false);
     }
@@ -125,7 +166,7 @@ export default function Refunds() {
   const processedCount = filteredRefunds.filter((r) => r.status === "processed").length;
 
   if (loading) {
-    return <div className="flex justify-center items-center min-h-[400px]"><Spinner size="lg" /></div>;
+    return <TablePageSkeleton kpiCards={3} columns={5} rows={8} />;
   }
 
   return (
@@ -133,15 +174,15 @@ export default function Refunds() {
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-4 mb-6 -mx-6 -mt-6 px-6 pt-6">
         <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
-          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Total Refunds</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">{t('pages.totalRefunds')}</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">₹{totalRefunds.toLocaleString()}</p>
         </div>
         <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
-          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Pending</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">{t('pages.pending2')}</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{pendingCount}</p>
         </div>
         <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
-          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Processed</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">{t('pages.processed')}</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{processedCount}</p>
         </div>
       </div>
@@ -153,8 +194,8 @@ export default function Refunds() {
             <Search size={16} className="text-gray-400 dark:text-zinc-500" />
             <input
               type="text"
-              placeholder="Search student..."
-              className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-zinc-100 placeholder:text-gray-400 dark:placeholder:text-zinc-500"
+              placeholder={t('pages.searchStudent')}
+              className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-zinc-100 placeholder:text-gray-500 dark:placeholder:text-zinc-500"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -169,16 +210,16 @@ export default function Refunds() {
         <div className="flex gap-2 w-full sm:w-auto">
           <Select
             size="sm"
-            placeholder="All Status"
+            placeholder={t('pages.allStatus1')}
             selectedKeys={new Set([statusFilter])}
             onSelectionChange={(keys) => setStatusFilter(Array.from(keys)[0])}
             className="w-full sm:w-[140px]"
             classNames={{ trigger: "h-9 min-h-9 bg-white dark:bg-zinc-950 border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700", value: "text-sm" }}
           >
-            <SelectItem key="all">All Status</SelectItem>
-            <SelectItem key="pending">Pending</SelectItem>
-            <SelectItem key="approved">Approved</SelectItem>
-            <SelectItem key="processed">Processed</SelectItem>
+            <SelectItem key="all">{t('pages.allStatus1')}</SelectItem>
+            <SelectItem key="pending">{t('pages.pending2')}</SelectItem>
+            <SelectItem key="approved">{t('pages.approved1')}</SelectItem>
+            <SelectItem key="processed">{t('pages.processed')}</SelectItem>
           </Select>
 
           <button
@@ -186,7 +227,7 @@ export default function Refunds() {
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gray-900 border border-gray-900 rounded-lg hover:bg-gray-800 transition-all"
           >
             <Plus size={14} />
-            <span>New Refund</span>
+            <span>{t('pages.newRefund')}</span>
           </button>
         </div>
       </div>
@@ -194,7 +235,7 @@ export default function Refunds() {
       {/* Table */}
       <div className="border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden -mx-6 sm:mx-0">
         <Table
-          aria-label="Refunds"
+          aria-label={t('aria.misc.refunds')}
           removeWrapper
           classNames={{
             th: "bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-11 border-b border-gray-200 dark:border-zinc-800",
@@ -202,14 +243,14 @@ export default function Refunds() {
           }}
         >
           <TableHeader>
-            <TableColumn>STUDENT</TableColumn>
-            <TableColumn>AMOUNT</TableColumn>
-            <TableColumn>REASON</TableColumn>
-            <TableColumn>STATUS</TableColumn>
-            <TableColumn>DATE</TableColumn>
-            <TableColumn align="end">ACTIONS</TableColumn>
+            <TableColumn scope="col">{t('pages.sTUDENT')}</TableColumn>
+            <TableColumn scope="col">{t('pages.aMOUNT')}</TableColumn>
+            <TableColumn scope="col">{t('pages.rEASON')}</TableColumn>
+            <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+            <TableColumn scope="col">{t('pages.dATE')}</TableColumn>
+            <TableColumn align="end" scope="col">{t('pages.aCTIONS')}</TableColumn>
           </TableHeader>
-          <TableBody emptyContent={<div className="text-center py-8"><p className="text-gray-400 dark:text-zinc-500 text-sm">No refund records</p></div>}>
+          <TableBody emptyContent={<div className="text-center py-8"><p className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.noRefundRecords')}</p></div>}>
             {visibleRefunds.map((refund) => (
               <TableRow key={refund._id} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
                 <TableCell>
@@ -284,7 +325,7 @@ export default function Refunds() {
         <div ref={loaderRef} className="flex justify-center py-4 bg-gray-50 dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
           {isLoadingMore && <Spinner size="sm" />}
           {!hasMore && filteredRefunds.length > ITEMS_PER_LOAD && (
-            <span className="text-gray-400 dark:text-zinc-500 text-xs">All refunds loaded</span>
+            <span className="text-gray-400 dark:text-zinc-500 text-xs">{t('pages.allRefundsLoaded')}</span>
           )}
         </div>
       </div>
@@ -294,19 +335,19 @@ export default function Refunds() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="border-b border-gray-200 dark:border-zinc-800">New Refund Request</ModalHeader>
+              <ModalHeader className="border-b border-gray-200 dark:border-zinc-800">{t('pages.newRefundRequest')}</ModalHeader>
               <ModalBody className="py-4 space-y-4">
                 <Input
-                  label="Student ID"
-                  placeholder="Enter student ID"
+                  label={t('pages.studentId')}
+                  placeholder={t('pages.enterStudentId')}
                   value={newRefundForm.studentId}
                   onValueChange={(v) => setNewRefundForm({ ...newRefundForm, studentId: v })}
                   variant="bordered"
                   isRequired
                 />
                 <Input
-                  label="Class ID"
-                  placeholder="Enter class ID"
+                  label={t('pages.classId')}
+                  placeholder={t('pages.enterClassId')}
                   value={newRefundForm.classId}
                   onValueChange={(v) => setNewRefundForm({ ...newRefundForm, classId: v })}
                   variant="bordered"
@@ -320,10 +361,13 @@ export default function Refunds() {
                   onValueChange={(v) => setNewRefundForm({ ...newRefundForm, amount: v })}
                   variant="bordered"
                   isRequired
+                  description={studentTotalPaid !== null ? `Max refundable: ₹${studentTotalPaid.toLocaleString()}` : undefined}
+                  isInvalid={studentTotalPaid !== null && parseFloat(newRefundForm.amount) > studentTotalPaid}
+                  errorMessage={studentTotalPaid !== null && parseFloat(newRefundForm.amount) > studentTotalPaid ? `Cannot exceed ₹${studentTotalPaid.toLocaleString()} (total paid)` : undefined}
                 />
                 <Textarea
-                  label="Reason"
-                  placeholder="Reason for refund..."
+                  label={t('pages.reason')}
+                  placeholder={t('pages.reasonForRefund')}
                   value={newRefundForm.reason}
                   onValueChange={(v) => setNewRefundForm({ ...newRefundForm, reason: v })}
                   variant="bordered"
@@ -331,18 +375,18 @@ export default function Refunds() {
                   minRows={2}
                 />
                 <Select
-                  label="Refund Mode"
+                  label={t('pages.refundMode')}
                   variant="bordered"
                   selectedKeys={[newRefundForm.refundMode]}
                   onChange={(e) => setNewRefundForm({ ...newRefundForm, refundMode: e.target.value })}
                 >
-                  <SelectItem key="cash">Cash</SelectItem>
-                  <SelectItem key="cheque">Cheque</SelectItem>
-                  <SelectItem key="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem key="cash">{t('pages.cash1')}</SelectItem>
+                  <SelectItem key="cheque">{t('pages.cheque1')}</SelectItem>
+                  <SelectItem key="bank_transfer">{t('pages.bankTransfer1')}</SelectItem>
                 </Select>
                 <Textarea
-                  label="Remarks (optional)"
-                  placeholder="Additional notes..."
+                  label={t('pages.remarksOptional')}
+                  placeholder={t('pages.additionalNotes1')}
                   value={newRefundForm.remarks}
                   onValueChange={(v) => setNewRefundForm({ ...newRefundForm, remarks: v })}
                   variant="bordered"

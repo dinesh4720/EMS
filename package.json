@@ -6,7 +6,9 @@
     "parent-app",
     "staff-app",
     "owlin",
-    "shared-types"
+    "shared-types",
+    "shared-config",
+    "shared-validation"
   ],
   "scripts": {
     "bootstrap": "npm install --workspaces --include-workspace-root --legacy-peer-deps && npm --prefix owlin/server install --legacy-peer-deps",

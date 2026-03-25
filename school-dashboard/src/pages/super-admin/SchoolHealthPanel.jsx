@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Activity, AlertTriangle, TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import { superAdminApi } from '../../services/api';
+import { useTranslation } from 'react-i18next';
 
 const RISK_COLORS = {
   low: 'text-emerald-600 dark:text-emerald-400',
@@ -29,6 +30,7 @@ function HealthBar({ score }) {
 }
 
 export default function SchoolHealthPanel() {
+  const { t } = useTranslation();
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -52,7 +54,7 @@ export default function SchoolHealthPanel() {
     <div className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-slate-950 dark:text-zinc-100">School Health Monitor</h2>
+          <h2 className="text-xl font-semibold text-slate-950 dark:text-zinc-100">{t('pages.schoolHealthMonitor')}</h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
             Health scores, churn risk, and activity across all schools.
           </p>
@@ -81,13 +83,13 @@ export default function SchoolHealthPanel() {
           <table className="min-w-full text-left text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-gray-500 dark:border-zinc-800 dark:text-zinc-400">
-                <th className="pb-3 font-medium">School</th>
-                <th className="pb-3 font-medium">Health</th>
-                <th className="pb-3 font-medium">Churn Risk</th>
-                <th className="pb-3 font-medium">Trend</th>
-                <th className="pb-3 font-medium">Students</th>
-                <th className="pb-3 font-medium">Staff</th>
-                <th className="pb-3 font-medium">Rate Limits</th>
+                <th className="pb-3 font-medium">{t('pages.school1')}</th>
+                <th className="pb-3 font-medium">{t('pages.health1')}</th>
+                <th className="pb-3 font-medium">{t('pages.churnRisk')}</th>
+                <th className="pb-3 font-medium">{t('pages.trend')}</th>
+                <th className="pb-3 font-medium">{t('pages.students1')}</th>
+                <th className="pb-3 font-medium">{t('pages.staff1')}</th>
+                <th className="pb-3 font-medium">{t('pages.rateLimits')}</th>
               </tr>
             </thead>
             <tbody>
@@ -129,7 +131,7 @@ export default function SchoolHealthPanel() {
             </tbody>
           </table>
           {schools.length === 0 && (
-            <div className="py-8 text-center text-sm text-gray-400 dark:text-zinc-500">No schools found.</div>
+            <div className="py-8 text-center text-sm text-gray-400 dark:text-zinc-500">{t('pages.noSchoolsFound')}</div>
           )}
         </div>
       )}

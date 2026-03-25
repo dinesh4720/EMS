@@ -1,5 +1,6 @@
 import { forwardRef, useMemo } from "react";
 import { format } from "date-fns";
+import { useTranslation } from 'react-i18next';
 
 const PrintableStudentProfile = forwardRef(({ 
   student, 
@@ -12,6 +13,7 @@ const PrintableStudentProfile = forwardRef(({
   remarks = [],
   classTeacher = null
 }, ref) => {
+  const { t } = useTranslation();
   // Calculate monthly attendance (hook must be called before any early return)
   const monthlyAttendance = useMemo(() => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -295,7 +297,7 @@ const PrintableStudentProfile = forwardRef(({
           {student.photo ? (
             <img src={student.photo} alt={student.name} style={styles.photo} />
           ) : (
-            <span style={styles.noPhotoText}>No photo uploaded</span>
+            <span style={styles.noPhotoText}>{t('pages.noPhotoUploaded')}</span>
           )}
         </div>
         <div style={styles.profileInfo}>
@@ -320,21 +322,21 @@ const PrintableStudentProfile = forwardRef(({
       <div style={styles.section}>
         <div style={styles.grid4}>
           <div style={styles.card}>
-            <div style={styles.cardLabel}>Academic Avg</div>
+            <div style={styles.cardLabel}>{t('pages.academicAvg')}</div>
             <div style={styles.cardValue}>{averagePercentage > 0 ? `${averagePercentage}%` : "N/A"}</div>
           </div>
           <div style={styles.card}>
-            <div style={styles.cardLabel}>Attendance</div>
+            <div style={styles.cardLabel}>{t('pages.attendance2')}</div>
             <div style={{...styles.cardValue, color: attendanceStats.percentage >= 75 ? "#22c55e" : "#ef4444"}}>{attendanceStats.percentage}%</div>
           </div>
           <div style={styles.card}>
-            <div style={styles.cardLabel}>Fee Balance</div>
+            <div style={styles.cardLabel}>{t('pages.feeBalance')}</div>
             <div style={{...styles.cardValue, color: (studentFeeStructure?.totalBalance || 0) <= 0 ? "#22c55e" : "#ef4444"}}>
               ₹{(studentFeeStructure?.totalBalance || 0).toLocaleString()}
             </div>
           </div>
           <div style={styles.card}>
-            <div style={styles.cardLabel}>Grade</div>
+            <div style={styles.cardLabel}>{t('pages.grade2')}</div>
             <div style={styles.cardValue}>{averagePercentage > 0 ? getGrade(averagePercentage) : "N/A"}</div>
           </div>
         </div>
@@ -342,7 +344,7 @@ const PrintableStudentProfile = forwardRef(({
 
       {/* Personal Information */}
       <div style={styles.section}>
-        <h4 style={styles.sectionTitle}>Personal Information</h4>
+        <h4 style={styles.sectionTitle}>{t('pages.personalInformation1')}</h4>
         <div style={styles.grid3}>
           <div style={styles.field}><span style={styles.label}>Name: </span><span style={styles.value}>{student.name || "N/A"}</span></div>
           <div style={styles.field}><span style={styles.label}>DOB: </span><span style={styles.value}>{student.dateOfBirth ? format(new Date(student.dateOfBirth), "dd MMM yyyy") : "N/A"}</span></div>
@@ -358,7 +360,7 @@ const PrintableStudentProfile = forwardRef(({
 
       {/* Contact Details */}
       <div style={styles.section}>
-        <h4 style={styles.sectionTitle}>Contact Details</h4>
+        <h4 style={styles.sectionTitle}>{t('pages.contactDetails1')}</h4>
         <div style={styles.grid2}>
           <div style={{ gridColumn: "1 / -1", ...styles.field }}>
             <span style={styles.label}>Address: </span>
@@ -386,7 +388,7 @@ const PrintableStudentProfile = forwardRef(({
 
       {/* Previous Education */}
       <div style={styles.section}>
-        <h4 style={styles.sectionTitle}>Previous Education</h4>
+        <h4 style={styles.sectionTitle}>{t('pages.previousEducation1')}</h4>
         <div style={styles.grid2}>
           <div style={styles.field}><span style={styles.label}>Previous School: </span><span style={styles.value}>{student.previousSchool || "N/A"}</span></div>
           <div style={styles.field}><span style={styles.label}>TC Number: </span><span style={styles.value}>{student.tcNumber || "N/A"}</span></div>
@@ -397,7 +399,7 @@ const PrintableStudentProfile = forwardRef(({
 
       {/* Additional Information */}
       <div style={styles.section}>
-        <h4 style={styles.sectionTitle}>Additional Information</h4>
+        <h4 style={styles.sectionTitle}>{t('pages.additionalInformation1')}</h4>
         <div style={styles.grid3}>
           <div style={styles.field}><span style={styles.label}>Transport: </span><span style={{...styles.value, color: student.transportRequired ? "#22c55e" : "#737373"}}>{student.transportRequired ? "Yes" : "No"}</span></div>
           <div style={styles.field}><span style={styles.label}>Hostel: </span><span style={{...styles.value, color: student.hostelRequired ? "#22c55e" : "#737373"}}>{student.hostelRequired ? "Yes" : "No"}</span></div>
@@ -407,18 +409,18 @@ const PrintableStudentProfile = forwardRef(({
 
       {/* Academic Performance */}
       <div style={styles.section}>
-        <h4 style={styles.sectionTitle}>Academic Performance</h4>
+        <h4 style={styles.sectionTitle}>{t('pages.academicPerformance1')}</h4>
         
         {results?.length > 0 ? (
           <>
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th style={styles.tableHeader}>Exam</th>
-                  <th style={styles.tableHeader}>Date</th>
-                  <th style={{...styles.tableHeader, textAlign: "center"}}>Marks</th>
+                  <th style={styles.tableHeader}>{t('pages.exam1')}</th>
+                  <th style={styles.tableHeader}>{t('pages.date2')}</th>
+                  <th style={{...styles.tableHeader, textAlign: "center"}}>{t('pages.marks')}</th>
                   <th style={{...styles.tableHeader, textAlign: "center"}}>%</th>
-                  <th style={{...styles.tableHeader, textAlign: "center"}}>Grade</th>
+                  <th style={{...styles.tableHeader, textAlign: "center"}}>{t('pages.grade2')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -436,14 +438,14 @@ const PrintableStudentProfile = forwardRef(({
 
             {results[0]?.subjects?.length > 0 && (
               <div style={{ marginTop: "10px" }}>
-                <p style={{ fontSize: "10px", fontWeight: "500", color: "#525252", marginBottom: "6px" }}>Subject Performance (Latest)</p>
+                <p style={{ fontSize: "10px", fontWeight: "500", color: "#525252", marginBottom: "6px" }}>{t('pages.subjectPerformanceLatest')}</p>
                 <table style={styles.table}>
                   <thead>
                     <tr>
-                      <th style={styles.tableHeader}>Subject</th>
-                      <th style={{...styles.tableHeader, textAlign: "center"}}>Marks</th>
-                      <th style={{...styles.tableHeader, textAlign: "center"}}>Max</th>
-                      <th style={{...styles.tableHeader}}>Progress</th>
+                      <th style={styles.tableHeader}>{t('pages.subject2')}</th>
+                      <th style={{...styles.tableHeader, textAlign: "center"}}>{t('pages.marks')}</th>
+                      <th style={{...styles.tableHeader, textAlign: "center"}}>{t('pages.max1')}</th>
+                      <th style={{...styles.tableHeader}}>{t('pages.progress')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -470,32 +472,32 @@ const PrintableStudentProfile = forwardRef(({
             )}
           </>
         ) : (
-          <div style={styles.emptyState}>No exam results available</div>
+          <div style={styles.emptyState}>{t('pages.noExamResultsAvailable')}</div>
         )}
       </div>
 
       {/* Attendance Details */}
       <div style={styles.section}>
-        <h4 style={styles.sectionTitle}>Attendance</h4>
+        <h4 style={styles.sectionTitle}>{t('pages.attendance2')}</h4>
         
         <div style={styles.grid3}>
           <div style={{...styles.card, borderLeft: "2px solid #22c55e"}}>
-            <div style={styles.cardLabel}>Present</div>
+            <div style={styles.cardLabel}>{t('pages.present2')}</div>
             <div style={styles.cardValueGreen}>{attendanceStats.present}</div>
           </div>
           <div style={{...styles.card, borderLeft: "2px solid #ef4444"}}>
-            <div style={styles.cardLabel}>Absent</div>
+            <div style={styles.cardLabel}>{t('pages.absent2')}</div>
             <div style={styles.cardValueRed}>{attendanceStats.absent}</div>
           </div>
           <div style={{...styles.card, borderLeft: "2px solid #171717"}}>
-            <div style={styles.cardLabel}>Percentage</div>
+            <div style={styles.cardLabel}>{t('pages.percentage2')}</div>
             <div style={{...styles.cardValue, color: attendanceStats.percentage >= 75 ? "#22c55e" : "#ef4444"}}>{attendanceStats.percentage}%</div>
           </div>
         </div>
 
         {attendanceData.length > 0 && (
           <div style={{ marginTop: "10px" }}>
-            <p style={{ fontSize: "10px", color: "#525252", marginBottom: "4px" }}>Monthly Overview</p>
+            <p style={{ fontSize: "10px", color: "#525252", marginBottom: "4px" }}>{t('pages.monthlyOverview')}</p>
             <div style={styles.attendanceBar}>
               {monthlyAttendance.map((m) => (
                 <div key={m.month} style={styles.attendanceBarMonth(m.percentage)} title={`${m.month}: ${m.percentage}%`}>
@@ -509,17 +511,17 @@ const PrintableStudentProfile = forwardRef(({
 
       {/* Fee Summary */}
       <div style={styles.section}>
-        <h4 style={styles.sectionTitle}>Fee Summary</h4>
+        <h4 style={styles.sectionTitle}>{t('pages.feeSummary')}</h4>
         
         <div style={styles.feeSummary}>
           {studentFeeStructure?.feeHeads?.length > 0 && (
             <table style={{...styles.table, marginBottom: "10px"}}>
               <thead>
                 <tr>
-                  <th style={styles.tableHeader}>Fee Head</th>
-                  <th style={{...styles.tableHeader, textAlign: "right"}}>Amount</th>
-                  <th style={{...styles.tableHeader, textAlign: "right"}}>Paid</th>
-                  <th style={{...styles.tableHeader, textAlign: "right"}}>Balance</th>
+                  <th style={styles.tableHeader}>{t('pages.feeHead')}</th>
+                  <th style={{...styles.tableHeader, textAlign: "right"}}>{t('pages.amount1')}</th>
+                  <th style={{...styles.tableHeader, textAlign: "right"}}>{t('pages.paid2')}</th>
+                  <th style={{...styles.tableHeader, textAlign: "right"}}>{t('pages.balance1')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -536,16 +538,16 @@ const PrintableStudentProfile = forwardRef(({
           )}
 
           <div style={styles.feeRow}>
-            <span style={styles.label}>Total Fee:</span>
+            <span style={styles.label}>{t('pages.totalFee2')}</span>
             <span>₹{(studentFeeStructure?.totalFee || 0).toLocaleString()}</span>
           </div>
           <div style={styles.feeRow}>
-            <span style={styles.label}>Paid:</span>
+            <span style={styles.label}>{t('pages.paid3')}</span>
             <span style={{ color: "#22c55e" }}>₹{(studentFeeStructure?.totalPaid || 0).toLocaleString()}</span>
           </div>
           {(studentFeeStructure?.discountApplied || 0) > 0 && (
             <div style={styles.feeRow}>
-              <span style={styles.label}>Discount:</span>
+              <span style={styles.label}>{t('pages.discount2')}</span>
               <span style={{ color: "#3b82f6" }}>₹{(studentFeeStructure?.discountApplied || 0).toLocaleString()}</span>
             </div>
           )}
@@ -561,14 +563,14 @@ const PrintableStudentProfile = forwardRef(({
 
         {feeHistory?.length > 0 && (
           <div style={{ marginTop: "10px" }}>
-            <p style={{ fontSize: "10px", fontWeight: "500", color: "#525252", marginBottom: "6px" }}>Recent Payments</p>
+            <p style={{ fontSize: "10px", fontWeight: "500", color: "#525252", marginBottom: "6px" }}>{t('pages.recentPayments')}</p>
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th style={styles.tableHeader}>Receipt</th>
-                  <th style={styles.tableHeader}>Date</th>
-                  <th style={{...styles.tableHeader, textAlign: "center"}}>Mode</th>
-                  <th style={{...styles.tableHeader, textAlign: "right"}}>Amount</th>
+                  <th style={styles.tableHeader}>{t('pages.receipt')}</th>
+                  <th style={styles.tableHeader}>{t('pages.date2')}</th>
+                  <th style={{...styles.tableHeader, textAlign: "center"}}>{t('pages.mode1')}</th>
+                  <th style={{...styles.tableHeader, textAlign: "right"}}>{t('pages.amount1')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -593,9 +595,9 @@ const PrintableStudentProfile = forwardRef(({
           <table style={styles.table}>
             <thead>
               <tr>
-                <th style={styles.tableHeader}>Name</th>
-                <th style={styles.tableHeader}>Type</th>
-                <th style={{...styles.tableHeader, textAlign: "center"}}>Uploaded</th>
+                <th style={styles.tableHeader}>{t('pages.name1')}</th>
+                <th style={styles.tableHeader}>{t('pages.type1')}</th>
+                <th style={{...styles.tableHeader, textAlign: "center"}}>{t('pages.uploaded')}</th>
               </tr>
             </thead>
             <tbody>
@@ -630,7 +632,7 @@ const PrintableStudentProfile = forwardRef(({
       {/* Student Ratings */}
       {student?.ratings && Object.keys(student.ratings).length > 0 && (
         <div style={styles.section}>
-          <h4 style={styles.sectionTitle}>Ratings</h4>
+          <h4 style={styles.sectionTitle}>{t('pages.ratings')}</h4>
           <div style={styles.grid2}>
             {Object.entries(student.ratings).map(([key, rating]) => (
               <div key={key} style={{ padding: "6px 8px", backgroundColor: "#fafafa", borderRadius: "3px" }}>
@@ -649,7 +651,7 @@ const PrintableStudentProfile = forwardRef(({
       {/* Achievements */}
       {student?.achievements?.length > 0 && (
         <div style={styles.section}>
-          <h4 style={styles.sectionTitle}>Achievements</h4>
+          <h4 style={styles.sectionTitle}>{t('pages.achievements1')}</h4>
           <div style={styles.grid2}>
             {student.achievements.map((achievement, i) => (
               <div key={achievement._id || achievement.title || `achievement-${i}`} style={{ padding: "6px 8px", backgroundColor: "#fafafa", borderRadius: "3px", borderLeft: "2px solid #f59e0b" }}>

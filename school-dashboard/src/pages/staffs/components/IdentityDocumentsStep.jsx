@@ -43,7 +43,7 @@ function IdentityDocumentsStep({
                   </button>
                 ) : (
                   <div className="relative">
-                    <button className="text-xs font-medium text-primary hover:text-primary-600 transition-colors px-2 py-1">Upload</button>
+                    <button className="text-xs font-medium text-primary hover:text-primary-600 transition-colors px-2 py-1">{t('pages.upload')}</button>
                     <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleIDProofUpload(type, e.target.files)} />
                   </div>
                 )}
@@ -63,7 +63,7 @@ function IdentityDocumentsStep({
             <Upload size={18} />
           </div>
           <p className="text-xs text-gray-600">{t('staff.form.clickToUpload')}</p>
-          <p className="text-2xs text-gray-400">PDF, JPG, PNG</p>
+          <p className="text-2xs text-gray-400">{t('pages.pDFJpgPng')}</p>
           <input ref={qualDocsInputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => handleFileUpload("qualificationDocs", e.target.files)} />
         </div>
         {formData.qualificationDocs.length > 0 && (

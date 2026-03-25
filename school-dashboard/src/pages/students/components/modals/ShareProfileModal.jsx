@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Avatar, Checkbox } from "@heroui/react";
 import { Share2, Search } from "lucide-react";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 /**
  * ShareProfileModal - Modal for sharing student profile with staff members
@@ -13,13 +14,14 @@ import toast from "react-hot-toast";
  * - staff: array - List of staff members to share with
  */
 export default function ShareProfileModal({ isOpen, onClose, student, staff = [] }) {
+  const { t } = useTranslation();
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSharing, setIsSharing] = useState(false);
 
   const handleShare = async () => {
     if (selectedUsers.length === 0) {
-      toast.error("Please select at least one user to share with");
+      toast.error(t('toast.error.pleaseSelectAtLeastOneUserToShareWith'));
       return;
     }
 
@@ -89,7 +91,7 @@ export default function ShareProfileModal({ isOpen, onClose, student, staff = []
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="md">
-      <ModalHeader>Share Student Profile</ModalHeader>
+      <ModalHeader>{t('pages.shareStudentProfile')}</ModalHeader>
       <ModalBody>
         <div className="space-y-4">
           <p className="text-sm text-gray-600 dark:text-zinc-400">Select staff members to share {student?.name}'s profile with:</p>
@@ -99,10 +101,10 @@ export default function ShareProfileModal({ isOpen, onClose, student, staff = []
             <Search size={18} className="text-gray-400 dark:text-zinc-500" />
             <input
               type="text"
-              placeholder="Search staff members..."
+              placeholder={t('pages.searchStaffMembers')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent outline-none text-sm placeholder:text-gray-400 dark:placeholder:text-zinc-500 dark:text-zinc-100"
+              className="flex-1 bg-transparent outline-none text-sm placeholder:text-gray-500 dark:placeholder:text-zinc-500 dark:text-zinc-100"
             />
           </div>
 
@@ -152,7 +154,7 @@ export default function ShareProfileModal({ isOpen, onClose, student, staff = []
                 </div>
               ))
             ) : (
-              <p className="text-center text-gray-500 dark:text-zinc-400 py-8">No staff members available</p>
+              <p className="text-center text-gray-500 dark:text-zinc-400 py-8">{t('pages.noStaffMembersAvailable')}</p>
             )}
           </div>
 
@@ -164,7 +166,7 @@ export default function ShareProfileModal({ isOpen, onClose, student, staff = []
         </div>
       </ModalBody>
       <ModalFooter>
-        <Button variant="bordered" className="border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300" onPress={handleClose}>Cancel</Button>
+        <Button variant="bordered" className="border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300" onPress={handleClose}>{t('pages.cancel2')}</Button>
         <Button
           className="bg-gray-900 hover:bg-gray-800 text-white"
           startContent={<Share2 size={16} />}

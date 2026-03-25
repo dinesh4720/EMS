@@ -1,10 +1,12 @@
+import { request } from '../../services/api.js';
 import { useState, useEffect } from "react";
-import { Card, CardBody, CardHeader, Button, Input, Checkbox, Switch, Spinner, Select, SelectItem, CheckboxGroup, Chip } from "@heroui/react";
+import { Card, CardBody, CardHeader, Button, Input, Checkbox, Switch, Select, SelectItem, CheckboxGroup, Chip } from "@heroui/react";
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { IndianRupee, Save, Trash2, BookOpen, Bus, Trophy, Home, GraduationCap, FlaskConical, Library, Monitor, Shirt, Plus } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 // Fee head types with icons
 const FEE_HEAD_TYPES = [
@@ -27,6 +29,7 @@ const FEE_HEAD_TYPES = [
 const STREAMS = ["Science", "Commerce", "Arts"];
 
 export default function FeeHeadsCardBased({ embedded = false }) {
+  const { t } = useTranslation();
   const { loading: appLoading } = useApp();
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [feeHeadData, setFeeHeadData] = useState({});
@@ -53,9 +56,7 @@ export default function FeeHeadsCardBased({ embedded = false }) {
   const fetchFeeHeads = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/fee-heads`);
-      if (!response.ok) throw new Error('Failed to fetch fee heads');
-      const data = await response.json();
+      const data = await request('/fee-heads');
       
       // Convert existing fee heads to the new format
       const types = [];
@@ -81,7 +82,7 @@ export default function FeeHeadsCardBased({ embedded = false }) {
       setFeeHeadData(headData);
     } catch (error) {
       console.error('Error fetching fee heads:', error);
-      toast.error('Failed to load fee heads');
+      toast.error(t('toast.error.failedToLoadFeeHeads'));
     } finally {
       setLoading(false);
     }
@@ -149,23 +150,14 @@ export default function FeeHeadsCardBased({ embedded = false }) {
           category: FEE_HEAD_TYPES.find(t => t.value === type)?.label || 'Other'
         };
 
-        const url = data.id 
-          ? `${API_URL}/fee-heads/${data.id}`
-          : `${API_URL}/fee-heads`;
-        
-        const response = await fetch(url, {
+        const endpoint = data.id ? `/fee-heads/${data.id}` : `/fee-heads`;
+        await request(endpoint, {
           method: data.id ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to save fee head');
-        }
       }
 
-      toast.success('All fee heads saved successfully');
+      toast.success(t('toast.success.allFeeHeadsSavedSuccessfully'));
       await fetchFeeHeads();
     } catch (error) {
       console.error('Failed to save fee heads:', error);
@@ -183,7 +175,7 @@ export default function FeeHeadsCardBased({ embedded = false }) {
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete ${data.name}?`)) return;
+    if (!confirm(t('confirm.deleteFeeHeadNamed', { name: data.name }))) return;
 
     // Optimistically remove from UI
     const previousData = { ...feeHeadData[typeValue] };
@@ -192,16 +184,12 @@ export default function FeeHeadsCardBased({ embedded = false }) {
     setDeletingId(data.id);
 
     try {
-      const response = await fetch(`${API_URL}/fee-heads/${data.id}`, {
-        method: 'DELETE'
-      });
+      await request(`/fee-heads/${data.id}`, { method: 'DELETE' });
 
-      if (!response.ok) throw new Error('Failed to delete fee head');
-
-      toast.success('Fee head deleted successfully');
+      toast.success(t('toast.success.feeHeadDeletedSuccessfully'));
     } catch (error) {
       console.error('Failed to delete fee head:', error);
-      toast.error('Failed to delete fee head');
+      toast.error(t('toast.error.failedToDeleteFeeHead'));
       // Restore on error
       setSelectedTypes(previousTypes);
       setFeeHeadData(prev => ({ ...prev, [typeValue]: previousData }));
@@ -212,9 +200,7 @@ export default function FeeHeadsCardBased({ embedded = false }) {
 
   if (loading || appLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Spinner size="lg" />
-      </div>
+      <TablePageSkeleton />
     );
   }
 
@@ -224,8 +210,8 @@ export default function FeeHeadsCardBased({ embedded = false }) {
       {!embedded && (
         <div className="flex justify-between items-center">
           <div>
-            <h3 className="text-xl font-bold text-default-900">Configure Fee Heads</h3>
-            <p className="text-sm text-default-500 mt-1">Select fee types and configure amounts</p>
+            <h3 className="text-xl font-bold text-default-900">{t('pages.configureFeeHeads')}</h3>
+            <p className="text-sm text-default-500 mt-1">{t('pages.selectFeeTypesAndConfigureAmounts')}</p>
           </div>
           <Button
             color="primary"
@@ -255,7 +241,7 @@ export default function FeeHeadsCardBased({ embedded = false }) {
 
       {/* Fee Type Selection Grid */}
       <div>
-        <h4 className="text-sm font-semibold text-default-700 mb-4">Select Fee Head Types</h4>
+        <h4 className="text-sm font-semibold text-default-700 mb-4">{t('pages.selectFeeHeadTypes')}</h4>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {FEE_HEAD_TYPES.map((type) => {
             const Icon = type.icon;
@@ -295,7 +281,7 @@ export default function FeeHeadsCardBased({ embedded = false }) {
       {/* Selected Fee Heads Configuration Cards */}
       {selectedTypes.length > 0 && (
         <div className="space-y-6">
-          <h4 className="text-sm font-semibold text-default-700">Configure Selected Fee Heads</h4>
+          <h4 className="text-sm font-semibold text-default-700">{t('pages.configureSelectedFeeHeads')}</h4>
           
           {selectedTypes.map((typeValue) => {
             const typeInfo = FEE_HEAD_TYPES.find(t => t.value === typeValue);
@@ -312,7 +298,7 @@ export default function FeeHeadsCardBased({ embedded = false }) {
                     </div>
                     <div>
                       <h5 className="text-lg font-bold">{typeInfo.label}</h5>
-                      <p className="text-xs text-default-500">Configure amount and settings</p>
+                      <p className="text-xs text-default-500">{t('pages.configureAmountAndSettings')}</p>
                     </div>
                   </div>
                   <Button
@@ -331,8 +317,8 @@ export default function FeeHeadsCardBased({ embedded = false }) {
                   {/* Name (editable for custom) */}
                   {typeValue === 'custom' && (
                     <Input
-                      label="Fee Head Name"
-                      placeholder="Enter custom fee head name"
+                      label={t('pages.feeHeadName')}
+                      placeholder={t('pages.enterCustomFeeHeadName')}
                       value={data.name || ''}
                       onValueChange={(v) => updateFeeHeadData(typeValue, 'name', v)}
                       variant="bordered"
@@ -344,7 +330,7 @@ export default function FeeHeadsCardBased({ embedded = false }) {
                   <div className="grid grid-cols-2 gap-4">
                     <Input
                       type="number"
-                      label="Amount"
+                      label={t('pages.amount1')}
                       placeholder="0"
                       startContent={<IndianRupee size={16} className="text-default-400" />}
                       value={data.amount || 0}
@@ -354,7 +340,7 @@ export default function FeeHeadsCardBased({ embedded = false }) {
                     />
 
                     <Select
-                      label="Frequency"
+                      label={t('pages.frequency')}
                       selectedKeys={[data.frequency || 'yearly']}
                       onChange={(e) => updateFeeHeadData(typeValue, 'frequency', e.target.value)}
                       variant="bordered"
@@ -372,7 +358,7 @@ export default function FeeHeadsCardBased({ embedded = false }) {
                     </label>
                     <div className="bg-default-50 rounded-xl border border-default-200 p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm text-default-600">Select classes (1-12)</span>
+                        <span className="text-sm text-default-600">{t('pages.selectClasses112')}</span>
                         <div className="flex gap-2">
                           <Button
                             size="sm"
@@ -431,8 +417,8 @@ export default function FeeHeadsCardBased({ embedded = false }) {
 
                   {/* Description */}
                   <Input
-                    label="Description (Optional)"
-                    placeholder="Brief description of this fee"
+                    label={t('pages.descriptionOptional')}
+                    placeholder={t('pages.briefDescriptionOfThisFee')}
                     value={data.description || ''}
                     onValueChange={(v) => updateFeeHeadData(typeValue, 'description', v)}
                     variant="bordered"
@@ -442,8 +428,8 @@ export default function FeeHeadsCardBased({ embedded = false }) {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex items-center justify-between p-4 bg-default-50 rounded-xl border border-default-200">
                       <div>
-                        <p className="text-sm font-bold text-default-700">Mandatory</p>
-                        <p className="text-xs text-default-500">Required for all students</p>
+                        <p className="text-sm font-bold text-default-700">{t('pages.mandatory')}</p>
+                        <p className="text-xs text-default-500">{t('pages.requiredForAllStudents')}</p>
                       </div>
                       <Switch
                         size="sm"
@@ -454,8 +440,8 @@ export default function FeeHeadsCardBased({ embedded = false }) {
 
                     <div className="flex items-center justify-between p-4 bg-primary-50 rounded-xl border border-primary-200">
                       <div>
-                        <p className="text-sm font-bold text-primary-700">Auto-Apply</p>
-                        <p className="text-xs text-primary-600">Apply to students automatically</p>
+                        <p className="text-sm font-bold text-primary-700">{t('pages.autoApply')}</p>
+                        <p className="text-xs text-primary-600">{t('pages.applyToStudentsAutomatically')}</p>
                       </div>
                       <Switch
                         size="sm"
@@ -477,8 +463,8 @@ export default function FeeHeadsCardBased({ embedded = false }) {
         <Card className="border-2 border-dashed border-default-300">
           <CardBody className="py-12 text-center">
             <IndianRupee size={48} className="mx-auto text-default-300 mb-4" />
-            <h4 className="text-lg font-semibold text-default-600 mb-2">No Fee Heads Selected</h4>
-            <p className="text-sm text-default-400">Select fee head types above to configure them</p>
+            <h4 className="text-lg font-semibold text-default-600 mb-2">{t('pages.noFeeHeadsSelected')}</h4>
+            <p className="text-sm text-default-400">{t('pages.selectFeeHeadTypesAboveToConfigureThem')}</p>
           </CardBody>
         </Card>
       )}

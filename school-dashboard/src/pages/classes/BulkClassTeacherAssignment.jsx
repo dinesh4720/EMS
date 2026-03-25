@@ -8,8 +8,10 @@ import { Search, X, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
 import { usePermissions } from "../../context/PermissionContext";
+import { useTranslation } from 'react-i18next';
 
 export default function BulkClassTeacherAssignment() {
+  const { t } = useTranslation();
   const { staff, classesWithTeachers, classesApi, updateClassLocal, refetch } = useApp();
   const { hasPermission } = usePermissions();
 
@@ -68,7 +70,7 @@ export default function BulkClassTeacherAssignment() {
 
   const handleOpenAssign = (cls) => {
     if (!canEdit) {
-      toast.error('You do not have permission to edit class assignments');
+      toast.error(t('toast.error.youDoNotHavePermissionToEditClassAssignments'));
       return;
     }
     setModal({
@@ -120,7 +122,7 @@ export default function BulkClassTeacherAssignment() {
 
   const handleUnassign = async (cls) => {
     if (!canEdit) {
-      toast.error('You do not have permission to edit class assignments');
+      toast.error(t('toast.error.youDoNotHavePermissionToEditClassAssignments'));
       return;
     }
     try {
@@ -151,7 +153,7 @@ export default function BulkClassTeacherAssignment() {
       {/* Header with Search */}
       <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-background border-b border-default-200 py-4 -mx-6 -mt-6 px-6 mb-4">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-default-800">Class Teachers</h2>
+          <h2 className="text-lg font-semibold text-default-800">{t('pages.classTeachers1')}</h2>
           <Chip size="sm" variant="flat" color={stats.unassigned > 0 ? "warning" : "success"}>
             {stats.assigned} Assigned • {stats.unassigned} Unassigned
           </Chip>
@@ -161,7 +163,7 @@ export default function BulkClassTeacherAssignment() {
           <Search size={16} className="text-default-400" />
           <input
             type="search"
-            placeholder="Search classes or teachers..."
+            placeholder={t('pages.searchClassesOrTeachers')}
             className="flex-1 bg-transparent outline-none text-sm"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -175,7 +177,7 @@ export default function BulkClassTeacherAssignment() {
       </div>
 
       <Table
-        aria-label="Class Teachers table"
+        aria-label={t('aria.tables.classTeachers')}
         removeWrapper
         radius="none"
         classNames={{
@@ -188,10 +190,10 @@ export default function BulkClassTeacherAssignment() {
         }}
       >
         <TableHeader>
-          <TableColumn>CLASS</TableColumn>
-          <TableColumn>CLASS TEACHER</TableColumn>
-          <TableColumn>STUDENTS</TableColumn>
-          <TableColumn align="center">ACTIONS</TableColumn>
+          <TableColumn scope="col">{t('pages.cLASS')}</TableColumn>
+          <TableColumn scope="col">{t('pages.cLASSTeacher')}</TableColumn>
+          <TableColumn scope="col">{t('pages.sTUDENTS')}</TableColumn>
+          <TableColumn align="center" scope="col">{t('pages.aCTIONS')}</TableColumn>
         </TableHeader>
         <TableBody items={filteredClasses} emptyContent="No classes found">
           {(cls) => (
@@ -219,7 +221,7 @@ export default function BulkClassTeacherAssignment() {
                       }}
                     />
                   ) : (
-                    <Chip size="sm" color="warning" variant="flat">Unassigned</Chip>
+                    <Chip size="sm" color="warning" variant="flat">{t('pages.unassigned1')}</Chip>
                   )}
                 </div>
               </TableCell>
@@ -247,7 +249,7 @@ export default function BulkClassTeacherAssignment() {
                       isIconOnly
                       onPress={() => handleUnassign(cls)}
                       isDisabled={!canEdit}
-                      title="Remove Teacher"
+                      title={t('pages.removeTeacher')}
                     >
                       <X size={16} />
                     </Button>
@@ -271,8 +273,8 @@ export default function BulkClassTeacherAssignment() {
           </ModalHeader>
           <ModalBody>
             <Select
-              label="Select Teacher"
-              placeholder="Choose a teacher"
+              label={t('pages.selectTeacher1')}
+              placeholder={t('pages.chooseATeacher')}
               selectedKeys={modal.selectedTeacherId ? [modal.selectedTeacherId] : []}
               onSelectionChange={(keys) => {
                 const arr = Array.from(keys);
@@ -298,7 +300,7 @@ export default function BulkClassTeacherAssignment() {
               <div className="mt-4 p-3 rounded-lg bg-warning-50 border border-warning-200 flex gap-3">
                 <AlertCircle size={20} className="text-warning-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-warning-800">Already assigned to other classes</p>
+                  <p className="text-sm font-medium text-warning-800">{t('pages.alreadyAssignedToOtherClasses')}</p>
                   <p className="text-xs text-warning-600 mt-1">
                     This teacher is currently the class teacher for: {selectedTeacherCurrentClasses.map(c => `Class ${c.name}-${c.section}`).join(', ')}.
                     They will manage multiple classes.

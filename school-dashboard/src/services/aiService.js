@@ -1,6 +1,5 @@
 import { clearStoredUser } from '../utils/authSession';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+import { API_URL } from '../config/api.js';
 
 const PREBUILT_PROMPTS = [
   {

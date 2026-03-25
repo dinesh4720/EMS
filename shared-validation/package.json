@@ -1,0 +1,19 @@
+{
+  "name": "@ems/validation",
+  "version": "0.1.0",
+  "description": "Shared Zod validation schemas used across dashboard, mobile apps, and backend",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./student": "./src/student.js",
+    "./staff": "./src/staff.js",
+    "./common": "./src/common.js"
+  },
+  "files": [
+    "src"
+  ],
+  "peerDependencies": {
+    "zod": "^3.0.0"
+  }
+}

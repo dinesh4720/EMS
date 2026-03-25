@@ -4,13 +4,17 @@ import AnnouncementForm from "./components/announcements/AnnouncementForm";
 import AnnouncementsList from "./components/announcements/AnnouncementsList";
 import AnnouncementAnalyticsModal from "./components/announcements/AnnouncementAnalyticsModal";
 import toast from "react-hot-toast";
+import { announcementsApi } from "../../services/api";
+import { useTranslation } from 'react-i18next';
 
 export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
+  const { t } = useTranslation();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [editAnnouncement, setEditAnnouncement] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [announcementStats, setAnnouncementStats] = useState({ sent: 0, delivered: 0, scheduled: 0 });
 
   // Sync with parent drawer state
   useEffect(() => {
@@ -18,6 +22,18 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
       setShowCreateModal(true);
     }
   }, [isDrawerOpen]);
+
+  useEffect(() => {
+    announcementsApi.getAll()
+      .then((data) => {
+        const list = Array.isArray(data) ? data : (data?.announcements || []);
+        const sent = list.filter(a => a.status === 'sent').length;
+        const scheduled = list.filter(a => a.status === 'scheduled').length;
+        const delivered = list.reduce((sum, a) => sum + (a.deliveredCount || a.recipientCount || 0), 0);
+        setAnnouncementStats({ sent, delivered, scheduled });
+      })
+      .catch(() => {});
+  }, [refreshKey]);
 
   const handleView = (announcement) => {
     setSelectedAnnouncement(announcement);
@@ -34,7 +50,7 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
     setShowCreateModal(false);
     setIsDrawerOpen(false);
     setEditAnnouncement(null);
-    toast.success('Announcement saved');
+    toast.success(t('toast.success.announcementSaved'));
   };
 
   const handleCreateNew = () => {
@@ -45,21 +61,21 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
   const stats = [
     {
       label: "Sent",
-      value: "24",
-      description: "This month",
+      value: announcementStats.sent.toString(),
+      description: "Total sent",
       icon: Send,
       color: "bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400"
     },
     {
       label: "Delivered",
-      value: "1,234",
+      value: announcementStats.delivered.toLocaleString(),
       description: "Total recipients",
       icon: Check,
       color: "bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-300"
     },
     {
       label: "Scheduled",
-      value: "3",
+      value: announcementStats.scheduled.toString(),
       description: "Pending",
       icon: Clock,
       color: "bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400"
@@ -106,8 +122,8 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
               <Send size={16} className="text-gray-600 dark:text-zinc-400" />
             </div>
             <div>
-              <h3 className="font-medium text-gray-800 dark:text-zinc-100 text-sm">All Announcements</h3>
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Manage your announcements</p>
+              <h3 className="font-medium text-gray-800 dark:text-zinc-100 text-sm">{t('pages.allAnnouncements')}</h3>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.manageYourAnnouncements')}</p>
             </div>
           </div>
           <button
@@ -115,7 +131,7 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
             className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors text-sm font-medium"
           >
             <Plus size={16} />
-            <span>New Announcement</span>
+            <span>{t('pages.newAnnouncement')}</span>
           </button>
         </div>
         <div className="p-5">

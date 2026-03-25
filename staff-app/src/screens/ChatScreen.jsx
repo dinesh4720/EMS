@@ -32,11 +32,13 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '../context/AuthContext';
 import { useChat } from '../context/ChatContext';
 import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Generate gradient colors based on name
 const getAvatarGradient = (name) => {
+  const { t } = useTranslation();
   const gradients = [
     ['#667eea', '#764ba2'],
     ['#f093fb', '#f5576c'],
@@ -430,7 +432,7 @@ const ChatScreen = () => {
         {/* Header */}
         <View style={[styles.header, { paddingHorizontal: spacing.md, borderBottomColor: colors.outlineVariant }]}>
           <View style={styles.headerLeft}>
-            <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>Messages</Text>
+            <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>{t('screens.messages')}</Text>
             {unreadCount > 0 && (
               <View style={[styles.headerBadge, { backgroundColor: colors.primary }]}>
                 <Text style={[typography.labelSmall, { color: colors.onPrimary }]}>
@@ -502,7 +504,7 @@ const ChatScreen = () => {
         {!socketConnected && (
           <View style={[styles.connectionBanner, { backgroundColor: colors.errorContainer }]}>
             <CloudOff size={16} color={colors.onErrorContainer} />
-            <Text style={[typography.labelMedium, { color: colors.onErrorContainer }]}>Connecting to chat server...</Text>
+            <Text style={[typography.labelMedium, { color: colors.onErrorContainer }]}>{t('screens.connectingToChatServer')}</Text>
             <ActivityIndicator size="small" color={colors.onErrorContainer} />
           </View>
         )}
@@ -528,7 +530,7 @@ const ChatScreen = () => {
             {filteredContacts.length === 0 ? (
               <EmptyState
                 icon={Users}
-                title="No Contacts Found"
+                title={t('screens.noContactsFound')}
                 subtitle={searchQuery ? 'Try a different search term' : 'No contacts available'}
               />
             ) : (
@@ -559,7 +561,7 @@ const ChatScreen = () => {
             {filteredConversations.length === 0 ? (
               <EmptyState
                 icon={MessageCircle}
-                title="No Messages Yet"
+                title={t('screens.noMessagesYet')}
                 subtitle={searchQuery ? 'No conversations match your search' : 'Start a conversation with your colleagues'}
                 actionLabel={searchQuery ? null : 'Start Chatting'}
                 onAction={() => setShowContacts(true)}

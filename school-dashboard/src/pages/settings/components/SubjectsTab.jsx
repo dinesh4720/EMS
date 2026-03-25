@@ -55,7 +55,7 @@ export default function SubjectsTab({ localSettings, onAddSubject, onEditSubject
                     <div className="mt-3 pt-3 border-t border-default-100">
                       <div className="flex items-center gap-2 mb-2">
                         <Layers size={12} className="text-default-400" />
-                        <span className="text-xs font-medium text-default-500">Assigned to Classes:</span>
+                        <span className="text-xs font-medium text-default-500">{t('pages.assignedToClasses')}</span>
                       </div>
                       <div className="flex flex-wrap gap-1">
                         {subject.assignedClasses.sort((a, b) => a - b).map(cls => (

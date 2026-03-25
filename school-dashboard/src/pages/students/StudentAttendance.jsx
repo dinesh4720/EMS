@@ -1,3 +1,4 @@
+import { request } from '../../services/api.js';
 import { useState, useMemo, memo, useRef, useEffect } from "react";
 import {
     Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
@@ -10,23 +11,12 @@ import { Search, Filter, ChevronDown, ChevronLeft, ChevronRight, CalendarDays, C
 import { useApp } from "../../context/AppContext";
 import PhotoAvatar from "../../components/PhotoAvatar";
 import toast from "react-hot-toast";
+import { getDateLocale } from '../../i18n/index';
+import { useTranslation } from 'react-i18next';
 
-// Helper function to get auth token (same as api.js)
-const getAuthToken = () => {
-    const storedUser = sessionStorage.getItem('app_user');
-    if (storedUser) {
-        try {
-            const userData = JSON.parse(storedUser);
-            return userData.token;
-        } catch (err) {
-            console.error('Failed to parse user data:', err);
-            return null;
-        }
-    }
-    return null;
-};
 
 const StudentAttendance = memo(function StudentAttendance() {
+  const { t } = useTranslation();
     const { students } = useApp();
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [searchQuery, setSearchQuery] = useState("");
@@ -36,39 +26,51 @@ const StudentAttendance = memo(function StudentAttendance() {
     const [attendance, setAttendance] = useState({});
     const initializedRef = useRef(false);
 
-    // Initialize attendance - FIXED: Fetch from backend instead of random
+    // Fetch existing attendance from backend, fall back to "unmarked"
     useEffect(() => {
+        if (students.length === 0) return;
+
+        const controller = new AbortController();
+
         const fetchAttendance = async () => {
+            // Initialize all students as unmarked first
+            const initial = {};
+            students.forEach(s => {
+                initial[s.id] = { status: "unmarked", inTime: "-", outTime: "-" };
+            });
+
             try {
-                // Initialize with unmarked status
-                const initial = {};
-                students.forEach(s => {
-                    initial[s.id] = {
-                        status: "unmarked",
-                        inTime: "-",
-                        outTime: "-"
-                    };
-                });
-                setAttendance(initial);
+                if (classFilter !== 'all') {
+                    // Fetch actual attendance for this class+date when a class is selected
+                    const classObj = students.find(s => s.class === classFilter);
+                    if (classObj?.classId) {
+                        const data = await request(`/attendance/${classObj.classId}/${selectedDate}`, { signal: controller.signal });
+                        if (!controller.signal.aborted && data) {
+                            Object.entries(data).forEach(([studentId, record]) => {
+                                if (initial[studentId] !== undefined) {
+                                    initial[studentId] = {
+                                        status: record.status || 'unmarked',
+                                        inTime: record.inTime || '-',
+                                        outTime: record.outTime || '-'
+                                    };
+                                }
+                            });
+                        }
+                    }
+                }
             } catch (error) {
+                if (error.name === 'AbortError') return;
                 console.error('Failed to fetch attendance:', error);
-                // Initialize with unmarked state on error
-                const initial = {};
-                students.forEach(s => {
-                    initial[s.id] = {
-                        status: "unmarked",
-                        inTime: "-",
-                        outTime: "-"
-                    };
-                });
+            }
+
+            if (!controller.signal.aborted) {
                 setAttendance(initial);
             }
         };
-        
-        if (students.length > 0) {
-            fetchAttendance();
-        }
-    }, [students, selectedDate]);
+
+        fetchAttendance();
+        return () => controller.abort();
+    }, [students, selectedDate, classFilter]);
 
     const uniqueClasses = useMemo(() => [...new Set(students.map(s => s.class))].sort(), [students]);
 
@@ -137,38 +139,23 @@ const StudentAttendance = memo(function StudentAttendance() {
 
     const handleSaveAttendance = async () => {
         try {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-            const token = getAuthToken();
-
-            // Build attendance array for bulk save
             const attendanceData = filteredStudents.map(s => ({
                 studentId: s.id,
                 status: attendance[s.id]?.status || 'unmarked'
             }));
 
-            // Use bulk attendance endpoint
-            const response = await fetch(`${API_URL}/attendance/bulk`, {
+            await request('/attendance/bulk', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({
                     date: selectedDate,
-                    attendance: attendanceData,
-                    markedBy: token ? JSON.parse(atob(token.split('.')[1])).id : null
+                    attendance: attendanceData
                 })
             });
 
-            if (response.ok) {
-                toast.success('Attendance saved successfully');
-            } else {
-                const error = await response.json();
-                toast.error(error.error || 'Failed to save attendance');
-            }
+            toast.success(t('toast.success.attendanceSavedSuccessfully'));
         } catch (error) {
             console.error('Error saving attendance:', error);
-            toast.error('Failed to save attendance');
+            toast.error(error.message || 'Failed to save attendance');
         }
     };
 
@@ -199,28 +186,28 @@ const StudentAttendance = memo(function StudentAttendance() {
                 <div className="p-4 bg-default-50 rounded-lg border border-default-200">
                     <div className="flex items-center gap-2 mb-2">
                         <Users size={18} className="text-default-500" />
-                        <span className="text-xs text-default-500 uppercase tracking-wider">Total Students</span>
+                        <span className="text-xs text-default-500 uppercase tracking-wider">{t('pages.totalStudents1')}</span>
                     </div>
                     <p className="text-2xl font-semibold text-default-900">{stats.total}</p>
                 </div>
                 <div className="p-4 bg-success-50 rounded-lg border border-success-200">
                     <div className="flex items-center gap-2 mb-2">
                         <UserCheck size={18} className="text-success-600" />
-                        <span className="text-xs text-success-700 uppercase tracking-wider">Present</span>
+                        <span className="text-xs text-success-700 uppercase tracking-wider">{t('pages.present2')}</span>
                     </div>
                     <p className="text-2xl font-semibold text-success-700">{stats.present}</p>
                 </div>
                 <div className="p-4 bg-danger-50 rounded-lg border border-danger-200">
                     <div className="flex items-center gap-2 mb-2">
                         <UserX size={18} className="text-danger-600" />
-                        <span className="text-xs text-danger-700 uppercase tracking-wider">Absent</span>
+                        <span className="text-xs text-danger-700 uppercase tracking-wider">{t('pages.absent2')}</span>
                     </div>
                     <p className="text-2xl font-semibold text-danger-700">{stats.absent}</p>
                 </div>
                 <div className="p-4 bg-warning-50 rounded-lg border border-warning-200">
                     <div className="flex items-center gap-2 mb-2">
                         <Clock size={18} className="text-warning-600" />
-                        <span className="text-xs text-warning-700 uppercase tracking-wider">On Leave</span>
+                        <span className="text-xs text-warning-700 uppercase tracking-wider">{t('pages.onLeave1')}</span>
                     </div>
                     <p className="text-2xl font-semibold text-warning-700">{stats.leave}</p>
                 </div>
@@ -245,7 +232,7 @@ const StudentAttendance = memo(function StudentAttendance() {
                                     <ChevronLeft size={14} className="text-default-400" />
                                 </button>
                                 <CalendarDays size={16} className="text-default-400 flex-shrink-0" />
-                                <span>{new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                <span>{new Date(selectedDate).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
@@ -264,7 +251,7 @@ const StudentAttendance = memo(function StudentAttendance() {
                             <Calendar
                                 value={parseDate(selectedDate)}
                                 onChange={(date) => setSelectedDate(date.toString())}
-                                aria-label="Select date"
+                                aria-label={t('aria.inputs.selectDate')}
                             />
                         </PopoverContent>
                     </Popover>
@@ -283,7 +270,7 @@ const StudentAttendance = memo(function StudentAttendance() {
                         <Search size={16} className="text-default-400" />
                         <input
                             type="text"
-                            placeholder="Search..."
+                            placeholder={t('pages.search1')}
                             className="flex-1 bg-transparent outline-none text-sm"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -299,13 +286,13 @@ const StudentAttendance = memo(function StudentAttendance() {
                             </button>
                         </DropdownTrigger>
                         <DropdownMenu
-                            aria-label="Filter by class"
+                            aria-label={t('aria.menus.filterByClass')}
                             disallowEmptySelection
                             selectionMode="single"
                             selectedKeys={new Set([classFilter])}
                             onSelectionChange={(keys) => setClassFilter(Array.from(keys)[0])}
                         >
-                            <DropdownItem key="all">All Classes</DropdownItem>
+                            <DropdownItem key="all">{t('pages.allClasses')}</DropdownItem>
                             {uniqueClasses.map((cls) => (
                                 <DropdownItem key={cls}>{cls}</DropdownItem>
                             ))}
@@ -319,17 +306,17 @@ const StudentAttendance = memo(function StudentAttendance() {
                             </button>
                         </DropdownTrigger>
                         <DropdownMenu
-                            aria-label="Filter by status"
+                            aria-label={t('aria.menus.filterByStatus')}
                             disallowEmptySelection
                             selectionMode="single"
                             selectedKeys={new Set([statusFilter])}
                             onSelectionChange={(keys) => setStatusFilter(Array.from(keys)[0])}
                         >
-                            <DropdownItem key="all">All Status</DropdownItem>
-                            <DropdownItem key="present">Present</DropdownItem>
-                            <DropdownItem key="absent">Absent</DropdownItem>
-                            <DropdownItem key="leave">On Leave</DropdownItem>
-                            <DropdownItem key="halfday">Half Day</DropdownItem>
+                            <DropdownItem key="all">{t('pages.allStatus1')}</DropdownItem>
+                            <DropdownItem key="present">{t('pages.present2')}</DropdownItem>
+                            <DropdownItem key="absent">{t('pages.absent2')}</DropdownItem>
+                            <DropdownItem key="leave">{t('pages.onLeave1')}</DropdownItem>
+                            <DropdownItem key="halfday">{t('pages.halfDay')}</DropdownItem>
                         </DropdownMenu>
                     </Dropdown>
 
@@ -344,7 +331,7 @@ const StudentAttendance = memo(function StudentAttendance() {
                                 }`}
                             >
                                 <Layers size={16} className={selectedKeys === "all" || selectedKeys.size > 0 ? "text-white" : "text-default-400"} />
-                                <span>Bulk Actions</span>
+                                <span>{t('pages.bulkActions1')}</span>
                                 {(selectedKeys === "all" || selectedKeys.size > 0) && (
                                     <span className="bg-white/20 px-1.5 py-0.5 rounded text-xs">
                                         {selectedKeys === "all" ? filteredStudents.length : selectedKeys.size}
@@ -354,7 +341,7 @@ const StudentAttendance = memo(function StudentAttendance() {
                             </button>
                         </DropdownTrigger>
                         <DropdownMenu
-                            aria-label="Bulk Actions"
+                            aria-label={t('aria.menus.bulkActionsUpper')}
                             onAction={handleBulkAction}
                             disabledKeys={selectedKeys !== "all" && selectedKeys.size === 0 ? ["present", "absent", "leave", "halfday"] : []}
                         >
@@ -389,7 +376,7 @@ const StudentAttendance = memo(function StudentAttendance() {
 
             {/* Table */}
             <Table
-                aria-label="Student attendance table"
+                aria-label={t('aria.tables.studentAttendance')}
                 selectionMode="multiple"
                 selectedKeys={selectedKeys}
                 onSelectionChange={setSelectedKeys}
@@ -405,12 +392,12 @@ const StudentAttendance = memo(function StudentAttendance() {
                 }}
             >
                 <TableHeader>
-                    <TableColumn className="w-[250px]">STUDENT</TableColumn>
-                    <TableColumn className="w-[100px]">CLASS</TableColumn>
-                    <TableColumn className="w-[100px]">ROLL NO</TableColumn>
-                    <TableColumn className="w-[140px]">STATUS</TableColumn>
-                    <TableColumn className="w-[100px]">IN TIME</TableColumn>
-                    <TableColumn className="w-[100px]">OUT TIME</TableColumn>
+                    <TableColumn className="w-[250px]" scope="col">{t('pages.sTUDENT')}</TableColumn>
+                    <TableColumn className="w-[100px]" scope="col">{t('pages.cLASS')}</TableColumn>
+                    <TableColumn className="w-[100px]" scope="col">{t('pages.rOLLNo')}</TableColumn>
+                    <TableColumn className="w-[140px]" scope="col">{t('pages.sTATUS')}</TableColumn>
+                    <TableColumn className="w-[100px]" scope="col">{t('pages.iNTime')}</TableColumn>
+                    <TableColumn className="w-[100px]" scope="col">{t('pages.oUTTime')}</TableColumn>
                 </TableHeader>
                 <TableBody items={filteredStudents} emptyContent="No students found">
                     {(student) => {
@@ -448,13 +435,13 @@ const StudentAttendance = memo(function StudentAttendance() {
                                             </div>
                                         </DropdownTrigger>
                                         <DropdownMenu
-                                            aria-label="Change Status"
+                                            aria-label={t('aria.misc.changeStatusUpper')}
                                             onAction={(key) => handleStatusChange(student.id, key)}
                                         >
-                                            <DropdownItem key="present" startContent={<Check size={14} className="text-success" />}>Present</DropdownItem>
-                                            <DropdownItem key="halfday" startContent={<AlertCircle size={14} className="text-secondary" />}>Half Day</DropdownItem>
-                                            <DropdownItem key="absent" startContent={<X size={14} className="text-danger" />}>Absent</DropdownItem>
-                                            <DropdownItem key="leave" startContent={<Clock size={14} className="text-warning" />}>On Leave</DropdownItem>
+                                            <DropdownItem key="present" startContent={<Check size={14} className="text-success" />}>{t('pages.present2')}</DropdownItem>
+                                            <DropdownItem key="halfday" startContent={<AlertCircle size={14} className="text-secondary" />}>{t('pages.halfDay')}</DropdownItem>
+                                            <DropdownItem key="absent" startContent={<X size={14} className="text-danger" />}>{t('pages.absent2')}</DropdownItem>
+                                            <DropdownItem key="leave" startContent={<Clock size={14} className="text-warning" />}>{t('pages.onLeave1')}</DropdownItem>
                                         </DropdownMenu>
                                     </Dropdown>
                                 </TableCell>

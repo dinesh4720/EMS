@@ -1,3 +1,4 @@
+import { safeGetItem, safeSetItem } from '../../utils/safeStorage';
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
@@ -11,6 +12,7 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import PhotoAvatar from "../../components/PhotoAvatar";
 import ClassTeacherAssignmentModal from "./components/ClassTeacherAssignmentModal";
+import { useTranslation } from 'react-i18next';
 
 
 const ITEMS_PER_LOAD = 10;
@@ -33,6 +35,7 @@ const AVAILABLE_COLUMNS = [
 ];
 
 export default function ClassesList() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { classesWithTeachers: classesData, feeDefaulters, classesEnhancedApi, classesApi, staff, updateClassLocal, refetch } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,7 +51,7 @@ export default function ClassesList() {
 
   // Column visibility state
   const [visibleColumns, setVisibleColumns] = useState(() => {
-    const saved = localStorage.getItem('classes_columns');
+    const saved = safeGetItem('classes_columns');
     return saved ? JSON.parse(saved) : AVAILABLE_COLUMNS;
   });
   const [showColumnModal, setShowColumnModal] = useState(false);
@@ -393,7 +396,7 @@ export default function ClassesList() {
 
   // Save column visibility to localStorage
   useEffect(() => {
-    localStorage.setItem('classes_columns', JSON.stringify(visibleColumns));
+    safeSetItem('classes_columns', JSON.stringify(visibleColumns));
   }, [visibleColumns]);
 
   // Handle row click
@@ -486,7 +489,7 @@ export default function ClassesList() {
             <input
               type="search"
               name="class-search-query"
-              placeholder="Search classes..."
+              placeholder={t('pages.searchClasses1')}
               className="flex-1 bg-transparent outline-none text-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -506,7 +509,7 @@ export default function ClassesList() {
           <button
             onClick={() => setShowColumnModal(true)}
             className="p-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 cursor-pointer"
-            title="Edit Columns"
+            title={t('pages.editColumns')}
           >
             <Settings size={16} className="text-default-400" />
           </button>
@@ -516,7 +519,7 @@ export default function ClassesList() {
       {/* Table */}
       <Table
         key={`table-${visibleColumns.map(c => c?.key).join('-')}`}
-        aria-label="Classes list"
+        aria-label={t('aria.tables.classesList')}
         selectionMode="multiple"
         selectedKeys={selectedKeys}
         onSelectionChange={setSelectedKeys}
@@ -539,7 +542,7 @@ export default function ClassesList() {
                 key={col.key}
                 allowsSorting={col.key !== 'actions'}
                 style={{ width: col.width }}
-              >
+               scope="col">
                 {col.label || ''}
               </TableColumn>
             ))
@@ -627,7 +630,7 @@ export default function ClassesList() {
                             )}
                           </>
                         ) : (
-                          <span className="text-default-400 text-sm">Unassigned</span>
+                          <span className="text-default-400 text-sm">{t('pages.unassigned1')}</span>
                         )}
                       </div>
                     </TableCell>
@@ -659,7 +662,7 @@ export default function ClassesList() {
                     <TableCell>
                       <div className="flex items-center gap-2 py-5">
                         <Progress
-                          aria-label="Academic performance"
+                          aria-label={t('aria.charts.academicPerformance')}
                           value={group?.averageAcademic || 0}
                           size="sm"
                           className="max-w-[100px]"
@@ -685,7 +688,7 @@ export default function ClassesList() {
                         {group?.averageAttendance != null ? (
                           <>
                             <Progress
-                              aria-label="Attendance"
+                              aria-label={t('aria.charts.attendance')}
                               value={group?.averageAttendance || 0}
                               size="sm"
                               className="max-w-[100px]"
@@ -831,7 +834,7 @@ export default function ClassesList() {
                               <button
                                 onClick={(e) => { e.stopPropagation(); if (cls) handleAssignTeacher(cls); }}
                                 className="text-default-400 hover:text-primary transition-colors"
-                                title="Change class teacher"
+                                title={t('pages.changeClassTeacher')}
                               >
                                 <RefreshCw size={12} />
                               </button>
@@ -845,7 +848,7 @@ export default function ClassesList() {
                               Assign
                             </button>
                           )}
-                          <span className="text-default-500 text-xs">Class Teacher</span>
+                          <span className="text-default-500 text-xs">{t('pages.classTeacher2')}</span>
                         </div>
                       </div>
                     </TableCell>
@@ -877,7 +880,7 @@ export default function ClassesList() {
                     <TableCell>
                       <div className="flex items-center gap-2 py-3">
                         <Progress
-                          aria-label="Academic performance"
+                          aria-label={t('aria.charts.academicPerformance')}
                           value={academicAverage || 0}
                           size="sm"
                           className="max-w-[100px]"
@@ -903,7 +906,7 @@ export default function ClassesList() {
                         {attendanceValue != null ? (
                           <>
                             <Progress
-                              aria-label="Attendance"
+                              aria-label={t('aria.charts.attendance')}
                               value={attendanceValue || 0}
                               size="sm"
                               className="max-w-[100px]"
@@ -948,7 +951,7 @@ export default function ClassesList() {
                             <MoreVertical size={18} />
                           </Button>
                         </DropdownTrigger>
-                        <DropdownMenu aria-label="Class actions" onAction={(key) => cls && handleActionMenuItem(key, cls)}>
+                        <DropdownMenu aria-label={t('aria.menus.classActions')} onAction={(key) => cls && handleActionMenuItem(key, cls)}>
                           <DropdownItem
                             key="view"
                             startContent={<Eye size={14} />}
@@ -988,14 +991,14 @@ export default function ClassesList() {
       <div ref={loaderRef} className="flex justify-center py-4">
         {isLoading && <Spinner size="sm" color="primary" />}
         {!hasMore && visibleItems.length > ITEMS_PER_LOAD && (
-          <span className="text-default-400 text-sm">All classes loaded</span>
+          <span className="text-default-400 text-sm">{t('pages.allClassesLoaded')}</span>
         )}
       </div>
 
       {/* Edit Columns Modal */}
       <Modal isOpen={showColumnModal} onClose={() => setShowColumnModal(false)} size="sm">
         <ModalContent>
-          <ModalHeader>Edit Columns</ModalHeader>
+          <ModalHeader>{t('pages.editColumns')}</ModalHeader>
           <ModalBody>
             <div className="flex flex-col gap-2">
               {AVAILABLE_COLUMNS.filter(col => col && typeof col === 'object' && col.key).map(col => (

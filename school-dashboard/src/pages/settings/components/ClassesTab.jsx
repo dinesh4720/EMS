@@ -21,10 +21,10 @@ export default function ClassesTab({ classConfig, localSettings, enabledClasses,
         <table className="w-full">
           <thead>
             <tr className="border-b border-default-200 bg-default-50">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider w-16">Class</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider">Sections</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider w-24">Students</th>
-              <th className="text-center px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider w-20">Enabled</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider w-16">{t('pages.class1')}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.sections1')}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider w-24">{t('pages.students1')}</th>
+              <th className="text-center px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider w-20">{t('pages.enabled')}</th>
             </tr>
           </thead>
           <tbody>

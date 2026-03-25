@@ -6,6 +6,7 @@ import { useStudentForm } from "../hooks/useStudentForm";
 import PersonalInfoStep from "./steps/PersonalInfoStep";
 import ParentsStep from "./steps/ParentsStep";
 import DocumentsStep from "./steps/DocumentsStep";
+import { useTranslation } from 'react-i18next';
 
 /**
  * Refactored Student Form Component

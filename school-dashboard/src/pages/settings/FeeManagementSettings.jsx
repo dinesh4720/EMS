@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Tabs, Tab } from "@heroui/react";
 import { IndianRupee, Percent, Clock, CreditCard } from "lucide-react";
 import FeeHeadsUnified from "./FeeHeadsUnified";
+import { useTranslation } from 'react-i18next';
 
 // Import individual tab components from FeeRulesSettings
 import {
@@ -37,14 +38,15 @@ function ConcessionsDiscountsTab() {
 }
 
 export default function FeeManagementSettings() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("fee-heads");
 
   return (
     <div className="max-w-5xl mx-auto pb-10 space-y-6">
       {/* Header */}
       <div className="border-b border-gray-200 pb-4">
-        <h2 className="text-xl font-bold text-gray-900">Fee Management</h2>
-        <p className="text-sm text-gray-500 mt-1">Configure fee structures, payments, and policies</p>
+        <h2 className="text-xl font-bold text-gray-900">{t('pages.feeManagement')}</h2>
+        <p className="text-sm text-gray-500 mt-1">{t('pages.configureFeeStructuresPaymentsAndPolicies')}</p>
       </div>
 
       {/* Tabs - Consolidated to 4 */}
@@ -64,7 +66,7 @@ export default function FeeManagementSettings() {
           title={
             <div className="flex items-center gap-2 text-sm">
               <IndianRupee size={16} />
-              <span>Fee Heads</span>
+              <span>{t('pages.feeHeads1')}</span>
             </div>
           }
         >
@@ -78,7 +80,7 @@ export default function FeeManagementSettings() {
           title={
             <div className="flex items-center gap-2 text-sm">
               <Percent size={16} />
-              <span>Concessions & Rules</span>
+              <span>{t('pages.concessionsRules')}</span>
             </div>
           }
         >
@@ -92,7 +94,7 @@ export default function FeeManagementSettings() {
           title={
             <div className="flex items-center gap-2 text-sm">
               <Clock size={16} />
-              <span>Late Fees</span>
+              <span>{t('pages.lateFees')}</span>
             </div>
           }
         >
@@ -106,7 +108,7 @@ export default function FeeManagementSettings() {
           title={
             <div className="flex items-center gap-2 text-sm">
               <CreditCard size={16} />
-              <span>Payment Settings</span>
+              <span>{t('pages.paymentSettings')}</span>
             </div>
           }
         >

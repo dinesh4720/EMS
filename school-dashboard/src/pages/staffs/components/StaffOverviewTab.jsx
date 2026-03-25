@@ -14,10 +14,14 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer
 } from "recharts";
-import { useChartTheme } from "../../../utils/chartTheme";
+import { useChartTheme, CHART_COLORS } from "../../../utils/chartTheme";
+import { getDateLocale } from '../../../i18n/index';
+import { useTranslation } from 'react-i18next';
+
 
 // Custom Tooltip
 const CustomTooltip = ({ active, payload, label }) => {
+  const { t } = useTranslation();
   if (active && payload && payload.length) {
     return (
       <div className="bg-white dark:bg-zinc-950 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 shadow-sm">
@@ -98,7 +102,7 @@ export default function StaffOverviewTab({
         <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><TrendingUp size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-            <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Attendance Trend</h3><p className="text-xs text-gray-500 dark:text-zinc-500">Monthly attendance overview</p></div>
+            <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.attendanceTrend')}</h3><p className="text-xs text-gray-500 dark:text-zinc-500">{t('pages.monthlyAttendanceOverview')}</p></div>
           </div>
         </div>
         <div className="p-5">
@@ -130,7 +134,7 @@ export default function StaffOverviewTab({
           <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><BarChart3 size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-              <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Class-wise Attendance</h3><p className="text-xs text-gray-500 dark:text-zinc-500">Attendance by assigned classes</p></div>
+              <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.classWiseAttendance')}</h3><p className="text-xs text-gray-500 dark:text-zinc-500">{t('pages.attendanceByAssignedClasses')}</p></div>
             </div>
           </div>
           <div className="p-5">
@@ -142,7 +146,7 @@ export default function StaffOverviewTab({
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: chart.tick, fontSize: 11 }} dy={10} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fill: chart.tick, fontSize: 11 }} domain={[0, 100]} />
                     <RechartsTooltip content={<CustomTooltip />} />
-                    <Bar dataKey="attendance" name="Attendance" fill="#6b7280" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="attendance" name="Attendance" fill={CHART_COLORS.neutral} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -161,7 +165,7 @@ export default function StaffOverviewTab({
           <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><BookOpen size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-              <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Classes Handling</h3><p className="text-xs text-gray-500 dark:text-zinc-500">{classTeacherAssignments.length} class(es) assigned</p></div>
+              <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.classesHandling')}</h3><p className="text-xs text-gray-500 dark:text-zinc-500">{classTeacherAssignments.length} class(es) assigned</p></div>
             </div>
           </div>
           <div className="divide-y divide-gray-50 dark:divide-zinc-800">
@@ -205,7 +209,7 @@ export default function StaffOverviewTab({
         <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Activity size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-            <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Recent Activity</h3><p className="text-xs text-gray-500 dark:text-zinc-500">From attendance records</p></div>
+            <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.recentActivity1')}</h3><p className="text-xs text-gray-500 dark:text-zinc-500">{t('pages.fromAttendanceRecords')}</p></div>
           </div>
         </div>
         <div className="divide-y divide-gray-50 dark:divide-zinc-800">
@@ -228,7 +232,7 @@ export default function StaffOverviewTab({
               const IconComponent = data.status === 'present' ? CheckCircle : data.status === 'leave' ? Calendar : FileText;
               const dateObj = new Date(date + 'T00:00:00');
               const isToday = date === todayStr;
-              const timeLabel = isToday ? 'Today' : dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              const timeLabel = isToday ? 'Today' : dateObj.toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric' });
               return (
                 <div key={date} className="px-5 py-3 flex items-center gap-4 hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors">
                   <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">

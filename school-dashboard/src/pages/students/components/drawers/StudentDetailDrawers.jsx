@@ -120,7 +120,7 @@ export function ParentAppDrawer({ isOpen, onOpenChange }) {
               <div className="space-y-4">
                 <div className="flex justify-between border-b border-default-100 pb-2">
                   <span className="text-default-500">{t('students.profile.overview.lastLogin', 'Last Login')}</span>
-                  <span>Today, 10:30 AM</span>
+                  <span>{t('pages.today1030Am')}</span>
                 </div>
                 <div className="flex justify-between border-b border-default-100 pb-2">
                   <span className="text-default-500">{t('students.profile.overview.device', 'Device')}</span>

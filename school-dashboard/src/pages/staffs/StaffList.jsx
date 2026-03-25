@@ -13,11 +13,14 @@ import PhotoAvatar from "../../components/PhotoAvatar";
 import FiltersDropdown from "../../components/FiltersDropdown";
 import { STAFF_ROLES } from "../../constants/roles";
 import ScrollToTopButton from "../../components/ui/ScrollToTopButton";
+import { useTranslation } from 'react-i18next';
 
 
 const ITEMS_PER_LOAD = 10;
 
-export default function StaffList({ onStaffClick, onStaffEdit }) {
+export default function StaffList({
+  onStaffClick, onStaffEdit }) {
+  const { t } = useTranslation();
     const { staff, deleteStaff, updateStaff, updateStaffLocal, staffAttendance } = useApp();
     const [searchQuery, setSearchQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState("all");
@@ -266,7 +269,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
             await updateStaff(staffId, { status: newStatus });
             toast.success(`Status updated to ${newStatus}`);
         } catch (err) {
-            toast.error("Failed to update status");
+            toast.error(t('toast.error.failedToUpdateStatus'));
         }
     };
 
@@ -275,7 +278,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
         setRoleFilter("all");
         setStatusFilter("all");
         setSearchQuery("");
-        toast.success("All filters cleared");
+        toast.success(t('toast.success.allFiltersCleared'));
     };
 
     // Handle filter changes from FiltersPanel
@@ -324,11 +327,49 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
         a.href = url;
         a.download = `staff-list-${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
-        toast.success("Staff list exported successfully");
+        toast.success(t('toast.success.staffListExportedSuccessfully'));
     };
 
     const exportToPDF = () => {
-        toast.info("PDF export feature coming soon");
+        const rows = filteredItems.map(s => `
+          <tr>
+            <td>${s.name || ''}</td>
+            <td>${s.code || ''}</td>
+            <td>${Array.isArray(s.role) ? s.role.join(', ') : (s.role || '')}</td>
+            <td>${s.department || ''}</td>
+            <td>${s.phone || 'N/A'}</td>
+            <td>${s.email || ''}</td>
+            <td>${s.status || ''}</td>
+          </tr>`).join('');
+
+        const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"/><title>Staff List</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif;margin:40px;color:#111}
+h1{font-size:20px;font-weight:700;margin-bottom:4px}
+p{font-size:12px;color:#888;margin-bottom:20px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#f3f4f6;text-align:left;padding:8px 12px;border:1px solid #e5e7eb;font-weight:600;color:#374151}
+td{padding:8px 12px;border:1px solid #e5e7eb}
+tr:nth-child(even) td{background:#f9fafb}
+@media print{body{margin:20px}}
+</style></head>
+<body>
+<h1>Staff List</h1>
+<p>Generated on ${new Date().toLocaleDateString()} — ${filteredItems.length} staff member(s)</p>
+<table>
+<thead><tr><th>Name</th><th>Code</th><th>Role</th><th>Department</th><th>Phone</th><th>Email</th><th>Status</th></tr></thead>
+<tbody>${rows}</tbody>
+</table>
+</body></html>`;
+
+        const w = window.open('', '_blank', 'width=1000,height=700');
+        if (!w) { toast.error('Pop-up blocked. Allow pop-ups to export PDF.'); return; }
+        w.document.write(html);
+        w.document.close();
+        w.focus();
+        setTimeout(() => w.print(), 400);
+        toast.success(t('toast.success.staffListExportedSuccessfully'));
     };
 
     // Bulk actions
@@ -374,7 +415,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
     const handleBulkDelete = async () => {
         if (selectedCount === 0) return;
 
-        if (!confirm(`Are you sure you want to delete ${selectedCount} staff members?`)) {
+        if (!confirm(t('confirm.deleteBulkStaff', { count: selectedCount }))) {
             return;
         }
 
@@ -414,7 +455,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                             </button>
                         </DropdownTrigger>
                         <DropdownMenu
-                            aria-label="Filter by status"
+                            aria-label={t('aria.menus.filterByStatus')}
                             className="max-h-[400px] overflow-y-auto"
                             onAction={(key) => {
                                 setStatusFilter(key);
@@ -459,8 +500,8 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                         <input
                             type="search"
                             name="staff-search-query"
-                            placeholder="Search by name, email, or ID..."
-                            className="flex-1 bg-transparent outline-none text-sm text-gray-800 dark:text-zinc-200 placeholder:text-gray-400 dark:placeholder:text-zinc-500"
+                            placeholder={t('pages.searchByNameEmailOrId')}
+                            className="flex-1 bg-transparent outline-none text-sm text-gray-800 dark:text-zinc-200 placeholder:text-gray-500 dark:placeholder:text-zinc-500"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             autoComplete="off"
@@ -501,13 +542,13 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                                 <DropdownTrigger>
                                     <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap text-default-900">
                                         <Users size={16} className="text-default-400" />
-                                        <span>Bulk Actions</span>
+                                        <span>{t('pages.bulkActions1')}</span>
                                         <span className="text-default-500">({selectedCount})</span>
                                         <ChevronDown size={14} className="text-default-400" />
                                     </button>
                                 </DropdownTrigger>
-                                <DropdownMenu aria-label="Bulk actions" className="max-h-[400px] overflow-y-auto relative">
-                                    <DropdownSection title="Change Status" showDivider>
+                                <DropdownMenu aria-label={t('aria.menus.bulkActions')} className="max-h-[400px] overflow-y-auto relative">
+                                    <DropdownSection title={t('pages.changeStatus1')} showDivider>
                                         <DropdownItem
                                             key="status-active"
                                             onPress={() => handleBulkStatusChange("active")}
@@ -523,7 +564,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                                             Set as Inactive
                                         </DropdownItem>
                                     </DropdownSection>
-                                    <DropdownSection title="Change Role" showDivider>
+                                    <DropdownSection title={t('pages.changeRole')} showDivider>
                                         {roles.map((role) => (
                                             <DropdownItem
                                                 key={`role-${role}`}
@@ -533,7 +574,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                                             </DropdownItem>
                                         ))}
                                     </DropdownSection>
-                                    <DropdownSection title="Actions">
+                                    <DropdownSection title={t('pages.actions1')}>
                                         <DropdownItem
                                             key="delete"
                                             className="text-danger"
@@ -559,11 +600,11 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                         <DropdownTrigger>
                             <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
                                 <Download size={16} className="text-default-400" />
-                                <span>Export</span>
+                                <span>{t('pages.export1')}</span>
                                 <ChevronDown size={14} className="text-default-400" />
                             </button>
                         </DropdownTrigger>
-                        <DropdownMenu aria-label="Export options" className="max-h-[400px] overflow-y-auto">
+                        <DropdownMenu aria-label={t('aria.menus.exportOptions')} className="max-h-[400px] overflow-y-auto">
                             <DropdownItem key="csv" onPress={exportToCSV}>
                                 Export as CSV
                             </DropdownItem>
@@ -578,7 +619,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                         <button
                             onClick={clearAllFilters}
                             className="p-2 bg-transparent rounded-lg border border-default-300 hover:border-danger hover:bg-danger-50 transition-all duration-200 cursor-pointer group"
-                            title="Clear all filters"
+                            title={t('pages.clearAllFilters')}
                         >
                             <X size={16} className="text-default-400 group-hover:text-danger" />
                         </button>
@@ -592,12 +633,12 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                         }}
                     >
                         <DropdownTrigger>
-                            <button className="p-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 cursor-pointer" aria-label="Sort">
+                            <button className="p-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 cursor-pointer" aria-label={t('aria.buttons.sort')}>
                                 <ArrowUpDown size={16} className="text-default-400" />
                             </button>
                         </DropdownTrigger>
                         <DropdownMenu
-                            aria-label="Sort options"
+                            aria-label={t('aria.menus.sortOptions')}
                             className="max-h-[400px] overflow-y-auto"
                             disallowEmptySelection
                             selectionMode="single"
@@ -607,8 +648,8 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                                 setOpenDropdowns(prev => ({ ...prev, sort: false }));
                             }}
                         >
-                            <DropdownItem key="name">Name</DropdownItem>
-                            <DropdownItem key="role">Role</DropdownItem>
+                            <DropdownItem key="name">{t('pages.name1')}</DropdownItem>
+                            <DropdownItem key="role">{t('pages.role1')}</DropdownItem>
                         </DropdownMenu>
                     </Dropdown>
                 </div>
@@ -616,7 +657,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
 
             {/* Table */}
             <Table
-                aria-label="All Staff table"
+                aria-label={t('aria.tables.allStaff')}
                 selectionMode="multiple"
                 selectedKeys={selectedStaff}
                 onSelectionChange={setSelectedStaff}
@@ -645,12 +686,12 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                 }}
             >
                 <TableHeader>
-                    <TableColumn key="name" allowsSorting style={{ width: columnWidths.name }}>STAFF NAME</TableColumn>
-                    <TableColumn key="role" allowsSorting style={{ width: columnWidths.role }}>ROLE</TableColumn>
-                    <TableColumn key="contact" style={{ width: columnWidths.contact }}>CONTACT INFO</TableColumn>
-                    <TableColumn key="attendance" style={{ width: columnWidths.attendance }}>ATTENDANCE %</TableColumn>
-                    <TableColumn key="status" style={{ width: columnWidths.status }}>STATUS</TableColumn>
-                    <TableColumn key="actions" align="end" style={{ width: columnWidths.actions }}>ACTIONS</TableColumn>
+                    <TableColumn key="name" allowsSorting style={{ width: columnWidths.name }} scope="col">{t('pages.sTAFFName')}</TableColumn>
+                    <TableColumn key="role" allowsSorting style={{ width: columnWidths.role }} scope="col">{t('pages.rOLE')}</TableColumn>
+                    <TableColumn key="contact" style={{ width: columnWidths.contact }} scope="col">{t('pages.cONTACTInfo')}</TableColumn>
+                    <TableColumn key="attendance" style={{ width: columnWidths.attendance }} scope="col">ATTENDANCE %</TableColumn>
+                    <TableColumn key="status" style={{ width: columnWidths.status }} scope="col">{t('pages.sTATUS')}</TableColumn>
+                    <TableColumn key="actions" align="end" style={{ width: columnWidths.actions }} scope="col">{t('pages.aCTIONS')}</TableColumn>
                 </TableHeader>
                 <TableBody items={visibleItems} emptyContent="No staff members found">
                     {(s) => (
@@ -732,7 +773,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                                             </button>
                                         </DropdownTrigger>
                                         <DropdownMenu
-                                            aria-label="Change status"
+                                            aria-label={t('aria.misc.changeStatus')}
                                             onAction={(key) => handleStatusChange(s.id, key)}
                                         >
                                             <DropdownItem key="active">
@@ -773,7 +814,7 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                                                 toast.success(`${s.name} deleted successfully`);
                                             } catch (err) {
                                                 console.error('Failed to delete staff:', err);
-                                                toast.error('Failed to delete staff member');
+                                                toast.error(t('toast.error.failedToDeleteStaffMember'));
                                             }
                                         }}
                                     >

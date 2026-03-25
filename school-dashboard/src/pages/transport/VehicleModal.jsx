@@ -5,8 +5,10 @@ import {
 } from "@heroui/react";
 import { transportApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
+  const { t } = useTranslation();
   const isEdit = !!vehicle;
 
   const [form, setForm] = useState({
@@ -22,9 +24,11 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
     conductor: { name: "", phone: "" },
   });
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (isOpen) {
+      setErrors({});
       if (vehicle) {
         setForm({
           registrationNumber: vehicle.registrationNumber || "",
@@ -57,7 +61,10 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
     }
   }, [isOpen, vehicle]);
 
-  const updateField = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+  const updateField = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    setErrors((e) => ({ ...e, [field]: '' }));
+  };
 
   const updateDriver = (field, value) =>
     setForm((prev) => ({ ...prev, driver: { ...prev.driver, [field]: value } }));
@@ -67,7 +74,8 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
 
   const handleSave = async () => {
     if (!form.registrationNumber.trim()) {
-      toast.error("Registration number is required");
+      setErrors({ registrationNumber: t('toast.error.registrationNumberIsRequired') });
+      toast.error(t('toast.error.registrationNumberIsRequired'));
       return;
     }
 
@@ -102,10 +110,10 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
 
       if (isEdit) {
         await transportApi.updateVehicle(vehicle._id, payload);
-        toast.success("Vehicle updated");
+        toast.success(t('toast.success.vehicleUpdated'));
       } else {
         await transportApi.createVehicle(payload);
-        toast.success("Vehicle created");
+        toast.success(t('toast.success.vehicleCreated'));
       }
       onSaved?.();
       onClose();
@@ -117,42 +125,44 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
+    <Modal isOpen={isOpen} onClose={() => { onClose(); setErrors({}); }} size="2xl" scrollBehavior="inside">
       <ModalContent>
         <ModalHeader>{isEdit ? "Edit Vehicle" : "Add Vehicle"}</ModalHeader>
         <ModalBody className="space-y-4">
           {/* Basic Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="Registration Number"
+              label={t('pages.registrationNumber')}
               placeholder="e.g. KA-01-AB-1234"
               value={form.registrationNumber}
               onValueChange={(v) => updateField("registrationNumber", v)}
               isRequired
+              isInvalid={!!errors.registrationNumber}
+              errorMessage={errors.registrationNumber}
             />
             <Select
-              label="Status"
+              label={t('pages.status2')}
               selectedKeys={[form.status]}
               onSelectionChange={(keys) => updateField("status", [...keys][0])}
             >
-              <SelectItem key="active">Active</SelectItem>
-              <SelectItem key="inactive">Inactive</SelectItem>
-              <SelectItem key="maintenance">Maintenance</SelectItem>
+              <SelectItem key="active">{t('pages.active')}</SelectItem>
+              <SelectItem key="inactive">{t('pages.inactive')}</SelectItem>
+              <SelectItem key="maintenance">{t('pages.maintenance')}</SelectItem>
             </Select>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <Input label="Make" placeholder="e.g. Tata" value={form.make} onValueChange={(v) => updateField("make", v)} />
-            <Input label="Model" placeholder="e.g. Starbus" value={form.model} onValueChange={(v) => updateField("model", v)} />
-            <Input label="Year" placeholder="2024" type="number" value={form.year} onValueChange={(v) => updateField("year", v)} />
-            <Input label="Capacity" placeholder="40" type="number" value={form.capacity} onValueChange={(v) => updateField("capacity", v)} />
+            <Input label={t('pages.make')} placeholder="e.g. Tata" value={form.make} onValueChange={(v) => updateField("make", v)} />
+            <Input label={t('pages.model')} placeholder="e.g. Starbus" value={form.model} onValueChange={(v) => updateField("model", v)} />
+            <Input label={t('pages.year1')} placeholder="2024" type="number" value={form.year} onValueChange={(v) => updateField("year", v)} />
+            <Input label={t('pages.capacity')} placeholder="40" type="number" value={form.capacity} onValueChange={(v) => updateField("capacity", v)} />
           </div>
 
-          <Input label="Color" placeholder="e.g. Yellow" value={form.color} onValueChange={(v) => updateField("color", v)} />
+          <Input label={t('pages.color')} placeholder="e.g. Yellow" value={form.color} onValueChange={(v) => updateField("color", v)} />
 
           <Textarea
-            label="Notes"
-            placeholder="Optional notes"
+            label={t('pages.notes1')}
+            placeholder={t('pages.optionalNotes')}
             value={form.notes}
             onValueChange={(v) => updateField("notes", v)}
             minRows={2}
@@ -162,12 +172,12 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
 
           {/* Driver */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3">Driver Details</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3">{t('pages.driverDetails')}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Driver Name" value={form.driver.name} onValueChange={(v) => updateDriver("name", v)} />
-              <Input label="Phone" value={form.driver.phone} onValueChange={(v) => updateDriver("phone", v)} />
-              <Input label="License Number" value={form.driver.licenseNumber} onValueChange={(v) => updateDriver("licenseNumber", v)} />
-              <Input label="License Expiry" type="date" value={form.driver.licenseExpiry} onValueChange={(v) => updateDriver("licenseExpiry", v)} />
+              <Input label={t('pages.driverName')} value={form.driver.name} onValueChange={(v) => updateDriver("name", v)} />
+              <Input label={t('pages.phone1')} value={form.driver.phone} onValueChange={(v) => updateDriver("phone", v)} />
+              <Input label={t('pages.licenseNumber')} value={form.driver.licenseNumber} onValueChange={(v) => updateDriver("licenseNumber", v)} />
+              <Input label={t('pages.licenseExpiry')} type="date" value={form.driver.licenseExpiry} onValueChange={(v) => updateDriver("licenseExpiry", v)} />
             </div>
           </div>
 
@@ -175,15 +185,15 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
 
           {/* Conductor */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3">Conductor Details</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3">{t('pages.conductorDetails')}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Conductor Name" value={form.conductor.name} onValueChange={(v) => updateConductor("name", v)} />
-              <Input label="Phone" value={form.conductor.phone} onValueChange={(v) => updateConductor("phone", v)} />
+              <Input label={t('pages.conductorName')} value={form.conductor.name} onValueChange={(v) => updateConductor("name", v)} />
+              <Input label={t('pages.phone1')} value={form.conductor.phone} onValueChange={(v) => updateConductor("phone", v)} />
             </div>
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="flat" onPress={onClose}>Cancel</Button>
+          <Button variant="flat" onPress={onClose}>{t('pages.cancel2')}</Button>
           <Button color="primary" onPress={handleSave} isLoading={saving}>
             {isEdit ? "Update" : "Create"}
           </Button>

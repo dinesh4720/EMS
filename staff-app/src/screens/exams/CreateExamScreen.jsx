@@ -17,8 +17,10 @@ import { ArrowLeft, Calendar, ChevronDown, Check, Info } from 'lucide-react-nati
 
 import { useTheme } from '../../context/ThemeContext';
 import { examsApi, subjectsApi, authApi, classesApi } from '../../services/api';
+import { useTranslation } from 'react-i18next';
 
 const CreateExamScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute();
   const insets = useSafeAreaInsets();
@@ -475,7 +477,7 @@ const CreateExamScreen = () => {
           ) : (
             <>
               <Check size={20} color={colors.onPrimary} style={{ marginRight: spacing.sm }} />
-              <Text style={[typography.labelLarge, { color: colors.onPrimary }]}>Create Exam</Text>
+              <Text style={[typography.labelLarge, { color: colors.onPrimary }]}>{t('screens.createExam')}</Text>
             </>
           )}
         </Pressable>

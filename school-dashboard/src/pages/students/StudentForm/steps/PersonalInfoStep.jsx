@@ -4,12 +4,14 @@ import { User, Calendar } from "lucide-react";
 import { GENDERS, BLOOD_GROUPS, RELIGIONS, CATEGORIES, MOTHER_TONGUES } from "../../../../constants/studentConstants";
 import { INDIAN_STATES, normalizeStateName } from "../../../../constants/states";
 import { lookupPincode } from "../../../../services/api";
+import { useTranslation } from 'react-i18next';
 
 /**
  * Personal Information Step for Student Form
  * Extracted from AddStudent.jsx
  */
 export default function PersonalInfoStep({
+  const { t } = useTranslation();
   formData,
   errors,
   updateField,
@@ -85,12 +87,12 @@ export default function PersonalInfoStep({
 
       {/* Personal Information */}
       <div className="space-y-2" ref={fullNameRef}>
-        <label className="text-sm font-semibold text-default-900">Personal Information</label>
+        <label className="text-sm font-semibold text-default-900">{t('pages.personalInformation1')}</label>
         <div className="grid grid-cols-2 gap-4">
           <Input
-            label="Full Name"
+            label={t('pages.fullName1')}
             labelPlacement="outside"
-            placeholder="Enter student's full name"
+            placeholder={t('pages.enterStudentSFullName')}
             value={formData.fullName}
             onValueChange={(v) => updateField("fullName", v.replace(/[0-9]/g, ""))}
             isInvalid={!!errors.fullName}
@@ -242,12 +244,12 @@ function ClassSection({ formData, errors, classesWithTeachers, onClassChange, on
 
   return (
     <div className="space-y-2 pt-2 border-t border-solid border-default-200" ref={ref}>
-      <label className="text-sm font-semibold text-default-900 block mt-2">Class Information</label>
+      <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.classInformation')}</label>
       <div className="grid grid-cols-2 gap-4">
         <Select
-          label="Class"
+          label={t('pages.class1')}
           labelPlacement="outside"
-          placeholder="Select class"
+          placeholder={t('pages.selectClass2')}
           selectedKeys={formData.classGrade ? [formData.classGrade] : []}
           onSelectionChange={onClassChange}
           isRequired
@@ -263,9 +265,9 @@ function ClassSection({ formData, errors, classesWithTeachers, onClassChange, on
         </Select>
 
         <Select
-          label="Section"
+          label={t('pages.section1')}
           labelPlacement="outside"
-          placeholder="Select section"
+          placeholder={t('pages.selectSection')}
           selectedKeys={formData.section ? [formData.section] : []}
           onSelectionChange={(keys) => onSectionChange(Array.from(keys)[0])}
           isRequired
@@ -288,13 +290,13 @@ function ClassSection({ formData, errors, classesWithTeachers, onClassChange, on
 function ContactSection({ formData, updateField }) {
   return (
     <div className="space-y-2 pt-2 border-t border-solid border-default-200">
-      <label className="text-sm font-semibold text-default-900 block mt-2">Contact Details</label>
+      <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.contactDetails1')}</label>
       <div className="grid grid-cols-2 gap-4">
         <Input
-          label="Mobile Number"
+          label={t('pages.mobileNumber')}
           labelPlacement="outside"
           startContent={<span className="text-default-400 text-xs">+91</span>}
-          placeholder="Student's mobile (if any)"
+          placeholder={t('pages.studentSMobileIfAny')}
           value={formData.mobile}
           onValueChange={(v) => updateField("mobile", v.replace(/\D/g, "").slice(0, 10))}
           variant="bordered"
@@ -303,7 +305,7 @@ function ContactSection({ formData, updateField }) {
           classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
         />
         <Input
-          label="Email Address"
+          label={t('pages.emailAddress')}
           labelPlacement="outside"
           placeholder="student@email.com"
           value={formData.email}
@@ -321,9 +323,9 @@ function AddressSection({ formData, errors, updateField, onZipCodeChange, isZipL
   return (
     <div className="space-y-2">
       <Textarea
-        label="Address"
+        label={t('pages.address2')}
         labelPlacement="outside"
-        placeholder="Full residential address"
+        placeholder={t('pages.fullResidentialAddress')}
         value={formData.address}
         onValueChange={(v) => updateField("address", v)}
         variant="bordered"
@@ -334,9 +336,9 @@ function AddressSection({ formData, errors, updateField, onZipCodeChange, isZipL
       />
       <div className="grid grid-cols-3 gap-4">
         <Input
-          label="City"
+          label={t('pages.city1')}
           labelPlacement="outside"
-          placeholder="City"
+          placeholder={t('pages.city1')}
           value={formData.city}
           onValueChange={(v) => { onManualCityStateEntry(); updateField("city", v); }}
           variant="bordered"
@@ -345,9 +347,9 @@ function AddressSection({ formData, errors, updateField, onZipCodeChange, isZipL
           classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
         />
         <Select
-          label="State"
+          label={t('pages.state1')}
           labelPlacement="outside"
-          placeholder="Select state"
+          placeholder={t('pages.selectState')}
           selectedKeys={formData.state ? [formData.state] : []}
           onSelectionChange={(keys) => { onManualCityStateEntry(); updateField("state", Array.from(keys)[0]); }}
           variant="bordered"
@@ -359,9 +361,9 @@ function AddressSection({ formData, errors, updateField, onZipCodeChange, isZipL
           ))}
         </Select>
         <Input
-          label="ZIP Code"
+          label={t('pages.zIPCode')}
           labelPlacement="outside"
-          placeholder="PIN Code"
+          placeholder={t('pages.pINCode')}
           value={formData.zipCode}
           onValueChange={onZipCodeChange}
           variant="bordered"
@@ -379,10 +381,10 @@ function AddressSection({ formData, errors, updateField, onZipCodeChange, isZipL
 function OptionalSection({ formData, updateField }) {
   return (
     <div className="space-y-2 pt-2 border-t border-solid border-default-200">
-      <label className="text-sm font-semibold text-default-900 block mt-2">Optional Information</label>
+      <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.optionalInformation')}</label>
       <div className="grid grid-cols-2 gap-4">
         <Input
-          label="Aadhaar Number"
+          label={t('pages.aadhaarNumber')}
           labelPlacement="outside"
           placeholder="12 digit Aadhaar"
           value={formData.aadhaarNumber}
@@ -393,9 +395,9 @@ function OptionalSection({ formData, updateField }) {
           classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
         />
         <Select
-          label="Blood Group"
+          label={t('pages.bloodGroup1')}
           labelPlacement="outside"
-          placeholder="Select..."
+          placeholder={t('pages.select1')}
           selectedKeys={formData.bloodGroup ? [formData.bloodGroup] : []}
           onSelectionChange={(keys) => updateField("bloodGroup", Array.from(keys)[0])}
           variant="bordered"
@@ -407,9 +409,9 @@ function OptionalSection({ formData, updateField }) {
           ))}
         </Select>
         <Select
-          label="Religion"
+          label={t('pages.religion1')}
           labelPlacement="outside"
-          placeholder="Select..."
+          placeholder={t('pages.select1')}
           selectedKeys={formData.religion ? [formData.religion] : []}
           onSelectionChange={(keys) => updateField("religion", Array.from(keys)[0])}
           variant="bordered"
@@ -421,9 +423,9 @@ function OptionalSection({ formData, updateField }) {
           ))}
         </Select>
         <Select
-          label="Category"
+          label={t('pages.category1')}
           labelPlacement="outside"
-          placeholder="Select..."
+          placeholder={t('pages.select1')}
           selectedKeys={formData.category ? [formData.category] : []}
           onSelectionChange={(keys) => updateField("category", Array.from(keys)[0])}
           variant="bordered"

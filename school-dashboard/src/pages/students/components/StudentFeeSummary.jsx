@@ -1,8 +1,12 @@
 import { Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
 import { IndianRupee, MoreVertical, CreditCard, Download, CheckCircle, Clock, FileText, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getDateLocale } from '../../../i18n/index';
+import { useTranslation } from 'react-i18next';
+
 
 export default function StudentFeeSummary({
+  const { t } = useTranslation();
   studentFeeStructure,
   feeHistory,
   loadingFeeStructure,
@@ -23,7 +27,7 @@ export default function StudentFeeSummary({
       <div className="p-5 border border-gray-200 rounded-lg bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
           <div>
-            <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Outstanding Balance</p>
+            <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">{t('pages.outstandingBalance')}</p>
             <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100">
               ₹{studentFeeStructure?.totalBalance?.toLocaleString() || 0}
             </p>
@@ -54,7 +58,7 @@ export default function StudentFeeSummary({
                   <MoreVertical size={16} />
                 </Button>
               </DropdownTrigger>
-              <DropdownMenu aria-label="Fee actions">
+              <DropdownMenu aria-label={t('aria.menus.feeActions')}>
                 <DropdownItem
                   key="reminder"
                   startContent={<Bell size={16} />}
@@ -77,7 +81,7 @@ export default function StudentFeeSummary({
         {/* Progress Bar */}
         <div className="space-y-2">
           <div className="flex justify-between items-center text-xs text-gray-500 dark:text-zinc-400">
-            <span>Payment Progress</span>
+            <span>{t('pages.paymentProgress')}</span>
             <span>{progressPercent}% paid</span>
           </div>
           <div className="h-2 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
@@ -96,7 +100,7 @@ export default function StudentFeeSummary({
       {/* Payment History - Timeline View */}
       <div className="space-y-3">
         <div className="flex justify-between items-center">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wider">Payment History</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wider">{t('pages.paymentHistory')}</h3>
           <button
             className="text-xs text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300"
             onClick={() => navigate('/fees')}
@@ -118,7 +122,7 @@ export default function StudentFeeSummary({
                         {payment.paymentPeriod || payment.feeHeads?.[0]?.period || 'Fee Payment'}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-zinc-400">
-                        {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : payment.date}
+                        {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) : payment.date}
                         {payment.receiptNumber && <span className="ml-2">• #{payment.receiptNumber}</span>}
                       </p>
                     </div>
@@ -133,7 +137,7 @@ export default function StudentFeeSummary({
           ) : (
             <div className="p-8 text-center">
               <CreditCard size={24} className="mx-auto text-gray-300 dark:text-zinc-600 mb-2" />
-              <p className="text-sm text-gray-500 dark:text-zinc-400">No payment history yet</p>
+              <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noPaymentHistoryYet')}</p>
             </div>
           )}
         </div>
@@ -142,7 +146,7 @@ export default function StudentFeeSummary({
       {/* Fee Heads Table */}
       <div className="space-y-3">
         <div className="flex justify-between items-center">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wider">Applicable Fee Heads</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wider">{t('pages.applicableFeeHeads')}</h3>
           <span className="text-xs text-gray-500 dark:text-zinc-400">
             {studentFeeStructure?.feeHeads?.length || 0} heads
           </span>
@@ -151,17 +155,17 @@ export default function StudentFeeSummary({
         {loadingFeeStructure ? (
           <div className="p-6 text-center border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900">
             <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-gray-600 mx-auto mb-2"></div>
-            <p className="text-sm text-gray-500 dark:text-zinc-400">Loading fee structure...</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.loadingFeeStructure')}</p>
           </div>
         ) : studentFeeStructure?.feeHeads?.length > 0 ? (
           <div className="border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 overflow-hidden">
             {/* Table Header */}
             <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-gray-50 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
-              <div className="col-span-4">Fee Head</div>
-              <div className="col-span-2 text-right">Amount</div>
-              <div className="col-span-2 text-right">Paid</div>
-              <div className="col-span-2 text-right">Balance</div>
-              <div className="col-span-2 text-center">Status</div>
+              <div className="col-span-4">{t('pages.feeHead')}</div>
+              <div className="col-span-2 text-right">{t('pages.amount1')}</div>
+              <div className="col-span-2 text-right">{t('pages.paid2')}</div>
+              <div className="col-span-2 text-right">{t('pages.balance1')}</div>
+              <div className="col-span-2 text-center">{t('pages.status2')}</div>
             </div>
 
             {/* Table Body */}
@@ -200,19 +204,19 @@ export default function StudentFeeSummary({
             {/* Summary Footer */}
             <div className="grid grid-cols-4 gap-4 px-4 py-4 bg-gray-50 dark:bg-zinc-800 border-t border-gray-200 dark:border-zinc-700">
               <div>
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Total Fee</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">{t('pages.totalFee3')}</p>
                 <p className="text-base font-bold text-gray-900 dark:text-zinc-100">₹{studentFeeStructure.totalFee?.toLocaleString() || 0}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Paid</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">{t('pages.paid2')}</p>
                 <p className="text-base font-bold text-gray-700 dark:text-zinc-300">₹{studentFeeStructure.totalPaid?.toLocaleString() || 0}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Discount</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">{t('pages.discount1')}</p>
                 <p className="text-base font-bold text-gray-700 dark:text-zinc-300">₹{studentFeeStructure.discountApplied?.toLocaleString() || 0}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Balance</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">{t('pages.balance1')}</p>
                 <p className="text-base font-bold text-gray-900 dark:text-zinc-100">₹{studentFeeStructure.totalBalance?.toLocaleString() || 0}</p>
               </div>
             </div>
@@ -226,8 +230,8 @@ export default function StudentFeeSummary({
         ) : (
           <div className="p-6 text-center border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900">
             <IndianRupee size={24} className="mx-auto text-gray-300 dark:text-zinc-600 mb-2" />
-            <p className="text-sm text-gray-500 dark:text-zinc-400 mb-1">No fee structure assigned</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">Fee heads are assigned based on class</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 mb-1">{t('pages.noFeeStructureAssigned')}</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.feeHeadsAreAssignedBasedOnClass')}</p>
           </div>
         )}
       </div>

@@ -7,6 +7,7 @@ import { Plus, Edit3, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { MinimalButton } from "../../components/ui";
 import { inventoryApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 const STATUSES = ["PENDING", "IN_PROGRESS", "COMPLETED"];
 
@@ -19,6 +20,7 @@ const statusColors = {
 const emptyForm = { title: "", status: "PENDING", startDate: "", notes: "" };
 
 export default function Audits() {
+  const { t } = useTranslation();
   const [audits, setAudits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("all");
@@ -27,19 +29,20 @@ export default function Audits() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState(null);
+  const [errors, setErrors] = useState({});
 
   const fetchData = async () => {
     try {
       setLoading(true);
       const data = await inventoryApi.getAudits(filterStatus !== "all" ? filterStatus : undefined);
       setAudits(Array.isArray(data) ? data : []);
-    } catch { toast.error("Failed to load audits"); }
+    } catch { toast.error(t('toast.error.failedToLoadAudits')); }
     finally { setLoading(false); }
   };
 
   useEffect(() => { fetchData(); }, [filterStatus]);
 
-  const openCreate = () => { setEditing(null); setForm(emptyForm); setIsOpen(true); };
+  const openCreate = () => { setEditing(null); setForm(emptyForm); setErrors({}); setIsOpen(true); };
   const openEdit = (a) => {
     setEditing(a);
     setForm({
@@ -48,20 +51,24 @@ export default function Audits() {
       startDate: a.startDate ? a.startDate.slice(0, 10) : "",
       notes: a.notes || "",
     });
+    setErrors({});
     setIsOpen(true);
   };
 
   const handleSave = async () => {
-    if (!form.title.trim()) return toast.error("Title is required");
+    if (!form.title.trim()) {
+      setErrors({ title: t('toast.error.titleIsRequired') });
+      return toast.error(t('toast.error.titleIsRequired'));
+    }
     try {
       setSaving(true);
       const payload = { ...form, startDate: form.startDate || undefined };
       if (editing) {
         await inventoryApi.updateAudit(editing._id, payload);
-        toast.success("Audit updated");
+        toast.success(t('toast.success.auditUpdated'));
       } else {
         await inventoryApi.createAudit(payload);
-        toast.success("Audit created");
+        toast.success(t('toast.success.auditCreated'));
       }
       setIsOpen(false);
       fetchData();
@@ -71,15 +78,18 @@ export default function Audits() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Delete this audit?")) return;
+    if (!confirm(t('confirm.deleteAudit'))) return;
     try {
       await inventoryApi.deleteAudit(id);
-      toast.success("Audit deleted");
+      toast.success(t('toast.success.auditDeleted'));
       fetchData();
-    } catch { toast.error("Delete failed"); }
+    } catch { toast.error(t('toast.error.deleteFailed')); }
   };
 
-  const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+  const set = (key, val) => {
+    setForm((f) => ({ ...f, [key]: val }));
+    setErrors((e) => ({ ...e, [key]: '' }));
+  };
 
   if (loading) {
     return (
@@ -100,7 +110,7 @@ export default function Audits() {
           onChange={(e) => setFilterStatus(e.target.value)}
           className="text-sm rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 px-3 py-2"
         >
-          <option value="all">All Statuses</option>
+          <option value="all">{t('pages.allStatuses')}</option>
           {STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
         </select>
         <MinimalButton variant="primary" size="sm" icon={<Plus size={16} />} onClick={openCreate}>
@@ -110,7 +120,7 @@ export default function Audits() {
 
       {/* Audit List */}
       {audits.length === 0 ? (
-        <p className="text-center py-12 text-gray-500 dark:text-zinc-400">No audits found</p>
+        <p className="text-center py-12 text-gray-500 dark:text-zinc-400">{t('pages.noAuditsFound')}</p>
       ) : (
         <div className="space-y-3">
           {audits.map((audit) => (
@@ -173,21 +183,21 @@ export default function Audits() {
       )}
 
       {/* Create/Edit Modal */}
-      <Modal isOpen={isOpen} onOpenChange={setIsOpen} size="lg">
+      <Modal isOpen={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) setErrors({}); }} size="lg">
         <ModalContent>
           <ModalHeader>{editing ? "Edit Audit" : "New Asset Audit"}</ModalHeader>
           <ModalBody>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Title" isRequired value={form.title} onValueChange={(v) => set("title", v)} className="sm:col-span-2" />
-              <Select label="Status" selectedKeys={[form.status]} onSelectionChange={(keys) => set("status", [...keys][0])}>
+              <Input label={t('pages.title1')} isRequired value={form.title} onValueChange={(v) => set("title", v)} className="sm:col-span-2" isInvalid={!!errors.title} errorMessage={errors.title} />
+              <Select label={t('pages.status2')} selectedKeys={[form.status]} onSelectionChange={(keys) => set("status", [...keys][0])}>
                 {STATUSES.map((s) => <SelectItem key={s}>{s.replace(/_/g, " ")}</SelectItem>)}
               </Select>
-              <Input label="Start Date" type="date" value={form.startDate} onValueChange={(v) => set("startDate", v)} />
+              <Input label={t('pages.startDate1')} type="date" value={form.startDate} onValueChange={(v) => set("startDate", v)} />
             </div>
-            <Textarea label="Notes" value={form.notes} onValueChange={(v) => set("notes", v)} className="mt-2" />
+            <Textarea label={t('pages.notes1')} value={form.notes} onValueChange={(v) => set("notes", v)} className="mt-2" />
           </ModalBody>
           <ModalFooter>
-            <MinimalButton variant="ghost" onClick={() => setIsOpen(false)}>Cancel</MinimalButton>
+            <MinimalButton variant="ghost" onClick={() => setIsOpen(false)}>{t('pages.cancel2')}</MinimalButton>
             <MinimalButton variant="primary" onClick={handleSave} loading={saving}>{editing ? "Update" : "Create"}</MinimalButton>
           </ModalFooter>
         </ModalContent>

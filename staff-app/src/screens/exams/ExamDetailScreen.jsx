@@ -13,8 +13,10 @@ import { ArrowLeft, Edit, Calendar, BookOpen, Clock, Users, PieChart, Activity, 
 
 import { useExamContext } from '../../context/ExamContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const ExamDetailScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute();
   const insets = useSafeAreaInsets();
@@ -106,7 +108,7 @@ const ExamDetailScreen = () => {
           onPress={() => navigation.goBack()}
         >
           <ArrowLeft size={20} color={colors.onPrimary} style={{ marginRight: spacing.sm }} />
-          <Text style={[typography.labelLarge, { color: colors.onPrimary }]}>Go Back</Text>
+          <Text style={[typography.labelLarge, { color: colors.onPrimary }]}>{t('screens.goBack')}</Text>
         </Pressable>
       </View>
     );
@@ -162,7 +164,7 @@ const ExamDetailScreen = () => {
             <View style={styles.infoItem}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                 <Users size={16} color={colors.onSurfaceVariant} style={{ marginRight: 4 }} />
-                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant }]}>CLASS</Text>
+                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant }]}>{t('screens.cLASS')}</Text>
               </View>
               <Text style={[typography.bodyLarge, { color: colors.onSurface }]}>
                 {selectedExam.classId || selectedExam.className}
@@ -171,7 +173,7 @@ const ExamDetailScreen = () => {
             <View style={styles.infoItem}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                 <BookOpen size={16} color={colors.onSurfaceVariant} style={{ marginRight: 4 }} />
-                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant }]}>SUBJECT</Text>
+                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant }]}>{t('screens.sUBJECT')}</Text>
               </View>
               <Text style={[typography.bodyLarge, { color: colors.onSurface }]}>
                 {selectedExam.subjectName}
@@ -180,7 +182,7 @@ const ExamDetailScreen = () => {
             <View style={styles.infoItem}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                 <Calendar size={16} color={colors.onSurfaceVariant} style={{ marginRight: 4 }} />
-                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant }]}>DATE</Text>
+                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant }]}>{t('screens.dATE')}</Text>
               </View>
               <Text style={[typography.bodyLarge, { color: colors.onSurface }]}>
                 {selectedExam.startDate}
@@ -189,7 +191,7 @@ const ExamDetailScreen = () => {
             <View style={styles.infoItem}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                 <Clock size={16} color={colors.onSurfaceVariant} style={{ marginRight: 4 }} />
-                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant }]}>TYPE</Text>
+                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant }]}>{t('screens.tYPE')}</Text>
               </View>
               <Text style={[typography.bodyLarge, { color: colors.onSurface, textTransform: 'capitalize' }]}>
                 {selectedExam.type?.replace('_', ' ') || selectedExam.examType}
@@ -206,17 +208,17 @@ const ExamDetailScreen = () => {
           <View style={styles.marksRow}>
             <View style={styles.marksItem}>
               <Text style={[typography.headlineMedium, { color: colors.primary }]}>{selectedExam.maxMarks || 100}</Text>
-              <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>Max Marks</Text>
+              <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>{t('screens.maxMarks')}</Text>
             </View>
             <View style={[styles.verticalDivider, { backgroundColor: colors.outlineVariant }]} />
             <View style={styles.marksItem}>
               <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>{selectedExam.passingMarks || 35}</Text>
-              <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>Passing</Text>
+              <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>{t('screens.passing')}</Text>
             </View>
             <View style={[styles.verticalDivider, { backgroundColor: colors.outlineVariant }]} />
             <View style={styles.marksItem}>
               <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>{selectedExam.weightage || 100}%</Text>
-              <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>Weightage</Text>
+              <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>{t('screens.weightage')}</Text>
             </View>
           </View>
         </View>
@@ -226,24 +228,24 @@ const ExamDetailScreen = () => {
           <View style={[styles.card, { backgroundColor: colors.surfaceContainer, borderRadius: shape.cornerLarge, marginTop: spacing.md }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md }}>
               <PieChart size={20} color={colors.primary} style={{ marginRight: spacing.sm }} />
-              <Text style={[typography.titleMedium, { color: colors.onSurface }]}>Results Summary</Text>
+              <Text style={[typography.titleMedium, { color: colors.onSurface }]}>{t('screens.resultsSummary')}</Text>
             </View>
             <View style={styles.statsGrid}>
               <View style={[styles.statItem, { backgroundColor: colors.surfaceContainerHigh, borderRadius: shape.cornerMedium }]}>
                 <Text style={[typography.headlineSmall, { color: colors.onSurface }]}>{stats.total}</Text>
-                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant }]}>Total</Text>
+                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant }]}>{t('screens.total')}</Text>
               </View>
               <View style={[styles.statItem, { backgroundColor: colors.surfaceContainerHigh, borderRadius: shape.cornerMedium }]}>
                 <Text style={[typography.headlineSmall, { color: colors.green || '#4CAF50' }]}>{stats.pass}</Text>
-                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant }]}>Pass</Text>
+                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant }]}>{t('screens.pass')}</Text>
               </View>
               <View style={[styles.statItem, { backgroundColor: colors.surfaceContainerHigh, borderRadius: shape.cornerMedium }]}>
                 <Text style={[typography.headlineSmall, { color: colors.error }]}>{stats.fail}</Text>
-                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant }]}>Fail</Text>
+                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant }]}>{t('screens.fail')}</Text>
               </View>
               <View style={[styles.statItem, { backgroundColor: colors.surfaceContainerHigh, borderRadius: shape.cornerMedium }]}>
                 <Text style={[typography.headlineSmall, { color: colors.primary }]}>{stats.average}%</Text>
-                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant }]}>Avg</Text>
+                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant }]}>{t('screens.avg')}</Text>
               </View>
             </View>
           </View>

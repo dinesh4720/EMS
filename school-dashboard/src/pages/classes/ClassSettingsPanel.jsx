@@ -1,18 +1,22 @@
 import { useState, useEffect } from "react";
 import {
   Card, CardBody, CardHeader, Button, Input, Select, SelectItem,
-  Spinner, Chip
+  Chip
 } from "@heroui/react";
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { Settings, Tag, BookOpen, Save, X } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { usePermissions } from "../../context/PermissionContext";
+import { useTranslation } from 'react-i18next';
 import { 
   showErrorToast, 
   showSuccessToast,
   executeWithFeedback
 } from "../../utils/errorHandling";
 
-export default function ClassSettingsPanel({ classId }) {
+export default function ClassSettingsPanel({
+  classId }) {
+  const { t } = useTranslation();
   const { classesApi, schoolSettings } = useApp();
   const { hasPermission } = usePermissions();
   const [loading, setLoading] = useState(true);
@@ -188,14 +192,7 @@ export default function ClassSettingsPanel({ classId }) {
   };
 
   if (loading) {
-    return (
-      <Card className="shadow-sm border border-default-200">
-        <CardBody className="flex items-center justify-center py-12">
-          <Spinner size="lg" />
-          <p className="text-default-500 mt-4">Loading class settings...</p>
-        </CardBody>
-      </Card>
-    );
+    return <TablePageSkeleton />;
   }
 
   return (
@@ -207,8 +204,8 @@ export default function ClassSettingsPanel({ classId }) {
               <Settings size={20} className="text-primary" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-default-800">Class Settings</h3>
-              <p className="text-xs text-default-500">Configure class tag and subjects</p>
+              <h3 className="text-lg font-semibold text-default-800">{t('pages.classSettings')}</h3>
+              <p className="text-xs text-default-500">{t('pages.configureClassTagAndSubjects')}</p>
             </div>
           </div>
         </CardHeader>
@@ -222,7 +219,7 @@ export default function ClassSettingsPanel({ classId }) {
               </label>
             </div>
             <Input
-              placeholder="Enter a custom tag for this class (e.g., 'Science Stream', 'Morning Batch')"
+              placeholder={t('pages.enterACustomTagForThisClassEGScienceStreamMorningBatch')}
               value={classTag}
               onValueChange={setClassTag}
               isInvalid={!!errors.classTag}
@@ -250,7 +247,7 @@ export default function ClassSettingsPanel({ classId }) {
             />
             {classTag && (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-default-500">Preview:</span>
+                <span className="text-xs text-default-500">{t('pages.preview2')}</span>
                 <Chip size="sm" variant="flat" color="primary">
                   {classTag}
                 </Chip>
@@ -269,8 +266,8 @@ export default function ClassSettingsPanel({ classId }) {
               </label>
             </div>
             <Select
-              label="Select subjects for this class"
-              placeholder="Choose subjects"
+              label={t('pages.selectSubjectsForThisClass')}
+              placeholder={t('pages.chooseSubjects')}
               selectionMode="multiple"
               selectedKeys={selectedSubjects}
               onSelectionChange={handleSubjectSelection}
@@ -319,7 +316,7 @@ export default function ClassSettingsPanel({ classId }) {
             <Button
               variant="flat"
               onPress={() => {
-                if (!isDirty || window.confirm('Discard unsaved changes?')) {
+                if (!isDirty || confirm(t('confirm.discardChanges'))) {
                   loadClassSettings();
                 }
               }}
@@ -355,7 +352,7 @@ export default function ClassSettingsPanel({ classId }) {
           <CardBody className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-default-700">Class Tag</p>
+                <p className="text-sm font-medium text-default-700">{t('pages.classTag')}</p>
                 <p className="text-xs text-default-500 mt-1">
                   {classTag || "No tag set"}
                 </p>
@@ -378,7 +375,7 @@ export default function ClassSettingsPanel({ classId }) {
           <CardBody className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-default-700">Subjects</p>
+                <p className="text-sm font-medium text-default-700">{t('pages.subjects1')}</p>
                 <p className="text-xs text-default-500 mt-1">
                   {selectedSubjects.size} subject{selectedSubjects.size !== 1 ? 's' : ''} selected
                 </p>

@@ -1,25 +1,13 @@
-﻿import { useState, useEffect } from "react";
+import { request } from '../../services/api.js';
+import { useState, useEffect } from "react";
 import { Card, CardBody, Progress, Button, Chip } from "@heroui/react";
 import { IndianRupee, CheckCircle, AlertTriangle, TrendingUp, Calendar, Mail, Download, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-
-// Helper function to get auth token
-const getAuthToken = () => {
-  const storedUser = sessionStorage.getItem('app_user');
-  if (storedUser) {
-    try {
-      const userData = JSON.parse(storedUser);
-      return userData.token;
-    } catch (err) {
-      console.error('Failed to parse user data:', err);
-      return null;
-    }
-  }
-  return null;
-};
+import { useTranslation } from 'react-i18next';
 
 export default function FeeDetailsCard({ student }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [feeSummary, setFeeSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -30,36 +18,14 @@ export default function FeeDetailsCard({ student }) {
       
       try {
         setLoading(true);
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-        const token = getAuthToken();
-        const headers = {};
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-        const response = await fetch(`${API_URL}/students/${student.id}/fee-summary`, { headers });
-        if (response.ok) {
-          const data = await response.json();
-          setFeeSummary(data);
-        } else {
-          // Use fallback data from student object
-          setFeeSummary({
-            totalFee: student.feeDetails?.totalFee || 60000,
-            totalPaid: student.feeDetails?.totalPaid || 0,
-            totalPending: (student.feeDetails?.totalFee || 60000) - (student.feeDetails?.totalPaid || 0),
-            totalDiscount: student.feeDetails?.totalDiscount || 0,
-            collectionMode: 'term',
-            nextDueDate: student.feeDetails?.nextDueDate || null,
-            pendingDuesByPeriod: {},
-            feeHeads: []
-          });
-        }
+        const data = await request(`/students/${student.id}/fee-summary`);
+        setFeeSummary(data);
       } catch (error) {
         console.error('Error fetching fee summary:', error);
-        // Set fallback data
         setFeeSummary({
-          totalFee: student.feeDetails?.totalFee || 60000,
+          totalFee: student.feeDetails?.totalFee || 0,
           totalPaid: student.feeDetails?.totalPaid || 0,
-          totalPending: (student.feeDetails?.totalFee || 60000) - (student.feeDetails?.totalPaid || 0),
+          totalPending: (student.feeDetails?.totalFee || 0) - (student.feeDetails?.totalPaid || 0),
           totalDiscount: student.feeDetails?.totalDiscount || 0,
           collectionMode: 'term',
           nextDueDate: student.feeDetails?.nextDueDate || null,
@@ -91,7 +57,7 @@ export default function FeeDetailsCard({ student }) {
       <Card className="border border-default-200">
         <CardBody className="p-6">
           <div className="flex justify-center items-center h-32">
-            <p className="text-default-500">Loading fee details...</p>
+            <p className="text-default-500">{t('components.loadingFeeDetails')}</p>
           </div>
         </CardBody>
       </Card>
@@ -104,7 +70,7 @@ export default function FeeDetailsCard({ student }) {
       <div className="p-6 rounded-2xl border border-default-200 bg-gradient-to-br from-primary-50 to-background relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="space-y-2 text-center md:text-left">
-            <p className="text-default-600 font-medium">Total Outstanding</p>
+            <p className="text-default-600 font-medium">{t('components.totalOutstanding')}</p>
             <h2 className="text-4xl font-bold text-default-900">
               â‚¹{feeSummary?.totalPending?.toLocaleString() || 0}
             </h2>
@@ -172,7 +138,7 @@ export default function FeeDetailsCard({ student }) {
                 <IndianRupee size={20} />
               </div>
               <div>
-                <p className="text-xs text-default-500">Total Fee</p>
+                <p className="text-xs text-default-500">{t('components.totalFee1')}</p>
                 <p className="text-lg font-bold text-default-900">
                   â‚¹{feeSummary?.totalFee?.toLocaleString() || 0}
                 </p>
@@ -188,7 +154,7 @@ export default function FeeDetailsCard({ student }) {
                 <CheckCircle size={20} />
               </div>
               <div>
-                <p className="text-xs text-default-500">Paid</p>
+                <p className="text-xs text-default-500">{t('components.paid1')}</p>
                 <p className="text-lg font-bold text-success-600">
                   â‚¹{feeSummary?.totalPaid?.toLocaleString() || 0}
                 </p>
@@ -204,7 +170,7 @@ export default function FeeDetailsCard({ student }) {
                 <AlertTriangle size={20} />
               </div>
               <div>
-                <p className="text-xs text-default-500">Pending</p>
+                <p className="text-xs text-default-500">{t('components.pending1')}</p>
                 <p className="text-lg font-bold text-warning-600">
                   â‚¹{feeSummary?.totalPending?.toLocaleString() || 0}
                 </p>
@@ -220,7 +186,7 @@ export default function FeeDetailsCard({ student }) {
                 <TrendingUp size={20} />
               </div>
               <div>
-                <p className="text-xs text-default-500">Discount</p>
+                <p className="text-xs text-default-500">{t('components.discount')}</p>
                 <p className="text-lg font-bold text-purple-600">
                   â‚¹{feeSummary?.totalDiscount?.toLocaleString() || 0}
                 </p>
