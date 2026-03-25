@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Select, SelectItem, Input, Button, Textarea, Divider } from '@heroui/react';
 import { Calendar, BookOpen } from 'lucide-react';
 import { homeworkApi, classesApi, subjectsApi } from '../../services/api';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const CreateHomeworkModal = ({ onClose, onSuccess }) => {
+  const { t } = useTranslation();
   const { currentAcademicYear } = useApp();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -50,7 +52,7 @@ const CreateHomeworkModal = ({ onClose, onSuccess }) => {
       setSubjects(subjectsData || []);
     } catch (error) {
       console.error('Error fetching form data:', error);
-      toast.error('Failed to load form data');
+      toast.error(t('toast.error.failedToLoadFormData'));
     } finally {
       setLoadingData(false);
     }
@@ -84,7 +86,7 @@ const CreateHomeworkModal = ({ onClose, onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
-      toast.error('Please fix the errors in the form');
+      toast.error(t('toast.error.pleaseFixTheErrorsInTheForm'));
       return;
     }
 
@@ -103,7 +105,7 @@ const CreateHomeworkModal = ({ onClose, onSuccess }) => {
       };
 
       await homeworkApi.create(payload);
-      toast.success('Homework created successfully!');
+      toast.success(t('toast.success.homeworkCreatedSuccessfully'));
       onSuccess?.();
     } catch (error) {
       console.error('Error creating homework:', error);
@@ -123,7 +125,7 @@ const CreateHomeworkModal = ({ onClose, onSuccess }) => {
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            label="Title"
+            label={t('pages.title1')}
             labelPlacement="outside"
             placeholder="e.g., Chapter 5 Practice Problems"
             value={formData.title}
@@ -135,7 +137,7 @@ const CreateHomeworkModal = ({ onClose, onSuccess }) => {
           />
 
           <Input
-            label="Subject"
+            label={t('pages.subject2')}
             labelPlacement="outside"
             placeholder="e.g., Mathematics"
             value={formData.subject}
@@ -147,7 +149,7 @@ const CreateHomeworkModal = ({ onClose, onSuccess }) => {
           />
 
           <Select
-            label="Class"
+            label={t('pages.class1')}
             labelPlacement="outside"
             placeholder={loadingData ? 'Loading...' : 'Select class'}
             selectedKeys={formData.classId}
@@ -167,7 +169,7 @@ const CreateHomeworkModal = ({ onClose, onSuccess }) => {
 
           <Input
             type="date"
-            label="Due Date"
+            label={t('pages.dueDate')}
             labelPlacement="outside"
             value={formData.dueDate}
             onValueChange={(value) => handleInputChange('dueDate', value)}
@@ -185,9 +187,9 @@ const CreateHomeworkModal = ({ onClose, onSuccess }) => {
       {/* Description */}
       <div>
         <Textarea
-          label="Description"
+          label={t('pages.description1')}
           labelPlacement="outside"
-          placeholder="Enter homework instructions and details..."
+          placeholder={t('pages.enterHomeworkInstructionsAndDetails')}
           value={formData.description}
           onValueChange={(value) => handleInputChange('description', value)}
           isInvalid={!!errors.description}
@@ -207,7 +209,7 @@ const CreateHomeworkModal = ({ onClose, onSuccess }) => {
             onChange={(e) => handleInputChange('sentToParents', e.target.checked)}
             className="rounded border-gray-300 dark:border-zinc-600"
           />
-          <span className="text-sm text-gray-700 dark:text-zinc-300">Notify parents about this homework</span>
+          <span className="text-sm text-gray-700 dark:text-zinc-300">{t('pages.notifyParentsAboutThisHomework')}</span>
         </label>
       </div>
 

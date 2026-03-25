@@ -16,6 +16,7 @@ import * as Haptics from 'expo-haptics';
 import { Calendar as CalendarIcon, ChevronDown, Upload, BarChart2, ChevronRight } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useClassContext } from '../../context/ClassContext';
+import { useTranslation } from 'react-i18next';
 
 const VIEW_MODES = [
   { id: 'daily', label: 'Daily' },
@@ -24,6 +25,7 @@ const VIEW_MODES = [
 ];
 
 const AttendanceHistoryScreen = () => {
+  const { t } = useTranslation();
   const route = useRoute();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -274,7 +276,7 @@ const AttendanceHistoryScreen = () => {
           onPress={handleExport}
         >
           <Upload size={18} color={colors.onSecondaryContainer} style={{ marginRight: spacing.sm }} />
-          <Text style={[typography.labelLarge, { color: colors.onSecondaryContainer }]}>Export Report</Text>
+          <Text style={[typography.labelLarge, { color: colors.onSecondaryContainer }]}>{t('screens.exportReport')}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -283,7 +285,7 @@ const AttendanceHistoryScreen = () => {
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
       <BarChart2 size={64} color={colors.outline} style={{ marginBottom: spacing.md }} />
-      <Text style={[typography.titleMedium, { color: colors.onSurface, marginBottom: spacing.sm }]}>No Attendance Records</Text>
+      <Text style={[typography.titleMedium, { color: colors.onSurface, marginBottom: spacing.sm }]}>{t('screens.noAttendanceRecords')}</Text>
       <Text style={[typography.bodyMedium, { color: colors.onSurfaceVariant, textAlign: 'center' }]}>
         {viewMode === 'daily'
           ? 'No attendance was recorded for this date.'
@@ -296,7 +298,7 @@ const AttendanceHistoryScreen = () => {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.surface }]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[typography.bodyMedium, { color: colors.onSurfaceVariant, marginTop: spacing.sm }]}>Loading history...</Text>
+        <Text style={[typography.bodyMedium, { color: colors.onSurfaceVariant, marginTop: spacing.sm }]}>{t('screens.loadingHistory')}</Text>
       </View>
     );
   }

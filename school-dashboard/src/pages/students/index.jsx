@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, Suspense, useTransition } from "react";
 import lazyWithRetry from "../../utils/lazyWithRetry";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { Drawer, DrawerContent, DrawerHeader, DrawerBody, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter as ModalFooterUI, Chip, Spinner } from "@heroui/react";
+import { Drawer, DrawerContent, DrawerHeader, DrawerBody, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter as ModalFooterUI, Chip } from "@heroui/react";
 import { Plus, X, UserPlus, Send, FileText, CheckCircle2, ChevronDown, Mail, Phone, Eye, Check, GraduationCap } from "lucide-react";
 import StudentsList from "./StudentsList";
 import StudentDashboard from "./StudentDashboard";
@@ -13,10 +13,12 @@ import { useApp } from "../../context/AppContext";
 import { intakeFormsApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { PageLayout, MinimalButton } from "../../components/ui";
+import { useTranslation } from 'react-i18next';
 
 const ModalFooter = ModalFooterUI;
 
 export default function StudentsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { classesWithTeachers, addStudent } = useApp();
@@ -53,16 +55,16 @@ export default function StudentsPage() {
 
   const handleAddEmail = () => {
     if (!newEmail || newEmail.trim() === '') {
-      toast.error('Please enter an email address');
+      toast.error(t('toast.error.pleaseEnterAnEmailAddress'));
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newEmail)) {
-      toast.error('Please enter a valid email address');
+      toast.error(t('toast.error.pleaseEnterAValidEmailAddress'));
       return;
     }
     if (recipientEmails.includes(newEmail)) {
-      toast.error('This email has already been added');
+      toast.error(t('toast.error.thisEmailHasAlreadyBeenAdded'));
       return;
     }
     setRecipientEmails([...recipientEmails, newEmail]);
@@ -73,16 +75,16 @@ export default function StudentsPage() {
 
   const handleAddPhone = () => {
     if (!newPhone || newPhone.trim() === '') {
-      toast.error('Please enter a phone number');
+      toast.error(t('toast.error.pleaseEnterAPhoneNumber'));
       return;
     }
     const phoneRegex = /^[6-9]\d{9}$/;
     if (!phoneRegex.test(newPhone)) {
-      toast.error('Please enter a valid 10-digit mobile number starting with 6-9');
+      toast.error(t('toast.error.pleaseEnterAValid10DigitMobileNumberStartingWith69'));
       return;
     }
     if (recipientPhones.includes(newPhone)) {
-      toast.error('This phone number has already been added');
+      toast.error(t('toast.error.thisPhoneNumberHasAlreadyBeenAdded'));
       return;
     }
     setRecipientPhones([...recipientPhones, newPhone]);
@@ -116,18 +118,18 @@ export default function StudentsPage() {
       setFormModalKey(prev => prev + 1);
       setIsFormSelectModalOpen(true);
     } catch (error) {
-      toast.error('Failed to load forms');
+      toast.error(t('toast.error.failedToLoadForms'));
       console.error(error);
     }
   };
 
   const handleSendForm = async () => {
     if (!selectedForm) {
-      toast.error('Please select a form');
+      toast.error(t('toast.error.pleaseSelectAForm'));
       return;
     }
     if (recipientEmails.length === 0 && recipientPhones.length === 0) {
-      toast.error('Please enter at least one email or phone number');
+      toast.error(t('toast.error.pleaseEnterAtLeastOneEmailOrPhoneNumber'));
       return;
     }
     setIsSendingForm(true);
@@ -138,7 +140,7 @@ export default function StudentsPage() {
         expiresInDays: 30,
         assignedBy: null
       });
-      toast.success('Form sent successfully!');
+      toast.success(t('toast.success.formSentSuccessfully'));
       setIsFormSelectModalOpen(false);
       setSelectedForm(null);
       setRecipientEmails([]);
@@ -165,7 +167,7 @@ export default function StudentsPage() {
     try {
       await addStudent(studentData);
       window.dispatchEvent(new Event("students:list-refresh"));
-      toast.success('Student added successfully!');
+      toast.success(t('toast.success.studentAddedSuccessfully'));
       handleCloseAddStudent();
     } catch (err) {
       console.error('Failed to add student:', err);
@@ -221,12 +223,26 @@ export default function StudentsPage() {
         className="flex-1 min-h-0"
         noPadding
         actions={activeTab === "list" && (
-          <MinimalButton
-            icon={<Plus size={16} />}
-            onClick={handleOpenAddStudent}
-          >
-            New Student
-          </MinimalButton>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/students/promotion')}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+            >
+              Promotion
+            </button>
+            <button
+              onClick={() => navigate('/students/transfer-certificate')}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+            >
+              Transfer Certificate
+            </button>
+            <MinimalButton
+              icon={<Plus size={16} />}
+              onClick={handleOpenAddStudent}
+            >
+              New Student
+            </MinimalButton>
+          </div>
         )}
       >
         {activeTab === "list" && (
@@ -266,8 +282,8 @@ export default function StudentsPage() {
                     <GraduationCap size={20} className="text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-default-900">Add New Student</h2>
-                    <p className="text-xs text-default-500">Register a new student manually</p>
+                    <h2 className="text-lg font-semibold text-default-900">{t('pages.addNewStudent')}</h2>
+                    <p className="text-xs text-default-500">{t('pages.registerANewStudentManually')}</p>
                   </div>
                 </div>
                 <Button isIconOnly size="sm" variant="light" onPress={handleCloseAddStudent}>
@@ -275,7 +291,7 @@ export default function StudentsPage() {
                 </Button>
               </DrawerHeader>
               <DrawerBody className="p-0 overflow-hidden">
-                <Suspense fallback={<div className="flex items-center justify-center h-full"><Spinner size="lg" /></div>}>
+                <Suspense fallback={<div className="flex justify-center py-8"><div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-900" /></div>}>
                   <AddStudent
                     onClose={handleCloseAddStudent}
                     onSave={handleSaveStudent}
@@ -300,8 +316,8 @@ export default function StudentsPage() {
       >
         <ModalContent>
           <ModalHeader className="border-b border-gray-100 dark:border-zinc-700 py-4">
-            <h3 className="text-lg font-medium">Choose Admission Method</h3>
-            <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal mt-1">Select how you want to add the new student</p>
+            <h3 className="text-lg font-medium">{t('pages.chooseAdmissionMethod')}</h3>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal mt-1">{t('pages.selectHowYouWantToAddTheNewStudent')}</p>
           </ModalHeader>
           <ModalBody className="py-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -314,8 +330,8 @@ export default function StudentsPage() {
                     <Send size={24} className="text-gray-600 dark:text-zinc-400" />
                   </div>
                   <div>
-                    <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 mb-2">Send Admission Form</h4>
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">Share a form link with parents via email or SMS</p>
+                    <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 mb-2">{t('pages.sendAdmissionForm')}</h4>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.shareAFormLinkWithParentsViaEmailOrSms')}</p>
                   </div>
                 </div>
               </button>
@@ -328,15 +344,15 @@ export default function StudentsPage() {
                     <UserPlus size={24} className="text-gray-600 dark:text-zinc-400" />
                   </div>
                   <div>
-                    <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 mb-2">Manual Registration</h4>
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">Add student details directly in the admin panel</p>
+                    <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 mb-2">{t('pages.manualRegistration')}</h4>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.addStudentDetailsDirectlyInTheAdminPanel')}</p>
                   </div>
                 </div>
               </button>
             </div>
           </ModalBody>
           <ModalFooter className="border-t border-gray-100 dark:border-zinc-700">
-            <Button variant="light" onPress={() => setIsMethodModalOpen(false)}>Cancel</Button>
+            <Button variant="light" onPress={() => setIsMethodModalOpen(false)}>{t('pages.cancel2')}</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -357,13 +373,13 @@ export default function StudentsPage() {
       >
         <ModalContent>
           <ModalHeader className="border-b border-gray-100 dark:border-zinc-700 py-4">
-            <h3 className="text-lg font-medium">Send Admission Form</h3>
-            <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal mt-1">Choose a form and share it</p>
+            <h3 className="text-lg font-medium">{t('pages.sendAdmissionForm')}</h3>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal mt-1">{t('pages.chooseAFormAndShareIt')}</p>
           </ModalHeader>
           <ModalBody className="py-6">
             <div className="space-y-4">
               <div className="relative" ref={formDropdownRef}>
-                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">Select Form</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">{t('pages.selectForm')}</label>
                 <button
                   type="button"
                   onClick={() => setIsFormDropdownOpen(!isFormDropdownOpen)}
@@ -375,7 +391,7 @@ export default function StudentsPage() {
                       <span className="text-sm">{availableForms.find(f => f.id === selectedForm)?.formName}</span>
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-500 dark:text-zinc-400">Choose an admission form</span>
+                    <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.chooseAnAdmissionForm')}</span>
                   )}
                   <ChevronDown size={18} className={`text-gray-400 dark:text-zinc-500 transition-transform ${isFormDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -400,8 +416,8 @@ export default function StudentsPage() {
                         ))
                       ) : (
                         <div className="text-center py-8 text-gray-500 dark:text-zinc-400">
-                          <p>No active admission forms available.</p>
-                          <Button size="sm" variant="flat" className="mt-2" onPress={() => { setIsFormDropdownOpen(false); setIsFormSelectModalOpen(false); navigate('/settings/intake-forms'); }}>Create a Form</Button>
+                          <p>{t('pages.noActiveAdmissionFormsAvailable')}</p>
+                          <Button size="sm" variant="flat" className="mt-2" onPress={() => { setIsFormDropdownOpen(false); setIsFormSelectModalOpen(false); navigate('/settings/intake-forms'); }}>{t('pages.createAForm')}</Button>
                         </div>
                       )}
                     </div>
@@ -410,17 +426,17 @@ export default function StudentsPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">Parent Email</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">{t('pages.parentEmail1')}</label>
                 <div className="flex gap-2 mb-3">
                   <input
                     type="email"
-                    placeholder="Enter email address"
+                    placeholder={t('pages.enterEmailAddress')}
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
                     onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddEmail(); }}}
                     className="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 text-sm focus:outline-none focus:border-gray-400 dark:focus:border-zinc-500 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                   />
-                  <Button variant="flat" size="sm" onPress={handleAddEmail} isDisabled={!newEmail} startContent={<Mail size={14} />}>Add</Button>
+                  <Button variant="flat" size="sm" onPress={handleAddEmail} isDisabled={!newEmail} startContent={<Mail size={14} />}>{t('pages.add1')}</Button>
                 </div>
                 {recipientEmails.length > 0 && (
                   <div className="flex flex-wrap gap-2">
@@ -432,17 +448,17 @@ export default function StudentsPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">Parent Mobile Number</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">{t('pages.parentMobileNumber')}</label>
                 <div className="flex gap-2 mb-3">
                   <input
                     type="tel"
-                    placeholder="Enter 10-digit mobile number"
+                    placeholder={t('pages.enter10DigitMobileNumber')}
                     value={newPhone}
                     onChange={(e) => setNewPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                     onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddPhone(); }}}
                     className="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 text-sm focus:outline-none focus:border-gray-400 dark:focus:border-zinc-500 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                   />
-                  <Button variant="flat" size="sm" onPress={handleAddPhone} isDisabled={!newPhone || newPhone.length !== 10} startContent={<Phone size={14} />}>Add</Button>
+                  <Button variant="flat" size="sm" onPress={handleAddPhone} isDisabled={!newPhone || newPhone.length !== 10} startContent={<Phone size={14} />}>{t('pages.add1')}</Button>
                 </div>
                 {recipientPhones.length > 0 && (
                   <div className="flex flex-wrap gap-2">
@@ -459,8 +475,8 @@ export default function StudentsPage() {
             </div>
           </ModalBody>
           <ModalFooter className="border-t border-gray-100 dark:border-zinc-700">
-            <Button variant="light" onPress={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmails([]); setRecipientPhones([]); }}>Cancel</Button>
-            <Button color="primary" onPress={handleSendForm} isLoading={isSendingForm} isDisabled={!selectedForm || (recipientEmails.length === 0 && recipientPhones.length === 0)} startContent={!isSendingForm && <Send size={16} />}>Send Form</Button>
+            <Button variant="light" onPress={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmails([]); setRecipientPhones([]); }}>{t('pages.cancel2')}</Button>
+            <Button color="primary" onPress={handleSendForm} isLoading={isSendingForm} isDisabled={!selectedForm || (recipientEmails.length === 0 && recipientPhones.length === 0)} startContent={!isSendingForm && <Send size={16} />}>{t('pages.sendForm')}</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -473,15 +489,15 @@ export default function StudentsPage() {
               <div className="w-12 h-12 rounded-full bg-gray-900 dark:bg-zinc-100 flex items-center justify-center">
                 <Check size={24} className="text-white dark:text-zinc-900" />
               </div>
-              <h3 className="text-lg font-medium">Form Sent Successfully!</h3>
+              <h3 className="text-lg font-medium">{t('pages.formSentSuccessfully1')}</h3>
             </div>
           </ModalHeader>
           <ModalBody className="py-6">
             <p className="text-sm text-gray-500 dark:text-zinc-400 text-center">The admission form has been sent. You can review the submission in the Form Submissions tab.</p>
           </ModalBody>
           <ModalFooter className="border-t border-gray-100 dark:border-zinc-700 gap-3">
-            <Button variant="flat" onPress={() => { setShowSuccessModal(false); setIsFormSelectModalOpen(true); }} className="flex-1">Send Another</Button>
-            <Button color="primary" onPress={() => { setShowSuccessModal(false); setIsMethodModalOpen(true); }} className="flex-1" startContent={<UserPlus size={16} />}>Manual Registration</Button>
+            <Button variant="flat" onPress={() => { setShowSuccessModal(false); setIsFormSelectModalOpen(true); }} className="flex-1">{t('pages.sendAnother')}</Button>
+            <Button color="primary" onPress={() => { setShowSuccessModal(false); setIsMethodModalOpen(true); }} className="flex-1" startContent={<UserPlus size={16} />}>{t('pages.manualRegistration')}</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

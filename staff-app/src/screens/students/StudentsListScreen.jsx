@@ -16,8 +16,10 @@ import { useAuth } from '../../context/AuthContext';
 import { Search, User, GraduationCap, Phone, Mail, ChevronRight, AlertCircle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { classesApi } from '../../services/api';
+import { useTranslation } from 'react-i18next';
 
 const StudentsListScreen = () => {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { colors, typography, spacing, shape, isDark } = useTheme();
@@ -185,7 +187,7 @@ const StudentsListScreen = () => {
     return (
       <View style={[styles.container, { backgroundColor: colors.surface, paddingTop: insets.top }]}>
         <View style={styles.header}>
-          <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>Students</Text>
+          <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>{t('screens.students1')}</Text>
         </View>
         <View style={styles.emptyState}>
           <AlertCircle size={56} color={colors.error} style={{ opacity: 0.6 }} />
@@ -199,7 +201,7 @@ const StudentsListScreen = () => {
             onPress={loadStudents}
             style={[styles.retryButton, { backgroundColor: colors.primary, borderRadius: shape.cornerMedium }]}
           >
-            <Text style={[typography.labelLarge, { color: colors.onPrimary }]}>Try Again</Text>
+            <Text style={[typography.labelLarge, { color: colors.onPrimary }]}>{t('screens.tryAgain1')}</Text>
           </Pressable>
         </View>
       </View>
@@ -210,7 +212,7 @@ const StudentsListScreen = () => {
     <View style={[styles.container, { backgroundColor: colors.surface, paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>Students</Text>
+        <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>{t('screens.students1')}</Text>
         <Text style={[typography.bodyMedium, { color: colors.onSurfaceVariant, marginTop: 4 }]}>
           {filteredStudents.length} students
         </Text>
@@ -231,7 +233,7 @@ const StudentsListScreen = () => {
         <TextInput
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Search by name, class or roll no..."
+          placeholder={t('screens.searchByNameClassOrRollNo')}
           placeholderTextColor={colors.onSurfaceVariant}
           style={[styles.searchInput, typography.bodyLarge, { color: colors.onSurface }]}
         />

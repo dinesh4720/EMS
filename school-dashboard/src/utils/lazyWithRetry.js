@@ -32,7 +32,9 @@ function retryImport(importFn, retriesLeft) {
       sessionStorage.removeItem(reloadKey);
     }
 
-    throw error;
+    // Wrap non-Error values so ErrorBoundary receives a proper Error instance
+    // (prevents "[object Object]" flooding the console)
+    throw error instanceof Error ? error : new Error(String(error ?? 'Unknown import error'));
   });
 }
 

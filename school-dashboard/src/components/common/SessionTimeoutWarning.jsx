@@ -3,6 +3,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from
 import { Clock, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { silentRefresh } from '../../services/api';
+import { useTranslation } from 'react-i18next';
 
 // Show warning after 30 minutes of inactivity
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
@@ -14,6 +15,7 @@ const ACTIVITY_THROTTLE_MS = 30 * 1000;
 const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'scroll', 'touchstart', 'pointermove'];
 
 export default function SessionTimeoutWarning() {
+  const { t } = useTranslation();
   const { logout, isAuthenticated } = useAuth();
   const [showWarning, setShowWarning] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(WARNING_COUNTDOWN_S);
@@ -147,7 +149,7 @@ export default function SessionTimeoutWarning() {
       <ModalContent>
         <ModalHeader className="flex items-center gap-2">
           <Clock size={20} className="text-warning" />
-          <span>Session Expiring Soon</span>
+          <span>{t('components.sessionExpiringSoon')}</span>
         </ModalHeader>
         <ModalBody>
           <p className="text-default-600">

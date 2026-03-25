@@ -1,6 +1,8 @@
 import { Users, DoorOpen, Calendar, MessageSquare, Phone, TrendingUp, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function Overview({ stats, onTabChange }) {
+  const { t } = useTranslation();
   const statCards = [
     {
       title: 'Visitors Today',
@@ -50,8 +52,8 @@ export default function Overview({ stats, onTabChange }) {
                 <AlertCircle size={16} className="text-gray-600" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900 text-sm">Attention Required</h3>
-                <p className="text-xs text-gray-500">Items that need your attention</p>
+                <h3 className="font-medium text-gray-900 text-sm">{t('pages.attentionRequired1')}</h3>
+                <p className="text-xs text-gray-500">{t('pages.itemsThatNeedYourAttention')}</p>
               </div>
             </div>
           </div>
@@ -64,7 +66,7 @@ export default function Overview({ stats, onTabChange }) {
                 <MessageSquare size={16} className="text-gray-600" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Open Feedbacks</p>
+                <p className="text-sm font-medium text-gray-900">{t('pages.openFeedbacks')}</p>
                 <p className="text-xs text-gray-500">{stats.openFeedbacks} pending response</p>
               </div>
               <div className="text-xs px-2 py-1 rounded-md bg-gray-200 text-gray-700 font-medium">
@@ -103,8 +105,8 @@ export default function Overview({ stats, onTabChange }) {
               <TrendingUp size={16} className="text-gray-600" />
             </div>
             <div>
-              <h3 className="font-medium text-gray-900 text-sm">Quick Access</h3>
-              <p className="text-xs text-gray-500">Navigate to modules quickly</p>
+              <h3 className="font-medium text-gray-900 text-sm">{t('pages.quickAccess')}</h3>
+              <p className="text-xs text-gray-500">{t('pages.navigateToModulesQuickly')}</p>
             </div>
           </div>
         </div>

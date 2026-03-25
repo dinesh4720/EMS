@@ -3,6 +3,7 @@ import { Activity, AlertCircle, Clock, CheckCircle2, Loader2 } from 'lucide-reac
 import { superAdminApi } from '../../services/api';
 import JobsTable from './jobs/JobsTable';
 import { formatDuration } from './jobs/jobsUtils';
+import { useTranslation } from 'react-i18next';
 
 const STATUS_FILTERS = ['all', 'running', 'scheduled', 'failed', 'completed'];
 
@@ -19,6 +20,7 @@ function MetricCard({ icon: Icon, label, value, accent }) {
 }
 
 export default function JobsDashboardPanel() {
+  const { t } = useTranslation();
   const [metrics, setMetrics] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -74,16 +76,16 @@ export default function JobsDashboardPanel() {
     <div className="space-y-5">
       {metrics && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricCard icon={Activity} label="Total jobs" value={metrics.total} accent="bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300" />
-          <MetricCard icon={Loader2} label="Running" value={metrics.running} accent="bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" />
-          <MetricCard icon={AlertCircle} label="Failed" value={metrics.failed} accent="bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" />
-          <MetricCard icon={Clock} label="Avg execution" value={formatDuration(metrics.avgExecutionMs)} accent="bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300" />
+          <MetricCard icon={Activity} label={t('pages.totalJobs')} value={metrics.total} accent="bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300" />
+          <MetricCard icon={Loader2} label={t('pages.running')} value={metrics.running} accent="bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" />
+          <MetricCard icon={AlertCircle} label={t('pages.failed')} value={metrics.failed} accent="bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" />
+          <MetricCard icon={Clock} label={t('pages.avgExecution')} value={formatDuration(metrics.avgExecutionMs)} accent="bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300" />
         </div>
       )}
 
       <div className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold text-slate-950 dark:text-zinc-100">Background Jobs</h2>
+          <h2 className="text-xl font-semibold text-slate-950 dark:text-zinc-100">{t('pages.backgroundJobs')}</h2>
           <div className="flex items-center gap-2">
             {STATUS_FILTERS.map((s) => (
               <button

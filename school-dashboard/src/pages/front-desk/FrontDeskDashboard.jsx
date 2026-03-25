@@ -12,8 +12,10 @@ import GatePassLog from './GatePassLog';
 import AppointmentsList from './AppointmentsList';
 import FeedbacksList from './FeedbacksList';
 import CallLogsList from './CallLogsList';
+import { useTranslation } from 'react-i18next';
 
 export default function FrontDeskDashboard() {
+  const { t } = useTranslation();
   // Create refs for each component
   const visitorLogRef = useRef(null);
   const gatePassLogRef = useRef(null);
@@ -35,19 +37,13 @@ export default function FrontDeskDashboard() {
 
   const loadStats = async () => {
     try {
-      const visitors = await frontDeskApi.getVisitorsToday();
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      const gatePasses = await frontDeskApi.getGatePassesToday();
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      const appointments = await frontDeskApi.getAppointments({ status: 'scheduled' });
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      const feedbacks = await frontDeskApi.getFeedbacks({ status: 'open' });
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      const callLogs = await frontDeskApi.getCallLogs();
+      const [visitors, gatePasses, appointments, feedbacks, callLogs] = await Promise.all([
+        frontDeskApi.getVisitorsToday(),
+        frontDeskApi.getGatePassesToday(),
+        frontDeskApi.getAppointments({ status: 'scheduled' }),
+        frontDeskApi.getFeedbacks({ status: 'open' }),
+        frontDeskApi.getCallLogs(),
+      ]);
 
       const today = new Date().toLocaleDateString('en-CA');
       const todayCalls = callLogs.filter(log => log.dateTime?.startsWith(today));
@@ -81,6 +77,14 @@ export default function FrontDeskDashboard() {
     { key: 'call-log', label: 'Log Call', icon: Phone },
   ];
 
+  const handleTabChange = (tabKey) => {
+    setSelectedTab(tabKey);
+    // Refresh counts when returning to overview
+    if (tabKey === 'overview') {
+      loadStats();
+    }
+  };
+
   const handleNewAction = (key) => {
     const actionMap = {
       'visitor': { tab: 'visitors', ref: visitorLogRef },
@@ -108,7 +112,7 @@ export default function FrontDeskDashboard() {
         {/* Enclosed Tabs */}
         <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-zinc-900 rounded-lg overflow-x-auto">
           {tabs.map(tab => (
-            <button key={tab.key} onClick={() => setSelectedTab(tab.key)}
+            <button key={tab.key} onClick={() => handleTabChange(tab.key)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-all whitespace-nowrap ${
                 selectedTab === tab.key
                   ? 'bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 shadow-sm'
@@ -149,12 +153,12 @@ export default function FrontDeskDashboard() {
 
         {/* MAIN CONTENT - 2/3 */}
         <div className="lg:col-span-2 space-y-4">
-          {selectedTab === 'overview' && <Overview stats={stats} onTabChange={setSelectedTab} />}
-          {selectedTab === 'visitors' && <VisitorLog ref={visitorLogRef} />}
-          {selectedTab === 'gate-passes' && <GatePassLog ref={gatePassLogRef} />}
-          {selectedTab === 'appointments' && <AppointmentsList ref={appointmentsListRef} />}
-          {selectedTab === 'feedbacks' && <FeedbacksList ref={feedbacksListRef} />}
-          {selectedTab === 'call-logs' && <CallLogsList ref={callLogsListRef} />}
+          {selectedTab === 'overview' && <Overview stats={stats} onTabChange={handleTabChange} />}
+          {selectedTab === 'visitors' && <VisitorLog ref={visitorLogRef} onSave={loadStats} />}
+          {selectedTab === 'gate-passes' && <GatePassLog ref={gatePassLogRef} onSave={loadStats} />}
+          {selectedTab === 'appointments' && <AppointmentsList ref={appointmentsListRef} onSave={loadStats} />}
+          {selectedTab === 'feedbacks' && <FeedbacksList ref={feedbacksListRef} onSave={loadStats} />}
+          {selectedTab === 'call-logs' && <CallLogsList ref={callLogsListRef} onSave={loadStats} />}
         </div>
 
         {/* RIGHT SIDEBAR - 1/3 */}
@@ -162,7 +166,7 @@ export default function FrontDeskDashboard() {
           {/* Recent Activity */}
           <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 overflow-hidden">
             <div className="p-4 border-b border-gray-100 dark:border-zinc-800">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Recent Activity</h3>
+              <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.recentActivity1')}</h3>
             </div>
             <div className="divide-y divide-gray-50 dark:divide-zinc-800">
               {[

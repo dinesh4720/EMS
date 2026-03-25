@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { Select, SelectItem } from '@heroui/react';
 import {
   BarChart3, TrendingUp, Users, IndianRupee, GraduationCap,
-  ClipboardList, UserCheck, Calendar, ChevronRight,
+  ClipboardList, UserCheck, Calendar, ChevronRight, Download,
 } from 'lucide-react';
+import { Button } from '@heroui/react';
 import { reportsApi } from '../../services/api';
 import { useApp } from '../../context/AppContext';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const REPORT_CATEGORIES = [
   {
@@ -70,6 +72,7 @@ const REPORT_CATEGORIES = [
 ];
 
 export default function ReportsPage() {
+  const { t } = useTranslation();
   const { classesWithTeachers, currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
@@ -78,6 +81,33 @@ export default function ReportsPage() {
     classId: '',
     academicYear: currentAcademicYear || '',
   });
+
+  const handleExportCSV = () => {
+    const data = reportData?.data || reportData;
+    if (!Array.isArray(data) || !data.length) {
+      toast.error('No data to export');
+      return;
+    }
+    const columns = Object.keys(data[0]);
+    const rows = [
+      columns,
+      ...data.map(row => columns.map(col => {
+        const val = row[col];
+        return val !== null && val !== undefined ? String(val) : '';
+      }))
+    ];
+    const csv = rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${selectedReport || 'report'}-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Report exported as CSV');
+  };
 
   const handleRunReport = async (reportKey) => {
     setSelectedReport(reportKey);
@@ -105,8 +135,8 @@ export default function ReportsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Reports</h1>
-          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">Generate and view school reports</p>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{t('pages.reports1')}</h1>
+          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">{t('pages.generateAndViewSchoolReports')}</p>
         </div>
       </div>
 
@@ -115,7 +145,7 @@ export default function ReportsPage() {
         <div className="flex flex-wrap gap-4">
           <div className="w-48">
             <Select
-              label="Academic Year"
+              label={t('pages.academicYear1')}
               size="sm"
               selectedKeys={filters.academicYear ? [filters.academicYear] : []}
               onChange={(e) => setFilters((f) => ({ ...f, academicYear: e.target.value }))}
@@ -127,13 +157,17 @@ export default function ReportsPage() {
           </div>
           <div className="w-48">
             <Select
-              label="Class"
+              label={t('pages.class1')}
               size="sm"
               selectedKeys={filters.classId ? [filters.classId] : []}
-              onChange={(e) => setFilters((f) => ({ ...f, classId: e.target.value }))}
+              onChange={(e) => {
+                const val = e.target.value;
+                const cls = (classesWithTeachers || []).find(c => (c._id || c.id) === val);
+                setFilters((f) => ({ ...f, classId: cls?._id || cls?.id || val }));
+              }}
             >
-              {(classesWithTeachers || []).map((c) => (
-                <SelectItem key={c._id} textValue={c.name}>{c.name} {c.section || ''}</SelectItem>
+              {(classesWithTeachers || []).filter(c => c._id || c.id).map((c) => (
+                <SelectItem key={c._id || c.id} textValue={c.name}>{c.name} {c.section || ''}</SelectItem>
               ))}
             </Select>
           </div>
@@ -184,9 +218,22 @@ export default function ReportsPage() {
             <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
               Report Results
             </h3>
-            <span className="text-xs text-gray-500 dark:text-zinc-400">
-              Generated at {new Date().toLocaleTimeString()}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-500 dark:text-zinc-400">
+                Generated at {new Date().toLocaleTimeString()}
+              </span>
+              {Array.isArray(reportData?.data || reportData) && (reportData?.data || reportData).length > 0 && (
+                <Button
+                  size="sm"
+                  variant="flat"
+                  className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300"
+                  startContent={<Download size={14} />}
+                  onPress={handleExportCSV}
+                >
+                  Export CSV
+                </Button>
+              )}
+            </div>
           </div>
           <div className="p-5 overflow-x-auto">
             {Array.isArray(reportData?.data || reportData) ? (
@@ -204,8 +251,9 @@ export default function ReportsPage() {
 }
 
 function ReportTable({ data }) {
+  const { t } = useTranslation();
   if (!data || data.length === 0) {
-    return <p className="text-sm text-gray-500 dark:text-zinc-400 text-center py-8">No data available for this report.</p>;
+    return <p className="text-sm text-gray-500 dark:text-zinc-400 text-center py-8">{t('pages.noDataAvailableForThisReport')}</p>;
   }
 
   const columns = Object.keys(data[0]);
@@ -223,12 +271,22 @@ function ReportTable({ data }) {
       </thead>
       <tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
         {data.map((row, i) => (
-          <tr key={i} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
-            {columns.map((col) => (
-              <td key={col} className="px-4 py-2.5 text-gray-700 dark:text-zinc-300">
-                {row[col] !== null && row[col] !== undefined ? String(row[col]) : '—'}
-              </td>
-            ))}
+          // BUG-41: key uses actual _id to prevent React reuse issues; rank col uses row.rank/rankInClass not i
+          <tr key={row._id || row.id || `row-${i}`} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
+            {columns.map((col) => {
+              let displayVal;
+              if ((col === 'rank' || col === 'rankInClass') && (row[col] === null || row[col] === undefined)) {
+                // If rank is missing fall back to 1-based row position within this full dataset (BUG-41)
+                displayVal = i + 1;
+              } else {
+                displayVal = row[col] !== null && row[col] !== undefined ? String(row[col]) : '—';
+              }
+              return (
+                <td key={col} className="px-4 py-2.5 text-gray-700 dark:text-zinc-300">
+                  {displayVal}
+                </td>
+              );
+            })}
           </tr>
         ))}
       </tbody>

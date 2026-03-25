@@ -16,10 +16,12 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '../context/AuthContext';
 import { staffApi } from '../services/api';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme';
+import { useTranslation } from 'react-i18next';
 
 // Password Input Component - defined outside to prevent re-renders
 const PasswordInput = React.memo(({ value, onChangeText, placeholder, label, showPassword, onTogglePassword }) => (
   <View style={styles.inputGroup}>
+  const { t } = useTranslation();
     <Text style={styles.inputLabel}>{label}</Text>
     <View style={styles.passwordInputContainer}>
       <TextInput
@@ -137,7 +139,7 @@ const ChangePasswordScreen = ({ navigation }) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Change Password</Text>
+        <Text style={styles.headerTitle}>{t('screens.changePassword1')}</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -160,31 +162,31 @@ const ChangePasswordScreen = ({ navigation }) => {
 
         {/* Password Fields */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Password Information</Text>
+          <Text style={styles.sectionTitle}>{t('screens.passwordInformation')}</Text>
           <View style={styles.sectionContent}>
             <PasswordInput
-              label="Current Password"
+              label={t('screens.currentPassword')}
               value={currentPassword}
               onChangeText={setCurrentPassword}
-              placeholder="Enter current password"
+              placeholder={t('screens.enterCurrentPassword')}
               showPassword={showCurrentPassword}
               onTogglePassword={() => setShowCurrentPassword(!showCurrentPassword)}
             />
             <View style={styles.inputDivider} />
             <PasswordInput
-              label="New Password"
+              label={t('screens.newPassword')}
               value={newPassword}
               onChangeText={setNewPassword}
-              placeholder="Enter new password"
+              placeholder={t('screens.enterNewPassword')}
               showPassword={showNewPassword}
               onTogglePassword={() => setShowNewPassword(!showNewPassword)}
             />
             <View style={styles.inputDivider} />
             <PasswordInput
-              label="Confirm New Password"
+              label={t('screens.confirmNewPassword')}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              placeholder="Confirm new password"
+              placeholder={t('screens.confirmNewPassword1')}
               showPassword={showConfirmPassword}
               onTogglePassword={() => setShowConfirmPassword(!showConfirmPassword)}
             />
@@ -193,14 +195,14 @@ const ChangePasswordScreen = ({ navigation }) => {
 
         {/* Password Requirements */}
         <View style={styles.requirements}>
-          <Text style={styles.requirementsTitle}>Password Requirements:</Text>
+          <Text style={styles.requirementsTitle}>{t('screens.passwordRequirements')}</Text>
           <View style={styles.requirementItem}>
             <Text style={styles.requirementIcon}>✓</Text>
-            <Text style={styles.requirementText}>At least 8 characters long</Text>
+            <Text style={styles.requirementText}>{t('screens.atLeast8CharactersLong')}</Text>
           </View>
           <View style={styles.requirementItem}>
             <Text style={styles.requirementIcon}>✓</Text>
-            <Text style={styles.requirementText}>Different from current password</Text>
+            <Text style={styles.requirementText}>{t('screens.differentFromCurrentPassword')}</Text>
           </View>
         </View>
 
@@ -214,7 +216,7 @@ const ChangePasswordScreen = ({ navigation }) => {
           {loading ? (
             <ActivityIndicator size="small" color={Colors.background.primary} />
           ) : (
-            <Text style={styles.saveButtonText}>Change Password</Text>
+            <Text style={styles.saveButtonText}>{t('screens.changePassword1')}</Text>
           )}
         </TouchableOpacity>
 

@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { Bell, Settings, CheckCircle } from 'lucide-react';
 import NotificationCenter from './components/notifications/NotificationCenter';
 import NotificationSettings from './components/notifications/NotificationSettings';
+import { useTranslation } from 'react-i18next';
 
 export default function Notifications() {
+  const { t } = useTranslation();
   const [selectedTab, setSelectedTab] = useState('center');
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -40,7 +42,7 @@ export default function Notifications() {
           }`}
         >
           <Bell size={16} />
-          <span>Notification Center</span>
+          <span>{t('pages.notificationCenter')}</span>
           {unreadCount > 0 && (
             <span className="px-2 py-0.5 bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 text-xs rounded-full">
               {unreadCount}
@@ -56,7 +58,7 @@ export default function Notifications() {
           }`}
         >
           <Settings size={16} />
-          <span>Settings</span>
+          <span>{t('pages.settings2')}</span>
         </button>
       </div>
 

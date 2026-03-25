@@ -35,7 +35,7 @@ export default function FormsList({ forms, loading, onEdit, onDelete, onDuplicat
       {/* Forms Table */}
       <div className="bg-white border border-default-200 rounded-xl overflow-hidden shadow-sm">
         <Table
-          aria-label="Intake forms table"
+          aria-label={t('aria.misc.intakeForms')}
           removeWrapper
           radius="none"
           classNames={{
@@ -46,13 +46,13 @@ export default function FormsList({ forms, loading, onEdit, onDelete, onDuplicat
           }}
         >
           <TableHeader>
-            <TableColumn>{t('settings.intakeForms.table.formName', 'FORM NAME')}</TableColumn>
-            <TableColumn>{t('settings.intakeForms.table.type', 'TYPE')}</TableColumn>
-            <TableColumn>{t('settings.intakeForms.table.status', 'STATUS')}</TableColumn>
-            <TableColumn>{t('settings.intakeForms.table.fields', 'FIELDS')}</TableColumn>
-            <TableColumn>{t('settings.intakeForms.table.submissions', 'SUBMISSIONS')}</TableColumn>
-            <TableColumn>{t('settings.intakeForms.table.version', 'VERSION')}</TableColumn>
-            <TableColumn>{t('settings.intakeForms.table.actions', 'ACTIONS')}</TableColumn>
+            <TableColumn scope="col">{t('settings.intakeForms.table.formName', 'FORM NAME')}</TableColumn>
+            <TableColumn scope="col">{t('settings.intakeForms.table.type', 'TYPE')}</TableColumn>
+            <TableColumn scope="col">{t('settings.intakeForms.table.status', 'STATUS')}</TableColumn>
+            <TableColumn scope="col">{t('settings.intakeForms.table.fields', 'FIELDS')}</TableColumn>
+            <TableColumn scope="col">{t('settings.intakeForms.table.submissions', 'SUBMISSIONS')}</TableColumn>
+            <TableColumn scope="col">{t('settings.intakeForms.table.version', 'VERSION')}</TableColumn>
+            <TableColumn scope="col">{t('settings.intakeForms.table.actions', 'ACTIONS')}</TableColumn>
           </TableHeader>
           <TableBody
             items={forms}

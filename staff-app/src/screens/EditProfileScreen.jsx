@@ -17,8 +17,10 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '../context/AuthContext';
 import { staffApi, uploadApi } from '../services/api';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme';
+import { useTranslation } from 'react-i18next';
 
 const EditProfileScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { user, updateUser } = useAuth();
 
@@ -244,7 +246,7 @@ const EditProfileScreen = ({ navigation }) => {
     return (
       <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
         <ActivityIndicator size="large" color={Colors.blue} />
-        <Text style={styles.loadingText}>Loading profile...</Text>
+        <Text style={styles.loadingText}>{t('screens.loadingProfile')}</Text>
       </View>
     );
   }
@@ -256,7 +258,7 @@ const EditProfileScreen = ({ navigation }) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
+        <Text style={styles.headerTitle}>{t('screens.editProfile1')}</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -284,12 +286,12 @@ const EditProfileScreen = ({ navigation }) => {
               <Text style={styles.editPhotoIcon}>📷</Text>
             </View>
           </TouchableOpacity>
-          <Text style={styles.photoHint}>Tap to change photo</Text>
+          <Text style={styles.photoHint}>{t('screens.tapToChangePhoto')}</Text>
         </View>
 
         {/* Personal Information */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Personal Information</Text>
+          <Text style={styles.sectionTitle}>{t('screens.personalInformation')}</Text>
           <View style={styles.sectionContent}>
             {renderInput('name', 'Full Name', 'Enter your full name')}
             {renderInput('email', 'Email', 'Enter your email', 'email-address')}
@@ -299,7 +301,7 @@ const EditProfileScreen = ({ navigation }) => {
 
         {/* Professional Information */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Professional Information</Text>
+          <Text style={styles.sectionTitle}>{t('screens.professionalInformation')}</Text>
           <View style={styles.sectionContent}>
             {renderInput('designation', 'Designation', 'e.g., Teacher, HOD')}
             {renderInput('department', 'Department', 'e.g., Science, Mathematics')}
@@ -310,7 +312,7 @@ const EditProfileScreen = ({ navigation }) => {
 
         {/* Additional Information */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Additional Information</Text>
+          <Text style={styles.sectionTitle}>{t('screens.additionalInformation')}</Text>
           <View style={styles.sectionContent}>
             {renderInput('address', 'Address', 'Enter your address', 'default', true)}
             {renderInput('emergencyContact', 'Emergency Contact', 'Enter emergency contact number', 'phone-pad')}
@@ -327,7 +329,7 @@ const EditProfileScreen = ({ navigation }) => {
           {saving ? (
             <ActivityIndicator size="small" color={Colors.background.primary} />
           ) : (
-            <Text style={styles.saveButtonText}>Save Changes</Text>
+            <Text style={styles.saveButtonText}>{t('screens.saveChanges')}</Text>
           )}
         </TouchableOpacity>
 

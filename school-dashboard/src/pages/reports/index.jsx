@@ -3,6 +3,7 @@ import { BarChart3, Download, Activity } from 'lucide-react';
 import ReportsPage from './ReportsPage';
 import ExportCenter from './ExportCenter';
 import BackgroundJobs from './BackgroundJobs';
+import { useTranslation } from 'react-i18next';
 
 const TABS = [
   { key: 'reports', label: 'Reports', icon: BarChart3 },

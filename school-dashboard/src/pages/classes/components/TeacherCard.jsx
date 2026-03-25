@@ -1,6 +1,7 @@
 import { Checkbox, Badge } from "@heroui/react";
 import { Check, User, Hand } from "lucide-react";
 import PhotoAvatar from "../../../components/PhotoAvatar";
+import { useTranslation } from 'react-i18next';
 
 /**
  * TeacherCard - Displays teacher information with assignment status

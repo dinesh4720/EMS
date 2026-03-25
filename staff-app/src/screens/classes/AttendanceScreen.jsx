@@ -19,8 +19,10 @@ import { useTheme } from '../../context/ThemeContext';
 import { useClassContext } from '../../context/ClassContext';
 import { StudentAttendanceRow, AttendanceSummaryCard, AttendanceDatePicker } from '../../components/attendance';
 import { ATTENDANCE_STATUS } from '../../services/api';
+import { useTranslation } from 'react-i18next';
 
 const AttendanceScreen = () => {
+  const { t } = useTranslation();
   const route = useRoute();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -169,7 +171,7 @@ const AttendanceScreen = () => {
       >
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <CalendarIcon size={20} color={colors.primary} style={{ marginRight: spacing.sm }} />
-          <Text style={[typography.labelLarge, { color: colors.onSurface }]}>Date:</Text>
+          <Text style={[typography.labelLarge, { color: colors.onSurface }]}>{t('screens.date')}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Text style={[typography.titleMedium, { color: colors.onSurface, marginRight: spacing.sm }]}>
@@ -208,7 +210,7 @@ const AttendanceScreen = () => {
             onPress={handleMarkAllPresent}
           >
             <Check size={18} color={colors.primary} style={{ marginRight: spacing.sm }} />
-            <Text style={[typography.labelLarge, { color: colors.primary }]}>Mark All Present</Text>
+            <Text style={[typography.labelLarge, { color: colors.primary }]}>{t('screens.markAllPresent')}</Text>
           </Pressable>
         </View>
       )}
@@ -264,7 +266,7 @@ const AttendanceScreen = () => {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.surface }]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[typography.bodyMedium, { color: colors.onSurfaceVariant, marginTop: spacing.sm }]}>Loading students...</Text>
+        <Text style={[typography.bodyMedium, { color: colors.onSurfaceVariant, marginTop: spacing.sm }]}>{t('screens.loadingStudents')}</Text>
       </View>
     );
   }

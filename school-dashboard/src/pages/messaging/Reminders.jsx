@@ -5,6 +5,7 @@ import RemindersList from "./components/reminders/RemindersList";
 import ReminderTemplates from "./components/reminders/ReminderTemplates";
 import { remindersApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 const typeTabs = [
   { id: "all", label: "All" },
@@ -15,6 +16,7 @@ const typeTabs = [
 ];
 
 export default function Reminders() {
+  const { t } = useTranslation();
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,16 +49,16 @@ export default function Reminders() {
     try {
       if (editReminder) {
         await remindersApi.update(editReminder._id, formData);
-        toast.success('Reminder updated');
+        toast.success(t('toast.success.reminderUpdated'));
       } else {
         await remindersApi.create(formData);
-        toast.success('Reminder created');
+        toast.success(t('toast.success.reminderCreated'));
       }
       setRefreshKey(prev => prev + 1);
       setShowCreateModal(false);
       setEditReminder(null);
     } catch (error) {
-      toast.error('Failed to save reminder');
+      toast.error(t('toast.error.failedToSaveReminder'));
     }
   };
 
@@ -206,7 +208,7 @@ export default function Reminders() {
             className="flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-all duration-200 text-sm font-medium border border-gray-200 dark:border-zinc-700"
           >
             <BookOpen size={16} />
-            <span>Templates</span>
+            <span>{t('pages.templates1')}</span>
           </button>
           <button
             onClick={() => {
@@ -216,7 +218,7 @@ export default function Reminders() {
             className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-lg transition-all duration-200 text-sm font-medium shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
           >
             <Plus size={16} />
-            <span>New Reminder</span>
+            <span>{t('pages.newReminder')}</span>
           </button>
         </div>
       </div>

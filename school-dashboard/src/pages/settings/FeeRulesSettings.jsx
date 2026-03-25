@@ -1,20 +1,25 @@
-import { useState, useEffect } from "react";
+import { request } from '../../services/api.js';
+import { useState, useEffect, useCallback } from "react";
 import {
   Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
-  Select, SelectItem, Switch, Spinner
+  Select, SelectItem, Switch
 } from "@heroui/react";
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { Plus, Edit, Trash2, Save } from "lucide-react";
 import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
+import { useTranslation } from 'react-i18next';
+import HelpIcon from '../../components/ui/HelpIcon';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 // ============ CONCESSIONS TAB ============
 export function ConcessionsTab() {
+  const { t } = useTranslation();
   const { currentAcademicYear } = useApp();
   const [concessions, setConcessions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingConcession, setEditingConcession] = useState(null);
   const [formData, setFormData] = useState({
@@ -25,20 +30,21 @@ export function ConcessionsTab() {
     isActive: true
   });
 
-  useEffect(() => { fetchConcessions(); }, [currentAcademicYear]);
-
-  const fetchConcessions = async () => {
+  const fetchConcessions = useCallback(async () => {
+    setFetchError(null);
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/fee-settings/concessions?academicYear=${currentAcademicYear}`);
-      if (!response.ok) throw new Error('Failed to fetch');
-      setConcessions(await response.json());
+      const data = await request(`/fee-settings/concessions?academicYear=${currentAcademicYear}`);
+      setConcessions(data);
     } catch (error) {
       console.error(error);
+      setFetchError(error.message || 'Failed to load concessions');
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentAcademicYear]);
+
+  useEffect(() => { fetchConcessions(); }, [fetchConcessions]);
 
   const handleOpen = (concession = null) => {
     if (concession) {
@@ -58,61 +64,67 @@ export function ConcessionsTab() {
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim()) { toast.error('Name required'); return; }
+    if (!formData.name.trim()) { toast.error(t('toast.error.nameRequired')); return; }
     try {
       const payload = {
         ...formData,
         eligibilityCriteria: { type: formData.eligibilityType, conditions: [] },
         academicYear: currentAcademicYear
       };
-      const url = editingConcession ? `${API_URL}/fee-settings/concessions/${editingConcession._id}` : `${API_URL}/fee-settings/concessions`;
-      const response = await fetch(url, {
+      const endpoint = editingConcession ? `/fee-settings/concessions/${editingConcession._id}` : `/fee-settings/concessions`;
+      await request(endpoint, {
         method: editingConcession ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      if (!response.ok) throw new Error('Failed');
       toast.success(editingConcession ? 'Updated' : 'Created');
       fetchConcessions();
       onClose();
     } catch (error) {
-      toast.error('Failed to save');
+      toast.error(error.message || t('toast.error.failedToSave'));
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this concession?')) return;
+    if (!confirm(t('confirm.deleteConcession'))) return;
     try {
-      await fetch(`${API_URL}/fee-settings/concessions/${id}`, { method: 'DELETE' });
-      toast.success('Deleted');
+      await request(`/fee-settings/concessions/${id}`, { method: 'DELETE' });
+      toast.success(t('toast.success.deleted'));
       fetchConcessions();
     } catch (error) {
-      toast.error('Failed to delete');
+      toast.error(error.message || t('toast.error.failedToDelete'));
     }
   };
 
-  if (loading) return <div className="flex justify-center py-12"><Spinner /></div>;
+  if (loading) return <TablePageSkeleton kpiCards={0} searchBar={false} rows={4} />;
+
+  if (fetchError) return (
+    <div className="flex flex-col items-center py-12 gap-4">
+      <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">Failed to load concessions</p>
+      <p className="text-xs text-gray-500 dark:text-zinc-400">{fetchError}</p>
+      <button onClick={fetchConcessions} className="px-3 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800">Retry</button>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wider">Concessions & Discounts</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wider">{t('pages.concessionsDiscounts')}</h3>
         <button onClick={() => handleOpen()} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800">
           <Plus size={14} /> Add
         </button>
       </div>
 
       <div className="border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden">
-        <Table aria-label="Concessions" removeWrapper classNames={{ th: "bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 text-xs uppercase", td: "py-3" }}>
+        <Table aria-label={t('aria.misc.concessions')} removeWrapper classNames={{ th: "bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 text-xs uppercase", td: "py-3" }}>
           <TableHeader>
-            <TableColumn>NAME</TableColumn>
-            <TableColumn>TYPE</TableColumn>
-            <TableColumn>VALUE</TableColumn>
-            <TableColumn>ELIGIBILITY</TableColumn>
-            <TableColumn>STATUS</TableColumn>
-            <TableColumn align="end">ACTIONS</TableColumn>
+            <TableColumn scope="col">{t('pages.nAME')}</TableColumn>
+            <TableColumn scope="col">{t('pages.tYPE')}</TableColumn>
+            <TableColumn scope="col">{t('pages.vALUE')}</TableColumn>
+            <TableColumn scope="col">{t('pages.eLIGIBILITY')}</TableColumn>
+            <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+            <TableColumn align="end" scope="col">{t('pages.aCTIONS')}</TableColumn>
           </TableHeader>
-          <TableBody emptyContent={<p className="text-gray-400 dark:text-zinc-500 text-sm py-8">No concessions</p>}>
+          <TableBody emptyContent={<p className="text-gray-400 dark:text-zinc-500 text-sm py-8">{t('pages.noConcessions')}</p>}>
             {concessions.map((c) => (
               <TableRow key={c._id} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
                 <TableCell><span className="font-medium text-gray-900 dark:text-zinc-100">{c.name}</span></TableCell>
@@ -142,40 +154,46 @@ export function ConcessionsTab() {
           <ModalHeader className="border-b border-gray-200 dark:border-zinc-800 px-6 py-4">{editingConcession ? 'Edit' : 'Add'} Concession</ModalHeader>
           <ModalBody className="p-6 space-y-4">
             <div>
-              <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">Name</label>
+              <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.name1')}</label>
               <input type="text" placeholder="e.g., Sibling Discount" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">Type</label>
+                <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.type1')}</label>
                 <Select size="sm" selectedKeys={[formData.discountType]} onChange={(e) => setFormData({ ...formData, discountType: e.target.value })} classNames={{ trigger: "bg-white dark:bg-zinc-950 border-gray-200 dark:border-zinc-800" }}>
-                  <SelectItem key="percentage">Percentage</SelectItem>
-                  <SelectItem key="flat">Flat Amount</SelectItem>
+                  <SelectItem key="percentage">{t('pages.percentage2')}</SelectItem>
+                  <SelectItem key="flat">{t('pages.flatAmount')}</SelectItem>
                 </Select>
               </div>
               <div>
-                <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">Value</label>
+                <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.value')}</label>
                 <input type="number" value={formData.discountValue} onChange={(e) => setFormData({ ...formData, discountValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
               </div>
             </div>
             <div>
-              <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">Eligibility</label>
+              <div className="flex items-center gap-1.5 mb-2">
+                <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase">{t('pages.eligibility')}</label>
+                <HelpIcon
+                  text="Determines which students automatically qualify for this concession. 'Sibling' applies to students with siblings already enrolled. 'Merit' is for academic performance. 'Financial' is for need-based assistance. 'Staff Ward' applies to children of school staff. 'Custom' lets you manually assign the concession per student."
+                  size="sm"
+                />
+              </div>
               <Select size="sm" selectedKeys={[formData.eligibilityType]} onChange={(e) => setFormData({ ...formData, eligibilityType: e.target.value })} classNames={{ trigger: "bg-white dark:bg-zinc-950 border-gray-200 dark:border-zinc-800" }}>
-                <SelectItem key="sibling">Sibling</SelectItem>
-                <SelectItem key="merit">Merit</SelectItem>
-                <SelectItem key="financial">Financial</SelectItem>
-                <SelectItem key="staff_ward">Staff Ward</SelectItem>
-                <SelectItem key="custom">Custom</SelectItem>
+                <SelectItem key="sibling">{t('pages.sibling')}</SelectItem>
+                <SelectItem key="merit">{t('pages.merit')}</SelectItem>
+                <SelectItem key="financial">{t('pages.financial')}</SelectItem>
+                <SelectItem key="staff_ward">{t('pages.staffWard')}</SelectItem>
+                <SelectItem key="custom">{t('pages.custom')}</SelectItem>
               </Select>
             </div>
             <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
-              <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">Active</span>
+              <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.active')}</span>
               <Switch size="sm" isSelected={formData.isActive} onValueChange={(v) => setFormData({ ...formData, isActive: v })} />
             </div>
           </ModalBody>
           <ModalFooter className="border-t border-gray-200 dark:border-zinc-800 px-6 py-4 gap-3">
-            <button onClick={onClose} className="px-4 py-2 text-sm text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900">Cancel</button>
-            <button onClick={handleSave} className="px-4 py-2 text-sm text-white bg-gray-900 rounded-lg hover:bg-gray-800">Save</button>
+            <button onClick={onClose} className="px-4 py-2 text-sm text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900">{t('pages.cancel2')}</button>
+            <button onClick={handleSave} className="px-4 py-2 text-sm text-white bg-gray-900 rounded-lg hover:bg-gray-800">{t('pages.save')}</button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -185,42 +203,41 @@ export function ConcessionsTab() {
 
 // ============ LATE FEE TAB ============
 export function LateFeeTab() {
+  const { t } = useTranslation();
   const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({ enabled: false, gracePeriod: 7, fineType: "flat", flatAmount: 100, perDayAmount: 10, maximumCap: 0 });
 
-  useEffect(() => { fetchConfig(); }, [currentAcademicYear]);
-
-  const fetchConfig = async () => {
+  const fetchConfig = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/fee-settings/late-fee-rules?academicYear=${currentAcademicYear}`);
-      const data = await response.json();
-      if (data.length > 0) setFormData({ ...formData, ...data[0] });
+      const data = await request(`/fee-settings/late-fee-rules?academicYear=${currentAcademicYear}`);
+      if (data.length > 0) setFormData(prev => ({ ...prev, ...data[0] }));
     } catch (error) { console.error(error); }
     finally { setLoading(false); }
-  };
+  }, [currentAcademicYear]);
+
+  useEffect(() => { fetchConfig(); }, [fetchConfig]);
 
   const handleSave = async () => {
     try {
       setSaving(true);
-      await fetch(`${API_URL}/fee-settings/late-fee-rules`, {
+      await request(`/fee-settings/late-fee-rules`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, academicYear: currentAcademicYear })
       });
-      toast.success('Saved');
-    } catch (error) { toast.error('Failed to save'); }
+      toast.success(t('toast.success.saved'));
+    } catch (error) { toast.error(error.message || t('toast.error.failedToSave')); }
     finally { setSaving(false); }
   };
 
-  if (loading) return <div className="flex justify-center py-12"><Spinner /></div>;
+  if (loading) return <TablePageSkeleton kpiCards={0} searchBar={false} rows={4} />;
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wider">Late Fee Rules</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wider">{t('pages.lateFeeRules')}</h3>
         <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50">
           <Save size={14} /> Save
         </button>
@@ -229,8 +246,8 @@ export function LateFeeTab() {
       <div className="border border-gray-200 dark:border-zinc-800 rounded-lg divide-y divide-gray-100 dark:divide-zinc-800 bg-white dark:bg-zinc-950">
         <div className="flex items-center justify-between p-4">
           <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Enable Late Fee</p>
-            <p className="text-xs text-gray-500 dark:text-zinc-400">Auto-apply late fees on overdue payments</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.enableLateFee')}</p>
+            <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.autoApplyLateFeesOnOverduePayments')}</p>
           </div>
           <Switch size="sm" isSelected={formData.enabled} onValueChange={(v) => setFormData({ ...formData, enabled: v })} />
         </div>
@@ -238,12 +255,12 @@ export function LateFeeTab() {
         {formData.enabled && (
           <>
             <div className="p-4">
-              <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">Grace Period (Days)</label>
+              <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.gracePeriodDays')}</label>
               <input type="number" value={formData.gracePeriod} onChange={(e) => setFormData({ ...formData, gracePeriod: parseInt(e.target.value) || 0 })} className="w-32 px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
             </div>
 
             <div className="p-4">
-              <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">Fine Type</label>
+              <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.fineType')}</label>
               <div className="flex gap-2">
                 {[
                   { key: 'flat', label: 'Flat Amount' },
@@ -258,7 +275,7 @@ export function LateFeeTab() {
 
             {formData.fineType === 'flat' && (
               <div className="p-4">
-                <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">Flat Amount</label>
+                <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.flatAmount')}</label>
                 <div className="relative w-40">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 text-sm">₹</span>
                   <input type="number" value={formData.flatAmount} onChange={(e) => setFormData({ ...formData, flatAmount: parseFloat(e.target.value) || 0 })} className="w-full pl-7 pr-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
@@ -268,7 +285,7 @@ export function LateFeeTab() {
 
             {formData.fineType === 'per_day' && (
               <div className="p-4">
-                <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">Per Day Amount</label>
+                <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.perDayAmount')}</label>
                 <div className="relative w-40">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 text-sm">₹</span>
                   <input type="number" value={formData.perDayAmount} onChange={(e) => setFormData({ ...formData, perDayAmount: parseFloat(e.target.value) || 0 })} className="w-full pl-7 pr-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
@@ -277,7 +294,7 @@ export function LateFeeTab() {
             )}
 
             <div className="p-4">
-              <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">Maximum Cap (0 for no limit)</label>
+              <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.maximumCap0ForNoLimit')}</label>
               <div className="relative w-40">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 text-sm">₹</span>
                 <input type="number" value={formData.maximumCap} onChange={(e) => setFormData({ ...formData, maximumCap: parseFloat(e.target.value) || 0 })} className="w-full pl-7 pr-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
@@ -292,6 +309,7 @@ export function LateFeeTab() {
 
 // ============ PAYMENT METHODS TAB ============
 export function PaymentMethodsTab() {
+  const { t } = useTranslation();
   const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -300,32 +318,30 @@ export function PaymentMethodsTab() {
     offline: { enabled: true, cash: true, cheque: true, dd: true }
   });
 
-  useEffect(() => { fetchConfig(); }, [currentAcademicYear]);
-
-  const fetchConfig = async () => {
+  const fetchConfig = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/fee-settings/payment-methods?academicYear=${currentAcademicYear}`);
-      const data = await response.json();
+      const data = await request(`/fee-settings/payment-methods?academicYear=${currentAcademicYear}`);
       if (data.length > 0) setFormData(data[0]);
     } catch (error) { console.error(error); }
     finally { setLoading(false); }
-  };
+  }, [currentAcademicYear]);
+
+  useEffect(() => { fetchConfig(); }, [fetchConfig]);
 
   const handleSave = async () => {
     try {
       setSaving(true);
-      await fetch(`${API_URL}/fee-settings/payment-methods`, {
+      await request(`/fee-settings/payment-methods`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, academicYear: currentAcademicYear })
       });
-      toast.success('Saved');
-    } catch (error) { toast.error('Failed to save'); }
+      toast.success(t('toast.success.saved'));
+    } catch (error) { toast.error(error.message || t('toast.error.failedToSave')); }
     finally { setSaving(false); }
   };
 
-  if (loading) return <div className="flex justify-center py-12"><Spinner /></div>;
+  if (loading) return <TablePageSkeleton kpiCards={0} searchBar={false} rows={4} />;
 
   const onlineMethods = [
     { key: 'upi', label: 'UPI', desc: 'Google Pay, PhonePe, etc.' },
@@ -343,7 +359,7 @@ export function PaymentMethodsTab() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wider">Payment Methods</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wider">{t('pages.paymentMethods')}</h3>
         <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50">
           <Save size={14} /> Save
         </button>
@@ -352,7 +368,7 @@ export function PaymentMethodsTab() {
       {/* Online Payments */}
       <div className="border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
         <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-zinc-800">
-          <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">Online Payments</span>
+          <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.onlinePayments')}</span>
           <Switch size="sm" isSelected={formData.online.enabled} onValueChange={(v) => setFormData({ ...formData, online: { ...formData.online, enabled: v } })} />
         </div>
         {formData.online.enabled && (
@@ -373,7 +389,7 @@ export function PaymentMethodsTab() {
       {/* Offline Payments */}
       <div className="border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
         <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-zinc-800">
-          <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">Offline Payments</span>
+          <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.offlinePayments')}</span>
           <Switch size="sm" isSelected={formData.offline.enabled} onValueChange={(v) => setFormData({ ...formData, offline: { ...formData.offline, enabled: v } })} />
         </div>
         {formData.offline.enabled && (
@@ -396,42 +412,42 @@ export function PaymentMethodsTab() {
 
 // ============ COLLECTION PERIOD TAB ============
 export function CollectionPeriodTab() {
+  const { t } = useTranslation();
   const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({ collectionInterval: "yearly", reminders: { enabled: true, daysBefore: 3 } });
 
-  useEffect(() => { fetchConfig(); }, [currentAcademicYear]);
-
-  const fetchConfig = async () => {
+  const fetchConfig = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/fee-settings/collection-period?academicYear=${currentAcademicYear}`);
-      const data = await response.json();
+      const data = await request(`/fee-settings/collection-period?academicYear=${currentAcademicYear}`);
       if (data.length > 0) setFormData({ collectionInterval: data[0].collectionInterval, reminders: data[0].autoPay || { enabled: true, daysBefore: 3 } });
     } catch (error) { console.error(error); }
     finally { setLoading(false); }
-  };
+  }, [currentAcademicYear]);
+
+  useEffect(() => { fetchConfig(); }, [fetchConfig]);
 
   const handleSave = async () => {
     try {
       setSaving(true);
-      await fetch(`${API_URL}/fee-settings/collection-period`, {
+      const { reminders, ...rest } = formData;
+      await request(`/fee-settings/collection-period`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, academicYear: currentAcademicYear, autoPay: formData.reminders })
+        body: JSON.stringify({ ...rest, academicYear: currentAcademicYear, autoPay: reminders })
       });
-      toast.success('Saved');
-    } catch (error) { toast.error('Failed to save'); }
+      toast.success(t('toast.success.saved'));
+    } catch (error) { toast.error(error.message || t('toast.error.failedToSave')); }
     finally { setSaving(false); }
   };
 
-  if (loading) return <div className="flex justify-center py-12"><Spinner /></div>;
+  if (loading) return <TablePageSkeleton kpiCards={0} searchBar={false} rows={4} />;
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wider">Collection Settings</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wider">{t('pages.collectionSettings')}</h3>
         <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50">
           <Save size={14} /> Save
         </button>
@@ -439,25 +455,25 @@ export function CollectionPeriodTab() {
 
       <div className="border border-gray-200 dark:border-zinc-800 rounded-lg divide-y divide-gray-100 dark:divide-zinc-800 bg-white dark:bg-zinc-950">
         <div className="p-4">
-          <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">Collection Interval</label>
+          <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.collectionInterval')}</label>
           <Select size="sm" selectedKeys={[formData.collectionInterval]} onChange={(e) => setFormData({ ...formData, collectionInterval: e.target.value })} classNames={{ trigger: "bg-white dark:bg-zinc-950 border-gray-200 dark:border-zinc-800 w-48" }}>
-            <SelectItem key="monthly">Monthly</SelectItem>
-            <SelectItem key="quarterly">Quarterly</SelectItem>
-            <SelectItem key="yearly">Yearly</SelectItem>
+            <SelectItem key="monthly">{t('pages.monthly')}</SelectItem>
+            <SelectItem key="quarterly">{t('pages.quarterly')}</SelectItem>
+            <SelectItem key="yearly">{t('pages.yearly')}</SelectItem>
           </Select>
         </div>
 
         <div className="flex items-center justify-between p-4">
           <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Payment Reminders</p>
-            <p className="text-xs text-gray-500 dark:text-zinc-400">Auto-send reminders before due date</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.paymentReminders')}</p>
+            <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.autoSendRemindersBeforeDueDate')}</p>
           </div>
           <Switch size="sm" isSelected={formData.reminders.enabled} onValueChange={(v) => setFormData({ ...formData, reminders: { ...formData.reminders, enabled: v } })} />
         </div>
 
         {formData.reminders.enabled && (
           <div className="p-4">
-            <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">Days Before Due</label>
+            <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.daysBeforeDue')}</label>
             <input type="number" value={formData.reminders.daysBefore} onChange={(e) => setFormData({ ...formData, reminders: { ...formData.reminders, daysBefore: parseInt(e.target.value) || 0 } })} className="w-24 px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
           </div>
         )}
@@ -468,6 +484,7 @@ export function CollectionPeriodTab() {
 
 // ============ GENERAL RULES TAB ============
 export function GeneralRulesTab() {
+  const { t } = useTranslation();
   const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -478,37 +495,35 @@ export function GeneralRulesTab() {
     refundPolicy: { enabled: false, processingDays: 7 }
   });
 
-  useEffect(() => { fetchConfig(); }, [currentAcademicYear]);
-
-  const fetchConfig = async () => {
+  const fetchConfig = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/fee-settings/rules?academicYear=${currentAcademicYear}`);
-      const data = await response.json();
+      const data = await request(`/fee-settings/rules?academicYear=${currentAcademicYear}`);
       if (data.length > 0) setFormData(data[0]);
     } catch (error) { console.error(error); }
     finally { setLoading(false); }
-  };
+  }, [currentAcademicYear]);
+
+  useEffect(() => { fetchConfig(); }, [fetchConfig]);
 
   const handleSave = async () => {
     try {
       setSaving(true);
-      await fetch(`${API_URL}/fee-settings/rules`, {
+      await request(`/fee-settings/rules`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, academicYear: currentAcademicYear })
       });
-      toast.success('Saved');
-    } catch (error) { toast.error('Failed to save'); }
+      toast.success(t('toast.success.saved'));
+    } catch (error) { toast.error(error.message || t('toast.error.failedToSave')); }
     finally { setSaving(false); }
   };
 
-  if (loading) return <div className="flex justify-center py-12"><Spinner /></div>;
+  if (loading) return <TablePageSkeleton kpiCards={0} searchBar={false} rows={4} />;
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wider">Fee Rules</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wider">{t('pages.feeRules')}</h3>
         <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50">
           <Save size={14} /> Save
         </button>
@@ -517,18 +532,18 @@ export function GeneralRulesTab() {
       <div className="border border-gray-200 dark:border-zinc-800 rounded-lg divide-y divide-gray-100 dark:divide-zinc-800 bg-white dark:bg-zinc-950">
         {/* New Admission */}
         <div className="p-4">
-          <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">New Admission Fee Calculation</label>
+          <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.newAdmissionFeeCalculation')}</label>
           <Select size="sm" selectedKeys={[formData.newAdmission.feeCalculation]} onChange={(e) => setFormData({ ...formData, newAdmission: { feeCalculation: e.target.value } })} classNames={{ trigger: "bg-white dark:bg-zinc-950 border-gray-200 dark:border-zinc-800 w-48" }}>
-            <SelectItem key="total">Full Year Fee</SelectItem>
-            <SelectItem key="prorated">Prorated Fee</SelectItem>
+            <SelectItem key="total">{t('pages.fullYearFee')}</SelectItem>
+            <SelectItem key="prorated">{t('pages.proratedFee')}</SelectItem>
           </Select>
         </div>
 
         {/* Partial Payment */}
         <div className="flex items-center justify-between p-4">
           <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Allow Partial Payments</p>
-            <p className="text-xs text-gray-500 dark:text-zinc-400">Students can pay in installments</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.allowPartialPayments')}</p>
+            <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.studentsCanPayInInstallments')}</p>
           </div>
           <Switch size="sm" isSelected={formData.allowPartialPayment} onValueChange={(v) => setFormData({ ...formData, allowPartialPayment: v })} />
         </div>
@@ -543,15 +558,15 @@ export function GeneralRulesTab() {
         {/* Refund Policy */}
         <div className="flex items-center justify-between p-4">
           <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Enable Refunds</p>
-            <p className="text-xs text-gray-500 dark:text-zinc-400">Allow fee refund requests</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.enableRefunds')}</p>
+            <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.allowFeeRefundRequests')}</p>
           </div>
           <Switch size="sm" isSelected={formData.refundPolicy.enabled} onValueChange={(v) => setFormData({ ...formData, refundPolicy: { ...formData.refundPolicy, enabled: v } })} />
         </div>
 
         {formData.refundPolicy.enabled && (
           <div className="p-4">
-            <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">Processing Days</label>
+            <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.processingDays')}</label>
             <input type="number" value={formData.refundPolicy.processingDays} onChange={(e) => setFormData({ ...formData, refundPolicy: { ...formData.refundPolicy, processingDays: parseInt(e.target.value) || 0 } })} className="w-24 px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
           </div>
         )}
@@ -562,15 +577,16 @@ export function GeneralRulesTab() {
 
 // Default export with tabs
 export default function FeeRulesSettings({ embedded = false }) {
+  const { t } = useTranslation();
   return (
     <div className={embedded ? "space-y-6" : "max-w-5xl mx-auto pb-10 space-y-6"}>
       {!embedded && (
         <div className="border-b border-gray-200 dark:border-zinc-800 pb-4">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Fee Rules</h2>
-          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">Configure policies and settings</p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100">{t('pages.feeRules')}</h2>
+          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">{t('pages.configurePoliciesAndSettings')}</p>
         </div>
       )}
-      <p className="text-sm text-gray-500 dark:text-zinc-400">Access these settings from Fee Management page.</p>
+      <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.accessTheseSettingsFromFeeManagementPage')}</p>
     </div>
   );
 }

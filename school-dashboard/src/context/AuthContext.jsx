@@ -3,9 +3,12 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { clearStoredUser, getAuthHeaders, getStoredUser, saveStoredUser } from "../utils/authSession";
 import { isSuperAdminRole } from "../utils/roleUtils";
 import { clearApiCache } from "../services/api";
+import { API_URL } from "../config/api.js";
 
 const AuthContext = createContext();
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
+// Mutex to prevent concurrent session refresh calls
+let sessionRestorePromise = null;
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -22,14 +25,24 @@ export const AuthProvider = ({ children }) => {
     const restoreSession = async () => {
       const storedUser = getStoredUser();
 
-      try {
-        const response = await fetch(`${API_URL}/auth/session`, {
+      // Deduplicate concurrent session restore calls (e.g. StrictMode double-invoke).
+      // Resolve the promise with parsed data so all concurrent awaits get the same result.
+      if (!sessionRestorePromise) {
+        sessionRestorePromise = fetch(`${API_URL}/auth/session`, {
           headers: getAuthHeaders(),
           credentials: 'include'
-        });
+        })
+          .then(async (res) => ({ ok: res.ok, status: res.status, data: res.ok ? await res.json() : null }))
+          .catch(() => ({ ok: false, status: 0, data: null }))
+          .finally(() => {
+            sessionRestorePromise = null;
+          });
+      }
 
-        if (response.ok) {
-          const sessionUser = await response.json();
+      try {
+        const { ok, status, data: sessionUser } = await sessionRestorePromise;
+
+        if (ok && sessionUser) {
           if (!isMounted) return;
 
           saveStoredUser(sessionUser);
@@ -40,7 +53,7 @@ export const AuthProvider = ({ children }) => {
           return;
         }
 
-        if (response.status === 401 || response.status === 403) {
+        if (status === 401 || status === 403) {
           clearStoredUser();
           if (isMounted) {
             setUser(null);
@@ -118,10 +131,14 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       await fetch(`${API_URL}/auth/logout`, {
         method: 'POST',
-        credentials: 'include'
+        credentials: 'include',
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
     } catch (error) {
       console.warn('Logout request failed:', error.message);
     }

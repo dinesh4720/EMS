@@ -29,6 +29,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 // Trash API - Add this to api.js when integrating
 export const trashApi = {
@@ -60,8 +61,12 @@ export const trashApi = {
 
 // Import request function
 import { request } from "../../services/api";
+import { getDateLocale } from '../../i18n/index';
+import { useTranslation } from 'react-i18next';
+
 
 export default function TrashSettings() {
+  const { t } = useTranslation();
   // State management
   const [trashItems, setTrashItems] = useState([]);
   const [stats, setStats] = useState({
@@ -124,7 +129,7 @@ export default function TrashSettings() {
       setStats(transformedStats);
     } catch (error) {
       console.error("Failed to load trash data:", error);
-      toast.error("Failed to load trash data");
+      toast.error(t('toast.error.failedToLoadTrashData'));
     } finally {
       setLoading(false);
     }
@@ -185,7 +190,7 @@ export default function TrashSettings() {
     try {
       setActionInProgress(true);
       await trashApi.restore(id);
-      toast.success("Item restored successfully");
+      toast.success(t('toast.success.itemRestoredSuccessfully'));
       await loadTrashData();
       setSelectedItems(new Set());
     } catch (error) {
@@ -198,14 +203,14 @@ export default function TrashSettings() {
 
   // Handle permanent delete of single item
   const handlePermanentDelete = async (id) => {
-    if (!confirm("Are you sure you want to permanently delete this item? This action cannot be undone.")) {
+    if (!confirm(t('confirm.deletePermanently'))) {
       return;
     }
 
     try {
       setActionInProgress(true);
       await trashApi.permanentDelete(id);
-      toast.success("Item permanently deleted");
+      toast.success(t('toast.success.itemPermanentlyDeleted'));
       await loadTrashData();
       setSelectedItems(new Set());
     } catch (error) {
@@ -254,7 +259,7 @@ export default function TrashSettings() {
   const formatDate = (dateString) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
+    return date.toLocaleDateString(getDateLocale(), {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -265,9 +270,7 @@ export default function TrashSettings() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Spinner size="lg" />
-      </div>
+      <TablePageSkeleton />
     );
   }
 
@@ -276,7 +279,7 @@ export default function TrashSettings() {
       {/* Header */}
       <div className="flex justify-between items-center border-b border-default-200 pb-6">
         <div>
-          <h2 className="text-2xl font-bold text-default-900">Trash Management</h2>
+          <h2 className="text-2xl font-bold text-default-900">{t('pages.trashManagement')}</h2>
           <p className="text-sm text-default-500 mt-1">
             View and manage deleted items. Items are permanently deleted after 30 days.
           </p>
@@ -380,7 +383,7 @@ export default function TrashSettings() {
             {/* Search Input */}
             <Input
               size="sm"
-              placeholder="Search by name or deleted by..."
+              placeholder={t('pages.searchByNameOrDeletedBy')}
               startContent={<Search size={16} className="text-default-400" />}
               value={searchTerm}
               onValueChange={setSearchTerm}
@@ -394,7 +397,7 @@ export default function TrashSettings() {
             {/* Type Filter */}
             <Select
               size="sm"
-              placeholder="Filter by type"
+              placeholder={t('pages.filterByType')}
               selectedKeys={[typeFilter]}
               onChange={(e) => setTypeFilter(e.target.value)}
               variant="bordered"
@@ -471,7 +474,7 @@ export default function TrashSettings() {
       <Card className="shadow-sm border border-default-200 rounded-lg">
         <CardBody className="p-0">
           <Table
-            aria-label="Trash items table"
+            aria-label={t('aria.tables.trashItems')}
             selectionMode="multiple"
             selectedKeys={selectedItems}
             onSelectionChange={setSelectedItems}
@@ -485,12 +488,12 @@ export default function TrashSettings() {
             }}
           >
             <TableHeader>
-              <TableColumn>NAME</TableColumn>
-              <TableColumn>TYPE</TableColumn>
-              <TableColumn>DELETED BY</TableColumn>
-              <TableColumn>DELETED AT</TableColumn>
-              <TableColumn>EXPIRES IN</TableColumn>
-              <TableColumn align="end">ACTIONS</TableColumn>
+              <TableColumn scope="col">{t('pages.nAME')}</TableColumn>
+              <TableColumn scope="col">{t('pages.tYPE')}</TableColumn>
+              <TableColumn scope="col">{t('pages.dELETEDBy')}</TableColumn>
+              <TableColumn scope="col">{t('pages.dELETEDAt')}</TableColumn>
+              <TableColumn scope="col">{t('pages.eXPIRESIn')}</TableColumn>
+              <TableColumn align="end" scope="col">{t('pages.aCTIONS')}</TableColumn>
             </TableHeader>
             <TableBody
               items={filteredItems}
@@ -564,7 +567,7 @@ export default function TrashSettings() {
                           color="primary"
                           onPress={() => handleRestore(itemId)}
                           isLoading={actionInProgress}
-                          title="Restore item"
+                          title={t('pages.restoreItem')}
                           className="transition-all duration-200"
                         >
                           <RotateCcw size={16} />
@@ -576,7 +579,7 @@ export default function TrashSettings() {
                           color="danger"
                           onPress={() => handlePermanentDelete(itemId)}
                           isLoading={actionInProgress}
-                          title="Delete permanently"
+                          title={t('pages.deletePermanently2')}
                           className="transition-all duration-200"
                         >
                           <Trash2 size={16} />

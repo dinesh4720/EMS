@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Card, CardBody, CardHeader, Button, Input, Divider, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/react";
 import { Plus, Edit, Trash2, DollarSign, X } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 const initialTemplates = [
   { 
@@ -52,6 +53,7 @@ const initialTemplates = [
 ];
 
 export default function SalaryTemplates() {
+  const { t } = useTranslation();
   const [templates, setTemplates] = useState(initialTemplates);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -81,7 +83,7 @@ export default function SalaryTemplates() {
   };
 
   const handleDelete = (id) => {
-    if (confirm("Are you sure you want to delete this template?")) {
+    if (confirm(t('confirm.deleteTemplate'))) {
       setTemplates(templates.filter(t => t.id !== id));
     }
   };
@@ -114,8 +116,8 @@ export default function SalaryTemplates() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-medium">Salary Templates</h2>
-          <p className="text-sm text-default-500 mt-1">Manage salary templates for different staff roles</p>
+          <h2 className="text-2xl font-medium">{t('pages.salaryTemplates')}</h2>
+          <p className="text-sm text-default-500 mt-1">{t('pages.manageSalaryTemplatesForDifferentStaffRoles')}</p>
         </div>
         <Button color="primary" startContent={<Plus size={16} />} onPress={handleNew}>
           New Template
@@ -135,10 +137,10 @@ export default function SalaryTemplates() {
                   <h3 className="text-lg font-medium">{template.name}</h3>
                 </div>
                 <div className="flex gap-1">
-                  <Button size="sm" isIconOnly variant="light" onPress={() => handleEdit(template)} title="Edit Template">
+                  <Button size="sm" isIconOnly variant="light" onPress={() => handleEdit(template)} title={t('pages.editTemplate')}>
                     <Edit size={16} />
                   </Button>
-                  <Button size="sm" isIconOnly variant="light" color="danger" onPress={() => handleDelete(template.id)} title="Delete Template">
+                  <Button size="sm" isIconOnly variant="light" color="danger" onPress={() => handleDelete(template.id)} title={t('pages.deleteTemplate1')}>
                     <Trash2 size={16} />
                   </Button>
                 </div>
@@ -155,7 +157,7 @@ export default function SalaryTemplates() {
                 </div>
                 <Divider className="mb-3" />
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Total Monthly</span>
+                  <span className="text-sm font-medium">{t('pages.totalMonthly')}</span>
                   <Chip color="success" variant="flat" size="lg" classNames={{ content: "font-bold" }}>
                     ₹{total.toLocaleString()}
                   </Chip>
@@ -178,7 +180,7 @@ export default function SalaryTemplates() {
                 {editingTemplate && (
                   <div className="space-y-4">
                     <Input
-                      label="Template Name"
+                      label={t('pages.templateName')}
                       placeholder="e.g., Teacher, Lab Assistant"
                       value={editingTemplate.name}
                       onValueChange={v => setEditingTemplate({ ...editingTemplate, name: v })}
@@ -190,7 +192,7 @@ export default function SalaryTemplates() {
 
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
-                        <label className="text-sm font-medium">Salary Components</label>
+                        <label className="text-sm font-medium">{t('pages.salaryComponents')}</label>
                         <Button size="sm" variant="flat" color="primary" startContent={<Plus size={16} />} 
                           onPress={addBreakdownItem}>
                           Add Component
@@ -202,7 +204,7 @@ export default function SalaryTemplates() {
                           <div className="flex gap-3 items-start">
                             <Input
                               size="sm"
-                              label="Component Name"
+                              label={t('pages.componentName')}
                               placeholder="e.g., Basic Salary"
                               value={item.component}
                               onValueChange={v => updateBreakdownItem(i, "component", v)}
@@ -211,7 +213,7 @@ export default function SalaryTemplates() {
                             />
                             <Input
                               size="sm"
-                              label="Amount"
+                              label={t('pages.amount1')}
                               type="number"
                               value={item.amount}
                               onValueChange={v => updateBreakdownItem(i, "amount", v)}
@@ -235,7 +237,7 @@ export default function SalaryTemplates() {
 
                       <div className="p-4 bg-success-50 rounded-lg border border-success-200">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Total Monthly Salary</span>
+                          <span className="text-sm font-medium">{t('pages.totalMonthlySalary1')}</span>
                           <span className="text-xl font-bold text-success">
                             ₹{calculateTotal(editingTemplate.breakdown).toLocaleString()}
                           </span>
@@ -246,7 +248,7 @@ export default function SalaryTemplates() {
                 )}
               </ModalBody>
               <ModalFooter>
-                <Button variant="light" onPress={onModalClose}>Cancel</Button>
+                <Button variant="light" onPress={onModalClose}>{t('pages.cancel2')}</Button>
                 <Button color="primary" onPress={handleSave} isDisabled={!editingTemplate?.name.trim()}>
                   Save Template
                 </Button>

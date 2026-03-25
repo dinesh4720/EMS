@@ -165,6 +165,15 @@ app.get('/analytics', validateApiKey, (req, res) => {
   })
 })
 
+// Socket.IO connection-level API key validation
+io.use((socket, next) => {
+  const apiKey = socket.handshake.auth?.apiKey || socket.handshake.headers?.['x-api-key'] as string
+  if (!apiKey || apiKey !== API_KEY) {
+    return next(new Error('Unauthorized: invalid API key'))
+  }
+  next()
+})
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id)

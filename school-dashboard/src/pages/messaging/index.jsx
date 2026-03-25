@@ -7,6 +7,7 @@ import Announcements from "./Announcements";
 import Reminders from "./Reminders";
 import CommunicationLogs from "./CommunicationLogs";
 import ChatFull from "./ChatFull";
+import { useTranslation } from 'react-i18next';
 
 const tabs = [
   { key: "chat", title: "Chat" },

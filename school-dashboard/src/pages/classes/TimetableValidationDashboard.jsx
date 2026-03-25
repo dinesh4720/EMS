@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardBody, CardHeader, Progress, Badge, Button, Tabs, Tab, Select, SelectItem } from '@heroui/react';
 import { request } from '../../services/api';
 import { CURRENT_ACADEMIC_YEAR } from '../../utils/constants';
+import { useTranslation } from 'react-i18next';
 
 /**
  * TimetableValidationDashboard Component
  * Comprehensive dashboard for viewing timetable validation across all classes and teachers
  */
 const TimetableValidationDashboard = () => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [classReport, setClassReport] = useState(null);
   const [teacherReport, setTeacherReport] = useState(null);
@@ -58,31 +60,31 @@ const TimetableValidationDashboard = () => {
         {/* Overall Statistics */}
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold">Overall Class Timetable Statistics</h3>
+            <h3 className="text-lg font-semibold">{t('pages.overallClassTimetableStatistics')}</h3>
           </CardHeader>
           <CardBody>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600">{classReport.totalClasses}</div>
-                <div className="text-sm text-gray-600 dark:text-zinc-400">Total Classes</div>
+                <div className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.totalClasses1')}</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-green-600">{classReport.completeClasses}</div>
-                <div className="text-sm text-gray-600 dark:text-zinc-400">Complete</div>
+                <div className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.complete')}</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-red-600">{classReport.incompleteClasses}</div>
-                <div className="text-sm text-gray-600 dark:text-zinc-400">Incomplete</div>
+                <div className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.incomplete')}</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-purple-600">{classReport.averageCompleteness}%</div>
-                <div className="text-sm text-gray-600 dark:text-zinc-400">Avg Completeness</div>
+                <div className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.avgCompleteness')}</div>
               </div>
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium">Average Completeness</span>
+                <span className="text-sm font-medium">{t('pages.averageCompleteness')}</span>
                 <span className="text-sm font-medium">{classReport.averageCompleteness}%</span>
               </div>
               <Progress 
@@ -97,7 +99,7 @@ const TimetableValidationDashboard = () => {
         {/* Individual Class Reports */}
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold">Class-wise Breakdown</h3>
+            <h3 className="text-lg font-semibold">{t('pages.classWiseBreakdown')}</h3>
           </CardHeader>
           <CardBody>
             <div className="space-y-3">
@@ -149,31 +151,31 @@ const TimetableValidationDashboard = () => {
         {/* Overall Statistics */}
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold">Overall Teacher Utilization Statistics</h3>
+            <h3 className="text-lg font-semibold">{t('pages.overallTeacherUtilizationStatistics')}</h3>
           </CardHeader>
           <CardBody>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600">{teacherReport.totalTeachers}</div>
-                <div className="text-sm text-gray-600 dark:text-zinc-400">Total Teachers</div>
+                <div className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.totalTeachers')}</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-green-600">{teacherReport.fullyUtilizedTeachers}</div>
-                <div className="text-sm text-gray-600 dark:text-zinc-400">Fully Utilized</div>
+                <div className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.fullyUtilized')}</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-orange-600">{teacherReport.underutilizedTeachers}</div>
-                <div className="text-sm text-gray-600 dark:text-zinc-400">Underutilized</div>
+                <div className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.underutilized')}</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-purple-600">{teacherReport.averageUtilization}%</div>
-                <div className="text-sm text-gray-600 dark:text-zinc-400">Avg Utilization</div>
+                <div className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.avgUtilization')}</div>
               </div>
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium">Average Utilization</span>
+                <span className="text-sm font-medium">{t('pages.averageUtilization')}</span>
                 <span className="text-sm font-medium">{teacherReport.averageUtilization}%</span>
               </div>
               <Progress 
@@ -188,7 +190,7 @@ const TimetableValidationDashboard = () => {
         {/* Individual Teacher Reports */}
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold">Teacher-wise Breakdown</h3>
+            <h3 className="text-lg font-semibold">{t('pages.teacherWiseBreakdown')}</h3>
           </CardHeader>
           <CardBody>
             <div className="space-y-3">
@@ -239,7 +241,7 @@ const TimetableValidationDashboard = () => {
           <CardBody>
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <div className="text-gray-600 dark:text-zinc-400 text-lg">Loading validation reports...</div>
+              <div className="text-gray-600 dark:text-zinc-400 text-lg">{t('pages.loadingValidationReports')}</div>
             </div>
           </CardBody>
         </Card>
@@ -254,7 +256,7 @@ const TimetableValidationDashboard = () => {
           <CardBody>
             <div className="text-center py-12">
               <div className="text-red-600 text-5xl mb-4">⚠</div>
-              <div className="text-red-600 font-medium text-xl mb-2">Error</div>
+              <div className="text-red-600 font-medium text-xl mb-2">{t('pages.error1')}</div>
               <div className="text-gray-600 dark:text-zinc-400 mb-4">{error}</div>
               <Button 
                 color="primary" 
@@ -272,7 +274,7 @@ const TimetableValidationDashboard = () => {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">Timetable Validation Dashboard</h1>
+        <h1 className="text-2xl font-bold mb-2">{t('pages.timetableValidationDashboard')}</h1>
         <p className="text-gray-600 dark:text-zinc-400">
           Monitor timetable completeness and teacher utilization across the school
         </p>
@@ -280,8 +282,8 @@ const TimetableValidationDashboard = () => {
 
       <div className="flex justify-between items-center mb-6">
         <Tabs selectedKey={activeTab} onSelectionChange={setActiveTab}>
-          <Tab key="classes" title="Classes" />
-          <Tab key="teachers" title="Teachers" />
+          <Tab key="classes" title={t('pages.classes2')} />
+          <Tab key="teachers" title={t('pages.teachers')} />
         </Tabs>
 
         <Button 

@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { classesApi } from '../services/api';
 import { ArrowLeft, Plus, X, Save, AlertTriangle, CheckCircle, BookOpen, Search, Settings, Users } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const SubjectAssignment = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [classes, setClasses] = useState([]);
@@ -104,7 +106,7 @@ const SubjectAssignment = () => {
       <div className="w-full flex-1 bg-gray-50 p-6 min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full"></div>
-          <p className="text-sm text-gray-500">Loading classes...</p>
+          <p className="text-sm text-gray-500">{t('components.loadingClasses1')}</p>
         </div>
       </div>
     );
@@ -134,7 +136,7 @@ const SubjectAssignment = () => {
           className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors mb-2"
         >
           <ArrowLeft size={16} />
-          <span>Back</span>
+          <span>{t('components.back')}</span>
         </button>
 
         <div className="bg-white rounded-lg border border-gray-100 p-5">
@@ -147,7 +149,7 @@ const SubjectAssignment = () => {
 
               {/* Info */}
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">Subject Assignment</h1>
+                <h1 className="text-xl font-semibold text-gray-900">{t('components.subjectAssignment')}</h1>
                 <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
                   <span>{totalClasses} Classes</span>
                   <span className="text-gray-300">|</span>
@@ -155,7 +157,7 @@ const SubjectAssignment = () => {
                 </div>
                 <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
                   <Settings size={12} />
-                  <span>Configure subjects for each class</span>
+                  <span>{t('components.configureSubjectsForEachClass')}</span>
                 </div>
               </div>
             </div>
@@ -220,7 +222,7 @@ const SubjectAssignment = () => {
                     <AlertTriangle size={16} className="text-gray-600" />
                   </div>
                   <div>
-                    <h3 className="font-medium text-gray-900 text-sm">Attention Required</h3>
+                    <h3 className="font-medium text-gray-900 text-sm">{t('components.attentionRequired')}</h3>
                     <p className="text-xs text-gray-500">
                       {missingSubjectsClasses.length} class{missingSubjectsClasses.length > 1 ? 'es have' : ' has'} no subjects assigned
                     </p>
@@ -256,7 +258,7 @@ const SubjectAssignment = () => {
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search classes..."
+                placeholder={t('components.searchClasses')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400"
@@ -270,8 +272,8 @@ const SubjectAssignment = () => {
               <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
                 <BookOpen size={20} className="text-gray-400" />
               </div>
-              <h3 className="text-sm font-medium text-gray-900 mb-2">No classes found</h3>
-              <p className="text-sm text-gray-500">Create classes first to assign subjects.</p>
+              <h3 className="text-sm font-medium text-gray-900 mb-2">{t('components.noClassesFound')}</h3>
+              <p className="text-sm text-gray-500">{t('components.createClassesFirstToAssignSubjects')}</p>
               <button
                 onClick={() => navigate('/classes/new')}
                 className="mt-4 px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors"
@@ -372,7 +374,7 @@ const SubjectAssignment = () => {
                               value={newSubject}
                               onChange={(e) => setNewSubject(e.target.value)}
                               onKeyPress={handleKeyPress}
-                              placeholder="Add subject (e.g., Mathematics, English)"
+                              placeholder={t('components.addSubjectEGMathematicsEnglish')}
                               className="flex-1 px-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400"
                               disabled={saving}
                             />
@@ -405,7 +407,7 @@ const SubjectAssignment = () => {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-sm text-gray-400 italic">No subjects added yet</p>
+                            <p className="text-sm text-gray-400 italic">{t('components.noSubjectsAddedYet')}</p>
                           )}
 
                           {/* Helper Text */}
@@ -426,7 +428,7 @@ const SubjectAssignment = () => {
                               </span>
                             ))
                           ) : (
-                            <span className="text-sm text-gray-400 italic">No subjects assigned</span>
+                            <span className="text-sm text-gray-400 italic">{t('components.noSubjectsAssigned')}</span>
                           )}
                         </div>
                       )}
@@ -443,7 +445,7 @@ const SubjectAssignment = () => {
 
           {/* Stats Cards */}
           <div className="bg-white rounded-lg border border-gray-100 p-5">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">Overview</h3>
+            <h3 className="text-sm font-medium text-gray-900 mb-4">{t('components.overview')}</h3>
             <div className="space-y-4">
               {stats.map((stat, i) => (
                 <div key={stat.label} className="flex items-center justify-between">
@@ -463,11 +465,11 @@ const SubjectAssignment = () => {
 
           {/* Progress */}
           <div className="bg-white rounded-lg border border-gray-100 p-5">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">Configuration Progress</h3>
+            <h3 className="text-sm font-medium text-gray-900 mb-4">{t('components.configurationProgress')}</h3>
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between text-xs mb-2">
-                  <span className="text-gray-500">Classes with subjects</span>
+                  <span className="text-gray-500">{t('components.classesWithSubjects')}</span>
                   <span className="font-medium text-gray-900">{Math.round((classesWithSubjects / totalClasses) * 100) || 0}%</span>
                 </div>
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -487,28 +489,28 @@ const SubjectAssignment = () => {
 
           {/* Quick Actions */}
           <div className="bg-white rounded-lg border border-gray-100 p-5">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">Quick Actions</h3>
+            <h3 className="text-sm font-medium text-gray-900 mb-4">{t('components.quickActions')}</h3>
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => navigate('/classes')}
                 className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
               >
                 <Users size={18} className="text-gray-600" />
-                <span className="text-xs text-gray-600">Classes</span>
+                <span className="text-xs text-gray-600">{t('components.classes1')}</span>
               </button>
               <button
                 onClick={() => navigate('/timetable')}
                 className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
               >
                 <BookOpen size={18} className="text-gray-600" />
-                <span className="text-xs text-gray-600">Timetable</span>
+                <span className="text-xs text-gray-600">{t('components.timetable1')}</span>
               </button>
             </div>
           </div>
 
           {/* Help Card */}
           <div className="bg-white rounded-lg border border-gray-100 p-5">
-            <h3 className="text-sm font-medium text-gray-900 mb-2">How it works</h3>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">{t('components.howItWorks')}</h3>
             <p className="text-xs text-gray-500 leading-relaxed">
               Assign subjects to each class to enable timetable generation. Click "Manage" on a class to add or remove subjects.
             </p>

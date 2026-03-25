@@ -1,9 +1,10 @@
 /**
  * PageHeader - Clean page header component
  */
+import { memo } from "react";
 import { cn } from "../../utils/cn";
 
-export default function PageHeader({
+const PageHeader = memo(function PageHeader({
   title,
   description,
   actions,
@@ -55,4 +56,8 @@ export default function PageHeader({
       </div>
     </div>
   );
-}
+});
+
+PageHeader.displayName = 'PageHeader';
+
+export default PageHeader;

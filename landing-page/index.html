@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="EMS — The all-in-one Education Management System for modern schools. Manage students, fees, attendance, exams, staff, and parent communication from one place." />
+  <meta name="keywords" content="school management software, student information system, EMS, education management, fee management, attendance tracking" />
+  <title>EMS — Education Management System for Modern Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #4f46e5;
+      --primary-dark: #3730a3;
+      --primary-light: #e0e7ff;
+      --accent: #06b6d4;
+      --success: #10b981;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --bg: #ffffff;
+      --bg-alt: #f9fafb;
+      --border: #e5e7eb;
+      --radius: 12px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.6;
+    }
+
+    /* ─── NAV ─────────────────────────────────────────────────────────── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 40px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-size: 22px; font-weight: 800; color: var(--primary);
+      text-decoration: none; letter-spacing: -0.5px;
+    }
+    .nav-logo span { color: var(--accent); }
+
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 15px; font-weight: 500; transition: color .2s; }
+    .nav-links a:hover { color: var(--primary); }
+
+    .nav-cta { display: flex; gap: 12px; align-items: center; }
+    .btn-ghost { background: none; border: 1.5px solid var(--border); border-radius: 8px; padding: 8px 20px; font-size: 14px; font-weight: 600; color: var(--text); cursor: pointer; transition: all .2s; text-decoration: none; }
+    .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-primary { background: var(--primary); border: none; border-radius: 8px; padding: 9px 22px; font-size: 14px; font-weight: 600; color: #fff; cursor: pointer; transition: background .2s; text-decoration: none; }
+    .btn-primary:hover { background: var(--primary-dark); }
+
+    /* ─── HERO ────────────────────────────────────────────────────────── */
+    .hero {
+      padding: 100px 40px 80px;
+      text-align: center;
+      background: linear-gradient(160deg, #f0f4ff 0%, #fafbff 60%, #e0f7fa 100%);
+    }
+
+    .hero-badge {
+      display: inline-block;
+      background: var(--primary-light); color: var(--primary);
+      font-size: 13px; font-weight: 600; border-radius: 100px;
+      padding: 4px 16px; margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 800; line-height: 1.12;
+      letter-spacing: -1.5px; max-width: 820px; margin: 0 auto 24px;
+    }
+    .hero h1 .highlight { color: var(--primary); }
+
+    .hero-sub {
+      font-size: 18px; color: var(--text-muted); max-width: 560px;
+      margin: 0 auto 40px; line-height: 1.7;
+    }
+
+    .hero-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .btn-lg { padding: 14px 32px; font-size: 16px; border-radius: 10px; font-weight: 700; }
+    .btn-outline-lg {
+      background: none; border: 2px solid var(--primary); color: var(--primary);
+      border-radius: 10px; padding: 14px 32px; font-size: 16px; font-weight: 700;
+      cursor: pointer; text-decoration: none; transition: all .2s;
+    }
+    .btn-outline-lg:hover { background: var(--primary); color: #fff; }
+
+    .hero-stats {
+      display: flex; gap: 40px; justify-content: center; margin-top: 60px; flex-wrap: wrap;
+    }
+    .stat { text-align: center; }
+    .stat-value { font-size: 32px; font-weight: 800; color: var(--primary); }
+    .stat-label { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ─── SECTION SHARED ─────────────────────────────────────────────── */
+    section { padding: 80px 40px; }
+    .section-label { font-size: 13px; font-weight: 700; color: var(--primary); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+    .section-title { font-size: clamp(28px, 4vw, 42px); font-weight: 800; letter-spacing: -1px; margin-bottom: 16px; }
+    .section-sub { font-size: 17px; color: var(--text-muted); max-width: 600px; line-height: 1.7; }
+    .center { text-align: center; margin: 0 auto; }
+
+    /* ─── FEATURES GRID ──────────────────────────────────────────────── */
+    .features { background: var(--bg-alt); }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px; margin-top: 56px;
+    }
+    .feature-card {
+      background: #fff; border-radius: var(--radius); padding: 28px;
+      border: 1px solid var(--border); box-shadow: var(--shadow);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .feature-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.12); }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: var(--primary-light); display: flex; align-items: center;
+      justify-content: center; font-size: 24px; margin-bottom: 20px;
+    }
+    .feature-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+    .feature-desc { color: var(--text-muted); font-size: 14px; line-height: 1.65; }
+
+    /* ─── HOW IT WORKS ───────────────────────────────────────────────── */
+    .steps { display: flex; gap: 32px; margin-top: 56px; flex-wrap: wrap; }
+    .step { flex: 1; min-width: 200px; }
+    .step-num {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--primary); color: #fff;
+      font-size: 16px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px;
+    }
+    .step-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .step-desc { color: var(--text-muted); font-size: 14px; line-height: 1.65; }
+
+    /* ─── PRICING ─────────────────────────────────────────────────────── */
+    .pricing { background: var(--bg-alt); }
+    .pricing-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px; margin-top: 56px; max-width: 960px; margin-left: auto; margin-right: auto;
+    }
+    .pricing-card {
+      background: #fff; border-radius: var(--radius); padding: 36px;
+      border: 1px solid var(--border); position: relative;
+    }
+    .pricing-card.featured {
+      border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-light);
+    }
+    .featured-badge {
+      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+      background: var(--primary); color: #fff;
+      font-size: 12px; font-weight: 700; padding: 4px 16px; border-radius: 100px;
+    }
+    .plan-name { font-size: 16px; font-weight: 700; color: var(--text-muted); margin-bottom: 12px; }
+    .plan-price { font-size: 42px; font-weight: 800; letter-spacing: -1px; }
+    .plan-price span { font-size: 16px; font-weight: 500; color: var(--text-muted); }
+    .plan-desc { font-size: 14px; color: var(--text-muted); margin: 12px 0 24px; }
+    .plan-features { list-style: none; }
+    .plan-features li { font-size: 14px; padding: 8px 0; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: flex-start; }
+    .plan-features li:last-child { border-bottom: none; }
+    .check { color: var(--success); font-size: 16px; flex-shrink: 0; }
+    .plan-cta { margin-top: 28px; width: 100%; text-align: center; display: block; }
+
+    /* ─── TESTIMONIALS ───────────────────────────────────────────────── */
+    .testimonials-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px; margin-top: 56px;
+    }
+    .testimonial-card {
+      background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 28px; box-shadow: var(--shadow);
+    }
+    .testimonial-text { font-size: 15px; line-height: 1.7; color: var(--text); margin-bottom: 20px; font-style: italic; }
+    .testimonial-author { display: flex; align-items: center; gap: 12px; }
+    .avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--primary-light); color: var(--primary);
+      font-weight: 800; font-size: 18px; display: flex; align-items: center; justify-content: center;
+    }
+    .author-name { font-weight: 700; font-size: 14px; }
+    .author-role { font-size: 13px; color: var(--text-muted); }
+
+    /* ─── CTA ─────────────────────────────────────────────────────────── */
+    .cta-section {
+      background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+      text-align: center; padding: 100px 40px; color: #fff;
+    }
+    .cta-section .section-title { color: #fff; }
+    .cta-section .section-sub { color: rgba(255,255,255,0.8); margin: 0 auto 40px; }
+    .btn-white { background: #fff; color: var(--primary); border: none; border-radius: 10px; padding: 14px 36px; font-size: 16px; font-weight: 700; cursor: pointer; text-decoration: none; transition: all .2s; display: inline-block; }
+    .btn-white:hover { background: var(--primary-light); }
+
+    /* ─── FOOTER ─────────────────────────────────────────────────────── */
+    footer {
+      background: #111827; color: #9ca3af; padding: 60px 40px 32px;
+    }
+    .footer-grid {
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px;
+      max-width: 1200px; margin: 0 auto;
+    }
+    .footer-brand { color: #fff; font-size: 22px; font-weight: 800; margin-bottom: 12px; }
+    .footer-brand span { color: var(--accent); }
+    .footer-tagline { font-size: 14px; line-height: 1.65; }
+    .footer-col h4 { color: #fff; font-size: 14px; font-weight: 700; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 10px; }
+    .footer-col a { color: #9ca3af; text-decoration: none; font-size: 14px; transition: color .2s; }
+    .footer-col a:hover { color: #fff; }
+    .footer-bottom {
+      border-top: 1px solid #374151; margin-top: 48px; padding-top: 24px;
+      text-align: center; font-size: 13px;
+      max-width: 1200px; margin-left: auto; margin-right: auto;
+    }
+
+    /* ─── RESPONSIVE ─────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      nav { padding: 14px 20px; }
+      .nav-links { display: none; }
+      .hero { padding: 70px 20px 60px; }
+      section { padding: 60px 20px; }
+      .hero-stats { gap: 24px; }
+      .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+    }
+    @media (max-width: 480px) {
+      .hero-actions { flex-direction: column; align-items: center; }
+      .footer-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── NAVIGATION ──────────────────────────────────────────────────────────── -->
+<nav>
+  <a href="/" class="nav-logo">EMS<span>.</span></a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how-it-works">How it Works</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#testimonials">Reviews</a></li>
+  </ul>
+  <div class="nav-cta">
+    <a href="/login" class="btn-ghost">Sign In</a>
+    <a href="#pricing" class="btn-primary">Start Free Trial</a>
+  </div>
+</nav>
+
+<!-- ─── HERO ────────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-badge">Trusted by 500+ schools across India</div>
+  <h1>Run Your School Smarter with <span class="highlight">EMS</span></h1>
+  <p class="hero-sub">One platform for student management, fees, attendance, exams, staff, and parent communication. Built for modern schools of all sizes.</p>
+  <div class="hero-actions">
+    <a href="#pricing" class="btn-primary btn-lg">Start 30-Day Free Trial</a>
+    <a href="#features" class="btn-outline-lg">See All Features</a>
+  </div>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-value">500+</div><div class="stat-label">Schools using EMS</div></div>
+    <div class="stat"><div class="stat-value">2L+</div><div class="stat-label">Students managed</div></div>
+    <div class="stat"><div class="stat-value">99.5%</div><div class="stat-label">Uptime SLA</div></div>
+    <div class="stat"><div class="stat-value">4.8★</div><div class="stat-label">Average rating</div></div>
+  </div>
+</section>
+
+<!-- ─── FEATURES ─────────────────────────────────────────────────────────────── -->
+<section class="features" id="features">
+  <div class="center">
+    <div class="section-label">Features</div>
+    <h2 class="section-title">Everything your school needs in one place</h2>
+    <p class="section-sub">From admission to alumni — EMS covers the full student lifecycle with zero data silos.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🎓</div>
+      <div class="feature-title">Student Management</div>
+      <div class="feature-desc">Maintain complete student profiles — admission, personal details, documents, academic history, and parent contacts — in one searchable database.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <div class="feature-title">Attendance Tracking</div>
+      <div class="feature-desc">Mark daily attendance per class with one tap. Automated SMS and push notifications alert parents when their child is absent.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💰</div>
+      <div class="feature-title">Fee Management</div>
+      <div class="feature-desc">Flexible fee heads, concession management, online payments, auto-receipts, and overdue reminders — your accountant will thank you.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📝</div>
+      <div class="feature-title">Exams & Results</div>
+      <div class="feature-desc">Schedule exams, enter marks, compute grades, and publish results. Supports CBSE, ICSE, and State Board report card formats.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">👩‍🏫</div>
+      <div class="feature-title">Staff & Payroll</div>
+      <div class="feature-desc">Manage staff profiles, timetables, leave requests, and payroll — all in sync. Digital payslips delivered automatically.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📱</div>
+      <div class="feature-title">Parent App</div>
+      <div class="feature-desc">Parents get a dedicated mobile app for attendance, results, fee dues, remarks, homework, and real-time chat with teachers.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🗓️</div>
+      <div class="feature-title">Timetable Builder</div>
+      <div class="feature-desc">Drag-and-drop timetable creation with automatic conflict detection. Substitution management included.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📚</div>
+      <div class="feature-title">Homework Management</div>
+      <div class="feature-desc">Teachers assign, track, and grade homework digitally. Students and parents receive assignment notifications instantly.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔔</div>
+      <div class="feature-title">Communication Suite</div>
+      <div class="feature-desc">SMS, email, WhatsApp, and push notifications for announcements, reminders, and individual messaging — all from one inbox.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🚌</div>
+      <div class="feature-title">Transport Management</div>
+      <div class="feature-desc">Track bus routes, assign students to vehicles, and monitor transport fees with the built-in transport module.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <div class="feature-title">Analytics & Reports</div>
+      <div class="feature-desc">Real-time dashboards for attendance trends, fee collection, academic performance, and staff utilisation. Export any report to Excel or PDF.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <div class="feature-title">Multi-Tenant Security</div>
+      <div class="feature-desc">Every school's data is fully isolated. Role-based access ensures staff see only what they need. GDPR and FERPA compliant.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── HOW IT WORKS ──────────────────────────────────────────────────────────── -->
+<section id="how-it-works">
+  <div class="center">
+    <div class="section-label">Getting Started</div>
+    <h2 class="section-title">Up and running in under a day</h2>
+    <p class="section-sub">Our onboarding team sets up your school and trains your staff — no IT department required.</p>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-title">Sign Up & School Setup</div>
+      <div class="step-desc">Create your school account, configure academic year, classes, subjects, and fee heads using our guided setup wizard.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-title">Import Your Data</div>
+      <div class="step-desc">Bulk import existing student and staff records via Excel. Our template makes migration from any system effortless.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-title">Invite Your Team</div>
+      <div class="step-desc">Send email invitations to teachers, accountants, and front-desk staff. Set permissions for each role in minutes.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-title">Go Live</div>
+      <div class="step-desc">Start marking attendance, collecting fees, and communicating with parents from day one. Parents download the app using your school code.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── PRICING ───────────────────────────────────────────────────────────────── -->
+<section class="pricing" id="pricing">
+  <div class="center">
+    <div class="section-label">Pricing</div>
+    <h2 class="section-title">Simple, transparent pricing</h2>
+    <p class="section-sub">All plans include unlimited students, free onboarding, and 24/7 support. No hidden fees.</p>
+  </div>
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <div class="plan-name">STARTER</div>
+      <div class="plan-price">₹2,999<span>/month</span></div>
+      <div class="plan-desc">Perfect for small schools up to 500 students.</div>
+      <ul class="plan-features">
+        <li><span class="check">✓</span> Up to 500 students</li>
+        <li><span class="check">✓</span> Student & fee management</li>
+        <li><span class="check">✓</span> Attendance tracking</li>
+        <li><span class="check">✓</span> Parent app (SMS alerts)</li>
+        <li><span class="check">✓</span> Basic reports</li>
+        <li><span class="check">✓</span> Email support</li>
+      </ul>
+      <a href="/register" class="btn-primary btn-lg plan-cta">Start Free Trial</a>
+    </div>
+    <div class="pricing-card featured">
+      <div class="featured-badge">Most Popular</div>
+      <div class="plan-name">GROWTH</div>
+      <div class="plan-price">₹5,999<span>/month</span></div>
+      <div class="plan-desc">For growing schools that need the full feature set.</div>
+      <ul class="plan-features">
+        <li><span class="check">✓</span> Up to 2,000 students</li>
+        <li><span class="check">✓</span> Everything in Starter</li>
+        <li><span class="check">✓</span> Exams, results & report cards</li>
+        <li><span class="check">✓</span> Staff & payroll management</li>
+        <li><span class="check">✓</span> Timetable builder</li>
+        <li><span class="check">✓</span> Homework management</li>
+        <li><span class="check">✓</span> WhatsApp & email campaigns</li>
+        <li><span class="check">✓</span> Transport & hostel modules</li>
+        <li><span class="check">✓</span> Priority support</li>
+      </ul>
+      <a href="/register" class="btn-primary btn-lg plan-cta">Start Free Trial</a>
+    </div>
+    <div class="pricing-card">
+      <div class="plan-name">ENTERPRISE</div>
+      <div class="plan-price">Custom</div>
+      <div class="plan-desc">For large schools, school groups, and chains.</div>
+      <ul class="plan-features">
+        <li><span class="check">✓</span> Unlimited students</li>
+        <li><span class="check">✓</span> Everything in Growth</li>
+        <li><span class="check">✓</span> Multi-branch management</li>
+        <li><span class="check">✓</span> Custom integrations (Tally, ERP)</li>
+        <li><span class="check">✓</span> SSO & advanced permissions</li>
+        <li><span class="check">✓</span> Data residency options</li>
+        <li><span class="check">✓</span> SLA guarantee (99.9%)</li>
+        <li><span class="check">✓</span> Dedicated account manager</li>
+      </ul>
+      <a href="/contact" class="btn-outline-lg btn-lg plan-cta" style="border-width:1.5px;">Contact Sales</a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── TESTIMONIALS ──────────────────────────────────────────────────────────── -->
+<section id="testimonials">
+  <div class="center">
+    <div class="section-label">Reviews</div>
+    <h2 class="section-title">Loved by schools across India</h2>
+    <p class="section-sub">Here's what principals, admins, and teachers say about EMS.</p>
+  </div>
+  <div class="testimonials-grid">
+    <div class="testimonial-card">
+      <p class="testimonial-text">"We switched from spreadsheets to EMS last year. Fee collection time dropped by 60% and parents finally stopped calling the office about their child's attendance."</p>
+      <div class="testimonial-author">
+        <div class="avatar">R</div>
+        <div>
+          <div class="author-name">Rekha Sharma</div>
+          <div class="author-role">Principal, Delhi Public Academy</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <p class="testimonial-text">"The timetable builder alone saved us 2 days of manual work every term. Substitution alerts to teachers happen in real time — it's a game changer."</p>
+      <div class="testimonial-author">
+        <div class="avatar">A</div>
+        <div>
+          <div class="author-name">Arjun Menon</div>
+          <div class="author-role">Vice Principal, Sunrise CBSE School, Kochi</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <p class="testimonial-text">"Our accountant says EMS has eliminated all manual ledger errors. Receipt generation is instant and the Tally export works perfectly."</p>
+      <div class="testimonial-author">
+        <div class="avatar">P</div>
+        <div>
+          <div class="author-name">Priya Nair</div>
+          <div class="author-role">School Director, Greenfield International School</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CTA ──────────────────────────────────────────────────────────────────── -->
+<section class="cta-section">
+  <h2 class="section-title">Ready to modernise your school?</h2>
+  <p class="section-sub">Join 500+ schools already running on EMS. Start your free 30-day trial — no credit card required.</p>
+  <a href="/register" class="btn-white">Start Free Trial Today</a>
+</section>
+
+<!-- ─── FOOTER ───────────────────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">EMS<span>.</span></div>
+      <p class="footer-tagline">The all-in-one Education Management System trusted by 500+ schools to manage students, staff, fees, and parent communication.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <ul>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#">Integrations</a></li>
+        <li><a href="#">Changelog</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Resources</h4>
+      <ul>
+        <li><a href="#">Knowledge Base</a></li>
+        <li><a href="#">Admin Guide</a></li>
+        <li><a href="#">Teacher Guide</a></li>
+        <li><a href="#">Parent App Guide</a></li>
+        <li><a href="#">API Docs</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="#">About Us</a></li>
+        <li><a href="#">Contact</a></li>
+        <li><a href="#">Privacy Policy</a></li>
+        <li><a href="#">Terms of Service</a></li>
+        <li><a href="#">Security</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 EMS. All rights reserved. Made with care for educators across India.</p>
+  </div>
+</footer>
+
+</body>
+</html>

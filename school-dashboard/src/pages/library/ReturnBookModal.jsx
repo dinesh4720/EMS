@@ -5,6 +5,9 @@ import {
 } from "@heroui/react";
 import { libraryApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { getDateLocale } from '../../i18n/index';
+import { useTranslation } from 'react-i18next';
+
 
 const CONDITIONS = [
   { key: "new", label: "New" },
@@ -16,6 +19,7 @@ const CONDITIONS = [
 ];
 
 export default function ReturnBookModal({ isOpen, onClose, issue, onSaved }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({ returnCondition: "good", finePaid: false, notes: "" });
   const [saving, setSaving] = useState(false);
 
@@ -29,7 +33,10 @@ export default function ReturnBookModal({ isOpen, onClose, issue, onSaved }) {
 
   const isOverdue = new Date(issue.dueDate) < new Date();
   const daysLate = isOverdue ? Math.ceil((new Date() - new Date(issue.dueDate)) / (1000 * 60 * 60 * 24)) : 0;
-  const accruedFine = issue.accruedFine || (daysLate * (issue.finePerDay || 0));
+  // BUG-38: clamp fine to non-negative and cap at a reasonable ceiling (₹5000)
+  const MAX_FINE = 5000;
+  const rawFine = issue.accruedFine || (daysLate * (issue.finePerDay || 0));
+  const accruedFine = Math.min(Math.max(0, rawFine), MAX_FINE);
 
   const handleSubmit = async () => {
     try {
@@ -39,7 +46,7 @@ export default function ReturnBookModal({ isOpen, onClose, issue, onSaved }) {
         finePaid: form.finePaid,
         ...(form.notes.trim() && { notes: form.notes.trim() }),
       });
-      toast.success("Book returned successfully");
+      toast.success(t('toast.success.bookReturnedSuccessfully'));
       onSaved?.();
     } catch (err) {
       toast.error(err?.message || "Failed to return book");
@@ -51,7 +58,7 @@ export default function ReturnBookModal({ isOpen, onClose, issue, onSaved }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="md">
       <ModalContent>
-        <ModalHeader>Return Book</ModalHeader>
+        <ModalHeader>{t('pages.returnBook')}</ModalHeader>
         <ModalBody className="gap-4">
           {/* Book info */}
           <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 space-y-1">
@@ -60,7 +67,7 @@ export default function ReturnBookModal({ isOpen, onClose, issue, onSaved }) {
               Issued to: {issue.studentId?.name || "Unknown"}
             </p>
             <p className="text-sm text-gray-500 dark:text-zinc-400">
-              Due: {new Date(issue.dueDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+              Due: {new Date(issue.dueDate).toLocaleDateString(getDateLocale(), { day: "2-digit", month: "short", year: "numeric" })}
             </p>
             {isOverdue && (
               <div className="flex items-center gap-2 pt-1">
@@ -73,7 +80,7 @@ export default function ReturnBookModal({ isOpen, onClose, issue, onSaved }) {
           </div>
 
           <Select
-            label="Return Condition"
+            label={t('pages.returnCondition')}
             selectedKeys={[form.returnCondition]}
             onSelectionChange={(keys) => setForm((f) => ({ ...f, returnCondition: [...keys][0] }))}
           >
@@ -92,15 +99,15 @@ export default function ReturnBookModal({ isOpen, onClose, issue, onSaved }) {
           )}
 
           <Textarea
-            label="Notes"
+            label={t('pages.notes1')}
             value={form.notes}
             onValueChange={(v) => setForm((f) => ({ ...f, notes: v }))}
             minRows={2}
-            placeholder="Optional notes about the return..."
+            placeholder={t('pages.optionalNotesAboutTheReturn')}
           />
         </ModalBody>
         <ModalFooter>
-          <Button variant="flat" onPress={onClose}>Cancel</Button>
+          <Button variant="flat" onPress={onClose}>{t('pages.cancel2')}</Button>
           <Button color="success" isLoading={saving} onPress={handleSubmit}>
             Confirm Return
           </Button>

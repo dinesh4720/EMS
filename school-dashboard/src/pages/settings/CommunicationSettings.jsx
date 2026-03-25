@@ -1,14 +1,45 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardBody, CardHeader, Input, Switch, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Spinner, Divider } from "@heroui/react";
 import { Save, Plus, Edit, Search, X, MessageSquare, Mail } from "lucide-react";
+import { settingsApi } from "../../services/api";
+import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+
+// BUG-11: provider defaults to '' so user must explicitly choose — never assume Twilio
+const DEFAULT_SMS = { enabled: false, provider: '', senderId: '', apiKey: '' };
+const DEFAULT_EMAIL = { enabled: false, provider: '', smtpHost: '', port: '587', username: '', password: '' };
 
 export default function CommunicationSettings() {
+  const { t } = useTranslation();
   const [editingSection, setEditingSection] = useState(null);
-  const [smsEnabled, setSmsEnabled] = useState(true);
-  const [emailEnabled, setEmailEnabled] = useState(true);
+  const [smsConfig, setSmsConfig] = useState(DEFAULT_SMS);
+  const [emailConfig, setEmailConfig] = useState(DEFAULT_EMAIL);
   const [saving, setSaving] = useState(false);
+  const [loadingSettings, setLoadingSettings] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+
+  // Track editable draft values
+  const [smsDraft, setSmsDraft] = useState(DEFAULT_SMS);
+  const [emailDraft, setEmailDraft] = useState(DEFAULT_EMAIL);
+
+  useEffect(() => {
+    settingsApi.getCommunicationSettings()
+      .then((data) => {
+        if (data) {
+          setSmsConfig(data.sms || DEFAULT_SMS);
+          setEmailConfig(data.email || DEFAULT_EMAIL);
+          setSmsDraft(data.sms || DEFAULT_SMS);
+          setEmailDraft(data.email || DEFAULT_EMAIL);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load communication settings:', err);
+        toast.error(t('toast.error.failedToLoadCommunicationSettings'));
+      })
+      .finally(() => setLoadingSettings(false));
+  }, []);
 
   const templates = [
     { id: 1, name: "Fee Reminder", type: "SMS", variables: "{student}, {amount}, {date}" },
@@ -19,16 +50,14 @@ export default function CommunicationSettings() {
     { id: 6, name: "Result Published", type: "Email", variables: "{student}, {class}, {result}" },
   ];
 
-  // Filter templates
   const filteredTemplates = useMemo(() => {
     return templates.filter(t => {
       const matchesSearch = t.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType = typeFilter === "all" || t.type.toLowerCase() === typeFilter.toLowerCase();
       return matchesSearch && matchesType;
     });
-  }, [templates, searchQuery, typeFilter]);
+  }, [searchQuery, typeFilter]);
 
-  // Lazy loading state
   const ITEMS_PER_LOAD = 10;
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -41,12 +70,10 @@ export default function CommunicationSettings() {
 
   const hasMore = visibleCount < filteredTemplates.length;
 
-  // Reset visible count when filters change
   useEffect(() => {
     setVisibleCount(ITEMS_PER_LOAD);
   }, [searchQuery, typeFilter]);
 
-  // Lazy loading intersection observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -60,24 +87,36 @@ export default function CommunicationSettings() {
       },
       { threshold: 0.1 }
     );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
+    if (loaderRef.current) observer.observe(loaderRef.current);
     return () => observer.disconnect();
   }, [hasMore, isLoadingMore]);
 
-  // Mock implementations for demo
-  const handleSave = () => {
+  const handleSave = async (section) => {
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
+    try {
+      const payload = {
+        sms: section === 'sms' ? smsDraft : smsConfig,
+        email: section === 'email' ? emailDraft : emailConfig,
+      };
+      const updated = await settingsApi.updateCommunicationSettings(payload);
+      if (updated) {
+        setSmsConfig(updated.sms || payload.sms);
+        setEmailConfig(updated.email || payload.email);
+        setSmsDraft(updated.sms || payload.sms);
+        setEmailDraft(updated.email || payload.email);
+      }
+      toast.success(t('toast.success.settingsSaved'));
       setEditingSection(null);
-    }, 1000);
+    } catch (error) {
+      toast.error(t('toast.error.failedToSaveSettings'));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleCancel = () => {
+  const handleCancel = (section) => {
+    if (section === 'sms') setSmsDraft(smsConfig);
+    else setEmailDraft(emailConfig);
     setEditingSection(null);
   };
 
@@ -102,27 +141,49 @@ export default function CommunicationSettings() {
         />
         {editingSection === section ? (
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="light" color="danger" onPress={handleCancel} disabled={saving}>Cancel</Button>
-            <Button size="sm" color="primary" onPress={handleSave} isLoading={saving} startContent={<Save size={14} />}>
+            <button
+              className="text-sm text-danger hover:text-danger-600 font-medium px-3 py-1.5 rounded-lg hover:bg-danger-50 transition-colors"
+              onClick={() => handleCancel(section)}
+              disabled={saving}
+            >
+              Cancel
+            </button>
+            <button
+              className="flex items-center gap-1.5 text-sm bg-primary text-white font-medium px-3 py-1.5 rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50"
+              onClick={() => handleSave(section)}
+              disabled={saving}
+            >
+              {saving ? <Spinner size="sm" color="white" /> : <Save size={14} />}
               Save
-            </Button>
+            </button>
           </div>
         ) : (
-          <Button size="sm" variant="light" color="primary" onPress={() => setEditingSection(section)} isDisabled={editingSection !== null} startContent={<Edit size={16} />}>
+          <button
+            className="flex items-center gap-1.5 text-sm text-primary font-medium px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors disabled:opacity-50"
+            onClick={() => setEditingSection(section)}
+            disabled={editingSection !== null}
+          >
+            <Edit size={16} />
             Edit
-          </Button>
+          </button>
         )}
       </div>
     </div>
   );
+
+  if (loadingSettings) {
+    return (
+      <TablePageSkeleton />
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto pb-10 space-y-8">
       {/* Unified Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-default-200 pb-6">
         <div>
-          <h2 className="text-2xl font-bold text-default-900">Communication Channels</h2>
-          <p className="text-sm text-default-500 mt-1">Configure SMS gateways and Email SMTP settings.</p>
+          <h2 className="text-2xl font-bold text-default-900">{t('pages.communicationChannels')}</h2>
+          <p className="text-sm text-default-500 mt-1">{t('pages.configureSmsGatewaysAndEmailSmtpSettings')}</p>
         </div>
       </div>
 
@@ -131,55 +192,86 @@ export default function CommunicationSettings() {
         <section className={`rounded-xl border transition-all duration-300 ${editingSection === 'sms' ? 'border-primary ring-1 ring-primary bg-white dark:bg-zinc-950' : 'border-default-200 dark:border-zinc-800 bg-white dark:bg-zinc-950'}`}>
           <div className="p-6">
             <SectionHeader
-              title="SMS Configuration"
+              title={t('pages.sMSConfiguration')}
               description="Manage SMS gateway integration"
               icon={MessageSquare}
               section="sms"
-              isEnabled={smsEnabled}
-              onToggle={setSmsEnabled}
+              isEnabled={editingSection === 'sms' ? smsDraft.enabled : smsConfig.enabled}
+              onToggle={(val) => setSmsDraft(prev => ({ ...prev, enabled: val }))}
             />
 
-            {smsEnabled && (
+            {(editingSection === 'sms' ? smsDraft.enabled : smsConfig.enabled) && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 px-2 animate-fade-in">
                 {editingSection === 'sms' ? (
                   <>
-                    <Select label="SMS Provider" defaultSelectedKeys={["twilio"]} variant="bordered" labelPlacement="outside" classNames={{ trigger: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}>
-                      <SelectItem key="twilio">Twilio</SelectItem>
-                      <SelectItem key="msg91">MSG91</SelectItem>
-                      <SelectItem key="textlocal">TextLocal</SelectItem>
+                    <Select
+                      label={t('pages.sMSProvider')}
+                      selectedKeys={[smsDraft.provider]}
+                      onSelectionChange={(keys) => setSmsDraft(prev => ({ ...prev, provider: Array.from(keys)[0] }))}
+                      variant="bordered"
+                      labelPlacement="outside"
+                      classNames={{ trigger: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}
+                    >
+                      <SelectItem key="twilio">{t('pages.twilio')}</SelectItem>
+                      <SelectItem key="msg91">{t('pages.mSG91')}</SelectItem>
+                      <SelectItem key="textlocal">{t('pages.textLocal')}</SelectItem>
                     </Select>
-                    <Input label="Sender ID" placeholder="SCHOOL" defaultValue="SCHOOL" variant="bordered" labelPlacement="outside" classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }} />
-                    <Input label="API Key" type="password" defaultValue="****************" placeholder="Enter API key" variant="bordered" labelPlacement="outside" classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }} className="md:col-span-2" />
+                    <Input
+                      label={t('pages.senderId')}
+                      placeholder={t('pages.sCHOOL')}
+                      value={smsDraft.senderId}
+                      onValueChange={(val) => setSmsDraft(prev => ({ ...prev, senderId: val }))}
+                      variant="bordered"
+                      labelPlacement="outside"
+                      classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}
+                    />
+                    <Input
+                      label={t('pages.aPIKey')}
+                      type="password"
+                      value={smsDraft.apiKey}
+                      onValueChange={(val) => setSmsDraft(prev => ({ ...prev, apiKey: val }))}
+                      placeholder={t('pages.enterApiKey')}
+                      variant="bordered"
+                      labelPlacement="outside"
+                      classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}
+                      className="md:col-span-2"
+                    />
                   </>
                 ) : (
                   <>
                     <div className="space-y-1">
-                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">SMS Provider</span>
-                      <p className="font-medium text-default-900">Twilio</p>
+                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.sMSProvider')}</span>
+                      <p className="font-medium text-default-900 capitalize">{smsConfig.provider || '—'}</p>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">Sender ID</span>
-                      <p className="font-medium text-default-900">SCHOOL</p>
+                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.senderId')}</span>
+                      <p className="font-medium text-default-900">{smsConfig.senderId || '—'}</p>
                     </div>
                     <div className="space-y-1 md:col-span-2">
-                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">API Key</span>
-                      <p className="font-medium text-default-900">••••••••••••••••</p>
+                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.aPIKey')}</span>
+                      <p className="font-medium text-default-900">{smsConfig.apiKey ? '••••••••' : 'Not configured'}</p>
                     </div>
                   </>
                 )}
 
                 <div className="md:col-span-2 p-4 bg-success-50 dark:bg-success-950/30 rounded-xl border border-success-200 dark:border-success-800 flex justify-between items-center mt-2">
                   <div>
-                    <p className="text-sm font-semibold text-success-800 dark:text-success-200">Connection Status: Active</p>
-                    <p className="text-xs text-success-600 dark:text-success-400">Balance: 5,000 SMS Credits</p>
+                    <p className="text-sm font-semibold text-success-800 dark:text-success-200">
+                      {smsConfig.apiKey ? 'Configured' : 'Not configured'}
+                    </p>
+                    <p className="text-xs text-success-600 dark:text-success-400">
+                      {smsConfig.senderId ? `Sender: ${smsConfig.senderId}` : 'Add API key to enable SMS'}
+                    </p>
                   </div>
-                  <button className="px-4 py-2 bg-white dark:bg-zinc-900 text-success-700 dark:text-success-300 rounded-lg border border-success-200 dark:border-success-800 text-xs font-medium hover:bg-success-50 dark:hover:bg-success-950/50">Test SMS</button>
+                  <button className="px-4 py-2 bg-white dark:bg-zinc-900 text-success-700 dark:text-success-300 rounded-lg border border-success-200 dark:border-success-800 text-xs font-medium hover:bg-success-50 dark:hover:bg-success-950/50">
+                    Test SMS
+                  </button>
                 </div>
               </div>
             )}
-            {!smsEnabled && (
+            {!(editingSection === 'sms' ? smsDraft.enabled : smsConfig.enabled) && (
               <div className="p-8 text-center text-default-400 bg-default-50 rounded-lg border border-dashed border-default-200">
-                <p>SMS notifications are currently disabled.</p>
+                <p>{t('pages.sMSNotificationsAreCurrentlyDisabled')}</p>
               </div>
             )}
           </div>
@@ -189,61 +281,104 @@ export default function CommunicationSettings() {
         <section className={`rounded-xl border transition-all duration-300 ${editingSection === 'email' ? 'border-primary ring-1 ring-primary bg-white dark:bg-zinc-950' : 'border-default-200 dark:border-zinc-800 bg-white dark:bg-zinc-950'}`}>
           <div className="p-6">
             <SectionHeader
-              title="Email Configuration"
+              title={t('pages.emailConfiguration')}
               description="Configure SMTP for email delivery"
               icon={Mail}
               section="email"
-              isEnabled={emailEnabled}
-              onToggle={setEmailEnabled}
+              isEnabled={editingSection === 'email' ? emailDraft.enabled : emailConfig.enabled}
+              onToggle={(val) => setEmailDraft(prev => ({ ...prev, enabled: val }))}
             />
 
-            {emailEnabled && (
+            {(editingSection === 'email' ? emailDraft.enabled : emailConfig.enabled) && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 px-2 animate-fade-in">
                 {editingSection === 'email' ? (
                   <>
-                    <Select label="Email Provider" defaultSelectedKeys={["smtp"]} variant="bordered" labelPlacement="outside" classNames={{ trigger: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }} className="md:col-span-2">
-                      <SelectItem key="smtp">SMTP</SelectItem>
-                      <SelectItem key="sendgrid">SendGrid</SelectItem>
-                      <SelectItem key="mailgun">Mailgun</SelectItem>
+                    <Select
+                      label={t('pages.emailProvider')}
+                      selectedKeys={[emailDraft.provider]}
+                      onSelectionChange={(keys) => setEmailDraft(prev => ({ ...prev, provider: Array.from(keys)[0] }))}
+                      variant="bordered"
+                      labelPlacement="outside"
+                      classNames={{ trigger: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}
+                      className="md:col-span-2"
+                    >
+                      <SelectItem key="smtp">{t('pages.sMTP')}</SelectItem>
+                      <SelectItem key="sendgrid">{t('pages.sendGrid')}</SelectItem>
+                      <SelectItem key="mailgun">{t('pages.mailgun')}</SelectItem>
                     </Select>
-                    <Input label="SMTP Host" placeholder="smtp.gmail.com" defaultValue="smtp.gmail.com" variant="bordered" labelPlacement="outside" classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }} />
-                    <Input label="Port" placeholder="587" defaultValue="587" variant="bordered" labelPlacement="outside" classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }} />
-                    <Input label="Username/Email" placeholder="noreply@school.com" defaultValue="noreply@school.com" variant="bordered" labelPlacement="outside" classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }} />
-                    <Input label="Password" type="password" placeholder="Enter password" defaultValue="password" variant="bordered" labelPlacement="outside" classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }} />
+                    <Input
+                      label={t('pages.sMTPHost')}
+                      placeholder="smtp.gmail.com"
+                      value={emailDraft.smtpHost}
+                      onValueChange={(val) => setEmailDraft(prev => ({ ...prev, smtpHost: val }))}
+                      variant="bordered"
+                      labelPlacement="outside"
+                      classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}
+                    />
+                    <Input
+                      label={t('pages.port')}
+                      placeholder="587"
+                      value={emailDraft.port}
+                      onValueChange={(val) => setEmailDraft(prev => ({ ...prev, port: val }))}
+                      variant="bordered"
+                      labelPlacement="outside"
+                      classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}
+                    />
+                    <Input
+                      label="Username/Email"
+                      placeholder="noreply@school.com"
+                      value={emailDraft.username}
+                      onValueChange={(val) => setEmailDraft(prev => ({ ...prev, username: val }))}
+                      variant="bordered"
+                      labelPlacement="outside"
+                      classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}
+                    />
+                    <Input
+                      label={t('pages.password')}
+                      type="password"
+                      placeholder={t('pages.enterPassword')}
+                      value={emailDraft.password}
+                      onValueChange={(val) => setEmailDraft(prev => ({ ...prev, password: val }))}
+                      variant="bordered"
+                      labelPlacement="outside"
+                      classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}
+                    />
                   </>
                 ) : (
                   <>
                     <div className="space-y-1 md:col-span-2">
-                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">Email Provider</span>
-                      <p className="font-medium text-default-900">SMTP</p>
+                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.emailProvider')}</span>
+                      <p className="font-medium text-default-900 capitalize">{emailConfig.provider || '—'}</p>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">SMTP Host</span>
-                      <p className="font-medium text-default-900">smtp.gmail.com</p>
+                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.sMTPHost')}</span>
+                      <p className="font-medium text-default-900">{emailConfig.smtpHost || '—'}</p>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">Port</span>
-                      <p className="font-medium text-default-900">587</p>
+                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.port')}</span>
+                      <p className="font-medium text-default-900">{emailConfig.port || '—'}</p>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">Username</span>
-                      <p className="font-medium text-default-900">noreply@school.com</p>
+                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.username')}</span>
+                      <p className="font-medium text-default-900">{emailConfig.username || '—'}</p>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">Password</span>
-                      <p className="font-medium text-default-900">••••••••</p>
+                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.password')}</span>
+                      <p className="font-medium text-default-900">{emailConfig.password ? '••••••••' : 'Not configured'}</p>
                     </div>
                   </>
                 )}
 
                 <div className="md:col-span-2 flex justify-end mt-2">
-                  <button className="px-4 py-2 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300 rounded-lg border border-primary-100 dark:border-primary-800 text-sm font-medium hover:bg-primary-100 dark:hover:bg-primary-950/50">Send Test Email</button>
+                  <button className="px-4 py-2 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300 rounded-lg border border-primary-100 dark:border-primary-800 text-sm font-medium hover:bg-primary-100 dark:hover:bg-primary-950/50">
+                    Send Test Email
+                  </button>
                 </div>
               </div>
             )}
-            {!emailEnabled && (
+            {!(editingSection === 'email' ? emailDraft.enabled : emailConfig.enabled) && (
               <div className="p-8 text-center text-default-400 bg-default-50 rounded-lg border border-dashed border-default-200">
-                <p>Email notifications are currently disabled.</p>
+                <p>{t('pages.emailNotificationsAreCurrentlyDisabled')}</p>
               </div>
             )}
           </div>
@@ -259,13 +394,13 @@ export default function CommunicationSettings() {
                 <Edit size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-default-900">Message Templates</h3>
-                <p className="text-xs text-default-500">Manage SMS and Email templates</p>
+                <h3 className="text-lg font-bold text-default-900">{t('pages.messageTemplates')}</h3>
+                <p className="text-xs text-default-500">{t('pages.manageSmsAndEmailTemplates')}</p>
               </div>
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary-600 transition-colors font-medium shadow-sm">
+            <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary-600 transition-colors shadow-sm">
               <Plus size={16} />
-              <span>Add Template</span>
+              <span>{t('pages.addTemplate')}</span>
             </button>
           </div>
 
@@ -277,7 +412,7 @@ export default function CommunicationSettings() {
                   <Search size={16} className="text-default-400" />
                   <input
                     type="text"
-                    placeholder="Search templates..."
+                    placeholder={t('pages.searchTemplates')}
                     className="flex-1 bg-transparent outline-none text-sm text-default-900"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -293,7 +428,7 @@ export default function CommunicationSettings() {
               <div className="w-full sm:w-auto">
                 <Select
                   size="sm"
-                  placeholder="All Types"
+                  placeholder={t('pages.allTypes1')}
                   selectedKeys={new Set([typeFilter])}
                   onSelectionChange={(keys) => setTypeFilter(Array.from(keys)[0])}
                   className="w-full sm:w-[140px]"
@@ -302,16 +437,16 @@ export default function CommunicationSettings() {
                     trigger: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800",
                   }}
                 >
-                  <SelectItem key="all">All Types</SelectItem>
+                  <SelectItem key="all">{t('pages.allTypes1')}</SelectItem>
                   <SelectItem key="sms">SMS</SelectItem>
-                  <SelectItem key="email">Email</SelectItem>
+                  <SelectItem key="email">{t('pages.email1')}</SelectItem>
                 </Select>
               </div>
             </div>
 
             {/* Table */}
             <Table
-              aria-label="Templates"
+              aria-label={t('aria.misc.templates')}
               removeWrapper
               radius="none"
               classNames={{
@@ -323,14 +458,14 @@ export default function CommunicationSettings() {
               }}
             >
               <TableHeader>
-                <TableColumn>TEMPLATE NAME</TableColumn>
-                <TableColumn>TYPE</TableColumn>
-                <TableColumn>VARIABLES</TableColumn>
-                <TableColumn align="end">ACTIONS</TableColumn>
+                <TableColumn scope="col">{t('pages.tEMPLATEName')}</TableColumn>
+                <TableColumn scope="col">{t('pages.tYPE')}</TableColumn>
+                <TableColumn scope="col">{t('pages.vARIABLES')}</TableColumn>
+                <TableColumn align="end" scope="col">{t('pages.aCTIONS')}</TableColumn>
               </TableHeader>
               <TableBody emptyContent={
                 <div className="text-center py-12">
-                  <p className="text-default-400 text-sm">No templates found matching your search</p>
+                  <p className="text-default-400 text-sm">{t('pages.noTemplatesFoundMatchingYourSearch')}</p>
                 </div>
               }>
                 {visibleTemplates.map((t) => (
@@ -369,7 +504,7 @@ export default function CommunicationSettings() {
             <div ref={loaderRef} className="flex justify-center py-4 bg-default-50/30">
               {isLoadingMore && <Spinner size="sm" color="primary" />}
               {!hasMore && filteredTemplates.length > ITEMS_PER_LOAD && (
-                <span className="text-default-400 text-xs">All templates loaded</span>
+                <span className="text-default-400 text-xs">{t('pages.allTemplatesLoaded')}</span>
               )}
             </div>
           </div>
@@ -381,7 +516,7 @@ export default function CommunicationSettings() {
               Available Variables
             </h4>
             <div className="flex flex-wrap gap-2 mb-3">
-              {["{student}", "{parent}", "{class}", "{amount}", "{date}", "{time}", "{teacher}", "{school}"].map((v, i) => (
+              {["{student}", "{parent}", "{class}", "{amount}", "{date}", "{time}", "{teacher}", "{school}"].map((v) => (
                 <Chip
                   key={`variable-${v}`}
                   size="sm"
@@ -399,8 +534,6 @@ export default function CommunicationSettings() {
           </div>
         </section>
       </div>
-
     </div>
   );
 }
-

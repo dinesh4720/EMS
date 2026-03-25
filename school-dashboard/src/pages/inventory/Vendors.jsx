@@ -1,18 +1,20 @@
 import { useState, useEffect } from "react";
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Input, Textarea,
+  Input, Textarea, Select, SelectItem,
 } from "@heroui/react";
 import { Search, Plus, Edit3, Trash2, Phone, Mail } from "lucide-react";
 import { MinimalButton } from "../../components/ui";
 import { inventoryApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 const emptyForm = {
   name: "", contactPerson: "", phone: "", email: "", address: "", category: "", notes: "",
 };
 
 export default function Vendors() {
+  const { t } = useTranslation();
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -20,38 +22,43 @@ export default function Vendors() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const fetchVendors = async () => {
     try {
       setLoading(true);
       const data = await inventoryApi.getVendors(search || undefined);
       setVendors(Array.isArray(data) ? data : []);
-    } catch { toast.error("Failed to load vendors"); }
+    } catch { toast.error(t('toast.error.failedToLoadVendors')); }
     finally { setLoading(false); }
   };
 
   useEffect(() => { fetchVendors(); }, [search]);
 
-  const openCreate = () => { setEditing(null); setForm(emptyForm); setIsOpen(true); };
+  const openCreate = () => { setEditing(null); setForm(emptyForm); setErrors({}); setIsOpen(true); };
   const openEdit = (v) => {
     setEditing(v);
     setForm({
       name: v.name || "", contactPerson: v.contactPerson || "", phone: v.phone || "",
       email: v.email || "", address: v.address || "", category: v.category || "", notes: v.notes || "",
     });
+    setErrors({});
     setIsOpen(true);
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) return toast.error("Name is required");
+    if (!form.name.trim()) {
+      setErrors({ name: t('toast.error.nameIsRequired') });
+      return toast.error(t('toast.error.nameIsRequired'));
+    }
     try {
       setSaving(true);
       if (editing) {
         await inventoryApi.updateVendor(editing._id, form);
-        toast.success("Vendor updated");
+        toast.success(t('toast.success.vendorUpdated'));
       } else {
         await inventoryApi.createVendor(form);
-        toast.success("Vendor created");
+        toast.success(t('toast.success.vendorCreated'));
       }
       setIsOpen(false);
       fetchVendors();
@@ -61,15 +68,18 @@ export default function Vendors() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Delete this vendor?")) return;
+    if (!confirm(t('confirm.deleteVendor'))) return;
     try {
       await inventoryApi.deleteVendor(id);
-      toast.success("Vendor deleted");
+      toast.success(t('toast.success.vendorDeleted'));
       fetchVendors();
-    } catch { toast.error("Delete failed"); }
+    } catch { toast.error(t('toast.error.deleteFailed')); }
   };
 
-  const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+  const set = (key, val) => {
+    setForm((f) => ({ ...f, [key]: val }));
+    setErrors((e) => ({ ...e, [key]: '' }));
+  };
 
   if (loading) {
     return (
@@ -90,8 +100,8 @@ export default function Vendors() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search vendors..."
-            className="pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 placeholder:text-gray-400 dark:placeholder:text-zinc-500 w-56"
+            placeholder={t('pages.searchVendors')}
+            className="pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 placeholder:text-gray-500 dark:placeholder:text-zinc-500 w-56"
           />
         </div>
         <MinimalButton variant="primary" size="sm" icon={<Plus size={16} />} onClick={openCreate}>
@@ -101,7 +111,7 @@ export default function Vendors() {
 
       {/* Vendor Cards */}
       {vendors.length === 0 ? (
-        <p className="text-center py-12 text-gray-500 dark:text-zinc-400">No vendors found</p>
+        <p className="text-center py-12 text-gray-500 dark:text-zinc-400">{t('pages.noVendorsFound')}</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {vendors.map((v) => (
@@ -134,7 +144,7 @@ export default function Vendors() {
                 )}
               </div>
               {!v.isActive && (
-                <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400 mt-2">Inactive</span>
+                <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400 mt-2">{t('pages.inactive')}</span>
               )}
             </div>
           ))}
@@ -142,22 +152,37 @@ export default function Vendors() {
       )}
 
       {/* Create/Edit Modal */}
-      <Modal isOpen={isOpen} onOpenChange={setIsOpen} size="lg">
+      <Modal isOpen={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) setErrors({}); }} size="lg">
         <ModalContent>
           <ModalHeader>{editing ? "Edit Vendor" : "New Vendor"}</ModalHeader>
           <ModalBody>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Vendor Name" isRequired value={form.name} onValueChange={(v) => set("name", v)} />
-              <Input label="Contact Person" value={form.contactPerson} onValueChange={(v) => set("contactPerson", v)} />
-              <Input label="Phone" value={form.phone} onValueChange={(v) => set("phone", v)} />
-              <Input label="Email" type="email" value={form.email} onValueChange={(v) => set("email", v)} />
-              <Input label="Category" value={form.category} onValueChange={(v) => set("category", v)} />
+              <Input label={t('pages.vendorName')} isRequired value={form.name} onValueChange={(v) => set("name", v)} isInvalid={!!errors.name} errorMessage={errors.name} />
+              <Input label={t('pages.contactPerson')} value={form.contactPerson} onValueChange={(v) => set("contactPerson", v)} />
+              <Input label={t('pages.phone1')} value={form.phone} onValueChange={(v) => set("phone", v)} />
+              <Input label={t('pages.email1')} type="email" value={form.email} onValueChange={(v) => set("email", v)} />
+              <Select
+                label={t('pages.category1')}
+                selectedKeys={form.category ? [form.category] : []}
+                onChange={(e) => set("category", e.target.value)}
+              >
+                <SelectItem key="Stationery">Stationery</SelectItem>
+                <SelectItem key="Electronics">Electronics</SelectItem>
+                <SelectItem key="Furniture">Furniture</SelectItem>
+                <SelectItem key="Lab Equipment">Lab Equipment</SelectItem>
+                <SelectItem key="Sports">Sports</SelectItem>
+                <SelectItem key="Cleaning">Cleaning</SelectItem>
+                <SelectItem key="Food">Food</SelectItem>
+                <SelectItem key="Transport">Transport</SelectItem>
+                <SelectItem key="Printing">Printing</SelectItem>
+                <SelectItem key="Other">Other</SelectItem>
+              </Select>
             </div>
-            <Textarea label="Address" value={form.address} onValueChange={(v) => set("address", v)} className="mt-2" />
-            <Textarea label="Notes" value={form.notes} onValueChange={(v) => set("notes", v)} />
+            <Textarea label={t('pages.address2')} value={form.address} onValueChange={(v) => set("address", v)} className="mt-2" />
+            <Textarea label={t('pages.notes1')} value={form.notes} onValueChange={(v) => set("notes", v)} />
           </ModalBody>
           <ModalFooter>
-            <MinimalButton variant="ghost" onClick={() => setIsOpen(false)}>Cancel</MinimalButton>
+            <MinimalButton variant="ghost" onClick={() => setIsOpen(false)}>{t('pages.cancel2')}</MinimalButton>
             <MinimalButton variant="primary" onClick={handleSave} loading={saving}>{editing ? "Update" : "Create"}</MinimalButton>
           </ModalFooter>
         </ModalContent>

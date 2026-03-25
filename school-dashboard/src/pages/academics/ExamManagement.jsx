@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Card,
   CardBody,
   Chip,
-  Spinner,
   Table,
   TableHeader,
   TableColumn,
@@ -22,8 +21,59 @@ import { examsApi, classesApi } from '../../services/api';
 import FiltersDropdown from '../../components/FiltersDropdown';
 import { MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const STATUS_OPTIONS = ['all', 'scheduled', 'ongoing', 'completed', 'results_published'];
+
+function ExamManagementSkeleton() {
+  const { t } = useTranslation();
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <div className="h-9 w-24 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
+          <div className="h-9 w-32 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-28 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
+          <div className="h-9 w-28 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 border border-gray-100 dark:border-zinc-800">
+            <div className="h-3 w-20 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse mb-2" />
+            <div className="h-7 w-10 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+      <div className="border border-gray-100 dark:border-zinc-800 rounded-lg overflow-hidden">
+        <div className="bg-gray-50 dark:bg-zinc-900 px-4 py-3 flex gap-6">
+          {['EXAM', 'TYPE', 'CLASS', 'SUBJECT', 'DATE', 'STATUS', 'ACTIONS'].map((h) => (
+            <div key={h} className="h-3 w-14 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+          ))}
+        </div>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="px-4 py-3 flex items-center gap-6 border-t border-gray-100 dark:border-zinc-800">
+            <div className="flex items-center gap-3 flex-1">
+              <div className="h-9 w-9 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
+              <div className="space-y-1.5">
+                <div className="h-3 w-32 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                <div className="h-2.5 w-20 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+              </div>
+            </div>
+            <div className="h-3 w-16 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+            <div className="h-3 w-16 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+            <div className="h-3 w-20 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+            <div className="h-3 w-24 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+            <div className="h-5 w-20 bg-gray-200 dark:bg-zinc-700 rounded-full animate-pulse" />
+            <div className="h-7 w-16 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // Simple cache
 const examsCache = {
@@ -129,7 +179,7 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
       examsCache.timestamp = now;
     } catch (error) {
       console.error('Error fetching exams:', error);
-      toast.error('Failed to load exams');
+      toast.error(t('toast.error.failedToLoadExams'));
     } finally {
       setLoading(false);
     }
@@ -176,11 +226,11 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
 
     try {
       await examsApi.delete(deleteModal.examId);
-      toast.success('Exam deleted successfully');
+      toast.success(t('toast.success.examDeletedSuccessfully'));
       refreshExams();
     } catch (error) {
       console.error('Error deleting exam:', error);
-      toast.error('Failed to delete exam');
+      toast.error(t('toast.error.failedToDeleteExam'));
     } finally {
       setDeleteModal({ isOpen: false, examId: null, examName: '' });
     }
@@ -229,11 +279,7 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
   }, [filteredExams]);
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+    return <ExamManagementSkeleton />;
   }
 
   return (
@@ -282,19 +328,19 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
       {/* Stats Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-gray-500 dark:text-zinc-400">Total Exams</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.totalExams')}</p>
           <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{exams.length}</p>
         </div>
         <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
-          <p className="text-xs text-blue-600 dark:text-blue-400">Scheduled</p>
+          <p className="text-xs text-blue-600 dark:text-blue-400">{t('pages.scheduled')}</p>
           <p className="text-xl font-semibold text-blue-700 dark:text-blue-300">{exams.filter(e => e.status === 'scheduled').length}</p>
         </div>
         <div className="bg-amber-50 dark:bg-amber-950 rounded-lg p-3 border border-amber-100 dark:border-amber-800">
-          <p className="text-xs text-amber-600 dark:text-amber-400">Ongoing</p>
+          <p className="text-xs text-amber-600 dark:text-amber-400">{t('pages.ongoing')}</p>
           <p className="text-xl font-semibold text-amber-700 dark:text-amber-300">{exams.filter(e => e.status === 'ongoing').length}</p>
         </div>
         <div className="bg-green-50 dark:bg-green-950 rounded-lg p-3 border border-green-100 dark:border-green-800">
-          <p className="text-xs text-green-600 dark:text-green-400">Completed</p>
+          <p className="text-xs text-green-600 dark:text-green-400">{t('pages.completed')}</p>
           <p className="text-xl font-semibold text-green-700 dark:text-green-300">{exams.filter(e => e.status === 'completed' || e.status === 'results_published').length}</p>
         </div>
       </div>
@@ -307,7 +353,7 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
             {filteredExams.length === 0 ? (
               <div className="text-center py-12">
                 <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-                <p className="text-gray-500 dark:text-zinc-400 mb-4">No exams found</p>
+                <p className="text-gray-500 dark:text-zinc-400 mb-4">{t('pages.noExamsFound')}</p>
                 {activeFiltersCount > 0 ? (
                   <Button variant="flat" size="sm" onClick={handleClearFilters}>
                     Clear Filters
@@ -319,15 +365,15 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
                 )}
               </div>
             ) : (
-              <Table aria-label="Exams table" removeWrapper>
+              <Table aria-label={t('aria.tables.exams')} removeWrapper>
                 <TableHeader>
-                  <TableColumn>EXAM</TableColumn>
-                  <TableColumn>TYPE</TableColumn>
-                  <TableColumn>CLASS</TableColumn>
-                  <TableColumn>SUBJECT</TableColumn>
-                  <TableColumn>DATE</TableColumn>
-                  <TableColumn>STATUS</TableColumn>
-                  <TableColumn>ACTIONS</TableColumn>
+                  <TableColumn scope="col">{t('pages.eXAM')}</TableColumn>
+                  <TableColumn scope="col">{t('pages.tYPE')}</TableColumn>
+                  <TableColumn scope="col">{t('pages.cLASS')}</TableColumn>
+                  <TableColumn scope="col">{t('pages.sUBJECT')}</TableColumn>
+                  <TableColumn scope="col">{t('pages.dATE')}</TableColumn>
+                  <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+                  <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
                 </TableHeader>
                 <TableBody emptyContent="No exams found">
                   {filteredExams.map((exam) => (
@@ -377,21 +423,21 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
                           <button
                             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
                             onClick={() => onViewExam?.(exam.id || exam._id)}
-                            title="View Details"
+                            title={t('pages.viewDetails1')}
                           >
                             <Eye size={16} className="text-gray-500 dark:text-zinc-400" />
                           </button>
                           <button
                             className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
                             onClick={() => onEnterResults?.(exam.id || exam._id)}
-                            title="Enter Results"
+                            title={t('pages.enterResults')}
                           >
                             <Pencil size={16} className="text-blue-500" />
                           </button>
                           <button
                             className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
                             onClick={() => handleDeleteClick(exam.id || exam._id, exam.name)}
-                            title="Delete"
+                            title={t('pages.delete1')}
                           >
                             <Trash2 size={16} className="text-red-400" />
                           </button>
@@ -424,7 +470,7 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <span className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{exam.name}</span>
-                        <Chip size="sm" color="primary" variant="flat">Scheduled</Chip>
+                        <Chip size="sm" color="primary" variant="flat">{t('pages.scheduled')}</Chip>
                       </div>
                       <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.className || exam.classId} - {exam.subjectName}</p>
                       <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{exam.startDate}</p>
@@ -452,7 +498,7 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <span className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{exam.name}</span>
-                        <Chip size="sm" color="warning" variant="flat">Ongoing</Chip>
+                        <Chip size="sm" color="warning" variant="flat">{t('pages.ongoing')}</Chip>
                       </div>
                       <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.className || exam.classId} - {exam.subjectName}</p>
                     </div>
@@ -506,7 +552,7 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
           {filteredExams.length === 0 && (
             <div className="text-center py-12">
               <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-              <p className="text-gray-500 dark:text-zinc-400 mb-4">No exams to display</p>
+              <p className="text-gray-500 dark:text-zinc-400 mb-4">{t('pages.noExamsToDisplay')}</p>
               <MinimalButton icon={<Plus size={16} />} onClick={onCreateExam}>
                 Create First Exam
               </MinimalButton>
@@ -529,8 +575,8 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
                 <AlertTriangle size={20} className="text-red-500" />
               </div>
               <div>
-                <h3 className="text-lg font-medium">Delete Exam</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">This action cannot be undone</p>
+                <h3 className="text-lg font-medium">{t('pages.deleteExam')}</h3>
+                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">{t('pages.thisActionCannotBeUndone1')}</p>
               </div>
             </div>
           </ModalHeader>

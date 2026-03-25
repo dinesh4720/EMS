@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Select, SelectItem, Input, Button, Textarea, Divider } from '@heroui/react';
 import { Calendar, Award, BookOpen, Users, AlertCircle } from 'lucide-react';
 import { examsApi, subjectsApi, classesApi } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useApp } from '../../context/AppContext';
+import { useTranslation } from 'react-i18next';
 
 const EXAM_TYPES = [
   { value: 'unit_test', label: 'Unit Test' },
@@ -19,6 +20,7 @@ const GRADING_TYPES = [
 ];
 
 const CreateExamModal = ({ onClose, onSuccess }) => {
+  const { t } = useTranslation();
   const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
@@ -72,7 +74,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
       setClasses(Array.from(uniqueClasses.values()));
     } catch (error) {
       console.error('Error fetching initial data:', error);
-      toast.error('Failed to load form data');
+      toast.error(t('toast.error.failedToLoadFormData'));
     } finally {
       setLoadingData(false);
     }
@@ -106,6 +108,13 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
     }
     if (!formData.startDate) {
       newErrors.startDate = 'Start date is required';
+    } else {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const startDate = new Date(formData.startDate);
+      if (startDate < today) {
+        newErrors.startDate = 'Start date cannot be in the past';
+      }
     }
     if (parseInt(formData.maxMarks) <= 0) {
       newErrors.maxMarks = 'Max marks must be greater than 0';
@@ -125,7 +134,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error('Please fix the errors in the form');
+      toast.error(t('toast.error.pleaseFixTheErrorsInTheForm'));
       return;
     }
 
@@ -156,7 +165,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
       };
 
       await examsApi.create(payload);
-      toast.success('Exam created successfully!');
+      toast.success(t('toast.success.examCreatedSuccessfully'));
       onSuccess?.();
     } catch (error) {
       console.error('Error creating exam:', error);
@@ -176,7 +185,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            label="Exam Name"
+            label={t('pages.examName')}
             labelPlacement="outside"
             placeholder="e.g., Unit Test 1, Mid-Term Examination"
             value={formData.name}
@@ -190,9 +199,9 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
           />
 
           <Select
-            label="Exam Type"
+            label={t('pages.examType')}
             labelPlacement="outside"
-            placeholder="Select exam type"
+            placeholder={t('pages.selectExamType')}
             selectedKeys={formData.type}
             onSelectionChange={handleSelectionChange('type')}
             isRequired
@@ -208,7 +217,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
           </Select>
 
           <Select
-            label="Class"
+            label={t('pages.class1')}
             labelPlacement="outside"
             placeholder={loadingData ? "Loading..." : "Select class"}
             selectedKeys={formData.classId}
@@ -229,7 +238,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
           </Select>
 
           <Select
-            label="Subject"
+            label={t('pages.subject2')}
             labelPlacement="outside"
             placeholder={loadingData ? "Loading..." : "Select subject"}
             selectedKeys={formData.subjectId}
@@ -250,7 +259,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
           </Select>
 
           <Input
-            label="Academic Year"
+            label={t('pages.academicYear1')}
             labelPlacement="outside"
             placeholder={`e.g., ${currentAcademicYear}`}
             value={formData.academicYear || currentAcademicYear}
@@ -274,7 +283,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             type="date"
-            label="Start Date"
+            label={t('pages.startDate1')}
             labelPlacement="outside"
             value={formData.startDate}
             onValueChange={(value) => handleInputChange('startDate', value)}
@@ -287,7 +296,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
           />
           <Input
             type="date"
-            label="End Date"
+            label={t('pages.endDate1')}
             labelPlacement="outside"
             value={formData.endDate}
             onValueChange={(value) => handleInputChange('endDate', value)}
@@ -311,7 +320,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input
             type="number"
-            label="Max Marks"
+            label={t('pages.maxMarks2')}
             labelPlacement="outside"
             placeholder="100"
             value={formData.maxMarks}
@@ -324,7 +333,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
           />
           <Input
             type="number"
-            label="Passing Marks"
+            label={t('pages.passingMarks')}
             labelPlacement="outside"
             placeholder="35"
             value={formData.passingMarks}
@@ -350,9 +359,9 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
 
         <div className="mt-4">
           <Select
-            label="Grading Type"
+            label={t('pages.gradingType')}
             labelPlacement="outside"
-            placeholder="Select grading type"
+            placeholder={t('pages.selectGradingType')}
             selectedKeys={formData.gradingType}
             onSelectionChange={handleSelectionChange('gradingType')}
             classNames={{
@@ -373,9 +382,9 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
       {/* Instructions */}
       <div>
         <Textarea
-          label="Instructions (Optional)"
+          label={t('pages.instructionsOptional')}
           labelPlacement="outside"
-          placeholder="Enter exam instructions for students..."
+          placeholder={t('pages.enterExamInstructionsForStudents')}
           value={formData.instructions}
           onValueChange={(value) => handleInputChange('instructions', value)}
           minRows={3}

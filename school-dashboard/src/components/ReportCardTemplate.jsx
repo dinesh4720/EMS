@@ -1,7 +1,10 @@
 import React from 'react';
+import { getDateLocale } from '../i18n/index';
+
 import {
   Card, CardBody, Divider, Chip, Progress
 } from '@heroui/react';
+import { useTranslation } from 'react-i18next';
 import {
   Award, User, Calendar, BookOpen, TrendingUp, FileText
 } from 'lucide-react';
@@ -25,6 +28,7 @@ const ReportCardTemplate = ({
   attendance = {},
   forPrint = false
 }) => {
+  const { t } = useTranslation();
   // Print styles - 2 page layout with generous spacing
   const containerStyle = forPrint ? {
     width: '210mm',
@@ -111,7 +115,7 @@ const ReportCardTemplate = ({
         </h3>
         <div className="grid grid-cols-2 gap-x-12 gap-y-4">
           <div className="flex flex-col">
-            <span className="text-sm text-gray-500 uppercase tracking-wide">Student Name</span>
+            <span className="text-sm text-gray-500 uppercase tracking-wide">{t('components.studentName1')}</span>
             <span className="text-base font-semibold text-gray-900 mt-1">{student?.name || 'N/A'}</span>
           </div>
           <div className="flex flex-col">
@@ -119,19 +123,19 @@ const ReportCardTemplate = ({
             <span className="text-base font-semibold text-gray-900 mt-1">{student?.class || 'N/A'}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-sm text-gray-500 uppercase tracking-wide">Roll Number</span>
+            <span className="text-sm text-gray-500 uppercase tracking-wide">{t('components.rollNumber1')}</span>
             <span className="text-base font-semibold text-gray-900 mt-1">{student?.rollNo || student?.id || 'N/A'}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-sm text-gray-500 uppercase tracking-wide">Admission Number</span>
+            <span className="text-sm text-gray-500 uppercase tracking-wide">{t('components.admissionNumber')}</span>
             <span className="text-base font-semibold text-gray-900 mt-1">{student?.admissionNo || 'N/A'}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-sm text-gray-500 uppercase tracking-wide">Father's Name</span>
+            <span className="text-sm text-gray-500 uppercase tracking-wide">{t('components.fatherSName')}</span>
             <span className="text-base font-semibold text-gray-900 mt-1">{student?.fatherName || student?.guardianName || 'N/A'}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-sm text-gray-500 uppercase tracking-wide">Date of Birth</span>
+            <span className="text-sm text-gray-500 uppercase tracking-wide">{t('components.dateOfBirth1')}</span>
             <span className="text-base font-semibold text-gray-900 mt-1">{student?.dob || 'N/A'}</span>
           </div>
         </div>
@@ -147,32 +151,32 @@ const ReportCardTemplate = ({
             <p className="text-4xl font-bold text-blue-600">
               {performance?.overallGrade || 'N/A'}
             </p>
-            <p className="text-sm text-blue-500 uppercase tracking-wide mt-2">Grade</p>
+            <p className="text-sm text-blue-500 uppercase tracking-wide mt-2">{t('components.grade1')}</p>
           </div>
           <div className="text-center p-6 bg-green-50 rounded-xl">
             <p className="text-4xl font-bold text-green-600">
               {performance?.overallPercentage?.toFixed(1) || overallPercentage.toFixed(1)}%
             </p>
-            <p className="text-sm text-green-500 uppercase tracking-wide mt-2">Percentage</p>
+            <p className="text-sm text-green-500 uppercase tracking-wide mt-2">{t('components.percentage1')}</p>
           </div>
           <div className="text-center p-6 bg-purple-50 rounded-xl">
             <p className="text-4xl font-bold text-purple-600">
               #{performance?.classRank || 'N/A'}
             </p>
-            <p className="text-sm text-purple-500 uppercase tracking-wide mt-2">Class Rank</p>
+            <p className="text-sm text-purple-500 uppercase tracking-wide mt-2">{t('components.classRank')}</p>
           </div>
         </div>
 
         {/* Additional metrics row */}
         <div className="grid grid-cols-2 gap-6 mt-6">
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <span className="text-sm text-gray-600">GPA</span>
+            <span className="text-sm text-gray-600">{t('components.gPA')}</span>
             <span className="text-lg font-semibold text-gray-800">
               {performance?.overallGPA?.toFixed(2) || 'N/A'}
             </span>
           </div>
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <span className="text-sm text-gray-600">Total Students</span>
+            <span className="text-sm text-gray-600">{t('components.totalStudents')}</span>
             <span className="text-lg font-semibold text-gray-800">
               {performance?.totalStudents || 'N/A'}
             </span>
@@ -206,21 +210,21 @@ const ReportCardTemplate = ({
           <div className="grid grid-cols-4 gap-4">
             <div className="text-center p-5 bg-gray-50 rounded-lg">
               <p className="text-3xl font-bold text-gray-800">{attendance.totalDays}</p>
-              <p className="text-sm text-gray-500 mt-1">Total Days</p>
+              <p className="text-sm text-gray-500 mt-1">{t('components.totalDays1')}</p>
             </div>
             <div className="text-center p-5 bg-green-50 rounded-lg">
               <p className="text-3xl font-bold text-green-600">{attendance.present}</p>
-              <p className="text-sm text-green-500 mt-1">Present</p>
+              <p className="text-sm text-green-500 mt-1">{t('components.present1')}</p>
             </div>
             <div className="text-center p-5 bg-red-50 rounded-lg">
               <p className="text-3xl font-bold text-red-600">{attendance.absent}</p>
-              <p className="text-sm text-red-500 mt-1">Absent</p>
+              <p className="text-sm text-red-500 mt-1">{t('components.absent1')}</p>
             </div>
             <div className="text-center p-5 bg-blue-50 rounded-lg">
               <p className="text-3xl font-bold text-blue-600">
                 {((attendance.present / attendance.totalDays) * 100).toFixed(1)}%
               </p>
-              <p className="text-sm text-blue-500 mt-1">Attendance</p>
+              <p className="text-sm text-blue-500 mt-1">{t('components.attendance1')}</p>
             </div>
           </div>
         </div>
@@ -239,7 +243,7 @@ const ReportCardTemplate = ({
       <div className="mb-8 pt-4">
         <div className="flex items-center justify-between border-b-2 border-gray-200 pb-4">
           <div>
-            <h2 className="text-xl font-bold text-gray-800">Academic Report Card</h2>
+            <h2 className="text-xl font-bold text-gray-800">{t('components.academicReportCard')}</h2>
             <p className="text-sm text-gray-500">{performance?.academicYear || new Date().getFullYear()}</p>
           </div>
           <div className="text-right">
@@ -259,12 +263,12 @@ const ReportCardTemplate = ({
           <table className="w-full text-sm border-separate border-spacing-0">
             <thead>
               <tr className="bg-gray-100">
-                <th className="text-left py-4 px-4 font-semibold text-gray-700 rounded-tl-lg">Subject</th>
-                <th className="text-center py-4 px-4 font-semibold text-gray-700">Max Marks</th>
-                <th className="text-center py-4 px-4 font-semibold text-gray-700">Obtained</th>
-                <th className="text-center py-4 px-4 font-semibold text-gray-700">Percentage</th>
-                <th className="text-center py-4 px-4 font-semibold text-gray-700">Grade</th>
-                <th className="text-center py-4 px-4 font-semibold text-gray-700 rounded-tr-lg">Status</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-700 rounded-tl-lg">{t('components.subject1')}</th>
+                <th className="text-center py-4 px-4 font-semibold text-gray-700">{t('components.maxMarks1')}</th>
+                <th className="text-center py-4 px-4 font-semibold text-gray-700">{t('components.obtained')}</th>
+                <th className="text-center py-4 px-4 font-semibold text-gray-700">{t('components.percentage1')}</th>
+                <th className="text-center py-4 px-4 font-semibold text-gray-700">{t('components.grade1')}</th>
+                <th className="text-center py-4 px-4 font-semibold text-gray-700 rounded-tr-lg">{t('components.status1')}</th>
               </tr>
             </thead>
             <tbody>
@@ -342,7 +346,7 @@ const ReportCardTemplate = ({
               })}
               {/* Total Row */}
               <tr className="bg-gray-50 font-semibold">
-                <td className="py-4 px-4 rounded-bl-lg">Total</td>
+                <td className="py-4 px-4 rounded-bl-lg">{t('components.total')}</td>
                 <td className="text-center py-4 px-4">{totalMaxMarks}</td>
                 <td className="text-center py-4 px-4">{totalMarksObtained}</td>
                 <td className="text-center py-4 px-4">{overallPercentage.toFixed(1)}%</td>
@@ -363,7 +367,7 @@ const ReportCardTemplate = ({
         ) : (
           <div className="text-center py-12 text-gray-400 bg-gray-50 rounded-lg">
             <BookOpen size={40} className="mx-auto mb-3 opacity-50" />
-            <p>No published results available</p>
+            <p>{t('components.noPublishedResultsAvailable')}</p>
           </div>
         )}
       </div>
@@ -375,15 +379,15 @@ const ReportCardTemplate = ({
         </h3>
         <div className="space-y-6">
           <div className="p-5 bg-gray-50 rounded-lg min-h-[80px]">
-            <p className="text-sm text-gray-500 mb-2">Class Teacher's Remarks:</p>
+            <p className="text-sm text-gray-500 mb-2">{t('components.classTeacherSRemarks')}</p>
             <p className="text-base text-gray-700">
               {performance?.teacherRemarks || (
-                <span className="text-gray-400 italic">No remarks provided</span>
+                <span className="text-gray-400 italic">{t('components.noRemarksProvided')}</span>
               )}
             </p>
           </div>
           <div className="p-5 bg-gray-50 rounded-lg min-h-[80px]">
-            <p className="text-sm text-gray-500 mb-2">Principal's Remarks:</p>
+            <p className="text-sm text-gray-500 mb-2">{t('components.principalSRemarks')}</p>
             <p className="text-base text-gray-700 italic text-gray-400">
               ____________________________________________________________________________
             </p>
@@ -396,21 +400,21 @@ const ReportCardTemplate = ({
         <div className="grid grid-cols-3 gap-8">
           <div className="text-center">
             <div className="border-t-2 border-gray-300 pt-4 mt-16">
-              <p className="font-semibold text-gray-800">Class Teacher</p>
+              <p className="font-semibold text-gray-800">{t('components.classTeacher1')}</p>
             </div>
-            <p className="text-sm text-gray-500 mt-2">Signature</p>
+            <p className="text-sm text-gray-500 mt-2">{t('components.signature')}</p>
           </div>
           <div className="text-center">
             <div className="border-t-2 border-gray-300 pt-4 mt-16">
-              <p className="font-semibold text-gray-800">Principal</p>
+              <p className="font-semibold text-gray-800">{t('components.principal1')}</p>
             </div>
-            <p className="text-sm text-gray-500 mt-2">Signature & Seal</p>
+            <p className="text-sm text-gray-500 mt-2">{t('components.signatureSeal')}</p>
           </div>
           <div className="text-center">
             <div className="border-t-2 border-gray-300 pt-4 mt-16">
               <p className="font-semibold text-gray-800">Parent/Guardian</p>
             </div>
-            <p className="text-sm text-gray-500 mt-2">Signature</p>
+            <p className="text-sm text-gray-500 mt-2">{t('components.signature')}</p>
           </div>
         </div>
       </div>
@@ -418,7 +422,7 @@ const ReportCardTemplate = ({
       {/* Footer */}
       <div className="text-center mt-12 pt-6 border-t border-gray-200">
         <p className="text-sm text-gray-500">
-          Generated on: {new Date().toLocaleDateString('en-US', { 
+          Generated on: {new Date().toLocaleDateString(getDateLocale(), { 
             weekday: 'long', 
             year: 'numeric', 
             month: 'long', 

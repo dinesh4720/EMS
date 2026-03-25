@@ -3,6 +3,7 @@ import { Card, CardBody, Button, Select, SelectItem, Modal, ModalContent, ModalH
 import { motion } from "framer-motion";
 import { Settings, Plus, Trash2, Save, X, Clock, AlertTriangle, CheckCircle2, Wand2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { timetableApi, teacherAssignmentsApi, classesEnhancedApi } from "../../services/api";
 import ConflictIndicator from "../../components/ConflictIndicator";
 import ConfirmDialog from "../../components/ConfirmDialog";
@@ -16,6 +17,7 @@ import {
   formatConflictDetails
 } from "../../utils/errorHandling";
 import { DEFAULT_PERIODS, TIMETABLE_DAYS } from "../../utils/constants";
+import { useTranslation } from 'react-i18next';
 
 const days = TIMETABLE_DAYS;
 const defaultPeriods = DEFAULT_PERIODS;
@@ -52,6 +54,7 @@ const getSubjectStyles = (subject) => {
 };
 
 export default function Timetable({ classId }) {
+  const { t } = useTranslation();
   const { classesWithTeachers, staff, schoolSettings, currentAcademicYear } = useApp();
   const [selectedClass, setSelectedClass] = useState(classId || "");
   const [timetable, setTimetable] = useState(null);
@@ -434,7 +437,7 @@ export default function Timetable({ classId }) {
   if (classesWithTeachers.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500 dark:text-zinc-400">No classes available</p>
+        <p className="text-gray-500 dark:text-zinc-400">{t('pages.noClassesAvailable')}</p>
       </div>
     );
   }
@@ -452,7 +455,7 @@ export default function Timetable({ classId }) {
                 selectedKeys={selectedClass ? [selectedClass] : []}
                 onChange={(e) => setSelectedClass(e.target.value)}
                 className="w-[160px]"
-                aria-label="Select Class"
+                aria-label={t('aria.inputs.selectClass')}
                 variant="flat"
               >
                 {classesWithTeachers.map(c => (
@@ -498,8 +501,8 @@ export default function Timetable({ classId }) {
             startContent={<Wand2 size={14} />}
             onPress={handleWizardClick}
           >
-            <span className="hidden sm:inline">Timetable Wizard</span>
-            <span className="sm:hidden">Wizard</span>
+            <span className="hidden sm:inline">{t('pages.timetableWizard')}</span>
+            <span className="sm:hidden">{t('pages.wizard')}</span>
           </Button>
           <Button
             size="sm"
@@ -507,8 +510,8 @@ export default function Timetable({ classId }) {
             startContent={<Settings size={14} />}
             onPress={onPeriodsOpen}
           >
-            <span className="hidden sm:inline">Periods</span>
-            <span className="sm:hidden">Settings</span>
+            <span className="hidden sm:inline">{t('pages.periods')}</span>
+            <span className="sm:hidden">{t('pages.settings2')}</span>
           </Button>
           {hasChanges && (
             <Button
@@ -525,9 +528,7 @@ export default function Timetable({ classId }) {
       </div>
 
       {loading && !hasChanges ? (
-        <div className="flex items-center justify-center h-64">
-          <Spinner size="lg" color="primary" />
-        </div>
+        <TablePageSkeleton />
       ) : !timetable ? (
         /* No timetable set - grayed out state */
         <div className="flex flex-col items-center justify-center h-full min-h-[400px] bg-gray-50 dark:bg-zinc-900 border-2 border-dashed border-gray-200 dark:border-zinc-800 rounded-lg">
@@ -536,7 +537,7 @@ export default function Timetable({ classId }) {
               <Clock size={40} className="text-gray-400 dark:text-zinc-500" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-700 dark:text-zinc-300 mb-2">No Timetable Set</h3>
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-zinc-300 mb-2">{t('pages.noTimetableSet')}</h3>
               <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
                 Timetable has not been created for this class yet.
               </p>
@@ -564,7 +565,7 @@ export default function Timetable({ classId }) {
       ) : (
         <>
           <Table
-            aria-label="Class Timetable"
+            aria-label={t('aria.misc.classTimetable')}
             shadow="none"
             isStriped={false}
             radius="sm"
@@ -578,9 +579,9 @@ export default function Timetable({ classId }) {
             }}
           >
             <TableHeader>
-              <TableColumn className="w-24">Day</TableColumn>
+              <TableColumn className="w-24" scope="col">{t('pages.day2')}</TableColumn>
               {periods.map((period, i) => (
-                <TableColumn key={`period-${period.name}-${period.startTime}`} className="w-32">
+                <TableColumn key={`period-${period.name}-${period.startTime}`} className="w-32" scope="col">
                   <div className="flex flex-col items-center justify-center gap-0.5">
                     <span className="text-xs font-bold">{period.name}</span>
                     <span className="text-[9px] text-gray-400 dark:text-zinc-500 font-normal">
@@ -612,6 +613,7 @@ export default function Timetable({ classId }) {
                       );
                     }
 
+                    const subjectStyles = slot.subject ? getSubjectStyles(slot.subject) : null;
                     return (
                       <TableCell key={`${day}-${i}`} className="p-1">
                         {slot.subject ? (
@@ -621,13 +623,13 @@ export default function Timetable({ classId }) {
                               shadow="sm"
                               onPress={() => handleSlotClick(day, i)}
                               style={{
-                                backgroundColor: getSubjectStyles(slot.subject).bg,
-                                borderColor: getSubjectStyles(slot.subject).border,
+                                backgroundColor: subjectStyles.bg,
+                                borderColor: subjectStyles.border,
                                 height: '6rem',
                               }}
                             >
                               <CardBody className="p-1.5 flex flex-col justify-center items-center gap-1">
-                                <span className="text-xs font-bold text-center line-clamp-2" style={{ color: getSubjectStyles(slot.subject).text }}>
+                                <span className="text-xs font-bold text-center line-clamp-2" style={{ color: subjectStyles.text }}>
                                   {slot.subject}
                                 </span>
                                 {slot.teacherId && (
@@ -651,7 +653,7 @@ export default function Timetable({ classId }) {
                             onClick={() => handleSlotClick(day, i)}
                           >
                             <Plus size={16} />
-                            <span className="text-[10px]">Add</span>
+                            <span className="text-[10px]">{t('pages.add1')}</span>
                           </div>
                         )}
                       </TableCell>
@@ -664,14 +666,14 @@ export default function Timetable({ classId }) {
 
           {/* Legend */}
           <div className="mt-4 flex flex-wrap gap-4 text-xs text-gray-500 dark:text-zinc-400 items-center justify-end px-4 pb-4 border-t border-gray-100 dark:border-zinc-800 pt-4">
-            <span className="font-medium mr-2">Subject Types:</span>
+            <span className="font-medium mr-2">{t('pages.subjectTypes')}</span>
             <div className="flex gap-2 items-center">
               <span className="w-3 h-3 rounded-full bg-blue-200 border border-blue-300"></span>
-              <span>Core (Math)</span>
+              <span>{t('pages.coreMath')}</span>
             </div>
             <div className="flex gap-2 items-center">
               <span className="w-3 h-3 rounded-full bg-green-200 border border-green-300"></span>
-              <span>Science</span>
+              <span>{t('pages.science')}</span>
             </div>
             <div className="flex gap-2 items-center">
               <span className="w-3 h-3 rounded-full bg-yellow-200 border border-yellow-300"></span>
@@ -694,7 +696,7 @@ export default function Timetable({ classId }) {
         <ModalContent>
           <ModalHeader className="flex items-center gap-2">
             <Clock size={20} className="text-primary" />
-            <span>Manage Periods</span>
+            <span>{t('pages.managePeriods')}</span>
           </ModalHeader>
           <ModalBody>
             <div className="space-y-3">
@@ -704,7 +706,7 @@ export default function Timetable({ classId }) {
                     size="sm"
                     value={period.name}
                     onValueChange={(v) => updatePeriod(i, 'name', v)}
-                    label="Period Name"
+                    label={t('pages.periodName')}
                     className="flex-1"
                     variant="bordered"
                   />
@@ -713,7 +715,7 @@ export default function Timetable({ classId }) {
                     type="time"
                     value={period.startTime}
                     onValueChange={(v) => updatePeriod(i, 'startTime', v)}
-                    label="Start Time"
+                    label={t('pages.startTime1')}
                     className="w-32"
                     variant="bordered"
                   />
@@ -722,7 +724,7 @@ export default function Timetable({ classId }) {
                     type="time"
                     value={period.endTime}
                     onValueChange={(v) => updatePeriod(i, 'endTime', v)}
-                    label="End Time"
+                    label={t('pages.endTime1')}
                     className="w-32"
                     variant="bordered"
                   />
@@ -734,7 +736,7 @@ export default function Timetable({ classId }) {
                         onChange={(e) => updatePeriod(i, 'isBreak', e.target.checked)}
                         className="rounded"
                       />
-                      <span>Break</span>
+                      <span>{t('pages.break')}</span>
                     </label>
                     <Button
                       isIconOnly
@@ -763,8 +765,8 @@ export default function Timetable({ classId }) {
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={onPeriodsClose}>Cancel</Button>
-            <Button color="primary" onPress={handleSavePeriods}>Apply Changes</Button>
+            <Button variant="light" onPress={onPeriodsClose}>{t('pages.cancel2')}</Button>
+            <Button color="primary" onPress={handleSavePeriods}>{t('pages.applyChanges')}</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -778,8 +780,8 @@ export default function Timetable({ classId }) {
           <ModalBody>
             <div className="space-y-4">
               <Select
-                label="Subject"
-                placeholder="Select subject"
+                label={t('pages.subject2')}
+                placeholder={t('pages.selectSubject')}
                 selectedKeys={slotForm.subject ? [slotForm.subject] : []}
                 onSelectionChange={(keys) => setSlotForm({ ...slotForm, subject: Array.from(keys)[0] || "" })}
                 variant="bordered"
@@ -795,7 +797,7 @@ export default function Timetable({ classId }) {
               {loadingTeachers && slotForm.subject && (
                 <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">
                   <Spinner size="sm" />
-                  <span className="text-sm text-gray-500 dark:text-zinc-400">Loading available teachers...</span>
+                  <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.loadingAvailableTeachers')}</span>
                 </div>
               )}
 
@@ -803,7 +805,7 @@ export default function Timetable({ classId }) {
               {slotForm.subject && !loadingTeachers && (
                 <>
                   <Select
-                    label="Teacher"
+                    label={t('pages.teacher2')}
                     placeholder={availableTeachers.length > 0 ? "Select teacher" : "No teachers available"}
                     selectedKeys={slotForm.teacherId ? [String(slotForm.teacherId)] : []}
                     onSelectionChange={(keys) => handleTeacherChange(Array.from(keys)[0] || "")}
@@ -828,12 +830,12 @@ export default function Timetable({ classId }) {
                   {availableTeachers.length === 0 && (
                     <div className="p-3 bg-warning-50 border border-warning-200 rounded-lg">
                       <p className="text-xs text-warning-700">
-                        <strong>Tip:</strong> No teachers are qualified or available. You can:
+                        <strong>{t('pages.tip')}</strong> No teachers are qualified or available. You can:
                       </p>
                       <ul className="text-xs text-warning-600 mt-2 ml-4 list-disc space-y-1">
-                        <li>Assign a teacher to this subject in Staff Management</li>
-                        <li>Choose a different time slot</li>
-                        <li>Select a different subject</li>
+                        <li>{t('pages.assignATeacherToThisSubjectInStaffManagement')}</li>
+                        <li>{t('pages.chooseADifferentTimeSlot')}</li>
+                        <li>{t('pages.selectADifferentSubject')}</li>
                       </ul>
                     </div>
                   )}
@@ -865,7 +867,7 @@ export default function Timetable({ classId }) {
               )}
 
               <Input
-                label="Room"
+                label={t('pages.room')}
                 placeholder="e.g., Room 101 (optional)"
                 value={slotForm.room}
                 onValueChange={(v) => setSlotForm({ ...slotForm, room: v })}
@@ -888,7 +890,7 @@ export default function Timetable({ classId }) {
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={onSlotClose}>Cancel</Button>
+            <Button variant="light" onPress={onSlotClose}>{t('pages.cancel2')}</Button>
             <Button
               color="primary"
               onPress={handleSaveSlot}
@@ -906,7 +908,7 @@ export default function Timetable({ classId }) {
         isOpen={isConfirmClearOpen}
         onClose={onConfirmClearClose}
         onConfirm={confirmClearSlot}
-        title="Clear Timetable Slot"
+        title={t('pages.clearTimetableSlot')}
         message="Are you sure you want to clear this slot? This will remove the teacher assignment from both the class and teacher timetables."
         confirmText="Clear Slot"
         cancelText="Cancel"
@@ -918,7 +920,7 @@ export default function Timetable({ classId }) {
         isOpen={isConfirmSaveOpen}
         onClose={onConfirmSaveClose}
         onConfirm={confirmSaveTimetable}
-        title="Save Timetable"
+        title={t('pages.saveTimetable')}
         message="Are you sure you want to save all changes to the timetable? This will update the schedule for the entire class."
         confirmText="Save Changes"
         cancelText="Cancel"

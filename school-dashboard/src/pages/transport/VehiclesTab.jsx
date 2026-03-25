@@ -4,8 +4,10 @@ import { Plus, Search, MoreVertical, Truck, Edit2, Trash2 } from "lucide-react";
 import { transportApi } from "../../services/api";
 import toast from "react-hot-toast";
 import VehicleModal from "./VehicleModal";
+import { useTranslation } from 'react-i18next';
 
 export default function VehiclesTab() {
+  const { t } = useTranslation();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -21,7 +23,7 @@ export default function VehiclesTab() {
       const res = await transportApi.getVehicles();
       setVehicles(res?.data || []);
     } catch {
-      toast.error("Failed to load vehicles");
+      toast.error(t('toast.error.failedToLoadVehicles'));
     } finally {
       setLoading(false);
     }
@@ -45,13 +47,13 @@ export default function VehiclesTab() {
   }, [vehicles, statusFilter, search]);
 
   const handleDelete = async (vehicle) => {
-    if (!window.confirm(`Delete vehicle "${vehicle.registrationNumber}"?`)) return;
+    if (!confirm(t('confirm.deleteVehicle', { regNum: vehicle.registrationNumber }))) return;
     try {
       await transportApi.deleteVehicle(vehicle._id);
-      toast.success("Vehicle deleted");
+      toast.success(t('toast.success.vehicleDeleted'));
       fetchVehicles();
     } catch {
-      toast.error("Failed to delete vehicle");
+      toast.error(t('toast.error.failedToDeleteVehicle'));
     }
   };
 
@@ -73,7 +75,7 @@ export default function VehiclesTab() {
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-2 items-center flex-1 w-full sm:w-auto">
           <Input
-            placeholder="Search vehicles..."
+            placeholder={t('pages.searchVehicles')}
             value={search}
             onValueChange={setSearch}
             startContent={<Search size={16} className="text-gray-400" />}
@@ -91,10 +93,10 @@ export default function VehiclesTab() {
               selectedKeys={new Set([statusFilter])}
               onSelectionChange={(keys) => setStatusFilter([...keys][0])}
             >
-              <DropdownItem key="all">All Status</DropdownItem>
-              <DropdownItem key="active">Active</DropdownItem>
-              <DropdownItem key="inactive">Inactive</DropdownItem>
-              <DropdownItem key="maintenance">Maintenance</DropdownItem>
+              <DropdownItem key="all">{t('pages.allStatus1')}</DropdownItem>
+              <DropdownItem key="active">{t('pages.active')}</DropdownItem>
+              <DropdownItem key="inactive">{t('pages.inactive')}</DropdownItem>
+              <DropdownItem key="maintenance">{t('pages.maintenance')}</DropdownItem>
             </DropdownMenu>
           </Dropdown>
         </div>
@@ -112,8 +114,8 @@ export default function VehiclesTab() {
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-500 dark:text-zinc-400">
           <Truck size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No vehicles found</p>
-          <p className="text-sm mt-1">Add your first vehicle to the fleet.</p>
+          <p className="font-medium">{t('pages.noVehiclesFound')}</p>
+          <p className="text-sm mt-1">{t('pages.addYourFirstVehicleToTheFleet')}</p>
         </div>
       ) : (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
@@ -138,8 +140,8 @@ export default function VehiclesTab() {
                       <Button isIconOnly size="sm" variant="light"><MoreVertical size={16} /></Button>
                     </DropdownTrigger>
                     <DropdownMenu>
-                      <DropdownItem key="edit" startContent={<Edit2 size={14} />} onPress={() => { setEditingVehicle(vehicle); setIsModalOpen(true); }}>Edit</DropdownItem>
-                      <DropdownItem key="delete" startContent={<Trash2 size={14} />} className="text-danger" color="danger" onPress={() => handleDelete(vehicle)}>Delete</DropdownItem>
+                      <DropdownItem key="edit" startContent={<Edit2 size={14} />} onPress={() => { setEditingVehicle(vehicle); setIsModalOpen(true); }}>{t('pages.edit1')}</DropdownItem>
+                      <DropdownItem key="delete" startContent={<Trash2 size={14} />} className="text-danger" color="danger" onPress={() => handleDelete(vehicle)}>{t('pages.delete1')}</DropdownItem>
                     </DropdownMenu>
                   </Dropdown>
                 </div>
@@ -154,18 +156,18 @@ export default function VehiclesTab() {
               <div className="mt-3 pt-3 border-t border-gray-50 dark:border-zinc-800 space-y-1.5">
                 {vehicle.driver?.name && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500 dark:text-zinc-400">Driver</span>
+                    <span className="text-gray-500 dark:text-zinc-400">{t('pages.driver')}</span>
                     <span className="text-gray-900 dark:text-zinc-100 font-medium">{vehicle.driver.name}</span>
                   </div>
                 )}
                 {vehicle.conductor?.name && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500 dark:text-zinc-400">Conductor</span>
+                    <span className="text-gray-500 dark:text-zinc-400">{t('pages.conductor')}</span>
                     <span className="text-gray-900 dark:text-zinc-100 font-medium">{vehicle.conductor.name}</span>
                   </div>
                 )}
                 {!vehicle.driver?.name && !vehicle.conductor?.name && (
-                  <p className="text-xs text-gray-400 dark:text-zinc-500 italic">No staff assigned</p>
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 italic">{t('pages.noStaffAssigned')}</p>
                 )}
               </div>
             </div>

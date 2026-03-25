@@ -1,11 +1,13 @@
+import { request } from '../../services/api.js';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useValidatedParams } from '../../hooks/useValidatedParams';
 import {
   Card, CardBody, CardHeader, Chip, Select, SelectItem,
-  Spinner, Button, Progress, Table, TableHeader, TableColumn,
+  Button, Progress, Table, TableHeader, TableColumn,
   TableBody, TableRow, TableCell, Input, Divider
 } from '@heroui/react';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import {
   BarChart3, Users, BookOpen, Trophy, TrendingUp, Calendar,
   FileText, Download, ArrowRight, Award, Search, Filter,
@@ -16,14 +18,17 @@ import {
   ResponsiveContainer, LineChart, Line
 } from 'recharts';
 import { useApp } from '../../context/AppContext';
-import { getAuthHeaders } from '../../utils/authSession';
 import { getAcademicYearOptions } from '../../utils/constants';
+import { CHART_COLORS } from '../../utils/chartTheme';
+import { useTranslation } from 'react-i18next';
 
 const ClassPerformance = () => {
+  const { t } = useTranslation();
   const { params: { classId }, isValid } = useValidatedParams({ classId: 'objectId' }, { redirectTo: '/academics' });
   const navigate = useNavigate();
   const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [classInfo, setClassInfo] = useState(null);
   const [students, setStudents] = useState([]);
   const [performance, setPerformance] = useState([]);
@@ -35,66 +40,43 @@ const ClassPerformance = () => {
   const selectedYear = selectedYearOverride || currentAcademicYear;
   const academicYearOptions = getAcademicYearOptions(currentAcademicYear, { past: 2, future: 1 });
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
   useEffect(() => {
-    if (classId) {
-      fetchData();
-    }
+    if (!classId) return;
+    const controller = new AbortController();
+    fetchData(controller.signal);
+    return () => controller.abort();
   }, [classId, selectedYear, selectedTerm]);
 
-  const fetchData = async () => {
+  const fetchData = async (signal) => {
     setLoading(true);
-    const headers = getAuthHeaders();
-
+    setError(null);
     try {
-      // Fetch class info
-      const classRes = await fetch(`${API_URL}/classes/${classId}`, { headers });
-      if (classRes.ok) {
-        setClassInfo(await classRes.json());
-      }
+      const [classData, studentsData, perfData, examsData] = await Promise.allSettled([
+        request(`/classes/${classId}`, { signal }),
+        request(`/classes/${classId}/students`, { signal }),
+        request(`/academic-performance/class/${classId}?academicYear=${selectedYear}`, { signal }),
+        request(`/exams/class/${classId}`, { signal })
+      ]);
 
-      // Fetch students
-      const studentsRes = await fetch(`${API_URL}/classes/${classId}/students`, { headers });
-      if (studentsRes.ok) {
-        setStudents(await studentsRes.json());
-      }
-
-      // Fetch class performance
-      const perfRes = await fetch(
-        `${API_URL}/academic-performance/class/${classId}?academicYear=${selectedYear}`,
-        { headers }
-      );
-      if (perfRes.ok) {
-        setPerformance(await perfRes.json());
-      }
-
-      // Fetch class exams
-      const examsRes = await fetch(`${API_URL}/exams/class/${classId}`, { headers });
-      if (examsRes.ok) {
-        setExams(await examsRes.json());
-      }
-    } catch (error) {
-      console.error('Error fetching class performance:', error);
+      if (signal?.aborted) return;
+      if (classData.status === 'fulfilled') setClassInfo(classData.value);
+      else setError(classData.reason?.message || 'Failed to load class data');
+      if (studentsData.status === 'fulfilled') setStudents(studentsData.value);
+      if (perfData.status === 'fulfilled') setPerformance(perfData.value);
+      if (examsData.status === 'fulfilled') setExams(examsData.value);
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      console.error('Error fetching class performance:', err);
+      setError(err.message || 'Failed to load performance data');
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   };
 
-  // Build student ranking data
+  // Build student ranking data — only from real performance records
   const buildStudentRanking = () => {
-    if (performance.length === 0) {
-      // Return mock data based on students
-      return students.map((student, idx) => ({
-        id: student.id,
-        name: student.name,
-        rollNo: student.rollNo || idx + 1,
-        percentage: 65 + Math.random() * 30,
-        grade: ['A+', 'A', 'B+', 'B', 'C+'][Math.floor(Math.random() * 5)],
-        rank: idx + 1,
-        trend: ['improving', 'stable', 'declining'][Math.floor(Math.random() * 3)]
-      })).sort((a, b) => b.percentage - a.percentage).map((s, idx) => ({ ...s, rank: idx + 1 }));
-    }
+    if (performance.length === 0) return [];
 
     return performance.map(p => {
       const student = students.find(s => s.id === p.studentId);
@@ -110,20 +92,12 @@ const ClassPerformance = () => {
     }).sort((a, b) => a.rank - b.rank);
   };
 
-  // Build subject breakdown
+  // Build subject breakdown — only from real data
   const buildSubjectBreakdown = () => {
     if (performance.length > 0 && performance[0].subjectWisePerformance) {
       return performance[0].subjectWisePerformance;
     }
-
-    // Mock subject data
-    return exams.map(exam => ({
-      subjectId: exam.subjectId,
-      subjectName: exam.subjectName,
-      average: 60 + Math.random() * 30,
-      highest: 85 + Math.random() * 15,
-      lowest: 40 + Math.random() * 20
-    }));
+    return [];
   };
 
   // Filter students by search
@@ -139,9 +113,13 @@ const ClassPerformance = () => {
     totalStudents: students.length,
     averageScore: performance.length > 0
       ? (performance.reduce((sum, p) => sum + (p.overallPercentage || 0), 0) / performance.length).toFixed(1)
-      : '72.5',
-    passingRate: '89%',
-    topScore: Math.max(...filteredStudents.map(s => s.percentage), 95).toFixed(1)
+      : '—',
+    passingRate: performance.length > 0
+      ? `${Math.round((performance.filter(p => (p.overallPercentage || 0) >= 33).length / performance.length) * 100)}%`
+      : '—',
+    topScore: filteredStudents.length > 0
+      ? Math.max(...filteredStudents.map(s => s.percentage)).toFixed(1)
+      : '—'
   };
 
   const getTrendIcon = (trend) => {
@@ -156,8 +134,19 @@ const ClassPerformance = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-10">
-        <Spinner size="lg" />
+      <TablePageSkeleton />
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-4">
+        <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950 flex items-center justify-center">
+          <FileText size={24} className="text-red-500" />
+        </div>
+        <p className="text-sm font-medium text-gray-800 dark:text-zinc-200">Failed to load performance data</p>
+        <p className="text-xs text-gray-500 dark:text-zinc-400 max-w-xs text-center">{error}</p>
+        <Button size="sm" variant="flat" onPress={() => fetchData()}>Retry</Button>
       </div>
     );
   }
@@ -205,7 +194,7 @@ const ClassPerformance = () => {
                 <Users size={20} />
               </div>
               <div>
-                <p className="text-xs text-default-500">Total Students</p>
+                <p className="text-xs text-default-500">{t('pages.totalStudents1')}</p>
                 <p className="text-xl font-bold text-default-900">{classStats.totalStudents}</p>
               </div>
             </div>
@@ -218,7 +207,7 @@ const ClassPerformance = () => {
                 <TrendingUp size={20} />
               </div>
               <div>
-                <p className="text-xs text-default-500">Average Score</p>
+                <p className="text-xs text-default-500">{t('pages.averageScore')}</p>
                 <p className="text-xl font-bold text-default-900">{classStats.averageScore}%</p>
               </div>
             </div>
@@ -231,7 +220,7 @@ const ClassPerformance = () => {
                 <Trophy size={20} />
               </div>
               <div>
-                <p className="text-xs text-default-500">Top Score</p>
+                <p className="text-xs text-default-500">{t('pages.topScore')}</p>
                 <p className="text-xl font-bold text-default-900">{classStats.topScore}%</p>
               </div>
             </div>
@@ -244,7 +233,7 @@ const ClassPerformance = () => {
                 <Award size={20} />
               </div>
               <div>
-                <p className="text-xs text-default-500">Pass Rate</p>
+                <p className="text-xs text-default-500">{t('pages.passRate')}</p>
                 <p className="text-xl font-bold text-default-900">{classStats.passingRate}</p>
               </div>
             </div>
@@ -261,26 +250,26 @@ const ClassPerformance = () => {
               <div className="p-2.5 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-lg">
                 <BarChart3 size={20} />
               </div>
-              <h3 className="text-lg font-semibold text-default-900">Score Distribution</h3>
+              <h3 className="text-lg font-semibold text-default-900">{t('pages.scoreDistribution')}</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
             <ResponsiveContainer width="100%" height={250}>
               <BarChart
                 data={[
-                  { range: '90-100', count: filteredStudents.filter(s => s.percentage >= 90).length || 5 },
-                  { range: '80-89', count: filteredStudents.filter(s => s.percentage >= 80 && s.percentage < 90).length || 8 },
-                  { range: '70-79', count: filteredStudents.filter(s => s.percentage >= 70 && s.percentage < 80).length || 12 },
-                  { range: '60-69', count: filteredStudents.filter(s => s.percentage >= 60 && s.percentage < 70).length || 6 },
-                  { range: '50-59', count: filteredStudents.filter(s => s.percentage >= 50 && s.percentage < 60).length || 3 },
-                  { range: '<50', count: filteredStudents.filter(s => s.percentage < 50).length || 2 },
+                  { range: '90-100', count: filteredStudents.filter(s => s.percentage >= 90).length },
+                  { range: '80-89', count: filteredStudents.filter(s => s.percentage >= 80 && s.percentage < 90).length },
+                  { range: '70-79', count: filteredStudents.filter(s => s.percentage >= 70 && s.percentage < 80).length },
+                  { range: '60-69', count: filteredStudents.filter(s => s.percentage >= 60 && s.percentage < 70).length },
+                  { range: '50-59', count: filteredStudents.filter(s => s.percentage >= 50 && s.percentage < 60).length },
+                  { range: '<50', count: filteredStudents.filter(s => s.percentage < 50).length },
                 ]}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="range" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip />
-                <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" fill={CHART_COLORS.blue} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardBody>
@@ -293,7 +282,7 @@ const ClassPerformance = () => {
               <div className="p-2.5 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded-lg">
                 <BookOpen size={20} />
               </div>
-              <h3 className="text-lg font-semibold text-default-900">Subject Averages</h3>
+              <h3 className="text-lg font-semibold text-default-900">{t('pages.subjectAverages')}</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
@@ -303,7 +292,7 @@ const ClassPerformance = () => {
                 <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
                 <YAxis dataKey="subjectName" type="category" tick={{ fontSize: 10 }} width={80} />
                 <Tooltip />
-                <Bar dataKey="average" fill="#10b981" radius={[0, 4, 4, 0]} name="Average" />
+                <Bar dataKey="average" fill={CHART_COLORS.chart3} radius={[0, 4, 4, 0]} name="Average" />
               </BarChart>
             </ResponsiveContainer>
           </CardBody>
@@ -318,11 +307,11 @@ const ClassPerformance = () => {
               <div className="p-2.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400 rounded-lg">
                 <Trophy size={20} />
               </div>
-              <h3 className="text-lg font-semibold text-default-900">Student Rankings</h3>
+              <h3 className="text-lg font-semibold text-default-900">{t('pages.studentRankings1')}</h3>
             </div>
             <Input
               size="sm"
-              placeholder="Search students..."
+              placeholder={t('pages.searchStudents')}
               value={searchQuery}
               onValueChange={setSearchQuery}
               startContent={<Search size={16} className="text-default-400" />}
@@ -332,7 +321,7 @@ const ClassPerformance = () => {
         </CardHeader>
         <CardBody className="p-0">
           <Table
-            aria-label="Student rankings table"
+            aria-label={t('aria.tables.studentRankings')}
             removeWrapper
             classNames={{
               th: "bg-default-50 text-default-600",
@@ -340,13 +329,13 @@ const ClassPerformance = () => {
             }}
           >
             <TableHeader>
-              <TableColumn>RANK</TableColumn>
-              <TableColumn>STUDENT</TableColumn>
-              <TableColumn>ROLL NO</TableColumn>
-              <TableColumn>SCORE</TableColumn>
-              <TableColumn>GRADE</TableColumn>
-              <TableColumn>TREND</TableColumn>
-              <TableColumn>ACTIONS</TableColumn>
+              <TableColumn scope="col">{t('pages.rANK')}</TableColumn>
+              <TableColumn scope="col">{t('pages.sTUDENT')}</TableColumn>
+              <TableColumn scope="col">{t('pages.rOLLNo')}</TableColumn>
+              <TableColumn scope="col">{t('pages.sCORE')}</TableColumn>
+              <TableColumn scope="col">{t('pages.gRADE')}</TableColumn>
+              <TableColumn scope="col">{t('pages.tREND')}</TableColumn>
+              <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
             </TableHeader>
             <TableBody>
               {filteredStudents.slice(0, 20).map((student, idx) => (
@@ -358,7 +347,7 @@ const ClassPerformance = () => {
                       student.rank === 3 ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' :
                       'bg-default-100 text-default-600'
                     }`}>
-                      {student.rank}
+                      {student.rank != null ? student.rank : '—'}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -370,7 +359,7 @@ const ClassPerformance = () => {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Progress
-                        value={student.percentage}
+                        value={Math.max(0, Math.min(100, student.percentage ?? 0))}
                         color={
                           student.percentage >= 90 ? 'success' :
                           student.percentage >= 75 ? 'primary' :
@@ -379,7 +368,7 @@ const ClassPerformance = () => {
                         size="sm"
                         className="w-20"
                       />
-                      <span className="font-medium">{student.percentage.toFixed(1)}%</span>
+                      <span className="font-medium">{Math.max(0, Math.min(100, student.percentage ?? 0)).toFixed(1)}%</span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -422,12 +411,12 @@ const ClassPerformance = () => {
             <div className="p-2.5 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 rounded-lg">
               <BookOpen size={20} />
             </div>
-            <h3 className="text-lg font-semibold text-default-900">Subject-wise Details</h3>
+            <h3 className="text-lg font-semibold text-default-900">{t('pages.subjectWiseDetails')}</h3>
           </div>
         </CardHeader>
         <CardBody className="p-0">
           <Table
-            aria-label="Subject breakdown table"
+            aria-label={t('aria.tables.subjectBreakdown')}
             removeWrapper
             classNames={{
               th: "bg-default-50 text-default-600",
@@ -435,11 +424,11 @@ const ClassPerformance = () => {
             }}
           >
             <TableHeader>
-              <TableColumn>SUBJECT</TableColumn>
-              <TableColumn>AVERAGE</TableColumn>
-              <TableColumn>HIGHEST</TableColumn>
-              <TableColumn>LOWEST</TableColumn>
-              <TableColumn>PASS RATE</TableColumn>
+              <TableColumn scope="col">{t('pages.sUBJECT')}</TableColumn>
+              <TableColumn scope="col">{t('pages.aVERAGE')}</TableColumn>
+              <TableColumn scope="col">{t('pages.hIGHEST')}</TableColumn>
+              <TableColumn scope="col">{t('pages.lOWEST')}</TableColumn>
+              <TableColumn scope="col">{t('pages.pASSRate')}</TableColumn>
             </TableHeader>
             <TableBody>
               {subjectBreakdown.map((subject, idx) => (
@@ -449,30 +438,26 @@ const ClassPerformance = () => {
                   </TableCell>
                   <TableCell>
                     <span className={`font-medium ${
-                      (subject.average || 70) >= 75 ? 'text-success' :
-                      (subject.average || 70) >= 50 ? 'text-warning' : 'text-danger'
+                      subject.average >= 75 ? 'text-success' :
+                      subject.average >= 50 ? 'text-warning' : 'text-danger'
                     }`}>
-                      {(subject.average || 70).toFixed(1)}%
+                      {subject.average != null ? `${subject.average.toFixed(1)}%` : '—'}
                     </span>
                   </TableCell>
                   <TableCell>
                     <span className="text-success font-medium">
-                      {(subject.highest || 95).toFixed(1)}%
+                      {subject.highest != null ? `${subject.highest.toFixed(1)}%` : '—'}
                     </span>
                   </TableCell>
                   <TableCell>
                     <span className="text-warning font-medium">
-                      {(subject.lowest || 45).toFixed(1)}%
+                      {subject.lowest != null ? `${subject.lowest.toFixed(1)}%` : '—'}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <Progress
-                      value={85 + Math.random() * 10}
-                      color="success"
-                      size="sm"
-                      className="w-24"
-                      showValueLabel={true}
-                    />
+                    <span className="text-sm text-default-500">
+                      {subject.passRate != null ? `${subject.passRate}%` : '—'}
+                    </span>
                   </TableCell>
                 </TableRow>
               ))}

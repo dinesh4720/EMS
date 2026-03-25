@@ -1,9 +1,10 @@
 /**
  * MinimalCard - Clean card component without shadows
  */
+import { memo } from "react";
 import { cn } from "../../utils/cn";
 
-export default function MinimalCard({
+const MinimalCard = memo(function MinimalCard({
   children,
   className,
   padding = "md",
@@ -30,7 +31,9 @@ export default function MinimalCard({
       {children}
     </div>
   );
-}
+});
+
+MinimalCard.displayName = 'MinimalCard';
 
 // Card Header subcomponent
 MinimalCard.Header = function CardHeader({ children, className, ...props }) {
@@ -64,3 +67,5 @@ MinimalCard.Footer = function CardFooter({ children, className, ...props }) {
     </div>
   );
 };
+
+export default MinimalCard;

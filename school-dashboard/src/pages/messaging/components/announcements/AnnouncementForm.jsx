@@ -18,6 +18,7 @@ import {
 import { Send, Clock, Upload, X, FileText } from 'lucide-react';
 import { announcementsApi, uploadApi } from '../../../../services/api';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 export default function AnnouncementForm({
   isOpen,
@@ -25,6 +26,7 @@ export default function AnnouncementForm({
   onSave,
   editData = null,
 }) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -37,6 +39,7 @@ export default function AnnouncementForm({
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (editData) {
@@ -85,7 +88,7 @@ export default function AnnouncementForm({
 
     // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('File size must be less than 5MB');
+      toast.error(t('toast.error.fileSizeMustBeLessThan5mb'));
       return;
     }
 
@@ -110,10 +113,10 @@ export default function AnnouncementForm({
         }]
       }));
 
-      toast.success('File uploaded successfully');
+      toast.success(t('toast.success.fileUploadedSuccessfully'));
     } catch (error) {
       console.error('Error uploading file:', error);
-      toast.error('Failed to upload file');
+      toast.error(t('toast.error.failedToUploadFile'));
     } finally {
       setUploadingFile(false);
       setUploadProgress(0);
@@ -128,18 +131,17 @@ export default function AnnouncementForm({
   };
 
   const handleSubmit = async (schedule = false) => {
-    if (!formData.title.trim() || !formData.content.trim()) {
-      toast.error('Please fill in title and content');
-      return;
-    }
+    const newErrors = {};
+    if (!formData.title.trim()) newErrors.title = t('toast.error.pleaseFillInTitleAndContent');
+    if (!formData.content.trim()) newErrors.content = t('toast.error.pleaseFillInTitleAndContent');
+    if (formData.channels.length === 0) newErrors.channels = t('toast.error.pleaseSelectAtLeastOneChannel');
+    if (formData.recipients.length === 0) newErrors.recipients = t('toast.error.pleaseSelectRecipients');
 
-    if (formData.channels.length === 0) {
-      toast.error('Please select at least one channel');
-      return;
-    }
-
-    if (formData.recipients.length === 0) {
-      toast.error('Please select recipients');
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      if (newErrors.title || newErrors.content) toast.error(t('toast.error.pleaseFillInTitleAndContent'));
+      else if (newErrors.channels) toast.error(t('toast.error.pleaseSelectAtLeastOneChannel'));
+      else if (newErrors.recipients) toast.error(t('toast.error.pleaseSelectRecipients'));
       return;
     }
 
@@ -158,7 +160,7 @@ export default function AnnouncementForm({
 
       if (editData?._id) {
         await announcementsApi.update(editData._id, payload);
-        toast.success('Announcement updated successfully');
+        toast.success(t('toast.success.announcementUpdatedSuccessfully'));
       } else {
         await announcementsApi.create(payload);
         toast.success(schedule ? 'Announcement scheduled' : 'Announcement created');
@@ -175,8 +177,12 @@ export default function AnnouncementForm({
   };
 
   const handleSendNow = async () => {
-    if (!formData.title.trim() || !formData.content.trim()) {
-      toast.error('Please fill in title and content');
+    const newErrors = {};
+    if (!formData.title.trim()) newErrors.title = t('toast.error.pleaseFillInTitleAndContent');
+    if (!formData.content.trim()) newErrors.content = t('toast.error.pleaseFillInTitleAndContent');
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error(t('toast.error.pleaseFillInTitleAndContent'));
       return;
     }
 
@@ -195,7 +201,7 @@ export default function AnnouncementForm({
         await announcementsApi.send(created._id);
       }
 
-      toast.success('Announcement sent successfully');
+      toast.success(t('toast.success.announcementSentSuccessfully'));
       onSave();
       handleClose();
     } catch (error) {
@@ -215,6 +221,7 @@ export default function AnnouncementForm({
       scheduledFor: null,
       attachments: [],
     });
+    setErrors({});
     onClose();
   };
 
@@ -235,28 +242,32 @@ export default function AnnouncementForm({
         <ModalBody className="space-y-4">
           {/* Title */}
           <Input
-            label="Title"
-            placeholder="Enter announcement title"
+            label={t('pages.title1')}
+            placeholder={t('pages.enterAnnouncementTitle')}
             value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            onChange={(e) => { setFormData({ ...formData, title: e.target.value }); setErrors(prev => ({ ...prev, title: '' })); }}
             variant="bordered"
             isRequired
+            isInvalid={!!errors.title}
+            errorMessage={errors.title}
           />
 
           {/* Content */}
           <Textarea
-            label="Content"
-            placeholder="Enter announcement content"
+            label={t('pages.content')}
+            placeholder={t('pages.enterAnnouncementContent')}
             value={formData.content}
-            onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+            onChange={(e) => { setFormData({ ...formData, content: e.target.value }); setErrors(prev => ({ ...prev, content: '' })); }}
             variant="bordered"
             minRows={6}
             isRequired
+            isInvalid={!!errors.content}
+            errorMessage={errors.content}
           />
 
           {/* Recipients */}
           <div>
-            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Recipients</label>
+            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.recipients')}</label>
             <div className="flex flex-wrap gap-2">
               {[
                 { key: 'all', label: 'Whole School' },
@@ -267,17 +278,18 @@ export default function AnnouncementForm({
                 <Checkbox size="sm"
                   key={recipient.key}
                   isSelected={formData.recipients.some(r => r.type === recipient.key)}
-                  onValueChange={() => handleRecipientChange(recipient.key)}
+                  onValueChange={() => { handleRecipientChange(recipient.key); setErrors(prev => ({ ...prev, recipients: '' })); }}
                 >
                   {recipient.label}
                 </Checkbox>
               ))}
             </div>
+            {errors.recipients && <p className="text-xs text-red-500 mt-1">{errors.recipients}</p>}
           </div>
 
           {/* Channels */}
           <div>
-            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Send Via</label>
+            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.sendVia')}</label>
             <div className="flex flex-wrap gap-2">
               {[
                 { key: 'inapp', label: 'In-App' },
@@ -288,12 +300,13 @@ export default function AnnouncementForm({
                 <Checkbox size="sm"
                   key={channel.key}
                   isSelected={formData.channels.includes(channel.key)}
-                  onValueChange={() => handleChannelToggle(channel.key)}
+                  onValueChange={() => { handleChannelToggle(channel.key); setErrors(prev => ({ ...prev, channels: '' })); }}
                 >
                   {channel.label}
                 </Checkbox>
               ))}
             </div>
+            {errors.channels && <p className="text-xs text-red-500 mt-1">{errors.channels}</p>}
           </div>
 
           {/* Schedule */}
@@ -320,7 +333,7 @@ export default function AnnouncementForm({
 
           {/* Attachments */}
           <div>
-            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Attachments</label>
+            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.attachments')}</label>
             <div className="space-y-2">
               {formData.attachments.map((attachment, index) => (
                 <Card key={attachment.name || index} size="sm">

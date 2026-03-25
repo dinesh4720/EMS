@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Card,
@@ -35,6 +36,7 @@ import { format } from "date-fns";
  */
 
 export default function PublicFormSubmission() {
+  const { t } = useTranslation();
   const { token } = useParams();
   const navigate = useNavigate();
 
@@ -121,10 +123,12 @@ export default function PublicFormSubmission() {
         }
       }
 
-      // Phone validation
+      // Phone validation — must contain at least 7 digits
       if (field.type === "phone" && formValues[field.id]) {
+        const val = formValues[field.id];
         const phoneRegex = /^[+]?[\d\s\-()]+$/;
-        if (!phoneRegex.test(formValues[field.id])) {
+        const digitCount = (val.replace(/\D/g, '')).length;
+        if (!phoneRegex.test(val) || digitCount < 7 || digitCount > 15) {
           newErrors[field.id] = "Please enter a valid phone number";
         }
       }
@@ -138,7 +142,7 @@ export default function PublicFormSubmission() {
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error("Please fill in all required fields correctly");
+      toast.error(t('toast.error.pleaseFillInAllRequiredFieldsCorrectly'));
       return;
     }
 
@@ -150,7 +154,7 @@ export default function PublicFormSubmission() {
       });
 
       setSubmitted(true);
-      toast.success("Form submitted successfully!");
+      toast.success(t('toast.success.formSubmittedSuccessfully'));
     } catch (error) {
       console.error("Submission failed:", error);
       toast.error(error.message || "Failed to submit form. Please try again.");
@@ -269,7 +273,7 @@ export default function PublicFormSubmission() {
                 ${error ? "border-danger" : "border-default-200 hover:border-default-400"}
                 focus:outline-none focus:ring-2 focus:ring-primary/50`}
             >
-              <option value="">Select an option</option>
+              <option value="">{t('pages.selectAnOption')}</option>
               {field.options?.map((option) => {
                 // Handle both string options and object options with value/label
                 const value = typeof option === 'string' ? option : option.value;
@@ -325,7 +329,7 @@ export default function PublicFormSubmission() {
             <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto"></div>
             <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-r-secondary rounded-full animate-spin mx-auto [animation-duration:1.5s]"></div>
           </div>
-          <p className="text-foreground/70 font-medium">Loading form...</p>
+          <p className="text-foreground/70 font-medium">{t('pages.loadingForm')}</p>
         </div>
       </div>
     );
@@ -340,7 +344,7 @@ export default function PublicFormSubmission() {
             <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center mx-auto">
               <XCircle className="w-8 h-8 text-danger" />
             </div>
-            <h2 className="text-xl font-bold text-foreground">Form Not Available</h2>
+            <h2 className="text-xl font-bold text-foreground">{t('pages.formNotAvailable')}</h2>
             <p className="text-foreground/70">
               This form link is invalid, expired, or has been canceled.
               Please contact the school administration for assistance.
@@ -368,7 +372,7 @@ export default function PublicFormSubmission() {
             <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto">
               <CheckCircle className="w-8 h-8 text-success" />
             </div>
-            <h2 className="text-xl font-bold text-foreground">Already Submitted</h2>
+            <h2 className="text-xl font-bold text-foreground">{t('pages.alreadySubmitted')}</h2>
             <p className="text-foreground/70">
               This form has already been submitted on{" "}
               {format(new Date(formData.submissionStatus.submittedAt), "MMMM d, yyyy 'at' h:mm a")}.
@@ -492,7 +496,7 @@ export default function PublicFormSubmission() {
 
         {/* Footer */}
         <div className="mt-6 text-center text-sm text-default-500">
-          <p>Need help? Contact the school administration</p>
+          <p>{t('pages.needHelpContactTheSchoolAdministration')}</p>
         </div>
       </div>
     </div>

@@ -18,6 +18,7 @@ import JobsDashboardPanel from './JobsDashboardPanel';
 import FeatureFlagsPanel from './FeatureFlagsPanel';
 import GrowthAnalyticsPanel from './GrowthAnalyticsPanel';
 import ChangelogPanel from './ChangelogPanel';
+import { useTranslation } from 'react-i18next';
 
 const TABS = [
   { key: 'schools', label: 'Schools', icon: Building2 },
@@ -92,10 +93,10 @@ function SchoolsPanel({ overview, loadData, loading, tableRows, updateSchoolDraf
   return (
     <>
       <div className="mb-8 grid gap-4 md:grid-cols-4">
-        <SummaryCard icon={Building2} label="Total schools" value={overview.totalSchools} accent="bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300" />
-        <SummaryCard icon={Sparkles} label="Active schools" value={overview.activeSchools} accent="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" />
-        <SummaryCard icon={UserPlus} label="Trials running" value={overview.trialingSchools} accent="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" />
-        <SummaryCard icon={RefreshCcw} label="Attention needed" value={overview.attentionNeeded} accent="bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300" />
+        <SummaryCard icon={Building2} label={t('pages.totalSchools')} value={overview.totalSchools} accent="bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300" />
+        <SummaryCard icon={Sparkles} label={t('pages.activeSchools')} value={overview.activeSchools} accent="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" />
+        <SummaryCard icon={UserPlus} label={t('pages.trialsRunning')} value={overview.trialingSchools} accent="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" />
+        <SummaryCard icon={RefreshCcw} label={t('pages.attentionNeeded')} value={overview.attentionNeeded} accent="bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_1.7fr]">
@@ -104,7 +105,7 @@ function SchoolsPanel({ overview, loadData, loading, tableRows, updateSchoolDraf
           className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90"
         >
           <div className="mb-5">
-            <h2 className="text-xl font-semibold text-slate-950 dark:text-zinc-100">Onboard a new school</h2>
+            <h2 className="text-xl font-semibold text-slate-950 dark:text-zinc-100">{t('pages.onboardANewSchool')}</h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
               This creates the school, provisions its settings, and sets up an initial admin account.
             </p>
@@ -114,27 +115,27 @@ function SchoolsPanel({ overview, loadData, loading, tableRows, updateSchoolDraf
             <input
               value={form.schoolName}
               onChange={(event) => updateForm('schoolName', event.target.value)}
-              placeholder="School name"
+              placeholder={t('pages.schoolName2')}
               className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
               required
             />
             <input
               value={form.schoolCode}
               onChange={(event) => updateForm('schoolCode', event.target.value)}
-              placeholder="School code (optional)"
+              placeholder={t('pages.schoolCodeOptional')}
               className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
             />
             <div className="grid gap-4 md:grid-cols-2">
               <input
                 value={form.contactEmail}
                 onChange={(event) => updateForm('contactEmail', event.target.value)}
-                placeholder="Contact email"
+                placeholder={t('pages.contactEmail')}
                 className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
               />
               <input
                 value={form.contactPhone}
                 onChange={(event) => updateForm('contactPhone', event.target.value)}
-                placeholder="Contact phone"
+                placeholder={t('pages.contactPhone')}
                 className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
               />
             </div>
@@ -145,14 +146,14 @@ function SchoolsPanel({ overview, loadData, loading, tableRows, updateSchoolDraf
             <input
               value={form.adminName}
               onChange={(event) => updateForm('adminName', event.target.value)}
-              placeholder="Admin full name"
+              placeholder={t('pages.adminFullName')}
               className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
               required
             />
             <input
               value={form.adminEmail}
               onChange={(event) => updateForm('adminEmail', event.target.value)}
-              placeholder="Admin email"
+              placeholder={t('pages.adminEmail')}
               type="email"
               className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
               required
@@ -160,7 +161,7 @@ function SchoolsPanel({ overview, loadData, loading, tableRows, updateSchoolDraf
             <input
               value={form.adminPassword}
               onChange={(event) => updateForm('adminPassword', event.target.value)}
-              placeholder="Admin password (optional)"
+              placeholder={t('pages.adminPasswordOptional')}
               type="password"
               className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
             />
@@ -168,13 +169,13 @@ function SchoolsPanel({ overview, loadData, loading, tableRows, updateSchoolDraf
               <input
                 value={form.frontendUrl}
                 onChange={(event) => updateForm('frontendUrl', event.target.value)}
-                placeholder="Frontend URL"
+                placeholder={t('pages.frontendUrl')}
                 className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
               />
               <input
                 value={form.backendUrl}
                 onChange={(event) => updateForm('backendUrl', event.target.value)}
-                placeholder="Backend URL"
+                placeholder={t('pages.backendUrl')}
                 className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
               />
             </div>
@@ -192,7 +193,7 @@ function SchoolsPanel({ overview, loadData, loading, tableRows, updateSchoolDraf
         <div className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
           <div className="mb-5 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold text-slate-950 dark:text-zinc-100">School registry</h2>
+              <h2 className="text-xl font-semibold text-slate-950 dark:text-zinc-100">{t('pages.schoolRegistry')}</h2>
               <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">Manage plan state and re-run provisioning without touching the database manually.</p>
             </div>
             <button
@@ -213,12 +214,12 @@ function SchoolsPanel({ overview, loadData, loading, tableRows, updateSchoolDraf
               <table className="min-w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500 dark:border-zinc-800 dark:text-zinc-400">
-                    <th className="pb-3 font-medium">School</th>
-                    <th className="pb-3 font-medium">Admin</th>
-                    <th className="pb-3 font-medium">Plan</th>
-                    <th className="pb-3 font-medium">Status</th>
-                    <th className="pb-3 font-medium">Provisioning</th>
-                    <th className="pb-3 font-medium text-right">Actions</th>
+                    <th className="pb-3 font-medium">{t('pages.school1')}</th>
+                    <th className="pb-3 font-medium">{t('pages.admin2')}</th>
+                    <th className="pb-3 font-medium">{t('pages.plan')}</th>
+                    <th className="pb-3 font-medium">{t('pages.status2')}</th>
+                    <th className="pb-3 font-medium">{t('pages.provisioning')}</th>
+                    <th className="pb-3 font-medium text-right">{t('pages.actions1')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -295,6 +296,7 @@ function SchoolsPanel({ overview, loadData, loading, tableRows, updateSchoolDraf
 }
 
 export default function SuperAdminDashboard() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('schools');
   const [overview, setOverview] = useState({
@@ -490,7 +492,7 @@ export default function SuperAdminDashboard() {
               <ShieldCheck size={14} />
               Super Admin
             </div>
-            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">School onboarding and tenant control</h1>
+            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{t('pages.schoolOnboardingAndTenantControl')}</h1>
             <p className="mt-2 max-w-3xl text-sm text-slate-300 md:text-base">
               Provision schools, assign plans, and re-run setup from one place instead of handling each launch manually.
             </p>
@@ -498,7 +500,7 @@ export default function SuperAdminDashboard() {
 
           <div className="flex items-center gap-3">
             <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-right">
-              <div className="text-xs uppercase tracking-[0.24em] text-slate-400">Signed in as</div>
+              <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{t('pages.signedInAs1')}</div>
               <div className="mt-1 text-sm font-medium">{user?.name || 'Super Admin'}</div>
               <div className="text-xs text-slate-400">{user?.email}</div>
             </div>

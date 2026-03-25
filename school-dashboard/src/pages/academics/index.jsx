@@ -1,7 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Breadcrumbs, BreadcrumbItem, Modal, ModalContent, ModalHeader, ModalBody } from '@heroui/react';
-import { Home, BarChart3, FileText, Plus, BookOpen } from 'lucide-react';
+import { Home, BarChart3, FileText, Plus, BookOpen, Award, ClipboardList } from 'lucide-react';
 import { PageLayout, MinimalButton } from '../../components/ui';
 import PerformanceDashboard from './PerformanceDashboard';
 import ExamManagement from './ExamManagement';
@@ -9,8 +9,12 @@ import CreateExamModal from './CreateExamModal';
 import ExamDetailModal from './ExamDetailModal';
 import ResultsEntryModal from './ResultsEntryModal';
 import SubjectAssignment from '../../components/SubjectAssignment';
+import CBSEReportCardPage from './CBSEReportCardPage';
+import CCEGradingPage from './CCEGradingPage';
+import { useTranslation } from 'react-i18next';
 
 const AcademicLayout = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -26,6 +30,8 @@ const AcademicLayout = () => {
     if (path === '/academics' || path === '/academics/') return 'dashboard';
     if (path.startsWith('/academics/exams')) return 'exams';
     if (path.startsWith('/academics/subjects')) return 'subjects';
+    if (path.startsWith('/academics/cbse-report-card')) return 'cbse';
+    if (path.startsWith('/academics/cce-grading')) return 'cce';
     return 'dashboard';
   };
 
@@ -37,7 +43,7 @@ const AcademicLayout = () => {
       title: (
         <div className="flex items-center gap-2">
           <BarChart3 size={16} />
-          <span>Dashboard</span>
+          <span>{t('pages.dashboard1')}</span>
         </div>
       ),
     },
@@ -46,7 +52,7 @@ const AcademicLayout = () => {
       title: (
         <div className="flex items-center gap-2">
           <FileText size={16} />
-          <span>Exams</span>
+          <span>{t('pages.exams1')}</span>
         </div>
       ),
     },
@@ -55,7 +61,25 @@ const AcademicLayout = () => {
       title: (
         <div className="flex items-center gap-2">
           <BookOpen size={16} />
-          <span>Subjects</span>
+          <span>{t('pages.subjects1')}</span>
+        </div>
+      ),
+    },
+    {
+      key: "cbse",
+      title: (
+        <div className="flex items-center gap-2">
+          <Award size={16} />
+          <span>CBSE Report Card</span>
+        </div>
+      ),
+    },
+    {
+      key: "cce",
+      title: (
+        <div className="flex items-center gap-2">
+          <ClipboardList size={16} />
+          <span>CCE Grading</span>
         </div>
       ),
     },
@@ -65,25 +89,24 @@ const AcademicLayout = () => {
     if (key === 'dashboard') navigate('/academics', { replace: true });
     else if (key === 'exams') navigate('/academics/exams', { replace: true });
     else if (key === 'subjects') navigate('/academics/subjects', { replace: true });
+    else if (key === 'cbse') navigate('/academics/cbse-report-card', { replace: true });
+    else if (key === 'cce') navigate('/academics/cce-grading', { replace: true });
   }, [navigate]);
 
   const getHeader = () => {
     if (activeTab === 'exams') {
-      return {
-        title: 'Exam Management',
-        description: 'Create, schedule, and manage examinations',
-      };
+      return { title: 'Exam Management', description: 'Create, schedule, and manage examinations' };
     }
     if (activeTab === 'subjects') {
-      return {
-        title: 'Subject Assignment',
-        description: 'Assign subjects to classes for timetable generation',
-      };
+      return { title: 'Subject Assignment', description: 'Assign subjects to classes for timetable generation' };
     }
-    return {
-      title: 'Academic Dashboard',
-      description: 'Overview of academic performance and analytics',
-    };
+    if (activeTab === 'cbse') {
+      return { title: 'CBSE Report Card', description: 'Generate CBSE-format report cards for students' };
+    }
+    if (activeTab === 'cce') {
+      return { title: 'CCE Grading', description: 'Continuous and Comprehensive Evaluation grading' };
+    }
+    return { title: 'Academic Dashboard', description: 'Overview of academic performance and analytics' };
   };
 
   // Create Exam handlers
@@ -142,9 +165,11 @@ const AcademicLayout = () => {
           <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate('/')}>
             Home
           </BreadcrumbItem>
-          <BreadcrumbItem>Academics</BreadcrumbItem>
-          {activeTab === 'exams' && <BreadcrumbItem>Exams</BreadcrumbItem>}
-          {activeTab === 'subjects' && <BreadcrumbItem>Subjects</BreadcrumbItem>}
+          <BreadcrumbItem>{t('pages.academics1')}</BreadcrumbItem>
+          {activeTab === 'exams' && <BreadcrumbItem>{t('pages.exams1')}</BreadcrumbItem>}
+          {activeTab === 'subjects' && <BreadcrumbItem>{t('pages.subjects1')}</BreadcrumbItem>}
+          {activeTab === 'cbse' && <BreadcrumbItem>CBSE Report Card</BreadcrumbItem>}
+          {activeTab === 'cce' && <BreadcrumbItem>CCE Grading</BreadcrumbItem>}
         </Breadcrumbs>
       </div>
 
@@ -172,6 +197,12 @@ const AcademicLayout = () => {
           {activeTab === 'subjects' && (
             <SubjectAssignment />
           )}
+          {activeTab === 'cbse' && (
+            <CBSEReportCardPage />
+          )}
+          {activeTab === 'cce' && (
+            <CCEGradingPage />
+          )}
         </div>
       </PageLayout>
 
@@ -194,8 +225,8 @@ const AcademicLayout = () => {
                 <FileText size={20} className="text-gray-600 dark:text-zinc-400" />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Create New Exam</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">Schedule a new examination</p>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.createNewExam')}</h3>
+                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">{t('pages.scheduleANewExamination')}</p>
               </div>
             </div>
           </ModalHeader>

@@ -5,8 +5,10 @@ import { Bus, Route as RouteIcon, Truck, Home } from "lucide-react";
 import { PageLayout } from "../../components/ui";
 import RoutesTab from "./RoutesTab";
 import VehiclesTab from "./VehiclesTab";
+import { useTranslation } from 'react-i18next';
 
 export default function TransportPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -18,8 +20,8 @@ export default function TransportPage() {
   const activeTab = getActiveTab();
 
   const tabs = [
-    { key: "routes", title: <div className="flex items-center gap-2"><RouteIcon size={16} /><span>Routes</span></div> },
-    { key: "vehicles", title: <div className="flex items-center gap-2"><Truck size={16} /><span>Vehicles</span></div> },
+    { key: "routes", title: <div className="flex items-center gap-2"><RouteIcon size={16} /><span>{t('pages.routes')}</span></div> },
+    { key: "vehicles", title: <div className="flex items-center gap-2"><Truck size={16} /><span>{t('pages.vehicles')}</span></div> },
   ];
 
   const handleTabChange = (key) => {
@@ -38,8 +40,8 @@ export default function TransportPage() {
     <div className="animate-fade-in">
       <div className="mb-4">
         <Breadcrumbs size="sm">
-          <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate("/")}>Home</BreadcrumbItem>
-          <BreadcrumbItem onPress={() => navigate("/transport")}>Transport</BreadcrumbItem>
+          <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate("/")}>{t('pages.home')}</BreadcrumbItem>
+          <BreadcrumbItem onPress={() => navigate("/transport")}>{t('pages.transport1')}</BreadcrumbItem>
           {tabLabel[activeTab] && <BreadcrumbItem>{tabLabel[activeTab]}</BreadcrumbItem>}
         </Breadcrumbs>
       </div>

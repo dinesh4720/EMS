@@ -6,6 +6,9 @@ import { libraryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import IssueBookModal from "./IssueBookModal";
 import ReturnBookModal from "./ReturnBookModal";
+import { getDateLocale } from '../../i18n/index';
+import { useTranslation } from 'react-i18next';
+
 
 const STATUS_OPTIONS = [
   { key: "all", label: "All Statuses" },
@@ -27,6 +30,7 @@ function statusColor(status) {
 }
 
 export default function IssuedBooksList() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const initialStatus = searchParams.get("status") || "all";
 
@@ -50,13 +54,31 @@ export default function IssuedBooksList() {
       setIssues(data.issues || []);
       setTotal(data.total || 0);
     } catch {
-      toast.error("Failed to load issued books");
+      toast.error(t('toast.error.failedToLoadIssuedBooks'));
     } finally {
       setLoading(false);
     }
   }, [status, page]);
 
-  useEffect(() => { fetchIssues(); }, [fetchIssues]);
+  useEffect(() => {
+    let cancelled = false;
+    const params = { page, limit: 25 };
+    if (status === "overdue") params.overdue = "true";
+    else if (status !== "all") params.status = status;
+
+    setLoading(true);
+    libraryApi.getIssues(params)
+      .then(data => {
+        if (!cancelled) {
+          setIssues(data.issues || []);
+          setTotal(data.total || 0);
+        }
+      })
+      .catch(() => { if (!cancelled) toast.error(t('toast.error.failedToLoadIssuedBooks')); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [status, page]);
 
   const handleReturn = (issue) => {
     setReturnIssue(issue);
@@ -76,7 +98,7 @@ export default function IssuedBooksList() {
 
   const totalPages = Math.ceil(total / 25);
 
-  const formatDate = (d) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString(getDateLocale(), { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
   const isOverdue = (issue) => {
     return (issue.status === "issued" || issue.status === "overdue") && new Date(issue.dueDate) < new Date();
@@ -107,13 +129,13 @@ export default function IssuedBooksList() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800">
-                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">Book</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">Student</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">Issue Date</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">Due Date</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">Status</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">Fine</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">Actions</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">{t('pages.book')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">{t('pages.student')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">{t('pages.issueDate')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">{t('pages.dueDate')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">{t('pages.status2')}</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">{t('pages.fine')}</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-zinc-400">{t('pages.actions1')}</th>
               </tr>
             </thead>
             <tbody>
@@ -129,7 +151,7 @@ export default function IssuedBooksList() {
                 <tr>
                   <td colSpan={7} className="text-center py-12">
                     <BookUp size={40} className="mx-auto text-gray-300 dark:text-zinc-600 mb-3" />
-                    <p className="text-gray-500 dark:text-zinc-400">No issued books found</p>
+                    <p className="text-gray-500 dark:text-zinc-400">{t('pages.noIssuedBooksFound')}</p>
                   </td>
                 </tr>
               ) : (
@@ -152,7 +174,7 @@ export default function IssuedBooksList() {
                     <td className="px-4 py-3">
                       <Chip size="sm" color={statusColor(issue.status)} variant="flat" className="capitalize">{issue.status}</Chip>
                       {isOverdue(issue) && issue.status === "issued" && (
-                        <Chip size="sm" color="danger" variant="flat" className="ml-1 bg-red-50 dark:bg-red-950">Overdue</Chip>
+                        <Chip size="sm" color="danger" variant="flat" className="ml-1 bg-red-50 dark:bg-red-950">{t('pages.overdue1')}</Chip>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-700 dark:text-zinc-300">
@@ -176,9 +198,9 @@ export default function IssuedBooksList() {
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-zinc-800">
             <p className="text-sm text-gray-500 dark:text-zinc-400">{total} records total</p>
             <div className="flex gap-1">
-              <Button size="sm" variant="flat" isDisabled={page <= 1} onPress={() => setPage(page - 1)}>Prev</Button>
+              <Button size="sm" variant="flat" isDisabled={page <= 1} onPress={() => setPage(page - 1)}>{t('pages.prev')}</Button>
               <span className="text-sm text-gray-600 dark:text-zinc-400 flex items-center px-2">{page} / {totalPages}</span>
-              <Button size="sm" variant="flat" isDisabled={page >= totalPages} onPress={() => setPage(page + 1)}>Next</Button>
+              <Button size="sm" variant="flat" isDisabled={page >= totalPages} onPress={() => setPage(page + 1)}>{t('pages.next')}</Button>
             </div>
           </div>
         )}

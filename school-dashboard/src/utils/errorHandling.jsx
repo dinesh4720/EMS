@@ -367,7 +367,7 @@ export function formatValidationErrors(error) {
  */
 export function showUndoableToast(message, onUndo, undoLabel = 'Undo') {
   const toastId = toast((t) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+    <div className="flex items-center gap-3">
       <span>{message}</span>
       <button
         onClick={() => {

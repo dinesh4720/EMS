@@ -1,4 +1,6 @@
 import { getStoredAuthToken } from "../../../utils/authSession";
+import { getDateLocale } from '../../../i18n/index';
+
 
 /**
  * Student Helper Utilities
@@ -115,7 +117,7 @@ export const formatDate = (date, format = 'short') => {
     short: { month: 'short', day: 'numeric', year: 'numeric' },
     long: { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }
   };
-  return d.toLocaleDateString('en-US', options[format] || options.short);
+  return d.toLocaleDateString(getDateLocale(), options[format] || options.short);
 };
 
 /**

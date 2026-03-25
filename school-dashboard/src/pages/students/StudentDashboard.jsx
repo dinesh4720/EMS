@@ -24,7 +24,8 @@ import {
 } from "recharts";
 import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
-import { feesApi, studentFeesApi, studentsApi, uploadApi } from "../../services/api";
+import { feesApi, studentFeesApi, studentsApi, uploadApi, attendanceApi } from "../../services/api";
+import { CHART_COLORS } from "../../utils/chartTheme";
 const AddStudent = lazyWithRetry(() => import("./AddStudent"));
 import TCGeneratorModal from "./TCGeneratorModal";
 import PhotoEditorModal from "../../components/PhotoEditorModal";
@@ -35,14 +36,17 @@ import StudentRemarks from "./components/StudentRemarks";
 import StudentRatingSystem from "./components/StudentRatingSystem";
 import InvoicePrintModal from "./components/InvoicePrintModal";
 import { useStudentAttendance, useStudentData, useStudentFees, useStudentRemarks, useStudentResults } from "./hooks";
+import { getDateLocale } from '../../i18n/index';
+import { useTranslation } from 'react-i18next';
+
 
 // ============================================================================
 // STUDENT DASHBOARD - COMPLETE REFACTOR
 // Dashboard style, full page, rounded corners, all features
 // ============================================================================
 
-function confirmPermanentDeletion(studentName) {
-  return window.confirm(`Permanently delete ${studentName}? This removes linked attendance, fees, and parent-contact data.`);
+function confirmPermanentDeletion(studentName, t) {
+  return confirm(t('confirm.permanentDeleteStudent', { name: studentName }));
 }
 
 // Helper to get next class for promotion
@@ -82,6 +86,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function StudentDashboard() {
+  const { t } = useTranslation();
   const { params: { id }, isValid } = useValidatedParams({ id: 'objectId' }, { redirectTo: '/students' });
   const navigate = useNavigate();
   const { getStudentById, classesWithTeachers, staff, updateStudent, deleteStudent, loading, currentAcademicYear } = useApp();
@@ -119,7 +124,7 @@ export default function StudentDashboard() {
   const attendanceEndDate = `${currentYear}-12-31`;
 
   const contextStudent = getStudentById(id);
-  const { student: hydratedStudent, refetch: refetchStudent } = useStudentData(id);
+  const { student: hydratedStudent, loading: studentDataLoading, refetch: refetchStudent } = useStudentData(id);
   const student = hydratedStudent || contextStudent;
   const { attendanceData, attendanceStats, loading: attendanceLoading } = useStudentAttendance(id, {
     startDate: attendanceStartDate,
@@ -148,7 +153,7 @@ export default function StudentDashboard() {
 
   // Class info
   const classInfo = useMemo(() => {
-    if (!student?.class) return null;
+    if (!student?.class || typeof student.class !== 'string') return null;
     const parts = student.class.split("-");
     return (classesWithTeachers || []).find(c => c.name === parts[0] && c.section === parts[1]);
   }, [student, classesWithTeachers]);
@@ -210,38 +215,38 @@ export default function StudentDashboard() {
       const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
       const response = await uploadApi.uploadFile(file);
       await updateStudent(student.id, { photo: response.url });
-      toast.success("Photo updated");
-    } catch (error) { toast.error("Failed to update photo"); }
+      toast.success(t('toast.success.photoUpdated'));
+    } catch (error) { toast.error(t('toast.error.failedToUpdatePhoto')); }
     setIsPhotoEditorOpen(false);
   };
 
   const handleRemovePhoto = async () => {
     try {
       await updateStudent(student.id, { photo: null });
-      toast.success("Photo removed");
-    } catch { toast.error("Failed to remove photo"); }
+      toast.success(t('toast.success.photoRemoved'));
+    } catch { toast.error(t('toast.error.failedToRemovePhoto')); }
   };
 
   // Payment handler
   const handleRecordPayment = async () => {
     if (!paymentForm.amount || !paymentForm.paymentMode) {
-      toast.error("Please enter amount and select payment method");
+      toast.error(t('toast.error.pleaseEnterAmountAndSelectPaymentMethod'));
       return;
     }
 
     // Check if student has a fee structure
     if (!studentFeeStructure || studentFeeStructure.totalBalance <= 0) {
-      toast.error("No outstanding balance to pay");
+      toast.error(t('toast.error.noOutstandingBalanceToPay'));
       return;
     }
 
     const paymentAmount = parseInt(paymentForm.amount);
     if (paymentAmount <= 0) {
-      toast.error("Please enter a valid amount");
+      toast.error(t('toast.error.pleaseEnterAValidAmount'));
       return;
     }
 
-    const loadingToast = toast.loading("Recording payment...");
+    const loadingToast = toast.loading(t('toast.loading.recordingPayment'));
     try {
       // Calculate fee head payments for distribution
       const feeHeadPayments = [];
@@ -311,7 +316,7 @@ export default function StudentDashboard() {
   const handlePromoteStudent = async () => {
     const nextClass = getNextClass(student.class, availableClasses);
     if (!nextClass) {
-      toast.error("Unable to calculate next class");
+      toast.error(t('toast.error.unableToCalculateNextClass'));
       return;
     }
     try {
@@ -335,7 +340,7 @@ export default function StudentDashboard() {
 
   const handleSendReminderMessage = async () => {
     if (!reminderMessage.trim()) {
-      toast.error("Please enter a message");
+      toast.error(t('toast.error.pleaseEnterAMessage'));
       return;
     }
     try {
@@ -349,14 +354,53 @@ export default function StudentDashboard() {
       toast.success(`Reminder sent to ${student.parentName || 'parent'}`);
       setIsReminderOpen(false);
     } catch (error) {
-      toast.error('Failed to send reminder');
+      toast.error(t('toast.error.failedToSendReminder'));
+    }
+  };
+
+  // Quick attendance marking handler (MF-13)
+  const handleQuickMarkAttendance = async (status) => {
+    if (!student?.id) return;
+    const todayDate = new Date().toISOString().split('T')[0];
+    const loadingToast = toast.loading(`Marking as ${status}...`);
+    try {
+      await attendanceApi.mark({
+        studentId: student.id,
+        classId: student.classId,
+        date: todayDate,
+        status,
+        clientTimestamp: new Date().toISOString()
+      });
+      toast.success(`Marked as ${status.charAt(0).toUpperCase() + status.slice(1)}`, { id: loadingToast });
+    } catch (error) {
+      toast.error(`Failed to mark attendance: ${error.message || 'Unknown error'}`, { id: loadingToast });
+    }
+  };
+
+  // Send attendance report handler (MF-15)
+  const handleSendAttendanceReport = async (channel) => {
+    if (!student?.id) return;
+    const loadingToast = toast.loading(`Sending report via ${channel === 'email' ? 'Email' : 'SMS'}...`);
+    try {
+      const message = `Attendance Report for ${student.name}: ${attendanceStats.percentage}% attendance (${attendanceStats.present} present, ${attendanceStats.absent} absent out of ${attendanceStats.total} days).`;
+      await studentsApi.sendReminder(id, {
+        message,
+        channel,
+        parentPhone: student.parentPhone,
+        parentEmail: student.parentEmail,
+        studentName: student.name,
+        type: 'attendance_report'
+      });
+      toast.success(`Report sent via ${channel === 'email' ? 'Email' : 'SMS'}`, { id: loadingToast });
+    } catch (error) {
+      toast.error(`Failed to send report: ${error.message || 'Unknown error'}`, { id: loadingToast });
     }
   };
 
   // Rating handler
   const handleRatingChange = async (ratings) => {
     try {
-      const loadingToast = toast.loading("Saving ratings...");
+      const loadingToast = toast.loading(t('toast.loading.savingRatings'));
       const ratingsWithTimestamp = {};
       Object.keys(ratings).forEach(key => {
         ratingsWithTimestamp[key] = { ...ratings[key], lastUpdated: new Date().toISOString() };
@@ -364,24 +408,94 @@ export default function StudentDashboard() {
       await updateStudent(student.id, { ratings: ratingsWithTimestamp });
       toast.success("Ratings saved successfully", { id: loadingToast });
     } catch (error) {
-      toast.error("Failed to save ratings");
+      toast.error(t('toast.error.failedToSaveRatings'));
     }
   };
 
   const handleDownload = () => window.print();
 
+  // MF-16: Generate branded progress card PDF using print-to-PDF
+  const handleProgressCardDownload = () => {
+    const studentResults = results || [];
+    const photo = student?.photo || student?.picture || '';
+    const resultRows = studentResults.map(r => `
+      <tr>
+        <td>${r.examName || r.exam?.name || '—'}</td>
+        <td>${r.subject || '—'}</td>
+        <td style="text-align:center">${r.marksObtained ?? r.marks ?? '—'}</td>
+        <td style="text-align:center">${r.totalMarks ?? '—'}</td>
+        <td style="text-align:center">${r.percentage != null ? r.percentage + '%' : '—'}</td>
+        <td style="text-align:center">${r.grade || '—'}</td>
+      </tr>`).join('');
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
+<title>Progress Card – ${student?.name || ''}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:36px;max-width:800px;margin:auto}
+.header{display:flex;align-items:flex-start;gap:20px;border-bottom:3px solid #111;padding-bottom:16px;margin-bottom:24px}
+.photo{width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid #ddd}
+.photo-placeholder{width:80px;height:80px;border-radius:50%;background:#f3f4f6;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#9ca3af}
+.school-name{font-size:18px;font-weight:700;margin-bottom:2px}
+.title{font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
+.student-name{font-size:22px;font-weight:700;margin-bottom:4px}
+.meta{font-size:13px;color:#6b7280}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.stat{border:1px solid #e5e7eb;border-radius:8px;padding:12px;text-align:center}
+.stat-val{font-size:22px;font-weight:700;color:#111}
+.stat-lbl{font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f9fafb;border:1px solid #e5e7eb;padding:10px 12px;text-align:left;font-weight:600;color:#374151;font-size:11px;text-transform:uppercase}
+td{border:1px solid #e5e7eb;padding:9px 12px}
+tr:hover td{background:#f9fafb}
+.footer{text-align:center;font-size:11px;color:#aaa;margin-top:24px;border-top:1px solid #e5e7eb;padding-top:12px}
+@media print{body{padding:20px}}
+</style></head><body>
+<div class="header">
+  <div style="flex:1">
+    <div class="school-name">School Progress Card</div>
+    <div class="title">Academic Performance Report</div>
+  </div>
+  <div style="text-align:right">
+    ${photo ? `<img class="photo" src="${photo}" alt="photo"/>` : `<div class="photo-placeholder">${(student?.name || 'S')[0]}</div>`}
+    <div style="margin-top:8px;font-size:12px;color:#6b7280">${student?.rollNo ? 'Roll: ' + student.rollNo : ''}</div>
+  </div>
+</div>
+<div style="margin-bottom:20px">
+  <div class="student-name">${student?.name || ''}</div>
+  <div class="meta">Class ${student?.class || '—'} &nbsp;•&nbsp; Admission No: ${student?.admissionNo || '—'}</div>
+</div>
+<div class="stats">
+  <div class="stat"><div class="stat-val">${avgPercentage != null ? avgPercentage + '%' : '—'}</div><div class="stat-lbl">Average</div></div>
+  <div class="stat"><div class="stat-val">${studentResults.length}</div><div class="stat-lbl">Exams</div></div>
+  <div class="stat"><div class="stat-val">${attendancePercentage != null ? attendancePercentage + '%' : '—'}</div><div class="stat-lbl">Attendance</div></div>
+</div>
+${studentResults.length > 0 ? `
+<table>
+  <thead><tr><th>Exam</th><th>Subject</th><th>Marks</th><th>Total</th><th>%</th><th>Grade</th></tr></thead>
+  <tbody>${resultRows}</tbody>
+</table>` : '<p style="text-align:center;color:#9ca3af;padding:20px">No result records found</p>'}
+<div class="footer">Generated on ${new Date().toLocaleString()} — Confidential</div>
+</body></html>`;
+    const w = window.open('', '_blank', 'width=800,height=700');
+    if (!w) { toast.error('Pop-up blocked. Allow pop-ups to generate PDF.'); return; }
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 400);
+  };
+
   if (!isValid) return null;
 
   // Loading/Error states
-  if (loading) return (
+  if (loading || studentDataLoading) return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="text-gray-400 dark:text-zinc-500 text-sm">Loading...</div>
+      <div className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.loading')}</div>
     </div>
   );
 
   if (!student) return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="text-gray-400 dark:text-zinc-500 text-sm">Student not found</div>
+      <div className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.studentNotFound')}</div>
     </div>
   );
 
@@ -463,7 +577,7 @@ export default function StudentDashboard() {
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="mb-6">
         <button onClick={() => navigate('/students')} className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors mb-2">
-          <ArrowLeft size={16} /><span>Back to Students</span>
+          <ArrowLeft size={16} /><span>{t('pages.backToStudents')}</span>
         </button>
 
         <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-100 dark:border-zinc-700 p-5">
@@ -474,7 +588,7 @@ export default function StudentDashboard() {
                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect} />
                 <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-zinc-800 overflow-hidden flex items-center justify-center">
                   {student.photo ? (
-                    <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
+                    <img src={student.photo} alt={student.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   ) : (
                     <span className="text-xl font-medium text-gray-400 dark:text-zinc-500">{student.name?.charAt(0)?.toUpperCase()}</span>
                   )}
@@ -486,9 +600,9 @@ export default function StudentDashboard() {
                     </button>
                   </DropdownTrigger>
                   <DropdownMenu className="min-w-[140px]">
-                    <DropdownItem key="upload" onPress={() => fileInputRef.current?.click()}>Upload Photo</DropdownItem>
-                    <DropdownItem key="camera" onPress={() => setIsCameraCaptureOpen(true)}>Take Photo</DropdownItem>
-                    <DropdownItem key="remove" className="text-red-600" onPress={handleRemovePhoto}>Remove</DropdownItem>
+                    <DropdownItem key="upload" onPress={() => fileInputRef.current?.click()}>{t('pages.uploadPhoto1')}</DropdownItem>
+                    <DropdownItem key="camera" onPress={() => setIsCameraCaptureOpen(true)}>{t('pages.takePhoto')}</DropdownItem>
+                    <DropdownItem key="remove" className="text-red-600" onPress={handleRemovePhoto}>{t('pages.remove1')}</DropdownItem>
                   </DropdownMenu>
                 </Dropdown>
               </div>
@@ -516,27 +630,27 @@ export default function StudentDashboard() {
             {/* Actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
               <Button variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Phone size={16} />}
-                onPress={() => { if (student.parentPhone) { window.location.href = `tel:${student.parentPhone}`; toast.success(`Calling...`); } else { toast.error("No phone number"); }}}
-                isDisabled={!student.parentPhone}>Call</Button>
-              <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200" startContent={<Edit size={16} />} onPress={onEditOpen}>Edit</Button>
+                onPress={() => { if (student.parentPhone) { window.location.href = `tel:${student.parentPhone}`; toast.success(`Calling...`); } else { toast.error(t('toast.error.noPhoneNumber')); }}}
+                isDisabled={!student.parentPhone}>{t('pages.call')}</Button>
+              <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200" startContent={<Edit size={16} />} onPress={onEditOpen}>{t('pages.edit1')}</Button>
               <Dropdown>
                 <DropdownTrigger>
                   <Button isIconOnly variant="light" className="text-gray-400 dark:text-zinc-500"><MoreVertical size={20} /></Button>
                 </DropdownTrigger>
                 <DropdownMenu className="min-w-[180px]">
-                  <DropdownItem key="promote" startContent={<TrendingUp size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={onPromoteOpen}>Promote Student</DropdownItem>
-                  <DropdownItem key="move" startContent={<Move size={14} className="text-gray-400 dark:text-zinc-500" />}>Move to Class</DropdownItem>
-                  <DropdownItem key="tc" startContent={<FileCheck size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={onTcOpen}>Generate TC</DropdownItem>
-                  <DropdownItem key="progress" startContent={<BarChart3 size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={onProgressOpen}>Progress Card</DropdownItem>
-                  <DropdownItem key="reminder" startContent={<Bell size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={handleSendReminder}>Send Reminder</DropdownItem>
-                  <DropdownItem key="download" startContent={<Download size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={handleDownload}>Download</DropdownItem>
-                  <DropdownItem key="print" startContent={<Printer size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={handleDownload}>Print</DropdownItem>
+                  <DropdownItem key="promote" startContent={<TrendingUp size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={onPromoteOpen}>{t('pages.promoteStudent')}</DropdownItem>
+                  <DropdownItem key="move" startContent={<Move size={14} className="text-gray-400 dark:text-zinc-500" />}>{t('pages.moveToClass')}</DropdownItem>
+                  <DropdownItem key="tc" startContent={<FileCheck size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={onTcOpen}>{t('pages.generateTc')}</DropdownItem>
+                  <DropdownItem key="progress" startContent={<BarChart3 size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={onProgressOpen}>{t('pages.progressCard')}</DropdownItem>
+                  <DropdownItem key="reminder" startContent={<Bell size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={handleSendReminder}>{t('pages.sendReminder1')}</DropdownItem>
+                  <DropdownItem key="download" startContent={<Download size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={handleDownload}>{t('pages.download')}</DropdownItem>
+                  <DropdownItem key="print" startContent={<Printer size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={handleDownload}>{t('pages.print')}</DropdownItem>
                   <DropdownItem
                     key="delete"
                     className="text-red-600"
                     startContent={<Trash2 size={14} />}
                     onPress={async () => {
-                      if (!confirmPermanentDeletion(student.name)) {
+                      if (!confirmPermanentDeletion(student.name, t)) {
                         return;
                       }
 
@@ -629,7 +743,7 @@ export default function StudentDashboard() {
                 <div className="p-5 border-b border-gray-200 dark:border-zinc-700">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><TrendingUp size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Performance Trend</h3><p className="text-xs text-gray-500 dark:text-zinc-400">Academic performance over time</p></div>
+                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.performanceTrend1')}</h3><p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.academicPerformanceOverTime')}</p></div>
                   </div>
                 </div>
                 <div className="p-5">
@@ -641,11 +755,11 @@ export default function StudentDashboard() {
                           <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} dy={10} />
                           <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} domain={[0, 100]} />
                           <RechartsTooltip content={<CustomTooltip />} />
-                          <Area type="monotone" dataKey="value" name="Score" stroke="#6b7280" strokeWidth={2} fill="#e5e7eb" />
+                          <Area type="monotone" dataKey="value" name="Score" stroke={CHART_COLORS.neutral} strokeWidth={2} fill={CHART_COLORS.neutralLight} />
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
-                  ) : <div className="h-[200px] flex items-center justify-center text-gray-400 dark:text-zinc-500 text-sm">No exam data available</div>}
+                  ) : <div className="h-[200px] flex items-center justify-center text-gray-400 dark:text-zinc-500 text-sm">{t('pages.noExamDataAvailable')}</div>}
                 </div>
               </div>
 
@@ -654,7 +768,7 @@ export default function StudentDashboard() {
                 <div className="p-5 border-b border-gray-200 dark:border-zinc-700">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Clock size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Attendance Trend</h3><p className="text-xs text-gray-500 dark:text-zinc-400">Monthly attendance</p></div>
+                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.attendanceTrend')}</h3><p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.monthlyAttendance')}</p></div>
                   </div>
                 </div>
                 <div className="p-5">
@@ -670,7 +784,7 @@ export default function StudentDashboard() {
                           <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} dy={10} />
                           <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} domain={[0, 100]} />
                           <RechartsTooltip content={<CustomTooltip />} />
-                          <Area type="monotone" dataKey="value" name="Attendance" stroke="#6b7280" strokeWidth={2} fill="#e5e7eb" />
+                          <Area type="monotone" dataKey="value" name="Attendance" stroke={CHART_COLORS.neutral} strokeWidth={2} fill={CHART_COLORS.neutralLight} />
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
@@ -692,15 +806,15 @@ export default function StudentDashboard() {
                 <div className="p-5 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><GraduationCap size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                    <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Academic Information</h3>
+                    <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.academicInformation1')}</h3>
                   </div>
                   <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-800/50 rounded-lg"><Edit size={14} className="text-gray-400 dark:text-zinc-500" /></button>
                 </div>
                 <div className="p-5 grid grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Class</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.class || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Roll Number</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.rollNo || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Academic Year</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.academicYear || currentAcademicYear}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Class Teacher</p><p className="text-sm text-gray-900 dark:text-zinc-100">{classTeacher?.name || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.class1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.class || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.rollNumber2')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.rollNo || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.academicYear1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.academicYear || currentAcademicYear}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.classTeacher2')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{classTeacher?.name || "—"}</p></div>
                 </div>
               </div>
 
@@ -709,20 +823,20 @@ export default function StudentDashboard() {
                 <div className="p-5 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><User size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                    <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Personal Information</h3>
+                    <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.personalInformation1')}</h3>
                   </div>
                   <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-800/50 rounded-lg"><Edit size={14} className="text-gray-400 dark:text-zinc-500" /></button>
                 </div>
                 <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Full Name</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.name || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Admission ID</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.admissionId || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Date of Birth</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.dateOfBirth || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Gender</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.gender || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Blood Group</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.bloodGroup || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Religion</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.religion || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Category</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.category || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Mother Tongue</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.motherTongue || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Nationality</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.nationality || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.fullName1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.name || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.admissionId1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.admissionId || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.dateOfBirth2')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.dateOfBirth ? student.dateOfBirth.split('T')[0].split('-').reverse().join('/') : "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.gender1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.gender || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.bloodGroup1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.bloodGroup || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.religion1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.religion || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.category1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.category || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.motherTongue1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.motherTongue || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.nationality1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.nationality || "—"}</p></div>
                 </div>
               </div>
 
@@ -731,17 +845,17 @@ export default function StudentDashboard() {
                 <div className="p-5 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Mail size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                    <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Contact Details</h3>
+                    <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.contactDetails1')}</h3>
                   </div>
                   <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-800/50 rounded-lg"><Edit size={14} className="text-gray-400 dark:text-zinc-500" /></button>
                 </div>
                 <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="col-span-full"><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Address</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.address || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">City</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.city || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">State</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.state || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">ZIP Code</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.zipCode || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Phone</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.phone || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Email</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.email || "—"}</p></div>
+                  <div className="col-span-full"><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.address2')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.address || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.city1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.city || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.state1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.state || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.zIPCode')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.zipCode || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.phone1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.phone || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.email1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.email || "—"}</p></div>
                 </div>
               </div>
 
@@ -755,9 +869,9 @@ export default function StudentDashboard() {
                   <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-800/50 rounded-lg"><Edit size={14} className="text-gray-400 dark:text-zinc-500" /></button>
                 </div>
                 <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Parent Name</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentName || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Parent Phone</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentPhone || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Parent Email</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentEmail || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.parentName2')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentName || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.parentPhone1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentPhone || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.parentEmail1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentEmail || "—"}</p></div>
                 </div>
               </div>
 
@@ -766,13 +880,13 @@ export default function StudentDashboard() {
                 <div className="p-5 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><GraduationCap size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                    <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Previous Education</h3>
+                    <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.previousEducation1')}</h3>
                   </div>
                   <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-800/50 rounded-lg"><Edit size={14} className="text-gray-400 dark:text-zinc-500" /></button>
                 </div>
                 <div className="p-5 grid grid-cols-2 gap-6">
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Previous School</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.previousSchool || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">TC Number</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.tcNumber || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.previousSchool1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.previousSchool || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.tCNumber')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.tcNumber || "—"}</p></div>
                 </div>
               </div>
 
@@ -781,14 +895,14 @@ export default function StudentDashboard() {
                 <div className="p-5 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><FileCheck size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                    <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Additional Information</h3>
+                    <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.additionalInformation1')}</h3>
                   </div>
                   <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-800/50 rounded-lg"><Edit size={14} className="text-gray-400 dark:text-zinc-500" /></button>
                 </div>
                 <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Transport Required</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.transportRequired ? "Yes" : "No"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Hostel Required</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.hostelRequired ? "Yes" : "No"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">Medical Conditions</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.medicalConditions || "None"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.transportRequired1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.transportRequired ? "Yes" : "No"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.hostelRequired1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.hostelRequired ? "Yes" : "No"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.medicalConditions1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.medicalConditions || "None"}</p></div>
                 </div>
               </div>
             </div>
@@ -802,28 +916,28 @@ export default function StudentDashboard() {
                 <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-700 hover:border-gray-200 dark:hover:border-zinc-600 transition-colors">
                   <div className="flex items-center gap-2 mb-3">
                     <Award size={16} className="text-gray-400 dark:text-zinc-500" />
-                    <span className="text-xs text-gray-500 dark:text-zinc-400 font-medium">Overall Grade</span>
+                    <span className="text-xs text-gray-500 dark:text-zinc-400 font-medium">{t('pages.overallGrade1')}</span>
                   </div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{avgPercentage ? (avgPercentage >= 90 ? 'A+' : avgPercentage >= 80 ? 'A' : avgPercentage >= 70 ? 'B+' : 'B') : '—'}</p>
                 </div>
                 <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-700 hover:border-gray-200 dark:hover:border-zinc-600 transition-colors">
                   <div className="flex items-center gap-2 mb-3">
                     <TrendingUp size={16} className="text-gray-400 dark:text-zinc-500" />
-                    <span className="text-xs text-gray-500 dark:text-zinc-400 font-medium">Avg Score</span>
+                    <span className="text-xs text-gray-500 dark:text-zinc-400 font-medium">{t('pages.avgScore1')}</span>
                   </div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{avgPercentage ? `${avgPercentage}%` : '—'}</p>
                 </div>
                 <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-700 hover:border-gray-200 dark:hover:border-zinc-600 transition-colors">
                   <div className="flex items-center gap-2 mb-3">
                     <FileText size={16} className="text-gray-400 dark:text-zinc-500" />
-                    <span className="text-xs text-gray-500 dark:text-zinc-400 font-medium">Exams</span>
+                    <span className="text-xs text-gray-500 dark:text-zinc-400 font-medium">{t('pages.exams1')}</span>
                   </div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{results?.length || 0}</p>
                 </div>
                 <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-700 hover:border-gray-200 dark:hover:border-zinc-600 transition-colors">
                   <div className="flex items-center gap-2 mb-3">
                     <User size={16} className="text-gray-400 dark:text-zinc-500" />
-                    <span className="text-xs text-gray-500 dark:text-zinc-400 font-medium">Class Teacher</span>
+                    <span className="text-xs text-gray-500 dark:text-zinc-400 font-medium">{t('pages.classTeacher2')}</span>
                   </div>
                   <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100 truncate">{classTeacher?.name || '—'}</p>
                 </div>
@@ -832,8 +946,8 @@ export default function StudentDashboard() {
               {/* Subject Performance */}
               <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-700">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Subject Performance</h3>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Based on exam results</p>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.subjectPerformance1')}</h3>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.basedOnExamResults1')}</p>
                 </div>
                 {resultsLoading ? (
                   <div className="p-8 flex justify-center">
@@ -872,8 +986,8 @@ export default function StudentDashboard() {
                 ) : (
                   <div className="p-8 text-center">
                     <BookOpen size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">No subject results available</p>
-                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Results will appear once exams are completed</p>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noSubjectResultsAvailable')}</p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">{t('pages.resultsWillAppearOnceExamsAreCompleted')}</p>
                   </div>
                 )}
               </div>
@@ -882,8 +996,8 @@ export default function StudentDashboard() {
               <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-700 flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Exam Results</h3>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Assessment history</p>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.examResults1')}</h3>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.assessmentHistory1')}</p>
                   </div>
                   {resultsLoading && <div className="animate-spin w-4 h-4 border-2 border-gray-300 dark:border-zinc-600 border-t-gray-600 dark:border-t-zinc-300 rounded-full" />}
                 </div>
@@ -897,7 +1011,7 @@ export default function StudentDashboard() {
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{result.examId?.name || 'Exam'}</p>
-                            <p className="text-xs text-gray-500 dark:text-zinc-400">{result.examId?.startDate ? new Date(result.examId.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : ''}</p>
+                            <p className="text-xs text-gray-500 dark:text-zinc-400">{result.examId?.startDate ? new Date(result.examId.startDate).toLocaleDateString(getDateLocale(), { month: 'short', year: 'numeric' }) : ''}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
@@ -914,7 +1028,7 @@ export default function StudentDashboard() {
                 ) : (
                   <div className="px-5 py-12 text-center">
                     <FileText size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">No exam results yet</p>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noExamResultsYet1')}</p>
                   </div>
                 )}
               </div>
@@ -922,7 +1036,7 @@ export default function StudentDashboard() {
               {/* Achievements */}
               <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-700">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Achievements</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.achievements1')}</h3>
                 </div>
                 <div className="p-5">
                   <div className="grid grid-cols-2 gap-3">
@@ -958,26 +1072,26 @@ export default function StudentDashboard() {
                   <>
                     <div className="flex items-center justify-between mb-5">
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Attendance Overview</h3>
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.attendanceOverview')}</h3>
                         <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Based on {attendanceStats.total} recorded days</p>
                       </div>
                       <div className="text-right">
                         <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100">{attendanceStats.percentage}%</p>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">Attendance Rate</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.attendanceRate')}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-4">
                       <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-zinc-800">
                         <p className="text-xl font-bold text-gray-900 dark:text-zinc-100">{attendanceStats.present}</p>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Present</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.present2')}</p>
                       </div>
                       <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-zinc-800">
                         <p className="text-xl font-bold text-gray-900 dark:text-zinc-100">{attendanceStats.absent}</p>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Absent</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.absent2')}</p>
                       </div>
                       <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-zinc-800">
                         <p className="text-xl font-bold text-gray-900 dark:text-zinc-100">{attendanceStats.total}</p>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Total Days</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.totalDays2')}</p>
                       </div>
                     </div>
                   </>
@@ -987,7 +1101,7 @@ export default function StudentDashboard() {
               {/* Quick Mark */}
               <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-700">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Mark Attendance</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.markAttendance')}</h3>
                   <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Today, {format(new Date(), 'dd MMM yyyy')}</p>
                 </div>
                 <div className="p-4">
@@ -995,21 +1109,21 @@ export default function StudentDashboard() {
                     Note: Attendance is typically marked by teachers through the Staff Mobile App.
                   </p>
                   <div className="grid grid-cols-4 gap-2">
-                    <button onClick={() => toast.success("Marked as Present")} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all">
+                    <button onClick={() => handleQuickMarkAttendance('present')} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all">
                       <CheckCircle2 size={20} className="text-gray-600 dark:text-zinc-400" />
-                      <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">Present</span>
+                      <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">{t('pages.present2')}</span>
                     </button>
-                    <button onClick={() => toast.success("Marked as Absent")} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all">
+                    <button onClick={() => handleQuickMarkAttendance('absent')} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all">
                       <XCircle size={20} className="text-gray-600 dark:text-zinc-400" />
-                      <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">Absent</span>
+                      <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">{t('pages.absent2')}</span>
                     </button>
-                    <button onClick={() => toast.success("Marked as Half Day")} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all">
+                    <button onClick={() => handleQuickMarkAttendance('half-day')} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all">
                       <Clock size={20} className="text-gray-600 dark:text-zinc-400" />
-                      <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">Half Day</span>
+                      <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">{t('pages.halfDay')}</span>
                     </button>
-                    <button onClick={() => toast.success("Marked as Leave")} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all">
+                    <button onClick={() => handleQuickMarkAttendance('leave')} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all">
                       <Calendar size={20} className="text-gray-600 dark:text-zinc-400" />
-                      <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">Leave</span>
+                      <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">{t('pages.leave')}</span>
                     </button>
                   </div>
                 </div>
@@ -1018,11 +1132,11 @@ export default function StudentDashboard() {
               {/* Subject-wise Attendance - Not Available */}
               <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-700">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Subject-wise Attendance</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.subjectWiseAttendance')}</h3>
                 </div>
                 <div className="p-8 text-center">
                   <BookOpen size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
-                  <p className="text-sm text-gray-500 dark:text-zinc-400">Subject-wise attendance tracking is not currently available.</p>
+                  <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.subjectWiseAttendanceTrackingIsNotCurrentlyAvailable')}</p>
                   <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">This feature requires per-subject attendance tracking which will be implemented in a future update.</p>
                 </div>
               </div>
@@ -1033,13 +1147,13 @@ export default function StudentDashboard() {
                   <div className="flex items-center gap-3">
                     <Send size={18} className="text-gray-400 dark:text-zinc-500" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Send Report to Parent</p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">Share attendance summary via email or SMS</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.sendReportToParent')}</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.shareAttendanceSummaryViaEmailOrSms')}</p>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Mail size={14} />} onPress={() => toast.success("Report sent via email")}>Email</Button>
-                    <Button size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Phone size={14} />} onPress={() => toast.success("Report sent via SMS")}>SMS</Button>
+                    <Button size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Mail size={14} />} onPress={() => handleSendAttendanceReport('email')}>{t('pages.email1')}</Button>
+                    <Button size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Phone size={14} />} onPress={() => handleSendAttendanceReport('sms')}>SMS</Button>
                   </div>
                 </div>
               </div>
@@ -1054,7 +1168,7 @@ export default function StudentDashboard() {
                 <div className="p-6 border-b border-gray-100 dark:border-zinc-700">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium uppercase tracking-wide">Total Outstanding</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium uppercase tracking-wide">{t('pages.totalOutstanding1')}</p>
                       <p className="text-4xl font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{(studentFeeStructure?.totalBalance || 0).toLocaleString()}</p>
                       <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">
                         {(studentFeeStructure?.totalBalance || 0) <= 0 ? 'All fees cleared' : 'Payment pending'}
@@ -1063,11 +1177,11 @@ export default function StudentDashboard() {
                     <div className="flex gap-2">
                       {(studentFeeStructure?.totalBalance || 0) > 0 && (
                         <>
-                          <Button size="sm" className="bg-gray-900 text-white" startContent={<IndianRupee size={14} />} onPress={onPaymentOpen}>Collect Payment</Button>
-                          <Button size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Bell size={14} />} onPress={handleSendReminder}>Send Reminder</Button>
+                          <Button size="sm" className="bg-gray-900 text-white" startContent={<IndianRupee size={14} />} onPress={onPaymentOpen}>{t('pages.collectPayment1')}</Button>
+                          <Button size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Bell size={14} />} onPress={handleSendReminder}>{t('pages.sendReminder1')}</Button>
                         </>
                       )}
-                      <Button size="sm" variant="bordered" className="border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300" startContent={<Download size={14} />} onPress={() => setIsInvoiceOpen(true)}>Invoice</Button>
+                      <Button size="sm" variant="bordered" className="border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300" startContent={<Download size={14} />} onPress={() => setIsInvoiceOpen(true)}>{t('pages.invoice1')}</Button>
                     </div>
                   </div>
                 </div>
@@ -1075,19 +1189,19 @@ export default function StudentDashboard() {
                 {/* Fee Summary Stats */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 dark:divide-zinc-700">
                   <div className="p-4 text-center">
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">Total Fee</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.totalFee3')}</p>
                     <p className="text-lg font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{(studentFeeStructure?.totalFee || 0).toLocaleString()}</p>
                   </div>
                   <div className="p-4 text-center">
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">Paid</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.paid2')}</p>
                     <p className="text-lg font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{(studentFeeStructure?.totalPaid || 0).toLocaleString()}</p>
                   </div>
                   <div className="p-4 text-center">
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">Discount</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.discount1')}</p>
                     <p className="text-lg font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{(studentFeeStructure?.discountApplied || 0).toLocaleString()}</p>
                   </div>
                   <div className="p-4 text-center">
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">Balance</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.balance1')}</p>
                     <p className="text-lg font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{(studentFeeStructure?.totalBalance || 0).toLocaleString()}</p>
                   </div>
                 </div>
@@ -1097,10 +1211,10 @@ export default function StudentDashboard() {
               <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-700 flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Payment History</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.paymentHistory')}</h3>
                     <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{feeHistory?.length || 0} transactions</p>
                   </div>
-                  <Button size="sm" variant="light" className="text-gray-500 dark:text-zinc-400" onPress={() => navigate('/fees')}>View All</Button>
+                  <Button size="sm" variant="light" className="text-gray-500 dark:text-zinc-400" onPress={() => navigate('/fees')}>{t('pages.viewAll1')}</Button>
                 </div>
                 {feeHistory?.length > 0 ? (
                   <div className="divide-y divide-gray-50 dark:divide-zinc-800 max-h-64 overflow-y-auto">
@@ -1125,7 +1239,7 @@ export default function StudentDashboard() {
                 ) : (
                   <div className="px-5 py-8 text-center">
                     <IndianRupee size={24} className="mx-auto text-gray-200 dark:text-zinc-700 mb-2" />
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">No payment history</p>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noPaymentHistory')}</p>
                   </div>
                 )}
               </div>
@@ -1134,10 +1248,10 @@ export default function StudentDashboard() {
               <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-700 flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Fee Breakdown</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.feeBreakdown')}</h3>
                     <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{studentFeeStructure?.feeHeads?.length || 0} fee heads</p>
                   </div>
-                  <Button size="sm" variant="light" className="text-gray-500 dark:text-zinc-400" startContent={<BookOpen size={14} />} onPress={() => navigate('/settings?tab=fee-heads')}>Configure</Button>
+                  <Button size="sm" variant="light" className="text-gray-500 dark:text-zinc-400" startContent={<BookOpen size={14} />} onPress={() => navigate('/settings?tab=fee-heads')}>{t('pages.configure')}</Button>
                 </div>
                 {loadingFeeStructure ? (
                   <div className="p-8 text-center">
@@ -1158,15 +1272,15 @@ export default function StudentDashboard() {
                         </div>
                         <div className="flex items-center gap-4 pl-11 sm:pl-0">
                           <div className="text-right hidden md:block">
-                            <p className="text-xs text-gray-500 dark:text-zinc-400">Amount</p>
+                            <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.amount1')}</p>
                             <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{fee.amount?.toLocaleString()}</p>
                           </div>
                           <div className="text-right hidden sm:block">
-                            <p className="text-xs text-gray-500 dark:text-zinc-400">Paid</p>
+                            <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.paid2')}</p>
                             <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{fee.paidAmount?.toLocaleString()}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-xs text-gray-500 dark:text-zinc-400">Balance</p>
+                            <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.balance1')}</p>
                             <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{fee.balanceAmount?.toLocaleString()}</p>
                           </div>
                           <span className={`text-xs px-2 py-0.5 rounded-md ${
@@ -1183,7 +1297,7 @@ export default function StudentDashboard() {
                 ) : (
                   <div className="px-5 py-8 text-center">
                     <IndianRupee size={24} className="mx-auto text-gray-200 dark:text-zinc-700 mb-2" />
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">No fee structure assigned</p>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noFeeStructureAssigned')}</p>
                   </div>
                 )}
               </div>
@@ -1230,38 +1344,38 @@ export default function StudentDashboard() {
 
           {/* Quick Actions */}
           <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-100 dark:border-zinc-700 p-5">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Quick Actions</h3>
+            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">{t('pages.quickActions1')}</h3>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={onEditOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><Edit size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">Edit</span></button>
-              <button onClick={() => student.parentPhone && (window.location.href = `tel:${student.parentPhone}`)} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><Phone size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">Call</span></button>
+              <button onClick={onEditOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><Edit size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.edit1')}</span></button>
+              <button onClick={() => student.parentPhone && (window.location.href = `tel:${student.parentPhone}`)} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><Phone size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.call')}</span></button>
               <button onClick={onTcOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><FileCheck size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">TC</span></button>
-              <button onClick={onProgressOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><BarChart3 size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">Progress</span></button>
+              <button onClick={onProgressOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><BarChart3 size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.progress')}</span></button>
             </div>
           </div>
 
           {/* Alerts */}
           {(attendanceStats.total > 0 && attendanceStats.percentage < 75 || studentFeeStructure?.totalBalance > 0 || (avgPercentage && avgPercentage < 60)) && (
             <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-100 dark:border-zinc-700 overflow-hidden">
-              <div className="p-4 border-b border-gray-100 dark:border-zinc-700"><h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Attention Required</h3></div>
+              <div className="p-4 border-b border-gray-100 dark:border-zinc-700"><h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.attentionRequired1')}</h3></div>
               <div className="divide-y divide-gray-50 dark:divide-zinc-800">
                 {attendanceStats.total > 0 && attendanceStats.percentage < 75 && (
                   <div className="p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 cursor-pointer">
                     <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><AlertCircle size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                    <div className="flex-1"><p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Low Attendance</p><p className="text-xs text-gray-500 dark:text-zinc-400">{attendanceStats.percentage}% (below 75%)</p></div>
+                    <div className="flex-1"><p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.lowAttendance1')}</p><p className="text-xs text-gray-500 dark:text-zinc-400">{attendanceStats.percentage}% (below 75%)</p></div>
                     <ChevronRight size={16} className="text-gray-400 dark:text-zinc-500" />
                   </div>
                 )}
                 {studentFeeStructure?.totalBalance > 0 && (
                   <div className="p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 cursor-pointer">
                     <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><IndianRupee size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                    <div className="flex-1"><p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Pending Fees</p><p className="text-xs text-gray-500 dark:text-zinc-400">₹{studentFeeStructure.totalBalance.toLocaleString()} due</p></div>
+                    <div className="flex-1"><p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.pendingFees1')}</p><p className="text-xs text-gray-500 dark:text-zinc-400">₹{studentFeeStructure.totalBalance.toLocaleString()} due</p></div>
                     <ChevronRight size={16} className="text-gray-400 dark:text-zinc-500" />
                   </div>
                 )}
                 {avgPercentage && avgPercentage < 60 && (
                   <div className="p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 cursor-pointer">
                     <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><TrendingUp size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                    <div className="flex-1"><p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Academic Concern</p><p className="text-xs text-gray-500 dark:text-zinc-400">{avgPercentage}% average</p></div>
+                    <div className="flex-1"><p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.academicConcern1')}</p><p className="text-xs text-gray-500 dark:text-zinc-400">{avgPercentage}% average</p></div>
                     <ChevronRight size={16} className="text-gray-400 dark:text-zinc-500" />
                   </div>
                 )}
@@ -1274,7 +1388,7 @@ export default function StudentDashboard() {
             <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-100 dark:border-zinc-700 p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><CheckCircle2 size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                <div><h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">All Clear</h3><p className="text-xs text-gray-500 dark:text-zinc-400">No issues detected</p></div>
+                <div><h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.allClear')}</h3><p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.noIssuesDetected')}</p></div>
               </div>
               <p className="text-sm text-gray-600 dark:text-zinc-400">
                 This student has no pending issues. All records are up to date.
@@ -1284,24 +1398,24 @@ export default function StudentDashboard() {
 
           {/* Contact Card */}
           <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-100 dark:border-zinc-700 p-5">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Contact Information</h3>
+            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">{t('pages.contactInformation1')}</h3>
             <div className="space-y-4">
               {student.parentPhone && (
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Phone size={14} className="text-gray-600 dark:text-zinc-400" /></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">Parent Phone</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentPhone}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.parentPhone1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentPhone}</p></div>
                 </div>
               )}
               {student.parentEmail && (
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Mail size={14} className="text-gray-600 dark:text-zinc-400" /></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">Parent Email</p><p className="text-sm text-gray-900 dark:text-zinc-100 truncate">{student.parentEmail}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.parentEmail1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100 truncate">{student.parentEmail}</p></div>
                 </div>
               )}
               {student.address && (
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0"><Mail size={14} className="text-gray-600 dark:text-zinc-400" /></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">Address</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.address}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.address2')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.address}</p></div>
                 </div>
               )}
             </div>
@@ -1321,10 +1435,10 @@ export default function StudentDashboard() {
             <>
               <DrawerHeader className="flex items-center gap-3 border-b border-gray-100 dark:border-zinc-700 p-4">
                 <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg"><Edit size={18} className="text-gray-600 dark:text-zinc-400" /></div>
-                <div><h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Edit Student</h3><p className="text-xs text-gray-500 dark:text-zinc-400">Update student information</p></div>
+                <div><h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{t('pages.editStudent1')}</h3><p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.updateStudentInformation1')}</p></div>
               </DrawerHeader>
               <DrawerBody className="p-0 overflow-auto">
-                <Suspense fallback={<div className="flex items-center justify-center h-40"><span className="text-sm text-gray-400 dark:text-zinc-500">Loading...</span></div>}>
+                <Suspense fallback={<div className="flex items-center justify-center h-40"><span className="text-sm text-gray-400 dark:text-zinc-500">{t('pages.loading')}</span></div>}>
                   <AddStudent onClose={onClose} onSave={(data) => { updateStudent(id, data); onClose(); }} classesWithTeachers={classesWithTeachers || []} classOptions={availableClasses} initialData={student} />
                 </Suspense>
               </DrawerBody>
@@ -1337,22 +1451,22 @@ export default function StudentDashboard() {
       {/* Payment Modal */}
       <Modal isOpen={isPaymentOpen} onClose={onPaymentClose} size="md">
         <ModalContent>
-          <ModalHeader>Record Fee Payment</ModalHeader>
+          <ModalHeader>{t('pages.recordFeePayment1')}</ModalHeader>
           <ModalBody>
             <div className="space-y-4">
-              <Input label="Amount" type="number" value={paymentForm.amount} onValueChange={(v) => setPaymentForm({ ...paymentForm, amount: v })} startContent="₹" variant="bordered" description={`Outstanding: ₹${studentFeeStructure?.totalBalance?.toLocaleString() || 0}`} isRequired />
-              <Select label="Payment Method" placeholder="Select method" selectedKeys={[paymentForm.paymentMode]} onSelectionChange={(keys) => setPaymentForm({ ...paymentForm, paymentMode: Array.from(keys)[0] })} variant="bordered" isRequired>
-                <SelectItem key="cash">Cash</SelectItem>
+              <Input label={t('pages.amount1')} type="number" value={paymentForm.amount} onValueChange={(v) => setPaymentForm({ ...paymentForm, amount: v })} startContent="₹" variant="bordered" description={`Outstanding: ₹${studentFeeStructure?.totalBalance?.toLocaleString() || 0}`} isRequired />
+              <Select label={t('pages.paymentMethod1')} placeholder={t('pages.selectMethod')} selectedKeys={[paymentForm.paymentMode]} onSelectionChange={(keys) => setPaymentForm({ ...paymentForm, paymentMode: Array.from(keys)[0] })} variant="bordered" isRequired>
+                <SelectItem key="cash">{t('pages.cash1')}</SelectItem>
                 <SelectItem key="online">Online/UPI</SelectItem>
-                <SelectItem key="card">Card</SelectItem>
-                <SelectItem key="cheque">Cheque</SelectItem>
+                <SelectItem key="card">{t('pages.card1')}</SelectItem>
+                <SelectItem key="cheque">{t('pages.cheque1')}</SelectItem>
               </Select>
-              <Input label="Payment Date" type="date" value={paymentForm.date} onValueChange={(v) => setPaymentForm({ ...paymentForm, date: v })} variant="bordered" />
+              <Input label={t('pages.paymentDate1')} type="date" value={paymentForm.date} onValueChange={(v) => setPaymentForm({ ...paymentForm, date: v })} variant="bordered" />
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={onPaymentClose}>Cancel</Button>
-            <Button className="bg-gray-900 text-white" onPress={handleRecordPayment} isDisabled={!paymentForm.amount || !paymentForm.paymentMode}>Record Payment</Button>
+            <Button variant="light" onPress={onPaymentClose}>{t('pages.cancel2')}</Button>
+            <Button className="bg-gray-900 text-white" onPress={handleRecordPayment} isDisabled={!paymentForm.amount || !paymentForm.paymentMode}>{t('pages.recordPayment1')}</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -1372,7 +1486,7 @@ export default function StudentDashboard() {
       {/* Promote Modal */}
       <Modal isOpen={isPromoteOpen} onClose={onPromoteClose} size="md">
         <ModalContent>
-          <ModalHeader>Promote Student</ModalHeader>
+          <ModalHeader>{t('pages.promoteStudent')}</ModalHeader>
           <ModalBody>
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-zinc-800 rounded-lg">
@@ -1380,14 +1494,14 @@ export default function StudentDashboard() {
                 <div><p className="text-sm text-gray-500 dark:text-zinc-400">Student: <span className="font-semibold text-gray-900 dark:text-zinc-100">{student.name}</span></p><p className="text-sm text-gray-500 dark:text-zinc-400">Current Class: <span className="font-semibold text-gray-900 dark:text-zinc-100">{student.class}</span></p></div>
               </div>
               <div className="p-4 bg-gray-100 dark:bg-zinc-800 rounded-lg">
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Auto-calculated next class:</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">{t('pages.autoCalculatedNextClass')}</p>
                 <p className="text-lg font-bold text-gray-900 dark:text-zinc-100">{getNextClass(student.class, availableClasses) || "Unable to calculate"}</p>
               </div>
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={onPromoteClose}>Cancel</Button>
-            <Button className="bg-gray-900 text-white" startContent={<GraduationCap size={16} />} onPress={handlePromoteStudent}>Promote</Button>
+            <Button variant="light" onPress={onPromoteClose}>{t('pages.cancel2')}</Button>
+            <Button className="bg-gray-900 text-white" startContent={<GraduationCap size={16} />} onPress={handlePromoteStudent}>{t('pages.promote')}</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -1395,17 +1509,17 @@ export default function StudentDashboard() {
       {/* Progress Card Modal */}
       <Modal isOpen={isProgressOpen} onClose={onProgressClose} size="md">
         <ModalContent>
-          <ModalHeader>Student Progress Card</ModalHeader>
+          <ModalHeader>{t('pages.studentProgressCard1')}</ModalHeader>
           <ModalBody>
             <div className="flex flex-col items-center gap-4 py-6 text-center">
               <div className="p-4 bg-gray-100 dark:bg-zinc-800 rounded-full"><BarChart3 size={48} className="text-gray-600 dark:text-zinc-400" /></div>
               <div><h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{student.name}</h3><p className="text-sm text-gray-500 dark:text-zinc-400">Class {student.class} • Roll {student.rollNo}</p></div>
-              <p className="text-sm text-gray-500 dark:text-zinc-400">Generate and download the detailed academic performance report card.</p>
+              <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.generateAndDownloadTheDetailedAcademicPerformanceReportCard')}</p>
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={onProgressClose}>Cancel</Button>
-            <Button className="bg-gray-900 text-white" startContent={<Download size={16} />} onPress={() => { toast.success("Downloading progress card..."); onProgressClose(); }}>Download</Button>
+            <Button variant="light" onPress={onProgressClose}>{t('pages.cancel2')}</Button>
+            <Button className="bg-gray-900 text-white" startContent={<Download size={16} />} onPress={() => { handleProgressCardDownload(); onProgressClose(); }}>{t('pages.download')}</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -1413,13 +1527,13 @@ export default function StudentDashboard() {
       {/* Reminder Modal */}
       <Modal isOpen={isReminderOpen} onClose={() => setIsReminderOpen(false)} size="md">
         <ModalContent>
-          <ModalHeader>Send Fee Reminder</ModalHeader>
+          <ModalHeader>{t('pages.sendFeeReminder1')}</ModalHeader>
           <ModalBody>
-            <Textarea label="Message" value={reminderMessage} onValueChange={setReminderMessage} minRows={4} variant="bordered" placeholder="Enter reminder message..." />
+            <Textarea label={t('pages.message1')} value={reminderMessage} onValueChange={setReminderMessage} minRows={4} variant="bordered" placeholder={t('pages.enterReminderMessage')} />
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={() => setIsReminderOpen(false)}>Cancel</Button>
-            <Button className="bg-gray-900 text-white" startContent={<Send size={16} />} onPress={handleSendReminderMessage}>Send Reminder</Button>
+            <Button variant="light" onPress={() => setIsReminderOpen(false)}>{t('pages.cancel2')}</Button>
+            <Button className="bg-gray-900 text-white" startContent={<Send size={16} />} onPress={handleSendReminderMessage}>{t('pages.sendReminder1')}</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

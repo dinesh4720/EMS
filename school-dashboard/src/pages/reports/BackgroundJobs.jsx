@@ -5,8 +5,10 @@ import {
   Trash2,
 } from 'lucide-react';
 import { jobsApi } from '../../services/api';
+import { usePermissions } from '../../context/PermissionContext';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const STATUS_CONFIG = {
   queued: { label: 'Queued', color: 'default', icon: Clock },
@@ -18,6 +20,9 @@ const STATUS_CONFIG = {
 };
 
 export default function BackgroundJobs() {
+  const { t } = useTranslation();
+  const { hasPermission } = usePermissions();
+  const canCancelJobs = hasPermission('manage_system') || hasPermission('admin');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [jobs, setJobs] = useState({ importJobs: [], systemJobs: [] });
@@ -32,7 +37,7 @@ export default function BackgroundJobs() {
       setStats(statsData);
       setJobs(jobsData);
     } catch (err) {
-      toast.error('Failed to load jobs');
+      toast.error(t('toast.error.failedToLoadJobs'));
     } finally {
       setLoading(false);
     }
@@ -46,7 +51,7 @@ export default function BackgroundJobs() {
     setCancelling(jobId);
     try {
       await jobsApi.cancelJob(jobId);
-      toast.success('Job cancelled');
+      toast.success(t('toast.success.jobCancelled'));
       loadData();
     } catch (err) {
       toast.error(err.message || 'Failed to cancel job');
@@ -65,8 +70,8 @@ export default function BackgroundJobs() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Background Jobs</h1>
-          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">Track import jobs and system tasks</p>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{t('pages.backgroundJobs')}</h1>
+          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">{t('pages.trackImportJobsAndSystemTasks')}</p>
         </div>
         <Button
           size="sm"
@@ -96,19 +101,19 @@ export default function BackgroundJobs() {
       {/* Import Jobs Table */}
       <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 shadow-sm dark:shadow-zinc-900/50 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-200 dark:border-zinc-800">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Import Jobs</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.importJobs')}</h3>
         </div>
         {jobs.importJobs?.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-100 dark:bg-zinc-800">
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">Type</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">Status</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">Rows</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">Initiated By</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">Created</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">Actions</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">{t('pages.type1')}</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">{t('pages.status2')}</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">{t('pages.rows')}</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">{t('pages.initiatedBy')}</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">{t('pages.created')}</th>
+                  <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">{t('pages.actions1')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
@@ -130,7 +135,7 @@ export default function BackgroundJobs() {
                         {new Date(job.createdAt).toLocaleDateString()} {new Date(job.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {['queued', 'running'].includes(job.status) && (
+                        {['queued', 'running'].includes(job.status) && canCancelJobs && (
                           <Button
                             size="sm"
                             variant="light"
@@ -151,7 +156,7 @@ export default function BackgroundJobs() {
           </div>
         ) : (
           <div className="p-8 text-center">
-            <p className="text-sm text-gray-500 dark:text-zinc-400">No import jobs found</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noImportJobsFound')}</p>
           </div>
         )}
       </div>
@@ -159,7 +164,7 @@ export default function BackgroundJobs() {
       {/* System Jobs */}
       <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 shadow-sm dark:shadow-zinc-900/50 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">System Jobs</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.systemJobs')}</h3>
           <span className="text-xs text-gray-500 dark:text-zinc-400">{systemStats.total || 0} total</span>
         </div>
         {jobs.systemJobs?.length > 0 ? (
@@ -167,10 +172,10 @@ export default function BackgroundJobs() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-100 dark:bg-zinc-800">
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">Name</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">Status</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">Last Run</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">Next Run</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">{t('pages.name1')}</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">{t('pages.status2')}</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">{t('pages.lastRun')}</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase">{t('pages.nextRun')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
@@ -196,7 +201,7 @@ export default function BackgroundJobs() {
           </div>
         ) : (
           <div className="p-8 text-center">
-            <p className="text-sm text-gray-500 dark:text-zinc-400">No system jobs found</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noSystemJobsFound')}</p>
           </div>
         )}
       </div>

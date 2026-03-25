@@ -1,18 +1,38 @@
-import { useState } from "react";
-import { Button, Input, Chip, Select, SelectItem, Divider, Spinner } from "@heroui/react";
+import { useState, useEffect } from "react";
+import { Button, Input, Chip, Select, SelectItem, Divider } from "@heroui/react";
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { Save, Building2, FileText, Edit2, Upload, X } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { useTranslation } from 'react-i18next';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
+import UnsavedChangesModal from '../../components/modals/UnsavedChangesModal';
 
 export default function InstitutionSettings() {
+  const { t } = useTranslation();
   const { schoolSettings, updateSchoolSettings, loading } = useApp();
   const [localSettings, setLocalSettings] = useState(schoolSettings);
   const [saving, setSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+
+  const { isBlocked, proceed, reset } = useUnsavedChanges(isDirty);
+
+  const updateLocalSettings = (updater) => {
+    setLocalSettings(updater);
+    setIsDirty(true);
+  };
+
+  useEffect(() => {
+    if (schoolSettings && !localSettings) {
+      setLocalSettings(schoolSettings);
+    }
+  }, [schoolSettings]);
   const [editingSection, setEditingSection] = useState(null); // 'identity', 'branding', or null
 
   const handleSave = async () => {
     setSaving(true);
     try {
       await updateSchoolSettings(localSettings);
+      setIsDirty(false);
       setEditingSection(null);
     } catch (error) {
       console.error('Failed to save settings:', error);
@@ -23,6 +43,7 @@ export default function InstitutionSettings() {
 
   const handleCancel = () => {
     setLocalSettings(schoolSettings);
+    setIsDirty(false);
     setEditingSection(null);
   };
 
@@ -31,7 +52,7 @@ export default function InstitutionSettings() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setLocalSettings((prev) => ({ ...prev, [field]: reader.result }));
+        updateLocalSettings((prev) => ({ ...prev, [field]: reader.result }));
       };
       reader.readAsDataURL(file);
     }
@@ -41,9 +62,7 @@ export default function InstitutionSettings() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Spinner size="lg" />
-      </div>
+      <TablePageSkeleton />
     );
   }
 
@@ -55,12 +74,13 @@ export default function InstitutionSettings() {
   );
 
   return (
+    <>
     <div className="max-w-4xl mx-auto pb-10 space-y-8">
       {/* Unified Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-default-200 pb-6">
         <div>
-          <h2 className="text-2xl font-bold text-default-900">Institution Profile</h2>
-          <p className="text-sm text-default-500 mt-1">Manage your institution's core identity and branding details.</p>
+          <h2 className="text-2xl font-bold text-default-900">{t('pages.institutionProfile')}</h2>
+          <p className="text-sm text-default-500 mt-1">{t('pages.manageYourInstitutionSCoreIdentityAndBrandingDetails')}</p>
         </div>
       </div>
 
@@ -74,13 +94,13 @@ export default function InstitutionSettings() {
                   <Building2 size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-default-900">Identity & Contact</h3>
-                  <p className="text-xs text-default-500">Basic details about your school</p>
+                  <h3 className="text-lg font-bold text-default-900">{t('pages.identityContact')}</h3>
+                  <p className="text-xs text-default-500">{t('pages.basicDetailsAboutYourSchool')}</p>
                 </div>
               </div>
               {editingSection === 'identity' ? (
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="light" color="danger" onPress={handleCancel} disabled={saving}>Cancel</Button>
+                  <Button size="sm" variant="light" color="danger" onPress={handleCancel} disabled={saving}>{t('pages.cancel2')}</Button>
                   <Button size="sm" color="primary" onPress={handleSave} isLoading={saving} startContent={<Save size={14} />}>
                     Save Changes
                   </Button>
@@ -96,34 +116,34 @@ export default function InstitutionSettings() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8 animate-fade-in">
                 <div className="md:col-span-2 lg:col-span-1">
                   <Input
-                    label="Institution Name"
+                    label={t('pages.institutionName')}
                     value={localSettings.name}
-                    onValueChange={(v) => setLocalSettings({ ...localSettings, name: v })}
+                    onValueChange={(v) => updateLocalSettings({ ...localSettings, name: v })}
                     variant="bordered"
                     labelPlacement="outside"
                     classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200" }}
                   />
                 </div>
                 <Input
-                  label="UDISE No."
+                  label={t('pages.uDISENo')}
                   value={localSettings.udiseNo}
-                  onValueChange={(v) => setLocalSettings({ ...localSettings, udiseNo: v })}
+                  onValueChange={(v) => updateLocalSettings({ ...localSettings, udiseNo: v })}
                   variant="bordered"
                   labelPlacement="outside"
                   classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200" }}
                 />
                 <Input
-                  label="Affiliation No."
+                  label={t('pages.affiliationNo')}
                   value={localSettings.affiliationNo}
-                  onValueChange={(v) => setLocalSettings({ ...localSettings, affiliationNo: v })}
+                  onValueChange={(v) => updateLocalSettings({ ...localSettings, affiliationNo: v })}
                   variant="bordered"
                   labelPlacement="outside"
                   classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200" }}
                 />
                 <Select
-                  label="Board of Education"
+                  label={t('pages.boardOfEducation')}
                   selectedKeys={localSettings.boardOfEducation ? [localSettings.boardOfEducation] : []}
-                  onChange={(e) => setLocalSettings({ ...localSettings, boardOfEducation: e.target.value })}
+                  onChange={(e) => updateLocalSettings({ ...localSettings, boardOfEducation: e.target.value })}
                   variant="bordered"
                   labelPlacement="outside"
                   classNames={{ trigger: "bg-white dark:bg-zinc-950 border-default-200" }}
@@ -133,26 +153,26 @@ export default function InstitutionSettings() {
                   ))}
                 </Select>
                 <Input
-                  label="Email Address"
+                  label={t('pages.emailAddress')}
                   value={localSettings.email}
-                  onValueChange={(v) => setLocalSettings({ ...localSettings, email: v })}
+                  onValueChange={(v) => updateLocalSettings({ ...localSettings, email: v })}
                   variant="bordered"
                   labelPlacement="outside"
                   classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200" }}
                 />
                 <Input
-                  label="Phone Number"
+                  label={t('pages.phoneNumber')}
                   value={localSettings.phone}
-                  onValueChange={(v) => setLocalSettings({ ...localSettings, phone: v })}
+                  onValueChange={(v) => updateLocalSettings({ ...localSettings, phone: v })}
                   variant="bordered"
                   labelPlacement="outside"
                   classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200" }}
                 />
                 <div className="md:col-span-2 lg:col-span-3">
                   <Input
-                    label="Address"
+                    label={t('pages.address2')}
                     value={localSettings.address}
-                    onValueChange={(v) => setLocalSettings({ ...localSettings, address: v })}
+                    onValueChange={(v) => updateLocalSettings({ ...localSettings, address: v })}
                     variant="bordered"
                     labelPlacement="outside"
                     classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200" }}
@@ -161,14 +181,14 @@ export default function InstitutionSettings() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8">
-                <DataField label="Institution Name" value={localSettings.name} />
-                <DataField label="UDISE No." value={localSettings.udiseNo} />
-                <DataField label="Affiliation No." value={localSettings.affiliationNo} />
-                <DataField label="Board" value={localSettings.boardOfEducation} />
-                <DataField label="Email" value={localSettings.email} />
-                <DataField label="Phone" value={localSettings.phone} />
+                <DataField label={t('pages.institutionName')} value={localSettings.name} />
+                <DataField label={t('pages.uDISENo')} value={localSettings.udiseNo} />
+                <DataField label={t('pages.affiliationNo')} value={localSettings.affiliationNo} />
+                <DataField label={t('pages.board')} value={localSettings.boardOfEducation} />
+                <DataField label={t('pages.email1')} value={localSettings.email} />
+                <DataField label={t('pages.phone1')} value={localSettings.phone} />
                 <div className="md:col-span-2 lg:col-span-3">
-                  <DataField label="Address" value={localSettings.address} />
+                  <DataField label={t('pages.address2')} value={localSettings.address} />
                 </div>
               </div>
             )}
@@ -184,13 +204,13 @@ export default function InstitutionSettings() {
                   <FileText size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-default-900">Official Branding</h3>
-                  <p className="text-xs text-default-500">Logos and signatures for official documents</p>
+                  <h3 className="text-lg font-bold text-default-900">{t('pages.officialBranding')}</h3>
+                  <p className="text-xs text-default-500">{t('pages.logosAndSignaturesForOfficialDocuments')}</p>
                 </div>
               </div>
               {editingSection === 'branding' ? (
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="light" color="danger" onPress={handleCancel} disabled={saving}>Cancel</Button>
+                  <Button size="sm" variant="light" color="danger" onPress={handleCancel} disabled={saving}>{t('pages.cancel2')}</Button>
                   <Button size="sm" color="primary" onPress={handleSave} isLoading={saving} startContent={<Save size={14} />}>
                     Save Changes
                   </Button>
@@ -207,18 +227,18 @@ export default function InstitutionSettings() {
               <div className="p-6 border border-default-200 rounded-xl bg-default-50 flex flex-col items-center text-center gap-4 group hover:border-primary/30 transition-colors">
                 <div className="w-32 h-32 rounded-full bg-white dark:bg-zinc-950 border border-default-200 flex items-center justify-center overflow-hidden relative shadow-sm">
                   {localSettings.logo ? (
-                    <img src={localSettings.logo} alt="Logo" className="w-full h-full object-contain p-4" />
+                    <img src={localSettings.logo} alt="Logo" className="w-full h-full object-contain p-4" loading="lazy" decoding="async" />
                   ) : (
                     <Building2 size={32} className="text-default-300" />
                   )}
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-default-900">Institution Logo</h4>
-                  {editingSection === 'branding' && <p className="text-xs text-default-500 mt-1">Recommended: 200x200px PNG</p>}
+                  <h4 className="text-sm font-bold text-default-900">{t('pages.institutionLogo')}</h4>
+                  {editingSection === 'branding' && <p className="text-xs text-default-500 mt-1">{t('pages.recommended200x200pxPng')}</p>}
                 </div>
                 {editingSection === 'branding' && (
                   <>
-                    <Button size="sm" color="primary" variant="flat" onPress={() => document.getElementById('logo-upload').click()} startContent={<Upload size={14} />}>Upload New</Button>
+                    <Button size="sm" color="primary" variant="flat" onPress={() => document.getElementById('logo-upload').click()} startContent={<Upload size={14} />}>{t('pages.uploadNew')}</Button>
                     <input id="logo-upload" type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload('logo', e)} />
                   </>
                 )}
@@ -228,18 +248,18 @@ export default function InstitutionSettings() {
               <div className="p-6 border border-default-200 rounded-xl bg-default-50 flex flex-col items-center text-center gap-4 group hover:border-primary/30 transition-colors">
                 <div className="w-40 h-24 rounded-lg bg-white dark:bg-zinc-950 border border-default-200 flex items-center justify-center overflow-hidden relative shadow-sm">
                   {localSettings.principalSignature ? (
-                    <img src={localSettings.principalSignature} alt="Principal Signature" className="w-full h-full object-contain p-2" />
+                    <img src={localSettings.principalSignature} alt="Principal Signature" className="w-full h-full object-contain p-2" loading="lazy" decoding="async" />
                   ) : (
-                    <span className="text-xs text-default-400 italic">No Signature</span>
+                    <span className="text-xs text-default-400 italic">{t('pages.noSignature')}</span>
                   )}
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-default-900">Principal Signature</h4>
-                  {editingSection === 'branding' && <p className="text-xs text-default-500 mt-1">For official documents</p>}
+                  <h4 className="text-sm font-bold text-default-900">{t('pages.principalSignature')}</h4>
+                  {editingSection === 'branding' && <p className="text-xs text-default-500 mt-1">{t('pages.forOfficialDocuments')}</p>}
                 </div>
                 {editingSection === 'branding' && (
                   <>
-                    <Button size="sm" color="primary" variant="flat" onPress={() => document.getElementById('principal-sig-upload').click()} startContent={<Upload size={14} />}>Upload New</Button>
+                    <Button size="sm" color="primary" variant="flat" onPress={() => document.getElementById('principal-sig-upload').click()} startContent={<Upload size={14} />}>{t('pages.uploadNew')}</Button>
                     <input id="principal-sig-upload" type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload('principalSignature', e)} />
                   </>
                 )}
@@ -249,18 +269,18 @@ export default function InstitutionSettings() {
               <div className="p-6 border border-default-200 rounded-xl bg-default-50 flex flex-col items-center text-center gap-4 group hover:border-primary/30 transition-colors">
                 <div className="w-40 h-24 rounded-lg bg-white dark:bg-zinc-950 border border-default-200 flex items-center justify-center overflow-hidden relative shadow-sm">
                   {localSettings.correspondentSignature ? (
-                    <img src={localSettings.correspondentSignature} alt="Correspondent Signature" className="w-full h-full object-contain p-2" />
+                    <img src={localSettings.correspondentSignature} alt="Correspondent Signature" className="w-full h-full object-contain p-2" loading="lazy" decoding="async" />
                   ) : (
-                    <span className="text-xs text-default-400 italic">No Signature</span>
+                    <span className="text-xs text-default-400 italic">{t('pages.noSignature')}</span>
                   )}
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-default-900">Correspondent Signature</h4>
-                  {editingSection === 'branding' && <p className="text-xs text-default-500 mt-1">For official documents</p>}
+                  <h4 className="text-sm font-bold text-default-900">{t('pages.correspondentSignature')}</h4>
+                  {editingSection === 'branding' && <p className="text-xs text-default-500 mt-1">{t('pages.forOfficialDocuments')}</p>}
                 </div>
                 {editingSection === 'branding' && (
                   <>
-                    <Button size="sm" color="primary" variant="flat" onPress={() => document.getElementById('correspondent-sig-upload').click()} startContent={<Upload size={14} />}>Upload New</Button>
+                    <Button size="sm" color="primary" variant="flat" onPress={() => document.getElementById('correspondent-sig-upload').click()} startContent={<Upload size={14} />}>{t('pages.uploadNew')}</Button>
                     <input id="correspondent-sig-upload" type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload('correspondentSignature', e)} />
                   </>
                 )}
@@ -269,6 +289,9 @@ export default function InstitutionSettings() {
           </div>
         </div>
       </div>
-    </div >
+    </div>
+
+    <UnsavedChangesModal isOpen={isBlocked} onDiscard={proceed} onCancel={reset} />
+    </>
   );
 }

@@ -1,24 +1,25 @@
+import { memo } from "react";
 import { Tooltip, Button } from "@heroui/react";
 
 /**
  * IconButtonWithTooltip - A button with an icon that shows a tooltip on hover
  * Use this for all icon-only buttons to improve accessibility and UX
- * 
+ *
  * @param {string} tooltip - The tooltip text to show on hover
  * @param {string} tooltipPlacement - Placement of tooltip (default: 'top')
  * @param {ReactNode} children - The icon or content to render inside the button
  * @param {object} props - All other props passed to Button component
  */
-export default function IconButtonWithTooltip({ 
-  tooltip, 
+const IconButtonWithTooltip = memo(function IconButtonWithTooltip({
+  tooltip,
   tooltipPlacement = "top",
-  children, 
+  children,
   className,
-  ...props 
+  ...props
 }) {
   return (
-    <Tooltip 
-      content={tooltip} 
+    <Tooltip
+      content={tooltip}
       placement={tooltipPlacement}
       delay={500}
       closeDelay={0}
@@ -37,4 +38,8 @@ export default function IconButtonWithTooltip({
       </Button>
     </Tooltip>
   );
-}
+});
+
+IconButtonWithTooltip.displayName = 'IconButtonWithTooltip';
+
+export default IconButtonWithTooltip;

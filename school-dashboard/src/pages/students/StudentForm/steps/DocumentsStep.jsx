@@ -1,12 +1,14 @@
 import { useRef } from "react";
 import { Button, Chip } from "@heroui/react";
 import { FileText, Upload, X } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 /**
  * Documents Upload Step for Student Form
  * Extracted from AddStudent.jsx
  */
 export default function DocumentsStep({
+  const { t } = useTranslation();
   formData,
   handleFileUpload,
   handleMultiFileUpload,
@@ -20,7 +22,7 @@ export default function DocumentsStep({
   return (
     <div className="space-y-5 animate-fade-in text-left">
       <div className="space-y-2">
-        <label className="text-sm font-semibold text-default-900">Document Uploads</label>
+        <label className="text-sm font-semibold text-default-900">{t('pages.documentUploads')}</label>
         <p className="text-xs text-default-500">
           Upload required documents. All documents are optional and can be uploaded later.
         </p>
@@ -28,7 +30,7 @@ export default function DocumentsStep({
 
       {/* Birth Certificate */}
       <DocumentUploadField
-        label="Birth Certificate"
+        label={t('pages.birthCertificate')}
         file={formData.birthCertificate}
         onUpload={(file) => handleFileUpload("birthCertificate", file)}
         onRemove={() => removeFile("birthCertificate")}
@@ -38,7 +40,7 @@ export default function DocumentsStep({
 
       {/* Transfer Certificate */}
       <DocumentUploadField
-        label="Transfer Certificate (TC)"
+        label={t('pages.transferCertificateTc')}
         file={formData.transferCertificate}
         onUpload={(file) => handleFileUpload("transferCertificate", file)}
         onRemove={() => removeFile("transferCertificate")}
@@ -48,8 +50,8 @@ export default function DocumentsStep({
 
       {/* Aadhaar Card */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-default-600">Aadhaar Card (Front & Back)</label>
-        <p className="text-xs text-default-500">Upload both sides of the Aadhaar card</p>
+        <label className="text-xs font-medium text-default-600">{t('pages.aadhaarCardFrontBack')}</label>
+        <p className="text-xs text-default-500">{t('pages.uploadBothSidesOfTheAadhaarCard')}</p>
 
         <DocumentUploadField
           label={formData.aadhaarFront ? `Front: ${formData.aadhaarFront.name}` : "Click to upload FRONT side"}
@@ -74,7 +76,7 @@ export default function DocumentsStep({
 
       {/* Other Documents */}
       <MultiDocumentUploadField
-        label="Other Documents"
+        label={t('pages.otherDocuments')}
         description="Upload any other relevant documents (medical records, previous report cards, etc.)"
         files={formData.otherDocuments || []}
         onUpload={(files) => handleMultiFileUpload("otherDocuments", files)}
@@ -133,7 +135,7 @@ function MultiDocumentUploadField({ label, description, files, onUpload, onRemov
         onClick={() => inputRef.current?.click()}
       >
         <Upload size={14} className="text-default-500" />
-        <span className="text-sm text-default-600">Upload additional documents</span>
+        <span className="text-sm text-default-600">{t('pages.uploadAdditionalDocuments')}</span>
       </div>
       <input ref={inputRef} type="file" multiple accept={accept} className="hidden" onChange={(e) => onUpload(e.target.files)} />
       {files.length > 0 && (

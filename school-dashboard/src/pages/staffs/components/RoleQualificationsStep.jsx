@@ -212,7 +212,7 @@ function RoleQualificationsStep({
                 <Upload size={12} /> {t('staff.form.uploadCertificate')}
               </button>
               {qual.documents && qual.documents.length > 0 && (
-                <button className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 cursor-not-allowed px-2 py-1" disabled title="Coming soon">
+                <button className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 cursor-not-allowed px-2 py-1" disabled title={t('pages.comingSoon')}>
                   <FileScan size={12} /> Extract Info
                 </button>
               )}

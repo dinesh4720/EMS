@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { parentApi } from "../../services/api";
+import { getDateLocale } from '../../i18n/index';
+import { useTranslation } from 'react-i18next';
+
 import {
   Search,
   RefreshCw,
@@ -15,6 +18,7 @@ import {
 } from "lucide-react";
 
 export default function ParentManagement() {
+  const { t } = useTranslation();
   const [parents, setParents] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 0 });
   const [search, setSearch] = useState("");
@@ -102,7 +106,7 @@ export default function ParentManagement() {
   };
 
   const handleBulkCreate = async () => {
-    if (!confirm("This will create parent accounts for all students that don't have one. Continue?")) return;
+    if (!confirm(t('confirm.createParentAccounts'))) return;
     setBulkLoading(true);
     try {
       const response = await parentApi.bulkCreate();
@@ -141,7 +145,7 @@ export default function ParentManagement() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Parent Accounts</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{t('pages.parentAccounts')}</h2>
           <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
             Manage parent login credentials and account status
           </p>
@@ -164,7 +168,7 @@ export default function ParentManagement() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, phone, or email..."
+            placeholder={t('pages.searchByNamePhoneOrEmail')}
             className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-zinc-600"
           />
         </form>
@@ -173,10 +177,10 @@ export default function ParentManagement() {
           onChange={(e) => setStatusFilter(e.target.value)}
           className="px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-zinc-600"
         >
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="suspended">Suspended</option>
+          <option value="">{t('pages.allStatus1')}</option>
+          <option value="active">{t('pages.active')}</option>
+          <option value="inactive">{t('pages.inactive')}</option>
+          <option value="suspended">{t('pages.suspended')}</option>
         </select>
         <button
           onClick={() => fetchParents(pagination.page)}
@@ -191,23 +195,23 @@ export default function ParentManagement() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900">
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Name</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Phone</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Email</th>
-              <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Children</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Last Login</th>
-              <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Status</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Actions</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.name1')}</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.phone1')}</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.email1')}</th>
+              <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.children')}</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.lastLogin1')}</th>
+              <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.status2')}</th>
+              <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.actions1')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50 dark:divide-zinc-800">
             {loading ? (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-gray-400 dark:text-zinc-500 text-sm">Loading...</td>
+                <td colSpan={7} className="text-center py-12 text-gray-400 dark:text-zinc-500 text-sm">{t('pages.loading')}</td>
               </tr>
             ) : parents.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-gray-400 dark:text-zinc-500 text-sm">No parent accounts found</td>
+                <td colSpan={7} className="text-center py-12 text-gray-400 dark:text-zinc-500 text-sm">{t('pages.noParentAccountsFound')}</td>
               </tr>
             ) : (
               parents.map((parent) => (
@@ -222,7 +226,7 @@ export default function ParentManagement() {
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-500 dark:text-zinc-400">
                     {parent.lastLogin
-                      ? new Date(parent.lastLogin).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+                      ? new Date(parent.lastLogin).toLocaleDateString(getDateLocale(), { day: "numeric", month: "short", year: "numeric" })
                       : "Never"}
                   </td>
                   <td className="px-4 py-3 text-center">
@@ -233,7 +237,7 @@ export default function ParentManagement() {
                       <button
                         onClick={() => handleViewDetails(parent)}
                         className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400"
-                        title="View details"
+                        title={t('pages.viewDetails2')}
                       >
                         <Eye size={15} />
                       </button>
@@ -241,7 +245,7 @@ export default function ParentManagement() {
                         onClick={() => handleResetPassword(parent._id)}
                         disabled={actionLoading === parent._id}
                         className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400"
-                        title="Reset password"
+                        title={t('pages.resetPassword1')}
                       >
                         <KeyRound size={15} />
                       </button>
@@ -292,14 +296,14 @@ export default function ParentManagement() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setGeneratedPassword(null)}>
           <div className="bg-white dark:bg-zinc-950 rounded-xl p-6 w-[400px] shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900 dark:text-zinc-100">Password Reset</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-zinc-100">{t('pages.passwordReset')}</h3>
               <button onClick={() => setGeneratedPassword(null)} className="text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300">
                 <X size={18} />
               </button>
             </div>
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4 flex items-start gap-2">
               <AlertTriangle size={16} className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-amber-800 dark:text-amber-200">Share this password with the parent. It will not be shown again.</p>
+              <p className="text-sm text-amber-800 dark:text-amber-200">{t('pages.shareThisPasswordWithTheParentItWillNotBeShownAgain')}</p>
             </div>
             <div className="flex items-center gap-2 bg-gray-50 dark:bg-zinc-900 rounded-lg px-4 py-3">
               <code className="flex-1 text-sm font-mono font-medium text-gray-900 dark:text-zinc-100">{generatedPassword}</code>
@@ -320,7 +324,7 @@ export default function ParentManagement() {
           <div className="bg-black/20 absolute inset-0" />
           <div className="relative bg-white dark:bg-zinc-950 w-[480px] h-full shadow-xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 bg-white dark:bg-zinc-950 border-b border-gray-100 dark:border-zinc-800 px-6 py-4 flex items-center justify-between z-10">
-              <h3 className="font-semibold text-gray-900 dark:text-zinc-100">Parent Details</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-zinc-100">{t('pages.parentDetails')}</h3>
               <button onClick={() => { setDrawerOpen(false); setGeneratedPassword(null); }} className="text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300">
                 <X size={18} />
               </button>
@@ -335,25 +339,25 @@ export default function ParentManagement() {
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <span className="text-gray-500 dark:text-zinc-400">Phone</span>
+                    <span className="text-gray-500 dark:text-zinc-400">{t('pages.phone1')}</span>
                     <p className="font-medium text-gray-900 dark:text-zinc-100">{selectedParent.phone}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500 dark:text-zinc-400">Email</span>
+                    <span className="text-gray-500 dark:text-zinc-400">{t('pages.email1')}</span>
                     <p className="font-medium text-gray-900 dark:text-zinc-100">{selectedParent.email || "-"}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500 dark:text-zinc-400">Last Login</span>
+                    <span className="text-gray-500 dark:text-zinc-400">{t('pages.lastLogin1')}</span>
                     <p className="font-medium text-gray-900 dark:text-zinc-100">
                       {selectedParent.lastLogin
-                        ? new Date(selectedParent.lastLogin).toLocaleString("en-IN")
+                        ? new Date(selectedParent.lastLogin).toLocaleString(getDateLocale())
                         : "Never"}
                     </p>
                   </div>
                   <div>
-                    <span className="text-gray-500 dark:text-zinc-400">Created</span>
+                    <span className="text-gray-500 dark:text-zinc-400">{t('pages.created')}</span>
                     <p className="font-medium text-gray-900 dark:text-zinc-100">
-                      {new Date(selectedParent.createdAt).toLocaleDateString("en-IN")}
+                      {new Date(selectedParent.createdAt).toLocaleDateString(getDateLocale())}
                     </p>
                   </div>
                 </div>
@@ -388,7 +392,7 @@ export default function ParentManagement() {
                 <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 space-y-2">
                   <div className="flex items-center gap-2">
                     <AlertTriangle size={16} className="text-amber-600 dark:text-amber-400" />
-                    <span className="text-sm font-medium text-amber-800 dark:text-amber-200">New Password Generated</span>
+                    <span className="text-sm font-medium text-amber-800 dark:text-amber-200">{t('pages.newPasswordGenerated')}</span>
                   </div>
                   <div className="flex items-center gap-2 bg-white dark:bg-zinc-950 rounded-lg px-3 py-2">
                     <code className="flex-1 text-sm font-mono font-medium">{generatedPassword}</code>
@@ -426,7 +430,7 @@ export default function ParentManagement() {
                     </div>
                   ))}
                   {(!selectedParent.children || selectedParent.children.length === 0) && (
-                    <p className="text-sm text-gray-400 dark:text-zinc-500 text-center py-4">No children linked</p>
+                    <p className="text-sm text-gray-400 dark:text-zinc-500 text-center py-4">{t('pages.noChildrenLinked')}</p>
                   )}
                 </div>
               </div>

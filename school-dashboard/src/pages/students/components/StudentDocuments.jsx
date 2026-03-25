@@ -1,22 +1,10 @@
+import { request } from '../../../services/api.js';
 import { useRef, useState } from "react";
 import { Button, Chip, Tooltip } from "@heroui/react";
 import { FileText, Upload, FolderPlus, AlertTriangle, Eye, Download, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { uploadApi } from "../../../services/api";
-
-const getAuthToken = () => {
-  const storedUser = sessionStorage.getItem('app_user');
-  if (storedUser) {
-    try {
-      const userData = JSON.parse(storedUser);
-      return userData.token;
-    } catch (err) {
-      console.error('Failed to parse user data:', err);
-      return null;
-    }
-  }
-  return null;
-};
+import { useTranslation } from 'react-i18next';
 
 export default function StudentDocuments({
   studentId,
@@ -25,6 +13,7 @@ export default function StudentDocuments({
   onDocumentsChange,
   onActiveUploadsChange
 }) {
+  const { t } = useTranslation();
   const documentInputRef = useRef(null);
 
   const handleDocumentUpload = async (e) => {
@@ -63,9 +52,21 @@ export default function StudentDocuments({
             ));
           }, 200);
 
+          // Retry helper: up to 2 retries with back-off on network failure (AP-19)
+          const uploadWithRetry = async (f, maxRetries = 2) => {
+            let lastErr;
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+              try { return await uploadApi.uploadFile(f); } catch (err) {
+                lastErr = err;
+                if (attempt < maxRetries) await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+              }
+            }
+            throw lastErr;
+          };
+
           try {
-            // Upload to backend/Cloudinary
-            const response = await uploadApi.uploadFile(file);
+            // Upload to backend/Cloudinary with retry on network failure
+            const response = await uploadWithRetry(file);
 
             clearInterval(progressInterval);
 
@@ -86,25 +87,10 @@ export default function StudentDocuments({
             };
 
             // Use dedicated document endpoint to append to array
-            const token = getAuthToken();
-            const headers = {
-              'Content-Type': 'application/json',
-            };
-            if (token) {
-              headers['Authorization'] = `Bearer ${token}`;
-            }
-            const response2 = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${studentId}/documents`, {
+            const result = await request(`/students/${studentId}/documents`, {
               method: 'POST',
-              headers,
               body: JSON.stringify(newDoc)
             });
-
-            if (!response2.ok) {
-              const error = await response2.json();
-              throw new Error(error.error || 'Failed to save document');
-            }
-
-            const result = await response2.json();
 
             // Update local state with all documents from server
             onDocumentsChange(result.documents || []);
@@ -130,7 +116,7 @@ export default function StudentDocuments({
         if (failCount === 0) {
           setTimeout(() => {
             onActiveUploadsChange([]); // Clear uploads
-            toast.success("All documents uploaded successfully");
+            toast.success(t('toast.success.allDocumentsUploadedSuccessfully'));
           }, 3000);
         } else {
           toast.error(`Uploaded ${successCount}, Failed ${failCount}`);
@@ -138,7 +124,7 @@ export default function StudentDocuments({
 
       } catch (error) {
         console.error("Batch upload error:", error);
-        toast.error("Upload failed");
+        toast.error(t('toast.error.uploadFailed'));
       } finally {
         e.target.value = null; // Reset input
       }
@@ -157,34 +143,16 @@ export default function StudentDocuments({
 
     if (docIndex === -1 || docIndex >= documents.length) {
       console.error('🗑️ Document not found or invalid index');
-      toast.error("Document not found");
+      toast.error(t('toast.error.documentNotFound'));
       return;
     }
 
-    const loadingToast = toast.loading("Deleting document...");
+    const loadingToast = toast.loading(t('toast.loading.deletingDocument'));
 
     try {
-      const deleteUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${studentId}/documents/${docIndex}`;
-
-      const token = getAuthToken();
-      const headers = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      // Call the backend DELETE endpoint with the document index
-      const response = await fetch(deleteUrl, {
-        method: 'DELETE',
-        headers
+      const result = await request(`/students/${studentId}/documents/${docIndex}`, {
+        method: 'DELETE'
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('🗑️ DELETE error response:', error);
-        throw new Error(error.error || 'Failed to delete document');
-      }
-
-      const result = await response.json();
 
       // Update local state with the documents array from server
       onDocumentsChange(result.documents || []);
@@ -196,26 +164,12 @@ export default function StudentDocuments({
   };
 
   const handleCleanupCorruptedDocuments = async () => {
-    const loadingToast = toast.loading("Fixing documents...");
+    const loadingToast = toast.loading(t('toast.loading.fixingDocuments'));
 
     try {
-      const token = getAuthToken();
-      const headers = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      // Call the fix-documents endpoint which removes corrupted docs and adds IDs
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${studentId}/fix-documents`, {
-        method: 'POST',
-        headers
+      const result = await request(`/students/${studentId}/fix-documents`, {
+        method: 'POST'
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to fix documents');
-      }
-
-      const result = await response.json();
 
       // Update local state with fixed documents
       onDocumentsChange(result.documents || []);
@@ -254,7 +208,7 @@ export default function StudentDocuments({
               Fix Documents
             </Button>
           )}
-          <Button size="sm" color="primary" startContent={<Upload size={16} />} onPress={() => documentInputRef.current?.click()}>Upload Document</Button>
+          <Button size="sm" color="primary" startContent={<Upload size={16} />} onPress={() => documentInputRef.current?.click()}>{t('pages.uploadDocument')}</Button>
         </div>
       </div>
 
@@ -263,9 +217,9 @@ export default function StudentDocuments({
           <div className="inline-flex p-4 bg-white dark:bg-zinc-900 rounded-full mb-4 ring-1 ring-gray-200 dark:ring-zinc-700 shadow-sm dark:shadow-zinc-900/50 group-hover:scale-110 transition-transform">
             <FolderPlus size={32} className="text-gray-600 dark:text-zinc-400" />
           </div>
-          <h4 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">No documents uploaded yet</h4>
-          <p className="text-sm text-gray-500 dark:text-zinc-400 max-w-xs mx-auto">Upload birth certificate, transfer certificate, or other essential documents.</p>
-          <Button className="mt-4" size="sm" variant="bordered" onPress={() => documentInputRef.current?.click()}>Browse Files</Button>
+          <h4 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">{t('pages.noDocumentsUploadedYet')}</h4>
+          <p className="text-sm text-gray-500 dark:text-zinc-400 max-w-xs mx-auto">{t('pages.uploadBirthCertificateTransferCertificateOrOtherEssentialDocuments')}</p>
+          <Button className="mt-4" size="sm" variant="bordered" onPress={() => documentInputRef.current?.click()}>{t('pages.browseFiles')}</Button>
         </div>
       ) : (
         <div className="space-y-3">
@@ -284,7 +238,7 @@ export default function StudentDocuments({
                   <div>
                     <p className={`text-sm font-medium ${isCorrupted ? 'text-red-700' : 'text-gray-900 dark:text-zinc-100'}`}>
                       {doc.name || 'Corrupted Document'}
-                      {isFrontBack && <span className="ml-2 text-xs bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 px-2 py-0.5 rounded">Front & Back</span>}
+                      {isFrontBack && <span className="ml-2 text-xs bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 px-2 py-0.5 rounded">{t('pages.frontBack')}</span>}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-zinc-400">
                       {isCorrupted ? 'Invalid file - please delete' : `${doc.date || 'Unknown date'} • ${doc.size || 'Unknown size'}`}
@@ -341,7 +295,7 @@ export default function StudentDocuments({
                                 })
                                 .catch(err => {
                                   console.error('Error opening document:', err);
-                                  toast.error('Failed to open document');
+                                  toast.error(t('toast.error.failedToOpenDocument'));
                                 });
                             } else {
                               // For Cloudinary URLs, add fl_attachment flag for PDFs to force download/view

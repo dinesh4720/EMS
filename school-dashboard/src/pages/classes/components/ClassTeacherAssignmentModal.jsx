@@ -7,6 +7,7 @@ import { Search, Users, User, AlertCircle, GraduationCap, Check } from "lucide-r
 import toast from "react-hot-toast";
 import ConfirmDialog from "../../../components/ConfirmDialog";
 import { useApp } from "../../../context/AppContext";
+import { useTranslation } from 'react-i18next';
 
 /**
  * ClassTeacherAssignmentModal - Modal to assign a teacher to a class
@@ -27,6 +28,7 @@ export default function ClassTeacherAssignmentModal({
   section,
   currentTeacherId
 }) {
+  const { t } = useTranslation();
   const { staff, classesApi, updateClassLocal, classesWithTeachers } = useApp();
 
   // Local state
@@ -154,7 +156,7 @@ export default function ClassTeacherAssignmentModal({
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1 border-b border-default-200">
             <div>
-              <h3 className="text-xl font-semibold">Assign Class Teacher</h3>
+              <h3 className="text-xl font-semibold">{t('pages.assignClassTeacher1')}</h3>
               <p className="text-sm text-default-500 font-normal">
                 Class: <span className="font-medium text-primary">{className}-{section}</span>
               </p>
@@ -165,7 +167,7 @@ export default function ClassTeacherAssignmentModal({
             {/* Search */}
             <div className="mb-4">
               <Input
-                placeholder="Search teachers by name, code, or department..."
+                placeholder={t('pages.searchTeachersByNameCodeOrDepartment')}
                 value={searchQuery}
                 onValueChange={setSearchQuery}
                 startContent={<Search size={16} className="text-default-400" />}
@@ -228,8 +230,8 @@ export default function ClassTeacherAssignmentModal({
                           <div className="flex items-center gap-2">
                             <Check size={16} className="text-success-600" />
                             <div>
-                              <p className="text-sm font-medium text-default-700">Current</p>
-                              <p className="text-xs text-default-400">Already assigned</p>
+                              <p className="text-sm font-medium text-default-700">{t('pages.current')}</p>
+                              <p className="text-xs text-default-400">{t('pages.alreadyAssigned')}</p>
                             </div>
                           </div>
                         ) : hasOtherClass ? (

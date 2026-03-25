@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import { SOCKET_URL } from '../config/api.js';
 
 class SocketService {
   constructor() {
@@ -18,10 +19,6 @@ class SocketService {
       console.error('❌ Socket connect called without auth token');
       return;
     }
-
-    // Remove /api from the URL for Socket.IO connection
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-    const SOCKET_URL = API_URL.replace('/api', '');
 
     this._token = token;
 

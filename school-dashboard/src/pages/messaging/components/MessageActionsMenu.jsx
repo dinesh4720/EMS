@@ -1,8 +1,11 @@
 import { useRef } from 'react';
 import { MoreVertical, Edit2, Trash2, Reply, Forward, Pin, Copy, Download } from 'lucide-react';
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection } from '@heroui/react';
+import { useTranslation } from 'react-i18next';
 
-export default function MessageActionsMenu({ message, currentUserId, onAction }) {
+export default function MessageActionsMenu({
+  message, currentUserId, onAction }) {
+  const { t } = useTranslation();
   const dropdownRef = useRef(null);
 
   const isOwnMessage = message.senderId?._id === currentUserId || message.senderId === currentUserId;
@@ -79,7 +82,7 @@ export default function MessageActionsMenu({ message, currentUserId, onAction })
         </DropdownTrigger>
 
         <DropdownMenu
-          aria-label="Message actions"
+          aria-label={t('aria.menus.messageActions')}
           onAction={(key) => handleAction(key)}
           className="min-w-48 p-1 rounded-xl border border-gray-200 dark:border-zinc-700 dark:shadow-zinc-900/50"
           itemClasses={{

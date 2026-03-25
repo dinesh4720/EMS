@@ -1,83 +1,90 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
+import { createContext, useContext, useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { studentsApi } from "../services/api";
 
-const StudentsContext = createContext();
+export const StudentsContext = createContext();
 
 export function StudentsProvider({ children }) {
+  const queryClient = useQueryClient();
   const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [studentsHydrated, setStudentsHydrated] = useState(false);
 
-  const fetchStudents = useCallback(async (classFilter) => {
-    try {
-      setLoading(true);
-      const response = await studentsApi.list({
-        page: 1,
-        limit: 50,
-        classId: classFilter || undefined,
-      });
-      setStudents(response.data || []);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-      console.error('Failed to fetch students:', err);
-    } finally {
-      setLoading(false);
-    }
+  const invalidateAppData = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ["app-context-data"] }),
+    [queryClient]
+  );
+
+  // Called by AppContextCore when query data arrives
+  const setStudentsFromQuery = useCallback((data, hydrated) => {
+    setStudents(data);
+    if (hydrated !== undefined) setStudentsHydrated(hydrated);
   }, []);
 
-  useEffect(() => {
-    fetchStudents();
-  }, [fetchStudents]);
+  const addStudent = async (newStudent) => {
+    const created = await studentsApi.create(newStudent);
+    setStudents((prev) => [...prev, created]);
+    void invalidateAppData();
+    return created;
+  };
 
-  const addStudent = useCallback(async (newStudent) => {
-    try {
-      const created = await studentsApi.create(newStudent);
-      setStudents(prev => [...prev, created]);
-      return created;
-    } catch (err) {
-      setError(err.message);
-      throw err;
+  const updateStudent = async (id, updates) => {
+    const updated = await studentsApi.update(id, updates);
+
+    // Ensure photo from updates is always included in state update
+    // This is critical for instant photo reflection after upload
+    const finalUpdates = { ...updated };
+    if (updates.photo) {
+      finalUpdates.photo = updates.photo;
     }
-  }, []);
 
-  const updateStudent = useCallback(async (id, updates) => {
-    try {
-      const updated = await studentsApi.update(id, updates);
-      setStudents(prev => prev.map(s => s.id === id ? updated : s));
-      return updated;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  }, []);
+    setStudents((prev) =>
+      prev.map((s) => (String(s.id) === String(id) ? { ...s, ...finalUpdates } : s))
+    );
+    void invalidateAppData();
+    return finalUpdates;
+  };
 
-  const deleteStudent = useCallback(async (id) => {
-    try {
-      const result = await studentsApi.delete(id);
-      setStudents(prev => prev.filter(s => s.id !== id));
-      return result;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  }, []);
+  // Update student in state without API call (for real-time socket updates)
+  const updateStudentLocal = (id, updates) => {
+    setStudents((prev) =>
+      prev.map((s) => (String(s.id) === String(id) ? { ...s, ...updates } : s))
+    );
+  };
 
-  const getStudentById = useCallback((id) => students.find(s => s.id === id || s.id === String(id)), [students]);
+  const deleteStudent = async (id) => {
+    const result = await studentsApi.delete(id);
+    setStudents((prev) => prev.filter((s) => String(s.id) !== String(id)));
+    void invalidateAppData();
+    return result;
+  };
 
-  const getStudentsByClass = useCallback((className) => students.filter(s => s.class === className), [students]);
+  const getStudentById = (id) =>
+    Array.isArray(students) ? students.find((s) => String(s.id) === String(id)) : undefined;
 
-  const value = useMemo(() => ({
+  // FIXED: Use String() comparison for ObjectId matching and filter by active status
+  const getStudentsByClass = (classId) =>
+    Array.isArray(students)
+      ? students.filter(
+          (s) =>
+            String(s.classId) === String(classId) &&
+            (s.status || "active") === "active" &&
+            s.isDeleted !== true
+        )
+      : [];
+
+  const value = {
     students,
-    loading,
-    error,
+    studentsHydrated,
+    setStudents,
+    setStudentsHydrated,
+    setStudentsFromQuery,
     addStudent,
     updateStudent,
+    updateStudentLocal,
     deleteStudent,
     getStudentById,
     getStudentsByClass,
-    refetch: fetchStudents,
-  }), [students, loading, error, addStudent, updateStudent, deleteStudent, getStudentById, getStudentsByClass, fetchStudents]);
+  };
 
   return <StudentsContext.Provider value={value}>{children}</StudentsContext.Provider>;
 }

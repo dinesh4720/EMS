@@ -155,6 +155,11 @@ export async function retryRequest(requestFn, maxRetries = 3, baseDelay = 1000) 
     } catch (error) {
       lastError = error;
 
+      // Don't retry on abort/cancellation
+      if (error.name === 'AbortError') {
+        throw error;
+      }
+
       // Don't retry on certain errors (client errors except rate limits)
       if (
         (error.status && error.status >= 400 && error.status < 500 && error.status !== 429) ||

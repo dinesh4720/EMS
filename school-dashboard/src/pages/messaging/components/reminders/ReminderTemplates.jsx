@@ -17,6 +17,7 @@ import {
 } from '@heroui/react';
 import { Save, FileText, Plus, Edit, Trash2, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const DEFAULT_TEMPLATES = {
   fee: [
@@ -70,6 +71,7 @@ export default function ReminderTemplates({
   type,
   onSelectTemplate,
 }) {
+  const { t } = useTranslation();
   const [templates, setTemplates] = useState([]);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -96,18 +98,18 @@ export default function ReminderTemplates({
       ...t,
       isDefault: t.id === templateId
     })));
-    toast.success('Default template updated');
+    toast.success(t('toast.success.defaultTemplateUpdated'));
   };
 
   const handleDelete = (templateId) => {
-    if (!confirm('Delete this template?')) return;
+    if (!confirm(t('confirm.deleteReminderTemplate'))) return;
     setTemplates(prev => prev.filter(t => t.id !== templateId));
-    toast.success('Template deleted');
+    toast.success(t('toast.success.templateDeleted'));
   };
 
   const handleSaveTemplate = () => {
     if (!editingTemplate.title || !editingTemplate.message) {
-      toast.error('Please fill in all fields');
+      toast.error(t('toast.error.pleaseFillInAllFields'));
       return;
     }
 
@@ -120,7 +122,7 @@ export default function ReminderTemplates({
     setTemplates(prev => [...prev, newTemplate]);
     setShowCreateModal(false);
     setEditingTemplate(null);
-    toast.success('Template created');
+    toast.success(t('toast.success.templateCreated'));
   };
 
   return (
@@ -155,8 +157,8 @@ export default function ReminderTemplates({
           {templates.length === 0 ? (
             <div className="text-center py-8">
               <FileText size={48} className="mx-auto mb-4 text-default-300" />
-              <p className="text-default-400">No templates found</p>
-              <p className="text-sm text-default-500">Create a template to get started</p>
+              <p className="text-default-400">{t('pages.noTemplatesFound')}</p>
+              <p className="text-sm text-default-500">{t('pages.createATemplateToGetStarted')}</p>
             </div>
           ) : (
             templates.map((template) => (
@@ -226,7 +228,7 @@ export default function ReminderTemplates({
                   <Divider />
 
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-default-400">Click to use this template</p>
+                    <p className="text-xs text-default-400">{t('pages.clickToUseThisTemplate')}</p>
                     <Button
                       size="sm"
                       color="primary"
@@ -243,7 +245,7 @@ export default function ReminderTemplates({
         </ModalBody>
 
         <ModalFooter>
-          <Button onPress={onClose}>Close</Button>
+          <Button onPress={onClose}>{t('pages.close2')}</Button>
         </ModalFooter>
       </ModalContent>
 
@@ -265,16 +267,16 @@ export default function ReminderTemplates({
 
           <ModalBody className="space-y-4">
             <Input
-              label="Template Title"
-              placeholder="Enter template title"
+              label={t('pages.templateTitle')}
+              placeholder={t('pages.enterTemplateTitle')}
               value={editingTemplate?.title || ''}
               onChange={(e) => setEditingTemplate({ ...editingTemplate, title: e.target.value })}
               variant="bordered"
             />
 
             <Textarea
-              label="Message"
-              placeholder="Enter message template"
+              label={t('pages.message1')}
+              placeholder={t('pages.enterMessageTemplate')}
               value={editingTemplate?.message || ''}
               onChange={(e) => setEditingTemplate({ ...editingTemplate, message: e.target.value })}
               variant="bordered"

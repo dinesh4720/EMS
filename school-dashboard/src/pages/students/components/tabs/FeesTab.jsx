@@ -1,4 +1,5 @@
 import StudentFeeSummary from "../StudentFeeSummary";
+import { useTranslation } from 'react-i18next';
 
 /**
  * FeesTab - Tab wrapper for StudentFeeSummary component

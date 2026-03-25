@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Card, CardBody, CardHeader, Button, Input, Switch, Divider, Select, SelectItem, Spinner } from "@heroui/react";
 import { Save } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 export default function AttendanceRules() {
+  const { t } = useTranslation();
   const [rules, setRules] = useState({
     defaulterThreshold: 75,
     lockTime: "16:00",
@@ -40,7 +42,7 @@ export default function AttendanceRules() {
       <h3 className="text-sm font-semibold text-default-700">{title}</h3>
       {editingSection === section ? (
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="light" color="danger" onPress={handleCancel} disabled={saving} className="h-8 min-w-0 px-2 text-xs">Cancel</Button>
+          <Button size="sm" variant="light" color="danger" onPress={handleCancel} disabled={saving} className="h-8 min-w-0 px-2 text-xs">{t('pages.cancel2')}</Button>
           <Button size="sm" color="primary" onPress={handleSave} isLoading={saving} className="h-8 min-w-0 px-3 text-xs" startContent={!saving && <Save size={12} />}>
             Save
           </Button>
@@ -58,7 +60,7 @@ export default function AttendanceRules() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'defaulter' ? 'border-primary ring-1 ring-primary' : 'border-default-200'}`}>
-          <SectionHeader title="Defaulter Settings" section="defaulter" />
+          <SectionHeader title={t('pages.defaulterSettings')} section="defaulter" />
           <CardBody className="p-4 space-y-4">
             {editingSection === 'defaulter' ? (
               <Input
@@ -72,7 +74,7 @@ export default function AttendanceRules() {
               />
             ) : (
               <div className="flex justify-between items-center p-2">
-                <span className="text-sm text-default-600">Threshold</span>
+                <span className="text-sm text-default-600">{t('pages.threshold')}</span>
                 <span className="text-lg font-bold text-default-900">{rules.defaulterThreshold}%</span>
               </div>
             )}
@@ -85,13 +87,13 @@ export default function AttendanceRules() {
         </Card>
 
         <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'lock' ? 'border-primary ring-1 ring-primary' : 'border-default-200'}`}>
-          <SectionHeader title="Lock Settings" section="lock" />
+          <SectionHeader title={t('pages.lockSettings')} section="lock" />
           <CardBody className="p-4 space-y-4">
             {editingSection === 'lock' ? (
               <Input
                 size="sm"
                 type="time"
-                label="Auto-Lock Time"
+                label={t('pages.autoLockTime')}
                 value={tempRules.lockTime}
                 onChange={(e) => setTempRules({ ...tempRules, lockTime: e.target.value })}
                 description="Attendance locked after this time"
@@ -99,15 +101,15 @@ export default function AttendanceRules() {
               />
             ) : (
               <div className="flex justify-between items-center p-2 border-b border-default-100">
-                <span className="text-sm text-default-600">Auto-Lock Time</span>
+                <span className="text-sm text-default-600">{t('pages.autoLockTime')}</span>
                 <span className="text-lg font-bold text-default-900">{rules.lockTime}</span>
               </div>
             )}
 
             <div className="flex items-center justify-between p-3 bg-default-50 rounded-lg border border-default-200">
               <div>
-                <p className="text-sm font-medium text-default-700">Allow Edit After Lock</p>
-                <p className="text-xs text-default-500">Admins can edit locked attendance</p>
+                <p className="text-sm font-medium text-default-700">{t('pages.allowEditAfterLock')}</p>
+                <p className="text-xs text-default-500">{t('pages.adminsCanEditLockedAttendance')}</p>
               </div>
               <Switch
                 size="sm"
@@ -121,7 +123,7 @@ export default function AttendanceRules() {
               editingSection === 'lock' ? (
                 <Select
                   size="sm"
-                  label="Edit Window (hours)"
+                  label={t('pages.editWindowHours')}
                   variant="bordered"
                   selectedKeys={[tempRules.editWindow.toString()]}
                   onChange={(e) => setTempRules({ ...tempRules, editWindow: parseInt(e.target.value) })}
@@ -132,7 +134,7 @@ export default function AttendanceRules() {
                 </Select>
               ) : (
                 <div className="flex justify-between items-center p-2">
-                  <span className="text-sm text-default-600">Edit Window</span>
+                  <span className="text-sm text-default-600">{t('pages.editWindow')}</span>
                   <span className="text-sm font-semibold text-default-900">{rules.editWindow} hours</span>
                 </div>
               )
@@ -141,12 +143,12 @@ export default function AttendanceRules() {
         </Card>
 
         <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'notifications' ? 'border-primary ring-1 ring-primary' : 'border-default-200'}`}>
-          <SectionHeader title="Notifications" section="notifications" />
+          <SectionHeader title={t('pages.notifications')} section="notifications" />
           <CardBody className="p-4 space-y-4">
             <div className="flex items-center justify-between p-3 bg-default-50 rounded-lg border border-default-200">
               <div>
-                <p className="text-sm font-medium text-default-700">Notify on Absence</p>
-                <p className="text-xs text-default-500">Send SMS when absent</p>
+                <p className="text-sm font-medium text-default-700">{t('pages.notifyOnAbsence')}</p>
+                <p className="text-xs text-default-500">{t('pages.sendSmsWhenAbsent')}</p>
               </div>
               <Switch
                 size="sm"
@@ -158,8 +160,8 @@ export default function AttendanceRules() {
             <Divider />
             <div className="flex items-center justify-between p-3 bg-default-50 rounded-lg border border-default-200">
               <div>
-                <p className="text-sm font-medium text-default-700">Notify Defaulters</p>
-                <p className="text-xs text-default-500">Weekly defaulter alert</p>
+                <p className="text-sm font-medium text-default-700">{t('pages.notifyDefaulters')}</p>
+                <p className="text-xs text-default-500">{t('pages.weeklyDefaulterAlert')}</p>
               </div>
               <Switch
                 size="sm"
@@ -173,7 +175,7 @@ export default function AttendanceRules() {
 
         <Card className="shadow-sm border border-default-200 rounded-lg">
           <CardHeader className="py-4 px-4 bg-default-50/50 border-b border-default-100">
-            <h3 className="text-sm font-semibold text-default-700">Edit Permissions</h3>
+            <h3 className="text-sm font-semibold text-default-700">{t('pages.editPermissions')}</h3>
           </CardHeader>
           <CardBody className="p-4 space-y-3">
             {[

@@ -17,8 +17,10 @@ import {
 import { Network, Save, Users } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 export default function HierarchySettings() {
+  const { t } = useTranslation();
   const { staff, updateStaff } = useApp();
   const [loading, setLoading] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState([]);
@@ -80,7 +82,7 @@ export default function HierarchySettings() {
 
   const handleUpdateReporter = async (staffId, reporterId) => {
     if (reporterId && hasCircularReference(staffId, reporterId)) {
-      toast.error("Cannot assign reporter: This would create a circular reference");
+      toast.error(t('toast.error.cannotAssignReporterThisWouldCreateACircularReference'));
       return;
     }
 
@@ -88,7 +90,7 @@ export default function HierarchySettings() {
     try {
       const staffMember = activeStaff.find(s => s.id === staffId);
       if (!staffMember) {
-        toast.error("Staff member not found");
+        toast.error(t('toast.error.staffMemberNotFound'));
         return;
       }
       
@@ -105,7 +107,7 @@ export default function HierarchySettings() {
 
   const handleBulkAssign = async () => {
     if (!bulkReporter || selectedStaff.length === 0) {
-      toast.error("Please select staff members and a reporter");
+      toast.error(t('toast.error.pleaseSelectStaffMembersAndAReporter'));
       return;
     }
 
@@ -162,8 +164,8 @@ export default function HierarchySettings() {
                 {selectedStaff.length} selected
               </Chip>
               <Select
-                label="Assign Reporter"
-                placeholder="Select reporter"
+                label={t('pages.assignReporter')}
+                placeholder={t('pages.selectReporter')}
                 selectedKeys={bulkReporter ? [String(bulkReporter)] : []}
                 onSelectionChange={(keys) => {
                   const selectedKey = Array.from(keys)[0];
@@ -205,7 +207,7 @@ export default function HierarchySettings() {
       <Card className="rounded-lg">
         <CardBody className="p-0">
           <Table
-            aria-label="Staff hierarchy table"
+            aria-label={t('aria.tables.staffHierarchy')}
             removeWrapper
             selectionMode="multiple"
             selectedKeys={selectedStaff}
@@ -224,11 +226,11 @@ export default function HierarchySettings() {
             }}
           >
             <TableHeader>
-              <TableColumn>STAFF MEMBER</TableColumn>
-              <TableColumn>ROLE</TableColumn>
-              <TableColumn>CURRENT REPORTER</TableColumn>
-              <TableColumn>DIRECT REPORTEES</TableColumn>
-              <TableColumn>ASSIGN REPORTER</TableColumn>
+              <TableColumn scope="col">{t('pages.sTAFFMember')}</TableColumn>
+              <TableColumn scope="col">{t('pages.rOLE')}</TableColumn>
+              <TableColumn scope="col">{t('pages.cURRENTReporter')}</TableColumn>
+              <TableColumn scope="col">{t('pages.dIRECTReportees')}</TableColumn>
+              <TableColumn scope="col">{t('pages.aSSIGNReporter')}</TableColumn>
             </TableHeader>
             <TableBody
               items={activeStaff}
@@ -263,7 +265,7 @@ export default function HierarchySettings() {
                             {getReporterName(staffMember.reporterId)}
                           </div>
                         ) : (
-                          <span className="text-gray-400 dark:text-zinc-500">No reporter</span>
+                          <span className="text-gray-400 dark:text-zinc-500">{t('pages.noReporter')}</span>
                         )}
                       </div>
                     </TableCell>
@@ -278,13 +280,13 @@ export default function HierarchySettings() {
                             </span>
                           </>
                         ) : (
-                          <span className="text-gray-400 dark:text-zinc-500 text-sm">None</span>
+                          <span className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.none1')}</span>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <Select
-                        placeholder="Select reporter"
+                        placeholder={t('pages.selectReporter')}
                         selectedKeys={staffMember.reporterId ? [String(staffMember.reporterId)] : []}
                         onSelectionChange={(keys) => {
                           const selectedKey = Array.from(keys)[0];

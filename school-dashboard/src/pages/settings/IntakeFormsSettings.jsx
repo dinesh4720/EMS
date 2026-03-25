@@ -43,6 +43,7 @@ import { intakeFormsApi } from "../../services/api";
 import { formTemplates } from "../../data/formTemplates";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useTranslation } from 'react-i18next';
 
 // Field types available in form builder
 const FIELD_TYPES = [
@@ -73,6 +74,7 @@ const DraggableFieldItem = ({
   isFirst,
   isLast,
 }) => {
+  const { t } = useTranslation();
   const controls = useDragControls();
 
   return (
@@ -242,7 +244,7 @@ export default function IntakeFormsSettings() {
         fieldData: form.fields || []
       })));
     } catch (error) {
-      toast.error("Failed to load forms");
+      toast.error(t('toast.error.failedToLoadForms'));
     } finally {
       setLoading(false);
     }
@@ -400,7 +402,7 @@ export default function IntakeFormsSettings() {
 
   const handleSaveForm = async () => {
     if (!formData.name.trim()) {
-      toast.error("Form name is required");
+      toast.error(t('toast.error.formNameIsRequired'));
       return;
     }
 
@@ -416,10 +418,10 @@ export default function IntakeFormsSettings() {
 
       if (editingForm) {
         await intakeFormsApi.update(editingForm.id, formPayload);
-        toast.success("Form updated successfully");
+        toast.success(t('toast.success.formUpdatedSuccessfully'));
       } else {
         await intakeFormsApi.create(formPayload);
-        toast.success("Form created successfully");
+        toast.success(t('toast.success.formCreatedSuccessfully'));
       }
 
       fetchForms();
@@ -433,24 +435,24 @@ export default function IntakeFormsSettings() {
   };
 
   const handleDelete = async (formId) => {
-    if (!confirm("Are you sure you want to delete this form?")) return;
+    if (!confirm(t('confirm.deleteForm'))) return;
 
     try {
       await intakeFormsApi.delete(formId);
-      toast.success("Form deleted successfully");
+      toast.success(t('toast.success.formDeletedSuccessfully'));
       fetchForms();
     } catch (error) {
-      toast.error("Failed to delete form");
+      toast.error(t('toast.error.failedToDeleteForm'));
     }
   };
 
   const handleDuplicate = async (form) => {
     try {
       await intakeFormsApi.duplicate(form.id, user?.name || user?.id);
-      toast.success("Form duplicated successfully");
+      toast.success(t('toast.success.formDuplicatedSuccessfully'));
       fetchForms();
     } catch (error) {
-      toast.error("Failed to duplicate form");
+      toast.error(t('toast.error.failedToDuplicateForm'));
     }
   };
 
@@ -589,7 +591,7 @@ export default function IntakeFormsSettings() {
             <div className="border border-dashed border-gray-300 dark:border-zinc-600 rounded-lg p-4 flex items-center justify-center gap-3 bg-gray-50/50 dark:bg-zinc-900/50">
               <Upload size={16} className="text-gray-400 dark:text-zinc-500" />
               <div className="text-center">
-                <p className="text-xs text-gray-600 dark:text-zinc-400 font-medium">Click to upload or drag and drop</p>
+                <p className="text-xs text-gray-600 dark:text-zinc-400 font-medium">{t('pages.clickToUploadOrDragAndDrop')}</p>
                 {field.description && <p className="text-[10px] text-gray-400 dark:text-zinc-500 mt-1">{field.description}</p>}
               </div>
             </div>
@@ -608,16 +610,16 @@ export default function IntakeFormsSettings() {
       {/* Unified Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-default-200 pb-6">
         <div>
-          <h2 className="text-2xl font-bold text-default-900">Intake Forms</h2>
-          <p className="text-sm text-default-500 mt-1">Create and manage custom intake forms for admissions and applications.</p>
+          <h2 className="text-2xl font-bold text-default-900">{t('pages.intakeForms1')}</h2>
+          <p className="text-sm text-default-500 mt-1">{t('pages.createAndManageCustomIntakeFormsForAdmissionsAndApplications')}</p>
         </div>
-        <Button color="primary" radius="full" className="shadow-md font-medium px-6" startContent={<Plus size={18} />} onPress={handleOpenTemplateModal}>Create Form</Button>
+        <Button color="primary" radius="full" className="shadow-md font-medium px-6" startContent={<Plus size={18} />} onPress={handleOpenTemplateModal}>{t('pages.createForm')}</Button>
       </div>
 
       {/* Forms Table */}
       <div className="bg-white dark:bg-zinc-950 border border-default-200 rounded-xl overflow-hidden shadow-sm">
         <Table
-          aria-label="Intake forms table"
+          aria-label={t('aria.misc.intakeForms')}
           removeWrapper
           radius="none"
           classNames={{
@@ -628,13 +630,13 @@ export default function IntakeFormsSettings() {
           }}
         >
           <TableHeader>
-            <TableColumn>FORM NAME</TableColumn>
-            <TableColumn>TYPE</TableColumn>
-            <TableColumn>STATUS</TableColumn>
-            <TableColumn>FIELDS</TableColumn>
-            <TableColumn>SUBMISSIONS</TableColumn>
-            <TableColumn>VERSION</TableColumn>
-            <TableColumn>ACTIONS</TableColumn>
+            <TableColumn scope="col">{t('pages.fORMName')}</TableColumn>
+            <TableColumn scope="col">{t('pages.tYPE')}</TableColumn>
+            <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+            <TableColumn scope="col">{t('pages.fIELDS')}</TableColumn>
+            <TableColumn scope="col">{t('pages.sUBMISSIONS')}</TableColumn>
+            <TableColumn scope="col">{t('pages.vERSION')}</TableColumn>
+            <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
           </TableHeader>
           <TableBody
             items={forms}
@@ -684,7 +686,7 @@ export default function IntakeFormsSettings() {
                       size="sm"
                       variant="light"
                       onPress={() => handlePreview(form)}
-                      title="Preview"
+                      title={t('pages.preview1')}
                       className="transition-all duration-200"
                     >
                       <Eye size={16} />
@@ -694,7 +696,7 @@ export default function IntakeFormsSettings() {
                       size="sm"
                       variant="light"
                       onPress={() => handleOpenBuilder(form)}
-                      title="Edit"
+                      title={t('pages.edit1')}
                       className="transition-all duration-200"
                     >
                       <Edit2 size={16} />
@@ -704,7 +706,7 @@ export default function IntakeFormsSettings() {
                       size="sm"
                       variant="light"
                       onPress={() => handleDuplicate(form)}
-                      title="Duplicate"
+                      title={t('pages.duplicate1')}
                       className="transition-all duration-200"
                     >
                       <Copy size={16} />
@@ -715,7 +717,7 @@ export default function IntakeFormsSettings() {
                       variant="light"
                       color="danger"
                       onPress={() => handleDelete(form.id)}
-                      title="Delete"
+                      title={t('pages.delete1')}
                       className="transition-all duration-200"
                     >
                       <Trash2 size={16} />
@@ -756,10 +758,10 @@ export default function IntakeFormsSettings() {
               {/* Left: Field Palette */}
               <div className="col-span-3 space-y-4">
                 <div>
-                  <h3 className="text-sm font-semibold mb-3">Form Details</h3>
+                  <h3 className="text-sm font-semibold mb-3">{t('pages.formDetails')}</h3>
                   <div className="space-y-3">
                     <Input
-                      label="Form Name"
+                      label={t('pages.formName1')}
                       value={formData.name}
                       onChange={(e) =>
                         setFormData({ ...formData, name: e.target.value })
@@ -768,7 +770,7 @@ export default function IntakeFormsSettings() {
                       size="sm"
                     />
                     <Select
-                      label="Form Type"
+                      label={t('pages.formType1')}
                       selectedKeys={[formData.type]}
                       onChange={(e) =>
                         setFormData({ ...formData, type: e.target.value })
@@ -815,7 +817,7 @@ export default function IntakeFormsSettings() {
               {/* Middle: Form Canvas */}
               <div className="col-span-6 bg-gray-50 dark:bg-black/20 rounded-xl border border-gray-200 dark:border-gray-800 p-6 overflow-hidden flex flex-col">
                 <div className="flex items-center justify-between mb-4 px-2">
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Canvas</h3>
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">{t('pages.canvas1')}</h3>
                   <span className="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-full text-gray-600 dark:text-gray-300">
                     {builderFields.length} Fields
                   </span>
@@ -879,10 +881,10 @@ export default function IntakeFormsSettings() {
               <div className="col-span-3 space-y-4">
                 {selectedField ? (
                   <>
-                    <h3 className="text-sm font-semibold">Field Settings</h3>
+                    <h3 className="text-sm font-semibold">{t('pages.fieldSettings')}</h3>
                     <div className="space-y-3">
                       <Input
-                        label="Field Label"
+                        label={t('pages.fieldLabel1')}
                         value={fieldConfig.label}
                         onChange={(e) =>
                           setFieldConfig({ ...fieldConfig, label: e.target.value })
@@ -894,7 +896,7 @@ export default function IntakeFormsSettings() {
                       />
 
                       <Input
-                        label="Placeholder"
+                        label={t('pages.placeholder1')}
                         value={fieldConfig.placeholder}
                         onChange={(e) =>
                           setFieldConfig({
@@ -925,12 +927,12 @@ export default function IntakeFormsSettings() {
                       />
 
                       <div className="flex gap-4">
-                        <Checkbox size="sm"
+                        <Checkbox
+                          size="sm"
                           isSelected={fieldConfig.required}
                           onValueChange={(value) =>
                             setFieldConfig({ ...fieldConfig, required: value })
                           }
-                          size="sm"
                         >
                           Required
                         </Checkbox>
@@ -971,7 +973,7 @@ export default function IntakeFormsSettings() {
                         {(fieldConfig.type === "text" || fieldConfig.type === "textarea") && (
                           <div className="grid grid-cols-2 gap-2 mb-3">
                             <Input
-                              label="Min Length"
+                              label={t('pages.minLength1')}
                               type="number"
                               size="sm"
                               variant="bordered"
@@ -985,7 +987,7 @@ export default function IntakeFormsSettings() {
                               }
                             />
                             <Input
-                              label="Max Length"
+                              label={t('pages.maxLength1')}
                               type="number"
                               size="sm"
                               variant="bordered"
@@ -1004,7 +1006,7 @@ export default function IntakeFormsSettings() {
                         {fieldConfig.type === "number" && (
                           <div className="grid grid-cols-2 gap-2 mb-3">
                             <Input
-                              label="Min Value"
+                              label={t('pages.minValue1')}
                               type="number"
                               size="sm"
                               variant="bordered"
@@ -1018,7 +1020,7 @@ export default function IntakeFormsSettings() {
                               }
                             />
                             <Input
-                              label="Max Value"
+                              label={t('pages.maxValue1')}
                               type="number"
                               size="sm"
                               variant="bordered"
@@ -1035,7 +1037,7 @@ export default function IntakeFormsSettings() {
                         )}
 
                         <Input
-                          label="Regex Pattern"
+                          label={t('pages.regexPattern1')}
                           placeholder="e.g. ^[A-Za-z]+$"
                           size="sm"
                           variant="bordered"
@@ -1127,7 +1129,7 @@ export default function IntakeFormsSettings() {
                   </>
                 ) : (
                   <div className="text-center py-12 text-gray-400">
-                    <p className="text-sm">Select a field to configure</p>
+                    <p className="text-sm">{t('pages.selectAFieldToConfigure')}</p>
                   </div>
                 )}
               </div>
@@ -1166,7 +1168,7 @@ export default function IntakeFormsSettings() {
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button onPress={onPreviewClose}>Close</Button>
+            <Button onPress={onPreviewClose}>{t('pages.close2')}</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -1174,7 +1176,7 @@ export default function IntakeFormsSettings() {
       {/* Template Selection Modal */}
       <Modal isOpen={isTemplateOpen} onClose={onTemplateClose} size="3xl">
         <ModalContent>
-          <ModalHeader>Choose a Template</ModalHeader>
+          <ModalHeader>{t('pages.chooseATemplate')}</ModalHeader>
           <ModalBody>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {formTemplates.map((template) => (

@@ -1,7 +1,9 @@
+import { request } from '../../../../services/api.js';
 import { useState } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Textarea } from "@heroui/react";
 import { MessageSquare, User, Phone, Mail, Send } from "lucide-react";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 /**
  * ReminderModal - Modal for sending fee reminders to parents
@@ -14,33 +16,29 @@ import toast from "react-hot-toast";
  * - onSend: function - Called after successful send (optional)
  */
 export default function ReminderModal({ isOpen, onClose, student, studentFeeStructure, onSend }) {
+  const { t } = useTranslation();
   const [reminderMessage, setReminderMessage] = useState("");
   const [reminderSending, setReminderSending] = useState(false);
+  const [messageError, setMessageError] = useState("");
 
   const handleClose = () => {
     setReminderMessage("");
+    setMessageError("");
     onClose();
   };
 
   const handleSendReminderMessage = async () => {
     if (!reminderMessage.trim()) {
-      toast.error("Please enter a message");
+      setMessageError(t('toast.error.pleaseEnterAMessage'));
       return;
     }
 
     setReminderSending(true);
-    const loadingToast = toast.loading("Sending reminder...");
+    const loadingToast = toast.loading(t('toast.loading.sendingReminder'));
 
     try {
-      const token = localStorage.getItem("token");
-      const headers = {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
-      };
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/messaging/send-reminder`, {
+      await request('/messaging/send-reminder', {
         method: 'POST',
-        headers,
         body: JSON.stringify({
           message: reminderMessage,
           parentPhone: student.parentPhone,
@@ -48,10 +46,6 @@ export default function ReminderModal({ isOpen, onClose, student, studentFeeStru
           studentName: student.name
         })
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to send reminder');
-      }
 
       toast.success("Reminder sent successfully", { id: loadingToast });
       setReminderMessage("");
@@ -83,7 +77,7 @@ export default function ReminderModal({ isOpen, onClose, student, studentFeeStru
               <MessageSquare size={20} className="text-primary" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold">Send Fee Reminder</h3>
+              <h3 className="text-lg font-semibold">{t('pages.sendFeeReminder1')}</h3>
               <p className="text-xs text-default-500">
                 {hasOutstandingFees
                   ? "Outstanding fee payment reminder"
@@ -97,7 +91,7 @@ export default function ReminderModal({ isOpen, onClose, student, studentFeeStru
           <div className="space-y-4">
             {/* Parent Contact Info - Gray container */}
             <div className="p-4 bg-default-50 rounded-lg border border-default-200">
-              <p className="text-xs font-semibold text-default-500 uppercase mb-2">Parent Contact Information</p>
+              <p className="text-xs font-semibold text-default-500 uppercase mb-2">{t('pages.parentContactInformation1')}</p>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
                   <User size={16} className="text-default-500" />
@@ -126,14 +120,14 @@ export default function ReminderModal({ isOpen, onClose, student, studentFeeStru
             }`}>
               {hasOutstandingFees ? (
                 <>
-                  <p className="text-xs font-semibold text-warning-700 uppercase mb-1">Outstanding Amount</p>
+                  <p className="text-xs font-semibold text-warning-700 uppercase mb-1">{t('pages.outstandingAmount1')}</p>
                   <p className="text-2xl font-bold text-warning-900">
                     ₹{studentFeeStructure?.totalBalance?.toLocaleString() || 0}
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="text-xs font-semibold text-success-700 uppercase mb-1">Total Fees Paid Till Date</p>
+                  <p className="text-xs font-semibold text-success-700 uppercase mb-1">{t('pages.totalFeesPaidTillDate1')}</p>
                   <p className="text-2xl font-bold text-success-900">
                     ₹{studentFeeStructure?.totalPaid?.toLocaleString() || 0}
                   </p>
@@ -143,15 +137,17 @@ export default function ReminderModal({ isOpen, onClose, student, studentFeeStru
 
             {/* Message Template */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-default-700">Message</label>
+              <label className="text-sm font-medium text-default-700">{t('pages.message1')}</label>
               <Textarea
                 value={reminderMessage}
-                onValueChange={setReminderMessage}
+                onValueChange={(v) => { setReminderMessage(v); setMessageError(""); }}
                 minRows={5}
                 variant="bordered"
-                placeholder="Enter your message..."
+                placeholder={t('pages.enterYourMessage1')}
                 description={`${reminderMessage.length}/500 characters`}
                 maxLength={500}
+                isInvalid={!!messageError}
+                errorMessage={messageError}
                 classNames={{
                   input: "border border-gray-200 dark:border-zinc-800 focus:border-gray-300 dark:focus:border-zinc-600"
                 }}

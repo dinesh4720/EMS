@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Button, Input, Select, SelectItem, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter
 } from "@heroui/react";
@@ -10,13 +10,16 @@ import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
 import { usePermissions } from "../../context/PermissionContext";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import { useTranslation } from 'react-i18next';
 
 /**
  * BulkSubjectAssignment - Page for assigning subjects and classes to teachers in bulk
  * Enables teachers to be selected when creating timetables
  */
 export default function BulkSubjectAssignment() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { staff, classesWithTeachers, schoolSettings, teacherAssignmentsApi, refetch } = useApp();
   const { hasPermission } = usePermissions();
 
@@ -28,6 +31,9 @@ export default function BulkSubjectAssignment() {
     "Mathematics", "Science", "English", "Hindi", "Social Studies",
     "Computer Science", "Physical Education", "Art", "Music"
   ];
+
+  // Pre-select staff coming from ClassSubjectManagementModal navigation (MF-26)
+  const preselectedStaffId = location.state?.preselectedStaffId;
 
   // Local state
   const [searchQuery, setSearchQuery] = useState("");
@@ -49,6 +55,14 @@ export default function BulkSubjectAssignment() {
     onConfirm: null,
     variant: "default"
   });
+
+  // Auto-select the staff member that navigated here from ClassSubjectManagementModal (MF-26)
+  useEffect(() => {
+    if (preselectedStaffId && staff.length > 0 && !selectedTeacher) {
+      const found = staff.find(s => String(s.id || s._id) === String(preselectedStaffId));
+      if (found) setSelectedTeacher(found);
+    }
+  }, [preselectedStaffId, staff, selectedTeacher]);
 
   // Extract unique departments from staff
   const departments = useMemo(() => {
@@ -118,7 +132,7 @@ export default function BulkSubjectAssignment() {
       setTeacherAssignments(assignmentsMap);
     } catch (error) {
       console.error('Error loading assignments:', error);
-      toast.error('Failed to load teacher assignments');
+      toast.error(t('toast.error.failedToLoadTeacherAssignments'));
     } finally {
       setLoading(false);
     }
@@ -154,7 +168,7 @@ export default function BulkSubjectAssignment() {
   // Handle opening assignment modal
   const handleOpenAssignModal = useCallback((teacher) => {
     if (!canEdit) {
-      toast.error('You do not have permission to edit teacher assignments');
+      toast.error(t('toast.error.youDoNotHavePermissionToEditTeacherAssignments'));
       return;
     }
     setSelectedTeacher(teacher);
@@ -165,7 +179,7 @@ export default function BulkSubjectAssignment() {
   // Handle adding assignment
   const handleAddAssignment = useCallback(() => {
     if (!selectedTeacher || !newAssignment.subject || newAssignment.classIds.size === 0) {
-      toast.error('Please select subject and at least one class');
+      toast.error(t('toast.error.pleaseSelectSubjectAndAtLeastOneClass'));
       return;
     }
 
@@ -178,7 +192,7 @@ export default function BulkSubjectAssignment() {
 
       const alreadyPending = teacherChanges.added.some(a => a.subject === subject);
       if (alreadyPending) {
-        toast.error('This subject is already pending to be added');
+        toast.error(t('toast.error.thisSubjectIsAlreadyPendingToBeAdded'));
         return prev;
       }
 
@@ -206,7 +220,7 @@ export default function BulkSubjectAssignment() {
   // Handle removing assignment
   const handleRemoveAssignment = useCallback((teacherId, assignmentId, subject) => {
     if (!canEdit) {
-      toast.error('You do not have permission to edit teacher assignments');
+      toast.error(t('toast.error.youDoNotHavePermissionToEditTeacherAssignments'));
       return;
     }
 
@@ -262,7 +276,7 @@ export default function BulkSubjectAssignment() {
   // Handle saving all pending changes
   const handleSaveAll = useCallback(async () => {
     if (totalPendingChanges === 0) {
-      toast.error('No pending changes to save');
+      toast.error(t('toast.error.noPendingChangesToSave'));
       return;
     }
 
@@ -329,7 +343,7 @@ export default function BulkSubjectAssignment() {
   // Handle clearing all pending changes
   const handleClearAll = useCallback(() => {
     setPendingChanges({});
-    toast.success('All pending changes cleared');
+    toast.success(t('toast.success.allPendingChangesCleared'));
   }, []);
 
   // Get effective assignments (current + pending)
@@ -369,7 +383,7 @@ export default function BulkSubjectAssignment() {
           className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors mb-2"
         >
           <ArrowLeft size={16} />
-          <span>Back to Staff</span>
+          <span>{t('pages.backToStaff')}</span>
         </button>
 
         <div className="bg-white rounded-lg border border-gray-100 p-5">
@@ -382,7 +396,7 @@ export default function BulkSubjectAssignment() {
 
               {/* Info */}
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">Bulk Subject Assignment</h1>
+                <h1 className="text-xl font-semibold text-gray-900">{t('pages.bulkSubjectAssignment')}</h1>
                 <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
                   <span>{teachers.length} Teachers</span>
                   <span className="text-gray-300">|</span>
@@ -390,7 +404,7 @@ export default function BulkSubjectAssignment() {
                 </div>
                 <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
                   <Users size={12} />
-                  <span>Assign subjects and classes to teachers in bulk</span>
+                  <span>{t('pages.assignSubjectsAndClassesToTeachersInBulk')}</span>
                 </div>
               </div>
             </div>
@@ -420,7 +434,7 @@ export default function BulkSubjectAssignment() {
               <AlertCircle size={16} className="text-gray-600" />
             </div>
             <p className="text-sm text-gray-600">
-              <strong>Note:</strong> Subject assignments determine which teachers can be selected when creating timetables for specific subjects and classes.
+              <strong>{t('pages.note1')}</strong> Subject assignments determine which teachers can be selected when creating timetables for specific subjects and classes.
               This is separate from "Class Teacher" assignment.
             </p>
           </div>
@@ -480,14 +494,14 @@ export default function BulkSubjectAssignment() {
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search teachers..."
+                placeholder={t('pages.searchTeachers')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400"
               />
             </div>
             <Select
-              placeholder="Filter by department"
+              placeholder={t('pages.filterByDepartment')}
               selectedKeys={departmentFilter !== 'all' ? [departmentFilter] : []}
               onSelectionChange={(keys) => setDepartmentFilter(Array.from(keys)[0] || 'all')}
               variant="bordered"
@@ -497,7 +511,7 @@ export default function BulkSubjectAssignment() {
                 trigger: "border-gray-200 hover:border-gray-300"
               }}
             >
-              <SelectItem key="all">All Departments</SelectItem>
+              <SelectItem key="all">{t('pages.allDepartments')}</SelectItem>
               {departments.map(dept => (
                 <SelectItem key={dept}>{dept}</SelectItem>
               ))}
@@ -509,17 +523,17 @@ export default function BulkSubjectAssignment() {
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           {/* Table Header */}
           <div className="grid grid-cols-12 gap-4 px-5 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wide">
-            <div className="col-span-3">Teacher</div>
-            <div className="col-span-2">Department</div>
-            <div className="col-span-5">Subject Assignments</div>
-            <div className="col-span-2 text-right">Actions</div>
+            <div className="col-span-3">{t('pages.teacher2')}</div>
+            <div className="col-span-2">{t('pages.department1')}</div>
+            <div className="col-span-5">{t('pages.subjectAssignments')}</div>
+            <div className="col-span-2 text-right">{t('pages.actions1')}</div>
           </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="flex flex-col items-center gap-3">
                 <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full"></div>
-                <p className="text-sm text-gray-500">Loading assignments...</p>
+                <p className="text-sm text-gray-500">{t('pages.loadingAssignments')}</p>
               </div>
             </div>
           ) : teachers.length === 0 ? (
@@ -527,7 +541,7 @@ export default function BulkSubjectAssignment() {
               <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
                 <Users size={20} className="text-gray-400" />
               </div>
-              <p className="text-sm text-gray-500">No teachers found</p>
+              <p className="text-sm text-gray-500">{t('pages.noTeachersFound')}</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
@@ -544,7 +558,7 @@ export default function BulkSubjectAssignment() {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                           {teacher.picture ? (
-                            <img src={teacher.picture} alt="" className="w-full h-full object-cover" />
+                            <img src={teacher.picture} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                           ) : (
                             <span className="text-sm font-medium text-gray-600">
                               {teacher.name?.charAt(0)}
@@ -554,7 +568,7 @@ export default function BulkSubjectAssignment() {
                         <div>
                           <p className="text-sm font-medium text-gray-900">{teacher.name}</p>
                           {hasChanges && (
-                            <span className="text-xs text-gray-500">Pending changes</span>
+                            <span className="text-xs text-gray-500">{t('pages.pendingChanges')}</span>
                           )}
                         </div>
                       </div>
@@ -571,7 +585,7 @@ export default function BulkSubjectAssignment() {
                     <div className="col-span-5">
                       <div className="space-y-2">
                         {assignments.length === 0 ? (
-                          <p className="text-sm text-gray-400 italic">No subjects assigned</p>
+                          <p className="text-sm text-gray-400 italic">{t('pages.noSubjectsAssigned1')}</p>
                         ) : (
                           assignments.map((assignment) => {
                             const isPendingAdd = changes.added.some(a => a.subject === assignment.subject);
@@ -602,7 +616,7 @@ export default function BulkSubjectAssignment() {
                                     <BookOpen size={14} className="text-gray-500" />
                                     <span className="text-sm font-medium text-gray-900">{assignment.subject}</span>
                                     {isPendingAdd && (
-                                      <span className="text-xs text-green-600 font-medium">New</span>
+                                      <span className="text-xs text-green-600 font-medium">{t('pages.new')}</span>
                                     )}
                                   </div>
                                   {canEdit && (
@@ -671,7 +685,7 @@ export default function BulkSubjectAssignment() {
                 <BookOpen size={16} className="text-gray-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Add Subject Assignment</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t('pages.addSubjectAssignment')}</h3>
                 <p className="text-sm text-gray-500 font-normal">For: {selectedTeacher?.name}</p>
               </div>
             </div>
@@ -684,7 +698,7 @@ export default function BulkSubjectAssignment() {
                   Subject <span className="text-red-500">*</span>
                 </label>
                 <Select
-                  placeholder="Select a subject"
+                  placeholder={t('pages.selectASubject')}
                   selectedKeys={newAssignment.subject ? new Set([newAssignment.subject]) : new Set()}
                   onSelectionChange={(keys) => {
                     setNewAssignment(prev => ({ ...prev, subject: Array.from(keys)[0] || "" }));
@@ -711,7 +725,7 @@ export default function BulkSubjectAssignment() {
                   Classes <span className="text-red-500">*</span>
                 </label>
                 <Select
-                  placeholder="Choose one or more classes"
+                  placeholder={t('pages.chooseOneOrMoreClasses')}
                   selectionMode="multiple"
                   selectedKeys={newAssignment.classIds}
                   onSelectionChange={(keys) => {

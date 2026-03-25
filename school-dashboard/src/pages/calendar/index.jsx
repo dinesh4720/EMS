@@ -12,6 +12,9 @@ import {
 import { useApp } from "../../context/AppContext";
 import { frontDeskApi, teacherTimetableApi } from "../../services/api";
 import { motion, AnimatePresence } from "framer-motion";
+import { getDateLocale } from '../../i18n/index';
+import { useTranslation } from 'react-i18next';
+
 
 const eventTypes = {
   holiday: { label: "Holiday", icon: AlertCircle },
@@ -39,6 +42,7 @@ const defaultPeriods = [
 ];
 
 export default function CalendarPage() {
+  const { t } = useTranslation();
   const { events, addEvent, deleteEvent, staff, classesWithTeachers, schoolSettings } = useApp();
 
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -161,17 +165,17 @@ export default function CalendarPage() {
 
   const getHeaderTitle = () => {
     if (view === "month" || view === "schedule") {
-      return currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      return currentDate.toLocaleDateString(getDateLocale(), { month: "long", year: "numeric" });
     } else if (view === "week") {
       const weekDates = getWeekDates();
       const start = weekDates[0];
       const end = weekDates[6];
       if (start.getMonth() === end.getMonth()) {
-        return `${start.toLocaleDateString("en-US", { month: "long" })} ${start.getDate()} - ${end.getDate()}, ${start.getFullYear()}`;
+        return `${start.toLocaleDateString(getDateLocale(), { month: "long" })} ${start.getDate()} - ${end.getDate()}, ${start.getFullYear()}`;
       }
-      return `${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+      return `${start.toLocaleDateString(getDateLocale(), { month: "short", day: "numeric" })} - ${end.toLocaleDateString(getDateLocale(), { month: "short", day: "numeric", year: "numeric" })}`;
     } else {
-      return currentDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+      return currentDate.toLocaleDateString(getDateLocale(), { weekday: "long", month: "long", day: "numeric", year: "numeric" });
     }
   };
 
@@ -211,7 +215,7 @@ export default function CalendarPage() {
   // Get timetable classes for a specific date
   const getTimetableForDate = (dateKey) => {
     if (!selectedStaff || !staffTimetable?.schedule) return [];
-    const date = new Date(dateKey);
+    const date = new Date(dateKey + 'T00:00:00');
     const dayName = daysOfWeekFull[date.getDay()];
     const daySchedule = staffTimetable.schedule[dayName] || [];
     return daySchedule
@@ -254,7 +258,7 @@ export default function CalendarPage() {
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
     const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    return date.toLocaleDateString(getDateLocale(), { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   };
 
   const handleAddEvent = async () => {
@@ -296,7 +300,7 @@ export default function CalendarPage() {
 
     for (let day = 1; day <= daysInMonth; day++) {
       const dateKey = formatDateKey(year, month, day);
-      const date = new Date(dateKey);
+      const date = new Date(dateKey + 'T00:00:00');
       const dayEvents = getEventsForDate(dateKey);
       const timetableClasses = getTimetableForDate(dateKey);
       const isToday = dateKey === formatDateKey(today.getFullYear(), today.getMonth(), today.getDate());
@@ -427,12 +431,12 @@ export default function CalendarPage() {
             <CalendarIcon size={32} className="mx-auto text-default-300 mb-3" />
             {!selectedStaff ? (
               <>
-                <p className="text-default-500 font-medium">Select a staff member</p>
-                <p className="text-default-400 text-sm mt-1">Choose a staff from the sidebar to view their schedule and appointments</p>
+                <p className="text-default-500 font-medium">{t('pages.selectAStaffMember')}</p>
+                <p className="text-default-400 text-sm mt-1">{t('pages.chooseAStaffFromTheSidebarToViewTheirScheduleAndAppointments')}</p>
               </>
             ) : (
               <>
-                <p className="text-default-400">No events scheduled this month</p>
+                <p className="text-default-400">{t('pages.noEventsScheduledThisMonth')}</p>
                 <Button size="sm" variant="flat" className="mt-3" onPress={() => onAddOpen()}>
                   Add Event
                 </Button>
@@ -447,7 +451,7 @@ export default function CalendarPage() {
                 <span className="text-[10px] font-semibold uppercase text-default-400">{dayData.dayNameShort}</span>
                 <span className={`text-xl font-bold ${dayData.isToday ? 'text-foreground' : 'text-foreground'}`}>{dayData.day}</span>
                 {dayData.isToday && (
-                  <span className="text-[9px] font-medium text-foreground mt-0.5">TODAY</span>
+                  <span className="text-[9px] font-medium text-foreground mt-0.5">{t('pages.tODAY')}</span>
                 )}
               </div>
 
@@ -469,7 +473,7 @@ export default function CalendarPage() {
                           )}
                         </>
                       ) : (
-                        <span className="text-[10px] text-default-400 uppercase">All day</span>
+                        <span className="text-[10px] text-default-400 uppercase">{t('pages.allDay1')}</span>
                       )}
                     </div>
 
@@ -563,7 +567,7 @@ export default function CalendarPage() {
           <div className="flex items-center gap-2 text-sm text-default-600">
             <Clock size={14} className="text-default-400" />
             {selectedEvent.allDay ? (
-              <span>All Day</span>
+              <span>{t('pages.allDay2')}</span>
             ) : (
               <span>
                 {formatTime(selectedEvent.startTime)}
@@ -581,7 +585,7 @@ export default function CalendarPage() {
             <div className="flex items-start gap-2">
               <User size={14} className="text-default-400 mt-0.5" />
               <div>
-                <span className="text-xs text-default-400 block">Visitor</span>
+                <span className="text-xs text-default-400 block">{t('pages.visitor1')}</span>
                 <span className="text-sm font-medium">{selectedEvent.visitorName}</span>
               </div>
             </div>
@@ -590,7 +594,7 @@ export default function CalendarPage() {
               <div className="flex items-start gap-2">
                 <Phone size={14} className="text-default-400 mt-0.5" />
                 <div>
-                  <span className="text-xs text-default-400 block">Phone</span>
+                  <span className="text-xs text-default-400 block">{t('pages.phone1')}</span>
                   <span className="text-sm">{selectedEvent.phone}</span>
                 </div>
               </div>
@@ -600,7 +604,7 @@ export default function CalendarPage() {
               <div className="flex items-start gap-2">
                 <FileText size={14} className="text-default-400 mt-0.5" />
                 <div>
-                  <span className="text-xs text-default-400 block">Purpose</span>
+                  <span className="text-xs text-default-400 block">{t('pages.purpose1')}</span>
                   <span className="text-sm">{selectedEvent.purpose}</span>
                 </div>
               </div>
@@ -610,7 +614,7 @@ export default function CalendarPage() {
               <div className="flex items-start gap-2">
                 <Users size={14} className="text-default-400 mt-0.5" />
                 <div>
-                  <span className="text-xs text-default-400 block">Meeting With</span>
+                  <span className="text-xs text-default-400 block">{t('pages.meetingWith1')}</span>
                   <span className="text-sm">{selectedEvent.meetingWith}</span>
                 </div>
               </div>
@@ -620,7 +624,7 @@ export default function CalendarPage() {
               <div className="flex items-start gap-2">
                 <CheckCircle2 size={14} className="text-default-400 mt-0.5" />
                 <div>
-                  <span className="text-xs text-default-400 block">Status</span>
+                  <span className="text-xs text-default-400 block">{t('pages.status2')}</span>
                   <Chip size="sm" variant="flat" color={
                     selectedEvent.status === 'completed' ? 'success' :
                     selectedEvent.status === 'cancelled' ? 'danger' : 'primary'
@@ -633,7 +637,7 @@ export default function CalendarPage() {
 
             {selectedEvent.notes && (
               <div className="p-3 bg-default-50 rounded-lg">
-                <span className="text-xs text-default-400 block mb-1">Notes</span>
+                <span className="text-xs text-default-400 block mb-1">{t('pages.notes1')}</span>
                 <span className="text-sm">{selectedEvent.notes}</span>
               </div>
             )}
@@ -645,7 +649,7 @@ export default function CalendarPage() {
             <div className="flex items-start gap-2">
               <BookOpen size={14} className="text-default-400 mt-0.5" />
               <div>
-                <span className="text-xs text-default-400 block">Subject</span>
+                <span className="text-xs text-default-400 block">{t('pages.subject2')}</span>
                 <span className="text-sm font-medium">{selectedEvent.subject}</span>
               </div>
             </div>
@@ -653,7 +657,7 @@ export default function CalendarPage() {
             <div className="flex items-start gap-2">
               <MapPin size={14} className="text-default-400 mt-0.5" />
               <div>
-                <span className="text-xs text-default-400 block">Class</span>
+                <span className="text-xs text-default-400 block">{t('pages.class1')}</span>
                 <span className="text-sm font-medium">{getClassName(selectedEvent.classId)}</span>
               </div>
             </div>
@@ -662,7 +666,7 @@ export default function CalendarPage() {
               <div className="flex items-start gap-2">
                 <Clock size={14} className="text-default-400 mt-0.5" />
                 <div>
-                  <span className="text-xs text-default-400 block">Period</span>
+                  <span className="text-xs text-default-400 block">{t('pages.period2')}</span>
                   <span className="text-sm">{defaultPeriods[selectedEvent.periodIndex].name} ({defaultPeriods[selectedEvent.periodIndex].startTime} - {defaultPeriods[selectedEvent.periodIndex].endTime})</span>
                 </div>
               </div>
@@ -672,7 +676,7 @@ export default function CalendarPage() {
               <div className="flex items-start gap-2">
                 <User size={14} className="text-default-400 mt-0.5" />
                 <div>
-                  <span className="text-xs text-default-400 block">Teacher</span>
+                  <span className="text-xs text-default-400 block">{t('pages.teacher2')}</span>
                   <span className="text-sm">{selectedStaff.name}</span>
                 </div>
               </div>
@@ -685,7 +689,7 @@ export default function CalendarPage() {
             <div className="flex items-start gap-2">
               <Users size={14} className="text-default-400 mt-0.5" />
               <div>
-                <span className="text-xs text-default-400 block">Meeting</span>
+                <span className="text-xs text-default-400 block">{t('pages.meeting1')}</span>
                 <span className="text-sm">{selectedEvent.title}</span>
               </div>
             </div>
@@ -856,7 +860,7 @@ export default function CalendarPage() {
                 className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${view === "month" ? "bg-background text-foreground shadow-sm" : "text-default-400 hover:text-default-600"}`}
               >
                 <LayoutGrid size={12} />
-                <span className="hidden sm:inline">Month</span>
+                <span className="hidden sm:inline">{t('pages.month1')}</span>
               </button>
               <button
                 onClick={() => setView("week")}
@@ -875,7 +879,7 @@ export default function CalendarPage() {
                 className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${view === "schedule" ? "bg-background text-foreground shadow-sm" : "text-default-400 hover:text-default-600"}`}
               >
                 <List size={12} />
-                <span>Schedule</span>
+                <span>{t('pages.schedule1')}</span>
               </button>
             </div>
 
@@ -954,12 +958,12 @@ export default function CalendarPage() {
                 <div className="flex items-baseline gap-3 border-b border-default-100 pb-4 mb-4">
                   <span className="text-3xl font-bold tracking-tight">{currentDate.getDate()}</span>
                   <div className="text-lg text-default-400 font-medium">{daysOfWeekFull[currentDate.getDay()]}</div>
-                  <div className="ml-auto text-base text-default-500">{currentDate.toLocaleDateString("en-US", { month: 'long', year: 'numeric' })}</div>
+                  <div className="ml-auto text-base text-default-500">{currentDate.toLocaleDateString(getDateLocale(), { month: 'long', year: 'numeric' })}</div>
                 </div>
 
                 {selectedStaff && (
                   <div className="mb-4">
-                    <h4 className="text-xs font-semibold text-default-500 uppercase mb-2">Today's Classes</h4>
+                    <h4 className="text-xs font-semibold text-default-500 uppercase mb-2">{t('pages.todaySClasses')}</h4>
                     <div className="space-y-2">
                       {getTimetableForDate(formatDateKey(year, month, currentDate.getDate())).map((cls) => {
                         const period = defaultPeriods[cls.periodIndex];
@@ -981,8 +985,8 @@ export default function CalendarPage() {
                   {getEventsForDate(formatDateKey(year, month, currentDate.getDate())).length === 0 ? (
                     <div className="py-8 text-center">
                       <CalendarIcon size={24} className="mx-auto text-default-300 mb-2" />
-                      <p className="text-sm text-default-400">No events scheduled</p>
-                      <Button size="sm" variant="flat" className="mt-2" onPress={() => handleDateClick(formatDateKey(year, month, currentDate.getDate()))}>Add Event</Button>
+                      <p className="text-sm text-default-400">{t('pages.noEventsScheduled')}</p>
+                      <Button size="sm" variant="flat" className="mt-2" onPress={() => handleDateClick(formatDateKey(year, month, currentDate.getDate()))}>{t('pages.addEvent1')}</Button>
                     </div>
                   ) : (
                     getEventsForDate(formatDateKey(year, month, currentDate.getDate())).map(event => (
@@ -1016,7 +1020,7 @@ export default function CalendarPage() {
         {sidebarExpanded ? (
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between p-3 border-b border-default-100">
-              <h3 className="text-sm font-semibold text-foreground">Staff Schedule</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t('pages.staffSchedule')}</h3>
               <Button isIconOnly size="sm" variant="light" className="text-default-400" onPress={() => setSidebarExpanded(false)}>
                 <ChevronRight size={16} />
               </Button>
@@ -1025,7 +1029,7 @@ export default function CalendarPage() {
             <div className="p-3 border-b border-default-100">
               <Select
                 size="sm"
-                placeholder="Select staff member"
+                placeholder={t('pages.selectStaffMember')}
                 selectedKeys={selectedStaff ? [String(selectedStaff.id)] : []}
                 onChange={(e) => {
                   const staffId = e.target.value;
@@ -1065,7 +1069,9 @@ export default function CalendarPage() {
                       <BookOpen size={12} /> Today's Classes
                     </h4>
                     {loadingTimetable ? (
-                      <div className="flex items-center justify-center py-4"><Spinner size="sm" /></div>
+                      <div className="animate-pulse space-y-1.5">
+                        {[...Array(3)].map((_, i) => <div key={i} className="h-10 bg-gray-100 dark:bg-zinc-800 rounded-lg" />)}
+                      </div>
                     ) : todaySchedule.filter(s => s.classId && s.subject).length > 0 ? (
                       <div className="space-y-1.5">
                         {todaySchedule.map((slot, idx) => {
@@ -1100,7 +1106,7 @@ export default function CalendarPage() {
                         })}
                       </div>
                     ) : (
-                      <div className="text-xs text-default-400 py-3 text-center border border-dashed border-default-200 rounded-lg">No classes today</div>
+                      <div className="text-xs text-default-400 py-3 text-center border border-dashed border-default-200 rounded-lg">{t('pages.noClassesToday1')}</div>
                     )}
                   </div>
 
@@ -1109,7 +1115,9 @@ export default function CalendarPage() {
                       <Users size={12} /> Upcoming Appointments
                     </h4>
                     {loadingAppointments ? (
-                      <div className="flex items-center justify-center py-4"><Spinner size="sm" /></div>
+                      <div className="animate-pulse space-y-1.5">
+                        {[...Array(2)].map((_, i) => <div key={i} className="h-10 bg-gray-100 dark:bg-zinc-800 rounded-lg" />)}
+                      </div>
                     ) : upcomingAppointments.length > 0 ? (
                       <div className="space-y-1.5">
                         {upcomingAppointments.map((apt) => (
@@ -1142,14 +1150,14 @@ export default function CalendarPage() {
                             </div>
                             <div className="text-[10px] text-success-600 mt-1 flex items-center gap-1">
                               <Clock size={10} />
-                              {new Date(apt.fromDateTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                              {new Date(apt.fromDateTime).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                             </div>
                             {apt.purpose && <div className="text-[10px] text-success-500 mt-0.5 truncate">{apt.purpose}</div>}
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="text-xs text-default-400 py-3 text-center border border-dashed border-default-200 rounded-lg">No upcoming appointments</div>
+                      <div className="text-xs text-default-400 py-3 text-center border border-dashed border-default-200 rounded-lg">{t('pages.noUpcomingAppointments1')}</div>
                     )}
                   </div>
                 </div>
@@ -1158,8 +1166,8 @@ export default function CalendarPage() {
                   <div className="w-12 h-12 rounded-full bg-default-50 flex items-center justify-center mb-3">
                     <User size={20} className="text-default-300" />
                   </div>
-                  <p className="text-sm text-default-500 font-medium">No Staff Selected</p>
-                  <p className="text-xs text-default-400 mt-1">Select a staff member to view their schedule</p>
+                  <p className="text-sm text-default-500 font-medium">{t('pages.noStaffSelected1')}</p>
+                  <p className="text-xs text-default-400 mt-1">{t('pages.selectAStaffMemberToViewTheirSchedule')}</p>
                 </div>
               )}
             </ScrollShadow>
@@ -1169,7 +1177,7 @@ export default function CalendarPage() {
             <Button isIconOnly size="sm" variant="light" className="text-default-400" onPress={() => setSidebarExpanded(true)}>
               <ChevronLeft size={16} />
             </Button>
-            <div className="mt-2 writing-mode-vertical text-[10px] text-default-400 font-medium">Staff</div>
+            <div className="mt-2 writing-mode-vertical text-[10px] text-default-400 font-medium">{t('pages.staff1')}</div>
           </div>
         )}
       </div>
@@ -1178,7 +1186,7 @@ export default function CalendarPage() {
       <Modal isOpen={isDetailOpen} onClose={onDetailClose} size="md" backdrop="blur" classNames={{ base: "bg-background border border-default-200 rounded-xl" }}>
         <ModalContent>
           <ModalHeader className="border-b border-default-100 pb-3">
-            <span className="text-base font-semibold">Event Details</span>
+            <span className="text-base font-semibold">{t('pages.eventDetails')}</span>
           </ModalHeader>
           <ModalBody className="py-4">
             {renderEventDetail()}
@@ -1190,7 +1198,7 @@ export default function CalendarPage() {
               </Button>
             )}
             <div className="flex-1" />
-            <Button size="sm" variant="light" onPress={onDetailClose}>Close</Button>
+            <Button size="sm" variant="light" onPress={onDetailClose}>{t('pages.close2')}</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -1212,7 +1220,7 @@ export default function CalendarPage() {
                     <Plus size={18} className="text-default-600" />
                   </div>
                   <div>
-                    <span className="text-base font-semibold block">New Event</span>
+                    <span className="text-base font-semibold block">{t('pages.newEvent')}</span>
                     {selectedDate && (
                       <span className="text-xs text-default-400">{formatDate(selectedDate)}</span>
                     )}
@@ -1234,7 +1242,7 @@ export default function CalendarPage() {
                 <div className="space-y-6">
                   {/* Title */}
                   <div>
-                    <label className="text-xs font-medium text-default-500 mb-1.5 block">Event Title</label>
+                    <label className="text-xs font-medium text-default-500 mb-1.5 block">{t('pages.eventTitle')}</label>
                     <Input
                       placeholder="e.g., Staff Meeting, Annual Day..."
                       variant="bordered"
@@ -1250,7 +1258,7 @@ export default function CalendarPage() {
 
                   {/* Event Type Selection */}
                   <div>
-                    <label className="text-xs font-medium text-default-500 mb-2 block">Event Type</label>
+                    <label className="text-xs font-medium text-default-500 mb-2 block">{t('pages.eventType')}</label>
                     <div className="grid grid-cols-2 gap-2">
                       {Object.entries(eventTypes)
                         .filter(([k]) => k !== 'appointment' && k !== 'class')
@@ -1281,7 +1289,7 @@ export default function CalendarPage() {
                   <div className="flex items-center justify-between p-3 rounded-lg border border-default-200">
                     <div className="flex items-center gap-2">
                       <Clock size={16} className="text-default-400" />
-                      <span className="text-sm text-default-600">All Day Event</span>
+                      <span className="text-sm text-default-600">{t('pages.allDayEvent1')}</span>
                     </div>
                     <button
                       onClick={() => setNewEvent({ ...newEvent, allDay: !newEvent.allDay })}
@@ -1299,7 +1307,7 @@ export default function CalendarPage() {
                   {!newEvent.allDay && (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-xs font-medium text-default-500 mb-1.5 block">Start Time</label>
+                        <label className="text-xs font-medium text-default-500 mb-1.5 block">{t('pages.startTime1')}</label>
                         <Input
                           type="time"
                           variant="bordered"
@@ -1313,7 +1321,7 @@ export default function CalendarPage() {
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-medium text-default-500 mb-1.5 block">End Time</label>
+                        <label className="text-xs font-medium text-default-500 mb-1.5 block">{t('pages.endTime1')}</label>
                         <Input
                           type="time"
                           variant="bordered"
@@ -1331,7 +1339,7 @@ export default function CalendarPage() {
 
                   {/* Preview Section */}
                   <div>
-                    <label className="text-xs font-medium text-default-500 mb-2 block">Preview</label>
+                    <label className="text-xs font-medium text-default-500 mb-2 block">{t('pages.preview1')}</label>
                     <div className="border border-default-200 rounded-lg p-4 bg-default-50/50">
                       {/* Event Preview Card */}
                       <div className="bg-background rounded-lg border border-default-200 p-4">
@@ -1349,13 +1357,13 @@ export default function CalendarPage() {
                             <div className="flex items-center gap-2 mt-1.5 text-xs text-default-500">
                               <CalendarIcon size={12} />
                               <span>
-                                {selectedDate ? new Date(selectedDate + 'T00:00:00').toLocaleDateString("en-US", { weekday: 'short', month: 'short', day: 'numeric' }) : 'Select date'}
+                                {selectedDate ? new Date(selectedDate + 'T00:00:00').toLocaleDateString(getDateLocale(), { weekday: 'short', month: 'short', day: 'numeric' }) : 'Select date'}
                               </span>
                             </div>
                             <div className="flex items-center gap-2 mt-1 text-xs text-default-500">
                               <Clock size={12} />
                               {newEvent.allDay ? (
-                                <span>All Day</span>
+                                <span>{t('pages.allDay2')}</span>
                               ) : (
                                 <span>
                                   {newEvent.startTime ? formatTime(newEvent.startTime) : '--:--'}

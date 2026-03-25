@@ -1,21 +1,9 @@
-import { useState, useRef } from "react";
+import { request } from '../../../services/api.js';
+import { useState, useRef, useCallback } from "react";
+import { useTranslation } from 'react-i18next';
 import { useReactToPrint } from "react-to-print";
 import toast from "react-hot-toast";
 import { uploadApi } from "../../../services/api";
-
-const getAuthToken = () => {
-  const storedUser = sessionStorage.getItem('app_user');
-  if (storedUser) {
-    try {
-      const userData = JSON.parse(storedUser);
-      return userData.token;
-    } catch (err) {
-      console.error('Failed to parse user data:', err);
-      return null;
-    }
-  }
-  return null;
-};
 
 /**
  * Custom hook for student photo-related actions
@@ -26,6 +14,7 @@ const getAuthToken = () => {
  * @param {React.RefObject} printRef - Reference to printable component
  */
 export function useStudentPhotoActions(student, onUpdateStudent, printRef) {
+  const { t } = useTranslation();
   const fileInputRef = useRef(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [selectedImageForEdit, setSelectedImageForEdit] = useState(null);
@@ -37,7 +26,7 @@ export function useStudentPhotoActions(student, onUpdateStudent, printRef) {
     content: () => printRef?.current,
     documentTitle: `${student?.name || "Student"}_Profile`,
     onAfterPrint: () => {
-      toast.success("Student profile downloaded successfully!");
+      toast.success(t('toast.success.studentProfileDownloadedSuccessfully'));
     },
     onBeforeGetContent: () => {
       return Promise.resolve();
@@ -57,24 +46,32 @@ export function useStudentPhotoActions(student, onUpdateStudent, printRef) {
     }
   };
 
-  const updatePhotoOnServer = async (photoUrl) => {
-    const token = getAuthToken();
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+  // useCallback with student?.id dep prevents stale closure when student identity changes (AP-12)
+  const updatePhotoOnServer = useCallback(async (photoUrl) => {
+    await request(`/students/${student.id}/photo`, {
+      method: 'PUT',
+      body: JSON.stringify({ photo: photoUrl })
+    });
+  }, [student?.id]);
 
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/students/${student.id}/photo`,
-      { method: 'PUT', headers, body: JSON.stringify({ photo: photoUrl }) }
-    );
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to update photo');
+  // Retry helper: attempts fn up to maxRetries times with exponential back-off (AP-20, AP-21)
+  const withRetry = async (fn, maxRetries = 2) => {
+    let lastError;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (err) {
+        lastError = err;
+        if (attempt < maxRetries) {
+          await new Promise(res => setTimeout(res, 500 * (attempt + 1)));
+        }
+      }
     }
+    throw lastError;
   };
 
   const handlePhotoSave = async (croppedImage) => {
-    const loadingToast = toast.loading("Uploading photo...");
+    const loadingToast = toast.loading(t('toast.loading.uploadingPhoto'));
 
     try {
       // Convert data URL to File
@@ -91,8 +88,8 @@ export function useStudentPhotoActions(student, onUpdateStudent, printRef) {
 
       const file = dataURLtoFile(croppedImage, "profile_photo.jpg");
 
-      // Upload to Cloudinary
-      const response = await uploadApi.uploadFile(file);
+      // Upload to Cloudinary with retry on network failure
+      const response = await withRetry(() => uploadApi.uploadFile(file));
 
       await updatePhotoOnServer(response.url);
 
@@ -110,10 +107,11 @@ export function useStudentPhotoActions(student, onUpdateStudent, printRef) {
   };
 
   const handleCameraPhotoCapture = async (file) => {
-    const loadingToast = toast.loading("Uploading photo...");
+    const loadingToast = toast.loading(t('toast.loading.uploadingPhoto'));
 
     try {
-      const response = await uploadApi.uploadFile(file);
+      // Upload to Cloudinary with retry on network failure
+      const response = await withRetry(() => uploadApi.uploadFile(file));
 
       await updatePhotoOnServer(response.url);
 
@@ -134,7 +132,7 @@ export function useStudentPhotoActions(student, onUpdateStudent, printRef) {
     if (student?.photo) {
       setIsCameraCaptureOpen(true);
     } else {
-      toast.error("No photo to adjust");
+      toast.error(t('toast.error.noPhotoToAdjust'));
     }
   };
 
@@ -146,11 +144,11 @@ export function useStudentPhotoActions(student, onUpdateStudent, printRef) {
 
   const handleRemovePhoto = async () => {
     if (!student?.photo) {
-      toast.error("No photo to remove");
+      toast.error(t('toast.error.noPhotoToRemove'));
       return;
     }
 
-    const loadingToast = toast.loading("Removing photo...");
+    const loadingToast = toast.loading(t('toast.loading.removingPhoto'));
 
     try {
       await updatePhotoOnServer(null);

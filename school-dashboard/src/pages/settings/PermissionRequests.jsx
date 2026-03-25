@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { request } from '../../services/api.js';
+import { useState, useEffect, useMemo } from "react";
 import {
   Card,
   CardBody,
@@ -25,39 +26,38 @@ import {
 import { CheckCircle, XCircle, Clock, User, Calendar, MessageSquare } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { usePermissions } from "../../context/PermissionContext";
-import { getAuthHeaders } from "../../utils/authSession";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-
-const MODULE_LABELS = {
-  dashboard: "Dashboard",
-  staff: "Staff Management",
-  students: "Students Management",
-  classes: "Classes Management",
-  attendance: "Attendance",
-  timetable: "Timetable",
-  fees: "Fee Management",
-  payroll: "Payroll",
-  messaging: "Messaging",
-  reports: "Reports",
-  settings: "Settings",
-  "front-desk": "Front Desk"
-};
-
-const ACTION_LABELS = {
-  view: "View",
-  create: "Create",
-  edit: "Edit",
-  delete: "Delete"
-};
 
 export default function PermissionRequests() {
+  const { t } = useTranslation();
+  const MODULE_LABELS = useMemo(() => ({
+    dashboard: t('constants.permissions.modules.dashboard'),
+    staff: t('constants.permissions.modules.staff'),
+    students: t('constants.permissions.modules.students'),
+    classes: t('constants.permissions.modules.classes'),
+    attendance: t('constants.permissions.modules.attendance'),
+    timetable: t('constants.permissions.modules.timetable'),
+    fees: t('constants.permissions.modules.fees'),
+    payroll: t('constants.permissions.modules.payroll'),
+    messaging: t('constants.permissions.modules.messaging'),
+    reports: t('constants.permissions.modules.reports'),
+    settings: t('constants.permissions.modules.settings'),
+    "front-desk": t('constants.permissions.modules.frontDesk'),
+  }), [t]);
+  const ACTION_LABELS = useMemo(() => ({
+    view: t('constants.permissions.actions.view'),
+    create: t('constants.permissions.actions.create'),
+    edit: t('constants.permissions.actions.edit'),
+    delete: t('constants.permissions.actions.delete'),
+  }), [t]);
   const { user } = useAuth();
   const { isAdmin } = usePermissions();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [reviewNotes, setReviewNotes] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -88,23 +88,16 @@ export default function PermissionRequests() {
   }, [isAdmin]);
 
   const fetchRequests = async () => {
+    setFetchError(null);
     try {
       setLoading(true);
       const status = activeTab === 'all' ? '' : activeTab;
-      const response = await fetch(
-        `${API_URL}/permissions/requests${status ? `?status=${status}` : ''}`,
-        { headers: getAuthHeaders() }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch requests');
-      }
-
-      const data = await response.json();
+      const data = await request(`/permissions/requests${status ? `?status=${status}` : ''}`);
       setRequests(data);
     } catch (error) {
       console.error('Error fetching requests:', error);
-      toast.error('Failed to load permission requests');
+      setFetchError(error.message || 'Failed to load permission requests');
+      toast.error(t('toast.error.failedToLoadPermissionRequests'));
     } finally {
       setLoading(false);
     }
@@ -121,28 +114,16 @@ export default function PermissionRequests() {
 
     setProcessing(true);
     try {
-      const response = await fetch(
-        `${API_URL}/permissions/requests/${selectedRequest._id}`,
-        {
-          method: 'PUT',
-          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-          body: JSON.stringify({
-            status: 'approved',
-            reviewNotes,
-          })
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to approve request');
-      }
-
+      await request(`/permissions/requests/${selectedRequest._id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'approved', reviewNotes })
+      });
       toast.success(`Permission request approved for ${selectedRequest.userName}`);
       fetchRequests();
       onClose();
     } catch (error) {
       console.error('Error approving request:', error);
-      toast.error('Failed to approve request');
+      toast.error(t('toast.error.failedToApproveRequest'));
     } finally {
       setProcessing(false);
     }
@@ -152,34 +133,22 @@ export default function PermissionRequests() {
     if (!selectedRequest) return;
 
     if (!reviewNotes.trim()) {
-      toast.error('Please provide a reason for rejection');
+      toast.error(t('toast.error.pleaseProvideAReasonForRejection'));
       return;
     }
 
     setProcessing(true);
     try {
-      const response = await fetch(
-        `${API_URL}/permissions/requests/${selectedRequest._id}`,
-        {
-          method: 'PUT',
-          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-          body: JSON.stringify({
-            status: 'rejected',
-            reviewNotes,
-          })
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to reject request');
-      }
-
+      await request(`/permissions/requests/${selectedRequest._id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'rejected', reviewNotes })
+      });
       toast.success(`Permission request rejected`);
       fetchRequests();
       onClose();
     } catch (error) {
       console.error('Error rejecting request:', error);
-      toast.error('Failed to reject request');
+      toast.error(t('toast.error.failedToRejectRequest'));
     } finally {
       setProcessing(false);
     }
@@ -193,6 +162,24 @@ export default function PermissionRequests() {
             <p className="text-gray-600 dark:text-zinc-400">
               You don't have permission to view this page
             </p>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
+
+  if (fetchError && !loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">Permission Requests</h2>
+        </div>
+        <Card>
+          <CardBody className="flex flex-col items-center py-12 gap-4">
+            <XCircle size={40} className="text-red-400" />
+            <p className="text-sm font-medium text-gray-800 dark:text-zinc-200">Failed to load permission requests</p>
+            <p className="text-xs text-gray-500 dark:text-zinc-400">{fetchError}</p>
+            <Button size="sm" variant="flat" onPress={fetchRequests}>Retry</Button>
           </CardBody>
         </Card>
       </div>
@@ -227,7 +214,7 @@ export default function PermissionRequests() {
           title={
             <div className="flex items-center gap-2">
               <Clock size={16} />
-              <span>Pending</span>
+              <span>{t('pages.pending2')}</span>
               {requests.filter(r => r.status === 'pending').length > 0 && (
                 <Chip size="sm" color="warning" variant="flat">
                   {requests.filter(r => r.status === 'pending').length}
@@ -241,7 +228,7 @@ export default function PermissionRequests() {
           title={
             <div className="flex items-center gap-2">
               <CheckCircle size={16} />
-              <span>Approved</span>
+              <span>{t('pages.approved1')}</span>
             </div>
           }
         />
@@ -250,7 +237,7 @@ export default function PermissionRequests() {
           title={
             <div className="flex items-center gap-2">
               <XCircle size={16} />
-              <span>Rejected</span>
+              <span>{t('pages.rejected1')}</span>
             </div>
           }
         />
@@ -258,7 +245,7 @@ export default function PermissionRequests() {
           key="all"
           title={
             <div className="flex items-center gap-2">
-              <span>All</span>
+              <span>{t('pages.all1')}</span>
             </div>
           }
         />
@@ -268,7 +255,7 @@ export default function PermissionRequests() {
       <Card className="rounded-lg">
         <CardBody className="p-0">
           <Table
-            aria-label="Permission requests table"
+            aria-label={t('aria.tables.permissionRequests')}
             removeWrapper
             classNames={{
               th: "bg-gray-50 dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 font-semibold",
@@ -276,13 +263,13 @@ export default function PermissionRequests() {
             }}
           >
             <TableHeader>
-              <TableColumn>USER</TableColumn>
-              <TableColumn>MODULE</TableColumn>
-              <TableColumn>PERMISSIONS</TableColumn>
-              <TableColumn>REASON</TableColumn>
-              <TableColumn>DATE</TableColumn>
-              <TableColumn>STATUS</TableColumn>
-              <TableColumn>ACTIONS</TableColumn>
+              <TableColumn scope="col">{t('pages.uSER')}</TableColumn>
+              <TableColumn scope="col">{t('pages.mODULE')}</TableColumn>
+              <TableColumn scope="col">{t('pages.pERMISSIONS')}</TableColumn>
+              <TableColumn scope="col">{t('pages.rEASON')}</TableColumn>
+              <TableColumn scope="col">{t('pages.dATE')}</TableColumn>
+              <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+              <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
             </TableHeader>
             <TableBody
               items={requests}
@@ -479,8 +466,8 @@ export default function PermissionRequests() {
                 {/* Review Notes (for pending requests) */}
                 {selectedRequest.status === 'pending' && (
                   <Textarea
-                    label="Review Notes (Optional)"
-                    placeholder="Add notes about your decision..."
+                    label={t('pages.reviewNotesOptional')}
+                    placeholder={t('pages.addNotesAboutYourDecision')}
                     value={reviewNotes}
                     onValueChange={setReviewNotes}
                     variant="bordered"

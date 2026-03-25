@@ -1,7 +1,7 @@
 // Enhanced Chat Service with REST API calls
 import { getAuthHeaders } from '../utils/authSession';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+import { API_URL } from '../config/api.js';
+import { parseApiError } from '../utils/apiError.js';
 
 class ChatServiceEnhanced {
   getHeaders() {
@@ -14,7 +14,7 @@ class ChatServiceEnhanced {
         headers: this.getHeaders(),
         credentials: 'include'
       });
-      if (!response.ok) throw new Error('Failed to get permissions');
+      if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
       console.error('Error getting permissions:', error);
@@ -28,7 +28,7 @@ class ChatServiceEnhanced {
         headers: this.getHeaders(),
         credentials: 'include'
       });
-      if (!response.ok) throw new Error('Failed to get conversations');
+      if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
       console.error('Error getting conversations:', error?.message || error);
@@ -44,10 +44,7 @@ class ChatServiceEnhanced {
         credentials: 'include',
         body: JSON.stringify({ user2Id, user2Type })
       });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create conversation');
-      }
+      if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
       console.error('Error creating conversation:', error);
@@ -64,7 +61,7 @@ class ChatServiceEnhanced {
         headers: this.getHeaders(),
         credentials: 'include'
       });
-      if (!response.ok) throw new Error('Failed to get messages');
+      if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
       console.error('Error getting messages:', error);
@@ -82,7 +79,7 @@ class ChatServiceEnhanced {
         credentials: 'include',
         body: JSON.stringify(payload)
       });
-      if (!response.ok) throw new Error('Failed to send message');
+      if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
       console.error('Error sending message:', error);
@@ -98,7 +95,7 @@ class ChatServiceEnhanced {
         credentials: 'include',
         body: JSON.stringify({ conversationId })
       });
-      if (!response.ok) throw new Error('Failed to mark as read');
+      if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
       console.error('Error marking as read:', error);
@@ -113,7 +110,7 @@ class ChatServiceEnhanced {
         headers: this.getHeaders(),
         credentials: 'include'
       });
-      if (!response.ok) throw new Error('Failed to delete message');
+      if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
       console.error('Error deleting message:', error);
@@ -127,7 +124,7 @@ class ChatServiceEnhanced {
         headers: this.getHeaders(),
         credentials: 'include'
       });
-      if (!response.ok) throw new Error('Failed to search messages');
+      if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
       console.error('Error searching messages:', error);
@@ -141,7 +138,7 @@ class ChatServiceEnhanced {
         headers: this.getHeaders(),
         credentials: 'include'
       });
-      if (!response.ok) throw new Error('Failed to get presence');
+      if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
       console.error('Error getting presence:', error);
@@ -155,7 +152,7 @@ class ChatServiceEnhanced {
         headers: this.getHeaders(),
         credentials: 'include'
       });
-      if (!response.ok) throw new Error('Failed to get online users');
+      if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
       console.error('Error getting online users:', error);
@@ -174,10 +171,7 @@ class ChatServiceEnhanced {
         body: formData
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to upload file');
-      }
+      if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
       console.error('Error uploading file:', error);

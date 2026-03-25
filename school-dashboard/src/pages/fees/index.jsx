@@ -7,8 +7,11 @@ import Payments from "./Payments";
 import Refunds from "./Refunds";
 import FeeTemplatesManagement from "./FeeTemplatesManagement";
 import toast from "react-hot-toast";
+import { feesApi } from "../../services/api";
+import { useTranslation } from 'react-i18next';
 
 export default function FeesPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -20,8 +23,83 @@ export default function FeesPage() {
 
   const activeTab = getActiveTab();
 
-  const handleDownloadReport = () => {
-    toast('Fee report generation coming soon', { icon: '📊' });
+  const handleDownloadReport = async () => {
+    const loadingId = toast.loading('Generating fee report…');
+    try {
+      const payments = await feesApi.getPayments({});
+      if (!payments || payments.length === 0) {
+        toast.dismiss(loadingId);
+        toast.error('No payment data found to generate report.');
+        return;
+      }
+
+      // Aggregate per-student totals
+      const studentMap = {};
+      payments.forEach(p => {
+        const sid = p.studentId?._id || p.studentId || 'unknown';
+        const name = p.studentId?.name || p.studentName || 'Unknown';
+        const cls = p.studentId?.class || p.classId?.name || p.className || '';
+        if (!studentMap[sid]) {
+          studentMap[sid] = { name, class: cls, totalPaid: 0, lastPayment: null, modes: [] };
+        }
+        studentMap[sid].totalPaid += p.amount || 0;
+        if (!studentMap[sid].lastPayment || new Date(p.paymentDate) > new Date(studentMap[sid].lastPayment)) {
+          studentMap[sid].lastPayment = p.paymentDate;
+        }
+        if (p.paymentMode && !studentMap[sid].modes.includes(p.paymentMode)) {
+          studentMap[sid].modes.push(p.paymentMode);
+        }
+      });
+
+      const headers = ['Student', 'Class', 'Total Paid (₹)', 'Last Payment Date', 'Payment Modes', 'Transactions'];
+      const txCounts = {};
+      payments.forEach(p => {
+        const sid = p.studentId?._id || p.studentId || 'unknown';
+        txCounts[sid] = (txCounts[sid] || 0) + 1;
+      });
+
+      const rows = Object.entries(studentMap).map(([sid, s]) => [
+        s.name,
+        s.class,
+        s.totalPaid,
+        s.lastPayment ? new Date(s.lastPayment).toLocaleDateString() : 'N/A',
+        s.modes.join(' / ') || 'N/A',
+        txCounts[sid] || 0,
+      ]);
+
+      const totalCollected = Object.values(studentMap).reduce((sum, s) => sum + s.totalPaid, 0);
+      const summary = [
+        [],
+        ['--- Summary ---'],
+        ['Total Students with Payments', Object.keys(studentMap).length],
+        ['Total Transactions', payments.length],
+        ['Total Collected (₹)', totalCollected],
+        ['Report Generated', new Date().toLocaleString()],
+      ];
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(v => `"${v ?? ''}"`).join(',')),
+        ...summary.map(row => row.map(v => `"${v ?? ''}"`).join(',')),
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `fee-report-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast.dismiss(loadingId);
+      toast.success(`Fee report downloaded — ${payments.length} transactions`);
+    } catch (err) {
+      toast.dismiss(loadingId);
+      toast.error('Failed to generate report. Please try again.');
+      console.error('Fee report error:', err);
+    }
   };
 
   const tabs = [
@@ -30,7 +108,7 @@ export default function FeesPage() {
       title: (
         <div className="flex items-center gap-2">
           <IndianRupee size={16} />
-          <span>Payments</span>
+          <span>{t('pages.payments')}</span>
         </div>
       ),
     },
@@ -39,7 +117,7 @@ export default function FeesPage() {
       title: (
         <div className="flex items-center gap-2">
           <RotateCcw size={16} />
-          <span>Refunds</span>
+          <span>{t('pages.refunds1')}</span>
         </div>
       ),
     },
@@ -48,7 +126,7 @@ export default function FeesPage() {
       title: (
         <div className="flex items-center gap-2">
           <Layers size={16} />
-          <span>Templates</span>
+          <span>{t('pages.templates1')}</span>
         </div>
       ),
     },
@@ -116,9 +194,9 @@ export default function FeesPage() {
           <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate("/")}>
             Home
           </BreadcrumbItem>
-          <BreadcrumbItem>Fees</BreadcrumbItem>
-          {activeTab === "refunds" && <BreadcrumbItem>Refunds</BreadcrumbItem>}
-          {activeTab === "templates" && <BreadcrumbItem>Templates</BreadcrumbItem>}
+          <BreadcrumbItem>{t('pages.fees1')}</BreadcrumbItem>
+          {activeTab === "refunds" && <BreadcrumbItem>{t('pages.refunds1')}</BreadcrumbItem>}
+          {activeTab === "templates" && <BreadcrumbItem>{t('pages.templates1')}</BreadcrumbItem>}
         </Breadcrumbs>
       </div>
 

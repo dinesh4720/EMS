@@ -30,9 +30,7 @@ export default function ValidationModal({
         </ModalHeader>
         <ModalBody>
           {validating ? (
-            <div className="flex items-center justify-center py-8">
-              <Spinner size="lg" label={t('staff.payroll.validatingPayroll')} />
-            </div>
+            <div className="flex justify-center py-8"><div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-900" /></div>
           ) : validationResults && (
             <div className="space-y-4">
               {/* Valid Employees */}

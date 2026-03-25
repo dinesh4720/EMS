@@ -122,14 +122,14 @@ export default function PayrollFilters({
                     toast.success(t('staff.payroll.filtersCleared'));
                   }}
                   className="flex items-center justify-center w-8 h-8 bg-danger-100 text-danger-600 rounded-lg border border-danger-200 hover:bg-danger-200 transition-all duration-200 cursor-pointer"
-                  title="Clear all filters"
+                  title={t('pages.clearAllFilters')}
                 >
                   <X size={14} />
                 </button>
               )}
             </div>
           </DropdownTrigger>
-          <DropdownMenu aria-label="Filters" className="w-64 max-h-[400px] overflow-y-auto">
+          <DropdownMenu aria-label={t('aria.menus.filters')} className="w-64 max-h-[400px] overflow-y-auto">
             <DropdownItem key="status-header" isReadOnly className="opacity-100 font-semibold text-default-500 text-xs uppercase">
               {t('staff.payroll.statusHeader')}
             </DropdownItem>

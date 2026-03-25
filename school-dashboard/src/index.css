@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* CSS-09: Component-level print utilities (page breaks, color-adjust, image/table handling) */
+@import "./styles/print.css";
 @variant dark (&:where(.dark, .dark *));
 
 @plugin "./heroui.js";
@@ -7,7 +9,7 @@
 @theme {
   --font-sans: "Inter", sans-serif;
 
-  /* Minimal Design Tokens - Muted Colors */
+  /* ===== COLOR TOKENS ===== */
   --color-primary: #374151;
   --color-primary-hover: #1f2937;
   --color-bg: #ffffff;
@@ -24,11 +26,67 @@
   --color-error: #ef4444;
   --color-success: #22c55e;
 
-  /* Minimal Spacing & Sizing */
+  /* ===== CHART COLOR TOKENS ===== */
+  /* Used in Recharts fill/stroke props — consumed via chartTheme.js */
+  --color-chart-1: #8b5cf6;   /* violet-500  — attendance/students */
+  --color-chart-2: #ec4899;   /* pink-500    — staff */
+  --color-chart-3: #10b981;   /* emerald-500 — collected/positive */
+  --color-chart-4: #f59e0b;   /* amber-500   — pending/warning */
+  --color-chart-5: #6b7280;   /* gray-500    — neutral bars */
+  --color-chart-6: #3b82f6;   /* blue-500    — secondary metric */
+
+  /* ===== SPACING & SIZING ===== */
   --radius-lg: 8px;
   --radius-md: 6px;
   --radius-sm: 4px;
   --spacing-content: 24px;
+
+  /* ===== SIDEBAR DIMENSIONS ===== */
+  /* Referenced in App.jsx as ml-[var(--sidebar-width)] */
+  --sidebar-width: 240px;
+  --sidebar-width-collapsed: 64px;
+
+  /* ===== CONTENT AREA DIMENSIONS ===== */
+  /* Common heights used in chart containers, modals, and panels */
+  --height-chart-sm: 200px;    /* sparkline / mini charts */
+  --height-chart-md: 300px;    /* standard chart */
+  --height-chart-lg: 400px;    /* tall charts / maps */
+  --height-chart-xl: 500px;    /* full-section charts */
+  --height-modal-body: 600px;  /* large modal scroll areas */
+  --height-table-container: 400px; /* embedded table containers */
+
+  /* ===== MODAL / PANEL WIDTHS ===== */
+  /* Use these for drawer/modal width constraints */
+  --width-panel-sm: 320px;
+  --width-panel-md: 480px;
+  --width-panel-lg: 720px;
+  --width-panel-xl: 900px;
+
+  /* ===== TOPBAR ===== */
+  --topbar-height: 60px;
+
+  /* ===== Z-INDEX SCALE ===== */
+  /*
+   * Use these instead of arbitrary z-[9999] values.
+   * Each layer has a documented purpose — never skip layers.
+   *
+   *  z-dropdown    60   Dropdown menus, tooltips, popovers
+   *  z-sticky      80   Sticky table headers, sticky topbars
+   *  z-fixed      100   Fixed panels, drawers, slide-overs
+   *  z-overlay    200   Semi-transparent page overlays / backdrops
+   *  z-modal      300   Modal dialogs, drawers on top of overlay
+   *  z-toast      400   Toast / snackbar notifications
+   *  z-alert      600   Before-school / system banners
+   *  z-photo     9999   Full-screen photo / editor modals (topmost)
+   */
+  --z-dropdown: 60;
+  --z-sticky: 80;
+  --z-fixed: 100;
+  --z-overlay: 200;
+  --z-modal: 300;
+  --z-toast: 400;
+  --z-alert: 600;
+  --z-photo: 9999;
 }
 
 @layer base {
@@ -79,7 +137,13 @@
     cursor: pointer;
   }
 
-  /* Fix browser autofill styling */
+  /*
+   * Browser autofill override — !important is required here.
+   * Chrome/Safari replace the input background with a blue/yellow tint
+   * after autofill. The only reliable way to override the UA stylesheet
+   * for -webkit-autofill is via box-shadow inset hack + !important.
+   * This is a well-known browser quirk, not a style specificity shortcut.
+   */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus,
@@ -93,7 +157,7 @@
     transition: background-color 5000s ease-in-out 0s !important;
   }
 
-  /* Dark mode autofill styling */
+  /* Dark mode autofill — same browser hack, dark background */
   html.dark input:-webkit-autofill,
   html.dark input:-webkit-autofill:hover,
   html.dark input:-webkit-autofill:focus,
@@ -113,7 +177,12 @@
   }
 }
 
-/* ===== MINIMAL COMPONENT CLASSES ===== */
+/* ===== MINIMAL COMPONENT CLASSES =====
+ * Dark mode support is provided automatically via CSS custom properties:
+ * html.dark overrides the --color-* tokens in @layer base, so every
+ * component class below inherits dark mode without any extra dark: variants.
+ * This is the canonical approach for this design system (CSS-06).
+ */
 
 /* Card - no shadow, subtle border */
 .card {
@@ -152,7 +221,7 @@
   color: var(--color-text-muted);
 }
 
-/* Button Primary - dark */
+/* Button Primary - uses --color-primary token (inverts in dark mode via token) */
 .btn-primary {
   background: var(--color-primary);
   color: white;
@@ -173,7 +242,7 @@
   cursor: not-allowed;
 }
 
-/* Button Secondary - light */
+/* Button Secondary - uses bg-tertiary token (dark: zinc-800) */
 .btn-secondary {
   background: var(--color-bg-tertiary);
   color: var(--color-text-secondary);
@@ -206,7 +275,10 @@
   color: var(--color-text-primary);
 }
 
-/* ===== MINIMAL LAYOUT CLASSES ===== */
+/* ===== MINIMAL LAYOUT CLASSES =====
+ * Like the component classes above, dark mode is provided automatically
+ * via CSS custom property token swapping under html.dark.
+ */
 
 /* Page wrapper */
 .page-wrapper {
@@ -331,7 +403,107 @@
   animation: slide-up 0.2s ease-out forwards;
 }
 
-/* Toast Notifications */
+/* Slide In from top (used by FileUploadProgress) */
+@keyframes slide-in-top {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-slide-in-top {
+  animation: slide-in-top 0.2s ease-out forwards;
+}
+
+/*
+ * CSS-10: Reduced motion support
+ * Users with vestibular disorders or motion sensitivity prefer less animation.
+ * @media (prefers-reduced-motion: reduce) disables animations for those users.
+ * This applies to all custom animation classes defined above.
+ * Framer Motion and Recharts transitions are NOT covered here — those need
+ * to be handled in component code by checking the useReducedMotion hook.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-slide-in-top {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Suppress transition durations across the board */
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * CSS-07: Mobile media queries for fixed-position elements
+ * Fixed sidebars, drawers, and overlays need mobile-specific handling.
+ * On small screens (< 768px):
+ *   - Sidebar collapses to hidden by default (controlled via JS toggle)
+ *   - The main content area fills full width
+ *   - Fixed panels become full-width overlays
+ *
+ * Note: The actual sidebar collapse logic is in Sidebar.jsx and App.jsx.
+ * These CSS rules provide the foundational mobile layout reset.
+ */
+@media (max-width: 767px) {
+  /* Main content: full width on mobile regardless of sidebar state */
+  .ml-\[var\(--sidebar-width\)\],
+  .ml-\[var\(--sidebar-width-collapsed\)\] {
+    margin-left: 0 !important;
+  }
+
+  /* Fixed panels/drawers become full-width sheets on mobile */
+  [class*="fixed"][class*="w-[480px]"],
+  [class*="fixed"][class*="w-[400px]"] {
+    width: 100% !important;
+    right: 0;
+    left: 0;
+  }
+}
+
+/*
+ * CSS-08: Arbitrary Tailwind value reference
+ * ─────────────────────────────────────────────────────────────
+ * This codebase contains 146 w-[*] and 119 h-[*] arbitrary Tailwind
+ * values. Common patterns that should use CSS vars instead:
+ *
+ *   CURRENT                         USE INSTEAD
+ *   w-[240px] / ml-[240px]    →    var(--sidebar-width)
+ *   w-[64px]  / ml-[64px]     →    var(--sidebar-width-collapsed)
+ *   w-[480px] (calendar panel) →    define --panel-width-lg: 480px
+ *   h-[300px] (chart height)   →    define --chart-height-md: 300px
+ *   h-[200px] (chart height)   →    define --chart-height-sm: 200px
+ *
+ * The sidebar dimensions are already converted (see --sidebar-width above).
+ * Future refactoring should extract remaining common arbitrary values here
+ * as named CSS custom properties.
+ *
+ * ─────────────────────────────────────────────────────────────
+ * Common panel + chart dimension tokens (add more here as needed):
+ */
+:root {
+  --panel-width-lg: 480px;     /* Calendar event drawer (calendar/index.jsx) */
+  --panel-width-md: 400px;     /* Standard side panels */
+  --chart-height-lg: 300px;    /* Large chart areas (DashboardCharts) */
+  --chart-height-md: 200px;    /* Medium chart areas (ChartSection) */
+  --chart-height-sm: 160px;    /* Compact chart areas */
+  --topbar-height: 56px;       /* Topbar — matches mt-14 (3.5rem) in App.jsx */
+}
+
+/*
+ * Toast notification overrides — !important is required here.
+ * Sonner and react-hot-toast both set opacity/visibility on their
+ * internal elements via inline styles or high-specificity selectors.
+ * These rules ensure close buttons are always visible regardless of
+ * the library's own hover/animation state.
+ */
 [data-sonner-toast] button[data-close-button],
 [data-sonner-toast] button[aria-label="Close toast"],
 div[role="status"] button,
@@ -358,7 +530,14 @@ div[role="alert"]>div>div:last-child {
   opacity: 1;
 }
 
-/* Table selection */
+/*
+ * Table cell text selection — !important overrides HeroUI's default
+ * user-select: none on table rows (set for drag-to-reorder support).
+ * We want text inside cells to remain selectable for copy-paste.
+ * -webkit-user-drag: none prevents accidental row drag on Safari.
+ * pointer-events: auto re-enables checkbox clicks that HeroUI disables
+ * in certain table configurations.
+ */
 td,
 th,
 [data-slot="td"],
@@ -433,7 +612,12 @@ input[type="checkbox"] {
   /* Certificate borders (border-gray-800, border-black) remain dark in both modes */
 }
 
-/* Force light mode for actual printing */
+/*
+ * Print color override — !important is required inside @media print.
+ * Without it, screen-targeted Tailwind utilities (bg-gray-50 etc.) outrank
+ * the print stylesheet and the document prints with the dark/colored
+ * backgrounds. This is standard practice for print CSS.
+ */
 @media print {
   .print-content {
     background-color: white !important;
@@ -446,7 +630,13 @@ input[type="checkbox"] {
   }
 }
 
-/* ===== PRINT STYLES ===== */
+/* ===== PRINT STYLES =====
+ * All !important declarations below are required inside @media print.
+ * Print stylesheets have lower specificity than screen stylesheets, so
+ * !important is the standard mechanism to force print layout overrides.
+ * Do not remove them — they will silently break PDF/print output.
+ * See also: src/styles/print.css for component-level print utilities.
+ */
 
 /* Hide print-only content on screen */
 .print-only {
@@ -504,53 +694,78 @@ input[type="checkbox"] {
     display: none !important;
   }
 
-  /* Page break handling */
-  .print-only > div,
-  .printable-profile > div {
-    page-break-inside: avoid;
-  }
-
-  /* Ensure colors print correctly */
-  .print-only *,
-  .printable-profile * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    color-adjust: exact !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
-    transition: none !important;
-  }
-
-  /* Image handling */
-  .print-only img,
-  .printable-profile img {
-    max-width: 100% !important;
-    height: auto !important;
-    display: block !important;
-  }
-
-  /* Table handling */
-  .print-only table,
-  .printable-profile table {
-    page-break-inside: avoid;
-    width: 100% !important;
-  }
-
-  .print-only tr,
-  .printable-profile tr {
-    page-break-inside: avoid;
-    page-break-after: auto;
-  }
-
-  /* Link URLs */
-  .print-only a[href]:after,
-  .printable-profile a[href]:after {
-    content: none !important;
-  }
-
   /* Ensure proper page margins - minimal to reduce header space */
   @page {
     margin: 5mm 8mm;
     size: A4 portrait;
   }
+
+  /*
+   * Per-element print utilities (page-break, color-adjust, image/table handling,
+   * link URL suppression) are in src/styles/print.css which is imported above.
+   * CSS-09: Moved there to reduce duplication in this global file.
+   */
+}
+
+/* ===== RTL SUPPORT FOR URDU (I18N-52/56) ===== */
+/* Applied when the document lang is 'ur' (set by LanguageSwitcher) */
+
+:root[lang="ur"],
+html[lang="ur"] {
+  direction: rtl;
+  font-family: "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Scheherazade New",
+    "Amiri", "Arial Unicode MS", ui-sans-serif, sans-serif;
+}
+
+/* RTL layout helpers */
+[dir="rtl"] {
+  text-align: right;
+}
+
+[dir="rtl"] .sidebar,
+[dir="rtl"] aside {
+  left: auto;
+  right: 0;
+}
+
+/* Flip icons/chevrons in RTL */
+[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+/* Input / form fields */
+[dir="rtl"] input,
+[dir="rtl"] textarea,
+[dir="rtl"] select {
+  text-align: right;
+}
+
+/* Table cells */
+[dir="rtl"] th,
+[dir="rtl"] td {
+  text-align: right;
+}
+
+/* Flexbox row direction - use gap utilities naturally in RTL */
+[dir="rtl"] .flex-row-reverse-rtl {
+  flex-direction: row-reverse;
+}
+
+/* Padding / margin directional overrides */
+[dir="rtl"] .pl-4 { padding-left: 0; padding-right: 1rem; }
+[dir="rtl"] .pr-4 { padding-right: 0; padding-left: 1rem; }
+[dir="rtl"] .ml-4 { margin-left: 0; margin-right: 1rem; }
+[dir="rtl"] .mr-4 { margin-right: 0; margin-left: 1rem; }
+
+/* ===== RTL FONT LOADING ===== */
+/* Nastaliq (traditional Urdu calligraphic script) — loaded from Google Fonts */
+@font-face {
+  font-family: "Noto Nastaliq Urdu";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: local("Noto Nastaliq Urdu"),
+       url("https://fonts.gstatic.com/s/notonastaliqurdu/v21/LYjAdGP8kkgoTec8zkRgqHAtXN/Noto_Nastaliq_Urdu-Regular.woff2")
+       format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF;
 }

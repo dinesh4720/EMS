@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Play, Pause } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * VoiceWaveform Component - WhatsApp style

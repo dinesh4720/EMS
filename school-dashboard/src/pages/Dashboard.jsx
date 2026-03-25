@@ -7,6 +7,7 @@ import ActivityFeed from "../components/ActivityFeed";
 import AlertsPanel from "../components/AlertsPanel";
 import QuickActions from "../components/QuickActions";
 import SubstitutionAlertPanel from "../components/SubstitutionAlertPanel";
+import GuidedTour, { useGuidedTour } from "../components/ui/GuidedTour";
 import {
   GraduationCap,
   Users,
@@ -15,15 +16,15 @@ import {
   CheckCircle2,
   AlertCircle
 } from "lucide-react";
-
-const numberFormatter = new Intl.NumberFormat("en-IN");
-const currencyFormatter = new Intl.NumberFormat("en-IN", {
+import { getDateLocale } from "../i18n/index";
+const getNumberFormatter = () => new Intl.NumberFormat(getDateLocale());
+const getCurrencyFormatter = () => new Intl.NumberFormat(getDateLocale(), {
   style: "currency",
   currency: "INR",
   maximumFractionDigits: 0,
 });
 
-const monthFormatter = new Intl.DateTimeFormat("en-US", { month: "short" });
+const getMonthFormatter = () => new Intl.DateTimeFormat(getDateLocale(), { month: "short" });
 
 const createEmptyAttendanceSnapshot = (totalClasses = 0) => ({
   studentRate: null,
@@ -137,7 +138,7 @@ function createFeeCollectionSeries(payments) {
     const monthDate = new Date(now.getFullYear(), now.getMonth() - index, 1);
     months.push({
       key: `${monthDate.getFullYear()}-${monthDate.getMonth()}`,
-      month: monthFormatter.format(monthDate),
+      month: getMonthFormatter().format(monthDate),
       collected: 0,
     });
   }
@@ -160,6 +161,33 @@ function createFeeCollectionSeries(payments) {
   return months;
 }
 
+const DASHBOARD_TOUR_STEPS = [
+  {
+    target: '[data-tour="sidebar"]',
+    title: 'Navigation Sidebar',
+    content: 'Use the sidebar to navigate between all modules — Students, Fees, Academics, Staff, and more.',
+    placement: 'right',
+  },
+  {
+    target: '[data-tour="stat-cards"]',
+    title: 'Key Metrics',
+    content: 'These cards show real-time stats: total students, staff, fee collection, and today\'s attendance.',
+    placement: 'bottom',
+  },
+  {
+    target: '[data-tour="notifications"]',
+    title: 'Notifications',
+    content: 'Stay updated with alerts for pending attendance, overdue fees, and important announcements.',
+    placement: 'bottom',
+  },
+  {
+    target: '[data-tour="fee-chart"]',
+    title: 'Fee Collection Chart',
+    content: 'Track monthly fee collection trends over the last 6 months.',
+    placement: 'top',
+  },
+];
+
 function Dashboard() {
   const {
     dashboardStats,
@@ -170,6 +198,8 @@ function Dashboard() {
     staffAttendance,
     students,
   } = useApp();
+
+  const { isOpen: isTourOpen, closeTour } = useGuidedTour('dashboard-v1', true);
 
   const [recentPayments, setRecentPayments] = useState([]);
   const [recentAnnouncements, setRecentAnnouncements] = useState([]);
@@ -371,7 +401,7 @@ function Dashboard() {
       rows.push({
         label: "Students",
         value: attendanceSnapshot.studentRate,
-        subtext: `${numberFormatter.format(attendanceSnapshot.studentPresent)} present across ${attendanceSnapshot.markedClasses}/${attendanceSnapshot.totalClasses} marked classes`,
+        subtext: `${getNumberFormatter().format(attendanceSnapshot.studentPresent)} present across ${attendanceSnapshot.markedClasses}/${attendanceSnapshot.totalClasses} marked classes`,
       });
     }
 
@@ -379,7 +409,7 @@ function Dashboard() {
       rows.push({
         label: "Staff",
         value: attendanceSnapshot.staffRate,
-        subtext: `${numberFormatter.format(attendanceSnapshot.staffPresent)} present from ${attendanceSnapshot.staffMarked}/${attendanceSnapshot.staffTotal} marked staff records`,
+        subtext: `${getNumberFormatter().format(attendanceSnapshot.staffPresent)} present from ${attendanceSnapshot.staffMarked}/${attendanceSnapshot.staffTotal} marked staff records`,
       });
     }
 
@@ -414,7 +444,7 @@ function Dashboard() {
         id: "fee-defaulters",
         type: "warning",
         title: "Fee follow-up needed",
-        description: `${numberFormatter.format(dashboardStats.feeDefaultersCount)} students currently have pending or overdue fees.`,
+        description: `${getNumberFormatter().format(dashboardStats.feeDefaultersCount)} students currently have pending or overdue fees.`,
         time: "Live",
       });
     }
@@ -424,7 +454,7 @@ function Dashboard() {
         id: "upcoming-events",
         type: "info",
         title: "Upcoming events",
-        description: `${numberFormatter.format(dashboardStats.upcomingEvents)} events are scheduled on the academic calendar.`,
+        description: `${getNumberFormatter().format(dashboardStats.upcomingEvents)} events are scheduled on the academic calendar.`,
         time: "This term",
       });
     }
@@ -435,25 +465,25 @@ function Dashboard() {
   const stats = useMemo(() => ([
     {
       label: "Total Students",
-      value: loading ? "—" : numberFormatter.format(dashboardStats.totalStudents || 0),
-      subtext: `${numberFormatter.format(dashboardStats.totalClasses || 0)} classes active`,
+      value: loading ? "—" : getNumberFormatter().format(dashboardStats.totalStudents || 0),
+      subtext: `${getNumberFormatter().format(dashboardStats.totalClasses || 0)} classes active`,
       icon: GraduationCap,
       color: "gray",
     },
     {
       label: "Teaching Staff",
-      value: loading ? "—" : numberFormatter.format(dashboardStats.totalTeachers || 0),
+      value: loading ? "—" : getNumberFormatter().format(dashboardStats.totalTeachers || 0),
       subtext: typeof attendanceSnapshot.staffRate === "number"
-        ? `${numberFormatter.format(attendanceSnapshot.staffPresent)} present from ${numberFormatter.format(attendanceSnapshot.staffMarked)} marked records`
+        ? `${getNumberFormatter().format(attendanceSnapshot.staffPresent)} present from ${getNumberFormatter().format(attendanceSnapshot.staffMarked)} marked records`
         : "Staff attendance not marked yet",
       icon: Users,
       color: "gray",
     },
     {
       label: "Fee Collection",
-      value: paymentsLoaded ? currencyFormatter.format(paymentSnapshot.today || 0) : "—",
+      value: paymentsLoaded ? getCurrencyFormatter().format(paymentSnapshot.today || 0) : "—",
       subtext: paymentsLoaded
-        ? `${currencyFormatter.format(paymentSnapshot.month || 0)} collected this month`
+        ? `${getCurrencyFormatter().format(paymentSnapshot.month || 0)} collected this month`
         : "Payment data unavailable",
       icon: IndianRupee,
       color: "gray",
@@ -479,6 +509,13 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen pb-8">
+      <GuidedTour
+        tourId="dashboard-v1"
+        steps={DASHBOARD_TOUR_STEPS}
+        isOpen={isTourOpen}
+        onClose={closeTour}
+      />
+
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
           Overview
@@ -490,7 +527,7 @@ function Dashboard() {
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
         <div className="xl:col-span-8 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-tour="stat-cards">
             {stats.map((stat) => (
               <StatCard key={stat.label} {...stat} />
             ))}

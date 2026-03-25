@@ -48,7 +48,7 @@ export default function PayrollTable({
                   if (checked) setSelectedKeys(new Set(filteredRecords.map(r => r._id)));
                   else setSelectedKeys(new Set());
                 }}
-                aria-label="Select all"
+                aria-label={t('aria.buttons.selectAll')}
               />
             ),
           },

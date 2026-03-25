@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useValidatedParams } from '../../hooks/useValidatedParams';
 import {
   Card,
   CardBody,
   Chip,
-  Spinner,
   Table,
   TableHeader,
   TableColumn,
@@ -16,16 +15,19 @@ import {
   SelectItem,
   Input
 } from '@heroui/react';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { FileText, Users, ArrowLeft, Save, AlertCircle, Award, CheckCircle2, Search } from 'lucide-react';
 import { examsApi, resultsApi, classesApi } from '../../services/api';
 import { MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 // Simple cache for exam data
 const examCache = new Map();
 const CACHE_DURATION = 60000; // 1 minute
 
 const ResultsEntry = ({ standalone = false }) => {
+  const { t } = useTranslation();
   const { params: { examId }, isValid } = useValidatedParams({ examId: 'objectId' }, { redirectTo: '/academics/exams' });
   const navigate = useNavigate();
   const [exams, setExams] = useState([]);
@@ -67,7 +69,7 @@ const ResultsEntry = ({ standalone = false }) => {
       }
     } catch (error) {
       console.error('Error fetching exams:', error);
-      toast.error('Failed to load exams');
+      toast.error(t('toast.error.failedToLoadExams'));
     } finally {
       setLoadingExams(false);
     }
@@ -101,16 +103,19 @@ const ResultsEntry = ({ standalone = false }) => {
 
         const resultsMap = {};
         (existingResults || []).forEach(r => {
-          resultsMap[r.studentId] = {
-            marksObtained: r.marksObtained,
-            remarks: r.remarks || ''
-          };
+          const sid = r.studentId?._id || r.studentId;
+          if (sid) {
+            resultsMap[String(sid)] = {
+              marksObtained: r.marksObtained,
+              remarks: r.remarks || ''
+            };
+          }
         });
         setResults(resultsMap);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error('Failed to load exam data');
+      toast.error(t('toast.error.failedToLoadExamData'));
     } finally {
       setLoading(false);
       setLoadingStudents(false);
@@ -120,6 +125,12 @@ const ResultsEntry = ({ standalone = false }) => {
   const handleMarksChange = (studentId, value) => {
     const marks = parseInt(value) || 0;
     const maxMarks = exam?.maxMarks || 100;
+    const sid = String(studentId);
+
+    if (marks < 0) {
+      toast.error(t('toast.error.marksCannotBeNegative'));
+      return;
+    }
 
     if (marks > maxMarks) {
       toast.error(`Marks cannot exceed ${maxMarks}`);
@@ -128,18 +139,19 @@ const ResultsEntry = ({ standalone = false }) => {
 
     setResults(prev => ({
       ...prev,
-      [studentId]: {
-        ...prev[studentId],
+      [sid]: {
+        ...prev[sid],
         marksObtained: marks
       }
     }));
   };
 
   const handleRemarksChange = (studentId, value) => {
+    const sid = String(studentId);
     setResults(prev => ({
       ...prev,
-      [studentId]: {
-        ...prev[studentId],
+      [sid]: {
+        ...prev[sid],
         remarks: value
       }
     }));
@@ -154,23 +166,26 @@ const ResultsEntry = ({ standalone = false }) => {
     try {
       const user = JSON.parse(sessionStorage.getItem('app_user') || '{}');
 
-      const resultsArray = students.map(student => ({
-        studentId: student.id || student._id,
-        marksObtained: results[student.id || student._id]?.marksObtained || 0,
-        remarks: results[student.id || student._id]?.remarks || '',
-        enteredBy: user.id
-      }));
+      const resultsArray = students.map(student => {
+        const sid = String(student.id || student._id);
+        return {
+          studentId: sid,
+          marksObtained: results[sid]?.marksObtained ?? 0,
+          remarks: results[sid]?.remarks || '',
+          enteredBy: user.id
+        };
+      });
 
       await resultsApi.bulkCreate(resultsArray, currentExamId, exam.classId);
 
-      toast.success('Results saved successfully!');
+      toast.success(t('toast.success.resultsSavedSuccessfully'));
 
       if (!standalone) {
         navigate(`/academics/exams/${examId}`);
       }
     } catch (error) {
       console.error('Error saving results:', error);
-      toast.error('Failed to save results');
+      toast.error(t('toast.error.failedToSaveResults'));
     } finally {
       setSaving(false);
     }
@@ -213,9 +228,7 @@ const ResultsEntry = ({ standalone = false }) => {
   // Loading state
   if (loading || loadingExams) {
     return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
+      <TablePageSkeleton />
     );
   }
 
@@ -226,8 +239,8 @@ const ResultsEntry = ({ standalone = false }) => {
         {/* Exam Selector */}
         <div className="flex items-center justify-between gap-4">
           <Select
-            label="Select Exam"
-            placeholder="Choose an exam to enter results"
+            label={t('pages.selectExam')}
+            placeholder={t('pages.chooseAnExamToEnterResults')}
             selectedKeys={selectedExamId}
             onSelectionChange={setSelectedExamId}
             className="max-w-xs"
@@ -255,16 +268,14 @@ const ResultsEntry = ({ standalone = false }) => {
         {exams.length === 0 && (
           <div className="text-center py-12">
             <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-            <p className="text-gray-500 dark:text-zinc-400">No exams available</p>
-            <p className="text-sm text-gray-400 dark:text-zinc-500 mt-1">Create an exam first to enter results</p>
+            <p className="text-gray-500 dark:text-zinc-400">{t('pages.noExamsAvailable')}</p>
+            <p className="text-sm text-gray-400 dark:text-zinc-500 mt-1">{t('pages.createAnExamFirstToEnterResults')}</p>
           </div>
         )}
 
         {/* Loading students */}
         {loadingStudents && selectedExamId.size > 0 && (
-          <div className="flex justify-center py-12">
-            <Spinner size="lg" />
-          </div>
+          <TablePageSkeleton kpiCards={0} searchBar={false} rows={5} />
         )}
 
         {/* Results content */}
@@ -287,15 +298,15 @@ const ResultsEntry = ({ standalone = false }) => {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 border border-gray-100 dark:border-zinc-800">
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Total Students</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.totalStudents1')}</p>
                 <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{students.length}</p>
               </div>
               <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
-                <p className="text-xs text-blue-600 dark:text-blue-400">Results Entered</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400">{t('pages.resultsEntered')}</p>
                 <p className="text-xl font-semibold text-blue-700 dark:text-blue-300">{enteredCount}</p>
               </div>
               <div className="bg-green-50 dark:bg-green-950 rounded-lg p-3 border border-green-100 dark:border-green-800">
-                <p className="text-xs text-green-600 dark:text-green-400">Pass Count</p>
+                <p className="text-xs text-green-600 dark:text-green-400">{t('pages.passCount')}</p>
                 <p className="text-xl font-semibold text-green-700 dark:text-green-300">{passCount}</p>
               </div>
             </div>
@@ -303,7 +314,7 @@ const ResultsEntry = ({ standalone = false }) => {
             {/* Search */}
             {students.length > 5 && (
               <Input
-                placeholder="Search students..."
+                placeholder={t('pages.searchStudents')}
                 value={searchQuery}
                 onValueChange={setSearchQuery}
                 startContent={<Search size={16} className="text-gray-400 dark:text-zinc-500" />}
@@ -320,17 +331,17 @@ const ResultsEntry = ({ standalone = false }) => {
                 {students.length === 0 ? (
                   <div className="text-center py-12">
                     <Users size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-                    <p className="text-gray-500 dark:text-zinc-400">No students found in this class</p>
+                    <p className="text-gray-500 dark:text-zinc-400">{t('pages.noStudentsFoundInThisClass')}</p>
                   </div>
                 ) : (
-                  <Table aria-label="Results entry table" removeWrapper>
+                  <Table aria-label={t('aria.tables.resultsEntry')} removeWrapper>
                     <TableHeader>
-                      <TableColumn>STUDENT</TableColumn>
-                      <TableColumn>ROLL NO</TableColumn>
-                      <TableColumn>MARKS</TableColumn>
-                      <TableColumn>GRADE</TableColumn>
-                      <TableColumn>STATUS</TableColumn>
-                      <TableColumn>REMARKS</TableColumn>
+                      <TableColumn scope="col">{t('pages.sTUDENT')}</TableColumn>
+                      <TableColumn scope="col">{t('pages.rOLLNo')}</TableColumn>
+                      <TableColumn scope="col">{t('pages.mARKS')}</TableColumn>
+                      <TableColumn scope="col">{t('pages.gRADE')}</TableColumn>
+                      <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+                      <TableColumn scope="col">{t('pages.rEMARKS')}</TableColumn>
                     </TableHeader>
                     <TableBody emptyContent="No students found">
                       {filteredStudents.map((student) => {
@@ -389,7 +400,7 @@ const ResultsEntry = ({ standalone = false }) => {
                                 type="text"
                                 value={results[studentId]?.remarks || ''}
                                 onChange={(e) => handleRemarksChange(studentId, e.target.value)}
-                                placeholder="Add remarks..."
+                                placeholder={t('pages.addRemarks')}
                                 className="w-40 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100"
                               />
                             </TableCell>
@@ -412,7 +423,7 @@ const ResultsEntry = ({ standalone = false }) => {
     return (
       <div className="text-center py-20">
         <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-        <p className="text-gray-500 dark:text-zinc-400">Exam not found</p>
+        <p className="text-gray-500 dark:text-zinc-400">{t('pages.examNotFound')}</p>
         <MinimalButton className="mt-4" onClick={() => navigate('/academics/exams')}>
           Back to Exams
         </MinimalButton>
@@ -456,15 +467,15 @@ const ResultsEntry = ({ standalone = false }) => {
       {/* Stats Summary */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-gray-500 dark:text-zinc-400">Total Students</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.totalStudents1')}</p>
           <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{students.length}</p>
         </div>
         <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-gray-500 dark:text-zinc-400">Results Entered</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.resultsEntered')}</p>
           <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{enteredCount}</p>
         </div>
         <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-gray-500 dark:text-zinc-400">Pass Count</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.passCount')}</p>
           <p className="text-2xl font-semibold text-green-600 dark:text-green-400">{passCount}</p>
         </div>
       </div>
@@ -475,17 +486,17 @@ const ResultsEntry = ({ standalone = false }) => {
           {students.length === 0 ? (
             <div className="text-center py-12">
               <Users size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-              <p className="text-gray-500 dark:text-zinc-400">No students found in this class</p>
+              <p className="text-gray-500 dark:text-zinc-400">{t('pages.noStudentsFoundInThisClass')}</p>
             </div>
           ) : (
-            <Table aria-label="Results entry table" removeWrapper>
+            <Table aria-label={t('aria.tables.resultsEntry')} removeWrapper>
               <TableHeader>
-                <TableColumn>STUDENT</TableColumn>
-                <TableColumn>ROLL NO</TableColumn>
-                <TableColumn>MARKS</TableColumn>
-                <TableColumn>GRADE</TableColumn>
-                <TableColumn>STATUS</TableColumn>
-                <TableColumn>REMARKS</TableColumn>
+                <TableColumn scope="col">{t('pages.sTUDENT')}</TableColumn>
+                <TableColumn scope="col">{t('pages.rOLLNo')}</TableColumn>
+                <TableColumn scope="col">{t('pages.mARKS')}</TableColumn>
+                <TableColumn scope="col">{t('pages.gRADE')}</TableColumn>
+                <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+                <TableColumn scope="col">{t('pages.rEMARKS')}</TableColumn>
               </TableHeader>
               <TableBody emptyContent="No students found">
                 {students.map((student) => {
@@ -544,7 +555,7 @@ const ResultsEntry = ({ standalone = false }) => {
                           type="text"
                           value={results[studentId]?.remarks || ''}
                           onChange={(e) => handleRemarksChange(studentId, e.target.value)}
-                          placeholder="Add remarks..."
+                          placeholder={t('pages.addRemarks')}
                           className="w-40 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100"
                         />
                       </TableCell>

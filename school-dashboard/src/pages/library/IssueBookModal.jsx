@@ -6,8 +6,10 @@ import {
 import { libraryApi } from "../../services/api";
 import { studentsApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 export default function IssueBookModal({ isOpen, onClose, onSaved }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({ bookId: "", studentId: "", dueDate: "", notes: "" });
   const [saving, setSaving] = useState(false);
   const [books, setBooks] = useState([]);
@@ -60,7 +62,7 @@ export default function IssueBookModal({ isOpen, onClose, onSaved }) {
 
   const handleSubmit = async () => {
     if (!form.bookId || !form.studentId || !form.dueDate) {
-      toast.error("Book, student, and due date are required");
+      toast.error(t('toast.error.bookStudentAndDueDateAreRequired'));
       return;
     }
 
@@ -72,7 +74,7 @@ export default function IssueBookModal({ isOpen, onClose, onSaved }) {
         dueDate: form.dueDate,
         ...(form.notes.trim() && { notes: form.notes.trim() }),
       });
-      toast.success("Book issued successfully");
+      toast.success(t('toast.success.bookIssuedSuccessfully'));
       onSaved?.();
     } catch (err) {
       toast.error(err?.message || "Failed to issue book");
@@ -84,13 +86,13 @@ export default function IssueBookModal({ isOpen, onClose, onSaved }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="lg" scrollBehavior="inside">
       <ModalContent>
-        <ModalHeader>Issue Book</ModalHeader>
+        <ModalHeader>{t('pages.issueBook')}</ModalHeader>
         <ModalBody className="gap-4">
           {/* Book selector */}
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1 block">Book *</label>
             <Input
-              placeholder="Search books by title or ISBN..."
+              placeholder={t('pages.searchBooksByTitleOrIsbn')}
               value={selectedBook ? `${selectedBook.title} (${selectedBook.isbn || "No ISBN"})` : bookSearch}
               onValueChange={(v) => { setBookSearch(v); setForm((f) => ({ ...f, bookId: "" })); }}
               onFocus={() => { if (form.bookId) { setBookSearch(""); setForm((f) => ({ ...f, bookId: "" })); } }}
@@ -116,7 +118,7 @@ export default function IssueBookModal({ isOpen, onClose, onSaved }) {
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1 block">Student *</label>
             <Input
-              placeholder="Search students by name or admission no..."
+              placeholder={t('pages.searchStudentsByNameOrAdmissionNo')}
               value={selectedStudent ? `${selectedStudent.name} (${selectedStudent.admissionNo || ""})` : studentSearch}
               onValueChange={(v) => { setStudentSearch(v); setForm((f) => ({ ...f, studentId: "" })); }}
               onFocus={() => { if (form.studentId) { setStudentSearch(""); setForm((f) => ({ ...f, studentId: "" })); } }}
@@ -139,7 +141,7 @@ export default function IssueBookModal({ isOpen, onClose, onSaved }) {
           </div>
 
           <Input
-            label="Due Date"
+            label={t('pages.dueDate')}
             type="date"
             isRequired
             value={form.dueDate}
@@ -147,15 +149,15 @@ export default function IssueBookModal({ isOpen, onClose, onSaved }) {
           />
 
           <Textarea
-            label="Notes"
+            label={t('pages.notes1')}
             value={form.notes}
             onValueChange={(v) => setForm((f) => ({ ...f, notes: v }))}
             minRows={2}
-            placeholder="Optional notes..."
+            placeholder={t('pages.optionalNotes1')}
           />
         </ModalBody>
         <ModalFooter>
-          <Button variant="flat" onPress={onClose}>Cancel</Button>
+          <Button variant="flat" onPress={onClose}>{t('pages.cancel2')}</Button>
           <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900" isLoading={saving} onPress={handleSubmit}>
             Issue Book
           </Button>

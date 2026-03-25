@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, Button } from '@heroui/react';
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Monitor, Speaker } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function VideoCallModal({
   isOpen,

@@ -14,8 +14,10 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Button, TextInput } from '../components';
 import { isValidEmail, isValidPhone } from '../utils/helpers';
+import { useTranslation } from 'react-i18next';
 
 const LoginScreen = () => {
+  const { t } = useTranslation();
   const { login } = useAuth();
   const { themeColors, spacing, typography } = useTheme();
   const [identifier, setIdentifier] = useState('');
@@ -83,7 +85,7 @@ const LoginScreen = () => {
             <View style={[styles.logoContainer, { backgroundColor: themeColors.backgroundSecondary }]}>
               <Text style={[styles.logoText, { color: themeColors.text }]}>P</Text>
             </View>
-            <Text style={[styles.title, { color: themeColors.text }]}>Parent Portal</Text>
+            <Text style={[styles.title, { color: themeColors.text }]}>{t('screens.parentPortal')}</Text>
             <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
               Stay connected with your child's education
             </Text>
@@ -91,20 +93,20 @@ const LoginScreen = () => {
 
           <View style={styles.form}>
             <TextInput
-              label="Email or Phone Number"
+              label={t('screens.emailOrPhoneNumber')}
               value={identifier}
               onChangeText={setIdentifier}
-              placeholder="Enter your email or phone number"
+              placeholder={t('screens.enterYourEmailOrPhoneNumber')}
               keyboardType="default"
               autoCapitalize="none"
               autoCorrect={false}
             />
 
             <TextInput
-              label="Password"
+              label={t('screens.password1')}
               value={password}
               onChangeText={setPassword}
-              placeholder="Enter your password"
+              placeholder={t('screens.enterYourPassword')}
               secureTextEntry
             />
 
@@ -115,7 +117,7 @@ const LoginScreen = () => {
             ) : null}
 
             <Button
-              title="Sign In"
+              title={t('screens.signIn')}
               onPress={handleLogin}
               loading={loading}
               style={styles.button}

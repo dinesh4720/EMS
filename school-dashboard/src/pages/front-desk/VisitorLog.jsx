@@ -9,6 +9,7 @@ import { frontDeskApi, studentsApi } from '../../services/api';
 import FormInput from '../../components/FormInput';
 import { validatePhone, validateRequired } from '../../utils/validations';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const VISITOR_REASONS = [
   { key: 'PARENT_MEETING', label: 'Parent Meeting', needsGatePass: true, needsAppointment: false, needsStudentMapping: true },
@@ -21,6 +22,7 @@ const VISITOR_REASONS = [
 ];
 
 const VisitorLog = forwardRef((props, ref) => {
+  const { t } = useTranslation();
   const [visitors, setVisitors] = useState([]);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +83,7 @@ const VisitorLog = forwardRef((props, ref) => {
       setVisitors(response);
     } catch (error) {
       console.error('Failed to load visitors:', error);
-      toast.error('Failed to load visitors');
+      toast.error(t('toast.error.failedToLoadVisitors'));
     } finally {
       setLoading(false);
     }
@@ -165,7 +167,7 @@ const VisitorLog = forwardRef((props, ref) => {
 
   const handleSubmit = async () => {
     if (!validateForm()) {
-      toast.error('Please fix the errors before submitting');
+      toast.error(t('toast.error.pleaseFixTheErrorsBeforeSubmitting'));
       return;
     }
 
@@ -177,16 +179,16 @@ const VisitorLog = forwardRef((props, ref) => {
 
       if (editingId) {
         await frontDeskApi.updateVisitor(editingId, submitData);
-        toast.success('Visitor updated successfully');
+        toast.success(t('toast.success.visitorUpdatedSuccessfully'));
       } else {
         await frontDeskApi.createVisitor(submitData);
-        toast.success('Visitor checked in successfully');
+        toast.success(t('toast.success.visitorCheckedInSuccessfully'));
       }
       onClose();
       resetForm();
       loadVisitors();
     } catch (error) {
-      toast.error('Failed to save visitor');
+      toast.error(t('toast.error.failedToSaveVisitor'));
     }
   };
 
@@ -195,10 +197,10 @@ const VisitorLog = forwardRef((props, ref) => {
       await frontDeskApi.updateVisitor(id, {
         checkOutTime: new Date().toTimeString().slice(0, 5),
       });
-      toast.success('Visitor checked out successfully');
+      toast.success(t('toast.success.visitorCheckedOutSuccessfully'));
       loadVisitors();
     } catch (error) {
-      toast.error('Failed to check out visitor');
+      toast.error(t('toast.error.failedToCheckOutVisitor'));
     }
   };
 
@@ -243,13 +245,13 @@ const VisitorLog = forwardRef((props, ref) => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this visitor record?')) return;
+    if (!confirm(t('confirm.deleteVisitor'))) return;
     try {
       await frontDeskApi.deleteVisitor(id);
-      toast.success('Visitor record deleted');
+      toast.success(t('toast.success.visitorRecordDeleted'));
       loadVisitors();
     } catch (error) {
-      toast.error('Failed to delete visitor record');
+      toast.error(t('toast.error.failedToDeleteVisitorRecord'));
     }
   };
 
@@ -314,7 +316,7 @@ const VisitorLog = forwardRef((props, ref) => {
     <>
       <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
         <Input
-          placeholder="Search visitors..."
+          placeholder={t('pages.searchVisitors')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           startContent={<Search size={16} />}
@@ -326,17 +328,17 @@ const VisitorLog = forwardRef((props, ref) => {
           Add New Visitor
         </Button>
       </div>
-      <Table aria-label="Visitor log table" removeWrapper>
+      <Table aria-label={t('aria.tables.visitorLog')} removeWrapper>
         <TableHeader>
-          <TableColumn>VISITOR NAME</TableColumn>
-          <TableColumn>PHONE</TableColumn>
-          <TableColumn>REASON</TableColumn>
-          <TableColumn>CONCERNED PERSON</TableColumn>
-          <TableColumn>STUDENT</TableColumn>
-          <TableColumn>CHECK IN</TableColumn>
-          <TableColumn>CHECK OUT</TableColumn>
-          <TableColumn>STATUS</TableColumn>
-          <TableColumn>ACTIONS</TableColumn>
+          <TableColumn scope="col">{t('pages.vISITORName')}</TableColumn>
+          <TableColumn scope="col">{t('pages.pHONE')}</TableColumn>
+          <TableColumn scope="col">{t('pages.rEASON')}</TableColumn>
+          <TableColumn scope="col">{t('pages.cONCERNEDPerson')}</TableColumn>
+          <TableColumn scope="col">{t('pages.sTUDENT')}</TableColumn>
+          <TableColumn scope="col">{t('pages.cHECKIn')}</TableColumn>
+          <TableColumn scope="col">{t('pages.cHECKOut')}</TableColumn>
+          <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+          <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
         </TableHeader>
         <TableBody
           items={filteredVisitors}
@@ -407,8 +409,8 @@ const VisitorLog = forwardRef((props, ref) => {
           <ModalBody>
             <div className="grid grid-cols-2 gap-4">
               <FormInput
-                label="Visitor Name"
-                placeholder="Enter visitor name"
+                label={t('pages.visitorName')}
+                placeholder={t('pages.enterVisitorName')}
                 value={formData.visitorName}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -419,8 +421,8 @@ const VisitorLog = forwardRef((props, ref) => {
                 error={errors.visitorName}
               />
               <FormInput
-                label="Phone Number"
-                placeholder="Enter 10-digit phone number"
+                label={t('pages.phoneNumber')}
+                placeholder={t('pages.enter10DigitPhoneNumber')}
                 value={formData.phoneNumber}
                 onChange={(e) => {
                   const val = e.target.value.replace(/\D/g, '');
@@ -431,8 +433,8 @@ const VisitorLog = forwardRef((props, ref) => {
                 error={errors.phoneNumber}
               />
               <FormInput
-                label="Email"
-                placeholder="Enter email"
+                label={t('pages.email1')}
+                placeholder={t('pages.enterEmail')}
                 value={formData.email}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -442,8 +444,8 @@ const VisitorLog = forwardRef((props, ref) => {
                 error={errors.email}
               />
               <Select
-                label="Reason for Visit"
-                placeholder="Select reason"
+                label={t('pages.reasonForVisit')}
+                placeholder={t('pages.selectReason2')}
                 selectedKeys={formData.reasonForVisit ? [formData.reasonForVisit] : []}
                 onChange={(e) => {
                   handleReasonChange(e.target.value);
@@ -461,8 +463,8 @@ const VisitorLog = forwardRef((props, ref) => {
               </Select>
               {formData.reasonForVisit === 'OTHER' && (
                 <FormInput
-                  label="Please Specify"
-                  placeholder="Enter purpose"
+                  label={t('pages.pleaseSpecify')}
+                  placeholder={t('pages.enterPurpose')}
                   value={formData.otherPurpose}
                   onChange={(e) => {
                     const val = e.target.value;
@@ -477,8 +479,8 @@ const VisitorLog = forwardRef((props, ref) => {
               {formData.reasonForVisit === 'DELIVERY_VENDOR' && (
                 <>
                   <FormInput
-                    label="Company Name"
-                    placeholder="Enter company name"
+                    label={t('pages.companyName')}
+                    placeholder={t('pages.enterCompanyName')}
                     value={formData.companyName}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -489,8 +491,8 @@ const VisitorLog = forwardRef((props, ref) => {
                     error={errors.companyName}
                   />
                   <FormInput
-                    label="Delivery Person"
-                    placeholder="Enter delivery person name"
+                    label={t('pages.deliveryPerson')}
+                    placeholder={t('pages.enterDeliveryPersonName')}
                     value={formData.deliveryPerson}
                     onChange={(e) => setFormData({ ...formData, deliveryPerson: e.target.value })}
                   />
@@ -499,8 +501,8 @@ const VisitorLog = forwardRef((props, ref) => {
               {(formData.reasonForVisit === 'PARENT_MEETING' || formData.reasonForVisit === 'STUDENT_PICKUP_DROP_OFF') && (
                 <div className="col-span-2 space-y-3">
                   <Input
-                    label="Search Student (Optional)"
-                    placeholder="Search by student name, roll no, or admission ID"
+                    label={t('pages.searchStudentOptional')}
+                    placeholder={t('pages.searchByStudentNameRollNoOrAdmissionId')}
                     value={studentLookupQuery}
                     onChange={(e) => setStudentLookupQuery(e.target.value)}
                   />
@@ -526,22 +528,22 @@ const VisitorLog = forwardRef((props, ref) => {
                 </div>
               )}
               <FormInput
-                label="Date"
+                label={t('pages.date2')}
                 type="date"
                 value={formData.date}
                 readOnly
                 className="bg-default-100 cursor-not-allowed"
               />
               <FormInput
-                label="Check In Time"
+                label={t('pages.checkInTime')}
                 type="time"
                 value={formData.checkInTime}
                 readOnly
                 className="bg-default-100 cursor-not-allowed"
               />
               <FormInput
-                label="Concerned Person"
-                placeholder="Person to meet"
+                label={t('pages.concernedPerson')}
+                placeholder={t('pages.personToMeet')}
                 value={formData.concernedPerson}
                 onChange={(e) => setFormData({ ...formData, concernedPerson: e.target.value })}
                 wrapperClassName="col-span-2"
@@ -557,8 +559,8 @@ const VisitorLog = forwardRef((props, ref) => {
                 </div>
               )}
               <Textarea
-                label="Notes"
-                placeholder="Additional notes (optional)"
+                label={t('pages.notes1')}
+                placeholder={t('pages.additionalNotesOptional')}
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 className="col-span-2"

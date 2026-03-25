@@ -33,12 +33,16 @@ import StaffAttendanceTab from "./components/StaffAttendanceTab";
 import StaffPayrollTab from "./components/StaffPayrollTab";
 import StaffDocumentsTab from "./components/StaffDocumentsTab";
 
+import { DetailPageSkeleton } from "../../components/skeletons/PageSkeletons";
+
 // Context & Services
 import { useApp } from "../../context/AppContext";
 import { usePermissions } from "../../context/PermissionContext";
 import { uploadApi } from "../../services/api";
+import { useTranslation } from 'react-i18next';
 
 export default function StaffDashboard() {
+  const { t } = useTranslation();
   const { params: { id }, isValid } = useValidatedParams({ id: 'objectId' }, { redirectTo: '/staffs' });
   const navigate = useNavigate();
   const { hasPermission } = usePermissions();
@@ -124,7 +128,7 @@ export default function StaffDashboard() {
       const end = format(new Date(now.getFullYear(), now.getMonth() + 1, 0), 'yyyy-MM-dd');
       fetchStaffAttendanceByStaff(id, start, end).catch(err => {
         console.error('Failed to fetch staff attendance:', err);
-        toast.error('Failed to load attendance data');
+        toast.error(t('toast.error.failedToLoadAttendanceData'));
       });
     }
   }, [id, fetchStaffAttendanceByStaff]);
@@ -139,7 +143,8 @@ export default function StaffDashboard() {
 
   const today = new Date();
   const monthlyStats = useMemo(() => {
-    return getMonthlyAttendance(id, today.getFullYear(), today.getMonth());
+    if (!getMonthlyAttendance) return { present: 0, absent: 0, total: 0 };
+    return getMonthlyAttendance(id, today.getFullYear(), today.getMonth()) || { present: 0, absent: 0, total: 0 };
   }, [id, attendance, getMonthlyAttendance]);
 
   const attendanceRate = monthlyStats.total > 0 ? Math.round((monthlyStats.present / monthlyStats.total) * 100) : 0;
@@ -323,10 +328,10 @@ export default function StaffDashboard() {
       }
 
       setTimeout(() => setActiveUploads([]), 2000);
-      toast.success("Documents uploaded successfully");
+      toast.success(t('toast.success.documentsUploadedSuccessfully'));
     } catch (error) {
       console.error("Upload error:", error);
-      toast.error("Upload failed");
+      toast.error(t('toast.error.uploadFailed'));
     } finally {
       e.target.value = null;
     }
@@ -334,7 +339,7 @@ export default function StaffDashboard() {
 
   const handleDeleteDocument = (docId) => {
     setDocuments(prev => prev.filter(d => d.id !== docId && d.url !== docId));
-    toast.success("Document deleted");
+    toast.success(t('toast.success.documentDeleted'));
   };
 
   const handleFileSelect = (e) => {
@@ -351,7 +356,7 @@ export default function StaffDashboard() {
   };
 
   const handleCameraPhotoCapture = async (file) => {
-    const loadingToast = toast.loading("Uploading photo...");
+    const loadingToast = toast.loading(t('toast.loading.uploadingPhoto'));
 
     try {
       const response = await uploadApi.uploadFile(file);
@@ -365,7 +370,7 @@ export default function StaffDashboard() {
   };
 
   const handlePhotoSave = async (croppedImage) => {
-    const loadingToast = toast.loading("Uploading photo...");
+    const loadingToast = toast.loading(t('toast.loading.uploadingPhoto'));
 
     try {
       const dataURLtoFile = (dataurl, filename) => {
@@ -392,23 +397,23 @@ export default function StaffDashboard() {
     try {
       await updateStaff(id, { ...staff, picture: null });
       setPicturePreview(null);
-      toast.success("Photo removed");
+      toast.success(t('toast.success.photoRemoved'));
     } catch {
-      toast.error("Failed to remove photo");
+      toast.error(t('toast.error.failedToRemovePhoto'));
     }
   };
 
   const handleSendMessage = () => {
     setMessage("");
     onClose();
-    toast.success("Message sent");
+    toast.success(t('toast.success.messageSent'));
   };
 
   const handleEditClick = () => {
     if (hasPermission('staff', 'edit')) {
       handleOpenAddStaff();
     } else {
-      toast.error('You do not have permission to edit staff members');
+      toast.error(t('toast.error.youDoNotHavePermissionToEditStaffMembers'));
     }
   };
 
@@ -437,9 +442,9 @@ export default function StaffDashboard() {
   if (!staff) {
     // Show loading state while data is being fetched
     if (loading) {
-      return <div className="min-h-screen flex items-center justify-center"><div className="text-gray-400 dark:text-zinc-500 text-sm">Loading staff data...</div></div>;
+      return <DetailPageSkeleton avatar fields={8} />;
     }
-    return <div className="min-h-screen flex items-center justify-center"><div className="text-gray-400 dark:text-zinc-500 text-sm">Staff member not found</div></div>;
+    return <div className="min-h-screen flex items-center justify-center"><div className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.staffMemberNotFound1')}</div></div>;
   }
 
   return (
@@ -458,7 +463,7 @@ export default function StaffDashboard() {
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="mb-6">
         <button onClick={() => navigate('/staffs')} className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors mb-2">
-          <ArrowLeft size={16} /><span>Back to Staff</span>
+          <ArrowLeft size={16} /><span>{t('pages.backToStaff')}</span>
         </button>
 
         <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
@@ -468,7 +473,7 @@ export default function StaffDashboard() {
               <div className="relative">
                 <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-zinc-800 overflow-hidden flex items-center justify-center">
                   {picturePreview || staff.picture ? (
-                    <img src={picturePreview || staff.picture} alt={staff.name} className="w-full h-full object-cover" />
+                    <img src={picturePreview || staff.picture} alt={staff.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   ) : (
                     <span className="text-xl font-medium text-gray-400 dark:text-zinc-500">
                       {getSafeInitials(staff.name, staff.code?.charAt(0)?.toUpperCase() || '?')}
@@ -482,9 +487,9 @@ export default function StaffDashboard() {
                     </button>
                   </DropdownTrigger>
                   <DropdownMenu className="min-w-[140px]">
-                    <DropdownItem key="upload" onPress={() => fileInputRef.current?.click()}>Upload Photo</DropdownItem>
-                    <DropdownItem key="camera" onPress={() => setIsCameraCaptureOpen(true)}>Take Photo</DropdownItem>
-                    <DropdownItem key="remove" className="text-red-600" onPress={handleRemovePhoto}>Remove</DropdownItem>
+                    <DropdownItem key="upload" onPress={() => fileInputRef.current?.click()}>{t('pages.uploadPhoto1')}</DropdownItem>
+                    <DropdownItem key="camera" onPress={() => setIsCameraCaptureOpen(true)}>{t('pages.takePhoto')}</DropdownItem>
+                    <DropdownItem key="remove" className="text-red-600" onPress={handleRemovePhoto}>{t('pages.remove1')}</DropdownItem>
                   </DropdownMenu>
                 </Dropdown>
               </div>
@@ -497,7 +502,7 @@ export default function StaffDashboard() {
 
                 {/* Roles Line with heading */}
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  <span className="text-xs font-medium text-gray-500 dark:text-zinc-400">Roles:</span>
+                  <span className="text-xs font-medium text-gray-500 dark:text-zinc-400">{t('pages.roles1')}</span>
                   {Array.isArray(staff.role) ? staff.role.map((role, idx) => (
                     <Chip
                       key={role}
@@ -529,7 +534,7 @@ export default function StaffDashboard() {
                 {/* Subjects Line with heading (only for teachers) */}
                 {subjectAssignments.length > 0 && (
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    <span className="text-xs font-medium text-gray-500 dark:text-zinc-400">Subjects Handling:</span>
+                    <span className="text-xs font-medium text-gray-500 dark:text-zinc-400">{t('pages.subjectsHandling')}</span>
                     {[...new Set(subjectAssignments.map(a => a.subject).filter(Boolean))].map((subject, idx) => (
                       <Chip
                         key={subject}
@@ -566,17 +571,17 @@ export default function StaffDashboard() {
             {/* Actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
               <Button variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Phone size={16} />}
-                onPress={() => { if (staff.phone) { window.location.href = `tel:${staff.phone}`; toast.success(`Calling...`); } else { toast.error("No phone number"); } }}
-                isDisabled={!staff.phone}>Call</Button>
-              <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200" startContent={<Edit size={16} />} onPress={handleEditClick}>Edit</Button>
+                onPress={() => { if (staff.phone) { window.location.href = `tel:${staff.phone}`; toast.success(`Calling...`); } else { toast.error(t('toast.error.noPhoneNumber')); } }}
+                isDisabled={!staff.phone}>{t('pages.call')}</Button>
+              <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200" startContent={<Edit size={16} />} onPress={handleEditClick}>{t('pages.edit1')}</Button>
               <Dropdown>
                 <DropdownTrigger>
                   <Button isIconOnly variant="light" className="text-gray-400 dark:text-zinc-500"><MoreVertical size={20} /></Button>
                 </DropdownTrigger>
                 <DropdownMenu className="min-w-[180px]">
-                  <DropdownItem key="message" onPress={onOpen}>Send Message</DropdownItem>
-                  <DropdownItem key="download">Download Profile</DropdownItem>
-                  <DropdownItem key="print" onPress={() => window.print()}>Print</DropdownItem>
+                  <DropdownItem key="message" onPress={onOpen}>{t('pages.sendMessage')}</DropdownItem>
+                  <DropdownItem key="download">{t('pages.downloadProfile')}</DropdownItem>
+                  <DropdownItem key="print" onPress={() => window.print()}>{t('pages.print')}</DropdownItem>
                 </DropdownMenu>
               </Dropdown>
             </div>
@@ -632,7 +637,7 @@ export default function StaffDashboard() {
                 <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><GraduationCap size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Class Teacher Assignment</h3><p className="text-xs text-gray-500 dark:text-zinc-400">{classTeacherAssignments.length > 0 ? 'Class you manage as class teacher' : 'Not assigned to any class'}</p></div>
+                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.classTeacherAssignment')}</h3><p className="text-xs text-gray-500 dark:text-zinc-400">{classTeacherAssignments.length > 0 ? 'Class you manage as class teacher' : 'Not assigned to any class'}</p></div>
                   </div>
                 </div>
                 {classTeacherAssignments.length > 0 ? (
@@ -670,8 +675,8 @@ export default function StaffDashboard() {
                     <div className="w-12 h-12 rounded-full bg-gray-50 dark:bg-zinc-900 flex items-center justify-center mb-3">
                       <GraduationCap size={20} className="text-gray-300 dark:text-zinc-600" />
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-zinc-400 mb-1">No class has been assigned yet</p>
-                    <p className="text-xs text-gray-400 dark:text-zinc-500 mb-4">This staff member is not a class teacher for any class.</p>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400 mb-1">{t('pages.noClassHasBeenAssignedYet')}</p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500 mb-4">{t('pages.thisStaffMemberIsNotAClassTeacherForAnyClass')}</p>
                     <button
                       onClick={handleOpenAssignClassModal}
                       className="text-xs font-medium text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 px-4 py-2 rounded-lg transition-colors"
@@ -687,7 +692,7 @@ export default function StaffDashboard() {
                 <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Activity size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Today's Status</h3><p className="text-xs text-gray-500 dark:text-zinc-400">{format(today, 'EEEE, MMMM d, yyyy')}</p></div>
+                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.todaySStatus')}</h3><p className="text-xs text-gray-500 dark:text-zinc-400">{format(today, 'EEEE, MMMM d, yyyy')}</p></div>
                   </div>
                 </div>
                 <div className="p-5">
@@ -718,7 +723,7 @@ export default function StaffDashboard() {
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{attendanceRate}%</p>
-                          <p className="text-xs text-gray-500 dark:text-zinc-400">Monthly Attendance</p>
+                          <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.monthlyAttendance1')}</p>
                         </div>
                       </div>
                     );
@@ -728,19 +733,19 @@ export default function StaffDashboard() {
 
               {/* Quick Stats Summary */}
               <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 p-5">
-                <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Monthly Summary</h3>
+                <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">{t('pages.monthlySummary')}</h3>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-zinc-900">
                     <p className="text-xl font-bold text-gray-900 dark:text-zinc-100">{monthlyStats.total}</p>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Working Days</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.workingDays')}</p>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-zinc-900">
                     <p className="text-xl font-bold text-gray-900 dark:text-zinc-100">{monthlyStats.present}</p>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Present</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.present2')}</p>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-zinc-900">
                     <p className="text-xl font-bold text-gray-900 dark:text-zinc-100">{monthlyStats.absent}</p>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Absent</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.absent2')}</p>
                   </div>
                 </div>
               </div>
@@ -768,7 +773,7 @@ export default function StaffDashboard() {
                 <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Calendar size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Weekly Timetable</h3><p className="text-xs text-gray-500 dark:text-zinc-400">Manage class schedules and assignments</p></div>
+                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.weeklyTimetable')}</h3><p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.manageClassSchedulesAndAssignments')}</p></div>
                   </div>
                 </div>
                 <div className="p-5">
@@ -785,7 +790,7 @@ export default function StaffDashboard() {
                 <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Briefcase size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Subject & Class Assignments</h3><p className="text-xs text-gray-500 dark:text-zinc-400">Manage which subjects and classes this teacher can teach</p></div>
+                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.subjectClassAssignments')}</h3><p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.manageWhichSubjectsAndClassesThisTeacherCanTeach')}</p></div>
                   </div>
                 </div>
                 <div className="p-5">
@@ -801,6 +806,7 @@ export default function StaffDashboard() {
               payrollHistory={payrollHistory}
               staffSalary={staffSalary}
               calculateTotals={calculateTotals}
+              staff={staff}
             />
           )}
 
@@ -812,6 +818,7 @@ export default function StaffDashboard() {
               documentInputRef={documentInputRef}
               onDocumentUpload={handleDocumentUpload}
               onDeleteDocument={handleDeleteDocument}
+              staffName={staff?.name}
             />
           )}
         </div>
@@ -821,30 +828,30 @@ export default function StaffDashboard() {
 
           {/* Quick Actions */}
           <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Quick Actions</h3>
+            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">{t('pages.quickActions1')}</h3>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={handleEditClick} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-700"><Edit size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">Edit</span></button>
-              <button onClick={() => staff.phone && (window.location.href = `tel:${staff.phone}`)} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-700"><Phone size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">Call</span></button>
-              <button onClick={onOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-700"><Mail size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">Message</span></button>
-              <button onClick={() => navigate('/staffs')} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-700"><Users size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">All Staff</span></button>
+              <button onClick={handleEditClick} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-700"><Edit size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.edit1')}</span></button>
+              <button onClick={() => staff.phone && (window.location.href = `tel:${staff.phone}`)} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-700"><Phone size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.call')}</span></button>
+              <button onClick={onOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-700"><Mail size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.message1')}</span></button>
+              <button onClick={() => navigate('/staffs')} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-700"><Users size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.allStaff1')}</span></button>
             </div>
           </div>
 
           {/* Alerts */}
           {(attendanceRate < 75 || (isTeacher && avgClassAttendance < 75)) && (
             <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 overflow-hidden">
-              <div className="p-4 border-b border-gray-100 dark:border-zinc-800"><h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Attention Required</h3></div>
+              <div className="p-4 border-b border-gray-100 dark:border-zinc-800"><h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.attentionRequired1')}</h3></div>
               <div className="divide-y divide-gray-50 dark:divide-zinc-800">
                 {attendanceRate < 75 && (
                   <div className="p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer">
                     <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><AlertCircle size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                    <div className="flex-1"><p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Low Attendance</p><p className="text-xs text-gray-500 dark:text-zinc-400">{attendanceRate}% (below 75%)</p></div>
+                    <div className="flex-1"><p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.lowAttendance1')}</p><p className="text-xs text-gray-500 dark:text-zinc-400">{attendanceRate}% (below 75%)</p></div>
                   </div>
                 )}
                 {isTeacher && avgClassAttendance < 75 && (
                   <div className="p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer">
                     <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Users size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                    <div className="flex-1"><p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Class Attendance Alert</p><p className="text-xs text-gray-500 dark:text-zinc-400">Average: {avgClassAttendance}%</p></div>
+                    <div className="flex-1"><p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.classAttendanceAlert')}</p><p className="text-xs text-gray-500 dark:text-zinc-400">Average: {avgClassAttendance}%</p></div>
                   </div>
                 )}
               </div>
@@ -856,7 +863,7 @@ export default function StaffDashboard() {
             <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><CheckCircle2 size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                <div><h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">All Clear</h3><p className="text-xs text-gray-500 dark:text-zinc-400">No issues detected</p></div>
+                <div><h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.allClear')}</h3><p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.noIssuesDetected')}</p></div>
               </div>
               <p className="text-sm text-gray-600 dark:text-zinc-400">This staff member is performing well with good attendance and no pending actions.</p>
             </div>
@@ -864,24 +871,24 @@ export default function StaffDashboard() {
 
           {/* Contact Card */}
           <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Contact Information</h3>
+            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">{t('pages.contactInformation1')}</h3>
             <div className="space-y-4">
               {staff.phone && (
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Phone size={14} className="text-gray-600 dark:text-zinc-400" /></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">Phone</p><p className="text-sm text-gray-900 dark:text-zinc-100">{staff.phone}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.phone1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{staff.phone}</p></div>
                 </div>
               )}
               {staff.email && (
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Mail size={14} className="text-gray-600 dark:text-zinc-400" /></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">Email</p><p className="text-sm text-gray-900 dark:text-zinc-100 truncate">{staff.email}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.email1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100 truncate">{staff.email}</p></div>
                 </div>
               )}
               {staff.address && (
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0"><Briefcase size={14} className="text-gray-600 dark:text-zinc-400" /></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">Address</p><p className="text-sm text-gray-900 dark:text-zinc-100">{staff.address}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.address2')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{staff.address}</p></div>
                 </div>
               )}
             </div>
@@ -889,22 +896,22 @@ export default function StaffDashboard() {
 
           {/* Department Info */}
           <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Department Details</h3>
+            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">{t('pages.departmentDetails')}</h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500 dark:text-zinc-400">Department</span>
+                <span className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.department1')}</span>
                 <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{staff.department || "—"}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500 dark:text-zinc-400">Role</span>
+                <span className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.role1')}</span>
                 <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{Array.isArray(staff.role) ? staff.role.join(', ') : staff.role || "—"}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500 dark:text-zinc-400">Status</span>
+                <span className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.status2')}</span>
                 <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{staff.status || "Active"}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500 dark:text-zinc-400">Join Date</span>
+                <span className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.joinDate1')}</span>
                 <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{staff.joinDate || "—"}</span>
               </div>
             </div>
@@ -918,8 +925,8 @@ export default function StaffDashboard() {
           <ModalHeader>Send Message to {staff.name && /^[a-f\d]{24}$/i.test(staff.name) ? (staff.code || 'Staff') : (staff.name || 'Staff')}</ModalHeader>
           <ModalBody>
             <Textarea
-              label="Message"
-              placeholder="Type your message here..."
+              label={t('pages.message1')}
+              placeholder={t('pages.typeYourMessageHere')}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               minRows={3}
@@ -927,7 +934,7 @@ export default function StaffDashboard() {
             />
           </ModalBody>
           <ModalFooter>
-            <button className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300" onClick={onClose}>Cancel</button>
+            <button className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300" onClick={onClose}>{t('pages.cancel2')}</button>
             <button
               className="px-4 py-2 text-sm font-medium text-white dark:text-zinc-900 bg-gray-900 dark:bg-zinc-100 rounded-lg hover:bg-gray-800 dark:hover:bg-zinc-200 disabled:opacity-50"
               onClick={handleSendMessage}
@@ -966,8 +973,8 @@ export default function StaffDashboard() {
                       <Edit size={20} className="text-gray-600 dark:text-zinc-400" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Edit Staff Member</h2>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">Update staff details</p>
+                      <h2 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.editStaffMember')}</h2>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.updateStaffDetails')}</p>
                     </div>
                   </div>
                   <Button isIconOnly size="sm" variant="light" onPress={() => {

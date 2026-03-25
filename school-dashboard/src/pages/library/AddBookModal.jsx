@@ -5,6 +5,7 @@ import {
 } from "@heroui/react";
 import { libraryApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 const CATEGORIES = [
   { key: "textbook", label: "Textbook" },
@@ -24,12 +25,15 @@ const emptyForm = {
 };
 
 export default function AddBookModal({ isOpen, onClose, book, onSaved }) {
+  const { t } = useTranslation();
   const isEdit = !!book;
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (isOpen) {
+      setErrors({});
       if (book) {
         setForm({
           title: book.title || "",
@@ -55,18 +59,22 @@ export default function AddBookModal({ isOpen, onClose, book, onSaved }) {
     }
   }, [isOpen, book]);
 
-  const updateField = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+  const updateField = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
 
   const handleSubmit = async () => {
-    if (!form.title.trim() || !form.author.trim()) {
-      toast.error("Title and author are required");
-      return;
-    }
+    const e = {};
+    if (!form.title.trim()) e.title = t('toast.error.titleAndAuthorAreRequired');
+    if (!form.author.trim()) e.author = t('toast.error.titleAndAuthorAreRequired');
     const copies = parseInt(form.totalCopies);
-    if (!copies || copies < 1) {
-      toast.error("Total copies must be at least 1");
-      return;
+    if (!copies || copies < 1) e.totalCopies = t('toast.error.totalCopiesMustBeAtLeast1');
+    if (form.finePerDay) {
+      const fine = parseFloat(form.finePerDay);
+      if (isNaN(fine) || fine < 0) e.finePerDay = t('toast.error.finePerDayMustBeANonNegativeNumber');
     }
+    if (Object.keys(e).length > 0) { setErrors(e); return; }
 
     const payload = {
       title: form.title.trim(),
@@ -91,10 +99,10 @@ export default function AddBookModal({ isOpen, onClose, book, onSaved }) {
       setSaving(true);
       if (isEdit) {
         await libraryApi.updateBook(book._id, payload);
-        toast.success("Book updated");
+        toast.success(t('toast.success.bookUpdated'));
       } else {
         await libraryApi.createBook(payload);
-        toast.success("Book added");
+        toast.success(t('toast.success.bookAdded'));
       }
       onSaved?.();
     } catch (err) {
@@ -110,28 +118,28 @@ export default function AddBookModal({ isOpen, onClose, book, onSaved }) {
         <ModalHeader>{isEdit ? "Edit Book" : "Add Book"}</ModalHeader>
         <ModalBody className="gap-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input label="Title" isRequired value={form.title} onValueChange={(v) => updateField("title", v)} />
-            <Input label="Author" isRequired value={form.author} onValueChange={(v) => updateField("author", v)} />
-            <Input label="ISBN" value={form.isbn} onValueChange={(v) => updateField("isbn", v)} />
-            <Input label="Publisher" value={form.publisher} onValueChange={(v) => updateField("publisher", v)} />
-            <Input label="Published Year" type="number" value={form.publishedYear} onValueChange={(v) => updateField("publishedYear", v)} />
-            <Input label="Edition" value={form.edition} onValueChange={(v) => updateField("edition", v)} />
-            <Select label="Category" selectedKeys={[form.category]} onSelectionChange={(keys) => updateField("category", [...keys][0])}>
+            <Input label={t('pages.title1')} isRequired value={form.title} onValueChange={(v) => updateField("title", v)} isInvalid={!!errors.title} errorMessage={errors.title} />
+            <Input label={t('pages.author')} isRequired value={form.author} onValueChange={(v) => updateField("author", v)} isInvalid={!!errors.author} errorMessage={errors.author} />
+            <Input label={t('pages.iSBN')} value={form.isbn} onValueChange={(v) => updateField("isbn", v)} />
+            <Input label={t('pages.publisher')} value={form.publisher} onValueChange={(v) => updateField("publisher", v)} />
+            <Input label={t('pages.publishedYear')} type="number" value={form.publishedYear} onValueChange={(v) => updateField("publishedYear", v)} />
+            <Input label={t('pages.edition')} value={form.edition} onValueChange={(v) => updateField("edition", v)} />
+            <Select label={t('pages.category1')} selectedKeys={[form.category]} onSelectionChange={(keys) => updateField("category", [...keys][0])}>
               {CATEGORIES.map((c) => <SelectItem key={c.key}>{c.label}</SelectItem>)}
             </Select>
-            <Input label="Subject" value={form.subject} onValueChange={(v) => updateField("subject", v)} />
-            <Input label="Language" value={form.language} onValueChange={(v) => updateField("language", v)} />
-            <Input label="Total Copies" isRequired type="number" min={1} value={form.totalCopies} onValueChange={(v) => updateField("totalCopies", v)} />
-            <Input label="Rack Number" value={form.rackNumber} onValueChange={(v) => updateField("rackNumber", v)} />
-            <Input label="Shelf Number" value={form.shelfNumber} onValueChange={(v) => updateField("shelfNumber", v)} />
-            <Input label="Fine Per Day (₹)" type="number" min={0} value={form.finePerDay} onValueChange={(v) => updateField("finePerDay", v)} />
-            <Input label="Cover Image URL" value={form.coverImageUrl} onValueChange={(v) => updateField("coverImageUrl", v)} />
+            <Input label={t('pages.subject2')} value={form.subject} onValueChange={(v) => updateField("subject", v)} />
+            <Input label={t('pages.language')} value={form.language} onValueChange={(v) => updateField("language", v)} />
+            <Input label={t('pages.totalCopies')} isRequired type="number" min={1} value={form.totalCopies} onValueChange={(v) => updateField("totalCopies", v)} isInvalid={!!errors.totalCopies} errorMessage={errors.totalCopies} />
+            <Input label={t('pages.rackNumber')} value={form.rackNumber} onValueChange={(v) => updateField("rackNumber", v)} />
+            <Input label={t('pages.shelfNumber')} value={form.shelfNumber} onValueChange={(v) => updateField("shelfNumber", v)} />
+            <Input label="Fine Per Day (₹)" type="number" min={0} value={form.finePerDay} onValueChange={(v) => updateField("finePerDay", v)} isInvalid={!!errors.finePerDay} errorMessage={errors.finePerDay} />
+            <Input label={t('pages.coverImageUrl')} value={form.coverImageUrl} onValueChange={(v) => updateField("coverImageUrl", v)} />
           </div>
-          <Input label="Digital URL" value={form.digitalUrl} onValueChange={(v) => updateField("digitalUrl", v)} />
-          <Textarea label="Description" value={form.description} onValueChange={(v) => updateField("description", v)} minRows={2} />
+          <Input label={t('pages.digitalUrl')} value={form.digitalUrl} onValueChange={(v) => updateField("digitalUrl", v)} />
+          <Textarea label={t('pages.description1')} value={form.description} onValueChange={(v) => updateField("description", v)} minRows={2} />
         </ModalBody>
         <ModalFooter>
-          <Button variant="flat" onPress={onClose}>Cancel</Button>
+          <Button variant="flat" onPress={onClose}>{t('pages.cancel2')}</Button>
           <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900" isLoading={saving} onPress={handleSubmit}>
             {isEdit ? "Update" : "Add Book"}
           </Button>

@@ -88,7 +88,9 @@ export default function StaffSidebar({
                     <BookOpen size={12} /> {t('calendar.sidebar.todaysClasses', "Today's Classes")}
                   </h4>
                   {loadingTimetable ? (
-                    <div className="flex items-center justify-center py-4"><Spinner size="sm" /></div>
+                    <div className="animate-pulse space-y-1.5">
+                      {[...Array(3)].map((_, i) => <div key={i} className="h-10 bg-gray-100 dark:bg-zinc-800 rounded-lg" />)}
+                    </div>
                   ) : todaySchedule.filter(s => s.classId && s.subject).length > 0 ? (
                     <div className="space-y-1.5">
                       {todaySchedule.map((slot, idx) => {
@@ -131,7 +133,9 @@ export default function StaffSidebar({
                     <Users size={12} /> {t('calendar.sidebar.upcomingAppointments', 'Upcoming Appointments')}
                   </h4>
                   {loadingAppointments ? (
-                    <div className="flex items-center justify-center py-4"><Spinner size="sm" /></div>
+                    <div className="animate-pulse space-y-1.5">
+                      {[...Array(2)].map((_, i) => <div key={i} className="h-10 bg-gray-100 dark:bg-zinc-800 rounded-lg" />)}
+                    </div>
                   ) : upcomingAppointments.length > 0 ? (
                     <div className="space-y-1.5">
                       {upcomingAppointments.map((apt) => (

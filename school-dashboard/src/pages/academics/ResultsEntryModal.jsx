@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { ModalHeader, ModalBody, Chip, Spinner, Input } from '@heroui/react';
+import { useState, useEffect, useMemo } from 'react';
+import { ModalHeader, ModalBody, Chip, Input } from '@heroui/react';
 import { FileText, Users, Save, AlertCircle, Award, CheckCircle2, Search } from 'lucide-react';
 import { examsApi, resultsApi, classesApi } from '../../services/api';
 import { MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const ResultsEntryModal = ({ examId, onClose }) => {
+  const { t } = useTranslation();
   const [exam, setExam] = useState(null);
   const [students, setStudents] = useState([]);
   const [results, setResults] = useState({});
@@ -44,7 +46,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error('Failed to load exam data');
+      toast.error(t('toast.error.failedToLoadExamData'));
     } finally {
       setLoading(false);
     }
@@ -95,10 +97,10 @@ const ResultsEntryModal = ({ examId, onClose }) => {
 
       await resultsApi.bulkCreate(resultsArray, examId, exam.classId);
 
-      toast.success('Results saved successfully!');
+      toast.success(t('toast.success.resultsSavedSuccessfully'));
     } catch (error) {
       console.error('Error saving results:', error);
-      toast.error('Failed to save results');
+      toast.error(t('toast.error.failedToSaveResults'));
     } finally {
       setSaving(false);
     }
@@ -138,9 +140,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
+      <div className="flex justify-center py-8"><div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-900" /></div>
     );
   }
 
@@ -148,8 +148,8 @@ const ResultsEntryModal = ({ examId, onClose }) => {
     return (
       <div className="text-center py-12">
         <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-        <p className="text-gray-500 dark:text-zinc-400">Exam not found</p>
-        <MinimalButton className="mt-4" onClick={onClose}>Close</MinimalButton>
+        <p className="text-gray-500 dark:text-zinc-400">{t('pages.examNotFound')}</p>
+        <MinimalButton className="mt-4" onClick={onClose}>{t('pages.close2')}</MinimalButton>
       </div>
     );
   }
@@ -185,15 +185,15 @@ const ResultsEntryModal = ({ examId, onClose }) => {
           {/* Stats Summary */}
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 border border-gray-100 dark:border-zinc-800">
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Total Students</p>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.totalStudents1')}</p>
               <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{students.length}</p>
             </div>
             <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
-              <p className="text-xs text-blue-600 dark:text-blue-400">Results Entered</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400">{t('pages.resultsEntered')}</p>
               <p className="text-xl font-semibold text-blue-700 dark:text-blue-300">{enteredCount}</p>
             </div>
             <div className="bg-green-50 dark:bg-green-950 rounded-lg p-3 border border-green-100 dark:border-green-800">
-              <p className="text-xs text-green-600 dark:text-green-400">Pass Count</p>
+              <p className="text-xs text-green-600 dark:text-green-400">{t('pages.passCount')}</p>
               <p className="text-xl font-semibold text-green-700 dark:text-green-300">{passCount}</p>
             </div>
           </div>
@@ -201,7 +201,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
           {/* Search */}
           {students.length > 5 && (
             <Input
-              placeholder="Search students..."
+              placeholder={t('pages.searchStudents')}
               value={searchQuery}
               onValueChange={setSearchQuery}
               startContent={<Search size={16} className="text-gray-400 dark:text-zinc-500" />}
@@ -217,18 +217,18 @@ const ResultsEntryModal = ({ examId, onClose }) => {
             {students.length === 0 ? (
               <div className="text-center py-12">
                 <Users size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-                <p className="text-gray-500 dark:text-zinc-400">No students found in this class</p>
+                <p className="text-gray-500 dark:text-zinc-400">{t('pages.noStudentsFoundInThisClass')}</p>
               </div>
             ) : (
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-zinc-900">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Student</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Roll No</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase w-28">Marks</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Grade</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Remarks</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.student')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.rollNo1')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase w-28">{t('pages.marks')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.grade2')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.status2')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.remarks')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
@@ -286,7 +286,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
                             type="text"
                             value={results[studentId]?.remarks || ''}
                             onChange={(e) => handleRemarksChange(studentId, e.target.value)}
-                            placeholder="Add remarks..."
+                            placeholder={t('pages.addRemarks')}
                             className="w-32 px-3 py-2 bg-gray-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 focus:border-gray-400 dark:focus:border-zinc-500 focus:ring-2 focus:ring-gray-100 dark:focus:ring-zinc-800 outline-none text-sm dark:text-zinc-100"
                           />
                         </td>

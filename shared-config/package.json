@@ -1,0 +1,15 @@
+{
+  "name": "@ems/config",
+  "version": "0.1.0",
+  "description": "Shared platform-agnostic configuration constants for the EMS monorepo",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./api": "./src/api.js",
+    "./pagination": "./src/pagination.js"
+  },
+  "files": [
+    "src"
+  ]
+}

@@ -3,6 +3,7 @@ import { Input, Button, Select, SelectItem, useDisclosure, Modal, ModalContent, 
 import { Plus, Search, Building2, Edit2, Trash2, Users, DoorOpen } from "lucide-react";
 import { hostelApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 const INITIAL_FORM = {
   name: "", type: "boys", wardenName: "", wardenPhone: "", wardenEmail: "",
@@ -10,6 +11,7 @@ const INITIAL_FORM = {
 };
 
 function SkeletonCards() {
+  const { t } = useTranslation();
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {Array.from({ length: 6 }).map((_, i) => (
@@ -50,7 +52,7 @@ export default function HostelList() {
       const data = await hostelApi.getHostels(params);
       setHostels(data.hostels || []);
     } catch {
-      toast.error("Failed to load hostels");
+      toast.error(t('toast.error.failedToLoadHostels'));
     } finally {
       setIsLoading(false);
     }
@@ -75,10 +77,10 @@ export default function HostelList() {
     try {
       if (editingId) {
         await hostelApi.updateHostel(editingId, formData);
-        toast.success("Hostel updated");
+        toast.success(t('toast.success.hostelUpdated'));
       } else {
         await hostelApi.createHostel(formData);
-        toast.success("Hostel created");
+        toast.success(t('toast.success.hostelCreated'));
       }
       handleClose();
       fetchHostels();
@@ -102,10 +104,10 @@ export default function HostelList() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this hostel? This cannot be undone.")) return;
+    if (!confirm(t('confirm.deleteHostel'))) return;
     try {
       await hostelApi.deleteHostel(id);
-      toast.success("Hostel deleted");
+      toast.success(t('toast.success.hostelDeleted'));
       fetchHostels();
     } catch (err) {
       toast.error(err?.message || "Failed to delete hostel");
@@ -136,7 +138,7 @@ export default function HostelList() {
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-3 flex-1">
           <Input
-            placeholder="Search hostels..."
+            placeholder={t('pages.searchHostels')}
             startContent={<Search size={16} className="text-gray-400 dark:text-zinc-500" />}
             value={searchInput}
             onValueChange={setSearchInput}
@@ -144,15 +146,15 @@ export default function HostelList() {
             size="sm"
           />
           <Select
-            placeholder="All Types"
+            placeholder={t('pages.allTypes1')}
             selectedKeys={typeFilter ? [typeFilter] : []}
             onSelectionChange={(keys) => setTypeFilter([...keys][0] || "")}
             className="max-w-[150px]"
             size="sm"
           >
-            <SelectItem key="boys">Boys</SelectItem>
-            <SelectItem key="girls">Girls</SelectItem>
-            <SelectItem key="mixed">Mixed</SelectItem>
+            <SelectItem key="boys">{t('pages.boys')}</SelectItem>
+            <SelectItem key="girls">{t('pages.girls')}</SelectItem>
+            <SelectItem key="mixed">{t('pages.mixed')}</SelectItem>
           </Select>
         </div>
         <Button color="primary" startContent={<Plus size={16} />} onPress={handleAdd} size="sm">
@@ -164,7 +166,7 @@ export default function HostelList() {
       {hostels.length === 0 ? (
         <div className="text-center py-12">
           <Building2 size={40} className="mx-auto text-gray-400 dark:text-zinc-500 mb-3" />
-          <p className="text-gray-500 dark:text-zinc-400">No hostels found</p>
+          <p className="text-gray-500 dark:text-zinc-400">{t('pages.noHostelsFound')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -213,52 +215,52 @@ export default function HostelList() {
           </ModalHeader>
           <ModalBody className="gap-4">
             <Input
-              label="Hostel Name" isRequired
+              label={t('pages.hostelName')} isRequired
               value={formData.name}
               onValueChange={(v) => setFormData(p => ({ ...p, name: v }))}
               isInvalid={!!errors.name} errorMessage={errors.name}
             />
             <Select
-              label="Type" isRequired
+              label={t('pages.type1')} isRequired
               selectedKeys={[formData.type]}
               onSelectionChange={(keys) => setFormData(p => ({ ...p, type: [...keys][0] }))}
               isInvalid={!!errors.type} errorMessage={errors.type}
             >
-              <SelectItem key="boys">Boys</SelectItem>
-              <SelectItem key="girls">Girls</SelectItem>
-              <SelectItem key="mixed">Mixed</SelectItem>
+              <SelectItem key="boys">{t('pages.boys')}</SelectItem>
+              <SelectItem key="girls">{t('pages.girls')}</SelectItem>
+              <SelectItem key="mixed">{t('pages.mixed')}</SelectItem>
             </Select>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
-                label="Warden Name"
+                label={t('pages.wardenName')}
                 value={formData.wardenName}
                 onValueChange={(v) => setFormData(p => ({ ...p, wardenName: v }))}
               />
               <Input
-                label="Warden Phone"
+                label={t('pages.wardenPhone')}
                 value={formData.wardenPhone}
                 onValueChange={(v) => setFormData(p => ({ ...p, wardenPhone: v }))}
               />
             </div>
             <Input
-              label="Warden Email"
+              label={t('pages.wardenEmail')}
               value={formData.wardenEmail}
               onValueChange={(v) => setFormData(p => ({ ...p, wardenEmail: v }))}
               isInvalid={!!errors.wardenEmail} errorMessage={errors.wardenEmail}
             />
             <Input
-              label="Address"
+              label={t('pages.address2')}
               value={formData.address}
               onValueChange={(v) => setFormData(p => ({ ...p, address: v }))}
             />
             <Input
-              label="Description"
+              label={t('pages.description1')}
               value={formData.description}
               onValueChange={(v) => setFormData(p => ({ ...p, description: v }))}
             />
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={handleClose}>Cancel</Button>
+            <Button variant="flat" onPress={handleClose}>{t('pages.cancel2')}</Button>
             <Button color="primary" onPress={handleSubmit} isLoading={saving}>
               {editingId ? "Update" : "Create"}
             </Button>

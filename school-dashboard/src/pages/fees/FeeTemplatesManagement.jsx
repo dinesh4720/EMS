@@ -1,10 +1,11 @@
+import { request } from '../../services/api.js';
 import { useState, useEffect } from "react";
 import { Card, CardHeader, CardBody, Button, Input, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Switch, Divider, Textarea, Spinner, Badge } from "@heroui/react";
 import { Plus, Edit, Trash2, IndianRupee, Copy, Eye, Save, Layers, FolderTree } from "lucide-react";
 import toast from "react-hot-toast";
 import { CURRENT_ACADEMIC_YEAR } from "../../utils/constants";
+import { useTranslation } from 'react-i18next';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 const SECTIONS = [
   { key: 'primary', label: 'Primary Section (Classes 1-5)' },
@@ -24,6 +25,7 @@ const FREQUENCIES = [
 const CATEGORIES = ['Academic', 'Transport', 'Extra-curricular', 'Hostel', 'Other'];
 
 export default function FeeTemplatesManagement() {
+  const { t } = useTranslation();
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -47,12 +49,11 @@ export default function FeeTemplatesManagement() {
   const fetchTemplates = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/fee-templates`);
-      const data = await response.json();
+      const data = await request('/fee-templates');
       setTemplates(data);
     } catch (error) {
       console.error('Failed to fetch templates:', error);
-      toast.error('Failed to load fee templates');
+      toast.error(t('toast.error.failedToLoadFeeTemplates'));
     } finally {
       setLoading(false);
     }
@@ -87,12 +88,12 @@ export default function FeeTemplatesManagement() {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      toast.error('Template name is required');
+      toast.error(t('toast.error.templateNameIsRequired'));
       return;
     }
 
     if (formData.feeHeads.length === 0) {
-      toast.error('At least one fee head is required');
+      toast.error(t('toast.error.atLeastOneFeeHeadIsRequired'));
       return;
     }
 
@@ -101,46 +102,37 @@ export default function FeeTemplatesManagement() {
       const totalAnnualFee = calculateTotalAnnualFee();
       const payload = { ...formData, totalAnnualFee };
 
-      const url = selectedTemplate
-        ? `${API_URL}/fee-templates/${selectedTemplate._id}`
-        : `${API_URL}/fee-templates`;
+      const endpoint = selectedTemplate
+        ? `/fee-templates/${selectedTemplate._id}`
+        : `/fee-templates`;
 
-      const method = selectedTemplate ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
+      await request(endpoint, {
+        method: selectedTemplate ? 'PUT' : 'POST',
         body: JSON.stringify(payload)
       });
-
-      if (!response.ok) throw new Error('Failed to save template');
 
       toast.success(selectedTemplate ? 'Template updated successfully' : 'Template created successfully');
       onClose();
       fetchTemplates();
     } catch (error) {
       console.error('Failed to save template:', error);
-      toast.error('Failed to save template');
+      toast.error(error.message || t('toast.error.failedToSaveTemplate'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this template?')) return;
+    if (!confirm(t('confirm.deleteFeeTemplate'))) return;
 
     try {
-      const response = await fetch(`${API_URL}/fee-templates/${id}`, {
-        method: 'DELETE'
-      });
+      await request(`/fee-templates/${id}`, { method: 'DELETE' });
 
-      if (!response.ok) throw new Error('Failed to delete template');
-
-      toast.success('Template deleted successfully');
+      toast.success(t('toast.success.templateDeletedSuccessfully'));
       fetchTemplates();
     } catch (error) {
       console.error('Failed to delete template:', error);
-      toast.error('Failed to delete template');
+      toast.error(error.message || t('toast.error.failedToDeleteTemplate'));
     }
   };
 
@@ -150,6 +142,9 @@ export default function FeeTemplatesManagement() {
       if (head.frequency === 'monthly') annualAmount *= 12;
       else if (head.frequency === 'quarterly') annualAmount *= 4;
       else if (head.frequency === 'term' && head.applicableTerms) annualAmount *= head.applicableTerms.length;
+      // 'yearly' and 'one-time' are charged once per year — multiply by 1 (no change needed,
+      // but explicitly handled so future frequencies don't accidentally accumulate)
+      // else if (['yearly', 'one-time'].includes(head.frequency)) annualAmount *= 1;
       return total + annualAmount;
     }, 0);
   };
@@ -194,19 +189,16 @@ export default function FeeTemplatesManagement() {
     };
 
     try {
-      const response = await fetch(`${API_URL}/fee-templates`, {
+      await request(`/fee-templates`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(duplicated)
       });
 
-      if (!response.ok) throw new Error('Failed to duplicate template');
-
-      toast.success('Template duplicated successfully');
+      toast.success(t('toast.success.templateDuplicatedSuccessfully'));
       fetchTemplates();
     } catch (error) {
       console.error('Failed to duplicate template:', error);
-      toast.error('Failed to duplicate template');
+      toast.error(t('toast.error.failedToDuplicateTemplate'));
     }
   };
 
@@ -223,8 +215,8 @@ export default function FeeTemplatesManagement() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-default-900">Fee Templates</h2>
-          <p className="text-sm text-default-500 mt-1">Create and manage reusable fee structures for different sections</p>
+          <h2 className="text-2xl font-bold text-default-900">{t('pages.feeTemplates')}</h2>
+          <p className="text-sm text-default-500 mt-1">{t('pages.createAndManageReusableFeeStructuresForDifferentSections')}</p>
         </div>
         <Button
           color="primary"
@@ -256,7 +248,7 @@ export default function FeeTemplatesManagement() {
               <CardBody className="p-4 space-y-3">
                 {sectionTemplates.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-sm text-default-400">No templates in this section</p>
+                    <p className="text-sm text-default-400">{t('pages.noTemplatesInThisSection')}</p>
                   </div>
                 ) : (
                   sectionTemplates.map((template) => (
@@ -269,9 +261,9 @@ export default function FeeTemplatesManagement() {
                           <div className="flex items-center gap-2">
                             <h4 className="font-semibold text-default-900">{template.name}</h4>
                             {template.isActive ? (
-                              <Chip size="sm" color="success" variant="flat">Active</Chip>
+                              <Chip size="sm" color="success" variant="flat">{t('pages.active')}</Chip>
                             ) : (
-                              <Chip size="sm" color="default" variant="flat">Inactive</Chip>
+                              <Chip size="sm" color="default" variant="flat">{t('pages.inactive')}</Chip>
                             )}
                           </div>
                           {template.description && (
@@ -311,11 +303,11 @@ export default function FeeTemplatesManagement() {
 
                       <div className="grid grid-cols-2 gap-3 mb-3">
                         <div className="bg-default-50 rounded-lg p-3">
-                          <p className="text-xs text-default-500 uppercase tracking-wider mb-1">Fee Heads</p>
+                          <p className="text-xs text-default-500 uppercase tracking-wider mb-1">{t('pages.feeHeads1')}</p>
                           <p className="text-lg font-bold text-default-900">{template.feeHeads?.length || 0}</p>
                         </div>
                         <div className="bg-success-50 rounded-lg p-3">
-                          <p className="text-xs text-success-600 uppercase tracking-wider mb-1">Annual Fee</p>
+                          <p className="text-xs text-success-600 uppercase tracking-wider mb-1">{t('pages.annualFee')}</p>
                           <p className="text-lg font-bold text-success-700">₹{(template.totalAnnualFee || 0).toLocaleString()}</p>
                         </div>
                       </div>
@@ -351,7 +343,7 @@ export default function FeeTemplatesManagement() {
               </div>
               <div>
                 <h3 className="text-lg font-bold">{selectedTemplate ? 'Edit Fee Template' : 'Create Fee Template'}</h3>
-                <p className="text-xs text-default-500">Define fee structure for a section</p>
+                <p className="text-xs text-default-500">{t('pages.defineFeeStructureForASection')}</p>
               </div>
             </div>
           </ModalHeader>
@@ -360,7 +352,7 @@ export default function FeeTemplatesManagement() {
             {/* Basic Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Template Name"
+                label={t('pages.templateName')}
                 placeholder={`e.g., Primary Section ${CURRENT_ACADEMIC_YEAR}`}
                 value={formData.name}
                 onValueChange={(v) => setFormData({ ...formData, name: v })}
@@ -368,7 +360,7 @@ export default function FeeTemplatesManagement() {
                 isRequired
               />
               <Select
-                label="Section"
+                label={t('pages.section1')}
                 variant="bordered"
                 selectedKeys={[formData.section]}
                 onChange={(e) => setFormData({ ...formData, section: e.target.value })}
@@ -380,8 +372,8 @@ export default function FeeTemplatesManagement() {
             </div>
 
             <Textarea
-              label="Description"
-              placeholder="Brief description of this fee template..."
+              label={t('pages.description1')}
+              placeholder={t('pages.briefDescriptionOfThisFeeTemplate')}
               value={formData.description}
               onValueChange={(v) => setFormData({ ...formData, description: v })}
               variant="bordered"
@@ -394,8 +386,8 @@ export default function FeeTemplatesManagement() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h4 className="font-bold text-default-900">Fee Heads</h4>
-                  <p className="text-xs text-default-500">Define all fee components</p>
+                  <h4 className="font-bold text-default-900">{t('pages.feeHeads1')}</h4>
+                  <p className="text-xs text-default-500">{t('pages.defineAllFeeComponents')}</p>
                 </div>
                 <Button
                   color="primary"
@@ -426,7 +418,7 @@ export default function FeeTemplatesManagement() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <Input
-                        label="Fee Head Name"
+                        label={t('pages.feeHeadName')}
                         placeholder="e.g., Tuition Fee"
                         value={head.name}
                         onValueChange={(v) => updateFeeHead(index, 'name', v)}
@@ -434,7 +426,7 @@ export default function FeeTemplatesManagement() {
                         size="sm"
                       />
                       <Select
-                        label="Category"
+                        label={t('pages.category1')}
                         variant="bordered"
                         selectedKeys={[head.category]}
                         onChange={(e) => updateFeeHead(index, 'category', e.target.value)}
@@ -445,7 +437,7 @@ export default function FeeTemplatesManagement() {
                         ))}
                       </Select>
                       <Select
-                        label="Frequency"
+                        label={t('pages.frequency')}
                         variant="bordered"
                         selectedKeys={[head.frequency]}
                         onChange={(e) => updateFeeHead(index, 'frequency', e.target.value)}
@@ -470,7 +462,7 @@ export default function FeeTemplatesManagement() {
                       />
                       <Input
                         type="number"
-                        label="Due Day"
+                        label={t('pages.dueDay')}
                         placeholder="10"
                         value={head.dueDay}
                         onValueChange={(v) => updateFeeHead(index, 'dueDay', parseInt(v) || 10)}
@@ -483,7 +475,7 @@ export default function FeeTemplatesManagement() {
                           isSelected={head.mandatory}
                           onValueChange={(v) => updateFeeHead(index, 'mandatory', v)}
                         >
-                          <span className="text-sm">Mandatory</span>
+                          <span className="text-sm">{t('pages.mandatory')}</span>
                         </Switch>
                       </div>
                       <div className="flex items-center gap-3 p-3 bg-white dark:bg-zinc-950 rounded-lg border border-default-200">
@@ -492,7 +484,7 @@ export default function FeeTemplatesManagement() {
                           isSelected={head.refundable}
                           onValueChange={(v) => updateFeeHead(index, 'refundable', v)}
                         >
-                          <span className="text-sm">Refundable</span>
+                          <span className="text-sm">{t('pages.refundable')}</span>
                         </Switch>
                       </div>
                     </div>
@@ -504,8 +496,8 @@ export default function FeeTemplatesManagement() {
                 <div className="mt-4 p-4 bg-success-50 rounded-xl border border-success-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-semibold text-success-800">Total Annual Fee</p>
-                      <p className="text-xs text-success-600">Sum of all fee heads (annualized)</p>
+                      <p className="text-sm font-semibold text-success-800">{t('pages.totalAnnualFee')}</p>
+                      <p className="text-xs text-success-600">{t('pages.sumOfAllFeeHeadsAnnualized')}</p>
                     </div>
                     <p className="text-2xl font-bold text-success-700">
                       ₹{calculateTotalAnnualFee().toLocaleString()}

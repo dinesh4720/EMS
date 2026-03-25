@@ -1,12 +1,15 @@
+import { request } from '../../services/api.js';
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem, Switch, Spinner, Divider, Checkbox, CheckboxGroup } from "@heroui/react";
 import { Plus, Edit, Trash2, IndianRupee, BookOpen, Users, CheckCircle } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 export default function FeeHeadsSettings({ embedded = false }) {
+  const { t } = useTranslation();
   const { loading: appLoading } = useApp();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingFeeHead, setEditingFeeHead] = useState(null);
@@ -24,6 +27,7 @@ export default function FeeHeadsSettings({ embedded = false }) {
     autoApply: true
   });
   const [saving, setSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
   // Lazy loading state
   const ITEMS_PER_LOAD = 10;
@@ -51,13 +55,11 @@ export default function FeeHeadsSettings({ embedded = false }) {
   const fetchFeeHeads = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/fee-heads`);
-      if (!response.ok) throw new Error('Failed to fetch fee heads');
-      const data = await response.json();
+      const data = await request('/fee-heads');
       setFeeHeads(data);
     } catch (error) {
       console.error('Error fetching fee heads:', error);
-      toast.error('Failed to load fee heads');
+      toast.error(t('toast.error.failedToLoadFeeHeads'));
     } finally {
       setLoading(false);
     }
@@ -98,6 +100,7 @@ export default function FeeHeadsSettings({ embedded = false }) {
   }, [hasMore, isLoadingMore]);
 
   const handleOpen = (feeHead = null) => {
+    setFormErrors({});
     if (feeHead) {
       setEditingFeeHead(feeHead);
       setFormData({
@@ -127,31 +130,26 @@ export default function FeeHeadsSettings({ embedded = false }) {
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim()) {
-      toast.error('Fee head name is required');
-      return;
-    }
-    if (formData.applicableClasses.length === 0) {
-      toast.error('Please select at least one class');
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = t('toast.error.feeHeadNameIsRequired');
+    if (formData.applicableClasses.length === 0) newErrors.applicableClasses = t('toast.error.pleaseSelectAtLeastOneClass');
+    if (Object.keys(newErrors).length > 0) {
+      setFormErrors(newErrors);
+      if (newErrors.name) toast.error(t('toast.error.feeHeadNameIsRequired'));
+      else if (newErrors.applicableClasses) toast.error(t('toast.error.pleaseSelectAtLeastOneClass'));
       return;
     }
 
     setSaving(true);
     try {
-      const url = editingFeeHead 
-        ? `${API_URL}/fee-heads/${editingFeeHead._id}`
-        : `${API_URL}/fee-heads`;
-      
-      const response = await fetch(url, {
+      const endpoint = editingFeeHead
+        ? `/fee-heads/${editingFeeHead._id}`
+        : `/fee-heads`;
+
+      await request(endpoint, {
         method: editingFeeHead ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to save fee head');
-      }
 
       toast.success(editingFeeHead ? 'Fee head updated and applied to students' : 'Fee head created and applied to students');
       await fetchFeeHeads();
@@ -165,7 +163,7 @@ export default function FeeHeadsSettings({ embedded = false }) {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this fee head? It will be removed from all students.")) return;
+    if (!confirm(t('confirm.deleteFeeHead'))) return;
 
     // Optimistically remove from UI immediately
     const feeHeadToDelete = feeHeads.find(fh => fh._id === id);
@@ -173,16 +171,12 @@ export default function FeeHeadsSettings({ embedded = false }) {
     setDeletingId(id);
 
     try {
-      const response = await fetch(`${API_URL}/fee-heads/${id}`, {
-        method: 'DELETE'
-      });
+      await request(`/fee-heads/${id}`, { method: 'DELETE' });
 
-      if (!response.ok) throw new Error('Failed to delete fee head');
-
-      toast.success('Fee head deleted successfully');
+      toast.success(t('toast.success.feeHeadDeletedSuccessfully'));
     } catch (error) {
       console.error('Failed to delete fee head:', error);
-      toast.error('Failed to delete fee head');
+      toast.error(t('toast.error.failedToDeleteFeeHead'));
       // Restore the deleted item on error
       if (feeHeadToDelete) {
         setFeeHeads(prev => [...prev, feeHeadToDelete].sort((a, b) =>
@@ -196,18 +190,11 @@ export default function FeeHeadsSettings({ embedded = false }) {
 
   const handleApplyToStudents = async (id) => {
     try {
-      const response = await fetch(`${API_URL}/fee-heads/${id}/apply`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      if (!response.ok) throw new Error('Failed to apply fee head');
-      
-      const data = await response.json();
+      const data = await request(`/fee-heads/${id}/apply`, { method: 'POST' });
       toast.success(data.message);
     } catch (error) {
       console.error('Failed to apply fee head:', error);
-      toast.error('Failed to apply fee head to students');
+      toast.error(t('toast.error.failedToApplyFeeHeadToStudents'));
     }
   };
 
@@ -223,9 +210,7 @@ export default function FeeHeadsSettings({ embedded = false }) {
 
   if (loading || appLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Spinner size="lg" />
-      </div>
+      <TablePageSkeleton />
     );
   }
 
@@ -235,39 +220,39 @@ export default function FeeHeadsSettings({ embedded = false }) {
       {!embedded && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-default-200 pb-6">
           <div>
-            <h2 className="text-2xl font-bold text-default-900">Fee Management</h2>
-            <p className="text-sm text-default-500 mt-1">Configure fee heads, amounts and categories.</p>
+            <h2 className="text-2xl font-bold text-default-900">{t('pages.feeManagement')}</h2>
+            <p className="text-sm text-default-500 mt-1">{t('pages.configureFeeHeadsAmountsAndCategories')}</p>
           </div>
-          <Button color="primary" radius="full" className="shadow-md font-medium px-6" startContent={<Plus size={18} />} onPress={() => handleOpen()}>Add Fee Head</Button>
+          <Button color="primary" radius="full" className="shadow-md font-medium px-6" startContent={<Plus size={18} />} onPress={() => handleOpen()}>{t('pages.addFeeHead')}</Button>
         </div>
       )}
 
       <div className="space-y-12">
         {embedded && (
           <div className="flex justify-end">
-            <Button color="primary" radius="full" className="shadow-md font-medium px-6" startContent={<Plus size={18} />} onPress={() => handleOpen()}>Add Fee Head</Button>
+            <Button color="primary" radius="full" className="shadow-md font-medium px-6" startContent={<Plus size={18} />} onPress={() => handleOpen()}>{t('pages.addFeeHead')}</Button>
           </div>
         )}
 
         {/* Overview KPIs */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="p-4 bg-primary-50 rounded-xl border border-primary-100 flex flex-col justify-center items-center text-center">
-            <span className="text-xs text-primary-600 uppercase tracking-wider font-semibold mb-1">Total Heads</span>
+            <span className="text-xs text-primary-600 uppercase tracking-wider font-semibold mb-1">{t('pages.totalHeads')}</span>
             <p className="text-3xl font-bold text-primary-700">{feeHeads.length}</p>
           </div>
 
           <div className="p-4 bg-success-50 rounded-xl border border-success-100 flex flex-col justify-center items-center text-center">
-            <span className="text-xs text-success-600 uppercase tracking-wider font-semibold mb-1">Mandatory</span>
+            <span className="text-xs text-success-600 uppercase tracking-wider font-semibold mb-1">{t('pages.mandatory')}</span>
             <p className="text-3xl font-bold text-success-700">{feeHeads.filter(fh => fh.mandatory).length}</p>
           </div>
 
           <div className="p-4 bg-warning-50 rounded-xl border border-warning-100 flex flex-col justify-center items-center text-center">
-            <span className="text-xs text-warning-600 uppercase tracking-wider font-semibold mb-1">Optional</span>
+            <span className="text-xs text-warning-600 uppercase tracking-wider font-semibold mb-1">{t('pages.optional1')}</span>
             <p className="text-3xl font-bold text-warning-700">{feeHeads.filter(fh => !fh.mandatory).length}</p>
           </div>
 
           <div className="p-4 bg-secondary-50 rounded-xl border border-secondary-100 flex flex-col justify-center items-center text-center">
-            <span className="text-xs text-secondary-600 uppercase tracking-wider font-semibold mb-1">Total Amount</span>
+            <span className="text-xs text-secondary-600 uppercase tracking-wider font-semibold mb-1">{t('pages.totalAmount')}</span>
             <p className="text-3xl font-bold text-secondary-700">₹{totalFees.toLocaleString()}</p>
           </div>
         </div>
@@ -282,15 +267,15 @@ export default function FeeHeadsSettings({ embedded = false }) {
                 <IndianRupee size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-default-900">Fee Heads Directory</h3>
-                <p className="text-xs text-default-500">List of all configured fee heads</p>
+                <h3 className="text-lg font-bold text-default-900">{t('pages.feeHeadsDirectory')}</h3>
+                <p className="text-xs text-default-500">{t('pages.listOfAllConfiguredFeeHeads')}</p>
               </div>
             </div>
           </div>
 
           <div className="bg-white border border-default-200 rounded-xl overflow-hidden shadow-sm">
             <Table
-              aria-label="Fee Heads"
+              aria-label={t('aria.misc.feeHeads')}
               removeWrapper
               radius="none"
               classNames={{
@@ -301,16 +286,16 @@ export default function FeeHeadsSettings({ embedded = false }) {
               }}
             >
               <TableHeader>
-                <TableColumn>FEE HEAD</TableColumn>
-                <TableColumn>CATEGORY</TableColumn>
-                <TableColumn>AMOUNT</TableColumn>
-                <TableColumn>APPLICABLE CLASSES</TableColumn>
-                <TableColumn>TYPE</TableColumn>
-                <TableColumn align="end">ACTIONS</TableColumn>
+                <TableColumn scope="col">{t('pages.fEEHead')}</TableColumn>
+                <TableColumn scope="col">{t('pages.cATEGORY')}</TableColumn>
+                <TableColumn scope="col">{t('pages.aMOUNT')}</TableColumn>
+                <TableColumn scope="col">{t('pages.aPPLICABLEClasses')}</TableColumn>
+                <TableColumn scope="col">{t('pages.tYPE')}</TableColumn>
+                <TableColumn align="end" scope="col">{t('pages.aCTIONS')}</TableColumn>
               </TableHeader>
               <TableBody emptyContent={
                 <div className="text-center py-12">
-                  <p className="text-default-400 text-sm">No fee heads configured</p>
+                  <p className="text-default-400 text-sm">{t('pages.noFeeHeadsConfigured')}</p>
                 </div>
               }>
                 {visibleFeeHeads.map((feeHead) => (
@@ -354,7 +339,7 @@ export default function FeeHeadsSettings({ embedded = false }) {
                             </Chip>
                           )
                         ) : (
-                          <span className="text-xs text-default-400">None</span>
+                          <span className="text-xs text-default-400">{t('pages.none1')}</span>
                         )}
                       </div>
                     </TableCell>
@@ -377,7 +362,7 @@ export default function FeeHeadsSettings({ embedded = false }) {
                           color="success"
                           onPress={() => handleApplyToStudents(feeHead._id)}
                           className="text-default-400 hover:text-success"
-                          title="Apply to students"
+                          title={t('pages.applyToStudents')}
                         >
                           <Users size={16} />
                         </Button>
@@ -414,7 +399,7 @@ export default function FeeHeadsSettings({ embedded = false }) {
             <div ref={loaderRef} className="flex justify-center py-4 bg-default-50/50">
               {isLoadingMore && <Spinner size="sm" color="primary" />}
               {!hasMore && feeHeads.length > ITEMS_PER_LOAD && (
-                <span className="text-default-400 text-xs">All fee heads loaded</span>
+                <span className="text-default-400 text-xs">{t('pages.allFeeHeadsLoaded')}</span>
               )}
             </div>
           </div>
@@ -455,7 +440,7 @@ export default function FeeHeadsSettings({ embedded = false }) {
             <div className="bg-white border border-default-200 rounded-xl p-5 space-y-4 shadow-sm">
               <div className="flex items-center justify-between pb-3 border-b border-dashed border-default-200">
                 <div>
-                  <p className="text-sm font-semibold text-success-800">Mandatory Fees</p>
+                  <p className="text-sm font-semibold text-success-800">{t('pages.mandatoryFees')}</p>
                   <p className="text-xs text-default-400">{feeHeads.filter(fh => fh.mandatory).length} items</p>
                 </div>
                 <p className="text-sm font-bold text-default-900">
@@ -465,7 +450,7 @@ export default function FeeHeadsSettings({ embedded = false }) {
 
               <div className="flex items-center justify-between pb-3 border-b border-dashed border-default-200">
                 <div>
-                  <p className="text-sm font-semibold text-warning-700">Optional Fees</p>
+                  <p className="text-sm font-semibold text-warning-700">{t('pages.optionalFees')}</p>
                   <p className="text-xs text-default-400">{feeHeads.filter(fh => !fh.mandatory).length} items</p>
                 </div>
                 <p className="text-sm font-bold text-default-900">
@@ -475,8 +460,8 @@ export default function FeeHeadsSettings({ embedded = false }) {
 
               <div className="flex items-center justify-between pt-2">
                 <div>
-                  <p className="text-base font-bold text-default-900">Total Fees</p>
-                  <p className="text-xs text-default-400">All categories combined</p>
+                  <p className="text-base font-bold text-default-900">{t('pages.totalFees')}</p>
+                  <p className="text-xs text-default-400">{t('pages.allCategoriesCombined')}</p>
                 </div>
                 <p className="text-xl font-black text-primary">
                   ₹{feeHeads.reduce((sum, fh) => sum + fh.amount, 0).toLocaleString()}
@@ -488,26 +473,28 @@ export default function FeeHeadsSettings({ embedded = false }) {
 
       </div>
 
-      <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
+      <Modal isOpen={isOpen} onClose={() => { onClose(); setFormErrors({}); }} size="2xl" scrollBehavior="inside">
         <ModalContent>
           <ModalHeader className="pb-2 text-lg font-bold">{editingFeeHead ? "Edit Fee Head" : "Add New Fee Head"}</ModalHeader>
           <ModalBody className="gap-5 py-4">
             <Input
-              label="Fee Head Name"
+              label={t('pages.feeHeadName')}
               placeholder="e.g., Tuition Fee"
               value={formData.name}
-              onValueChange={(v) => setFormData({ ...formData, name: v })}
+              onValueChange={(v) => { setFormData({ ...formData, name: v }); setFormErrors(prev => ({ ...prev, name: '' })); }}
               variant="bordered"
               labelPlacement="outside"
               classNames={{ inputWrapper: "bg-white border-default-200" }}
               isRequired
+              isInvalid={!!formErrors.name}
+              errorMessage={formErrors.name}
             />
             
             <div className="grid grid-cols-2 gap-4">
               <Select
-                label="Category"
+                label={t('pages.category1')}
                 variant="bordered"
-                placeholder="Select category"
+                placeholder={t('pages.selectCategory')}
                 selectedKeys={[formData.category]}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 labelPlacement="outside"
@@ -519,9 +506,9 @@ export default function FeeHeadsSettings({ embedded = false }) {
               </Select>
 
               <Select
-                label="Frequency"
+                label={t('pages.frequency')}
                 variant="bordered"
-                placeholder="Select frequency"
+                placeholder={t('pages.selectFrequency')}
                 selectedKeys={[formData.frequency]}
                 onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
                 labelPlacement="outside"
@@ -535,7 +522,7 @@ export default function FeeHeadsSettings({ embedded = false }) {
 
             <Input
               type="number"
-              label="Amount"
+              label={t('pages.amount1')}
               placeholder="0.00"
               startContent={<span className="text-default-400">₹</span>}
               value={formData.amount}
@@ -550,9 +537,9 @@ export default function FeeHeadsSettings({ embedded = false }) {
               <label className="text-sm font-medium text-default-700 mb-2 block">
                 Applicable Classes <span className="text-danger">*</span>
               </label>
-              <div className="bg-default-50 rounded-xl border border-default-200 p-4">
+              <div className={`bg-default-50 rounded-xl border p-4 ${formErrors.applicableClasses ? 'border-danger' : 'border-default-200'}`}>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-default-600">Select classes (1-12)</span>
+                  <span className="text-sm text-default-600">{t('pages.selectClasses112')}</span>
                   <div className="flex gap-2">
                     <Button
                       size="sm"
@@ -573,7 +560,7 @@ export default function FeeHeadsSettings({ embedded = false }) {
                 </div>
                 <CheckboxGroup
                   value={formData.applicableClasses}
-                  onValueChange={(value) => setFormData({ ...formData, applicableClasses: value })}
+                  onValueChange={(value) => { setFormData({ ...formData, applicableClasses: value }); setFormErrors(prev => ({ ...prev, applicableClasses: '' })); }}
                   orientation="horizontal"
                   classNames={{ wrapper: "grid grid-cols-6 gap-2" }}
                 >
@@ -584,11 +571,14 @@ export default function FeeHeadsSettings({ embedded = false }) {
                   ))}
                 </CheckboxGroup>
               </div>
+              {formErrors.applicableClasses && (
+                <p className="text-xs text-danger mt-1">{formErrors.applicableClasses}</p>
+              )}
             </div>
 
             <Input
-              label="Description (Optional)"
-              placeholder="Brief description of this fee"
+              label={t('pages.descriptionOptional')}
+              placeholder={t('pages.briefDescriptionOfThisFee')}
               value={formData.description}
               onValueChange={(v) => setFormData({ ...formData, description: v })}
               variant="bordered"
@@ -599,8 +589,8 @@ export default function FeeHeadsSettings({ embedded = false }) {
             <div className="space-y-3">
               <div className="flex items-center justify-between p-4 bg-default-50 rounded-xl border border-default-200 cursor-pointer" onClick={() => setFormData({ ...formData, mandatory: !formData.mandatory })}>
                 <div>
-                  <p className="text-sm font-bold text-default-700">Mandatory Fee</p>
-                  <p className="text-xs text-default-500">Is this fee required for all students?</p>
+                  <p className="text-sm font-bold text-default-700">{t('pages.mandatoryFee')}</p>
+                  <p className="text-xs text-default-500">{t('pages.isThisFeeRequiredForAllStudents')}</p>
                 </div>
                 <Switch
                   size="sm"
@@ -611,8 +601,8 @@ export default function FeeHeadsSettings({ embedded = false }) {
 
               <div className="flex items-center justify-between p-4 bg-primary-50 rounded-xl border border-primary-200 cursor-pointer" onClick={() => setFormData({ ...formData, autoApply: !formData.autoApply })}>
                 <div>
-                  <p className="text-sm font-bold text-primary-700">Auto-Apply to Students</p>
-                  <p className="text-xs text-primary-600">Automatically apply this fee to all students in selected classes</p>
+                  <p className="text-sm font-bold text-primary-700">{t('pages.autoApplyToStudents')}</p>
+                  <p className="text-xs text-primary-600">{t('pages.automaticallyApplyThisFeeToAllStudentsInSelectedClasses')}</p>
                 </div>
                 <Switch
                   size="sm"
@@ -624,7 +614,7 @@ export default function FeeHeadsSettings({ embedded = false }) {
             </div>
           </ModalBody>
           <ModalFooter className="pt-2">
-            <Button variant="light" onPress={onClose} className="font-medium">Cancel</Button>
+            <Button variant="light" onPress={onClose} className="font-medium">{t('pages.cancel2')}</Button>
             <Button
               color="primary"
               onPress={handleSave}

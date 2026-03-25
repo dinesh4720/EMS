@@ -19,8 +19,10 @@ import MarkAlumniModal from "./modals/MarkAlumniModal";
 import SendFeeReminderModal from "./modals/SendFeeReminderModal";
 import ShareProfileModal from "./modals/ShareProfileModal";
 import { useStudentPhotoActions } from "../hooks/useStudentPhotoActions";
+import { useTranslation } from 'react-i18next';
 
 export default function StudentProfileHeader({
+  const { t } = useTranslation();
   student,
   onEdit,
   onDelete,
@@ -89,12 +91,12 @@ export default function StudentProfileHeader({
               <DropdownTrigger>
                 <div
                   className="absolute -bottom-1 -right-1 bg-white dark:bg-zinc-900 rounded-full p-1.5 shadow-sm dark:shadow-zinc-900/50 border border-gray-200 dark:border-zinc-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
-                  title="Change photo"
+                  title={t('pages.changePhoto1')}
                 >
                   <Camera size={14} className="text-gray-600 dark:text-zinc-400" />
                 </div>
               </DropdownTrigger>
-              <DropdownMenu aria-label="Photo actions">
+              <DropdownMenu aria-label={t('aria.menus.photoActions')}>
                 <DropdownItem
                   key="adjust"
                   startContent={<Camera size={16} />}
@@ -147,7 +149,7 @@ export default function StudentProfileHeader({
                   window.location.href = `tel:${student.parentPhone}`;
                   toast.success(`Calling ${student.parentName || "Parent"}...`);
                 } else {
-                  toast.error("No phone number available");
+                  toast.error(t('toast.error.noPhoneNumberAvailable'));
                 }
               }}
               isDisabled={!student.parentPhone}
@@ -173,7 +175,7 @@ export default function StudentProfileHeader({
                 <MoreVertical size={20} />
               </Button>
             </DropdownTrigger>
-            <DropdownMenu aria-label="Student actions" closeOnSelect={false}>
+            <DropdownMenu aria-label={t('aria.menus.studentActions')} closeOnSelect={false}>
               {/* Academic Actions Section */}
               <DropdownItem sectionTitle="Academic Actions" key="academic-header" showDivider>
                 Academic Actions

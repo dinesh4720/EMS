@@ -442,6 +442,72 @@ flag after spending an afternoon reading the code.
 
 ---
 
+### 23. No z-index scale — hardcoded values up to 999999
+
+- **Files:** `PhotoEditorModal.jsx`, `PhotoModal.jsx`, `OnboardingFlow.jsx`,
+  `ChatNotificationContext.jsx`, `CookieConsentBanner.jsx` and others
+- **What it is:** 18 components use arbitrary Tailwind `z-[*]` values ranging
+  from `z-[60]` to `z-[999999]` with no documented layer system. When any two
+  stacking contexts conflict, fixing it requires hunting every z-index in the
+  codebase.
+- **Fix:** A z-index scale is now defined in `index.css @theme` as CSS custom
+  properties (`--z-dropdown: 60`, `--z-fixed: 100`, `--z-modal: 300`, etc.).
+  Replace `z-[9999]` with `z-[var(--z-modal)]` and so on.
+
+---
+
+### 24. Two button systems coexist — MinimalButton and HeroUI Button
+
+- **Files:** `components/ui/MinimalButton.jsx` + any file importing
+  `Button` from `@heroui/react`
+- **What it is:** MinimalButton is used in admin pages, HeroUI Button is used
+  in modals and drawers. They have different hover/focus/size behaviour so
+  the same action looks different on different pages.
+- **Fix:** MinimalButton has been updated to use CSS design tokens (no more
+  hardcoded `bg-gray-900`). Progressively migrate HeroUI Button usages in
+  modals to MinimalButton so one system is canonical.
+
+---
+
+### 25. Sidebar width hardcoded as arbitrary values in 3+ places
+
+- **Files:** `App.jsx:185`, `Topbar.jsx:159`, any place with `ml-[240px]`
+  or `ml-[64px]`
+- **What it is:** Changing the sidebar width requires editing 3+ files.
+  A single change breaks the topbar and content layout independently.
+- **Fix:** `--sidebar-width: 240px` and `--sidebar-width-collapsed: 64px`
+  are now defined in `index.css @theme`. `App.jsx` and `Topbar.jsx` now
+  reference `var(--sidebar-width)`. One edit, everywhere updates.
+
+---
+
+### 26. Recharts components use 11 different hardcoded hex colors
+
+- **Files:** `DashboardCharts.jsx`, `ChartSection.jsx`, `Analytics.jsx`,
+  `ClassPerformance.jsx`, `PerformanceDashboard.jsx`, `StudentDashboard.jsx`,
+  `StudentOverview.jsx`, `StaffOverviewTab.jsx`, `StudentAcademics.jsx`,
+  `OverviewTab.jsx`
+- **What it is:** Chart fill and stroke colors like `#8b5cf6`, `#ec4899`,
+  `#6b7280` are scattered across 10 component files. Changing the chart color
+  palette requires finding and editing each file individually.
+- **Fix:** `CHART_COLORS` palette exported from `utils/chartTheme.js`.
+  All chart files now import and use `CHART_COLORS.chart1`, `.neutral`, etc.
+  Chart colors also mirrored in `index.css @theme` as `--color-chart-*`.
+
+---
+
+### 27. styles/print.css existed but was never imported
+
+- **File:** `src/styles/print.css`
+- **What it is:** A print utilities file was written but never imported
+  anywhere, making it dead code. The same utilities were duplicated in
+  `index.css` (with `!important` added). This meant the canonical version
+  silently did nothing.
+- **Fix:** `index.css` now imports `styles/print.css` at the top. Duplicate
+  rules removed from the global `@media print` block in `index.css`.
+
+---
+
 ## 📋 Fix Priority for the Dashboard
 
 ### Do before showing to any school

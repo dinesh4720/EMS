@@ -14,8 +14,12 @@ import {
   Textarea, Select, SelectItem, Chip
 } from "@heroui/react";
 import { useApp } from "../../../context/AppContext";
+import { getDateLocale } from '../../../i18n/index';
+import { useTranslation } from 'react-i18next';
+
 
 export default function StaffAttendanceTab({ staffId }) {
+  const { t } = useTranslation();
   const {
     staffAttendance,
     markStaffAttendance,
@@ -64,7 +68,7 @@ export default function StaffAttendanceTab({ staffId }) {
         staffId,
         todayStr,
         status,
-        status === 'present' ? new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '-',
+        status === 'present' ? new Date().toLocaleTimeString(getDateLocale(), { hour: '2-digit', minute: '2-digit', hour12: false }) : '-',
         '-',
         status === 'present' ? '' : 'Marked from Quick Actions'
       );
@@ -151,7 +155,7 @@ export default function StaffAttendanceTab({ staffId }) {
             <div className="flex justify-between items-start">
               <span className="text-sm font-semibold">{format(day, 'd')}</span>
               {record?.regularization?.requested && (
-                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" title="Regularization Requested" />
+                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" title={t('pages.regularizationRequested')} />
               )}
             </div>
 
@@ -222,7 +226,7 @@ export default function StaffAttendanceTab({ staffId }) {
         <div className="bg-white dark:bg-zinc-950 p-4 rounded-xl border border-gray-200 dark:border-zinc-800">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider font-semibold">Working Days</p>
+              <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider font-semibold">{t('pages.workingDays')}</p>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mt-1">{monthlyStats.total}</h3>
             </div>
             <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg"><CalendarDays size={18} className="text-gray-600 dark:text-zinc-400" /></div>
@@ -232,7 +236,7 @@ export default function StaffAttendanceTab({ staffId }) {
         <div className="bg-white dark:bg-zinc-950 p-4 rounded-xl border border-gray-200 dark:border-zinc-800">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider font-semibold">Present</p>
+              <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider font-semibold">{t('pages.present2')}</p>
               <h3 className="text-2xl font-bold text-green-600 mt-1">{monthlyStats.present}</h3>
             </div>
             <div className="p-2 bg-green-50 rounded-lg"><CheckCircle2 size={18} className="text-green-600" /></div>
@@ -242,7 +246,7 @@ export default function StaffAttendanceTab({ staffId }) {
         <div className="bg-white dark:bg-zinc-950 p-4 rounded-xl border border-gray-200 dark:border-zinc-800">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider font-semibold">Absent</p>
+              <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider font-semibold">{t('pages.absent2')}</p>
               <h3 className="text-2xl font-bold text-red-600 mt-1">{monthlyStats.absent}</h3>
             </div>
             <div className="p-2 bg-red-50 rounded-lg"><XCircle size={18} className="text-red-600" /></div>
@@ -269,8 +273,8 @@ export default function StaffAttendanceTab({ staffId }) {
               <CalendarIcon size={20} className="text-gray-600 dark:text-zinc-400" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-zinc-100">Attendance Calendar</h3>
-              <p className="text-xs text-gray-500 dark:text-zinc-400">View and manage daily attendance records</p>
+              <h3 className="font-semibold text-gray-900 dark:text-zinc-100">{t('pages.attendanceCalendar')}</h3>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.viewAndManageDailyAttendanceRecords')}</p>
             </div>
           </div>
 
@@ -312,19 +316,19 @@ export default function StaffAttendanceTab({ staffId }) {
           <div className="flex flex-wrap justify-center gap-6 mt-8 pt-4 border-t border-gray-50 dark:border-zinc-800">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-green-100 border border-green-200" />
-              <span className="text-xs text-gray-600 dark:text-zinc-400">Present</span>
+              <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.present2')}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-red-100 border border-red-200" />
-              <span className="text-xs text-gray-600 dark:text-zinc-400">Absent</span>
+              <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.absent2')}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-yellow-100 border border-yellow-200" />
-              <span className="text-xs text-gray-600 dark:text-zinc-400">Leave</span>
+              <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.leave')}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-orange-100 border border-orange-200" />
-              <span className="text-xs text-gray-600 dark:text-zinc-400">Half Day</span>
+              <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.halfDay')}</span>
             </div>
           </div>
         </div>
@@ -336,7 +340,7 @@ export default function StaffAttendanceTab({ staffId }) {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-50 rounded-lg"><Clock size={16} className="text-blue-600" /></div>
-              <h3 className="font-semibold text-gray-900 dark:text-zinc-100">Quick Mark Today</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-zinc-100">{t('pages.quickMarkToday')}</h3>
             </div>
             <Chip size="sm" variant="flat">{format(new Date(), 'dd MMMM yyyy')}</Chip>
           </div>
@@ -404,7 +408,7 @@ export default function StaffAttendanceTab({ staffId }) {
               <ModalBody>
                 <div className="space-y-4">
                   <div className="p-3 bg-blue-50 rounded-lg text-xs text-blue-700 border border-blue-100">
-                    <p className="font-semibold mb-1">Current Status</p>
+                    <p className="font-semibold mb-1">{t('pages.currentStatus')}</p>
                     {(() => {
                       const dateStr = selectedDateForReg?.toISOString().split('T')[0];
                       const status = staffAttendance[staffId]?.[dateStr]?.status;
@@ -413,21 +417,21 @@ export default function StaffAttendanceTab({ staffId }) {
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-gray-600 dark:text-zinc-400 mb-1.5 block">New Status</label>
+                    <label className="text-xs font-semibold text-gray-600 dark:text-zinc-400 mb-1.5 block">{t('pages.newStatus')}</label>
                     <Select
-                      label="Select Status"
+                      label={t('pages.selectStatus')}
                       selectedKeys={targetStatus}
                       onSelectionChange={setTargetStatus}
                       variant="bordered"
                     >
-                      <SelectItem key="present" value="present">Present</SelectItem>
-                      <SelectItem key="absent" value="absent">Absent</SelectItem>
-                      <SelectItem key="halfday" value="halfday">Half Day</SelectItem>
-                      <SelectItem key="leave" value="leave">On Leave</SelectItem>
+                      <SelectItem key="present" value="present">{t('pages.present2')}</SelectItem>
+                      <SelectItem key="absent" value="absent">{t('pages.absent2')}</SelectItem>
+                      <SelectItem key="halfday" value="halfday">{t('pages.halfDay')}</SelectItem>
+                      <SelectItem key="leave" value="leave">{t('pages.onLeave1')}</SelectItem>
                     </Select>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-gray-600 dark:text-zinc-400 mb-1.5 block">Reason for Correction</label>
+                    <label className="text-xs font-semibold text-gray-600 dark:text-zinc-400 mb-1.5 block">{t('pages.reasonForCorrection')}</label>
                     <Textarea
                       placeholder="e.g., Forgot to checkout, System error, worked from home..."
                       value={regularizationReason}
@@ -439,7 +443,7 @@ export default function StaffAttendanceTab({ staffId }) {
                 </div>
               </ModalBody>
               <ModalFooter>
-                <Button variant="light" onPress={onClose}>Cancel</Button>
+                <Button variant="light" onPress={onClose}>{t('pages.cancel2')}</Button>
                 <Button className="bg-gray-900 text-white" onPress={submitRegularization}>
                   Submit Request
                 </Button>

@@ -2,12 +2,14 @@ import { useRef } from "react";
 import { Input, Select, SelectItem, Checkbox, Textarea, Button } from "@heroui/react";
 import { X, Users } from "lucide-react";
 import { PARENT_RELATIONSHIPS, GUARDIAN_RELATIONSHIPS } from "../../../../constants/studentConstants";
+import { useTranslation } from 'react-i18next';
 
 /**
  * Parents and Guardians Step for Student Form
  * Extracted from AddStudent.jsx
  */
 export default function ParentsStep({
+  const { t } = useTranslation();
   formData,
   errors,
   updateParent,
@@ -29,7 +31,7 @@ export default function ParentsStep({
       {/* Parent Details */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <label className="text-sm font-semibold text-default-900">Parent Details</label>
+          <label className="text-sm font-semibold text-default-900">{t('pages.parentDetails')}</label>
         </div>
 
         {parents.map((parent, idx) => {
@@ -113,9 +115,9 @@ function ParentCard({
       <div className="grid grid-cols-2 gap-4">
         <div ref={parentNameRef}>
           <Input
-            label="Full Name"
+            label={t('pages.fullName1')}
             labelPlacement="outside"
-            placeholder="Parent name"
+            placeholder={t('pages.parentName1')}
             value={parent.name}
             onValueChange={(v) => updateParent(index, "name", v)}
             isInvalid={idx === 0 && !!errors.parentName}
@@ -127,9 +129,9 @@ function ParentCard({
           />
         </div>
         <Select
-          label="Relationship"
+          label={t('pages.relationship')}
           labelPlacement="outside"
-          placeholder="Select..."
+          placeholder={t('pages.select1')}
           selectedKeys={parent.relationship ? [parent.relationship] : []}
           onSelectionChange={(keys) => updateParent(index, "relationship", Array.from(keys)[0])}
           variant="bordered"
@@ -142,7 +144,7 @@ function ParentCard({
         </Select>
         <div className="space-y-2" ref={parentPhoneRef}>
           <Input
-            label="Phone Number"
+            label={t('pages.phoneNumber')}
             labelPlacement="outside"
             startContent={<span className="text-default-400 text-xs">+91</span>}
             placeholder="10 digit number"
@@ -169,7 +171,7 @@ function ParentCard({
           </Checkbox>
         </div>
         <Input
-          label="Email"
+          label={t('pages.email1')}
           labelPlacement="outside"
           placeholder="parent@email.com"
           value={parent.email}
@@ -179,7 +181,7 @@ function ParentCard({
           classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
         />
         <Input
-          label="Occupation"
+          label={t('pages.occupation')}
           labelPlacement="outside"
           placeholder="e.g., Engineer, Doctor"
           value={parent.occupation}
@@ -198,7 +200,7 @@ function GuardiansSection({ guardians, formData, updateParent, removeParent, add
   return (
     <div className="space-y-4 pt-2 border-t border-solid border-default-200">
       <div className="flex justify-between items-center">
-        <label className="text-sm font-semibold text-default-900">Guardian Details</label>
+        <label className="text-sm font-semibold text-default-900">{t('pages.guardianDetails')}</label>
         <span className="text-xs text-default-500">(Optional)</span>
       </div>
 
@@ -214,9 +216,9 @@ function GuardiansSection({ guardians, formData, updateParent, removeParent, add
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Full Name"
+                label={t('pages.fullName1')}
                 labelPlacement="outside"
-                placeholder="Guardian name"
+                placeholder={t('pages.guardianName')}
                 value={guardian.name}
                 onValueChange={(v) => updateParent(index, "name", v)}
                 variant="bordered"
@@ -224,9 +226,9 @@ function GuardiansSection({ guardians, formData, updateParent, removeParent, add
                 classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
               />
               <Select
-                label="Relationship"
+                label={t('pages.relationship')}
                 labelPlacement="outside"
-                placeholder="Select..."
+                placeholder={t('pages.select1')}
                 selectedKeys={guardian.relationship ? [guardian.relationship] : []}
                 onSelectionChange={(keys) => updateParent(index, "relationship", Array.from(keys)[0])}
                 variant="bordered"
@@ -258,7 +260,7 @@ function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, c
   return (
     <div className="space-y-4 pt-2 border-t border-solid border-default-200">
       <div className="flex justify-between items-center">
-        <label className="text-sm font-semibold text-default-900">Sibling Details</label>
+        <label className="text-sm font-semibold text-default-900">{t('pages.siblingDetails')}</label>
         <span className="text-xs text-default-500">(Optional — same school only)</span>
       </div>
 
@@ -276,9 +278,9 @@ function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, c
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Sibling Name"
+              label={t('pages.siblingName')}
               labelPlacement="outside"
-              placeholder="Sibling's full name"
+              placeholder={t('pages.siblingSFullName')}
               value={sibling.name}
               onValueChange={(v) => updateSibling(idx, "name", v)}
               variant="bordered"
@@ -293,14 +295,14 @@ function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, c
                   if (!v) updateSibling(idx, "classId", "");
                 }}
               >
-                <span className="text-sm text-default-700">Is sibling in this school?</span>
+                <span className="text-sm text-default-700">{t('pages.isSiblingInThisSchool')}</span>
               </Checkbox>
             </div>
             {sibling.inSameSchool && (
               <Select
-                label="Class"
+                label={t('pages.class1')}
                 labelPlacement="outside"
-                placeholder="Select class"
+                placeholder={t('pages.selectClass2')}
                 selectedKeys={sibling.classId ? [sibling.classId] : []}
                 onSelectionChange={(keys) => updateSibling(idx, "classId", Array.from(keys)[0])}
                 variant="bordered"
@@ -328,11 +330,11 @@ function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, c
 function HealthSection({ formData, updateField }) {
   return (
     <div className="space-y-2 pt-2 border-t border-solid border-default-200">
-      <label className="text-sm font-semibold text-default-900 block mt-2">Health & Safety</label>
+      <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.healthSafety')}</label>
       <Textarea
-        label="Medical Conditions"
+        label={t('pages.medicalConditions1')}
         labelPlacement="outside"
-        placeholder="Any allergies, medical conditions, or special needs (optional)"
+        placeholder={t('pages.anyAllergiesMedicalConditionsOrSpecialNeedsOptional')}
         value={formData.medicalConditions}
         onValueChange={(v) => updateField("medicalConditions", v)}
         variant="bordered"
@@ -347,7 +349,7 @@ function HealthSection({ formData, updateField }) {
 function TransportSection({ formData, updateField }) {
   return (
     <div className="space-y-4 pt-2 border-t border-solid border-default-200">
-      <label className="text-sm font-semibold text-default-900 block mt-2">Additional Requirements</label>
+      <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.additionalRequirements')}</label>
       <div className="grid grid-cols-2 gap-4">
         <div
           className={`cursor-pointer rounded-xl border-2 p-4 flex items-center gap-3 transition-all ${
@@ -366,7 +368,7 @@ function TransportSection({ formData, updateField }) {
             <span className={`text-sm font-medium ${formData.transportRequired ? "text-primary-700 dark:text-primary-300" : "text-default-600"}`}>
               Transport Required
             </span>
-            <p className="text-xs text-default-500">School bus facility</p>
+            <p className="text-xs text-default-500">{t('pages.schoolBusFacility')}</p>
           </div>
         </div>
         <div
@@ -386,7 +388,7 @@ function TransportSection({ formData, updateField }) {
             <span className={`text-sm font-medium ${formData.hostelRequired ? "text-primary-700 dark:text-primary-300" : "text-default-600"}`}>
               Hostel Required
             </span>
-            <p className="text-xs text-default-500">Boarding facility</p>
+            <p className="text-xs text-default-500">{t('pages.boardingFacility')}</p>
           </div>
         </div>
       </div>

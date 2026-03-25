@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardBody,
@@ -36,8 +37,11 @@ import {
 import toast from "react-hot-toast";
 import { intakeFormsApi } from "../../services/api";
 import { format } from "date-fns";
+import { useTranslation } from 'react-i18next';
 
 export default function StudentFormSubmissions() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const {
     isOpen: isReviewOpen,
     onOpen: onReviewOpen,
@@ -73,7 +77,7 @@ export default function StudentFormSubmissions() {
       );
       setSubmissions(studentSubmissions);
     } catch (error) {
-      toast.error("Failed to load submissions");
+      toast.error(t('toast.error.failedToLoadSubmissions'));
       console.error(error);
     } finally {
       setLoading(false);
@@ -87,7 +91,7 @@ export default function StudentFormSubmissions() {
       setReviewNotes(data.reviewNotes || "");
       onReviewOpen();
     } catch (error) {
-      toast.error("Failed to load submission details");
+      toast.error(t('toast.error.failedToLoadSubmissionDetails'));
     }
   };
 
@@ -95,7 +99,7 @@ export default function StudentFormSubmissions() {
     if (!selectedSubmission) return;
 
     if (status === "rejected" && !reviewNotes.trim()) {
-      toast.error("Please provide a reason for rejection");
+      toast.error(t('toast.error.pleaseProvideAReasonForRejection'));
       return;
     }
 
@@ -128,7 +132,7 @@ export default function StudentFormSubmissions() {
     if (!selectedSubmission) return;
 
     if (!editRequestNotes.trim()) {
-      toast.error("Please provide notes on what needs to be edited");
+      toast.error(t('toast.error.pleaseProvideNotesOnWhatNeedsToBeEdited'));
       return;
     }
 
@@ -140,7 +144,7 @@ export default function StudentFormSubmissions() {
         requestedBy: "admin",
       });
 
-      toast.success("Edit request sent to parent. They can update and resubmit.");
+      toast.success(t('toast.success.editRequestSentToParentTheyCanUpdateAndResubmit'));
 
       onEditRequestClose();
       onReviewClose();
@@ -175,7 +179,7 @@ export default function StudentFormSubmissions() {
   };
 
   const renderFieldValue = (field, value) => {
-    if (!value) return <span className="text-gray-400 dark:text-zinc-500">Not provided</span>;
+    if (!value) return <span className="text-gray-400 dark:text-zinc-500">{t('pages.notProvided1')}</span>;
 
     if (field.type === "file") {
       return (
@@ -254,7 +258,7 @@ export default function StudentFormSubmissions() {
       <Card>
         <CardBody className="p-0">
           <Table
-            aria-label="Student form submissions table"
+            aria-label={t('aria.tables.studentFormSubmissions')}
             removeWrapper
             classNames={{
               th: "bg-gray-50 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-semibold",
@@ -262,12 +266,12 @@ export default function StudentFormSubmissions() {
             }}
           >
             <TableHeader>
-              <TableColumn>FORM NAME</TableColumn>
-              <TableColumn>STUDENT NAME</TableColumn>
-              <TableColumn>PARENT CONTACT</TableColumn>
-              <TableColumn>SUBMITTED DATE</TableColumn>
-              <TableColumn>STATUS</TableColumn>
-              <TableColumn>ACTIONS</TableColumn>
+              <TableColumn scope="col">{t('pages.fORMName')}</TableColumn>
+              <TableColumn scope="col">{t('pages.sTUDENTName')}</TableColumn>
+              <TableColumn scope="col">{t('pages.pARENTContact')}</TableColumn>
+              <TableColumn scope="col">{t('pages.sUBMITTEDDate')}</TableColumn>
+              <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+              <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
             </TableHeader>
             <TableBody
               items={submissions}
@@ -322,7 +326,7 @@ export default function StudentFormSubmissions() {
                           <MoreVertical size={16} />
                         </Button>
                       </DropdownTrigger>
-                      <DropdownMenu aria-label="Submission actions">
+                      <DropdownMenu aria-label={t('aria.menus.submissionActions')}>
                         <DropdownItem
                           key="view"
                           startContent={<Eye size={16} />}
@@ -335,7 +339,7 @@ export default function StudentFormSubmissions() {
                             key="student"
                             startContent={<User size={16} />}
                             onPress={() =>
-                              (window.location.href = `/students/${submission.studentId}`)
+                              navigate(`/students/${submission.studentId}`)
                             }
                           >
                             View Student Record
@@ -361,7 +365,7 @@ export default function StudentFormSubmissions() {
         <ModalContent>
           <ModalHeader>
             <div>
-              <h3 className="text-xl font-semibold">Review Admission Submission</h3>
+              <h3 className="text-xl font-semibold">{t('pages.reviewAdmissionSubmission')}</h3>
               {selectedSubmission && (
                 <p className="text-sm text-gray-600 dark:text-zinc-400 font-normal mt-1">
                   {selectedSubmission.form?.formName || selectedSubmission.formName} -{" "}
@@ -414,8 +418,8 @@ export default function StudentFormSubmissions() {
                       Review Decision
                     </h4>
                     <Textarea
-                      label="Review Notes"
-                      placeholder="Add notes about this submission (required for rejection)"
+                      label={t('pages.reviewNotes')}
+                      placeholder={t('pages.addNotesAboutThisSubmissionRequiredForRejection')}
                       value={reviewNotes}
                       onChange={(e) => setReviewNotes(e.target.value)}
                       minRows={3}
@@ -519,7 +523,7 @@ export default function StudentFormSubmissions() {
                 </Button>
               </>
             ) : (
-              <Button onPress={onReviewClose}>Close</Button>
+              <Button onPress={onReviewClose}>{t('pages.close2')}</Button>
             )}
           </ModalFooter>
         </ModalContent>
@@ -538,7 +542,7 @@ export default function StudentFormSubmissions() {
                 <Send size={20} className="text-secondary-600" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold">Request Edit & Re-submit</h3>
+                <h3 className="text-xl font-semibold">{t('pages.requestEditReSubmit')}</h3>
                 <p className="text-sm text-gray-600 dark:text-zinc-400 font-normal mt-1">
                   Send the form back to parent for corrections
                 </p>
@@ -549,15 +553,15 @@ export default function StudentFormSubmissions() {
             <div className="space-y-4">
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <p className="text-sm text-blue-800 dark:text-blue-200">
-                  <strong>Note:</strong> The parent will receive a notification
+                  <strong>{t('pages.note1')}</strong> The parent will receive a notification
                   with your notes. They can use the same link to edit and
                   re-submit the form.
                 </p>
               </div>
 
               <Textarea
-                label="Required Changes"
-                placeholder="Describe what needs to be corrected or updated..."
+                label={t('pages.requiredChanges')}
+                placeholder={t('pages.describeWhatNeedsToBeCorrectedOrUpdated')}
                 value={editRequestNotes}
                 onChange={(e) => setEditRequestNotes(e.target.value)}
                 minRows={5}

@@ -477,12 +477,15 @@ test.describe('Global Features — Search, Permissions, Onboarding & Error Bound
   /* ───────── Notification Bell ───────── */
 
   test('Notification bell shows unread count badge', async ({ page }) => {
-    // Override the notifications mock to return unread count > 0
+    // Override the notifications mock to return unread notifications (array format)
     await page.route('**/api/notifications**', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ data: [{ _id: 'n1', type: 'announcement', title: 'Test', read: false, createdAt: new Date().toISOString() }], unreadCount: 5 }),
+        body: JSON.stringify([
+          { _id: 'n1', type: 'announcement', title: 'Test', message: 'Test message', read: false, createdAt: new Date().toISOString() },
+          { _id: 'n2', type: 'fee', title: 'Fee Due', message: 'Fee reminder', read: false, createdAt: new Date().toISOString() },
+        ]),
       });
     });
 
@@ -495,10 +498,10 @@ test.describe('Global Features — Search, Permissions, Onboarding & Error Bound
 
     if (hasUnreadLabel) {
       // Verify the unread indicator dot is present
-      const dot = notifButton.locator('span.bg-gray-900, span[aria-hidden="true"]');
+      const dot = notifButton.locator('span[aria-hidden="true"]');
       await expect(dot.first()).toBeVisible({ timeout: 3000 });
     } else {
-      // Fallback: check for any notification button with a badge indicator
+      // Fallback: check for any notification button in the header
       const bellButton = page.locator('button[aria-label*="Notification" i]');
       await expect(bellButton.first()).toBeVisible({ timeout: 5000 });
     }

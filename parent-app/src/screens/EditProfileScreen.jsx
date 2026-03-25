@@ -15,8 +15,10 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, Button } from '../components';
 import api from '../services/api';
 import { isValidEmail, isValidPhone } from '../utils/helpers';
+import { useTranslation } from 'react-i18next';
 
 const EditProfileScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { themeColors } = useTheme();
 
@@ -108,29 +110,29 @@ const EditProfileScreen = ({ navigation }) => {
                 label="Full Name *"
                 value={name}
                 onChangeText={setName}
-                placeholder="Enter your full name"
+                placeholder={t('screens.enterYourFullName')}
               />
               <InputField
-                label="Phone Number"
+                label={t('screens.phoneNumber')}
                 value={phone}
                 onChangeText={setPhone}
-                placeholder="Enter phone number"
+                placeholder={t('screens.enterPhoneNumber')}
                 keyboardType="phone-pad"
                 autoCapitalize="none"
               />
               <InputField
-                label="Email Address"
+                label={t('screens.emailAddress')}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="Enter email address"
+                placeholder={t('screens.enterEmailAddress')}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
               <InputField
-                label="Address"
+                label={t('screens.address')}
                 value={address}
                 onChangeText={setAddress}
-                placeholder="Enter home address"
+                placeholder={t('screens.enterHomeAddress')}
               />
             </Card>
 

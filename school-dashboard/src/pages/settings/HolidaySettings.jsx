@@ -3,8 +3,13 @@ import { Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableCol
 import { Plus, Edit, Trash2, Calendar } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
+import { getDateLocale } from '../../i18n/index';
+import { useTranslation } from 'react-i18next';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+
 
 export default function HolidaySettings() {
+  const { t } = useTranslation();
   const { events, addEvent, updateEvent, deleteEvent, loading } = useApp();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingHoliday, setEditingHoliday] = useState(null);
@@ -93,28 +98,28 @@ export default function HolidaySettings() {
 
       if (editingHoliday) {
         await updateEvent(editingHoliday.id, holidayData);
-        toast.success('Holiday updated successfully');
+        toast.success(t('toast.success.holidayUpdatedSuccessfully'));
       } else {
         await addEvent(holidayData);
-        toast.success('Holiday added successfully');
+        toast.success(t('toast.success.holidayAddedSuccessfully'));
       }
       onClose();
     } catch (error) {
       console.error('Failed to save holiday:', error);
-      toast.error('Failed to save holiday');
+      toast.error(t('toast.error.failedToSaveHoliday'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this holiday?")) {
+    if (confirm(t('confirm.deleteHoliday'))) {
       try {
         await deleteEvent(id);
-        toast.success('Holiday deleted successfully');
+        toast.success(t('toast.success.holidayDeletedSuccessfully'));
       } catch (error) {
         console.error('Failed to delete holiday:', error);
-        toast.error('Failed to delete holiday');
+        toast.error(t('toast.error.failedToDeleteHoliday'));
       }
     }
   };
@@ -127,9 +132,7 @@ export default function HolidaySettings() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Spinner size="lg" />
-      </div>
+      <TablePageSkeleton />
     );
   }
 
@@ -137,8 +140,8 @@ export default function HolidaySettings() {
     <div className="w-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-default-800">Holiday Management</h2>
-          <p className="text-sm text-default-500">Manage school holidays and academic calendar</p>
+          <h2 className="text-lg font-semibold text-default-800">{t('pages.holidayManagement')}</h2>
+          <p className="text-sm text-default-500">{t('pages.manageSchoolHolidaysAndAcademicCalendar')}</p>
         </div>
         <Button 
           color="primary" 
@@ -155,7 +158,7 @@ export default function HolidaySettings() {
         <div className="p-4 bg-success-50 rounded-lg border border-success-200">
           <div className="flex items-center gap-2 mb-2">
             <Calendar size={18} className="text-success-600" />
-            <span className="text-xs text-success-700 uppercase tracking-wider">Total Holidays</span>
+            <span className="text-xs text-success-700 uppercase tracking-wider">{t('pages.totalHolidays')}</span>
           </div>
           <p className="text-2xl font-semibold text-success-700">{holidays.length}</p>
         </div>
@@ -163,7 +166,7 @@ export default function HolidaySettings() {
         <div className="p-4 bg-warning-50 rounded-lg border border-warning-200">
           <div className="flex items-center gap-2 mb-2">
             <Calendar size={18} className="text-warning-600" />
-            <span className="text-xs text-warning-700 uppercase tracking-wider">National</span>
+            <span className="text-xs text-warning-700 uppercase tracking-wider">{t('pages.national')}</span>
           </div>
           <p className="text-2xl font-semibold text-warning-700">
             {holidays.filter(h => h.holidayType === "National").length}
@@ -173,7 +176,7 @@ export default function HolidaySettings() {
         <div className="p-4 bg-default-50 rounded-lg border border-default-200">
           <div className="flex items-center gap-2 mb-2">
             <Calendar size={18} className="text-default-500" />
-            <span className="text-xs text-default-500 uppercase tracking-wider">Regional</span>
+            <span className="text-xs text-default-500 uppercase tracking-wider">{t('pages.regional')}</span>
           </div>
           <p className="text-2xl font-semibold text-default-900">
             {holidays.filter(h => h.holidayType === "Regional").length}
@@ -183,7 +186,7 @@ export default function HolidaySettings() {
         <div className="p-4 bg-primary-50 rounded-lg border border-primary-200">
           <div className="flex items-center gap-2 mb-2">
             <Calendar size={18} className="text-primary-600" />
-            <span className="text-xs text-primary-700 uppercase tracking-wider">School</span>
+            <span className="text-xs text-primary-700 uppercase tracking-wider">{t('pages.school1')}</span>
           </div>
           <p className="text-2xl font-semibold text-primary-700">
             {holidays.filter(h => h.holidayType === "School").length}
@@ -194,7 +197,7 @@ export default function HolidaySettings() {
       <Card className="shadow-sm border border-default-200 rounded-lg">
         <CardBody className="p-0">
           <Table
-            aria-label="Holidays"
+            aria-label={t('aria.misc.holidays')}
             removeWrapper
             classNames={{
               base: "overflow-visible",
@@ -204,21 +207,21 @@ export default function HolidaySettings() {
             }}
           >
             <TableHeader>
-              <TableColumn>HOLIDAY NAME</TableColumn>
-              <TableColumn>DATE</TableColumn>
-              <TableColumn>TYPE</TableColumn>
-              <TableColumn>DAY</TableColumn>
-              <TableColumn align="end">ACTIONS</TableColumn>
+              <TableColumn scope="col">{t('pages.hOLIDAYName')}</TableColumn>
+              <TableColumn scope="col">{t('pages.dATE')}</TableColumn>
+              <TableColumn scope="col">{t('pages.tYPE')}</TableColumn>
+              <TableColumn scope="col">{t('pages.dAY')}</TableColumn>
+              <TableColumn align="end" scope="col">{t('pages.aCTIONS')}</TableColumn>
             </TableHeader>
             <TableBody emptyContent="No holidays added yet">
               {visibleHolidays.map((holiday) => {
                 const date = new Date(holiday.date);
-                const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                const dayName = date.toLocaleDateString(getDateLocale(), { weekday: 'short' });
                 return (
                   <TableRow key={holiday.id}>
                     <TableCell className="font-medium text-default-700">{holiday.title}</TableCell>
                     <TableCell className="text-sm text-default-600">
-                      {date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {date.toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short', year: 'numeric' })}
                     </TableCell>
                     <TableCell>
                       <Chip 
@@ -276,7 +279,7 @@ export default function HolidaySettings() {
           <ModalBody className="gap-4">
             <Input
               size="sm"
-              label="Holiday Name"
+              label={t('pages.holidayName')}
               placeholder="e.g., Independence Day"
               value={formData.title}
               onValueChange={(v) => setFormData({ ...formData, title: v })}
@@ -285,33 +288,33 @@ export default function HolidaySettings() {
             <Input
               size="sm"
               type="date"
-              label="Date"
+              label={t('pages.date2')}
               value={formData.date}
               onValueChange={(v) => setFormData({ ...formData, date: v })}
               variant="bordered"
             />
             <Select
               size="sm"
-              label="Holiday Type"
+              label={t('pages.holidayType')}
               variant="bordered"
               selectedKeys={[formData.holidayType]}
               onChange={(e) => setFormData({ ...formData, holidayType: e.target.value })}
             >
-              <SelectItem key="National" value="National">National Holiday</SelectItem>
-              <SelectItem key="Regional" value="Regional">Regional Holiday</SelectItem>
-              <SelectItem key="School" value="School">School Holiday</SelectItem>
+              <SelectItem key="National" value="National">{t('pages.nationalHoliday')}</SelectItem>
+              <SelectItem key="Regional" value="Regional">{t('pages.regionalHoliday')}</SelectItem>
+              <SelectItem key="School" value="School">{t('pages.schoolHoliday')}</SelectItem>
             </Select>
             <Input
               size="sm"
-              label="Description (Optional)"
-              placeholder="Additional details"
+              label={t('pages.descriptionOptional')}
+              placeholder={t('pages.additionalDetails')}
               value={formData.description}
               onValueChange={(v) => setFormData({ ...formData, description: v })}
               variant="bordered"
             />
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={onClose}>Cancel</Button>
+            <Button variant="light" onPress={onClose}>{t('pages.cancel2')}</Button>
             <Button 
               color="primary" 
               onPress={handleSave}

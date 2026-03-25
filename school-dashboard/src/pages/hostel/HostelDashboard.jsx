@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Building2, DoorOpen, Users, BedDouble, TrendingUp, AlertCircle } from "lucide-react";
 import { hostelApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 function StatCard({ icon: Icon, label, value, sub, color }) {
   const colors = {
@@ -50,6 +51,7 @@ function SkeletonDashboard() {
 }
 
 export default function HostelDashboard() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -63,7 +65,7 @@ export default function HostelDashboard() {
       const data = await hostelApi.getStats();
       setStats(data);
     } catch (error) {
-      toast.error("Failed to load hostel stats");
+      toast.error(t('toast.error.failedToLoadHostelStats'));
     } finally {
       setIsLoading(false);
     }
@@ -75,7 +77,7 @@ export default function HostelDashboard() {
     return (
       <div className="text-center py-12">
         <AlertCircle size={40} className="mx-auto text-gray-400 dark:text-zinc-500 mb-3" />
-        <p className="text-gray-500 dark:text-zinc-400">Failed to load dashboard data</p>
+        <p className="text-gray-500 dark:text-zinc-400">{t('pages.failedToLoadDashboardData')}</p>
       </div>
     );
   }
@@ -83,12 +85,12 @@ export default function HostelDashboard() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <StatCard icon={Building2} label="Total Hostels" value={stats.totalHostels || 0} color="blue" />
-        <StatCard icon={DoorOpen} label="Total Rooms" value={stats.totalRooms || 0} color="green" />
-        <StatCard icon={BedDouble} label="Total Capacity" value={stats.totalCapacity || 0} sub={`${stats.availableBeds || 0} beds available`} color="purple" />
-        <StatCard icon={Users} label="Occupied Beds" value={stats.occupiedBeds || 0} color="amber" />
-        <StatCard icon={TrendingUp} label="Occupancy Rate" value={`${Math.round(stats.occupancyRate || 0)}%`} color="cyan" />
-        <StatCard icon={Users} label="Active Allocations" value={stats.activeAllocations || 0} sub={`${stats.vacatedAllocations || 0} vacated`} color="rose" />
+        <StatCard icon={Building2} label={t('pages.totalHostels')} value={stats.totalHostels || 0} color="blue" />
+        <StatCard icon={DoorOpen} label={t('pages.totalRooms')} value={stats.totalRooms || 0} color="green" />
+        <StatCard icon={BedDouble} label={t('pages.totalCapacity')} value={stats.totalCapacity || 0} sub={`${stats.availableBeds || 0} beds available`} color="purple" />
+        <StatCard icon={Users} label={t('pages.occupiedBeds')} value={stats.occupiedBeds || 0} color="amber" />
+        <StatCard icon={TrendingUp} label={t('pages.occupancyRate')} value={`${Math.round(stats.occupancyRate || 0)}%`} color="cyan" />
+        <StatCard icon={Users} label={t('pages.activeAllocations')} value={stats.activeAllocations || 0} sub={`${stats.vacatedAllocations || 0} vacated`} color="rose" />
       </div>
     </div>
   );

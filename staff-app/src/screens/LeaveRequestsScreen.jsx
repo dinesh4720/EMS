@@ -28,6 +28,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { leavesApi } from '../services/api';
+import { useTranslation } from 'react-i18next';
 
 const LEAVE_TYPES = [
   { id: 'sick', label: 'Sick Leave' },
@@ -37,6 +38,7 @@ const LEAVE_TYPES = [
 ];
 
 const LeaveCard = ({ leave, onPress, onCancel, theme }) => {
+  const { t } = useTranslation();
   const { colors, typography, shape } = theme;
 
   const getStatusIcon = () => {
@@ -131,7 +133,7 @@ const LeaveCard = ({ leave, onPress, onCancel, theme }) => {
             style={[styles.cancelBtn, { backgroundColor: colors.errorContainer, borderRadius: shape.cornerSmall }]}
             onPress={onCancel}
           >
-            <Text style={[typography.labelMedium, { color: colors.onErrorContainer }]}>Cancel Request</Text>
+            <Text style={[typography.labelMedium, { color: colors.onErrorContainer }]}>{t('screens.cancelRequest')}</Text>
           </Pressable>
         </View>
       )}
@@ -185,7 +187,7 @@ const NewLeaveModal = ({ visible, onClose, onSubmit, theme }) => {
       <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
         <View style={[styles.modalContent, { backgroundColor: colors.surface, borderRadius: shape.cornerLarge }]}>
           <View style={[styles.modalHeader, { borderBottomColor: colors.outlineVariant }]}>
-            <Text style={[typography.titleLarge, { color: colors.onSurface }]}>Apply for Leave</Text>
+            <Text style={[typography.titleLarge, { color: colors.onSurface }]}>{t('screens.applyForLeave')}</Text>
             <Pressable onPress={onClose} style={styles.closeBtn}>
               <X size={24} color={colors.onSurfaceVariant} />
             </Pressable>
@@ -228,7 +230,7 @@ const NewLeaveModal = ({ visible, onClose, onSubmit, theme }) => {
                 </Text>
                 <TextInput
                   style={[styles.dateInput, { backgroundColor: colors.surfaceContainer, color: colors.onSurface, borderRadius: shape.cornerSmall }]}
-                  placeholder="YYYY-MM-DD"
+                  placeholder={t('screens.yYYYMmDd')}
                   placeholderTextColor={colors.onSurfaceVariant}
                   value={startDate}
                   onChangeText={setStartDate}
@@ -240,7 +242,7 @@ const NewLeaveModal = ({ visible, onClose, onSubmit, theme }) => {
                 </Text>
                 <TextInput
                   style={[styles.dateInput, { backgroundColor: colors.surfaceContainer, color: colors.onSurface, borderRadius: shape.cornerSmall }]}
-                  placeholder="YYYY-MM-DD"
+                  placeholder={t('screens.yYYYMmDd')}
                   placeholderTextColor={colors.onSurfaceVariant}
                   value={endDate}
                   onChangeText={setEndDate}
@@ -254,7 +256,7 @@ const NewLeaveModal = ({ visible, onClose, onSubmit, theme }) => {
             </Text>
             <TextInput
               style={[styles.reasonInput, { backgroundColor: colors.surfaceContainer, color: colors.onSurface, borderRadius: shape.cornerSmall }]}
-              placeholder="Enter reason for leave..."
+              placeholder={t('screens.enterReasonForLeave')}
               placeholderTextColor={colors.onSurfaceVariant}
               value={reason}
               onChangeText={setReason}
@@ -269,7 +271,7 @@ const NewLeaveModal = ({ visible, onClose, onSubmit, theme }) => {
               style={[styles.cancelModalBtn, { borderColor: colors.outline, borderRadius: shape.cornerMedium }]}
               onPress={onClose}
             >
-              <Text style={[typography.labelLarge, { color: colors.onSurfaceVariant }]}>Cancel</Text>
+              <Text style={[typography.labelLarge, { color: colors.onSurfaceVariant }]}>{t('screens.cancel1')}</Text>
             </Pressable>
             <Pressable
               style={({ pressed }) => [
@@ -282,7 +284,7 @@ const NewLeaveModal = ({ visible, onClose, onSubmit, theme }) => {
               {submitting ? (
                 <ActivityIndicator color={colors.onPrimary} size="small" />
               ) : (
-                <Text style={[typography.labelLarge, { color: colors.onPrimary }]}>Submit Request</Text>
+                <Text style={[typography.labelLarge, { color: colors.onPrimary }]}>{t('screens.submitRequest')}</Text>
               )}
             </Pressable>
           </View>
@@ -385,22 +387,22 @@ const LeaveRequestsScreen = () => {
         <View style={[styles.statsContainer, { backgroundColor: colors.surfaceContainer, borderRadius: shape.cornerLarge }]}>
           <View style={styles.statItem}>
             <Text style={[typography.headlineSmall, { color: colors.primary }]}>{stats.total || 0}</Text>
-            <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>Total</Text>
+            <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>{t('screens.total')}</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: colors.outlineVariant }]} />
           <View style={styles.statItem}>
             <Text style={[typography.headlineSmall, { color: colors.success }]}>{stats.approved || 0}</Text>
-            <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>Approved</Text>
+            <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>{t('screens.approved1')}</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: colors.outlineVariant }]} />
           <View style={styles.statItem}>
             <Text style={[typography.headlineSmall, { color: colors.warning }]}>{stats.pending || 0}</Text>
-            <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>Pending</Text>
+            <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>{t('screens.pending1')}</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: colors.outlineVariant }]} />
           <View style={styles.statItem}>
             <Text style={[typography.headlineSmall, { color: colors.error }]}>{stats.rejected || 0}</Text>
-            <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>Rejected</Text>
+            <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>{t('screens.rejected1')}</Text>
           </View>
         </View>
       )}
@@ -414,7 +416,7 @@ const LeaveRequestsScreen = () => {
         onPress={() => setShowNewLeaveModal(true)}
       >
         <Plus size={20} color={colors.onPrimary} />
-        <Text style={[typography.labelLarge, { color: colors.onPrimary, marginLeft: 8 }]}>Apply for Leave</Text>
+        <Text style={[typography.labelLarge, { color: colors.onPrimary, marginLeft: 8 }]}>{t('screens.applyForLeave')}</Text>
       </Pressable>
 
       <Text style={[typography.titleMedium, { color: colors.onSurface, marginTop: spacing.md, marginBottom: spacing.sm }]}>
@@ -439,7 +441,7 @@ const LeaveRequestsScreen = () => {
     return (
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.surface }]}>
         <View style={[styles.titleBar, { backgroundColor: colors.surface, borderBottomColor: colors.outlineVariant }]}>
-          <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>Leave Requests</Text>
+          <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>{t('screens.leaveRequests')}</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -454,7 +456,7 @@ const LeaveRequestsScreen = () => {
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.surface }]}>
       <View style={[styles.titleBar, { backgroundColor: colors.surface, borderBottomColor: colors.outlineVariant }]}>
-        <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>Leave Requests</Text>
+        <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>{t('screens.leaveRequests')}</Text>
       </View>
 
       {error && (

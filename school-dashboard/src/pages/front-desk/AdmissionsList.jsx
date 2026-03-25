@@ -10,6 +10,7 @@ import FormInput from '../../components/FormInput';
 import { validatePhone, validateEmail, validateFutureDate } from '../../utils/validations';
 import toast from 'react-hot-toast';
 import AdmissionTracker from './AdmissionTracker.jsx';
+import { useTranslation } from 'react-i18next';
 
 const STATUS_OPTIONS = [
   { value: 'inquiry-logged', label: 'Inquiry Logged', color: 'default' },
@@ -33,6 +34,7 @@ const HSC_GROUPS = ['BIOLOGY', 'COMPUTER_SCIENCE', 'COMMERCE'];
 const PAYMENT_MODES = ['CASH', 'ONLINE', 'CHEQUE', 'INCLUDED_IN_FORM'];
 
 const AdmissionsList = forwardRef((props, ref) => {
+  const { t } = useTranslation();
   const [admissions, setAdmissions] = useState([]);
   const [staff, setStaff] = useState([]);
   const [availableClasses, setAvailableClasses] = useState([]);
@@ -88,7 +90,7 @@ const AdmissionsList = forwardRef((props, ref) => {
       setAdmissions(response);
     } catch (error) {
       console.error('Failed to load admissions:', error);
-      toast.error('Failed to load admissions');
+      toast.error(t('toast.error.failedToLoadAdmissions'));
     } finally {
       setLoading(false);
     }
@@ -196,7 +198,7 @@ const AdmissionsList = forwardRef((props, ref) => {
 
   const handleSubmit = async () => {
     if (!validateForm()) {
-      toast.error('Please fix the errors before submitting');
+      toast.error(t('toast.error.pleaseFixTheErrorsBeforeSubmitting'));
       return;
     }
     try {
@@ -208,16 +210,16 @@ const AdmissionsList = forwardRef((props, ref) => {
 
       if (editingId) {
         await frontDeskApi.updateAdmission(editingId, dataToSend);
-        toast.success('Admission updated successfully');
+        toast.success(t('toast.success.admissionUpdatedSuccessfully'));
       } else {
         await frontDeskApi.createAdmission(dataToSend);
-        toast.success('Admission inquiry created successfully');
+        toast.success(t('toast.success.admissionInquiryCreatedSuccessfully'));
       }
       onClose();
       resetForm();
       loadAdmissions();
     } catch (error) {
-      toast.error('Failed to save admission');
+      toast.error(t('toast.error.failedToSaveAdmission'));
     }
   };
 
@@ -277,7 +279,7 @@ const AdmissionsList = forwardRef((props, ref) => {
       : null;
 
     if (!admissionData && (!formData.phoneNumber && !formData.email)) {
-      toast.error('Please add phone number or email to send form link');
+      toast.error(t('toast.error.pleaseAddPhoneNumberOrEmailToSendFormLink'));
       return;
     }
 
@@ -298,20 +300,20 @@ const AdmissionsList = forwardRef((props, ref) => {
           await frontDeskApi.updateAdmission(editingId, updatedData);
           loadAdmissions();
         } catch (error) {
-          toast.error('Failed to update admission status');
+          toast.error(t('toast.error.failedToUpdateAdmissionStatus'));
         }
       }
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this admission inquiry?')) return;
+    if (!confirm(t('confirm.deleteAdmission'))) return;
     try {
       await frontDeskApi.deleteAdmission(id);
-      toast.success('Admission inquiry deleted');
+      toast.success(t('toast.success.admissionInquiryDeleted'));
       loadAdmissions();
     } catch (error) {
-      toast.error('Failed to delete admission inquiry');
+      toast.error(t('toast.error.failedToDeleteAdmissionInquiry'));
     }
   };
 
@@ -362,16 +364,16 @@ const AdmissionsList = forwardRef((props, ref) => {
           New Admission Inquiry
         </Button>
       </div>
-      <Table aria-label="Admissions table" removeWrapper>
+      <Table aria-label={t('aria.tables.admissions')} removeWrapper>
         <TableHeader>
-          <TableColumn>STUDENT NAME</TableColumn>
-          <TableColumn>PARENT NAME</TableColumn>
-          <TableColumn>PHONE</TableColumn>
-          <TableColumn>CLASS</TableColumn>
-          <TableColumn>SOURCE</TableColumn>
-          <TableColumn>STATUS</TableColumn>
-          <TableColumn>PAYMENT</TableColumn>
-          <TableColumn>ACTIONS</TableColumn>
+          <TableColumn scope="col">{t('pages.sTUDENTName')}</TableColumn>
+          <TableColumn scope="col">{t('pages.pARENTName')}</TableColumn>
+          <TableColumn scope="col">{t('pages.pHONE')}</TableColumn>
+          <TableColumn scope="col">{t('pages.cLASS')}</TableColumn>
+          <TableColumn scope="col">{t('pages.sOURCE')}</TableColumn>
+          <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+          <TableColumn scope="col">{t('pages.pAYMENT')}</TableColumn>
+          <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
         </TableHeader>
         <TableBody
           items={admissions}
@@ -458,11 +460,11 @@ const AdmissionsList = forwardRef((props, ref) => {
           <ModalHeader>{editingId ? 'Edit Admission' : 'New Admission Inquiry'}</ModalHeader>
           <ModalBody>
             <Tabs>
-              <Tab key="basic" title="Basic Info">
+              <Tab key="basic" title={t('pages.basicInfo')}>
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <FormInput
-                    label="Student Name"
-                    placeholder="Enter student name"
+                    label={t('pages.studentName2')}
+                    placeholder={t('pages.enterStudentName')}
                     value={formData.studentName}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -473,7 +475,7 @@ const AdmissionsList = forwardRef((props, ref) => {
                     error={errors.studentName}
                   />
                   <FormInput
-                    label="Date of Birth"
+                    label={t('pages.dateOfBirth2')}
                     type="date"
                     value={formData.dateOfBirth}
                     onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
@@ -481,7 +483,7 @@ const AdmissionsList = forwardRef((props, ref) => {
                   />
                   <FormInput
                     label="Parent/Guardian Name"
-                    placeholder="Enter parent name"
+                    placeholder={t('pages.enterParentName')}
                     value={formData.parentName}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -492,8 +494,8 @@ const AdmissionsList = forwardRef((props, ref) => {
                     error={errors.parentName}
                   />
                   <FormInput
-                    label="Phone Number"
-                    placeholder="Enter 10-digit phone number"
+                    label={t('pages.phoneNumber')}
+                    placeholder={t('pages.enter10DigitPhoneNumber')}
                     value={formData.phoneNumber}
                     onChange={(e) => {
                       const val = e.target.value.replace(/\D/g, ''); // Allow only numbers
@@ -505,9 +507,9 @@ const AdmissionsList = forwardRef((props, ref) => {
                     error={errors.phoneNumber}
                   />
                   <FormInput
-                    label="Email"
+                    label={t('pages.email1')}
                     type="email"
-                    placeholder="Enter email"
+                    placeholder={t('pages.enterEmail')}
                     value={formData.email}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -517,8 +519,8 @@ const AdmissionsList = forwardRef((props, ref) => {
                     error={errors.email}
                   />
                   <Select
-                    label="Class Applying For"
-                    placeholder="Select Class"
+                    label={t('pages.classApplyingFor')}
+                    placeholder={t('pages.selectClass1')}
                     selectedKeys={formData.classApplyingFor ? [formData.classApplyingFor] : []}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -546,8 +548,8 @@ const AdmissionsList = forwardRef((props, ref) => {
                   </Select>
                   {(formData.classApplyingFor?.toLowerCase().includes('hsc') || formData.classApplyingFor?.toLowerCase().includes('12') || formData.classApplyingFor?.toLowerCase().includes('11') || formData.classApplyingFor?.toLowerCase().includes('10+2')) && (
                     <Select
-                      label="HSC Group (Optional)"
-                      placeholder="Select group if applicable"
+                      label={t('pages.hSCGroupOptional')}
+                      placeholder={t('pages.selectGroupIfApplicable')}
                       selectedKeys={formData.hscGroup ? [formData.hscGroup] : []}
                       onChange={(e) => setFormData({ ...formData, hscGroup: e.target.value })}
                     >
@@ -559,8 +561,8 @@ const AdmissionsList = forwardRef((props, ref) => {
                     </Select>
                   )}
                   <Select
-                    label="Source"
-                    placeholder="Select source"
+                    label={t('pages.source')}
+                    placeholder={t('pages.selectSource')}
                     selectedKeys={[formData.source]}
                     onChange={(e) => setFormData({ ...formData, source: e.target.value })}
                   >
@@ -571,8 +573,8 @@ const AdmissionsList = forwardRef((props, ref) => {
                     ))}
                   </Select>
                   <Select
-                    label="Status"
-                    placeholder="Select status"
+                    label={t('pages.status2')}
+                    placeholder={t('pages.selectStatus1')}
                     selectedKeys={[formData.status]}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   >
@@ -584,7 +586,7 @@ const AdmissionsList = forwardRef((props, ref) => {
                   </Select>
                 </div>
               </Tab>
-              <Tab key="assessment" title="Assessment">
+              <Tab key="assessment" title={t('pages.assessment')}>
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <Checkbox size="sm"
                     isSelected={formData.assessmentRequired}
@@ -596,8 +598,8 @@ const AdmissionsList = forwardRef((props, ref) => {
                   {formData.assessmentRequired && (
                     <>
                       <Select
-                        label="Assign To (Teacher)"
-                        placeholder="Select teacher"
+                        label={t('pages.assignToTeacher')}
+                        placeholder={t('pages.selectTeacher')}
                         selectedKeys={formData.assignedTeacher ? [formData.assignedTeacher] : []}
                         onChange={(e) => {
                           const val = e.target.value;
@@ -615,7 +617,7 @@ const AdmissionsList = forwardRef((props, ref) => {
                         ))}
                       </Select>
                       <FormInput
-                        label="Test Date"
+                        label={t('pages.testDate')}
                         type="date"
                         value={formData.testDate}
                         onChange={(e) => {
@@ -626,64 +628,64 @@ const AdmissionsList = forwardRef((props, ref) => {
                         max="9999-12-31"
                       />
                       <FormInput
-                        label="Test Time"
+                        label={t('pages.testTime')}
                         type="time"
                         value={formData.testTime}
                         onChange={(e) => setFormData({ ...formData, testTime: e.target.value })}
                       />
                       <Select
-                        label="Test Result"
-                        placeholder="Select result"
+                        label={t('pages.testResult')}
+                        placeholder={t('pages.selectResult')}
                         selectedKeys={[formData.testResult]}
                         onChange={(e) => setFormData({ ...formData, testResult: e.target.value })}
                       >
-                        <SelectItem key="pending" value="pending">Pending</SelectItem>
-                        <SelectItem key="cleared" value="cleared">Cleared</SelectItem>
-                        <SelectItem key="failed" value="failed">Failed</SelectItem>
+                        <SelectItem key="pending" value="pending">{t('pages.pending2')}</SelectItem>
+                        <SelectItem key="cleared" value="cleared">{t('pages.cleared')}</SelectItem>
+                        <SelectItem key="failed" value="failed">{t('pages.failed')}</SelectItem>
                       </Select>
                     </>
                   )}
                 </div>
               </Tab>
-              <Tab key="decision" title="Decision">
+              <Tab key="decision" title={t('pages.decision')}>
                 <div className="grid grid-cols-1 gap-4 mt-4">
                   <Select
-                    label="Admission Decision"
-                    placeholder="Select decision"
+                    label={t('pages.admissionDecision')}
+                    placeholder={t('pages.selectDecision')}
                     selectedKeys={[formData.admissionDecision]}
                     onChange={(e) => setFormData({ ...formData, admissionDecision: e.target.value })}
                   >
-                    <SelectItem key="pending" value="pending">Pending</SelectItem>
-                    <SelectItem key="approved" value="approved">Approved</SelectItem>
-                    <SelectItem key="rejected" value="rejected">Rejected</SelectItem>
+                    <SelectItem key="pending" value="pending">{t('pages.pending2')}</SelectItem>
+                    <SelectItem key="approved" value="approved">{t('pages.approved1')}</SelectItem>
+                    <SelectItem key="rejected" value="rejected">{t('pages.rejected1')}</SelectItem>
                   </Select>
                   <Textarea
-                    label="Decision Remarks"
-                    placeholder="Enter remarks (optional)"
+                    label={t('pages.decisionRemarks')}
+                    placeholder={t('pages.enterRemarksOptional')}
                     value={formData.decisionRemarks}
                     onChange={(e) => setFormData({ ...formData, decisionRemarks: e.target.value })}
                     rows={4}
                   />
                 </div>
               </Tab>
-              <Tab key="payment" title="Payment">
+              <Tab key="payment" title={t('pages.payment')}>
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <Select
-                    label="Payment Status"
-                    placeholder="Select payment status"
+                    label={t('pages.paymentStatus')}
+                    placeholder={t('pages.selectPaymentStatus')}
                     selectedKeys={[formData.paymentStatus]}
                     onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value })}
                     className="col-span-2"
                   >
-                    <SelectItem key="unpaid" value="unpaid">Unpaid</SelectItem>
-                    <SelectItem key="paid" value="paid">Paid</SelectItem>
-                    <SelectItem key="pending" value="pending">Pending</SelectItem>
+                    <SelectItem key="unpaid" value="unpaid">{t('pages.unpaid')}</SelectItem>
+                    <SelectItem key="paid" value="paid">{t('pages.paid2')}</SelectItem>
+                    <SelectItem key="pending" value="pending">{t('pages.pending2')}</SelectItem>
                   </Select>
                   {formData.paymentStatus === 'paid' && (
                     <>
                       <Select
-                        label="Payment Mode"
-                        placeholder="Select payment mode"
+                        label={t('pages.paymentMode')}
+                        placeholder={t('pages.selectPaymentMode')}
                         selectedKeys={formData.paymentMode ? [formData.paymentMode] : []}
                         onChange={(e) => setFormData({ ...formData, paymentMode: e.target.value })}
                       >
@@ -694,22 +696,22 @@ const AdmissionsList = forwardRef((props, ref) => {
                         ))}
                       </Select>
                       <FormInput
-                        label="Payment Amount"
-                        placeholder="Enter amount"
+                        label={t('pages.paymentAmount')}
+                        placeholder={t('pages.enterAmount')}
                         value={formData.paymentAmount}
                         onChange={(e) => setFormData({ ...formData, paymentAmount: e.target.value })}
                         type="number"
                       />
                       <FormInput
-                        label="Payment Date"
+                        label={t('pages.paymentDate1')}
                         type="date"
                         value={formData.paymentDate}
                         onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
                         max={new Date().toLocaleDateString('en-CA')}
                       />
                       <FormInput
-                        label="Transaction ID"
-                        placeholder="Enter transaction ID"
+                        label={t('pages.transactionId')}
+                        placeholder={t('pages.enterTransactionId')}
                         value={formData.transactionId}
                         onChange={(e) => setFormData({ ...formData, transactionId: e.target.value })}
                       />
@@ -718,12 +720,12 @@ const AdmissionsList = forwardRef((props, ref) => {
                   {formData.paymentStatus === 'unpaid' && (
                     <div className="col-span-2 bg-warning-50 border border-warning-200 p-3 rounded-lg">
                       <p className="text-sm text-warning-700">⚠️ Payment Pending</p>
-                      <p className="text-xs text-warning-600 mt-1">Send payment link or collect payment when admission is confirmed</p>
+                      <p className="text-xs text-warning-600 mt-1">{t('pages.sendPaymentLinkOrCollectPaymentWhenAdmissionIsConfirmed')}</p>
                     </div>
                   )}
                 </div>
               </Tab>
-              <Tab key="actions" title="Actions">
+              <Tab key="actions" title={t('pages.actions1')}>
                 <div className="space-y-4 mt-4">
                   <div className="bg-primary-50 border border-primary-200 p-4 rounded-lg">
                     <p className="text-sm font-medium text-primary-700 mb-2">📧 Send Admission Form Link</p>
@@ -732,10 +734,10 @@ const AdmissionsList = forwardRef((props, ref) => {
                       Send Form Link
                     </Button>
                   </div>
-                  {formData.status === 'admission-approved' || formData.status === 'fee-paid' ? (
+                  {formData.status === 'fee-paid' ? (
                     <div className="bg-success-50 border border-success-200 p-4 rounded-lg">
                       <p className="text-sm font-medium text-success-700 mb-2">🎓 Add as Student</p>
-                      <p className="text-xs text-success-600 mb-3">Convert this admission inquiry to a student record</p>
+                      <p className="text-xs text-success-600 mb-3">{t('pages.convertThisAdmissionInquiryToAStudentRecord')}</p>
                       <Button color="success" size="sm" onPress={() => handleConvertToStudent(editingId)}>
                         Add as New Student
                       </Button>
@@ -743,7 +745,7 @@ const AdmissionsList = forwardRef((props, ref) => {
                   ) : (
                     <div className="bg-default-100 border border-default-200 p-4 rounded-lg">
                       <p className="text-sm font-medium text-default-500 mb-2">🎓 Add as Student</p>
-                      <p className="text-xs text-default-400 mb-3">Admission must be approved and fee paid before adding as student</p>
+                      <p className="text-xs text-default-400 mb-3">{t('pages.admissionMustBeApprovedAndFeePaidBeforeAddingAsStudent')}</p>
                       <Button color="default" size="sm" isDisabled>
                         Add as New Student
                       </Button>
@@ -767,41 +769,41 @@ const AdmissionsList = forwardRef((props, ref) => {
       {/* Detail View Modal */}
       <Modal isOpen={isDetailOpen} onClose={onDetailClose} size="2xl">
         <ModalContent>
-          <ModalHeader>Admission Details</ModalHeader>
+          <ModalHeader>{t('pages.admissionDetails')}</ModalHeader>
           <ModalBody>
             {selectedAdmission && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-default-500">Student Name</p>
+                    <p className="text-sm text-default-500">{t('pages.studentName2')}</p>
                     <p className="font-medium">{selectedAdmission.studentName}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-default-500">Date of Birth</p>
+                    <p className="text-sm text-default-500">{t('pages.dateOfBirth2')}</p>
                     <p className="font-medium">{selectedAdmission.dateOfBirth || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-default-500">Parent Name</p>
+                    <p className="text-sm text-default-500">{t('pages.parentName2')}</p>
                     <p className="font-medium">{selectedAdmission.parentName || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-default-500">Phone</p>
+                    <p className="text-sm text-default-500">{t('pages.phone1')}</p>
                     <p className="font-medium">{selectedAdmission.phoneNumber || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-default-500">Email</p>
+                    <p className="text-sm text-default-500">{t('pages.email1')}</p>
                     <p className="font-medium">{selectedAdmission.email || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-default-500">Class Applying For</p>
+                    <p className="text-sm text-default-500">{t('pages.classApplyingFor')}</p>
                     <p className="font-medium">{selectedAdmission.classApplyingFor || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-default-500">Source</p>
+                    <p className="text-sm text-default-500">{t('pages.source')}</p>
                     <Chip size="sm" variant="flat">{selectedAdmission.source}</Chip>
                   </div>
                   <div>
-                    <p className="text-sm text-default-500">Status</p>
+                    <p className="text-sm text-default-500">{t('pages.status2')}</p>
                     <Chip size="sm" color={getStatusColor(selectedAdmission.status)} variant="flat">
                       {STATUS_OPTIONS.find(s => s.value === selectedAdmission.status)?.label}
                     </Chip>
@@ -809,11 +811,11 @@ const AdmissionsList = forwardRef((props, ref) => {
                   {selectedAdmission.assessmentRequired && (
                     <>
                       <div>
-                        <p className="text-sm text-default-500">Assigned Teacher</p>
+                        <p className="text-sm text-default-500">{t('pages.assignedTeacher')}</p>
                         <p className="font-medium">{selectedAdmission.assignedTeacher?.name || '-'}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-default-500">Test Date & Time</p>
+                        <p className="text-sm text-default-500">{t('pages.testDateTime')}</p>
                         <p className="font-medium">
                           {selectedAdmission.testDate && selectedAdmission.testTime
                             ? `${selectedAdmission.testDate} ${selectedAdmission.testTime}`
@@ -821,7 +823,7 @@ const AdmissionsList = forwardRef((props, ref) => {
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-default-500">Test Result</p>
+                        <p className="text-sm text-default-500">{t('pages.testResult')}</p>
                         <Chip size="sm" color={selectedAdmission.testResult === 'cleared' ? 'success' : 'default'}>
                           {selectedAdmission.testResult}
                         </Chip>
@@ -829,7 +831,7 @@ const AdmissionsList = forwardRef((props, ref) => {
                     </>
                   )}
                   <div>
-                    <p className="text-sm text-default-500">Admission Decision</p>
+                    <p className="text-sm text-default-500">{t('pages.admissionDecision')}</p>
                     <Chip
                       size="sm"
                       color={
@@ -845,7 +847,7 @@ const AdmissionsList = forwardRef((props, ref) => {
                   </div>
                   {selectedAdmission.decisionRemarks && (
                     <div className="col-span-2">
-                      <p className="text-sm text-default-500">Decision Remarks</p>
+                      <p className="text-sm text-default-500">{t('pages.decisionRemarks')}</p>
                       <p className="font-medium">{selectedAdmission.decisionRemarks}</p>
                     </div>
                   )}

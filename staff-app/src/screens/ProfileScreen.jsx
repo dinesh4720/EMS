@@ -8,6 +8,9 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  Modal,
+  FlatList,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -15,6 +18,8 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { classesApi } from '../services/api';
+import { SUPPORTED_LANGUAGES, setLanguage, getCurrentLanguage } from '../i18n';
+import { useTranslation } from 'react-i18next';
 
 const SETTING_SECTIONS = [
   {
@@ -36,7 +41,7 @@ const SETTING_SECTIONS = [
     title: 'Preferences',
     items: [
       { id: 'theme', icon: '🎨', label: 'Appearance', badge: null },
-      { id: 'language', icon: '🌐', label: 'Language', badge: 'EN' },
+      { id: 'language', icon: '🌐', label: 'Language', badge: null },
       { id: 'privacy', icon: '🔒', label: 'Privacy', badge: null },
     ],
   },
@@ -51,6 +56,7 @@ const SETTING_SECTIONS = [
 ];
 
 const SettingItem = ({ item, onPress, theme }) => {
+  const { t } = useTranslation();
   const { colors, typography } = theme;
   
   return (
@@ -88,6 +94,8 @@ const ProfileScreen = () => {
   const { user, logout } = useAuth();
   const theme = useTheme();
   const { colors, typography, spacing, shape, isDark, toggleTheme } = theme;
+  const [langModalVisible, setLangModalVisible] = useState(false);
+  const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
 
   // Stats state
   const [stats, setStats] = useState({
@@ -171,7 +179,7 @@ const ProfileScreen = () => {
         toggleTheme();
         break;
       case 'language':
-        Alert.alert('Language', 'Language settings coming soon!');
+        setLangModalVisible(true);
         break;
       case 'privacy':
         Alert.alert('Privacy', 'Privacy settings coming soon!');
@@ -211,7 +219,7 @@ const ProfileScreen = () => {
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.surface }]}>
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.outlineVariant }]}>
-        <Text style={[typography.largeTitle, { color: colors.onSurface }]}>Profile</Text>
+        <Text style={[typography.largeTitle, { color: colors.onSurface }]}>{t('screens.profile1')}</Text>
       </View>
 
       <ScrollView
@@ -324,9 +332,56 @@ const ProfileScreen = () => {
           activeOpacity={0.7}
         >
           <Text style={styles.logoutIcon}>🚪</Text>
-          <Text style={[typography.headline, { color: colors.error }]}>Logout</Text>
+          <Text style={[typography.headline, { color: colors.error }]}>{t('screens.logout1')}</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Language Picker Modal */}
+      <Modal
+        visible={langModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setLangModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setLangModalVisible(false)}
+        >
+          <View style={[styles.langSheet, { backgroundColor: colors.surface }]}>
+            <Text style={[typography.title2, { color: colors.onSurface, marginBottom: 16 }]}>
+              Select Language
+            </Text>
+            <FlatList
+              data={SUPPORTED_LANGUAGES}
+              keyExtractor={(item) => item.code}
+              renderItem={({ item }) => {
+                const isSelected = item.code === currentLang;
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.langItem,
+                      { borderBottomColor: colors.outlineVariant },
+                      isSelected && { backgroundColor: colors.primary + '15' },
+                    ]}
+                    onPress={async () => {
+                      await setLanguage(item.code);
+                      setCurrentLang(item.code);
+                      setLangModalVisible(false);
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }}
+                  >
+                    <Text style={[typography.body, { color: colors.onSurface }]}>{item.name}</Text>
+                    {isSelected && (
+                      <Text style={{ color: colors.primary, fontSize: 18 }}>✓</Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -440,6 +495,26 @@ const styles = StyleSheet.create({
   logoutIcon: {
     fontSize: 18,
     marginRight: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  langSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    maxHeight: '60%',
+  },
+  langItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 4,
+    borderBottomWidth: 0.5,
   },
 });
 

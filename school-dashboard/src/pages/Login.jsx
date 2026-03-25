@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { Eye, EyeOff, Lock, Mail, CheckCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 const SchoolBuilding3D = lazyWithRetry(() => import("../components/SchoolBuilding3D"));
 
 function LoginVisualFallback() {
@@ -12,12 +13,40 @@ function LoginVisualFallback() {
   );
 }
 
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+const LOCKOUT_KEY = 'login_lockout';
+
+function getLockoutState() {
+  try {
+    const raw = sessionStorage.getItem(LOCKOUT_KEY);
+    if (!raw) return { attempts: 0, lockedUntil: null };
+    return JSON.parse(raw);
+  } catch {
+    return { attempts: 0, lockedUntil: null };
+  }
+}
+
+function saveLockoutState(state) {
+  try {
+    sessionStorage.setItem(LOCKOUT_KEY, JSON.stringify(state));
+  } catch { /* ignore */ }
+}
+
+function clearLockoutState() {
+  try {
+    sessionStorage.removeItem(LOCKOUT_KEY);
+  } catch { /* ignore */ }
+}
+
 export default function Login() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [lockoutRemaining, setLockoutRemaining] = useState(0);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,15 +56,58 @@ export default function Login() {
 
   const toggleVisibility = useCallback(() => setIsVisible((v) => !v), []);
 
+  // Countdown timer for lockout
+  React.useEffect(() => {
+    const state = getLockoutState();
+    if (state.lockedUntil && Date.now() < state.lockedUntil) {
+      const interval = setInterval(() => {
+        const remaining = Math.ceil((state.lockedUntil - Date.now()) / 1000);
+        if (remaining <= 0) {
+          clearLockoutState();
+          setLockoutRemaining(0);
+          clearInterval(interval);
+        } else {
+          setLockoutRemaining(remaining);
+        }
+      }, 1000);
+      setLockoutRemaining(Math.ceil((state.lockedUntil - Date.now()) / 1000));
+      return () => clearInterval(interval);
+    }
+  }, []);
+
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     setError("");
+
+    // Check lockout
+    const lockout = getLockoutState();
+    if (lockout.lockedUntil && Date.now() < lockout.lockedUntil) {
+      const remaining = Math.ceil((lockout.lockedUntil - Date.now()) / 1000);
+      setLockoutRemaining(remaining);
+      setError(t('login.lockoutError', { mins: Math.ceil(remaining / 60), secs: remaining % 60 }));
+      return;
+    }
+
     setLoading(true);
 
     try {
       await login(email, password);
+      clearLockoutState();
     } catch (err) {
-      setError(err?.message || "Login failed");
+      const state = getLockoutState();
+      const attempts = (state.attempts || 0) + 1;
+
+      if (attempts >= MAX_ATTEMPTS) {
+        const lockedUntil = Date.now() + LOCKOUT_MS;
+        saveLockoutState({ attempts, lockedUntil });
+        const mins = Math.ceil(LOCKOUT_MS / 60000);
+        setError(t('login.lockedFor', { mins }));
+        setLockoutRemaining(Math.ceil(LOCKOUT_MS / 1000));
+      } else {
+        saveLockoutState({ attempts, lockedUntil: null });
+        const remaining = MAX_ATTEMPTS - attempts;
+        setError(t('login.loginFailedAttempts', { message: err?.message || "Login failed", remaining, plural: remaining !== 1 ? "s" : "" }));
+      }
     } finally {
       setLoading(false);
     }
@@ -60,13 +132,13 @@ export default function Login() {
             <div className="w-9 h-9 rounded-lg bg-teal-600 flex items-center justify-center">
               <span className="text-white font-bold text-lg">S</span>
             </div>
-            <span className="text-xl font-semibold text-gray-800 dark:text-zinc-100">SchoolSync</span>
+            <span className="text-xl font-semibold text-gray-800 dark:text-zinc-100">{t('pages.schoolSync1')}</span>
           </div>
 
           {/* Welcome Text */}
           <div className="mb-6 text-center">
-            <h1 className="text-xl font-bold text-gray-800 dark:text-zinc-100 mb-2">Welcome to SchoolSync</h1>
-            <p className="text-gray-500 dark:text-zinc-400 text-sm">Sign in to access your dashboard</p>
+            <h1 className="text-xl font-bold text-gray-800 dark:text-zinc-100 mb-2">{t('login.welcome')}</h1>
+            <p className="text-gray-500 dark:text-zinc-400 text-sm">{t('login.subtitle')}</p>
           </div>
 
           {/* Success Message from Signup */}
@@ -82,15 +154,15 @@ export default function Login() {
             {/* Email */}
             <div className="mb-3">
               <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5">
-                Email Address <span className="text-red-500">*</span>
+                {t('login.emailLabel')} <span className="text-red-500">*</span>
               </label>
               <div className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-colors autofill-fix">
                 <Mail size={16} className="text-gray-400 dark:text-zinc-500" />
                 <input
                   id="login-email"
                   type="email"
-                  placeholder="Enter your email"
-                  className="flex-1 bg-transparent outline-none text-gray-800 dark:text-zinc-100 placeholder:text-gray-400 dark:placeholder:text-zinc-500 text-sm autofill:bg-white autofill:text-gray-800"
+                  placeholder={t('login.emailPlaceholder')}
+                  className="flex-1 bg-transparent outline-none text-gray-800 dark:text-zinc-100 placeholder:text-gray-500 dark:placeholder:text-zinc-500 text-sm autofill:bg-white autofill:text-gray-800"
                   autoComplete="off"
                   data-form-type="other"
                   value={email}
@@ -103,15 +175,15 @@ export default function Login() {
             {/* Password */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5">
-                Password <span className="text-red-500">*</span>
+                {t('login.passwordLabel')} <span className="text-red-500">*</span>
               </label>
               <div className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-colors autofill-fix">
                 <Lock size={16} className="text-gray-400 dark:text-zinc-500" />
                 <input
                   id="login-password"
                   type={isVisible ? "text" : "password"}
-                  placeholder="Enter your password"
-                  className="flex-1 bg-transparent outline-none text-gray-800 dark:text-zinc-100 placeholder:text-gray-400 dark:placeholder:text-zinc-500 text-sm autofill:bg-white autofill:text-gray-800"
+                  placeholder={t('login.passwordPlaceholder')}
+                  className="flex-1 bg-transparent outline-none text-gray-800 dark:text-zinc-100 placeholder:text-gray-500 dark:placeholder:text-zinc-500 text-sm autofill:bg-white autofill:text-gray-800"
                   autoComplete="new-password"
                   data-form-type="other"
                   value={password}
@@ -122,7 +194,7 @@ export default function Login() {
                   type="button"
                   className="p-1 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded transition-colors"
                   onClick={toggleVisibility}
-                  aria-label={isVisible ? "Hide password" : "Show password"}
+                  aria-label={isVisible ? t('login.hidePassword') : t('login.showPassword')}
                 >
                   {isVisible ? (
                     <EyeOff size={16} className="text-gray-400 dark:text-zinc-500" />
@@ -143,22 +215,22 @@ export default function Login() {
             {/* Buttons */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || lockoutRemaining > 0}
               className={`w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-colors mb-2 ${
-                loading ? "opacity-70 cursor-not-allowed" : ""
+                loading || lockoutRemaining > 0 ? "opacity-70 cursor-not-allowed" : ""
               }`}
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? t('login.signingIn') : lockoutRemaining > 0 ? t('login.locked', { seconds: lockoutRemaining }) : t('login.signIn')}
             </button>
 
             <div className="mb-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 px-3 py-2 text-xs text-amber-900 dark:text-amber-300">
-              New schools are onboarded by invite only. Use the signup link sent to your organization.
+              {t('login.inviteOnlyNote')}
             </div>
 
             {/* Divider */}
             <div className="flex items-center gap-3 my-5">
               <div className="flex-1 h-px bg-gray-200 dark:bg-zinc-700" />
-              <span className="text-xs text-gray-400 dark:text-zinc-500">Or continue with</span>
+              <span className="text-xs text-gray-400 dark:text-zinc-500">{t('login.orContinueWith')}</span>
               <div className="flex-1 h-px bg-gray-200 dark:bg-zinc-700" />
             </div>
 
@@ -191,7 +263,7 @@ export default function Login() {
 
             {/* Demo credentials */}
             <div className="pt-3 border-t border-gray-100 dark:border-zinc-800">
-              <p className="text-xs text-gray-400 dark:text-zinc-500 mb-1.5 text-center">Demo credentials:</p>
+              <p className="text-xs text-gray-400 dark:text-zinc-500 mb-1.5 text-center">{t('login.demoCredentials')}</p>
               <div className="flex items-center justify-center gap-2 text-xs">
                 <span className="text-gray-600 dark:text-zinc-400">vikram@school.com</span>
                 <span className="text-gray-300 dark:text-zinc-600">•</span>
@@ -204,7 +276,7 @@ export default function Login() {
                   }}
                   className="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 font-medium ml-1"
                 >
-                  Auto-fill
+                  {t('login.autoFill')}
                 </button>
               </div>
             </div>
@@ -212,8 +284,8 @@ export default function Login() {
 
           {/* Footer */}
           <div className="flex items-center justify-center gap-4 text-xs text-gray-400 dark:text-zinc-500 mt-5 pt-3 border-t border-gray-100 dark:border-zinc-800">
-            <p>© {new Date().getFullYear()} SchoolSync</p>
-            <Link to="/privacy" className="hover:text-gray-600 dark:hover:text-zinc-300">Privacy Policy</Link>
+            <p>{t('login.copyright', { year: new Date().getFullYear() })}</p>
+            <Link to="/privacy" className="hover:text-gray-600 dark:hover:text-zinc-300">{t('login.privacyPolicy')}</Link>
           </div>
         </div>
       </div>

@@ -13,11 +13,13 @@ import BulkClassTeacherAssignment from "./BulkClassTeacherAssignment";
 import { useApp } from "../../context/AppContext";
 import { PageLayout, MinimalButton } from "../../components/ui";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 const classNames = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
 const sections = ["A", "B", "C", "D"];
 
 export default function ClassesPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
@@ -59,7 +61,7 @@ export default function ClassesPage() {
       );
 
       if (!selectedTeacher) {
-        toast.error('Selected teacher not found');
+        toast.error(t('toast.error.selectedTeacherNotFound'));
         setIsSubmitting(false);
         return;
       }
@@ -220,24 +222,24 @@ export default function ClassesPage() {
                     <BookOpen size={20} className="text-gray-700 dark:text-zinc-300" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Add New Class</h3>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">Fill in the class details below</p>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{t('pages.addNewClass')}</h3>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.fillInTheClassDetailsBelow')}</p>
                   </div>
                 </div>
-                <Button isIconOnly size="sm" variant="light" onPress={onClose} title="Close">
+                <Button isIconOnly size="sm" variant="light" onPress={onClose} title={t('pages.close2')}>
                   <X size={20} className="text-gray-500 dark:text-zinc-400" />
                 </Button>
               </DrawerHeader>
               <DrawerBody className="py-6 px-6">
                 <div className="space-y-4">
-                  <Select size="sm" label="Class Name" placeholder="Select class" selectedKeys={formData.name ? new Set([formData.name]) : new Set()} onSelectionChange={(keys) => setFormData({ ...formData, name: Array.from(keys)[0] || "" })} isInvalid={!!errors.name} errorMessage={errors.name} isRequired variant="bordered" radius="lg" aria-label="Class Name">
+                  <Select size="sm" label={t('pages.className1')} placeholder={t('pages.selectClass2')} selectedKeys={formData.name ? new Set([formData.name]) : new Set()} onSelectionChange={(keys) => setFormData({ ...formData, name: Array.from(keys)[0] || "" })} isInvalid={!!errors.name} errorMessage={errors.name} isRequired variant="bordered" radius="lg" aria-label={t('aria.inputs.className')}>
                     {classNames.map(c => <SelectItem key={c} textValue={`Class ${c}`}>Class {c}</SelectItem>)}
                   </Select>
-                  <Select size="sm" label="Section" placeholder="Select section" selectedKeys={formData.section ? new Set([formData.section]) : new Set()} onSelectionChange={(keys) => setFormData({ ...formData, section: Array.from(keys)[0] || "" })} isInvalid={!!errors.section} errorMessage={errors.section} isRequired variant="bordered" radius="lg" aria-label="Section">
+                  <Select size="sm" label={t('pages.section1')} placeholder={t('pages.selectSection')} selectedKeys={formData.section ? new Set([formData.section]) : new Set()} onSelectionChange={(keys) => setFormData({ ...formData, section: Array.from(keys)[0] || "" })} isInvalid={!!errors.section} errorMessage={errors.section} isRequired variant="bordered" radius="lg" aria-label={t('aria.inputs.section')}>
                     {sections.map(s => <SelectItem key={s} textValue={s}>{s}</SelectItem>)}
                   </Select>
-                  <Input size="sm" type="number" label="Strength" placeholder="Number of students" value={formData.strength} onValueChange={(value) => setFormData({ ...formData, strength: value })} isInvalid={!!errors.strength} errorMessage={errors.strength} isRequired variant="bordered" radius="lg" />
-                  <Select size="sm" label="Class Teacher" placeholder="Select teacher" selectedKeys={formData.teacherId ? new Set([formData.teacherId]) : new Set()} onSelectionChange={(keys) => setFormData({ ...formData, teacherId: Array.from(keys)[0] || "" })} isInvalid={!!errors.teacherId} errorMessage={errors.teacherId} isRequired variant="bordered" radius="lg" aria-label="Class Teacher">
+                  <Input size="sm" type="number" label={t('pages.strength')} placeholder={t('pages.numberOfStudents')} value={formData.strength} onValueChange={(value) => setFormData({ ...formData, strength: value })} isInvalid={!!errors.strength} errorMessage={errors.strength} isRequired variant="bordered" radius="lg" />
+                  <Select size="sm" label={t('pages.classTeacher2')} placeholder={t('pages.selectTeacher')} selectedKeys={formData.teacherId ? new Set([formData.teacherId]) : new Set()} onSelectionChange={(keys) => setFormData({ ...formData, teacherId: Array.from(keys)[0] || "" })} isInvalid={!!errors.teacherId} errorMessage={errors.teacherId} isRequired variant="bordered" radius="lg" aria-label={t('aria.inputs.classTeacher')}>
                     {staff.filter(s => {
                       const roles = Array.isArray(s.role) ? s.role : (s.role ? [s.role] : []);
                       const staffTypes = Array.isArray(s.staffType) ? s.staffType : (s.staffType ? [s.staffType] : []);
@@ -247,7 +249,7 @@ export default function ClassesPage() {
                 </div>
               </DrawerBody>
               <DrawerFooter className="border-t border-gray-100 dark:border-zinc-800 px-6 py-4">
-                <Button variant="flat" onPress={onClose} radius="lg" isDisabled={isSubmitting}>Cancel</Button>
+                <Button variant="flat" onPress={onClose} radius="lg" isDisabled={isSubmitting}>{t('pages.cancel2')}</Button>
                 <Button color="primary" onPress={handleSave} radius="lg" isLoading={isSubmitting} isDisabled={isSubmitting}>
                   {isSubmitting ? 'Creating...' : 'Add Class'}
                 </Button>

@@ -1,6 +1,8 @@
 import React from "react";
+import { useTranslation } from 'react-i18next';
 
 export const TransferCertificateTemplate = React.forwardRef(({ data }, ref) => {
+  const { t } = useTranslation();
     if (!data) return null;
 
     return (
@@ -25,21 +27,21 @@ export const TransferCertificateTemplate = React.forwardRef(({ data }, ref) => {
                         <div className="flex items-center justify-between mb-1">
                             {/* Logo */}
                             <div className="w-12 h-12 bg-gray-200 rounded-full flex-shrink-0 flex items-center justify-center border-2 border-black">
-                                <span className="text-[0.6rem] font-bold">LOGO</span>
+                                <span className="text-[0.6rem] font-bold">{t('pages.lOGO')}</span>
                             </div>
 
                             {/* School Details */}
                             <div className="text-center flex-grow px-2">
-                                <h1 className="text-xl font-extrabold uppercase tracking-wide leading-tight mb-0">SCHOOL NAME HERE</h1>
+                                <h1 className="text-xl font-extrabold uppercase tracking-wide leading-tight mb-0">{t('pages.sCHOOLNameHere')}</h1>
                                 <p className="text-[0.7rem] font-bold uppercase leading-tight">Affiliated to CBSE, New Delhi | Affiliation Number XXXXXX</p>
-                                <p className="text-[0.7rem] font-bold leading-tight">Address Line 1, City, State - Pin Code</p>
+                                <p className="text-[0.7rem] font-bold leading-tight">{t('pages.addressLine1CityStatePinCode')}</p>
                             </div>
 
                             {/* Logo Balancer */}
                             <div className="w-12 h-12 opacity-0 hidden print:block"></div>
                         </div>
                         <div className="text-center">
-                            <h2 className="text-lg font-bold uppercase underline decoration-2 underline-offset-2">Transfer Certificate</h2>
+                            <h2 className="text-lg font-bold uppercase underline decoration-2 underline-offset-2">{t('pages.transferCertificate')}</h2>
                         </div>
                     </div>
 
@@ -94,13 +96,13 @@ export const TransferCertificateTemplate = React.forwardRef(({ data }, ref) => {
                 {/* Footer Signatures */}
                 <div className="mt-8 flex justify-between items-end pb-4">
                     <div className="text-center w-56">
-                        <div className="border-t border-black pt-2 font-bold text-sm">Signature of the Class Teacher</div>
+                        <div className="border-t border-black pt-2 font-bold text-sm">{t('pages.signatureOfTheClassTeacher')}</div>
                     </div>
                     <div className="text-center w-56">
                         <div className="border-t border-black pt-2 font-bold text-sm">checked by</div>
                     </div>
                     <div className="text-center w-56">
-                        <div className="border-t border-black pt-2 font-bold text-sm">Principal</div>
+                        <div className="border-t border-black pt-2 font-bold text-sm">{t('pages.principal2')}</div>
                     </div>
                 </div>
             </div>

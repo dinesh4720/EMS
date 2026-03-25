@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Search, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function ChatSearch({ messages = [], onResultClick }) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
@@ -59,15 +61,17 @@ export default function ChatSearch({ messages = [], onResultClick }) {
     }
   };
 
-  const escapeHtml = (str) =>
-    str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-  const highlightMatch = (text, query) => {
-    const safe = escapeHtml(text);
-    if (!query) return safe;
-
-    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    return safe.replace(regex, '<mark class="bg-primary-100 dark:bg-primary/20 text-primary rounded px-0.5">$1</mark>');
+  // Returns an array of React elements with matched parts highlighted.
+  // split() with a capturing group produces alternating [unmatched, matched, unmatched, ...]
+  const buildHighlightParts = (text, query) => {
+    if (!query) return [text];
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+    return parts.map((part, i) =>
+      i % 2 === 1
+        ? <mark key={i} className="bg-primary-100 dark:bg-primary/20 text-primary rounded px-0.5">{part}</mark>
+        : part
+    );
   };
 
   const clearSearch = () => {
@@ -83,11 +87,11 @@ export default function ChatSearch({ messages = [], onResultClick }) {
         <Search size={18} className="text-default-400 flex-shrink-0" />
         <input
           type="text"
-          placeholder="Search messages..."
+          placeholder={t('pages.searchMessages')}
           value={query}
           onChange={(e) => handleSearch(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="flex-1 bg-transparent outline-none text-sm placeholder:text-default-400"
+          className="flex-1 bg-transparent outline-none text-sm placeholder:text-default-500"
         />
         {query && (
           <button
@@ -132,12 +136,9 @@ export default function ChatSearch({ messages = [], onResultClick }) {
                       })}
                     </span>
                   </div>
-                  <p
-                    className="text-sm text-default-600 line-clamp-2"
-                    dangerouslySetInnerHTML={{
-                      __html: highlightMatch(msg.content, query)
-                    }}
-                  />
+                  <p className="text-sm text-default-600 line-clamp-2">
+                    {buildHighlightParts(msg.content, query)}
+                  </p>
                 </div>
               </div>
             </div>

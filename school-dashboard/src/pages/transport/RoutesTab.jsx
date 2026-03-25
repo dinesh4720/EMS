@@ -7,8 +7,10 @@ import { CURRENT_ACADEMIC_YEAR } from "../../utils/constants";
 import toast from "react-hot-toast";
 import RouteModal from "./RouteModal";
 import StudentAssignModal from "./StudentAssignModal";
+import { useTranslation } from 'react-i18next';
 
 export default function RoutesTab() {
+  const { t } = useTranslation();
   const { schoolSettings } = useApp();
   const academicYear = schoolSettings?.academicYear || CURRENT_ACADEMIC_YEAR;
 
@@ -33,8 +35,9 @@ export default function RoutesTab() {
       ]);
       setRoutes(routesRes?.data || []);
       setVehicles(vehiclesRes?.data || []);
-    } catch {
-      toast.error("Failed to load routes");
+    } catch (error) {
+      console.error('Failed to load transport data:', error);
+      toast.error(t('toast.error.failedToLoadRoutes'));
     } finally {
       setLoading(false);
     }
@@ -53,13 +56,14 @@ export default function RoutesTab() {
   }, [routes, statusFilter, search]);
 
   const handleDelete = async (route) => {
-    if (!window.confirm(`Delete route "${route.routeName}"?`)) return;
+    if (!confirm(t('confirm.deleteRoute', { name: route.routeName }))) return;
     try {
       await transportApi.deleteRoute(route._id);
-      toast.success("Route deleted");
+      toast.success(t('toast.success.routeDeleted'));
       fetchData();
-    } catch {
-      toast.error("Failed to delete route");
+    } catch (error) {
+      console.error('Failed to delete route:', error);
+      toast.error(t('toast.error.failedToDeleteRoute'));
     }
   };
 
@@ -89,7 +93,7 @@ export default function RoutesTab() {
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-2 items-center flex-1 w-full sm:w-auto">
           <Input
-            placeholder="Search routes..."
+            placeholder={t('pages.searchRoutes')}
             value={search}
             onValueChange={setSearch}
             startContent={<Search size={16} className="text-gray-400" />}
@@ -107,9 +111,9 @@ export default function RoutesTab() {
               selectedKeys={new Set([statusFilter])}
               onSelectionChange={(keys) => setStatusFilter([...keys][0])}
             >
-              <DropdownItem key="all">All Status</DropdownItem>
-              <DropdownItem key="active">Active</DropdownItem>
-              <DropdownItem key="inactive">Inactive</DropdownItem>
+              <DropdownItem key="all">{t('pages.allStatus1')}</DropdownItem>
+              <DropdownItem key="active">{t('pages.active')}</DropdownItem>
+              <DropdownItem key="inactive">{t('pages.inactive')}</DropdownItem>
             </DropdownMenu>
           </Dropdown>
         </div>
@@ -127,8 +131,8 @@ export default function RoutesTab() {
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-500 dark:text-zinc-400">
           <MapPin size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No routes found</p>
-          <p className="text-sm mt-1">Create your first transport route to get started.</p>
+          <p className="font-medium">{t('pages.noRoutesFound')}</p>
+          <p className="text-sm mt-1">{t('pages.createYourFirstTransportRouteToGetStarted')}</p>
         </div>
       ) : (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
@@ -151,9 +155,9 @@ export default function RoutesTab() {
                       <Button isIconOnly size="sm" variant="light"><MoreVertical size={16} /></Button>
                     </DropdownTrigger>
                     <DropdownMenu>
-                      <DropdownItem key="edit" startContent={<Edit2 size={14} />} onPress={() => handleEdit(route)}>Edit</DropdownItem>
-                      <DropdownItem key="assign" startContent={<UserPlus size={14} />} onPress={() => handleAssignStudents(route)}>Assign Students</DropdownItem>
-                      <DropdownItem key="delete" startContent={<Trash2 size={14} />} className="text-danger" color="danger" onPress={() => handleDelete(route)}>Delete</DropdownItem>
+                      <DropdownItem key="edit" startContent={<Edit2 size={14} />} onPress={() => handleEdit(route)}>{t('pages.edit1')}</DropdownItem>
+                      <DropdownItem key="assign" startContent={<UserPlus size={14} />} onPress={() => handleAssignStudents(route)}>{t('pages.assignStudents')}</DropdownItem>
+                      <DropdownItem key="delete" startContent={<Trash2 size={14} />} className="text-danger" color="danger" onPress={() => handleDelete(route)}>{t('pages.delete1')}</DropdownItem>
                     </DropdownMenu>
                   </Dropdown>
                 </div>
@@ -167,16 +171,36 @@ export default function RoutesTab() {
               )}
 
               {/* Stats row */}
-              <div className="flex gap-4 text-sm">
-                <div className="flex items-center gap-1.5 text-gray-600 dark:text-zinc-300">
-                  <MapPin size={14} />
-                  <span>{route.stops?.length || 0} stops</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-gray-600 dark:text-zinc-300">
-                  <Users size={14} />
-                  <span>{route.students?.length || 0} students</span>
-                </div>
-              </div>
+              {(() => {
+                const studentCount = route.students?.length || 0;
+                const capacity = route.vehicleId?.capacity;
+                const isOverCapacity = capacity && studentCount > capacity;
+                const isNearCapacity = capacity && !isOverCapacity && studentCount >= capacity * 0.9;
+                return (
+                  <>
+                    <div className="flex gap-4 text-sm">
+                      <div className="flex items-center gap-1.5 text-gray-600 dark:text-zinc-300">
+                        <MapPin size={14} />
+                        <span>{route.stops?.length || 0} stops</span>
+                      </div>
+                      <div className={`flex items-center gap-1.5 ${isOverCapacity ? 'text-red-600 dark:text-red-400 font-medium' : isNearCapacity ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-zinc-300'}`}>
+                        <Users size={14} />
+                        <span>{studentCount}{capacity ? `/${capacity}` : ''} students</span>
+                      </div>
+                    </div>
+                    {isOverCapacity && (
+                      <p className="text-xs text-red-600 dark:text-red-400 mt-1 font-medium">
+                        ⚠ Over capacity by {studentCount - capacity} student{studentCount - capacity > 1 ? 's' : ''}
+                      </p>
+                    )}
+                    {isNearCapacity && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                        Near capacity ({capacity - studentCount} seat{capacity - studentCount !== 1 ? 's' : ''} remaining)
+                      </p>
+                    )}
+                  </>
+                );
+              })()}
 
               {/* Stops preview */}
               {route.stops?.length > 0 && (

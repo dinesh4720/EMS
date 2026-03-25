@@ -7,8 +7,10 @@ import Invoices from "./Invoices";
 import Expenses from "./Expenses";
 import Reports from "./Reports";
 import Payroll from "./Payroll";
+import { useTranslation } from 'react-i18next';
 
 export default function AccountsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -28,7 +30,7 @@ export default function AccountsPage() {
       title: (
         <div className="flex items-center gap-2">
           <LayoutDashboard size={16} />
-          <span>Overview</span>
+          <span>{t('pages.overview1')}</span>
         </div>
       ),
     },
@@ -37,7 +39,7 @@ export default function AccountsPage() {
       title: (
         <div className="flex items-center gap-2">
           <FileSpreadsheet size={16} />
-          <span>Invoices</span>
+          <span>{t('pages.invoices')}</span>
         </div>
       ),
     },
@@ -46,7 +48,7 @@ export default function AccountsPage() {
       title: (
         <div className="flex items-center gap-2">
           <Briefcase size={16} />
-          <span>Expenses</span>
+          <span>{t('pages.expenses')}</span>
         </div>
       ),
     },
@@ -55,7 +57,7 @@ export default function AccountsPage() {
       title: (
         <div className="flex items-center gap-2">
           <PieChart size={16} />
-          <span>Reports</span>
+          <span>{t('pages.reports1')}</span>
         </div>
       ),
     },
@@ -64,7 +66,7 @@ export default function AccountsPage() {
       title: (
         <div className="flex items-center gap-2">
           <Users size={16} />
-          <span>Payroll</span>
+          <span>{t('pages.payroll1')}</span>
         </div>
       ),
     },
@@ -135,11 +137,11 @@ export default function AccountsPage() {
           <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate("/")}>
             Home
           </BreadcrumbItem>
-          <BreadcrumbItem>Accounts</BreadcrumbItem>
-          {activeTab === "invoices" && <BreadcrumbItem>Invoices</BreadcrumbItem>}
-          {activeTab === "expenses" && <BreadcrumbItem>Expenses</BreadcrumbItem>}
-          {activeTab === "reports" && <BreadcrumbItem>Reports</BreadcrumbItem>}
-          {activeTab === "payroll" && <BreadcrumbItem>Payroll</BreadcrumbItem>}
+          <BreadcrumbItem>{t('pages.accounts')}</BreadcrumbItem>
+          {activeTab === "invoices" && <BreadcrumbItem>{t('pages.invoices')}</BreadcrumbItem>}
+          {activeTab === "expenses" && <BreadcrumbItem>{t('pages.expenses')}</BreadcrumbItem>}
+          {activeTab === "reports" && <BreadcrumbItem>{t('pages.reports1')}</BreadcrumbItem>}
+          {activeTab === "payroll" && <BreadcrumbItem>{t('pages.payroll1')}</BreadcrumbItem>}
         </Breadcrumbs>
       </div>
 

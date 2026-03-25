@@ -1,19 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { BookOpen, AlertTriangle, IndianRupee } from "lucide-react";
 import { libraryApi } from "../../services/api";
 import toast from "react-hot-toast";
-
-const categoryLabels = {
-  textbook: "Textbook",
-  reference: "Reference",
-  fiction: "Fiction",
-  "non-fiction": "Non-Fiction",
-  periodical: "Periodical",
-  digital: "Digital",
-  other: "Other",
-};
+import { useTranslation } from 'react-i18next';
 
 export default function LibraryReports() {
+  const { t } = useTranslation();
+  const categoryLabels = useMemo(() => ({
+    textbook: t('constants.library.categories.textbook'),
+    reference: t('constants.library.categories.reference'),
+    fiction: t('constants.library.categories.fiction'),
+    "non-fiction": t('constants.library.categories.nonFiction'),
+    periodical: t('constants.library.categories.periodical'),
+    digital: t('constants.library.categories.digital'),
+    other: t('constants.library.categories.other'),
+  }), [t]);
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -24,7 +25,7 @@ export default function LibraryReports() {
         const data = await libraryApi.getReports();
         setReport(data);
       } catch {
-        toast.error("Failed to load reports");
+        toast.error(t('toast.error.failedToLoadReports'));
       } finally {
         setLoading(false);
       }
@@ -52,7 +53,7 @@ export default function LibraryReports() {
       <div className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm dark:shadow-zinc-900/50">
         <div className="flex items-center gap-2 mb-4">
           <BookOpen size={16} className="text-blue-500" />
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Most Borrowed Books</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.mostBorrowedBooks')}</h3>
         </div>
         {report.mostBorrowed?.length ? (
           <div className="space-y-3">
@@ -73,22 +74,22 @@ export default function LibraryReports() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-500 dark:text-zinc-400">No data yet</p>
+          <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noDataYet')}</p>
         )}
       </div>
 
       {/* Category Breakdown */}
       <div className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm dark:shadow-zinc-900/50">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-4">Books by Category</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-4">{t('pages.booksByCategory')}</h3>
         {report.categoryStats?.length ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-zinc-800">
-                  <th className="text-left py-2 font-medium text-gray-500 dark:text-zinc-400">Category</th>
-                  <th className="text-right py-2 font-medium text-gray-500 dark:text-zinc-400">Books</th>
-                  <th className="text-right py-2 font-medium text-gray-500 dark:text-zinc-400">Total Copies</th>
-                  <th className="text-right py-2 font-medium text-gray-500 dark:text-zinc-400">Available</th>
+                  <th className="text-left py-2 font-medium text-gray-500 dark:text-zinc-400">{t('pages.category1')}</th>
+                  <th className="text-right py-2 font-medium text-gray-500 dark:text-zinc-400">{t('pages.books')}</th>
+                  <th className="text-right py-2 font-medium text-gray-500 dark:text-zinc-400">{t('pages.totalCopies')}</th>
+                  <th className="text-right py-2 font-medium text-gray-500 dark:text-zinc-400">{t('pages.available')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -104,7 +105,7 @@ export default function LibraryReports() {
             </table>
           </div>
         ) : (
-          <p className="text-sm text-gray-500 dark:text-zinc-400">No data yet</p>
+          <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noDataYet')}</p>
         )}
       </div>
 
@@ -113,7 +114,7 @@ export default function LibraryReports() {
         <div className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm dark:shadow-zinc-900/50">
           <div className="flex items-center gap-2 mb-4">
             <AlertTriangle size={16} className="text-red-500" />
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Top Overdue Students</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.topOverdueStudents')}</h3>
           </div>
           {report.overdueByStudent?.length ? (
             <div className="space-y-2">
@@ -130,7 +131,7 @@ export default function LibraryReports() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500 dark:text-zinc-400">No overdue books</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noOverdueBooks')}</p>
           )}
         </div>
 
@@ -138,7 +139,7 @@ export default function LibraryReports() {
         <div className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm dark:shadow-zinc-900/50">
           <div className="flex items-center gap-2 mb-4">
             <IndianRupee size={16} className="text-yellow-600 dark:text-yellow-400" />
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Unpaid Fines</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.unpaidFines')}</h3>
           </div>
           <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100">₹{report.unpaidFines?.total?.toLocaleString() || 0}</p>
           <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">{report.unpaidFines?.count || 0} unpaid records</p>

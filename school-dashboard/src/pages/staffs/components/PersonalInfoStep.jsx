@@ -313,9 +313,9 @@ function PersonalInfoStep({
               </button>
             )}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Input placeholder="Contact name" value={contact.name} onValueChange={v => handleEmergencyContactChange(index, "name", v)} size="sm" radius="sm" variant="bordered" classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-9" }} />
-              <Input placeholder="Relationship" value={contact.relationship} onValueChange={v => handleEmergencyContactChange(index, "relationship", v)} size="sm" radius="sm" variant="bordered" classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-9" }} />
-              <Input placeholder="Phone number" value={contact.phone} onValueChange={v => handleEmergencyContactChange(index, "phone", v)} size="sm" radius="sm" variant="bordered" isInvalid={!!errors[`emergencyPhone_${index}`]} errorMessage={errors[`emergencyPhone_${index}`]} startContent={<span className="text-default-400 text-2xs">+91</span>} classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-9" }} />
+              <Input placeholder={t('pages.contactName1')} value={contact.name} onValueChange={v => handleEmergencyContactChange(index, "name", v)} size="sm" radius="sm" variant="bordered" classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-9" }} />
+              <Input placeholder={t('pages.relationship')} value={contact.relationship} onValueChange={v => handleEmergencyContactChange(index, "relationship", v)} size="sm" radius="sm" variant="bordered" classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-9" }} />
+              <Input placeholder={t('pages.phoneNumber1')} value={contact.phone} onValueChange={v => handleEmergencyContactChange(index, "phone", v)} size="sm" radius="sm" variant="bordered" isInvalid={!!errors[`emergencyPhone_${index}`]} errorMessage={errors[`emergencyPhone_${index}`]} startContent={<span className="text-default-400 text-2xs">+91</span>} classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-9" }} />
             </div>
           </div>
         ))}

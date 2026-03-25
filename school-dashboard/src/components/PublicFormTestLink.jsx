@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Input, Button, Card, CardBody } from "@heroui/react";
 import { useNavigate } from "react-router-dom";
 import { ExternalLink } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 /**
  * PublicFormTestLink - Development utility for testing public forms
@@ -13,6 +14,7 @@ import { ExternalLink } from "lucide-react";
  */
 
 export default function PublicFormTestLink() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [token, setToken] = useState("");
 
@@ -53,7 +55,7 @@ export default function PublicFormTestLink() {
     <Card className="w-full max-w-2xl">
       <CardBody className="p-6 space-y-6">
         <div>
-          <h3 className="text-lg font-bold mb-1">Public Form Test Utility</h3>
+          <h3 className="text-lg font-bold mb-1">{t('components.publicFormTestUtility')}</h3>
           <p className="text-sm text-default-500">
             Test different public form scenarios. This is for development purposes only.
           </p>
@@ -62,7 +64,7 @@ export default function PublicFormTestLink() {
         {/* Custom Token Input */}
         <div className="flex gap-2">
           <Input
-            placeholder="Enter custom token"
+            placeholder={t('components.enterCustomToken')}
             value={token}
             onValueChange={setToken}
             onKeyPress={(e) => e.key === "Enter" && handleCustomToken()}
@@ -114,7 +116,7 @@ export default function PublicFormTestLink() {
 
         {/* Info Box */}
         <div className="bg-default-100 dark:bg-default-50/10 rounded-lg p-3 text-xs text-default-600 dark:text-default-400">
-          <strong>Note:</strong> These test tokens need to be set up in your backend
+          <strong>{t('components.note')}</strong> These test tokens need to be set up in your backend
           database to work properly. The tokens shown here are examples - replace them
           with actual tokens from your development database.
         </div>

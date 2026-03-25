@@ -1,4 +1,7 @@
+import { useTranslation } from 'react-i18next';
+
 export default function MessageReactions({ reactions, currentUserId, onReact }) {
+  const { t } = useTranslation();
   // Group reactions by emoji and count
   const groupedReactions = {};
   reactions.forEach((reaction) => {

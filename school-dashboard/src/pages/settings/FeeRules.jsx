@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Card, CardBody, CardHeader, Button, Input, Switch, Divider, Select, SelectItem, Checkbox, CheckboxGroup, RadioGroup, Radio } from "@heroui/react";
 import { Save } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 export default function FeeRules() {
+  const { t } = useTranslation();
   const [rules, setRules] = useState({
     receiptPrefix: "RCP",
     receiptStart: 1001,
@@ -47,12 +49,12 @@ export default function FeeRules() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="shadow-sm border border-default-200 rounded-lg">
           <CardHeader className="py-4 px-4 bg-default-50/50 border-b border-default-100">
-            <h3 className="text-sm font-semibold text-default-700">Receipt Settings</h3>
+            <h3 className="text-sm font-semibold text-default-700">{t('pages.receiptSettings')}</h3>
           </CardHeader>
           <CardBody className="p-4 space-y-4">
             <Input
               size="sm"
-              label="Receipt Prefix"
+              label={t('pages.receiptPrefix')}
               variant="bordered"
               value={rules.receiptPrefix}
               onChange={(e) => setRules({ ...rules, receiptPrefix: e.target.value })}
@@ -60,7 +62,7 @@ export default function FeeRules() {
             <Input
               size="sm"
               type="number"
-              label="Starting Number"
+              label={t('pages.startingNumber')}
               variant="bordered"
               value={rules.receiptStart}
               onChange={(e) => setRules({ ...rules, receiptStart: e.target.value })}
@@ -75,13 +77,13 @@ export default function FeeRules() {
 
         <Card className="shadow-sm border border-default-200 rounded-lg">
           <CardHeader className="py-4 px-4 bg-default-50/50 border-b border-default-100">
-            <h3 className="text-sm font-semibold text-default-700">Discount Settings</h3>
+            <h3 className="text-sm font-semibold text-default-700">{t('pages.discountSettings')}</h3>
           </CardHeader>
           <CardBody className="p-4 space-y-4">
             <div className="flex items-center justify-between p-3 bg-default-50 rounded-lg border border-default-200">
               <div>
-                <p className="text-sm font-medium text-default-700">Allow Discounts</p>
-                <p className="text-xs text-default-500">Enable fee discounts for students</p>
+                <p className="text-sm font-medium text-default-700">{t('pages.allowDiscounts')}</p>
+                <p className="text-xs text-default-500">{t('pages.enableFeeDiscountsForStudents')}</p>
               </div>
               <Switch size="sm" isSelected={rules.allowDiscount} onValueChange={(v) => setRules({ ...rules, allowDiscount: v })} />
             </div>
@@ -89,8 +91,8 @@ export default function FeeRules() {
               <>
                 <div className="flex items-center justify-between p-3 bg-default-50 rounded-lg border border-default-200">
                   <div>
-                    <p className="text-sm font-medium text-default-700">Require Approval</p>
-                    <p className="text-xs text-default-500">Discounts need admin approval</p>
+                    <p className="text-sm font-medium text-default-700">{t('pages.requireApproval')}</p>
+                    <p className="text-xs text-default-500">{t('pages.discountsNeedAdminApproval')}</p>
                   </div>
                   <Switch size="sm" isSelected={rules.discountApproval} onValueChange={(v) => setRules({ ...rules, discountApproval: v })} />
                 </div>
@@ -113,16 +115,16 @@ export default function FeeRules() {
 
         <Card className="shadow-sm border border-default-200 rounded-lg">
           <CardHeader className="py-4 px-4 bg-default-50/50 border-b border-default-100">
-            <h3 className="text-sm font-semibold text-default-700">Payment Modes</h3>
+            <h3 className="text-sm font-semibold text-default-700">{t('pages.paymentModes')}</h3>
           </CardHeader>
           <CardBody className="p-4">
             <CheckboxGroup value={rules.paymentModes} onChange={(v) => setRules({ ...rules, paymentModes: v })}>
               <div className="space-y-3">
-                <Checkbox value="cash" size="sm" classNames={{ label: "text-sm text-default-700" }}>Cash</Checkbox>
-                <Checkbox value="cheque" size="sm" classNames={{ label: "text-sm text-default-700" }}>Cheque</Checkbox>
+                <Checkbox value="cash" size="sm" classNames={{ label: "text-sm text-default-700" }}>{t('pages.cash1')}</Checkbox>
+                <Checkbox value="cheque" size="sm" classNames={{ label: "text-sm text-default-700" }}>{t('pages.cheque1')}</Checkbox>
                 <Checkbox value="online" size="sm" classNames={{ label: "text-sm text-default-700" }}>Online / UPI</Checkbox>
-                <Checkbox value="card" size="sm" classNames={{ label: "text-sm text-default-700" }}>Card</Checkbox>
-                <Checkbox value="bank" size="sm" classNames={{ label: "text-sm text-default-700" }}>Bank Transfer</Checkbox>
+                <Checkbox value="card" size="sm" classNames={{ label: "text-sm text-default-700" }}>{t('pages.card1')}</Checkbox>
+                <Checkbox value="bank" size="sm" classNames={{ label: "text-sm text-default-700" }}>{t('pages.bankTransfer1')}</Checkbox>
               </div>
             </CheckboxGroup>
           </CardBody>
@@ -130,7 +132,7 @@ export default function FeeRules() {
 
         <Card className="shadow-sm border border-default-200 rounded-lg">
           <CardHeader className="py-4 px-4 bg-default-50/50 border-b border-default-100">
-            <h3 className="text-sm font-semibold text-default-700">Payment Collection Method</h3>
+            <h3 className="text-sm font-semibold text-default-700">{t('pages.paymentCollectionMethod')}</h3>
           </CardHeader>
           <CardBody className="p-4">
             <RadioGroup
@@ -138,10 +140,10 @@ export default function FeeRules() {
               onValueChange={(v) => setRules({ ...rules, collectionMethod: v })}
             >
               <div className="space-y-3">
-                <Radio value="term" description="Collect fees per academic term (e.g., Term 1, Term 2)" classNames={{ label: "text-sm font-medium", description: "text-xs text-default-400" }}>Term-wise</Radio>
-                <Radio value="year" description="Collect the entire fee amount at once" classNames={{ label: "text-sm font-medium", description: "text-xs text-default-400" }}>Yearly</Radio>
-                <Radio value="monthly" description="Collect fees on a monthly basis" classNames={{ label: "text-sm font-medium", description: "text-xs text-default-400" }}>Monthly</Radio>
-                <Radio value="custom" description="Define custom collection durations" classNames={{ label: "text-sm font-medium", description: "text-xs text-default-400" }}>Custom Duration</Radio>
+                <Radio value="term" description="Collect fees per academic term (e.g., Term 1, Term 2)" classNames={{ label: "text-sm font-medium", description: "text-xs text-default-400" }}>{t('pages.termWise')}</Radio>
+                <Radio value="year" description="Collect the entire fee amount at once" classNames={{ label: "text-sm font-medium", description: "text-xs text-default-400" }}>{t('pages.yearly')}</Radio>
+                <Radio value="monthly" description="Collect fees on a monthly basis" classNames={{ label: "text-sm font-medium", description: "text-xs text-default-400" }}>{t('pages.monthly')}</Radio>
+                <Radio value="custom" description="Define custom collection durations" classNames={{ label: "text-sm font-medium", description: "text-xs text-default-400" }}>{t('pages.customDuration')}</Radio>
               </div>
             </RadioGroup>
           </CardBody>
@@ -149,13 +151,13 @@ export default function FeeRules() {
 
         <Card className="shadow-sm border border-default-200 rounded-lg">
           <CardHeader className="py-4 px-4 bg-default-50/50 border-b border-default-100">
-            <h3 className="text-sm font-semibold text-default-700">Late Fee Settings</h3>
+            <h3 className="text-sm font-semibold text-default-700">{t('pages.lateFeeSettings')}</h3>
           </CardHeader>
           <CardBody className="p-4 space-y-4">
             <div className="flex items-center justify-between p-3 bg-default-50 rounded-lg border border-default-200">
               <div>
-                <p className="text-sm font-medium text-default-700">Enable Late Fee</p>
-                <p className="text-xs text-default-500">Charge late fee after due date</p>
+                <p className="text-sm font-medium text-default-700">{t('pages.enableLateFee')}</p>
+                <p className="text-xs text-default-500">{t('pages.chargeLateFeeAfterDueDate')}</p>
               </div>
               <Switch
                 size="sm"
@@ -168,7 +170,7 @@ export default function FeeRules() {
                 <Input
                   size="sm"
                   type="number"
-                  label="Late Fee Amount"
+                  label={t('pages.lateFeeAmount')}
                   variant="bordered"
                   startContent="₹"
                   value={rules.lateFeeAmount}
@@ -177,7 +179,7 @@ export default function FeeRules() {
                 <Input
                   size="sm"
                   type="number"
-                  label="Grace Period (days)"
+                  label={t('pages.gracePeriodDays1')}
                   variant="bordered"
                   value={rules.gracePeriod}
                   onChange={(e) => setRules({ ...rules, gracePeriod: parseInt(e.target.value) || 0 })}

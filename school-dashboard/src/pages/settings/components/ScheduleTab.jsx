@@ -75,7 +75,7 @@ export default function ScheduleTab({ localSettings, onEditClick, instructionalH
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <DataField label={t('settings.academics.schoolStartTime', 'School Start Time')} value={localSettings.schoolStartTime} />
             <DataField label={t('settings.academics.schoolEndTime', 'School End Time')} value={localSettings.schoolEndTime} />
-            <DataField label="Total School Hours" value={getSchoolHours()} />
+            <DataField label={t('pages.totalSchoolHours')} value={getSchoolHours()} />
           </div>
         </div>
       </div>
@@ -107,7 +107,7 @@ export default function ScheduleTab({ localSettings, onEditClick, instructionalH
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <DataField label={t('settings.academics.periodDuration', 'Period Duration (minutes)')} value={localSettings.periodDuration ? `${localSettings.periodDuration} minutes` : null} />
             <DataField label={t('settings.academics.periodsPerDay', 'Periods Per Day')} value={localSettings.periodsPerDay} />
-            <DataField label="Instructional Time" value={`${instructionalHours}h ${instructionalMins}m`} />
+            <DataField label={t('pages.instructionalTime1')} value={`${instructionalHours}h ${instructionalMins}m`} />
           </div>
 
           <div className="mt-4 p-4 bg-default-50 rounded-lg">

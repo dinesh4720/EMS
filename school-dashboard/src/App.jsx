@@ -1,5 +1,11 @@
+import { safeGetItem } from './utils/safeStorage';
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { Suspense } from "react";
+import { Suspense, lazy } from "react";
+const TrialBanner = lazy(() => import('./components/billing/TrialBanner'));
+const SessionTimeoutWarning = lazy(() => import('./components/common/SessionTimeoutWarning'));
+const OfflineBanner = lazy(() => import('./components/common/OfflineBanner'));
+const StaleDataBanner = lazy(() => import('./components/common/StaleDataBanner'));
+const FeatureGate = lazy(() => import('./components/billing/FeatureGate'));
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -36,6 +42,14 @@ const Login = lazyWithRetry(() => import("./pages/Login"));
 const Signup = lazyWithRetry(() => import("./pages/Signup"));
 const SuperAdminDashboard = lazyWithRetry(() => import("./pages/super-admin"));
 
+// New module pages
+const PTMPage = lazyWithRetry(() => import("./pages/ptm"));
+const CBSEReportCardPage = lazyWithRetry(() => import("./pages/academics/CBSEReportCardPage"));
+const CCEGradingPage = lazyWithRetry(() => import("./pages/academics/CCEGradingPage"));
+const EmailCampaignsPage = lazyWithRetry(() => import("./pages/messaging/EmailCampaignsPage"));
+const StudentPromotionPage = lazyWithRetry(() => import("./pages/students/StudentPromotionPage"));
+const TransferCertificatePage = lazyWithRetry(() => import("./pages/students/TransferCertificatePage"));
+
 // Lazy load components that aren't needed on initial render
 const PublicFormSubmission = lazyWithRetry(() => import("./pages/PublicFormSubmission"));
 const OnboardingFlow = lazyWithRetry(() => import("./components/onboarding/OnboardingFlow"));
@@ -43,6 +57,7 @@ const PayrollReminder = lazyWithRetry(() => import("./components/PayrollReminder
 
 // Loading fallback component
 function PageLoader() {
+  const { t } = useTranslation();
   return (
     <div className="h-screen w-screen flex items-center justify-center bg-background">
       <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
@@ -59,6 +74,15 @@ import StructuredData from "./components/StructuredData";
 import { AlertCircle, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { isSuperAdminRole } from "./utils/roleUtils";
+import { useTranslation } from 'react-i18next';
+
+function RouteEB({ children }) {
+  return (
+    <ErrorBoundary message="This page encountered an error. Try navigating to a different section.">
+      {children}
+    </ErrorBoundary>
+  );
+}
 
 function BeforeSchoolAlert() {
   const { isBeforeSchoolHours, schoolSettings } = useApp();
@@ -152,7 +176,7 @@ function AuthenticatedApp() {
 
   useEffect(() => {
     // Check if onboarding is completed
-    const hasCompleted = localStorage.getItem("hasCompletedOnboarding");
+    const hasCompleted = safeGetItem("hasCompletedOnboarding");
     if (!hasCompleted) {
       setShowOnboarding(true);
     }
@@ -169,6 +193,13 @@ function AuthenticatedApp() {
 
   return (
     <>
+      {/* Skip-to-content link for keyboard / screen-reader users (WCAG 2.4.1) */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[99999] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-md focus:text-sm focus:font-medium"
+      >
+        Skip to main content
+      </a>
       <StructuredData />
       <div className="flex min-h-screen bg-background font-sans text-foreground">
         {showOnboarding && (
@@ -181,105 +212,191 @@ function AuthenticatedApp() {
           <Sidebar isSidebarOpen={effectiveSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
         </ErrorBoundary>
         <AiAssistantLayout>
-          <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${effectiveSidebarOpen ? 'ml-[240px]' : 'ml-[64px]'} relative z-10 bg-gray-50 dark:bg-zinc-950`}>
+          <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${effectiveSidebarOpen ? 'ml-[var(--sidebar-width)]' : 'ml-[var(--sidebar-width-collapsed)]'} relative z-10 bg-gray-50 dark:bg-zinc-950`}>
             <Topbar isSidebarOpen={effectiveSidebarOpen} />
             <div className="mt-14 flex-1 flex flex-col min-h-0">
+              <Suspense fallback={null}>
+                <TrialBanner />
+              </Suspense>
+              <Suspense fallback={null}>
+                <StaleDataBanner />
+              </Suspense>
               <BeforeSchoolAlert />
-              <main className={`flex-1 flex flex-col min-h-0 ${isSettingsPage ? 'p-0' : 'p-2 md:p-3'}`}>
+              <main id="main-content" tabIndex={-1} className={`flex-1 flex flex-col min-h-0 ${isSettingsPage ? 'p-0' : 'p-2 md:p-3'}`}>
                 <div className={`flex-1 flex flex-col min-h-0 ${isSettingsPage ? 'w-full' : 'max-w-[1600px] mx-auto w-full'}`}>
-                  <ErrorBoundary message="This page encountered an error. Try navigating to a different section.">
                   <Routes>
-                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/" element={<RouteEB><Dashboard /></RouteEB>} />
                     <Route path="/analytics" element={
-                      <PermissionGuard module="analytics">
-                        <Analytics />
-                      </PermissionGuard>
+                      <RouteEB>
+                        <PermissionGuard module="analytics">
+                          <Analytics />
+                        </PermissionGuard>
+                      </RouteEB>
                     } />
                     <Route path="/front-desk/*" element={
-                      <PermissionGuard module="front-desk">
-                        <FrontDeskPage />
-                      </PermissionGuard>
+                      <RouteEB>
+                        <PermissionGuard module="front-desk">
+                          <FrontDeskPage />
+                        </PermissionGuard>
+                      </RouteEB>
                     } />
                     <Route path="/staffs/*" element={
-                      <PermissionGuard module="staff">
-                        <StaffsPage />
-                      </PermissionGuard>
+                      <RouteEB>
+                        <PermissionGuard module="staff">
+                          <StaffsPage />
+                        </PermissionGuard>
+                      </RouteEB>
                     } />
                     <Route path="/students/*" element={
-                      <PermissionGuard module="students">
-                        <StudentsPage />
-                      </PermissionGuard>
+                      <RouteEB>
+                        <PermissionGuard module="students">
+                          <StudentsPage />
+                        </PermissionGuard>
+                      </RouteEB>
                     } />
                     <Route path="/classes/*" element={
-                      <PermissionGuard module="classes">
-                        <ClassesPage />
-                      </PermissionGuard>
+                      <RouteEB>
+                        <PermissionGuard module="classes">
+                          <ClassesPage />
+                        </PermissionGuard>
+                      </RouteEB>
                     } />
                     <Route path="/calendar" element={
-                      <PermissionGuard module="timetable">
-                        <CalendarPage />
-                      </PermissionGuard>
+                      <RouteEB>
+                        <PermissionGuard module="timetable">
+                          <CalendarPage />
+                        </PermissionGuard>
+                      </RouteEB>
                     } />
                     <Route path="/messaging/*" element={
-                      <PermissionGuard module="messaging">
-                        <MessagingPage />
-                      </PermissionGuard>
+                      <RouteEB>
+                        <PermissionGuard module="messaging">
+                          <MessagingPage />
+                        </PermissionGuard>
+                      </RouteEB>
                     } />
                     <Route path="/fees/*" element={
-                      <PermissionGuard module="fees">
-                        <FeesPage />
-                      </PermissionGuard>
+                      <RouteEB>
+                        <PermissionGuard module="fees">
+                          <FeesPage />
+                        </PermissionGuard>
+                      </RouteEB>
                     } />
                     <Route path="/inventory/*" element={
-                      <PermissionGuard module="inventory">
-                        <InventoryPage />
-                      </PermissionGuard>
+                      <RouteEB>
+                        <PermissionGuard module="inventory">
+                          <InventoryPage />
+                        </PermissionGuard>
+                      </RouteEB>
                     } />
                     <Route path="/hostel/*" element={
-                      <PermissionGuard module="hostel">
-                        <HostelPage />
-                      </PermissionGuard>
+                      <RouteEB>
+                        <PermissionGuard module="hostel">
+                          <HostelPage />
+                        </PermissionGuard>
+                      </RouteEB>
                     } />
                     <Route path="/transport/*" element={
-                      <PermissionGuard module="transport">
-                        <TransportPage />
-                      </PermissionGuard>
+                      <RouteEB>
+                        <PermissionGuard module="transport">
+                          <TransportPage />
+                        </PermissionGuard>
+                      </RouteEB>
                     } />
                     <Route path="/library/*" element={
-                      <PermissionGuard module="library">
-                        <LibraryPage />
-                      </PermissionGuard>
+                      <RouteEB>
+                        <PermissionGuard module="library">
+                          <LibraryPage />
+                        </PermissionGuard>
+                      </RouteEB>
                     } />
                     <Route path="/accounts/*" element={<Navigate to="/fees" replace />} />
                     <Route path="/academics/*" element={
-                      <PermissionGuard module="academics">
-                        <AcademicLayout />
-                      </PermissionGuard>
+                      <RouteEB>
+                        <PermissionGuard module="academics">
+                          <AcademicLayout />
+                        </PermissionGuard>
+                      </RouteEB>
                     } />
                     <Route path="/homework" element={
-                      <PermissionGuard module="academics">
-                        <HomeworkPage />
-                      </PermissionGuard>
+                      <RouteEB>
+                        <PermissionGuard module="academics">
+                          <HomeworkPage />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
+                    <Route path="/ptm" element={
+                      <RouteEB>
+                        <PermissionGuard module="academics">
+                          <PTMPage />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
+                    <Route path="/academics/cbse-report-card" element={
+                      <RouteEB>
+                        <PermissionGuard module="academics">
+                          <CBSEReportCardPage />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
+                    <Route path="/academics/cce-grading" element={
+                      <RouteEB>
+                        <PermissionGuard module="academics">
+                          <CCEGradingPage />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
+                    <Route path="/messaging/email-campaigns" element={
+                      <RouteEB>
+                        <PermissionGuard module="messaging">
+                          <EmailCampaignsPage />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
+                    <Route path="/students/promotion" element={
+                      <RouteEB>
+                        <PermissionGuard module="students">
+                          <StudentPromotionPage />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
+                    <Route path="/students/transfer-certificate" element={
+                      <RouteEB>
+                        <PermissionGuard module="students">
+                          <TransferCertificatePage />
+                        </PermissionGuard>
+                      </RouteEB>
                     } />
                     <Route path="/settings/*" element={
-                      <PermissionGuard module="settings">
-                        <SettingsPage />
-                      </PermissionGuard>
+                      <RouteEB>
+                        <PermissionGuard module="settings">
+                          <SettingsPage />
+                        </PermissionGuard>
+                      </RouteEB>
                     } />
-                    <Route path="/intake-forms/assignments" element={<FormAssignments />} />
-                    <Route path="/intake-forms/submissions" element={<FormSubmissions />} />
-                    <Route path="/intake-forms/funnel" element={<EnrollmentFunnel />} />
-                    <Route path="/ai-assistant" element={<AiAssistantPage />} />
+                    <Route path="/intake-forms/assignments" element={<RouteEB><FormAssignments /></RouteEB>} />
+                    <Route path="/intake-forms/submissions" element={<RouteEB><FormSubmissions /></RouteEB>} />
+                    <Route path="/intake-forms/funnel" element={<RouteEB><EnrollmentFunnel /></RouteEB>} />
+                    <Route path="/ai-assistant" element={
+                      <RouteEB>
+                        <Suspense fallback={null}>
+                          <FeatureGate capability="aiAssistant">
+                            <AiAssistantPage />
+                          </FeatureGate>
+                        </Suspense>
+                      </RouteEB>
+                    } />
                     {isDev && StyleGuide ? (
-                      <Route path="/style-guide" element={<StyleGuide />} />
+                      <Route path="/style-guide" element={<RouteEB><StyleGuide /></RouteEB>} />
                     ) : null}
                     <Route path="/timetable-wizard" element={
-                      <PermissionGuard module="timetable">
-                        <TimetableWizardPage />
-                      </PermissionGuard>
+                      <RouteEB>
+                        <PermissionGuard module="timetable">
+                          <TimetableWizardPage />
+                        </PermissionGuard>
+                      </RouteEB>
                     } />
                   </Routes>
-                  </ErrorBoundary>
                 </div>
               </main>
             </div>
@@ -290,6 +407,11 @@ function AuthenticatedApp() {
       {/* Payroll Reminder */}
       <Suspense fallback={null}>
         <PayrollReminder />
+      </Suspense>
+
+      {/* Session Timeout Warning */}
+      <Suspense fallback={null}>
+        <SessionTimeoutWarning />
       </Suspense>
     </>
   );
@@ -345,6 +467,8 @@ function AppRoutes() {
   );
 }
 
+const CookieConsentBanner = lazyWithRetry(() => import('./components/CookieConsentBanner'));
+
 export default function App() {
   return (
     <AuthProvider>
@@ -352,7 +476,13 @@ export default function App() {
         <PermissionProvider>
           <ChatNotificationProvider>
             <AiAssistantProvider>
+              <Suspense fallback={null}>
+                <OfflineBanner />
+              </Suspense>
               <AppRoutes />
+              <Suspense fallback={null}>
+                <CookieConsentBanner />
+              </Suspense>
             </AiAssistantProvider>
           </ChatNotificationProvider>
         </PermissionProvider>

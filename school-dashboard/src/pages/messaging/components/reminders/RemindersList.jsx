@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import SkeletonList from '../../../../components/skeletons/SkeletonList';
 import {
   Table,
   TableHeader,
@@ -33,72 +34,13 @@ import {
   Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
-const REMINDER_TYPES = {
-  fee: {
-    label: 'Fee Reminder',
-    icon: DollarSign,
-    color: 'warning',
-    gradient: 'from-amber-500 to-orange-500',
-    bgLight: 'bg-amber-50',
-    bgDark: 'dark:bg-amber-500/10',
-    textLight: 'text-amber-600',
-    textDark: 'dark:text-amber-400',
-    borderLight: 'border-amber-200',
-    borderDark: 'dark:border-amber-500/20',
-  },
-  attendance: {
-    label: 'Attendance Alert',
-    icon: Users,
-    color: 'danger',
-    gradient: 'from-rose-500 to-pink-500',
-    bgLight: 'bg-rose-50',
-    bgDark: 'dark:bg-rose-500/10',
-    textLight: 'text-rose-600',
-    textDark: 'dark:text-rose-400',
-    borderLight: 'border-rose-200',
-    borderDark: 'dark:border-rose-500/20',
-  },
-  academic: {
-    label: 'Academic Reminder',
-    icon: BookOpen,
-    color: 'primary',
-    gradient: 'from-indigo-500 to-blue-500',
-    bgLight: 'bg-indigo-50',
-    bgDark: 'dark:bg-indigo-500/10',
-    textLight: 'text-indigo-600',
-    textDark: 'dark:text-indigo-400',
-    borderLight: 'border-indigo-200',
-    borderDark: 'dark:border-indigo-500/20',
-  },
-  event: {
-    label: 'Event Reminder',
-    icon: Calendar,
-    color: 'success',
-    gradient: 'from-emerald-500 to-green-500',
-    bgLight: 'bg-emerald-50',
-    bgDark: 'dark:bg-emerald-500/10',
-    textLight: 'text-emerald-600',
-    textDark: 'dark:text-emerald-400',
-    borderLight: 'border-emerald-200',
-    borderDark: 'dark:border-emerald-500/20',
-  },
-};
-
-const TRIGGER_LABELS = {
-  overdue: 'Fee Overdue',
-  due_soon: 'Fee Due Soon',
-  partial_payment: 'Partial Payment',
-  no_payment: 'No Payment',
-  absent_3_days: 'Absent 3+ Days',
-  below_75: 'Below 75%',
-  absent_today: 'Absent Today',
-  assignment_due: 'Assignment Due',
-  exam_scheduled: 'Exam Scheduled',
-  grades_declined: 'Grades Declined',
-  before_event: 'Before Event',
-  after_event: 'After Event',
-  event_today: 'Event Today',
+const REMINDER_TYPE_CONFIG = {
+  fee: { icon: DollarSign, color: 'warning', gradient: 'from-amber-500 to-orange-500', bgLight: 'bg-amber-50', bgDark: 'dark:bg-amber-500/10', textLight: 'text-amber-600', textDark: 'dark:text-amber-400', borderLight: 'border-amber-200', borderDark: 'dark:border-amber-500/20' },
+  attendance: { icon: Users, color: 'danger', gradient: 'from-rose-500 to-pink-500', bgLight: 'bg-rose-50', bgDark: 'dark:bg-rose-500/10', textLight: 'text-rose-600', textDark: 'dark:text-rose-400', borderLight: 'border-rose-200', borderDark: 'dark:border-rose-500/20' },
+  academic: { icon: BookOpen, color: 'primary', gradient: 'from-indigo-500 to-blue-500', bgLight: 'bg-indigo-50', bgDark: 'dark:bg-indigo-500/10', textLight: 'text-indigo-600', textDark: 'dark:text-indigo-400', borderLight: 'border-indigo-200', borderDark: 'dark:border-indigo-500/20' },
+  event: { icon: Calendar, color: 'success', gradient: 'from-emerald-500 to-green-500', bgLight: 'bg-emerald-50', bgDark: 'dark:bg-emerald-500/10', textLight: 'text-emerald-600', textDark: 'dark:text-emerald-400', borderLight: 'border-emerald-200', borderDark: 'dark:border-emerald-500/20' },
 };
 
 export default function RemindersList({
@@ -109,6 +51,28 @@ export default function RemindersList({
   onToggle,
   onDuplicate,
 }) {
+  const { t } = useTranslation();
+  const REMINDER_TYPES = useMemo(() => ({
+    fee: { ...REMINDER_TYPE_CONFIG.fee, label: t('constants.reminders.types.fee') },
+    attendance: { ...REMINDER_TYPE_CONFIG.attendance, label: t('constants.reminders.types.attendance') },
+    academic: { ...REMINDER_TYPE_CONFIG.academic, label: t('constants.reminders.types.academic') },
+    event: { ...REMINDER_TYPE_CONFIG.event, label: t('constants.reminders.types.event') },
+  }), [t]);
+  const TRIGGER_LABELS = useMemo(() => ({
+    overdue: t('constants.reminders.triggers.overdue'),
+    due_soon: t('constants.reminders.triggers.dueSoon'),
+    partial_payment: t('constants.reminders.triggers.partialPayment'),
+    no_payment: t('constants.reminders.triggers.noPayment'),
+    absent_3_days: t('constants.reminders.triggers.absent3Days'),
+    below_75: t('constants.reminders.triggers.below75'),
+    absent_today: t('constants.reminders.triggers.absentToday'),
+    assignment_due: t('constants.reminders.triggers.assignmentDue'),
+    exam_scheduled: t('constants.reminders.triggers.examScheduled'),
+    grades_declined: t('constants.reminders.triggers.gradesDeclined'),
+    before_event: t('constants.reminders.triggers.beforeEvent'),
+    after_event: t('constants.reminders.triggers.afterEvent'),
+    event_today: t('constants.reminders.triggers.eventToday'),
+  }), [t]);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -133,26 +97,26 @@ export default function RemindersList({
       await onToggle(reminder._id, !reminder.active);
       toast.success(`Reminder ${reminder.active ? 'disabled' : 'enabled'}`);
     } catch (error) {
-      toast.error('Failed to toggle reminder');
+      toast.error(t('toast.error.failedToToggleReminder'));
     }
   };
 
   const handleDelete = async (reminderId) => {
-    if (!confirm('Are you sure you want to delete this reminder?')) return;
+    if (!confirm(t('confirm.deleteReminder'))) return;
     try {
       await onDelete(reminderId);
-      toast.success('Reminder deleted');
+      toast.success(t('toast.success.reminderDeleted'));
     } catch (error) {
-      toast.error('Failed to delete reminder');
+      toast.error(t('toast.error.failedToDeleteReminder'));
     }
   };
 
   const handleDuplicate = async (reminder) => {
     try {
       await onDuplicate(reminder);
-      toast.success('Reminder duplicated');
+      toast.success(t('toast.success.reminderDuplicated'));
     } catch (error) {
-      toast.error('Failed to duplicate reminder');
+      toast.error(t('toast.error.failedToDuplicateReminder'));
     }
   };
 
@@ -176,15 +140,7 @@ export default function RemindersList({
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 gap-4">
-        <div className="relative">
-          <div className="w-12 h-12 rounded-full border-4 border-indigo-100 dark:border-indigo-500/20" />
-          <div className="absolute inset-0 w-12 h-12 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin" />
-        </div>
-        <p className="text-gray-500 dark:text-gray-400 font-medium">Loading reminders...</p>
-      </div>
-    );
+    return <SkeletonList items={4} avatar={true} title={true} subtitle={true} className="p-4" />;
   }
 
   return (
@@ -197,8 +153,8 @@ export default function RemindersList({
             <Search size={16} className="text-gray-400 dark:text-gray-500" />
             <input
               type="text"
-              placeholder="Search reminders..."
-              className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              placeholder={t('pages.searchReminders')}
+              className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-500"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -218,7 +174,7 @@ export default function RemindersList({
                 <Filter size={14} className="text-gray-400" />
                 <span>Type: </span>
                 <span className="text-gray-900 dark:text-white">
-                  {typeFilter === 'all' ? 'All' : REMINDER_TYPES[typeFilter]?.label}
+                  {typeFilter === 'all' ? t('constants.reminders.types.all') : REMINDER_TYPES[typeFilter]?.label}
                 </span>
                 <ChevronDown size={14} className="text-gray-400 ml-1" />
               </Button>
@@ -231,11 +187,11 @@ export default function RemindersList({
                 base: "rounded-lg",
               }}
             >
-              <DropdownItem key="all">All Types</DropdownItem>
-              <DropdownItem key="fee" startContent={<DollarSign size={14} className="text-amber-500" />}>Fee Reminder</DropdownItem>
-              <DropdownItem key="attendance" startContent={<Users size={14} className="text-rose-500" />}>Attendance Alert</DropdownItem>
-              <DropdownItem key="academic" startContent={<BookOpen size={14} className="text-indigo-500" />}>Academic Reminder</DropdownItem>
-              <DropdownItem key="event" startContent={<Calendar size={14} className="text-emerald-500" />}>Event Reminder</DropdownItem>
+              <DropdownItem key="all">{t('pages.allTypes1')}</DropdownItem>
+              <DropdownItem key="fee" startContent={<DollarSign size={14} className="text-amber-500" />}>{t('pages.feeReminder')}</DropdownItem>
+              <DropdownItem key="attendance" startContent={<Users size={14} className="text-rose-500" />}>{t('pages.attendanceAlert')}</DropdownItem>
+              <DropdownItem key="academic" startContent={<BookOpen size={14} className="text-indigo-500" />}>{t('pages.academicReminder')}</DropdownItem>
+              <DropdownItem key="event" startContent={<Calendar size={14} className="text-emerald-500" />}>{t('pages.eventReminder')}</DropdownItem>
             </DropdownMenu>
           </Dropdown>
 
@@ -263,9 +219,9 @@ export default function RemindersList({
                 base: "rounded-lg",
               }}
             >
-              <DropdownItem key="all">All Status</DropdownItem>
-              <DropdownItem key="active" startContent={<Power size={14} className="text-emerald-500" />}>Active</DropdownItem>
-              <DropdownItem key="inactive" startContent={<PowerOff size={14} className="text-gray-400" />}>Inactive</DropdownItem>
+              <DropdownItem key="all">{t('pages.allStatus1')}</DropdownItem>
+              <DropdownItem key="active" startContent={<Power size={14} className="text-emerald-500" />}>{t('pages.active')}</DropdownItem>
+              <DropdownItem key="inactive" startContent={<PowerOff size={14} className="text-gray-400" />}>{t('pages.inactive')}</DropdownItem>
             </DropdownMenu>
           </Dropdown>
         </div>
@@ -284,7 +240,7 @@ export default function RemindersList({
       {/* Table */}
       <div className="w-full overflow-x-auto rounded-xl border border-gray-100 dark:border-zinc-800">
         <Table
-          aria-label="Reminders"
+          aria-label={t('aria.misc.reminders')}
           removeWrapper
           classNames={{
             th: "bg-gray-50 dark:bg-zinc-800/50 text-gray-600 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider",
@@ -293,12 +249,12 @@ export default function RemindersList({
           }}
         >
         <TableHeader>
-          <TableColumn>TITLE & TYPE</TableColumn>
-          <TableColumn>TRIGGER</TableColumn>
-          <TableColumn>RECIPIENTS & CHANNELS</TableColumn>
-          <TableColumn>FREQUENCY</TableColumn>
-          <TableColumn>STATUS</TableColumn>
-          <TableColumn align="end">ACTIONS</TableColumn>
+          <TableColumn scope="col">{t('pages.tITLEType')}</TableColumn>
+          <TableColumn scope="col">{t('pages.tRIGGER')}</TableColumn>
+          <TableColumn scope="col">{t('pages.rECIPIENTSChannels')}</TableColumn>
+          <TableColumn scope="col">{t('pages.fREQUENCY')}</TableColumn>
+          <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+          <TableColumn align="end" scope="col">{t('pages.aCTIONS')}</TableColumn>
         </TableHeader>
         <TableBody
           emptyContent={
@@ -311,7 +267,7 @@ export default function RemindersList({
                   <Sparkles size={14} className="text-white" />
                 </div>
               </div>
-              <p className="text-gray-700 dark:text-gray-300 font-semibold text-lg mb-1">No reminders found</p>
+              <p className="text-gray-700 dark:text-gray-300 font-semibold text-lg mb-1">{t('pages.noRemindersFound')}</p>
               <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm">
                 {searchQuery || typeFilter !== 'all' || statusFilter !== 'all'
                   ? 'Try adjusting your filters or search query'

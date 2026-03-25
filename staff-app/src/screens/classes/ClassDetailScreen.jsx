@@ -27,6 +27,7 @@ import { useClassContext } from '../../context/ClassContext';
 import { ClassInfoCard, ScheduleItem } from '../../components/classes';
 import { AttendanceSummaryCard } from '../../components/attendance';
 import { examsApi } from '../../services/api';
+import { useTranslation } from 'react-i18next';
 
 const QUICK_ACTIONS = [
   { id: 'attendance', label: 'Take Attendance', Icon: ClipboardList, colorRole: 'primary' },
@@ -36,6 +37,7 @@ const QUICK_ACTIONS = [
 ];
 
 const ClassDetailScreen = () => {
+  const { t } = useTranslation();
   const route = useRoute();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -194,7 +196,7 @@ const ClassDetailScreen = () => {
 
         {/* Quick Actions */}
         <View style={[styles.section, { marginBottom: spacing.lg }]}>
-          <Text style={[typography.titleMedium, { color: colors.onSurface, marginBottom: spacing.sm }]}>Quick Actions</Text>
+          <Text style={[typography.titleMedium, { color: colors.onSurface, marginBottom: spacing.sm }]}>{t('screens.quickActions')}</Text>
           <View style={styles.actionsGrid}>
             {QUICK_ACTIONS.map(action => {
               const Icon = action.Icon;
@@ -225,14 +227,14 @@ const ClassDetailScreen = () => {
         {/* Attendance Summary */}
         {Object.keys(attendance).length > 0 && (
           <View style={[styles.section, { marginBottom: spacing.lg }]}>
-            <Text style={[typography.titleMedium, { color: colors.onSurface, marginBottom: spacing.sm }]}>Today's Attendance</Text>
+            <Text style={[typography.titleMedium, { color: colors.onSurface, marginBottom: spacing.sm }]}>{t('screens.todaySAttendance')}</Text>
             <AttendanceSummaryCard summary={summary} compact />
           </View>
         )}
 
         {/* Today's Schedule */}
         <View style={[styles.section, { marginBottom: spacing.lg }]}>
-          <Text style={[typography.titleMedium, { color: colors.onSurface, marginBottom: spacing.sm }]}>Today's Schedule</Text>
+          <Text style={[typography.titleMedium, { color: colors.onSurface, marginBottom: spacing.sm }]}>{t('screens.todaySSchedule')}</Text>
           <View style={[styles.scheduleContainer, { backgroundColor: colors.surfaceContainerLow, borderRadius: shape.cornerLarge }]}>
             {todaySchedule.length > 0 ? (
               todaySchedule.map((item, index) => (
@@ -246,7 +248,7 @@ const ClassDetailScreen = () => {
             ) : (
               <View style={styles.emptyState}>
                 <CalendarDays size={48} color={colors.outline} style={{ marginBottom: spacing.sm }} />
-                <Text style={[typography.bodyMedium, { color: colors.onSurfaceVariant }]}>No classes scheduled for today</Text>
+                <Text style={[typography.bodyMedium, { color: colors.onSurfaceVariant }]}>{t('screens.noClassesScheduledForToday')}</Text>
               </View>
             )}
           </View>
@@ -255,10 +257,10 @@ const ClassDetailScreen = () => {
         {/* Exams Section */}
         <View style={[styles.section, { marginBottom: spacing.lg }]}>
           <View style={[styles.sectionHeader, { marginBottom: spacing.sm }]}>
-            <Text style={[typography.titleMedium, { color: colors.onSurface }]}>Exams</Text>
+            <Text style={[typography.titleMedium, { color: colors.onSurface }]}>{t('screens.exams')}</Text>
             <Pressable onPress={handleCreateExam} style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Plus size={16} color={colors.primary} />
-              <Text style={[typography.labelLarge, { color: colors.primary }]}>Create</Text>
+              <Text style={[typography.labelLarge, { color: colors.primary }]}>{t('screens.create')}</Text>
             </Pressable>
           </View>
 
@@ -269,7 +271,7 @@ const ClassDetailScreen = () => {
               {/* Upcoming Exams */}
               {upcomingExams.length > 0 && (
                 <View style={styles.examsSubsection}>
-                  <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant, marginBottom: spacing.xs, textTransform: 'uppercase' }]}>Upcoming</Text>
+                  <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant, marginBottom: spacing.xs, textTransform: 'uppercase' }]}>{t('screens.upcoming')}</Text>
                   {upcomingExams.map(exam => (
                     <View key={exam.id} style={[styles.examCard, { backgroundColor: colors.surfaceContainer, borderRadius: shape.cornerMedium }]}>
                       <View style={styles.examInfo}>
@@ -294,7 +296,7 @@ const ClassDetailScreen = () => {
               {/* Recent Completed Exams */}
               {recentExams.length > 0 && (
                 <View style={styles.examsSubsection}>
-                  <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant, marginBottom: spacing.xs, textTransform: 'uppercase' }]}>Completed</Text>
+                  <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant, marginBottom: spacing.xs, textTransform: 'uppercase' }]}>{t('screens.completed')}</Text>
                   {recentExams.map(exam => (
                     <View key={exam.id} style={[styles.examCard, { backgroundColor: colors.surfaceContainer, borderRadius: shape.cornerMedium }]}>
                       <View style={styles.examInfo}>
@@ -315,12 +317,12 @@ const ClassDetailScreen = () => {
               {classExams.length === 0 && (
                 <View style={[styles.examsEmptyState, { backgroundColor: colors.surfaceContainerLow, borderRadius: shape.cornerLarge }]}>
                   <FileText size={48} color={colors.outline} style={{ marginBottom: spacing.sm }} />
-                  <Text style={[typography.bodyMedium, { color: colors.onSurfaceVariant }]}>No exams scheduled yet</Text>
+                  <Text style={[typography.bodyMedium, { color: colors.onSurfaceVariant }]}>{t('screens.noExamsScheduledYet')}</Text>
                   <Pressable
                     style={[styles.createExamButton, { backgroundColor: colors.primary, borderRadius: shape.pill, marginTop: spacing.md }]}
                     onPress={handleCreateExam}
                   >
-                    <Text style={[typography.labelLarge, { color: colors.onPrimary }]}>Create First Exam</Text>
+                    <Text style={[typography.labelLarge, { color: colors.onPrimary }]}>{t('screens.createFirstExam')}</Text>
                   </Pressable>
                 </View>
               )}
@@ -331,9 +333,9 @@ const ClassDetailScreen = () => {
         {/* Students Preview */}
         <View style={styles.section}>
           <View style={[styles.sectionHeader, { marginBottom: spacing.sm }]}>
-            <Text style={[typography.titleMedium, { color: colors.onSurface }]}>Students</Text>
+            <Text style={[typography.titleMedium, { color: colors.onSurface }]}>{t('screens.students1')}</Text>
             <TouchableOpacity onPress={() => handleAction('students')}>
-              <Text style={[typography.labelLarge, { color: colors.primary }]}>See All</Text>
+              <Text style={[typography.labelLarge, { color: colors.primary }]}>{t('screens.seeAll1')}</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.studentsPreview}>
@@ -351,7 +353,7 @@ const ClassDetailScreen = () => {
             )}
           </View>
           {students.length === 0 && (
-            <Text style={[typography.bodyMedium, { color: colors.onSurfaceVariant }]}>No students enrolled</Text>
+            <Text style={[typography.bodyMedium, { color: colors.onSurfaceVariant }]}>{t('screens.noStudentsEnrolled')}</Text>
           )}
         </View>
       </ScrollView>

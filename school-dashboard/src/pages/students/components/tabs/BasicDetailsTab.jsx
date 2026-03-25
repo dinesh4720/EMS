@@ -2,6 +2,7 @@ import { useApp } from "../../../../context/AppContext";
 import { Button } from "@heroui/react";
 import { GraduationCap, User, Phone, Users, FileCheck, Edit } from "lucide-react";
 import InfoItem from "../shared/InfoItem";
+import { useTranslation } from 'react-i18next';
 
 /**
  * BasicDetailsTab - Student personal and academic details
@@ -11,6 +12,7 @@ export default function BasicDetailsTab({
   classTeacher,
   onEditSection
 }) {
+  const { t } = useTranslation();
   const { currentAcademicYear } = useApp();
 
   return (
@@ -22,7 +24,7 @@ export default function BasicDetailsTab({
             <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
               <GraduationCap size={18} className="text-gray-600 dark:text-zinc-400" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Academic Information</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">{t('pages.academicInformation1')}</h3>
           </div>
           {onEditSection && (
             <Button 
@@ -37,10 +39,10 @@ export default function BasicDetailsTab({
           )}
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-6">
-          <InfoItem label="Class" value={student?.class || "N/A"} />
-          <InfoItem label="Roll Number" value={student?.rollNo || "N/A"} />
-          <InfoItem label="Academic Year" value={student?.academicYear || currentAcademicYear} />
-          <InfoItem label="Class Teacher" value={classTeacher?.name || "Not Assigned"} />
+          <InfoItem label={t('pages.class1')} value={student?.class || "N/A"} />
+          <InfoItem label={t('pages.rollNumber2')} value={student?.rollNo || "N/A"} />
+          <InfoItem label={t('pages.academicYear1')} value={student?.academicYear || currentAcademicYear} />
+          <InfoItem label={t('pages.classTeacher2')} value={classTeacher?.name || "Not Assigned"} />
         </div>
       </div>
 
@@ -51,7 +53,7 @@ export default function BasicDetailsTab({
             <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
               <User size={18} className="text-gray-600 dark:text-zinc-400" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Personal Information</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">{t('pages.personalInformation1')}</h3>
           </div>
           {onEditSection && (
             <Button 
@@ -66,16 +68,16 @@ export default function BasicDetailsTab({
           )}
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-6">
-          <InfoItem label="Full Name" value={student?.name} />
-          <InfoItem label="Admission ID" value={student?.admissionId} />
-          <InfoItem label="Date of Birth" value={student?.dateOfBirth} />
-          <InfoItem label="Gender" value={student?.gender} />
-          <InfoItem label="Blood Group" value={student?.bloodGroup} />
-          <InfoItem label="Religion" value={student?.religion} />
-          <InfoItem label="Category" value={student?.category} />
-          <InfoItem label="Mother Tongue" value={student?.motherTongue} />
-          <InfoItem label="Aadhaar Number" value={student?.aadhaarNumber} />
-          <InfoItem label="Nationality" value={student?.nationality} />
+          <InfoItem label={t('pages.fullName1')} value={student?.name} />
+          <InfoItem label={t('pages.admissionId1')} value={student?.admissionId} />
+          <InfoItem label={t('pages.dateOfBirth2')} value={student?.dateOfBirth} />
+          <InfoItem label={t('pages.gender1')} value={student?.gender} />
+          <InfoItem label={t('pages.bloodGroup1')} value={student?.bloodGroup} />
+          <InfoItem label={t('pages.religion1')} value={student?.religion} />
+          <InfoItem label={t('pages.category1')} value={student?.category} />
+          <InfoItem label={t('pages.motherTongue1')} value={student?.motherTongue} />
+          <InfoItem label={t('pages.aadhaarNumber')} value={student?.aadhaarNumber} />
+          <InfoItem label={t('pages.nationality1')} value={student?.nationality} />
         </div>
       </div>
 
@@ -86,7 +88,7 @@ export default function BasicDetailsTab({
             <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
               <Phone size={18} className="text-gray-600 dark:text-zinc-400" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Contact Details</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">{t('pages.contactDetails1')}</h3>
           </div>
           {onEditSection && (
             <Button 
@@ -102,13 +104,13 @@ export default function BasicDetailsTab({
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-6">
           <div className="col-span-full">
-            <InfoItem label="Address" value={student?.address} />
+            <InfoItem label={t('pages.address2')} value={student?.address} />
           </div>
-          <InfoItem label="City" value={student?.city} />
-          <InfoItem label="State" value={student?.state} />
-          <InfoItem label="ZIP Code" value={student?.zipCode} />
-          <InfoItem label="Phone" value={student?.phone} />
-          <InfoItem label="Email" value={student?.email} />
+          <InfoItem label={t('pages.city1')} value={student?.city} />
+          <InfoItem label={t('pages.state1')} value={student?.state} />
+          <InfoItem label={t('pages.zIPCode')} value={student?.zipCode} />
+          <InfoItem label={t('pages.phone1')} value={student?.phone} />
+          <InfoItem label={t('pages.email1')} value={student?.email} />
         </div>
       </div>
 
@@ -134,21 +136,21 @@ export default function BasicDetailsTab({
           )}
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-6">
-          <InfoItem label="Father's Name" value={student?.parentName} />
-          <InfoItem label="Father's Occupation" value={student?.parentOccupation} />
-          <InfoItem label="Mother's Name" value={
+          <InfoItem label={t('pages.fatherSName1')} value={student?.parentName} />
+          <InfoItem label={t('pages.fatherSOccupation')} value={student?.parentOccupation} />
+          <InfoItem label={t('pages.motherSName')} value={
             student?.parents && student.parents.find(p => p.relationship?.toLowerCase() === 'mother')?.name ||
             student?.parents && student.parents.find(p => p.relationship?.toLowerCase() === 'wife')?.name ||
             'N/A'
           } />
-          <InfoItem label="Mother's Occupation" value={
+          <InfoItem label={t('pages.motherSOccupation')} value={
             student?.parents && student.parents.find(p => p.relationship?.toLowerCase() === 'mother')?.occupation ||
             student?.parents && student.parents.find(p => p.relationship?.toLowerCase() === 'wife')?.occupation ||
             'N/A'
           } />
-          <InfoItem label="Primary Phone" value={student?.parentPhone} />
-          <InfoItem label="Alternate Phone" value={student?.alternatePhone} />
-          <InfoItem label="Primary Email" value={student?.parentEmail} />
+          <InfoItem label={t('pages.primaryPhone')} value={student?.parentPhone} />
+          <InfoItem label={t('pages.alternatePhone')} value={student?.alternatePhone} />
+          <InfoItem label={t('pages.primaryEmail')} value={student?.parentEmail} />
         </div>
       </div>
 
@@ -159,7 +161,7 @@ export default function BasicDetailsTab({
             <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
               <GraduationCap size={18} className="text-gray-600 dark:text-zinc-400" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Previous Education</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">{t('pages.previousEducation1')}</h3>
           </div>
           {onEditSection && (
             <Button 
@@ -174,8 +176,8 @@ export default function BasicDetailsTab({
           )}
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-6">
-          <InfoItem label="Previous School" value={student?.previousSchool} />
-          <InfoItem label="TC Number" value={student?.tcNumber} />
+          <InfoItem label={t('pages.previousSchool1')} value={student?.previousSchool} />
+          <InfoItem label={t('pages.tCNumber')} value={student?.tcNumber} />
         </div>
       </div>
 
@@ -186,7 +188,7 @@ export default function BasicDetailsTab({
             <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
               <FileCheck size={18} className="text-gray-600 dark:text-zinc-400" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">Additional Information</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">{t('pages.additionalInformation1')}</h3>
           </div>
           {onEditSection && (
             <Button 
@@ -201,14 +203,14 @@ export default function BasicDetailsTab({
           )}
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-6">
-          <InfoItem label="Academic Year" value={student?.academicYear || currentAcademicYear} />
-          <InfoItem label="Transport Required" value={student?.transportRequired ? "Yes" : "No"} />
-          <InfoItem label="Hostel Required" value={student?.hostelRequired ? "Yes" : "No"} />
+          <InfoItem label={t('pages.academicYear1')} value={student?.academicYear || currentAcademicYear} />
+          <InfoItem label={t('pages.transportRequired1')} value={student?.transportRequired ? "Yes" : "No"} />
+          <InfoItem label={t('pages.hostelRequired1')} value={student?.hostelRequired ? "Yes" : "No"} />
           <div className="col-span-full">
-            <InfoItem label="Medical Conditions" value={student?.medicalConditions || "None"} />
+            <InfoItem label={t('pages.medicalConditions1')} value={student?.medicalConditions || "None"} />
           </div>
-          <InfoItem label="Emergency Contact Name" value={student?.emergencyContactName || "-"} />
-          <InfoItem label="Emergency Contact Phone" value={student?.emergencyContactPhone || "-"} />
+          <InfoItem label={t('pages.emergencyContactName')} value={student?.emergencyContactName || "-"} />
+          <InfoItem label={t('pages.emergencyContactPhone')} value={student?.emergencyContactPhone || "-"} />
         </div>
       </div>
     </div>

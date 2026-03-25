@@ -17,6 +17,7 @@ import {
 } from '@heroui/react';
 import { Save, Bell, Clock, DollarSign, Calendar, BookOpen, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const REMINDER_TYPES = [
   { key: 'fee', label: 'Fee Reminder', icon: DollarSign, color: 'warning' },
@@ -62,6 +63,7 @@ export default function ReminderForm({
   onSave,
   editData = null,
 }) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     title: '',
     type: 'fee',
@@ -76,8 +78,10 @@ export default function ReminderForm({
   });
 
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
+    setErrors({});
     if (editData) {
       setFormData({
         title: editData.title || '',
@@ -137,23 +141,19 @@ export default function ReminderForm({
   };
 
   const handleSubmit = async () => {
-    if (!formData.title.trim() || !formData.message.trim()) {
-      toast.error('Please fill in title and message');
-      return;
-    }
+    const newErrors = {};
+    if (!formData.title.trim()) newErrors.title = t('toast.error.pleaseFillInTitleAndMessage');
+    if (!formData.message.trim()) newErrors.message = t('toast.error.pleaseFillInTitleAndMessage');
+    if (!formData.trigger) newErrors.trigger = t('toast.error.pleaseSelectATriggerCondition');
+    if (formData.recipients.length === 0) newErrors.recipients = t('toast.error.pleaseSelectRecipients');
+    if (formData.channels.length === 0) newErrors.channels = t('toast.error.pleaseSelectAtLeastOneChannel');
 
-    if (!formData.trigger) {
-      toast.error('Please select a trigger condition');
-      return;
-    }
-
-    if (formData.recipients.length === 0) {
-      toast.error('Please select recipients');
-      return;
-    }
-
-    if (formData.channels.length === 0) {
-      toast.error('Please select at least one channel');
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      if (newErrors.title || newErrors.message) toast.error(t('toast.error.pleaseFillInTitleAndMessage'));
+      else if (newErrors.trigger) toast.error(t('toast.error.pleaseSelectATriggerCondition'));
+      else if (newErrors.recipients) toast.error(t('toast.error.pleaseSelectRecipients'));
+      else if (newErrors.channels) toast.error(t('toast.error.pleaseSelectAtLeastOneChannel'));
       return;
     }
 
@@ -171,7 +171,7 @@ export default function ReminderForm({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => { onClose(); setErrors({}); }}
       size="3xl"
       scrollBehavior="inside"
     >
@@ -185,7 +185,7 @@ export default function ReminderForm({
         <ModalBody className="space-y-4">
           {/* Type Selection */}
           <div>
-            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Reminder Type</label>
+            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.reminderType')}</label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {REMINDER_TYPES.map((type) => {
                 const Icon = type.icon;
@@ -212,24 +212,28 @@ export default function ReminderForm({
 
           {/* Title */}
           <Input
-            label="Title"
-            placeholder="Enter reminder title"
+            label={t('pages.title1')}
+            placeholder={t('pages.enterReminderTitle')}
             value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            onChange={(e) => { setFormData({ ...formData, title: e.target.value }); setErrors(prev => ({ ...prev, title: '' })); }}
             variant="bordered"
             isRequired
             startContent={<TypeIcon size={18} />}
+            isInvalid={!!errors.title}
+            errorMessage={errors.title}
           />
 
           {/* Trigger Condition */}
           <div>
-            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Trigger Condition</label>
+            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.triggerCondition')}</label>
             <Select
-              placeholder="Select when to send this reminder"
+              placeholder={t('pages.selectWhenToSendThisReminder')}
               selectedKeys={formData.trigger ? [formData.trigger] : []}
-              onSelectionChange={(keys) => setFormData({ ...formData, trigger: Array.from(keys)[0] })}
+              onSelectionChange={(keys) => { setFormData({ ...formData, trigger: Array.from(keys)[0] }); setErrors(prev => ({ ...prev, trigger: '' })); }}
               variant="bordered"
               isRequired
+              isInvalid={!!errors.trigger}
+              errorMessage={errors.trigger}
             >
               {TRIGGER_CONDITIONS[formData.type]?.map((condition) => (
                 <SelectItem key={condition.key}>{condition.label}</SelectItem>
@@ -239,20 +243,22 @@ export default function ReminderForm({
 
           {/* Message Template */}
           <div>
-            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Message</label>
+            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.message1')}</label>
             <Textarea
-              placeholder="Enter reminder message"
+              placeholder={t('pages.enterReminderMessage1')}
               value={formData.message}
-              onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+              onChange={(e) => { setFormData({ ...formData, message: e.target.value }); setErrors(prev => ({ ...prev, message: '' })); }}
               variant="bordered"
               minRows={4}
               isRequired
+              isInvalid={!!errors.message}
+              errorMessage={errors.message}
             />
 
             {/* Variable Suggestions */}
             {VARIABLES[formData.type] && (
               <div className="mt-2">
-                <p className="text-xs text-default-500 mb-1">Click to insert variables:</p>
+                <p className="text-xs text-default-500 mb-1">{t('pages.clickToInsertVariables')}</p>
                 <div className="flex flex-wrap gap-1">
                   {VARIABLES[formData.type].map((variable) => (
                     <Chip
@@ -272,7 +278,7 @@ export default function ReminderForm({
 
           {/* Recipients */}
           <div>
-            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Send To</label>
+            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.sendTo')}</label>
             <div className="flex flex-wrap gap-2">
               {[
                 { key: 'parents', label: 'Parents' },
@@ -282,17 +288,18 @@ export default function ReminderForm({
                 <Checkbox size="sm"
                   key={recipient.key}
                   isSelected={formData.recipients.some(r => r.type === recipient.key)}
-                  onValueChange={() => handleRecipientChange(recipient.key)}
+                  onValueChange={() => { handleRecipientChange(recipient.key); setErrors(prev => ({ ...prev, recipients: '' })); }}
                 >
                   {recipient.label}
                 </Checkbox>
               ))}
             </div>
+            {errors.recipients && <p className="text-xs text-red-500 mt-1">{errors.recipients}</p>}
           </div>
 
           {/* Channels */}
           <div>
-            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Send Via</label>
+            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.sendVia')}</label>
             <div className="flex flex-wrap gap-2">
               {[
                 { key: 'inapp', label: 'In-App' },
@@ -303,18 +310,19 @@ export default function ReminderForm({
                 <Checkbox size="sm"
                   key={channel.key}
                   isSelected={formData.channels.includes(channel.key)}
-                  onValueChange={() => handleChannelToggle(channel.key)}
+                  onValueChange={() => { handleChannelToggle(channel.key); setErrors(prev => ({ ...prev, channels: '' })); }}
                 >
                   {channel.label}
                 </Checkbox>
               ))}
             </div>
+            {errors.channels && <p className="text-xs text-red-500 mt-1">{errors.channels}</p>}
           </div>
 
           {/* Schedule */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Start Date</label>
+              <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.startDate1')}</label>
               <Input
                 type="date"
                 value={formData.startDate || ''}
@@ -323,7 +331,7 @@ export default function ReminderForm({
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">End Date</label>
+              <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.endDate1')}</label>
               <Input
                 type="date"
                 value={formData.endDate || ''}
@@ -335,16 +343,16 @@ export default function ReminderForm({
 
           {/* Frequency */}
           <div>
-            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">Frequency</label>
+            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.frequency')}</label>
             <Select
               selectedKeys={[formData.frequency]}
               onSelectionChange={(keys) => setFormData({ ...formData, frequency: Array.from(keys)[0] })}
               variant="bordered"
             >
-              <SelectItem key="once">Once</SelectItem>
-              <SelectItem key="daily">Daily</SelectItem>
-              <SelectItem key="weekly">Weekly</SelectItem>
-              <SelectItem key="monthly">Monthly</SelectItem>
+              <SelectItem key="once">{t('pages.once')}</SelectItem>
+              <SelectItem key="daily">{t('pages.daily')}</SelectItem>
+              <SelectItem key="weekly">{t('pages.weekly')}</SelectItem>
+              <SelectItem key="monthly">{t('pages.monthly')}</SelectItem>
             </Select>
           </div>
 

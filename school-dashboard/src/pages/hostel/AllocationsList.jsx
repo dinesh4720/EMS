@@ -1,8 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { Input, Button, Select, SelectItem, useDisclosure, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Chip } from "@heroui/react";
 import { Plus, Search, Users, LogOut, Calendar } from "lucide-react";
-import { hostelApi, studentsApi } from "../../services/api";
+import { hostelApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useHostelLookups } from "../../hooks/useHostelLookups";
+import { getDateLocale } from '../../i18n/index';
+import { useTranslation } from 'react-i18next';
+
 
 const INITIAL_FORM = {
   hostelId: "", roomId: "", studentId: "", bedNumber: "",
@@ -25,10 +29,8 @@ function SkeletonTable() {
 }
 
 export default function AllocationsList() {
+  const { t } = useTranslation();
   const [allocations, setAllocations] = useState([]);
-  const [hostels, setHostels] = useState([]);
-  const [rooms, setRooms] = useState([]);
-  const [students, setStudents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -43,27 +45,16 @@ export default function AllocationsList() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isVacateOpen, onOpen: onVacateOpen, onClose: onVacateClose } = useDisclosure();
   const [vacateData, setVacateData] = useState({ endDate: new Date().toISOString().split("T")[0], notes: "" });
+  // Student search term for the async dropdown (MF-24)
+  const [studentSearch, setStudentSearch] = useState("");
+
+  // Lookup data (hostels, rooms, students) — students are fetched via debounced search
+  const { hostels, rooms, students, studentsLoading } = useHostelLookups(formData.hostelId, studentSearch);
 
   useEffect(() => {
     const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 300);
     return () => clearTimeout(t);
   }, [searchInput]);
-
-  useEffect(() => {
-    hostelApi.getHostels().then(d => setHostels(d.hostels || [])).catch(() => {});
-    studentsApi.list({ limit: 500 }).then(d => setStudents(d.data || [])).catch(() => {});
-  }, []);
-
-  // Load rooms when hostel changes in form
-  useEffect(() => {
-    if (formData.hostelId) {
-      hostelApi.getRooms({ hostelId: formData.hostelId, available: true })
-        .then(d => setRooms(d.rooms || []))
-        .catch(() => {});
-    } else {
-      setRooms([]);
-    }
-  }, [formData.hostelId]);
 
   const fetchAllocations = useCallback(async () => {
     try {
@@ -76,7 +67,7 @@ export default function AllocationsList() {
       setAllocations(data.allocations || []);
       setTotalPages(data.pages || 1);
     } catch {
-      toast.error("Failed to load allocations");
+      toast.error(t('toast.error.failedToLoadAllocations'));
     } finally {
       setIsLoading(false);
     }
@@ -103,7 +94,7 @@ export default function AllocationsList() {
         monthlyFee: Number(formData.monthlyFee) || 0,
       };
       await hostelApi.createAllocation(payload);
-      toast.success("Student allocated successfully");
+      toast.success(t('toast.success.studentAllocatedSuccessfully'));
       handleClose();
       fetchAllocations();
     } catch (err) {
@@ -118,7 +109,7 @@ export default function AllocationsList() {
     setSaving(true);
     try {
       await hostelApi.vacateAllocation(vacatingId, vacateData);
-      toast.success("Student vacated");
+      toast.success(t('toast.success.studentVacated'));
       onVacateClose();
       setVacatingId(null);
       fetchAllocations();
@@ -138,6 +129,7 @@ export default function AllocationsList() {
   const handleClose = () => {
     setFormData(INITIAL_FORM);
     setErrors({});
+    setStudentSearch("");
     onClose();
   };
 
@@ -149,7 +141,7 @@ export default function AllocationsList() {
 
   const statusColors = { active: "success", vacated: "default", transferred: "warning" };
 
-  const formatDate = (d) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString(getDateLocale(), { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
   if (isLoading) return <SkeletonTable />;
 
@@ -159,7 +151,7 @@ export default function AllocationsList() {
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-3 flex-1 flex-wrap">
           <Input
-            placeholder="Search student..."
+            placeholder={t('pages.searchStudent')}
             startContent={<Search size={16} className="text-gray-400 dark:text-zinc-500" />}
             value={searchInput}
             onValueChange={setSearchInput}
@@ -167,7 +159,7 @@ export default function AllocationsList() {
             size="sm"
           />
           <Select
-            placeholder="All Hostels"
+            placeholder={t('pages.allHostels')}
             selectedKeys={hostelFilter ? [hostelFilter] : []}
             onSelectionChange={(keys) => { setHostelFilter([...keys][0] || ""); setPage(1); }}
             className="max-w-[180px]"
@@ -176,15 +168,15 @@ export default function AllocationsList() {
             {hostels.map(h => <SelectItem key={h._id}>{h.name}</SelectItem>)}
           </Select>
           <Select
-            placeholder="Status"
+            placeholder={t('pages.status2')}
             selectedKeys={statusFilter ? [statusFilter] : []}
             onSelectionChange={(keys) => { setStatusFilter([...keys][0] || ""); setPage(1); }}
             className="max-w-[140px]"
             size="sm"
           >
-            <SelectItem key="active">Active</SelectItem>
-            <SelectItem key="vacated">Vacated</SelectItem>
-            <SelectItem key="transferred">Transferred</SelectItem>
+            <SelectItem key="active">{t('pages.active')}</SelectItem>
+            <SelectItem key="vacated">{t('pages.vacated')}</SelectItem>
+            <SelectItem key="transferred">{t('pages.transferred')}</SelectItem>
           </Select>
         </div>
         <Button color="primary" startContent={<Plus size={16} />} onPress={handleAdd} size="sm">
@@ -196,7 +188,7 @@ export default function AllocationsList() {
       {allocations.length === 0 ? (
         <div className="text-center py-12">
           <Users size={40} className="mx-auto text-gray-400 dark:text-zinc-500 mb-3" />
-          <p className="text-gray-500 dark:text-zinc-400">No allocations found</p>
+          <p className="text-gray-500 dark:text-zinc-400">{t('pages.noAllocationsFound')}</p>
         </div>
       ) : (
         <>
@@ -204,14 +196,14 @@ export default function AllocationsList() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800">
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">Student</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">Adm No</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">Hostel</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">Room</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">Bed</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">From</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">Status</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">Actions</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.student')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.admNo')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.hostel1')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.room')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.bed')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.from')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.status2')}</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.actions1')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
@@ -260,9 +252,9 @@ export default function AllocationsList() {
 
           {totalPages > 1 && (
             <div className="flex justify-center gap-2">
-              <Button size="sm" variant="flat" isDisabled={page <= 1} onPress={() => setPage(p => p - 1)}>Previous</Button>
+              <Button size="sm" variant="flat" isDisabled={page <= 1} onPress={() => setPage(p => p - 1)}>{t('pages.previous')}</Button>
               <span className="flex items-center text-sm text-gray-600 dark:text-zinc-400">Page {page} of {totalPages}</span>
-              <Button size="sm" variant="flat" isDisabled={page >= totalPages} onPress={() => setPage(p => p + 1)}>Next</Button>
+              <Button size="sm" variant="flat" isDisabled={page >= totalPages} onPress={() => setPage(p => p + 1)}>{t('pages.next')}</Button>
             </div>
           )}
         </>
@@ -271,13 +263,25 @@ export default function AllocationsList() {
       {/* Add Allocation Modal */}
       <Modal isOpen={isOpen} onClose={handleClose} size="2xl" scrollBehavior="inside">
         <ModalContent>
-          <ModalHeader className="text-gray-900 dark:text-zinc-100">Allocate Student to Room</ModalHeader>
+          <ModalHeader className="text-gray-900 dark:text-zinc-100">{t('pages.allocateStudentToRoom')}</ModalHeader>
           <ModalBody className="gap-4">
+            {/* Server-side student search — replaces bulk limit:500 fetch (MF-24) */}
+            <Input
+              label={t('pages.searchStudent')}
+              placeholder="Type at least 2 characters..."
+              value={studentSearch}
+              onValueChange={setStudentSearch}
+              startContent={<Search size={14} className="text-gray-400" />}
+              isClearable
+              onClear={() => setStudentSearch("")}
+            />
             <Select
-              label="Student" isRequired
+              label={t('pages.student')} isRequired
               selectedKeys={formData.studentId ? [formData.studentId] : []}
               onSelectionChange={(keys) => setFormData(p => ({ ...p, studentId: [...keys][0] || "" }))}
               isInvalid={!!errors.studentId} errorMessage={errors.studentId}
+              isLoading={studentsLoading}
+              placeholder={studentSearch.length < 2 ? "Search a student above first" : studentsLoading ? "Searching..." : "Select student"}
             >
               {students.map(s => (
                 <SelectItem key={s._id}>
@@ -286,7 +290,7 @@ export default function AllocationsList() {
               ))}
             </Select>
             <Select
-              label="Hostel" isRequired
+              label={t('pages.hostel1')} isRequired
               selectedKeys={formData.hostelId ? [formData.hostelId] : []}
               onSelectionChange={(keys) => setFormData(p => ({ ...p, hostelId: [...keys][0] || "", roomId: "" }))}
               isInvalid={!!errors.hostelId} errorMessage={errors.hostelId}
@@ -294,7 +298,7 @@ export default function AllocationsList() {
               {hostels.map(h => <SelectItem key={h._id}>{h.name}</SelectItem>)}
             </Select>
             <Select
-              label="Room" isRequired
+              label={t('pages.room')} isRequired
               selectedKeys={formData.roomId ? [formData.roomId] : []}
               onSelectionChange={(keys) => setFormData(p => ({ ...p, roomId: [...keys][0] || "" }))}
               isInvalid={!!errors.roomId} errorMessage={errors.roomId}
@@ -309,13 +313,13 @@ export default function AllocationsList() {
             </Select>
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Bed Number"
+                label={t('pages.bedNumber')}
                 value={formData.bedNumber}
                 onValueChange={(v) => setFormData(p => ({ ...p, bedNumber: v }))}
                 placeholder="e.g. B1"
               />
               <Input
-                label="Start Date" isRequired type="date"
+                label={t('pages.startDate1')} isRequired type="date"
                 value={formData.startDate}
                 onValueChange={(v) => setFormData(p => ({ ...p, startDate: v }))}
                 isInvalid={!!errors.startDate} errorMessage={errors.startDate}
@@ -327,13 +331,13 @@ export default function AllocationsList() {
               onValueChange={(v) => setFormData(p => ({ ...p, monthlyFee: v }))}
             />
             <Input
-              label="Notes"
+              label={t('pages.notes1')}
               value={formData.notes}
               onValueChange={(v) => setFormData(p => ({ ...p, notes: v }))}
             />
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={handleClose}>Cancel</Button>
+            <Button variant="flat" onPress={handleClose}>{t('pages.cancel2')}</Button>
             <Button color="primary" onPress={handleSubmit} isLoading={saving}>
               Allocate
             </Button>
@@ -344,23 +348,23 @@ export default function AllocationsList() {
       {/* Vacate Modal */}
       <Modal isOpen={isVacateOpen} onClose={onVacateClose} size="md">
         <ModalContent>
-          <ModalHeader className="text-gray-900 dark:text-zinc-100">Vacate Student</ModalHeader>
+          <ModalHeader className="text-gray-900 dark:text-zinc-100">{t('pages.vacateStudent')}</ModalHeader>
           <ModalBody className="gap-4">
-            <p className="text-sm text-gray-600 dark:text-zinc-400">Mark this allocation as vacated. The room bed will be freed up.</p>
+            <p className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.markThisAllocationAsVacatedTheRoomBedWillBeFreedUp')}</p>
             <Input
-              label="End Date" type="date"
+              label={t('pages.endDate1')} type="date"
               value={vacateData.endDate}
               onValueChange={(v) => setVacateData(p => ({ ...p, endDate: v }))}
             />
             <Input
-              label="Notes"
+              label={t('pages.notes1')}
               value={vacateData.notes}
               onValueChange={(v) => setVacateData(p => ({ ...p, notes: v }))}
-              placeholder="Reason for vacating..."
+              placeholder={t('pages.reasonForVacating')}
             />
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={onVacateClose}>Cancel</Button>
+            <Button variant="flat" onPress={onVacateClose}>{t('pages.cancel2')}</Button>
             <Button color="warning" onPress={handleVacate} isLoading={saving}>
               Confirm Vacate
             </Button>

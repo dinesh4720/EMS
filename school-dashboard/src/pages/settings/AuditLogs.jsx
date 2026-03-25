@@ -1,31 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import { API_URL } from '../../config/api.js';
+import { request } from '../../services/api.js';
+import { useState, useEffect } from 'react';
 import {
   Card, CardBody, CardHeader, Chip, Select, SelectItem,
-  Spinner, Button, Input, Table, TableHeader, TableColumn,
+  Button, Input, Table, TableHeader, TableColumn,
   TableBody, TableRow, TableCell, Modal, ModalContent, ModalHeader,
   ModalBody, ModalFooter, useDisclosure, DatePicker, Divider
 } from '@heroui/react';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import {
   History, Search, Filter, Download, Eye, Calendar,
   User, FileText, AlertCircle, CheckCircle, Clock
 } from 'lucide-react';
 import { parseDate } from '@internationalized/date';
+import { getDateLocale } from '../../i18n/index';
+import { useTranslation } from 'react-i18next';
 
-// Helper function to get auth token
-const getAuthToken = () => {
-  const storedUser = sessionStorage.getItem('app_user');
-  if (storedUser) {
-    try {
-      const userData = JSON.parse(storedUser);
-      return userData.token;
-    } catch (err) {
-      return null;
-    }
-  }
-  return null;
-};
 
 const AuditLogs = () => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [logs, setLogs] = useState([]);
   const [selectedLog, setSelectedLog] = useState(null);
@@ -35,7 +28,6 @@ const AuditLogs = () => {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
   useEffect(() => {
     fetchLogs();
@@ -43,9 +35,6 @@ const AuditLogs = () => {
 
   const fetchLogs = async () => {
     setLoading(true);
-    const token = getAuthToken();
-    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-
     try {
       const params = new URLSearchParams();
       if (actionFilter !== 'all') params.append('action', actionFilter);
@@ -53,10 +42,8 @@ const AuditLogs = () => {
       if (dateRange.end) params.append('endDate', dateRange.end);
       params.append('limit', '100');
 
-      const response = await fetch(`${API_URL}/audit-logs?${params.toString()}`, { headers });
-      if (response.ok) {
-        setLogs(await response.json());
-      }
+      const data = await request(`/audit-logs?${params.toString()}`);
+      setLogs(data);
     } catch (error) {
       console.error('Error fetching audit logs:', error);
     } finally {
@@ -65,31 +52,25 @@ const AuditLogs = () => {
   };
 
   const handleViewDetails = async (logId) => {
-    const token = getAuthToken();
-    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-
     try {
-      const response = await fetch(`${API_URL}/audit-logs/${logId}`, { headers });
-      if (response.ok) {
-        setSelectedLog(await response.json());
-        onOpen();
-      }
+      const data = await request(`/audit-logs/${logId}`);
+      setSelectedLog(data);
+      onOpen();
     } catch (error) {
       console.error('Error fetching log details:', error);
     }
   };
 
   const handleExport = async (format = 'json') => {
-    const token = getAuthToken();
-
     try {
       const params = new URLSearchParams();
       params.append('format', format);
       if (dateRange.start) params.append('startDate', dateRange.start);
       if (dateRange.end) params.append('endDate', dateRange.end);
 
+      // Blob download requires raw fetch with credentials
       const response = await fetch(`${API_URL}/audit-logs/export?${params.toString()}`, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        credentials: 'include'
       });
 
       if (!response.ok) throw new Error('Export failed');
@@ -139,7 +120,7 @@ const AuditLogs = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString('en-US', {
+    return new Date(dateString).toLocaleString(getDateLocale(), {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -153,8 +134,8 @@ const AuditLogs = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-default-900">Audit Logs</h1>
-          <p className="text-default-500">Track all result modifications and changes</p>
+          <h1 className="text-2xl font-bold text-default-900">{t('pages.auditLogs1')}</h1>
+          <p className="text-default-500">{t('pages.trackAllResultModificationsAndChanges')}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -180,7 +161,7 @@ const AuditLogs = () => {
           <div className="flex flex-wrap items-center gap-4">
             <Input
               size="sm"
-              placeholder="Search by result ID, user, or reason..."
+              placeholder={t('pages.searchByResultIdUserOrReason')}
               value={searchQuery}
               onValueChange={setSearchQuery}
               startContent={<Search size={16} className="text-default-400" />}
@@ -191,12 +172,12 @@ const AuditLogs = () => {
               selectedKeys={[actionFilter]}
               onSelectionChange={(keys) => setActionFilter(Array.from(keys)[0])}
               className="w-40"
-              label="Action"
+              label={t('pages.action')}
             >
-              <SelectItem key="all" value="all">All Actions</SelectItem>
-              <SelectItem key="created" value="created">Created</SelectItem>
-              <SelectItem key="updated" value="updated">Updated</SelectItem>
-              <SelectItem key="deleted" value="deleted">Deleted</SelectItem>
+              <SelectItem key="all" value="all">{t('pages.allActions')}</SelectItem>
+              <SelectItem key="created" value="created">{t('pages.created')}</SelectItem>
+              <SelectItem key="updated" value="updated">{t('pages.updated')}</SelectItem>
+              <SelectItem key="deleted" value="deleted">{t('pages.deleted1')}</SelectItem>
             </Select>
             <Button
               color="primary"
@@ -218,24 +199,22 @@ const AuditLogs = () => {
               <History size={20} />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-default-900">Modification History</h3>
+              <h3 className="text-lg font-semibold text-default-900">{t('pages.modificationHistory')}</h3>
               <p className="text-sm text-default-500">{filteredLogs.length} records found</p>
             </div>
           </div>
         </CardHeader>
         <CardBody className="p-0">
           {loading ? (
-            <div className="flex justify-center py-10">
-              <Spinner size="lg" />
-            </div>
+            <TablePageSkeleton kpiCards={0} searchBar={false} rows={6} />
           ) : filteredLogs.length === 0 ? (
             <div className="text-center py-10 text-default-500">
               <History size={40} className="mx-auto mb-3 opacity-50" />
-              <p>No audit logs found</p>
+              <p>{t('pages.noAuditLogsFound')}</p>
             </div>
           ) : (
             <Table
-              aria-label="Audit logs table"
+              aria-label={t('aria.tables.auditLogs')}
               removeWrapper
               classNames={{
                 th: "bg-default-50 text-default-600",
@@ -243,13 +222,13 @@ const AuditLogs = () => {
               }}
             >
               <TableHeader>
-                <TableColumn>DATE/TIME</TableColumn>
-                <TableColumn>ACTION</TableColumn>
-                <TableColumn>RESULT ID</TableColumn>
-                <TableColumn>CHANGED BY</TableColumn>
-                <TableColumn>REASON</TableColumn>
-                <TableColumn>IP ADDRESS</TableColumn>
-                <TableColumn>DETAILS</TableColumn>
+                <TableColumn scope="col">DATE/TIME</TableColumn>
+                <TableColumn scope="col">{t('pages.aCTION')}</TableColumn>
+                <TableColumn scope="col">{t('pages.rESULTId')}</TableColumn>
+                <TableColumn scope="col">{t('pages.cHANGEDBy')}</TableColumn>
+                <TableColumn scope="col">{t('pages.rEASON')}</TableColumn>
+                <TableColumn scope="col">{t('pages.iPAddress')}</TableColumn>
+                <TableColumn scope="col">{t('pages.dETAILS')}</TableColumn>
               </TableHeader>
               <TableBody>
                 {filteredLogs.map((log, idx) => (
@@ -311,14 +290,14 @@ const AuditLogs = () => {
       {/* Details Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="2xl">
         <ModalContent>
-          <ModalHeader>Audit Log Details</ModalHeader>
+          <ModalHeader>{t('pages.auditLogDetails')}</ModalHeader>
           <ModalBody>
             {selectedLog && (
               <div className="space-y-4">
                 {/* Basic Info */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-default-500">Action</p>
+                    <p className="text-sm text-default-500">{t('pages.action')}</p>
                     <div className="flex items-center gap-2 mt-1">
                       {getActionIcon(selectedLog.action)}
                       <Chip size="sm" color={getActionColor(selectedLog.action)} variant="flat">
@@ -327,19 +306,19 @@ const AuditLogs = () => {
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm text-default-500">Date & Time</p>
+                    <p className="text-sm text-default-500">{t('pages.dateTime')}</p>
                     <p className="font-medium">{formatDate(selectedLog.changedAt)}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-default-500">Changed By</p>
+                    <p className="text-sm text-default-500">{t('pages.changedBy')}</p>
                     <p className="font-medium">{selectedLog.changedByUser?.name || selectedLog.changedBy}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-default-500">IP Address</p>
+                    <p className="text-sm text-default-500">{t('pages.iPAddress1')}</p>
                     <code className="text-sm">{selectedLog.ipAddress || '-'}</code>
                   </div>
                   <div className="col-span-2">
-                    <p className="text-sm text-default-500">Reason</p>
+                    <p className="text-sm text-default-500">{t('pages.reason')}</p>
                     <p className="font-medium">{selectedLog.reason || 'No reason provided'}</p>
                   </div>
                 </div>
@@ -350,14 +329,14 @@ const AuditLogs = () => {
                 {selectedLog.student && (
                   <>
                     <div>
-                      <h4 className="font-semibold text-default-900 mb-2">Student Information</h4>
+                      <h4 className="font-semibold text-default-900 mb-2">{t('pages.studentInformation1')}</h4>
                       <div className="grid grid-cols-2 gap-4 p-4 bg-default-50 rounded-lg">
                         <div>
-                          <p className="text-sm text-default-500">Name</p>
+                          <p className="text-sm text-default-500">{t('pages.name1')}</p>
                           <p className="font-medium">{selectedLog.student.name}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-default-500">Class</p>
+                          <p className="text-sm text-default-500">{t('pages.class1')}</p>
                           <p className="font-medium">{selectedLog.student.class}</p>
                         </div>
                       </div>
@@ -369,7 +348,7 @@ const AuditLogs = () => {
                 {/* Value Comparison */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <h4 className="font-semibold text-default-900 mb-2">Previous Value</h4>
+                    <h4 className="font-semibold text-default-900 mb-2">{t('pages.previousValue')}</h4>
                     <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800">
                       <pre className="text-xs overflow-auto max-h-48">
                         {selectedLog.previousValue
@@ -379,7 +358,7 @@ const AuditLogs = () => {
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-default-900 mb-2">New Value</h4>
+                    <h4 className="font-semibold text-default-900 mb-2">{t('pages.newValue')}</h4>
                     <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
                       <pre className="text-xs overflow-auto max-h-48">
                         {JSON.stringify(selectedLog.newValue, null, 2)}
@@ -391,7 +370,7 @@ const AuditLogs = () => {
                 {/* User Agent */}
                 {selectedLog.userAgent && (
                   <div>
-                    <p className="text-sm text-default-500">User Agent</p>
+                    <p className="text-sm text-default-500">{t('pages.userAgent')}</p>
                     <p className="text-xs text-default-400 break-all">{selectedLog.userAgent}</p>
                   </div>
                 )}

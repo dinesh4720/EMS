@@ -14,8 +14,10 @@ import { useApp } from "../../context/AppContext";
 import { intakeFormsApi, classesApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { PageLayout, MinimalButton } from "../../components/ui";
+import { useTranslation } from 'react-i18next';
 
 export default function StaffsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { addStaff, updateStaff, staff } = useApp();
@@ -127,10 +129,10 @@ export default function StaffsPage() {
       let savedStaff;
       if (editingStaffId) {
         savedStaff = await updateStaff(editingStaffId, transformedData);
-        toast.success('Staff member updated successfully!');
+        toast.success(t('toast.success.staffMemberUpdatedSuccessfully'));
       } else {
         savedStaff = await addStaff(transformedData);
-        toast.success('Staff member added successfully!');
+        toast.success(t('toast.success.staffMemberAddedSuccessfully'));
       }
 
       // Assign class teacher if isClassTeacher is enabled and a class is selected
@@ -139,7 +141,7 @@ export default function StaffsPage() {
         if (staffId) {
           try {
             await classesApi.updateClassTeacher(staffData.classTeacherOf, staffId);
-            toast.success('Class teacher assigned successfully!');
+            toast.success(t('toast.success.classTeacherAssignedSuccessfully'));
           } catch (ctError) {
             console.error('Failed to assign class teacher:', ctError);
             toast.error(ctError.message || 'Failed to assign class teacher. The staff was saved but class assignment failed.');
@@ -188,18 +190,18 @@ export default function StaffsPage() {
       setAvailableForms(staffForms);
       setIsFormSelectModalOpen(true);
     } catch (error) {
-      toast.error('Failed to load forms');
+      toast.error(t('toast.error.failedToLoadForms'));
       console.error(error);
     }
   };
 
   const handleSendForm = async () => {
     if (!selectedForm) {
-      toast.error('Please select a form');
+      toast.error(t('toast.error.pleaseSelectAForm'));
       return;
     }
     if (!recipientEmail && !recipientPhone) {
-      toast.error('Please enter email or phone number');
+      toast.error(t('toast.error.pleaseEnterEmailOrPhoneNumber'));
       return;
     }
     setIsSendingForm(true);
@@ -207,7 +209,7 @@ export default function StaffsPage() {
       const emails = recipientEmail ? [recipientEmail] : [];
       const phones = recipientPhone ? [recipientPhone] : [];
       await intakeFormsApi.assign(selectedForm, { emails, phones, expiresInDays: 30, assignedBy: null });
-      toast.success('Form sent successfully!');
+      toast.success(t('toast.success.formSentSuccessfully'));
       setIsFormSelectModalOpen(false);
       setSelectedForm(null);
       setRecipientEmail('');
@@ -268,9 +270,9 @@ export default function StaffsPage() {
         header={tabHeaderInfo[activeTab]}
         actions={
           activeTab === "list" ? (
-            <MinimalButton icon={<Plus size={16} />} onClick={handleOpenAddStaff}>Create Staff</MinimalButton>
+            <MinimalButton icon={<Plus size={16} />} onClick={handleOpenAddStaff}>{t('pages.createStaff')}</MinimalButton>
           ) : activeTab === "overview" ? (
-            <MinimalButton icon={<CalendarDays size={16} />} onClick={() => navigate("/staffs/attendance/regularize")}>Regularize</MinimalButton>
+            <MinimalButton icon={<CalendarDays size={16} />} onClick={() => navigate("/staffs/attendance/regularize")}>{t('pages.regularize')}</MinimalButton>
           ) : null
         }
       >
@@ -339,8 +341,8 @@ export default function StaffsPage() {
       <Modal isOpen={isMethodModalOpen} onClose={() => setIsMethodModalOpen(false)} size="2xl" classNames={{ backdrop: "bg-black/30", base: "bg-white dark:bg-zinc-950" }}>
         <ModalContent>
           <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
-            <h3 className="text-lg font-medium">Choose Registration Method</h3>
-            <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal mt-1">Select how to add the new staff member</p>
+            <h3 className="text-lg font-medium">{t('pages.chooseRegistrationMethod')}</h3>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal mt-1">{t('pages.selectHowToAddTheNewStaffMember')}</p>
           </ModalHeader>
           <ModalBody className="py-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -350,8 +352,8 @@ export default function StaffsPage() {
                     <Send size={24} className="text-gray-600 dark:text-zinc-400" />
                   </div>
                   <div>
-                    <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 mb-2">Send Filling Form</h4>
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">Send an intake form for them to fill out</p>
+                    <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 mb-2">{t('pages.sendFillingForm')}</h4>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.sendAnIntakeFormForThemToFillOut')}</p>
                   </div>
                 </div>
               </button>
@@ -361,15 +363,15 @@ export default function StaffsPage() {
                     <UserPlus size={24} className="text-gray-600 dark:text-zinc-400" />
                   </div>
                   <div>
-                    <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 mb-2">Full Registration</h4>
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">Fill out all staff details directly</p>
+                    <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 mb-2">{t('pages.fullRegistration')}</h4>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.fillOutAllStaffDetailsDirectly')}</p>
                   </div>
                 </div>
               </button>
             </div>
           </ModalBody>
           <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
-            <Button variant="light" onPress={() => setIsMethodModalOpen(false)}>Cancel</Button>
+            <Button variant="light" onPress={() => setIsMethodModalOpen(false)}>{t('pages.cancel2')}</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -378,13 +380,13 @@ export default function StaffsPage() {
       <Modal isOpen={isFormSelectModalOpen} onClose={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmail(''); setRecipientPhone(''); }} size="2xl" classNames={{ backdrop: "bg-black/30", base: "bg-white dark:bg-zinc-950" }}>
         <ModalContent>
           <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
-            <h3 className="text-lg font-medium">Send Intake Form</h3>
-            <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal mt-1">Select a form and enter recipient details</p>
+            <h3 className="text-lg font-medium">{t('pages.sendIntakeForm')}</h3>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal mt-1">{t('pages.selectAFormAndEnterRecipientDetails')}</p>
           </ModalHeader>
           <ModalBody className="py-6">
             <div className="space-y-4">
               <div className="relative" ref={formDropdownRef}>
-                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">Select Form</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">{t('pages.selectForm')}</label>
                 <button type="button" onClick={() => setIsFormDropdownOpen(!isFormDropdownOpen)} className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 transition-colors">
                   {selectedForm ? (
                     <div className="flex items-center gap-3">
@@ -392,7 +394,7 @@ export default function StaffsPage() {
                       <span className="text-sm">{availableForms.find(f => f.id === selectedForm)?.formName}</span>
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-500 dark:text-zinc-400">Choose an intake form</span>
+                    <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.chooseAnIntakeForm')}</span>
                   )}
                   <ChevronDown size={18} className={`text-gray-400 dark:text-zinc-500 transition-transform ${isFormDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -415,20 +417,20 @@ export default function StaffsPage() {
               </div>
               {availableForms.length === 0 && (
                 <div className="text-center py-8 text-gray-500 dark:text-zinc-400">
-                  <p>No active staff forms available.</p>
-                  <Button size="sm" variant="flat" className="mt-2" onPress={() => { setIsFormSelectModalOpen(false); navigate('/settings/intake-forms'); }}>Create a Form</Button>
+                  <p>{t('pages.noActiveStaffFormsAvailable')}</p>
+                  <Button size="sm" variant="flat" className="mt-2" onPress={() => { setIsFormSelectModalOpen(false); navigate('/settings/intake-forms'); }}>{t('pages.createAForm')}</Button>
                 </div>
               )}
-              <FormInput label="Email" type="email" placeholder="Enter email address" value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} startContent={<Mail size={18} />} />
-              <FormInput label="Phone Number" type="tel" placeholder="Enter phone number" value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} startContent={<Phone size={18} />} />
+              <FormInput label={t('pages.email1')} type="email" placeholder={t('pages.enterEmailAddress')} value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} startContent={<Mail size={18} />} />
+              <FormInput label={t('pages.phoneNumber')} type="tel" placeholder={t('pages.enterPhoneNumber')} value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} startContent={<Phone size={18} />} />
               <div className="bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-4">
-                <p className="text-sm text-gray-600 dark:text-zinc-400">The recipient will receive a link to fill out the form.</p>
+                <p className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.theRecipientWillReceiveALinkToFillOutTheForm')}</p>
               </div>
             </div>
           </ModalBody>
           <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
-            <Button variant="light" onPress={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmail(''); setRecipientPhone(''); }}>Cancel</Button>
-            <Button color="primary" onPress={handleSendForm} isLoading={isSendingForm} isDisabled={!selectedForm || (!recipientEmail && !recipientPhone)} startContent={!isSendingForm && <Send size={16} />}>Send Form</Button>
+            <Button variant="light" onPress={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmail(''); setRecipientPhone(''); }}>{t('pages.cancel2')}</Button>
+            <Button color="primary" onPress={handleSendForm} isLoading={isSendingForm} isDisabled={!selectedForm || (!recipientEmail && !recipientPhone)} startContent={!isSendingForm && <Send size={16} />}>{t('pages.sendForm')}</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

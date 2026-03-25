@@ -14,8 +14,10 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, Avatar, Loading, EmptyState } from '../components';
 import { truncateText } from '../utils/helpers';
 import { Search, MessageCircle } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 const getRoleTag = (role, userType) => {
+  const { t } = useTranslation();
   if (!role && !userType) return null;
   const r = (role || userType || '').toLowerCase();
   if (r.includes('admin') || r.includes('principal') || r.includes('management')) return 'Admin';
@@ -178,7 +180,7 @@ const ChatListScreen = ({ navigation }) => {
         <Search size={18} color={themeColors.textTertiary} />
         <TextInput
           style={[styles.searchInput, { color: themeColors.text }]}
-          placeholder="Search conversations..."
+          placeholder={t('screens.searchConversations')}
           placeholderTextColor={themeColors.textTertiary}
           value={searchQuery}
           onChangeText={setSearchQuery}

@@ -25,12 +25,15 @@ import { Plus, Edit2, Trash2, Users, DoorOpen, Building2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import { useTranslation } from 'react-i18next';
 
 export default function ClassSectionsSettings() {
+  const { t } = useTranslation();
   const { classes, staff, students, addClass, updateClass, deleteClass, loading } = useApp();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingSection, setEditingSection] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
   // Delete confirmation state
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, section: null });
@@ -66,6 +69,7 @@ export default function ClassSectionsSettings() {
   }, [classes]);
 
   const handleOpenModal = (section = null) => {
+    setFormErrors({});
     if (section) {
       setEditingSection(section);
       // Extract class name from full name (e.g., "10-A" -> "10")
@@ -97,8 +101,12 @@ export default function ClassSectionsSettings() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.section) {
-      toast.error("Class name and section are required");
+    const newErrors = {};
+    if (!formData.name) newErrors.name = t('toast.error.classNameAndSectionAreRequired');
+    if (!formData.section) newErrors.section = t('toast.error.classNameAndSectionAreRequired');
+    if (Object.keys(newErrors).length > 0) {
+      setFormErrors(newErrors);
+      toast.error(t('toast.error.classNameAndSectionAreRequired'));
       return;
     }
 
@@ -117,16 +125,16 @@ export default function ClassSectionsSettings() {
 
       if (editingSection) {
         await updateClass(editingSection.id, sectionData);
-        toast.success("Section updated successfully");
+        toast.success(t('toast.success.sectionUpdatedSuccessfully'));
       } else {
         await addClass(sectionData);
-        toast.success("Section added successfully");
+        toast.success(t('toast.success.sectionAddedSuccessfully'));
       }
 
       onClose();
     } catch (error) {
       console.error("Failed to save section:", error);
-      toast.error("Failed to save section");
+      toast.error(t('toast.error.failedToSaveSection'));
     } finally {
       setSaving(false);
     }
@@ -142,11 +150,11 @@ export default function ClassSectionsSettings() {
     setDeleting(true);
     try {
       await deleteClass(deleteConfirm.section.id);
-      toast.success("Section deleted successfully");
+      toast.success(t('toast.success.sectionDeletedSuccessfully'));
       setDeleteConfirm({ isOpen: false, section: null });
     } catch (error) {
       console.error("Failed to delete section:", error);
-      toast.error("Failed to delete section");
+      toast.error(t('toast.error.failedToDeleteSection'));
     } finally {
       setDeleting(false);
     }
@@ -175,13 +183,13 @@ export default function ClassSectionsSettings() {
   return (
     <div className="pb-10 space-y-6">
       <div className="flex justify-end">
-        <Button color="primary" radius="full" className="shadow-md font-medium px-6" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>Add Section</Button>
+        <Button color="primary" radius="full" className="shadow-md font-medium px-6" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>{t('pages.addSection1')}</Button>
       </div>
 
       {/* Sections Table */}
       <div className="bg-white border border-default-200 rounded-xl overflow-hidden shadow-sm">
         <Table
-          aria-label="Class sections table"
+          aria-label={t('aria.tables.classSections')}
           removeWrapper
           radius="none"
           classNames={{
@@ -192,14 +200,14 @@ export default function ClassSectionsSettings() {
           }}
         >
           <TableHeader>
-            <TableColumn>CLASS</TableColumn>
-            <TableColumn>SECTION</TableColumn>
-            <TableColumn>CLASS TEACHER</TableColumn>
-            <TableColumn>STUDENTS</TableColumn>
-            <TableColumn>ROOM</TableColumn>
-            <TableColumn>HOD</TableColumn>
-            <TableColumn>GROUP</TableColumn>
-            <TableColumn>ACTIONS</TableColumn>
+            <TableColumn scope="col">{t('pages.cLASS')}</TableColumn>
+            <TableColumn scope="col">{t('pages.sECTION')}</TableColumn>
+            <TableColumn scope="col">{t('pages.cLASSTeacher')}</TableColumn>
+            <TableColumn scope="col">{t('pages.sTUDENTS')}</TableColumn>
+            <TableColumn scope="col">{t('pages.rOOM')}</TableColumn>
+            <TableColumn scope="col">{t('pages.hOD')}</TableColumn>
+            <TableColumn scope="col">{t('pages.gROUP')}</TableColumn>
+            <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
           </TableHeader>
           <TableBody
             items={sortedClasses}
@@ -255,7 +263,7 @@ export default function ClassSectionsSettings() {
                           )}
                         </>
                       ) : (
-                        <span className="text-gray-400">Not assigned</span>
+                        <span className="text-gray-400">{t('pages.notAssigned')}</span>
                       )}
                     </div>
                   </TableCell>
@@ -304,7 +312,7 @@ export default function ClassSectionsSettings() {
       </div>
 
       {/* Add/Edit Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="2xl">
+      <Modal isOpen={isOpen} onClose={() => { onClose(); setFormErrors({}); }} size="2xl">
         <ModalContent>
           <ModalHeader>
             {editingSection ? "Edit Section" : "Add New Section"}
@@ -313,35 +321,39 @@ export default function ClassSectionsSettings() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="Class Name"
+                  label={t('pages.className1')}
                   placeholder="e.g., 10, 11, 12"
                   value={formData.name}
-                  onValueChange={(v) => setFormData({ ...formData, name: v })}
+                  onValueChange={(v) => { setFormData({ ...formData, name: v }); setFormErrors(prev => ({ ...prev, name: '' })); }}
                   variant="bordered"
                   isRequired
+                  isInvalid={!!formErrors.name}
+                  errorMessage={formErrors.name}
                 />
                 <Input
-                  label="Section"
+                  label={t('pages.section1')}
                   placeholder="e.g., A, B, C"
                   value={formData.section}
-                  onValueChange={(v) => setFormData({ ...formData, section: v })}
+                  onValueChange={(v) => { setFormData({ ...formData, section: v }); setFormErrors(prev => ({ ...prev, section: '' })); }}
                   variant="bordered"
                   isRequired
+                  isInvalid={!!formErrors.section}
+                  errorMessage={formErrors.section}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="Strength Limit"
-                  placeholder="Maximum students"
+                  label={t('pages.strengthLimit')}
+                  placeholder={t('pages.maximumStudents')}
                   type="number"
                   value={formData.strengthLimit}
                   onValueChange={(v) => setFormData({ ...formData, strengthLimit: v })}
                   variant="bordered"
                 />
                 <Select
-                  label="Class Teacher"
-                  placeholder="Select teacher"
+                  label={t('pages.classTeacher2')}
+                  placeholder={t('pages.selectTeacher')}
                   selectedKeys={formData.classTeacherId ? [formData.classTeacherId] : []}
                   onSelectionChange={(keys) => setFormData({ ...formData, classTeacherId: Array.from(keys)[0] || "" })}
                   variant="bordered"
@@ -356,14 +368,14 @@ export default function ClassSectionsSettings() {
 
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="Room Number"
+                  label={t('pages.roomNumber')}
                   placeholder="e.g., 101, 202"
                   value={formData.roomNo}
                   onValueChange={(v) => setFormData({ ...formData, roomNo: v })}
                   variant="bordered"
                 />
                 <Input
-                  label="Block"
+                  label={t('pages.block')}
                   placeholder="e.g., A Block, B Block"
                   value={formData.blockNo}
                   onValueChange={(v) => setFormData({ ...formData, blockNo: v })}
@@ -373,8 +385,8 @@ export default function ClassSectionsSettings() {
 
               <div className="grid grid-cols-2 gap-4">
                 <Select
-                  label="HOD (Head of Department)"
-                  placeholder="Select HOD"
+                  label={t('pages.hODHeadOfDepartment')}
+                  placeholder={t('pages.selectHod')}
                   selectedKeys={formData.hodId ? [formData.hodId] : []}
                   onSelectionChange={(keys) => setFormData({ ...formData, hodId: Array.from(keys)[0] || "" })}
                   variant="bordered"
@@ -386,15 +398,15 @@ export default function ClassSectionsSettings() {
                   ))}
                 </Select>
                 <Select
-                  label="Group (Higher Secondary)"
-                  placeholder="Select group"
+                  label={t('pages.groupHigherSecondary')}
+                  placeholder={t('pages.selectGroup')}
                   selectedKeys={formData.group ? [formData.group] : []}
                   onSelectionChange={(keys) => setFormData({ ...formData, group: Array.from(keys)[0] || "" })}
                   variant="bordered"
                 >
-                  <SelectItem key="Science" value="Science">Science</SelectItem>
-                  <SelectItem key="Commerce" value="Commerce">Commerce</SelectItem>
-                  <SelectItem key="Arts" value="Arts">Arts</SelectItem>
+                  <SelectItem key="Science" value="Science">{t('pages.science')}</SelectItem>
+                  <SelectItem key="Commerce" value="Commerce">{t('pages.commerce')}</SelectItem>
+                  <SelectItem key="Arts" value="Arts">{t('pages.arts')}</SelectItem>
                 </Select>
               </div>
             </div>
@@ -420,7 +432,7 @@ export default function ClassSectionsSettings() {
         isOpen={deleteConfirm.isOpen}
         onClose={() => setDeleteConfirm({ isOpen: false, section: null })}
         onConfirm={handleDeleteConfirm}
-        title="Delete Section"
+        title={t('pages.deleteSection')}
         message={`Are you sure you want to delete section "${deleteConfirm.section?.name}"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"

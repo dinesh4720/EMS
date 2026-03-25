@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
     Card,
     CardBody,
@@ -18,7 +18,6 @@ import {
     ModalBody,
     ModalFooter,
     useDisclosure,
-    Spinner,
     Tabs,
     Tab
 } from "@heroui/react";
@@ -28,8 +27,11 @@ import { useApp } from "../../context/AppContext";
 import { staffApi } from "../../services/api";
 import RolesAccess from "./RolesAccess";
 import HierarchySettings from "./HierarchySettings";
+import { useTranslation } from 'react-i18next';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 export default function UserManagement() {
+  const { t } = useTranslation();
     const { staff, loading, refetch } = useApp();
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedTab, setSelectedTab] = useState("users");
@@ -88,12 +90,12 @@ export default function UserManagement() {
 
     const handleSavePassword = async (onClose) => {
         if (newPassword !== confirmPassword) {
-            toast.error("Passwords do not match");
+            toast.error(t('toast.error.passwordsDoNotMatch'));
             return;
         }
 
         if (newPassword.length < 5) {
-            toast.error("Password must be at least 5 characters");
+            toast.error(t('toast.error.passwordMustBeAtLeast5Characters'));
             return;
         }
 
@@ -145,18 +147,14 @@ export default function UserManagement() {
     );
 
     if (loading) {
-        return (
-            <div className="flex justify-center items-center h-64">
-                <Spinner size="lg" />
-            </div>
-        );
+        return <TablePageSkeleton />;
     }
 
     return (
         <div className="space-y-6">
             {/* Header */}
             <div>
-                <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">User Management</h2>
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{t('pages.userManagement')}</h2>
                 <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
                     Manage users, roles, permissions, and organizational hierarchy
                 </p>
@@ -179,7 +177,7 @@ export default function UserManagement() {
                     title={
                         <div className="flex items-center gap-2">
                             <UsersIcon size={18} />
-                            <span>Users</span>
+                            <span>{t('pages.users')}</span>
                         </div>
                     }
                 >
@@ -187,12 +185,12 @@ export default function UserManagement() {
                         <Card className="border-none shadow-sm">
                             <CardBody className="flex flex-col md:flex-row justify-between gap-4 items-center p-4">
                                 <div>
-                                    <h3 className="text-lg font-semibold">Staff Login Management</h3>
-                                    <p className="text-default-500 text-sm">View and manage login credentials for all staff members.</p>
+                                    <h3 className="text-lg font-semibold">{t('pages.staffLoginManagement')}</h3>
+                                    <p className="text-default-500 text-sm">{t('pages.viewAndManageLoginCredentialsForAllStaffMembers')}</p>
                                 </div>
                                 <div className="w-full md:w-72">
                                     <Input
-                                        placeholder="Search staff..."
+                                        placeholder={t('pages.searchStaff')}
                                         startContent={<Search size={18} className="text-default-400" />}
                                         value={searchTerm}
                                         onValueChange={setSearchTerm}
@@ -205,13 +203,13 @@ export default function UserManagement() {
                         </Card>
 
                         <Card className="border-none shadow-sm rounded-lg">
-                            <Table aria-label="Staff Login Credentials" removeWrapper>
+                            <Table aria-label={t('aria.inputs.staffLoginCredentials')} removeWrapper>
                                 <TableHeader>
-                                    <TableColumn>STAFF</TableColumn>
-                                    <TableColumn>ROLE</TableColumn>
-                                    <TableColumn>LOGIN ID (PHONE)</TableColumn>
-                                    <TableColumn>STATUS</TableColumn>
-                                    <TableColumn align="end">ACTIONS</TableColumn>
+                                    <TableColumn scope="col">{t('pages.sTAFF')}</TableColumn>
+                                    <TableColumn scope="col">{t('pages.rOLE')}</TableColumn>
+                                    <TableColumn scope="col">{t('pages.lOGINIdPhone')}</TableColumn>
+                                    <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+                                    <TableColumn align="end" scope="col">{t('pages.aCTIONS')}</TableColumn>
                                 </TableHeader>
                                 <TableBody emptyContent="No staff members found">
                                     {filteredStaff.map((item) => (
@@ -283,7 +281,7 @@ export default function UserManagement() {
                     title={
                         <div className="flex items-center gap-2">
                             <Shield size={18} />
-                            <span>Roles & Permissions</span>
+                            <span>{t('pages.rolesPermissions')}</span>
                         </div>
                     }
                 >
@@ -297,7 +295,7 @@ export default function UserManagement() {
                     title={
                         <div className="flex items-center gap-2">
                             <Network size={18} />
-                            <span>Org Hierarchy</span>
+                            <span>{t('pages.orgHierarchy')}</span>
                         </div>
                     }
                 >
@@ -328,14 +326,14 @@ export default function UserManagement() {
                                 </div>
 
                                 <div className="mb-4 p-3 bg-default-100 rounded-lg">
-                                    <p className="text-xs text-default-500 mb-1">Login ID (Phone Number)</p>
+                                    <p className="text-xs text-default-500 mb-1">{t('pages.loginIdPhoneNumber')}</p>
                                     <p className="font-mono text-sm">{selectedUser?.phone}</p>
                                 </div>
 
                                 <Input
                                     autoFocus
-                                    label="New Password"
-                                    placeholder="Enter new password"
+                                    label={t('pages.newPassword')}
+                                    placeholder={t('pages.enterNewPassword')}
                                     variant="bordered"
                                     type="password"
                                     value={newPassword}
@@ -343,8 +341,8 @@ export default function UserManagement() {
                                     autoComplete="new-password"
                                 />
                                 <Input
-                                    label="Confirm Password"
-                                    placeholder="Re-enter new password"
+                                    label={t('pages.confirmPassword')}
+                                    placeholder={t('pages.reEnterNewPassword')}
                                     variant="bordered"
                                     type="password"
                                     value={confirmPassword}
@@ -374,7 +372,7 @@ export default function UserManagement() {
                             <ModalHeader className="flex flex-col gap-1">
                                 <div className="flex items-center gap-2">
                                     <RefreshCw size={20} className="text-primary" />
-                                    <span>Password Reset</span>
+                                    <span>{t('pages.passwordReset')}</span>
                                 </div>
                                 <span className="text-sm font-normal text-default-500">
                                     For <span className="font-semibold text-foreground">{selectedUser?.name}</span>
@@ -383,8 +381,8 @@ export default function UserManagement() {
                             <ModalBody>
                                 {resetting ? (
                                     <div className="flex flex-col items-center justify-center py-8">
-                                        <Spinner size="lg" color="primary" />
-                                        <p className="text-sm text-default-500 mt-4">Generating secure password...</p>
+                                        <div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-900" />
+                                        <p className="text-sm text-default-500 mt-4">{t('pages.generatingSecurePassword')}</p>
                                     </div>
                                 ) : resetSuccess ? (
                                     <div className="space-y-4">
@@ -392,14 +390,14 @@ export default function UserManagement() {
                                             <div className="flex gap-3">
                                                 <AlertTriangle size={20} className="text-warning flex-shrink-0 mt-0.5" />
                                                 <div className="text-sm text-warning-800 dark:text-warning-200">
-                                                    <p className="font-semibold mb-1">Password Shown Once</p>
+                                                    <p className="font-semibold mb-1">{t('pages.passwordShownOnce')}</p>
                                                     <p className="text-xs">This password will only be displayed this one time. Please copy it now and share it securely with the user. You won't be able to see it again after closing this modal.</p>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="p-4 bg-default-100 dark:bg-default-50 rounded-lg">
-                                            <p className="text-xs text-default-500 mb-2">New Temporary Password</p>
+                                            <p className="text-xs text-default-500 mb-2">{t('pages.newTemporaryPassword')}</p>
                                             <div className="flex items-center gap-2">
                                                 <div className="flex-1 font-mono text-lg font-semibold text-center py-3 bg-content1 rounded-lg border-2 border-primary">
                                                     {generatedPassword}
@@ -416,13 +414,13 @@ export default function UserManagement() {
                                                 </Button>
                                             </div>
                                             {copiedPassword && (
-                                                <p className="text-xs text-success text-center mt-2">Password copied to clipboard!</p>
+                                                <p className="text-xs text-success text-center mt-2">{t('pages.passwordCopiedToClipboard')}</p>
                                             )}
                                         </div>
 
                                         <div className="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
                                             <p className="text-xs text-primary-700 dark:text-primary-300">
-                                                <strong>Next steps:</strong> Share this password with {selectedUser?.name}. They can log in and change their password from their profile settings.
+                                                <strong>{t('pages.nextSteps')}</strong> Share this password with {selectedUser?.name}. They can log in and change their password from their profile settings.
                                             </p>
                                         </div>
                                     </div>

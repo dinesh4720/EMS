@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
+import { request } from "../services/api.js";
 
 const PermissionContext = createContext();
 
@@ -17,54 +18,42 @@ export const PermissionProvider = ({ children }) => {
       setPermissions([]);
       setLoading(false);
     }
-  }, [isAuthenticated, user]);
+  // Use user?.id instead of user object to avoid re-running on every render
+  // when AuthContext creates a new user object reference (AP-13)
+  }, [isAuthenticated, user?.id]);
 
   const fetchUserPermissions = async () => {
     try {
       setLoading(true);
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const response = await fetch(`${API_URL}/permissions/user/${user.id}`, {
-        headers: {
-          'Authorization': `Bearer ${user.token || ''}`,
-        },
-      });
 
-      if (response.ok) {
-        const data = await response.json();
-        const apiPermissions = data.permissions || [];
+      const data = await request(`/permissions/user/${user.id}`);
+      const apiPermissions = data.permissions || [];
 
-        // If API returns empty or incomplete permissions, merge with role defaults
-        if (apiPermissions.length === 0) {
-          grantDefaultPermissions();
-        } else {
-          // Check if academics is included, if not add it based on role
-          const roleStr = typeof user?.role === 'string' ? user.role :
-                          user?.role?.toString?.() || '';
-          const normalizedRole = roleStr.toLowerCase().trim();
-          const hasAcademicsPermission = apiPermissions.some(p => p.module === 'academics');
-
-          // For teachers and above, always include academics if missing
-          if (!hasAcademicsPermission && ['teacher', 'principal', 'vice principal', 'vice-principal', 'admin', 'super admin', 'superadmin'].includes(normalizedRole)) {
-            // Merge role-based academics permission with API permissions
-            const academicsPermission = {
-              module: 'academics',
-              actions: normalizedRole === 'teacher'
-                ? ['view', 'create', 'edit']
-                : ['view', 'create', 'edit', 'publish']
-            };
-            setPermissions([...apiPermissions, academicsPermission]);
-          } else {
-            setPermissions(apiPermissions);
-          }
-        }
-      } else {
-        // If fetch fails, grant all permissions for Admin roles
-        console.warn('Permissions API not available, using role-based fallback');
+      // If API returns empty or incomplete permissions, merge with role defaults
+      if (apiPermissions.length === 0) {
         grantDefaultPermissions();
+      } else {
+        // Check if academics is included, if not add it based on role
+        const roleStr = typeof user?.role === 'string' ? user.role :
+                        user?.role?.toString?.() || '';
+        const normalizedRole = roleStr.toLowerCase().trim();
+        const hasAcademicsPermission = apiPermissions.some(p => p.module === 'academics');
+
+        // For teachers and above, always include academics if missing
+        if (!hasAcademicsPermission && ['teacher', 'principal', 'vice principal', 'vice-principal', 'admin', 'super admin', 'superadmin'].includes(normalizedRole)) {
+          const academicsPermission = {
+            module: 'academics',
+            actions: normalizedRole === 'teacher'
+              ? ['view', 'create', 'edit']
+              : ['view', 'create', 'edit', 'publish']
+          };
+          setPermissions([...apiPermissions, academicsPermission]);
+        } else {
+          setPermissions(apiPermissions);
+        }
       }
     } catch (error) {
       console.warn('Permissions system not available, using role-based fallback:', error.message);
-      // Fallback: Grant permissions based on role
       grantDefaultPermissions();
     } finally {
       setLoading(false);
@@ -181,35 +170,18 @@ export const PermissionProvider = ({ children }) => {
 
   const requestPermission = async (module, action, reason) => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const response = await fetch(`${API_URL}/permissions/request`, {
+
+      return await request('/permissions/request', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token || ''}`,
-        },
         body: JSON.stringify({
           userId: user.id,
           userName: user.name || 'Unknown User',
           userEmail: user.email || '',
           module,
-          permissions: [action], // Backend expects array of permissions
+          permissions: [action],
           reason,
         }),
       });
-
-      if (response.ok) {
-        return await response.json();
-      }
-      
-      const errorData = await response.json().catch(() => ({}));
-      
-      // If permission system is not available, throw a specific error
-      if (response.status === 500) {
-        throw new Error('Permission request system is not available. Please contact your administrator directly.');
-      }
-      
-      throw new Error(errorData.error || 'Failed to request permission');
     } catch (error) {
       console.error('Error requesting permission:', error);
       throw error;

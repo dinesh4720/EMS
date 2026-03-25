@@ -19,6 +19,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useClassContext } from '../../context/ClassContext';
 import { StudentListItem } from '../../components/classes';
 import { AttendanceStatusBadge } from '../../components/attendance';
+import { useTranslation } from 'react-i18next';
 
 const FILTER_OPTIONS = [
   { id: 'all', label: 'All' },
@@ -27,6 +28,7 @@ const FILTER_OPTIONS = [
 ];
 
 const ClassStudentsScreen = () => {
+  const { t } = useTranslation();
   const route = useRoute();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -140,7 +142,7 @@ const ClassStudentsScreen = () => {
         <Search size={20} color={colors.onSurfaceVariant} style={{ marginRight: spacing.sm }} />
         <TextInput
           style={[styles.searchInput, typography.bodyLarge, { color: colors.onSurface }]}
-          placeholder="Search students..."
+          placeholder={t('screens.searchStudents')}
           placeholderTextColor={colors.onSurfaceVariant}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -193,21 +195,21 @@ const ClassStudentsScreen = () => {
       <View style={[styles.statsRow, { backgroundColor: colors.surfaceContainer, borderRadius: shape.cornerLarge }]}>
         <View style={styles.statItem}>
           <Text style={[typography.headlineSmall, { color: colors.onSurface }]}>{students.length}</Text>
-          <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>Total</Text>
+          <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>{t('screens.total')}</Text>
         </View>
         <View style={[styles.statDivider, { backgroundColor: colors.outlineVariant }]} />
         <View style={styles.statItem}>
           <Text style={[typography.headlineSmall, { color: colors.primary }]}>
             {students.filter(s => attendance[s.id]?.status === 'present').length}
           </Text>
-          <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>Present</Text>
+          <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>{t('screens.present1')}</Text>
         </View>
         <View style={[styles.statDivider, { backgroundColor: colors.outlineVariant }]} />
         <View style={styles.statItem}>
           <Text style={[typography.headlineSmall, { color: colors.error }]}>
             {students.filter(s => attendance[s.id]?.status === 'absent').length}
           </Text>
-          <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>Absent</Text>
+          <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>{t('screens.absent1')}</Text>
         </View>
       </View>
     </View>
@@ -233,7 +235,7 @@ const ClassStudentsScreen = () => {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.surface }]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[typography.bodyMedium, { color: colors.onSurfaceVariant, marginTop: spacing.sm }]}>Loading students...</Text>
+        <Text style={[typography.bodyMedium, { color: colors.onSurfaceVariant, marginTop: spacing.sm }]}>{t('screens.loadingStudents')}</Text>
       </View>
     );
   }

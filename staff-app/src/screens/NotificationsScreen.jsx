@@ -24,6 +24,7 @@ import {
   Info,
 } from 'lucide-react-native';
 import { triggerHaptic } from '../utils/helpers';
+import { useTranslation } from 'react-i18next';
 
 // Notification types with icons and colors
 const NOTIFICATION_CONFIG = {
@@ -37,6 +38,7 @@ const NOTIFICATION_CONFIG = {
 };
 
 const NotificationsScreen = () => {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { colors, typography, spacing, shape, isDark } = useTheme();
@@ -209,7 +211,7 @@ const NotificationsScreen = () => {
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <View style={styles.headerContent}>
-          <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>Notifications</Text>
+          <Text style={[typography.headlineMedium, { color: colors.onSurface }]}>{t('screens.notifications1')}</Text>
           <Text style={[typography.bodyMedium, { color: colors.onSurfaceVariant, marginTop: 2 }]}>
             {notifications.filter(n => !n.read).length} unread
           </Text>

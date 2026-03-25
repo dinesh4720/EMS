@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
 import {
   Card,
   CardBody,
@@ -36,8 +37,11 @@ import {
 import toast from "react-hot-toast";
 import { intakeFormsApi } from "../../services/api";
 import { format } from "date-fns";
+import { useTranslation } from 'react-i18next';
 
 export default function FormAssignments() {
+  const { t } = useTranslation();
+  const { user } = useAuth();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
     isOpen: isDetailsOpen,
@@ -68,7 +72,7 @@ export default function FormAssignments() {
       const data = await intakeFormsApi.getAll("staff", "active");
       setForms(data);
     } catch (error) {
-      toast.error("Failed to load forms");
+      toast.error(t('toast.error.failedToLoadForms'));
     }
   };
 
@@ -79,7 +83,7 @@ export default function FormAssignments() {
       const data = await intakeFormsApi.getAssignments(null, status);
       setAssignments(data);
     } catch (error) {
-      toast.error("Failed to load assignments");
+      toast.error(t('toast.error.failedToLoadAssignments'));
     } finally {
       setLoading(false);
     }
@@ -87,7 +91,7 @@ export default function FormAssignments() {
 
   const handleAssign = async () => {
     if (!assignmentData.formId) {
-      toast.error("Please select a form");
+      toast.error(t('toast.error.pleaseSelectAForm'));
       return;
     }
 
@@ -101,7 +105,7 @@ export default function FormAssignments() {
       .filter(Boolean);
 
     if (emails.length === 0 && phones.length === 0) {
-      toast.error("Please provide at least one email or phone number");
+      toast.error(t('toast.error.pleaseProvideAtLeastOneEmailOrPhoneNumber'));
       return;
     }
 
@@ -111,7 +115,7 @@ export default function FormAssignments() {
         emails,
         phones,
         expiresInDays: assignmentData.expiresInDays,
-        assignedBy: "admin", // TODO: Get from auth context
+        assignedBy: user?.id || user?.name || user?.email,
       });
 
       toast.success(
@@ -135,21 +139,21 @@ export default function FormAssignments() {
   const handleResend = async (assignmentId) => {
     try {
       await intakeFormsApi.resendAssignment(assignmentId);
-      toast.success("Notification resent successfully");
+      toast.success(t('toast.success.notificationResentSuccessfully'));
     } catch (error) {
-      toast.error("Failed to resend notification");
+      toast.error(t('toast.error.failedToResendNotification'));
     }
   };
 
   const handleDelete = async (assignmentId) => {
-    if (!confirm("Are you sure you want to cancel this assignment?")) return;
+    if (!confirm(t('confirm.cancelAssignment'))) return;
 
     try {
       await intakeFormsApi.deleteAssignment(assignmentId);
-      toast.success("Assignment cancelled");
+      toast.success(t('toast.success.assignmentCancelled'));
       fetchAssignments();
     } catch (error) {
-      toast.error("Failed to cancel assignment");
+      toast.error(t('toast.error.failedToCancelAssignment'));
     }
   };
 
@@ -159,9 +163,13 @@ export default function FormAssignments() {
   };
 
   const copyAccessLink = (token) => {
+    if (!token) {
+      toast.error(t('toast.error.accessLinkNotAvailable'));
+      return;
+    }
     const link = `${window.location.origin}/form/${token}`;
     navigator.clipboard.writeText(link);
-    toast.success("Link copied to clipboard");
+    toast.success(t('toast.success.linkCopiedToClipboard'));
   };
 
   const getStatusColor = (status) => {
@@ -219,7 +227,7 @@ export default function FormAssignments() {
       <Card>
         <CardBody className="p-0">
           <Table
-            aria-label="Form assignments table"
+            aria-label={t('aria.tables.formAssignments')}
             removeWrapper
             classNames={{
               th: "bg-gray-50 dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 font-semibold",
@@ -227,13 +235,13 @@ export default function FormAssignments() {
             }}
           >
             <TableHeader>
-              <TableColumn>FORM NAME</TableColumn>
-              <TableColumn>ASSIGNED TO</TableColumn>
-              <TableColumn>ASSIGNED BY</TableColumn>
-              <TableColumn>STATUS</TableColumn>
-              <TableColumn>ASSIGNED DATE</TableColumn>
-              <TableColumn>EXPIRES</TableColumn>
-              <TableColumn>ACTIONS</TableColumn>
+              <TableColumn scope="col">{t('pages.fORMName')}</TableColumn>
+              <TableColumn scope="col">{t('pages.aSSIGNEDTo')}</TableColumn>
+              <TableColumn scope="col">{t('pages.aSSIGNEDBy')}</TableColumn>
+              <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+              <TableColumn scope="col">{t('pages.aSSIGNEDDate')}</TableColumn>
+              <TableColumn scope="col">{t('pages.eXPIRES')}</TableColumn>
+              <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
             </TableHeader>
             <TableBody
               items={filteredAssignments}
@@ -283,7 +291,7 @@ export default function FormAssignments() {
                           <MoreVertical size={16} />
                         </Button>
                       </DropdownTrigger>
-                      <DropdownMenu aria-label="Assignment actions">
+                      <DropdownMenu aria-label={t('aria.menus.assignmentActions')}>
                         <DropdownItem
                           key="view"
                           startContent={<Eye size={16} />}
@@ -327,7 +335,7 @@ export default function FormAssignments() {
       {/* Assign Form Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="2xl">
         <ModalContent>
-          <ModalHeader>Assign Form</ModalHeader>
+          <ModalHeader>{t('pages.assignForm')}</ModalHeader>
           <ModalBody>
             <div className="space-y-4">
               <div>
@@ -344,7 +352,7 @@ export default function FormAssignments() {
                     })
                   }
                 >
-                  <option value="">Choose a form...</option>
+                  <option value="">{t('pages.chooseAForm')}</option>
                   {forms.map((form) => (
                     <option key={form.id} value={form.id}>
                       {form.formName}
@@ -354,8 +362,8 @@ export default function FormAssignments() {
               </div>
 
               <Textarea
-                label="Email Addresses"
-                placeholder="Enter email addresses (one per line or comma-separated)"
+                label={t('pages.emailAddresses')}
+                placeholder={t('pages.enterEmailAddressesOnePerLineOrCommaSeparated')}
                 value={assignmentData.emails}
                 onChange={(e) =>
                   setAssignmentData({
@@ -368,8 +376,8 @@ export default function FormAssignments() {
               />
 
               <Textarea
-                label="Phone Numbers"
-                placeholder="Enter phone numbers (one per line or comma-separated)"
+                label={t('pages.phoneNumbers')}
+                placeholder={t('pages.enterPhoneNumbersOnePerLineOrCommaSeparated')}
                 value={assignmentData.phones}
                 onChange={(e) =>
                   setAssignmentData({
@@ -383,7 +391,7 @@ export default function FormAssignments() {
 
               <Input
                 type="number"
-                label="Expires In (Days)"
+                label={t('pages.expiresInDays')}
                 value={assignmentData.expiresInDays}
                 onChange={(e) =>
                   setAssignmentData({
@@ -414,7 +422,7 @@ export default function FormAssignments() {
       {/* Assignment Details Modal */}
       <Modal isOpen={isDetailsOpen} onClose={onDetailsClose} size="lg">
         <ModalContent>
-          <ModalHeader>Assignment Details</ModalHeader>
+          <ModalHeader>{t('pages.assignmentDetails')}</ModalHeader>
           <ModalBody>
             {selectedAssignment && (
               <div className="space-y-4">
@@ -499,7 +507,7 @@ export default function FormAssignments() {
             )}
           </ModalBody>
           <ModalFooter>
-            <Button onPress={onDetailsClose}>Close</Button>
+            <Button onPress={onDetailsClose}>{t('pages.close2')}</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

@@ -12,8 +12,10 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, Loading, EmptyState } from '../components';
 import { calculatePercentage } from '../utils/helpers';
 import { Calendar, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 const AttendanceScreen = () => {
+  const { t } = useTranslation();
   const { attendance, loading, errors, fetchAttendance } = useStudent();
   const { themeColors } = useTheme();
   const [refreshing, setRefreshing] = React.useState(false);
@@ -164,25 +166,25 @@ const AttendanceScreen = () => {
                 <View style={styles.statsRow}>
                   <StatCard
                     icon={CheckCircle}
-                    label="Present"
+                    label={t('screens.present1')}
                     value={stats.present}
                     color={themeColors.success || '#22c55e'}
                   />
                   <StatCard
                     icon={XCircle}
-                    label="Absent"
+                    label={t('screens.absent1')}
                     value={stats.absent}
                     color={themeColors.error || '#ef4444'}
                   />
                   <StatCard
                     icon={AlertTriangle}
-                    label="Late"
+                    label={t('screens.late1')}
                     value={stats.late}
                     color={themeColors.warning || '#f59e0b'}
                   />
                   <StatCard
                     icon={Calendar}
-                    label="Total"
+                    label={t('screens.total')}
                     value={stats.totalDays}
                   />
                 </View>
@@ -250,7 +252,7 @@ const AttendanceScreen = () => {
             </>
           ) : !errors?.attendance ? (
             <EmptyState
-              title="No Attendance Data"
+              title={t('screens.noAttendanceData')}
               message="Attendance records will appear here once they are available."
               icon={<Calendar size={48} color={themeColors.textTertiary} />}
             />

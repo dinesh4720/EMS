@@ -7,6 +7,7 @@ const STORED_USER_FIELDS = [
   'picture',
   'code',
   'employeeId',
+  'schoolId',
 ];
 
 function dispatchAuthEvent(eventName) {

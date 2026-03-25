@@ -7,6 +7,7 @@ import { Search, Plus, Edit3, Trash2 } from "lucide-react";
 import { MinimalButton } from "../../components/ui";
 import { inventoryApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 const CATEGORIES = ["FURNITURE", "ELECTRONICS", "LAB_EQUIPMENT", "SPORTS", "STATIONERY", "VEHICLE", "OTHER"];
 const CONDITIONS = ["GOOD", "FAIR", "POOR", "DAMAGED"];
@@ -34,6 +35,7 @@ const emptyForm = {
 };
 
 export default function Assets() {
+  const { t } = useTranslation();
   const [assets, setAssets] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +46,7 @@ export default function Assets() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const fetchAssets = async () => {
     try {
@@ -54,13 +57,13 @@ export default function Assets() {
       ]);
       setAssets(res?.data || []);
       setVendors(Array.isArray(vendorList) ? vendorList : []);
-    } catch { toast.error("Failed to load assets"); }
+    } catch { toast.error(t('toast.error.failedToLoadAssets')); }
     finally { setLoading(false); }
   };
 
   useEffect(() => { fetchAssets(); }, [search, filterCategory, filterStatus]);
 
-  const openCreate = () => { setEditing(null); setForm(emptyForm); setIsOpen(true); };
+  const openCreate = () => { setEditing(null); setForm(emptyForm); setErrors({}); setIsOpen(true); };
   const openEdit = (a) => {
     setEditing(a);
     setForm({
@@ -72,12 +75,16 @@ export default function Assets() {
       vendorId: a.vendorId?._id || a.vendorId || "", condition: a.condition || "GOOD",
       status: a.status || "ACTIVE", notes: a.notes || "",
     });
+    setErrors({});
     setIsOpen(true);
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) return toast.error("Name is required");
-    if (form.quantity < 0) return toast.error("Quantity cannot be negative");
+    if (!form.name.trim()) {
+      setErrors({ name: t('toast.error.nameIsRequired') });
+      return toast.error(t('toast.error.nameIsRequired'));
+    }
+    if (form.quantity < 0) return toast.error(t('toast.error.quantityCannotBeNegative'));
     try {
       setSaving(true);
       const payload = {
@@ -91,10 +98,10 @@ export default function Assets() {
       };
       if (editing) {
         await inventoryApi.updateAsset(editing._id, payload);
-        toast.success("Asset updated");
+        toast.success(t('toast.success.assetUpdated'));
       } else {
         await inventoryApi.createAsset(payload);
-        toast.success("Asset created");
+        toast.success(t('toast.success.assetCreated'));
       }
       setIsOpen(false);
       fetchAssets();
@@ -104,15 +111,18 @@ export default function Assets() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Delete this asset?")) return;
+    if (!confirm(t('confirm.deleteAsset'))) return;
     try {
       await inventoryApi.deleteAsset(id);
-      toast.success("Asset deleted");
+      toast.success(t('toast.success.assetDeleted'));
       fetchAssets();
-    } catch { toast.error("Delete failed"); }
+    } catch { toast.error(t('toast.error.deleteFailed')); }
   };
 
-  const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+  const set = (key, val) => {
+    setForm((f) => ({ ...f, [key]: val }));
+    setErrors((e) => ({ ...e, [key]: '' }));
+  };
 
   if (loading) {
     return (
@@ -134,8 +144,8 @@ export default function Assets() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search assets..."
-              className="pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 placeholder:text-gray-400 dark:placeholder:text-zinc-500 w-56"
+              placeholder={t('pages.searchAssets')}
+              className="pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 placeholder:text-gray-500 dark:placeholder:text-zinc-500 w-56"
             />
           </div>
           {[{ label: "Category", value: filterCategory, setter: setFilterCategory, options: CATEGORIES },
@@ -169,7 +179,7 @@ export default function Assets() {
             </thead>
             <tbody>
               {assets.length === 0 ? (
-                <tr><td colSpan={8} className="text-center py-12 text-gray-500 dark:text-zinc-400">No assets found</td></tr>
+                <tr><td colSpan={8} className="text-center py-12 text-gray-500 dark:text-zinc-400">{t('pages.noAssetsFound')}</td></tr>
               ) : (
                 assets.map((a) => (
                   <tr key={a._id} className="border-b border-gray-50 dark:border-zinc-800 hover:bg-gray-50/50 dark:hover:bg-zinc-900/50">
@@ -204,39 +214,39 @@ export default function Assets() {
       </div>
 
       {/* Create/Edit Modal */}
-      <Modal isOpen={isOpen} onOpenChange={setIsOpen} size="2xl" scrollBehavior="inside">
+      <Modal isOpen={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) setErrors({}); }} size="2xl" scrollBehavior="inside">
         <ModalContent>
           <ModalHeader>{editing ? "Edit Asset" : "New Asset"}</ModalHeader>
           <ModalBody>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Name" isRequired value={form.name} onValueChange={(v) => set("name", v)} />
-              <Select label="Category" selectedKeys={[form.category]} onSelectionChange={(keys) => set("category", [...keys][0])}>
+              <Input label={t('pages.name1')} isRequired value={form.name} onValueChange={(v) => set("name", v)} isInvalid={!!errors.name} errorMessage={errors.name} />
+              <Select label={t('pages.category1')} selectedKeys={[form.category]} onSelectionChange={(keys) => set("category", [...keys][0])}>
                 {CATEGORIES.map((c) => <SelectItem key={c}>{c.replace(/_/g, " ")}</SelectItem>)}
               </Select>
-              <Input label="Asset Tag" value={form.assetTag} onValueChange={(v) => set("assetTag", v)} />
-              <Input label="Serial Number" value={form.serialNumber} onValueChange={(v) => set("serialNumber", v)} />
-              <Input label="Location" value={form.location} onValueChange={(v) => set("location", v)} />
-              <Input label="Assigned To" value={form.assignedTo} onValueChange={(v) => set("assignedTo", v)} />
-              <Input label="Quantity" type="number" value={String(form.quantity)} onValueChange={(v) => set("quantity", v)} />
-              <Input label="Minimum Quantity" type="number" value={String(form.minimumQuantity)} onValueChange={(v) => set("minimumQuantity", v)} />
-              <Input label="Purchase Date" type="date" value={form.purchaseDate} onValueChange={(v) => set("purchaseDate", v)} />
-              <Input label="Purchase Price" type="number" value={String(form.purchasePrice)} onValueChange={(v) => set("purchasePrice", v)} />
-              <Input label="Warranty Expiry" type="date" value={form.warrantyExpiry} onValueChange={(v) => set("warrantyExpiry", v)} />
-              <Select label="Vendor" selectedKeys={form.vendorId ? [form.vendorId] : []} onSelectionChange={(keys) => set("vendorId", [...keys][0] || "")}>
+              <Input label={t('pages.assetTag')} value={form.assetTag} onValueChange={(v) => set("assetTag", v)} />
+              <Input label={t('pages.serialNumber')} value={form.serialNumber} onValueChange={(v) => set("serialNumber", v)} />
+              <Input label={t('pages.location')} value={form.location} onValueChange={(v) => set("location", v)} />
+              <Input label={t('pages.assignedTo')} value={form.assignedTo} onValueChange={(v) => set("assignedTo", v)} />
+              <Input label={t('pages.quantity')} type="number" value={String(form.quantity)} onValueChange={(v) => set("quantity", v)} />
+              <Input label={t('pages.minimumQuantity')} type="number" value={String(form.minimumQuantity)} onValueChange={(v) => set("minimumQuantity", v)} />
+              <Input label={t('pages.purchaseDate')} type="date" value={form.purchaseDate} onValueChange={(v) => set("purchaseDate", v)} />
+              <Input label={t('pages.purchasePrice')} type="number" value={String(form.purchasePrice)} onValueChange={(v) => set("purchasePrice", v)} />
+              <Input label={t('pages.warrantyExpiry')} type="date" value={form.warrantyExpiry} onValueChange={(v) => set("warrantyExpiry", v)} />
+              <Select label={t('pages.vendor')} selectedKeys={form.vendorId ? [form.vendorId] : []} onSelectionChange={(keys) => set("vendorId", [...keys][0] || "")}>
                 {vendors.map((v) => <SelectItem key={v._id}>{v.name}</SelectItem>)}
               </Select>
-              <Select label="Condition" selectedKeys={[form.condition]} onSelectionChange={(keys) => set("condition", [...keys][0])}>
+              <Select label={t('pages.condition')} selectedKeys={[form.condition]} onSelectionChange={(keys) => set("condition", [...keys][0])}>
                 {CONDITIONS.map((c) => <SelectItem key={c}>{c}</SelectItem>)}
               </Select>
-              <Select label="Status" selectedKeys={[form.status]} onSelectionChange={(keys) => set("status", [...keys][0])}>
+              <Select label={t('pages.status2')} selectedKeys={[form.status]} onSelectionChange={(keys) => set("status", [...keys][0])}>
                 {STATUSES.map((s) => <SelectItem key={s}>{s.replace(/_/g, " ")}</SelectItem>)}
               </Select>
             </div>
-            <Textarea label="Description" value={form.description} onValueChange={(v) => set("description", v)} className="mt-2" />
-            <Textarea label="Notes" value={form.notes} onValueChange={(v) => set("notes", v)} />
+            <Textarea label={t('pages.description1')} value={form.description} onValueChange={(v) => set("description", v)} className="mt-2" />
+            <Textarea label={t('pages.notes1')} value={form.notes} onValueChange={(v) => set("notes", v)} />
           </ModalBody>
           <ModalFooter>
-            <MinimalButton variant="ghost" onClick={() => setIsOpen(false)}>Cancel</MinimalButton>
+            <MinimalButton variant="ghost" onClick={() => setIsOpen(false)}>{t('pages.cancel2')}</MinimalButton>
             <MinimalButton variant="primary" onClick={handleSave} loading={saving}>{editing ? "Update" : "Create"}</MinimalButton>
           </ModalFooter>
         </ModalContent>

@@ -195,6 +195,11 @@ export interface ConversationRecord {
   participants: Array<{ userId: string; name: string; userType: string }>;
 }
 
+export interface NotificationRecord {
+  _id: string; id: string; type: string; title: string;
+  message: string; read: boolean; createdAt: string; schoolId: string;
+}
+
 export interface MockState {
   user: User;
   staff: StaffMember[];
@@ -212,6 +217,7 @@ export interface MockState {
   appointments: AppointmentRecord[];
   callLogs: CallLogRecord[];
   feedbacks: FeedbackRecord[];
+  notifications: NotificationRecord[];
   hostels: HostelRecord[];
   hostelRooms: HostelRoomRecord[];
   hostelAllocations: HostelAllocationRecord[];
@@ -270,11 +276,11 @@ function objectId(prefix: string, counter: number): string {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
- *  createMockState
+ *  USER FACTORY HELPERS
  * ═══════════════════════════════════════════════════════════════════ */
 
-export function createMockState(): MockState {
-  const user: User = {
+export function createAdminUser(): User {
+  return {
     id: ADMIN_ID, _id: ADMIN_ID,
     name: 'Dinesh Admin', email: 'admin@schoolsync.test',
     role: 'admin', token: 'mock-jwt-token-admin',
@@ -288,6 +294,67 @@ export function createMockState(): MockState {
       superAdmin: false, intakeForms: true, dataTools: true,
     },
   };
+}
+
+export function createTeacherUser(): User {
+  return {
+    id: TEACHER_A_ID, _id: TEACHER_A_ID,
+    name: 'Ananya Sharma', email: 'ananya@schoolsync.test',
+    role: 'teacher', token: 'mock-jwt-token-teacher',
+    schoolId: SCHOOL_ID,
+    employeeId: 'EMP-001',
+    permissions: {
+      students: true, classes: true, staff: false, attendance: true,
+      academics: true, fees: false, messaging: true, frontDesk: false,
+      library: true, settings: false, analytics: false, reports: false,
+      timetable: true, hostel: false, transport: false, inventory: false,
+      homework: true, calendar: true, payroll: false, aiAssistant: false,
+      superAdmin: false, intakeForms: false, dataTools: false,
+    },
+  };
+}
+
+export function createAccountantUser(): User {
+  return {
+    id: ACCOUNTANT_ID, _id: ACCOUNTANT_ID,
+    name: 'Priya Menon', email: 'priya@schoolsync.test',
+    role: 'accountant', token: 'mock-jwt-token-accountant',
+    schoolId: SCHOOL_ID,
+    employeeId: 'EMP-003',
+    permissions: {
+      students: true, classes: false, staff: false, attendance: false,
+      academics: false, fees: true, messaging: true, frontDesk: false,
+      library: false, settings: false, analytics: true, reports: true,
+      timetable: false, hostel: false, transport: false, inventory: false,
+      homework: false, calendar: false, payroll: true, aiAssistant: false,
+      superAdmin: false, intakeForms: false, dataTools: false,
+    },
+  };
+}
+
+export function createPrincipalUser(): User {
+  return {
+    id: '64b100000000000000000020', _id: '64b100000000000000000020',
+    name: 'Dr. Krishnamurthy', email: 'principal@schoolsync.test',
+    role: 'principal', token: 'mock-jwt-token-principal',
+    schoolId: SCHOOL_ID,
+    permissions: {
+      students: true, classes: true, staff: true, attendance: true,
+      academics: true, fees: true, messaging: true, frontDesk: true,
+      library: true, settings: true, analytics: true, reports: true,
+      timetable: true, hostel: true, transport: true, inventory: true,
+      homework: true, calendar: true, payroll: true, aiAssistant: true,
+      superAdmin: false, intakeForms: true, dataTools: true,
+    },
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ *  createMockState
+ * ═══════════════════════════════════════════════════════════════════ */
+
+export function createMockState(userOverride?: User): MockState {
+  const user: User = userOverride ?? createAdminUser();
 
   const staff: StaffMember[] = [
     {
@@ -394,6 +461,7 @@ export function createMockState(): MockState {
       attendanceType: 'daily',
       gradingSystem: 'percentage',
     },
+    notifications: [],
     requestLog: new Set(),
     studentCounter: 0, examCounter: 0, resultCounter: 0, bookCounter: 0,
     issuedBookCounter: 0, announcementCounter: 0, appointmentCounter: 0,
@@ -838,6 +906,60 @@ export function seedBulkImportJobs(state: MockState): void {
   // no-op placeholder for bulk import seed
 }
 
+export function seedNotification(
+  state: MockState,
+  overrides: Partial<NotificationRecord> = {},
+): NotificationRecord {
+  const id = objectId('notif', (state.notifications.length) + 1);
+  const record: NotificationRecord = {
+    _id: id, id,
+    type: overrides.type || 'announcement',
+    title: overrides.title || `Notification ${id}`,
+    message: overrides.message || 'Test notification message',
+    read: overrides.read ?? false,
+    createdAt: overrides.createdAt || new Date().toISOString(),
+    schoolId: SCHOOL_ID,
+    ...overrides,
+  };
+  state.notifications.push(record);
+  return record;
+}
+
+export function recordFeePayment(
+  state: MockState,
+  studentId: string,
+  amount: number,
+  mode: string,
+  date: string,
+): void {
+  state.paymentCounter++;
+  const payment = {
+    _id: `pay-${state.paymentCounter}`,
+    id: `pay-${state.paymentCounter}`,
+    studentId,
+    amount,
+    paymentMode: mode,
+    paymentDate: date,
+    date,
+    receiptNumber: `RCP-${String(state.paymentCounter).padStart(4, '0')}`,
+    status: 'completed',
+    schoolId: SCHOOL_ID,
+  };
+  state.payments.push(payment);
+  // Update student fee status
+  const student = state.students.find((s) => s.id === studentId);
+  if (student) {
+    const fs = state.studentFeeStructures.get(studentId);
+    if (fs) {
+      (fs as Record<string, unknown>).paidAmount = ((fs.paidAmount as number) || 0) + amount;
+      const balance = ((fs.totalFee as number) || 0) - ((fs.paidAmount as number) || 0);
+      (fs as Record<string, unknown>).balanceAmount = Math.max(0, balance);
+      (fs as Record<string, unknown>).status = balance <= 0 ? 'paid' : 'pending';
+    }
+    student.feeStatus = state.studentFeeStructures.get(studentId)?.status as string || 'pending';
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════════
  *  installMockApi
  * ═══════════════════════════════════════════════════════════════════ */
@@ -1249,7 +1371,8 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     if (path === '/ai' || path.match(/^\/ai\//)) return json({ response: 'I am the AI assistant. How can I help you?', suggestions: [] });
 
     /* ── Notifications ── */
-    if (path === '/notifications')  return json({ data: [], unreadCount: 0 });
+    if (path === '/notifications')  return json(state.notifications ?? []);
+    if (path.match(/^\/notifications\/preferences/))  return json({ email: true, push: true, sms: false });
     if (path === '/notification-preferences')  return json({ email: true, push: true, sms: false });
 
     /* ── Intake Forms ── */
@@ -1286,6 +1409,20 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       if (path.includes('/eligible'))   return json(state.students.filter((s) => s.status === 'active'));
       if (method === 'POST')            return json({ promoted: 0, detained: 0, message: 'Promotion completed' });
       return json([]);
+    }
+
+    /* ── Changelog (public endpoint used by all roles) ── */
+    if (path === '/changelog') return json({ entries: [], total: 0 });
+    if (path.match(/^\/changelog\//)) return json({ entries: [], total: 0 });
+
+    /* ── NPS ── */
+    if (path === '/nps/status')  return json({ shouldShow: false });
+    if (path === '/nps/submit')  return json({ success: true });
+    if (path === '/nps/dismiss') return json({ success: true });
+
+    /* ── Student Fees Batch ── */
+    if (path === '/student-fees/batch' && method === 'POST') {
+      return json({ success: true, processed: [] }, 201);
     }
 
     /* ── Feature Flags ── */

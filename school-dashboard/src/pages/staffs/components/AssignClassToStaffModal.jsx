@@ -7,6 +7,7 @@ import { Search, Users, User, GraduationCap, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import ConfirmDialog from "../../../components/ConfirmDialog";
 import { useApp } from "../../../context/AppContext";
+import { useTranslation } from 'react-i18next';
 
 /**
  * AssignClassToStaffModal - Modal to assign a staff member as class teacher
@@ -23,6 +24,7 @@ export default function AssignClassToStaffModal({
   staffId,
   staffName
 }) {
+  const { t } = useTranslation();
   const { classes, classesApi, updateClassLocal } = useApp();
 
   // Local state
@@ -127,7 +129,7 @@ export default function AssignClassToStaffModal({
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1 border-b border-default-200">
             <div>
-              <h3 className="text-xl font-semibold">Assign as Class Teacher</h3>
+              <h3 className="text-xl font-semibold">{t('pages.assignAsClassTeacher')}</h3>
               <p className="text-sm text-default-500 font-normal">
                 Staff: <span className="font-medium text-primary">{staffName}</span>
               </p>
@@ -138,7 +140,7 @@ export default function AssignClassToStaffModal({
             {/* Search */}
             <div className="mb-4">
               <Input
-                placeholder="Search classes by name or teacher..."
+                placeholder={t('pages.searchClassesByNameOrTeacher')}
                 value={searchQuery}
                 onValueChange={setSearchQuery}
                 startContent={<Search size={16} className="text-default-400" />}
@@ -156,7 +158,7 @@ export default function AssignClassToStaffModal({
             <div className="bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg p-3 flex gap-3 mb-4">
               <AlertCircle size={18} className="text-warning-600 dark:text-warning-400 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-warning-800 dark:text-warning-200">
-                <strong>Important:</strong> A staff member can be class teacher for only one class. If they're already assigned to a class, that assignment will be automatically removed.
+                <strong>{t('pages.important')}</strong> A staff member can be class teacher for only one class. If they're already assigned to a class, that assignment will be automatically removed.
               </p>
             </div>
 
@@ -202,7 +204,7 @@ export default function AssignClassToStaffModal({
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
                             {cls.teacherPhoto ? (
-                              <img src={cls.teacherPhoto} alt={cls.classTeacherName} className="w-full h-full object-cover" />
+                              <img src={cls.teacherPhoto} alt={cls.classTeacherName} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                             ) : (
                               <User size={14} className="text-gray-600 dark:text-gray-400" />
                             )}
@@ -211,7 +213,7 @@ export default function AssignClassToStaffModal({
                             <p className="text-sm font-medium text-default-700">
                               {cls.classTeacherName}
                             </p>
-                            <p className="text-xs text-default-400">Current</p>
+                            <p className="text-xs text-default-400">{t('pages.current')}</p>
                           </div>
                         </div>
                       ) : (

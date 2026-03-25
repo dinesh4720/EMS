@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Select, SelectItem, Chip } from '@heroui/react';
 import {
   Upload, FileSpreadsheet, Download, AlertTriangle, CheckCircle2,
@@ -16,6 +17,7 @@ const IMPORT_TYPES = [
 ];
 
 export default function BulkImportPage() {
+  const { t } = useTranslation();
   const [importType, setImportType] = useState('students');
   const [file, setFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
@@ -31,27 +33,38 @@ export default function BulkImportPage() {
     else if (e.type === 'dragleave') setDragActive(false);
   }, []);
 
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
   const handleDrop = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
     const droppedFile = e.dataTransfer?.files?.[0];
-    if (droppedFile && /\.(csv|xlsx|xls)$/i.test(droppedFile.name)) {
+    if (!droppedFile) return;
+    if (droppedFile.size > MAX_FILE_SIZE) {
+      toast.error(t('toast.error.fileSizeExceeds10mbLimit'));
+      return;
+    }
+    if (/\.(csv|xlsx|xls)$/i.test(droppedFile.name)) {
       setFile(droppedFile);
       setPreview(null);
       setResult(null);
     } else {
-      toast.error('Only CSV and Excel files are supported');
+      toast.error(t('toast.error.onlyCsvAndExcelFilesAreSupported'));
     }
   }, []);
 
   const handleFileSelect = (e) => {
     const selected = e.target.files?.[0];
-    if (selected) {
-      setFile(selected);
-      setPreview(null);
-      setResult(null);
+    if (!selected) return;
+    if (selected.size > MAX_FILE_SIZE) {
+      toast.error(t('toast.error.fileSizeExceeds10mbLimit'));
+      e.target.value = '';
+      return;
     }
+    setFile(selected);
+    setPreview(null);
+    setResult(null);
   };
 
   const handleUpload = async () => {
@@ -77,7 +90,7 @@ export default function BulkImportPage() {
         toast.success(`File parsed: ${data.preview.length} rows found`);
       } else if (data.jobId) {
         setResult({ status: 'queued', jobId: data.jobId, message: data.message || 'Import queued for background processing' });
-        toast.success('Import job queued');
+        toast.success(t('toast.success.importJobQueued'));
       } else {
         setResult({ status: 'success', ...data });
         toast.success(data.message || 'Import completed');
@@ -92,7 +105,6 @@ export default function BulkImportPage() {
 
   const handleDownloadTemplate = async () => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
       const response = await fetch(`${API_URL}/bulk-import/template/${importType}`, { credentials: 'include' });
       if (!response.ok) throw new Error('Download failed');
       const blob = await response.blob();
@@ -105,7 +117,7 @@ export default function BulkImportPage() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('Failed to download template');
+      toast.error(t('toast.error.failedToDownloadTemplate'));
     }
   };
 
@@ -115,8 +127,8 @@ export default function BulkImportPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Bulk Import</h1>
-        <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">Import data from CSV or Excel files</p>
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{t('pages.bulkImport')}</h1>
+        <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">{t('pages.importDataFromCsvOrExcelFiles')}</p>
       </div>
 
       {/* Type Selection + Template Download */}
@@ -124,7 +136,7 @@ export default function BulkImportPage() {
         <div className="flex flex-wrap items-end gap-4">
           <div className="w-56">
             <Select
-              label="Import Type"
+              label={t('pages.importType')}
               size="sm"
               selectedKeys={[importType]}
               onChange={(e) => {
@@ -199,7 +211,7 @@ export default function BulkImportPage() {
         <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 p-4">
           <div className="flex items-center gap-3 mb-2">
             <Loader2 size={16} className="animate-spin text-blue-500" />
-            <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">Uploading & processing...</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('pages.uploadingProcessing')}</span>
           </div>
           <div className="w-full bg-gray-200 dark:bg-zinc-700 rounded-full h-2">
             <div
@@ -227,7 +239,7 @@ export default function BulkImportPage() {
       {preview?.preview && (
         <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 shadow-sm dark:shadow-zinc-900/50 overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Data Preview</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.dataPreview')}</h3>
             <Chip size="sm" variant="flat">{preview.preview.length} rows</Chip>
           </div>
           <div className="overflow-x-auto">
@@ -243,9 +255,9 @@ export default function BulkImportPage() {
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
                 {preview.preview.slice(0, 10).map((row, i) => (
-                  <tr key={i} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
+                  <tr key={`row-${i}`} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
                     {Object.values(row).map((val, j) => (
-                      <td key={j} className="px-4 py-2.5 text-gray-700 dark:text-zinc-300 whitespace-nowrap">
+                      <td key={`cell-${i}-${j}`} className="px-4 py-2.5 text-gray-700 dark:text-zinc-300 whitespace-nowrap">
                         {val !== null && val !== undefined ? String(val) : '—'}
                       </td>
                     ))}

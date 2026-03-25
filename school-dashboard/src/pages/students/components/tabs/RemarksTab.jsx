@@ -1,4 +1,5 @@
 import StudentRemarks from "../StudentRemarks";
+import { useTranslation } from 'react-i18next';
 
 /**
  * RemarksTab - Tab wrapper for StudentRemarks component

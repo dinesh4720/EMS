@@ -3,6 +3,7 @@
  */
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { announcementsApi } from "../../../services/api";
 import {
   ArrowLeft, Edit, MessageSquare, CreditCard, MoreVertical, Trash2,
   Phone, FileCheck, Download, Printer, Share2, Bell, Users, Camera
@@ -12,8 +13,10 @@ import PhotoAvatar from "../../../components/PhotoAvatar";
 import PhotoEditorModal from "../../../components/PhotoEditorModal";
 import CameraCaptureModal from "../../../components/CameraCaptureModal";
 import { useState } from "react";
+import { useTranslation } from 'react-i18next';
 
 export default function StaffProfileHeader({
+  const { t } = useTranslation();
   staff,
   picturePreview,
   onPhotoClick,
@@ -36,7 +39,7 @@ export default function StaffProfileHeader({
       setSelectedImageForEdit(currentPhoto);
       setIsPhotoEditorOpen(true);
     } else {
-      toast.error("No photo to adjust");
+      toast.error(t('toast.error.noPhotoToAdjust'));
     }
   };
 
@@ -56,7 +59,7 @@ export default function StaffProfileHeader({
   const handleRemovePhoto = () => {
     if (staff.picture && onPhotoClick) {
       onPhotoClick(null);
-      toast.success("Photo removed");
+      toast.success(t('toast.success.photoRemoved'));
     }
   };
 
@@ -105,12 +108,12 @@ export default function StaffProfileHeader({
               <DropdownTrigger>
                 <div
                   className="absolute -bottom-1 -right-1 bg-white dark:bg-zinc-900 rounded-full p-1.5 shadow-sm border border-gray-200 dark:border-zinc-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
-                  title="Change photo"
+                  title={t('pages.changePhoto1')}
                 >
                   <Camera size={14} className="text-gray-600 dark:text-zinc-400" />
                 </div>
               </DropdownTrigger>
-              <DropdownMenu aria-label="Photo actions">
+              <DropdownMenu aria-label={t('aria.menus.photoActions')}>
                 <DropdownItem
                   key="adjust"
                   startContent={<Camera size={16} />}
@@ -173,7 +176,7 @@ export default function StaffProfileHeader({
                   window.location.href = `tel:${staff.phone}`;
                   toast.success(`Calling ${staff.name}...`);
                 } else {
-                  toast.error("No phone number available");
+                  toast.error(t('toast.error.noPhoneNumberAvailable'));
                 }
               }}
               isDisabled={!staff.phone}
@@ -200,7 +203,7 @@ export default function StaffProfileHeader({
                 <MoreVertical size={20} />
               </Button>
             </DropdownTrigger>
-            <DropdownMenu aria-label="Staff actions" closeOnSelect={false}>
+            <DropdownMenu aria-label={t('aria.menus.staffActions')} closeOnSelect={false}>
               {/* Communication Section */}
               <DropdownItem sectionTitle="Communication" key="communication-header" showDivider>
                 Communication
@@ -217,7 +220,25 @@ export default function StaffProfileHeader({
               <DropdownItem
                 key="sendNotification"
                 startContent={<Bell size={16} />}
-                onPress={() => toast.success("Notification sent")}
+                onPress={async () => {
+                  const staffId = staff._id || staff.id;
+                  if (!staffId) { toast.error('Staff ID not available'); return; }
+                  const loadingId = toast.loading('Sending notification…');
+                  try {
+                    await announcementsApi.create({
+                      title: `Notification from Admin`,
+                      content: `You have a new notification from the administration.`,
+                      recipients: [{ type: 'custom', userIds: [staffId] }],
+                      channels: ['in_app'],
+                    });
+                    toast.dismiss(loadingId);
+                    toast.success(`Notification sent to ${staff.name}`);
+                  } catch (err) {
+                    toast.dismiss(loadingId);
+                    toast.error('Failed to send notification');
+                    console.error('Notification error:', err);
+                  }
+                }}
               >
                 Send Notification
               </DropdownItem>
@@ -225,7 +246,7 @@ export default function StaffProfileHeader({
               <DropdownItem
                 key="shareProfile"
                 startContent={<Share2 size={16} />}
-                onPress={() => toast.success("Profile link copied")}
+                onPress={() => toast.success(t('toast.success.profileLinkCopied'))}
               >
                 Share Profile
               </DropdownItem>
@@ -254,7 +275,33 @@ export default function StaffProfileHeader({
               <DropdownItem
                 key="generateReport"
                 startContent={<FileCheck size={16} />}
-                onPress={() => toast.success("Report generated")}
+                onPress={() => {
+                  const rows = [
+                    ['Field', 'Value'],
+                    ['Name', staff.name || ''],
+                    ['Employee Code', staff.code || ''],
+                    ['Role', Array.isArray(staff.role) ? staff.role.join(', ') : (staff.role || '')],
+                    ['Department', staff.department || ''],
+                    ['Email', staff.email || ''],
+                    ['Phone', staff.phone || ''],
+                    ['Status', staff.status || ''],
+                    ['Join Date', staff.joinDate || ''],
+                    ['Qualification', staff.qualification || ''],
+                    ['Address', staff.address || ''],
+                    ['Report Generated', new Date().toLocaleString()],
+                  ];
+                  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+                  const blob = new Blob([csv], { type: 'text/csv' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `staff-report-${staff.code || staff.name?.replace(/\s+/g, '-') || 'unknown'}-${new Date().toISOString().split('T')[0]}.csv`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  toast.success('Staff report downloaded');
+                }}
               >
                 Generate Report
               </DropdownItem>
@@ -267,7 +314,59 @@ export default function StaffProfileHeader({
               <DropdownItem
                 key="download"
                 startContent={<Download size={16} />}
-                onPress={() => toast.success("Profile downloaded")}
+                onPress={() => {
+                  const roles = Array.isArray(staff.role) ? staff.role.join(', ') : (staff.role || 'Staff');
+                  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"/><title>Staff Profile – ${staff.name || ''}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:40px;max-width:680px;margin:auto}
+.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:16px;margin-bottom:24px}
+.header h1{font-size:22px;font-weight:700}.header p{font-size:13px;color:#666;margin-top:4px}
+.badge{background:#f3f4f6;border:1px solid #e5e7eb;color:#374151;padding:4px 12px;border-radius:99px;font-size:11px;font-weight:600}
+.section{margin-bottom:20px}
+.section-title{font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.rows{border:1px solid #e5e7eb;border-radius:8px;overflow:hidden}
+.row{display:flex;font-size:13px;border-bottom:1px solid #f3f4f6}
+.row:last-child{border-bottom:none}
+.row .lbl{width:160px;min-width:160px;padding:10px 14px;background:#f9fafb;color:#6b7280;font-weight:500}
+.row .val{padding:10px 14px;color:#111}
+.footer{text-align:center;font-size:11px;color:#aaa;margin-top:28px}
+@media print{body{padding:20px}}
+</style></head>
+<body>
+<div class="header">
+  <div><h1>${staff.name || 'Staff Profile'}</h1><p>${roles} • ${staff.department || 'General'}</p></div>
+  <span class="badge">${staff.status || 'Active'}</span>
+</div>
+<div class="section">
+  <div class="section-title">Basic Information</div>
+  <div class="rows">
+    <div class="row"><span class="lbl">Employee Code</span><span class="val">${staff.code || '—'}</span></div>
+    <div class="row"><span class="lbl">Full Name</span><span class="val">${staff.name || '—'}</span></div>
+    <div class="row"><span class="lbl">Role</span><span class="val">${roles}</span></div>
+    <div class="row"><span class="lbl">Department</span><span class="val">${staff.department || '—'}</span></div>
+    <div class="row"><span class="lbl">Qualification</span><span class="val">${staff.qualification || '—'}</span></div>
+    <div class="row"><span class="lbl">Join Date</span><span class="val">${staff.joinDate || '—'}</span></div>
+  </div>
+</div>
+<div class="section">
+  <div class="section-title">Contact Information</div>
+  <div class="rows">
+    <div class="row"><span class="lbl">Email</span><span class="val">${staff.email || '—'}</span></div>
+    <div class="row"><span class="lbl">Phone</span><span class="val">${staff.phone || '—'}</span></div>
+    <div class="row"><span class="lbl">Address</span><span class="val">${staff.address || '—'}</span></div>
+  </div>
+</div>
+<div class="footer">Generated on ${new Date().toLocaleDateString()} — Confidential</div>
+</body></html>`;
+                  const w = window.open('', '_blank', 'width=750,height=650');
+                  if (!w) { toast.error('Pop-up blocked. Allow pop-ups to download profile.'); return; }
+                  w.document.write(html);
+                  w.document.close();
+                  w.focus();
+                  setTimeout(() => w.print(), 400);
+                }}
               >
                 Download Profile
               </DropdownItem>

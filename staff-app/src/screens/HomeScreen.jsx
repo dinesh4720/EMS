@@ -50,6 +50,7 @@ import { useExamContext } from '../context/ExamContext';
 import { useChat } from '../context/ChatContext';
 import { useTheme } from '../context/ThemeContext';
 import { staffApi } from '../services/api';
+import { useTranslation } from 'react-i18next';
 
 // ── M3 Motion constants ─────────────────────────────────────────
 const SPRING_SNAPPY = { damping: 15, stiffness: 180 };       // press feedback
@@ -59,6 +60,7 @@ const SPRING_BOUNCE = { damping: 12, stiffness: 200 };       // playful bounce
 
 // ── Timetable helpers ───────────────────────────────────────────
 const parseTime = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+  const { t } = useTranslation();
 const nowMins = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
 const getCurrentIdx = (tt) => {
   if (!tt?.length) return -1;
@@ -374,7 +376,7 @@ const HomeScreen = () => {
                   <View style={styles.focusTop}>
                     <View style={[styles.livePill, { backgroundColor: colors.primary, borderRadius: shape.pill }]}>
                       <PulseDot color={colors.onPrimary} size={7} />
-                      <Text style={[typography.labelSmall, { color: colors.onPrimary, marginLeft: 5 }]}>LIVE</Text>
+                      <Text style={[typography.labelSmall, { color: colors.onPrimary, marginLeft: 5 }]}>{t('screens.lIVE')}</Text>
                     </View>
                     <Text style={[typography.labelSmall, { color: colors.onPrimaryContainer, opacity: 0.5 }]}>
                       {focusClass.startTime} – {focusClass.endTime}
@@ -433,7 +435,7 @@ const HomeScreen = () => {
                   <View style={styles.focusTop}>
                     <View style={[styles.livePill, { backgroundColor: colors.secondary, borderRadius: shape.pill }]}>
                       <Clock size={11} color={colors.onSecondary} />
-                      <Text style={[typography.labelSmall, { color: colors.onSecondary, marginLeft: 4 }]}>UP NEXT</Text>
+                      <Text style={[typography.labelSmall, { color: colors.onSecondary, marginLeft: 4 }]}>{t('screens.uPNext')}</Text>
                     </View>
                     <View style={[styles.countdownPill, { backgroundColor: colors.secondary + '20', borderRadius: shape.pill }]}>
                       <Sparkles size={11} color={colors.onSecondaryContainer} />
@@ -558,7 +560,7 @@ const HomeScreen = () => {
             {timetable.length > 0 && (
               <SpringPress onPress={() => nav.navigate('ClassesTab')} scale={0.95}
                 style={[styles.seeAll, { borderRadius: shape.pill }]}>
-                <Text style={[typography.labelLarge, { color: colors.primary }]}>See all</Text>
+                <Text style={[typography.labelLarge, { color: colors.primary }]}>{t('screens.seeAll')}</Text>
                 <ChevronRight size={16} color={colors.primary} />
               </SpringPress>
             )}
@@ -659,7 +661,7 @@ const HomeScreen = () => {
                           </Text>
                           {isCurr && (
                             <View style={[styles.nowPill, { backgroundColor: colors.primary, borderRadius: shape.pill }]}>
-                              <Text style={[typography.labelSmall, { color: colors.onPrimary }]}>NOW</Text>
+                              <Text style={[typography.labelSmall, { color: colors.onPrimary }]}>{t('screens.nOW')}</Text>
                             </View>
                           )}
                           {isDone && <CheckCircle size={14} color={colors.primary} style={{ opacity: 0.4 }} />}
@@ -707,7 +709,7 @@ const HomeScreen = () => {
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.sheetBody}>
             {selectedClass.topic && (
               <View style={styles.sheetSec}>
-                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: 1 }]}>Topic</Text>
+                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: 1 }]}>{t('screens.topic')}</Text>
                 <Text style={[typography.titleLarge, { color: colors.onSurface, marginTop: spacing.xs }]}>{selectedClass.topic}</Text>
               </View>
             )}
@@ -726,7 +728,7 @@ const HomeScreen = () => {
             </View>
             {selectedClass.notes && (
               <View style={styles.sheetSec}>
-                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: 1 }]}>Notes</Text>
+                <Text style={[typography.labelSmall, { color: colors.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: 1 }]}>{t('screens.notes')}</Text>
                 <Text style={[typography.bodyMedium, { color: colors.onSurface, marginTop: spacing.xs }]}>{selectedClass.notes}</Text>
               </View>
             )}
@@ -736,14 +738,14 @@ const HomeScreen = () => {
                 scale={0.97}
                 style={[styles.sheetBtn, { backgroundColor: colors.primary, borderRadius: shape.cornerMedium }]}
               >
-                <Text style={[typography.labelLarge, { color: colors.onPrimary }]}>Take Attendance</Text>
+                <Text style={[typography.labelLarge, { color: colors.onPrimary }]}>{t('screens.takeAttendance')}</Text>
               </SpringPress>
               <SpringPress
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setSheetVisible(false); }}
                 scale={0.97}
                 style={[styles.sheetBtn, { backgroundColor: colors.surfaceContainer, borderRadius: shape.cornerMedium }]}
               >
-                <Text style={[typography.labelLarge, { color: colors.onSurface }]}>View Details</Text>
+                <Text style={[typography.labelLarge, { color: colors.onSurface }]}>{t('screens.viewDetails')}</Text>
               </SpringPress>
             </View>
           </ScrollView>

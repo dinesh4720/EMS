@@ -12,8 +12,10 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, Loading, EmptyState } from '../components';
 import { formatDate } from '../utils/helpers';
 import { MessageSquare, Calendar } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 const RemarksScreen = () => {
+  const { t } = useTranslation();
   const { remarks, loading, fetchRemarks } = useStudent();
   const { themeColors } = useTheme();
   const [refreshing, setRefreshing] = React.useState(false);
@@ -93,7 +95,7 @@ const RemarksScreen = () => {
             ))
           ) : (
             <EmptyState
-              title="No Remarks"
+              title={t('screens.noRemarks1')}
               message="Teacher remarks and feedback will appear here."
               icon={<MessageSquare size={48} color={themeColors.textTertiary} />}
             />

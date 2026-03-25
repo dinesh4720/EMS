@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Flag, Plus, X } from 'lucide-react';
 import { featureFlagsAdminApi } from '../../services/api';
+import { useTranslation } from 'react-i18next';
 
 const EMPTY_FLAG = { key: '', description: '', defaultEnabled: false, plan: 'starter' };
 const PLAN_OPTIONS = ['starter', 'growth', 'enterprise'];
@@ -56,6 +57,7 @@ function FlagRow({ flag, onToggle, onDelete, saving }) {
 }
 
 export default function FeatureFlagsPanel() {
+  const { t } = useTranslation();
   const [flags, setFlags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -123,7 +125,7 @@ export default function FeatureFlagsPanel() {
     <div className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-slate-950 dark:text-zinc-100">Feature Flags</h2>
+          <h2 className="text-xl font-semibold text-slate-950 dark:text-zinc-100">{t('pages.featureFlags')}</h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
             Control feature rollout globally and per school.
           </p>
@@ -166,7 +168,7 @@ export default function FeatureFlagsPanel() {
           <input
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
-            placeholder="Description (optional)"
+            placeholder={t('pages.descriptionOptional1')}
             className="mt-3 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
           />
           <div className="mt-3 flex items-center justify-between">
@@ -215,7 +217,7 @@ export default function FeatureFlagsPanel() {
             />
           ))}
           {flags.length === 0 && (
-            <div className="py-8 text-center text-sm text-gray-400 dark:text-zinc-500">No feature flags defined.</div>
+            <div className="py-8 text-center text-sm text-gray-400 dark:text-zinc-500">{t('pages.noFeatureFlagsDefined')}</div>
           )}
         </div>
       )}

@@ -16,8 +16,13 @@ import PhotoAvatar from "../../components/PhotoAvatar";
 import { payrollApi } from "../../services/api";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { getDateLocale } from '../../i18n/index';
+import { useTranslation } from 'react-i18next';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+
 
 export default function StaffPayroll() {
+  const { t } = useTranslation();
   const { staff, loading: appLoading } = useApp();
   const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -215,7 +220,7 @@ export default function StaffPayroll() {
       const response = await payrollApi.markAsPaid(editingRecord, paymentForm);
 
       if (response.success) {
-        toast.success('Payment recorded successfully!');
+        toast.success(t('toast.success.paymentRecordedSuccessfully'));
         setPaymentModalOpen(false);
         setPaymentForm({ paymentMethod: 'bank_transfer', paymentReference: '', notes: '' });
         fetchDashboard();
@@ -228,9 +233,7 @@ export default function StaffPayroll() {
   };
 
   const handleBulkPay = async () => {
-    const recordIds = selectedKeys === 'all' 
-      ? payrollRecords.map(r => r._id)
-      : Array.from(selectedKeys);
+    const recordIds = Array.from(selectedKeys);
 
     setPendingBulkPay({
       count: recordIds.length,
@@ -283,7 +286,7 @@ export default function StaffPayroll() {
 
   const confirmReversePayment = async () => {
     if (!reverseReason.trim()) {
-      toast.error('Please provide a reason for reversal');
+      toast.error(t('toast.error.pleaseProvideAReasonForReversal'));
       return;
     }
 
@@ -294,7 +297,7 @@ export default function StaffPayroll() {
       });
 
       if (response.success) {
-        toast.success('Payment reversed successfully!');
+        toast.success(t('toast.success.paymentReversedSuccessfully'));
         setReverseModalOpen(false);
         setReverseRecord(null);
         setReverseReason('');
@@ -312,10 +315,10 @@ export default function StaffPayroll() {
   // Export function
   const handleExportPayroll = async () => {
     try {
-      toast.loading('Exporting payroll data...');
+      toast.loading(t('toast.loading.exportingPayrollData'));
       await payrollApi.exportPayroll(selectedMonth, selectedYear);
       toast.dismiss();
-      toast.success('Payroll export downloaded!');
+      toast.success(t('toast.success.payrollExportDownloaded'));
     } catch (error) {
       toast.dismiss();
       console.error('Error exporting payroll:', error);
@@ -397,7 +400,7 @@ export default function StaffPayroll() {
   }, [hasMore, isLoadingMore]);
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
+    return new Intl.NumberFormat(getDateLocale(), {
       style: 'currency',
       currency: 'INR',
       maximumFractionDigits: 0
@@ -411,9 +414,7 @@ export default function StaffPayroll() {
     <div className="w-full flex flex-col gap-6">
       {/* Show loading spinner while staff data is loading */}
       {(appLoading || !staff || staff.length === 0) ? (
-        <div className="flex items-center justify-center h-screen">
-          <Spinner size="lg" label="Loading staff data..." />
-        </div>
+        <TablePageSkeleton />
       ) : (
         <>
       {/* Payment Modal */}
@@ -421,29 +422,29 @@ export default function StaffPayroll() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader>Log Payment Details</ModalHeader>
+              <ModalHeader>{t('pages.logPaymentDetails1')}</ModalHeader>
               <ModalBody className="gap-4">
                 <Select
-                  label="Payment Method"
+                  label={t('pages.paymentMethod1')}
                   selectedKeys={new Set([paymentForm.paymentMethod])}
                   onSelectionChange={(keys) => setPaymentForm({ ...paymentForm, paymentMethod: Array.from(keys)[0] })}
                   variant="bordered"
                 >
-                  <SelectItem key="bank_transfer" textValue="Bank Transfer">Bank Transfer</SelectItem>
-                  <SelectItem key="cash" textValue="Cash">Cash</SelectItem>
-                  <SelectItem key="cheque" textValue="Cheque">Cheque</SelectItem>
-                  <SelectItem key="online" textValue="Online Payment">Online Payment</SelectItem>
+                  <SelectItem key="bank_transfer" textValue="Bank Transfer">{t('pages.bankTransfer1')}</SelectItem>
+                  <SelectItem key="cash" textValue="Cash">{t('pages.cash1')}</SelectItem>
+                  <SelectItem key="cheque" textValue="Cheque">{t('pages.cheque1')}</SelectItem>
+                  <SelectItem key="online" textValue="Online Payment">{t('pages.onlinePayment1')}</SelectItem>
                 </Select>
                 <Input
-                  label="Payment Reference"
+                  label={t('pages.paymentReference1')}
                   placeholder="Transaction ID / Cheque Number"
                   value={paymentForm.paymentReference}
                   onValueChange={(v) => setPaymentForm({ ...paymentForm, paymentReference: v })}
                   variant="bordered"
                 />
                 <Textarea
-                  label="Notes (Optional)"
-                  placeholder="Additional notes..."
+                  label={t('pages.notesOptional1')}
+                  placeholder={t('pages.additionalNotes1')}
                   value={paymentForm.notes}
                   onValueChange={(v) => setPaymentForm({ ...paymentForm, notes: v })}
                   variant="bordered"
@@ -451,7 +452,7 @@ export default function StaffPayroll() {
                 />
               </ModalBody>
               <ModalFooter>
-                <Button variant="light" onPress={onClose}>Cancel</Button>
+                <Button variant="light" onPress={onClose}>{t('pages.cancel2')}</Button>
                 <Button color="success" onPress={confirmPayment}>
                   Record Payment
                 </Button>
@@ -509,7 +510,7 @@ export default function StaffPayroll() {
                 : 'text-default-600'
             }`}>
               {dashboardData.payrollRun.status === 'completed'
-                ? `Records for ${months[selectedMonth - 1]} ${selectedYear} were prepared on ${new Date(dashboardData.payrollRun.completedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}. `
+                ? `Records for ${months[selectedMonth - 1]} ${selectedYear} were prepared on ${new Date(dashboardData.payrollRun.completedAt).toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short', year: 'numeric' })}. `
                 : `Payroll records for ${months[selectedMonth - 1]} ${selectedYear} are currently being generated. `
               }
               {dashboardData.payrollRun.processedEmployees} of {dashboardData.payrollRun.totalEmployees} active {dashboardData.payrollRun.totalEmployees === 1 ? 'employee' : 'employees'} processed
@@ -535,7 +536,7 @@ export default function StaffPayroll() {
 
             {/* Staff Status Breakdown */}
             <div className="mt-3 flex flex-wrap gap-2">
-              <span className="text-xs text-default-500">System Staff:</span>
+              <span className="text-xs text-default-500">{t('pages.systemStaff')}</span>
               {Object.entries(staff.reduce((acc, s) => {
                 const status = s.status || 'unknown';
                 acc[status] = (acc[status] || 0) + 1;
@@ -550,7 +551,7 @@ export default function StaffPayroll() {
             {dashboardData.payrollRun.errorLog && dashboardData.payrollRun.errorLog.length > 0 && (
               <div className="mt-2 p-2 bg-danger-50 border border-danger-200 rounded">
                 <p className="text-xs text-danger-700">
-                  <strong>Errors:</strong> {dashboardData.payrollRun.errorLog.length} employees failed
+                  <strong>{t('pages.errors')}</strong> {dashboardData.payrollRun.errorLog.length} employees failed
                 </p>
               </div>
             )}
@@ -576,7 +577,7 @@ export default function StaffPayroll() {
             <AlertCircle size={20} className="text-info-600" />
           </div>
           <div className="flex-1">
-            <h4 className="font-semibold text-info-900">Records Not Yet Generated</h4>
+            <h4 className="font-semibold text-info-900">{t('pages.recordsNotYetGenerated')}</h4>
             <p className="text-sm text-info-700 mt-1">
               Payroll records for <strong>{months[selectedMonth - 1]} {selectedYear}</strong> have not been generated yet.
               {(() => {
@@ -598,7 +599,7 @@ export default function StaffPayroll() {
 
             {/* Staff Status Breakdown */}
             <div className="mt-3 flex flex-wrap gap-2">
-              <span className="text-xs text-info-600">All Staff:</span>
+              <span className="text-xs text-info-600">{t('pages.allStaff2')}</span>
               {Object.entries(staff.reduce((acc, s) => {
                 const status = s.status || 'unknown';
                 acc[status] = (acc[status] || 0) + 1;
@@ -623,7 +624,7 @@ export default function StaffPayroll() {
             <div className="p-4 bg-success-50 rounded-lg border border-success-200">
               <div className="flex items-center gap-2 mb-2">
                 <Wallet size={18} className="text-success-600" />
-                <span className="text-xs text-success-700 uppercase tracking-wider">Total Recorded</span>
+                <span className="text-xs text-success-700 uppercase tracking-wider">{t('pages.totalRecorded')}</span>
               </div>
               <p className="text-2xl font-semibold text-success-700">
                 {formatCurrency(dashboardData.totalPayout)}
@@ -636,7 +637,7 @@ export default function StaffPayroll() {
             <div className="p-4 bg-primary-50 rounded-lg border border-primary-200">
               <div className="flex items-center gap-2 mb-2">
                 <Clock size={18} className="text-primary-600" />
-                <span className="text-xs text-primary-700 uppercase tracking-wider">Unrecorded</span>
+                <span className="text-xs text-primary-700 uppercase tracking-wider">{t('pages.unrecorded')}</span>
               </div>
               <p className="text-2xl font-semibold text-primary-700">
                 {formatCurrency(dashboardData.pendingAmount)}
@@ -649,7 +650,7 @@ export default function StaffPayroll() {
             <div className="p-4 bg-warning-50 rounded-lg border border-warning-200">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp size={18} className="text-warning-600" />
-                <span className="text-xs text-warning-700 uppercase tracking-wider">Estimated</span>
+                <span className="text-xs text-warning-700 uppercase tracking-wider">{t('pages.estimated')}</span>
               </div>
               <p className="text-2xl font-semibold text-warning-700">
                 {formatCurrency(dashboardData.projectedPayout)}
@@ -662,7 +663,7 @@ export default function StaffPayroll() {
             <div className="p-4 bg-default-50 rounded-lg border border-default-200">
               <div className="flex items-center gap-2 mb-2">
                 <Users size={18} className="text-default-500" />
-                <span className="text-xs text-default-500 uppercase tracking-wider">Total Staff</span>
+                <span className="text-xs text-default-500 uppercase tracking-wider">{t('pages.totalStaff')}</span>
               </div>
               <p className="text-2xl font-semibold text-default-900">
                 {dashboardData.totalEmployees}
@@ -680,7 +681,7 @@ export default function StaffPayroll() {
             {/* Month/Year Selector - Moved here */}
             <div className="flex gap-2 items-center">
               <Select
-                label="Month"
+                label={t('pages.month1')}
                 selectedKeys={new Set([selectedMonth.toString()])}
                 onSelectionChange={(keys) => setSelectedMonth(parseInt(Array.from(keys)[0]))}
                 className="w-36"
@@ -699,7 +700,7 @@ export default function StaffPayroll() {
                 })}
               </Select>
               <Select
-                label="Year"
+                label={t('pages.year1')}
                 selectedKeys={new Set([selectedYear.toString()])}
                 onSelectionChange={(keys) => setSelectedYear(parseInt(Array.from(keys)[0]))}
                 className="w-28"
@@ -721,7 +722,7 @@ export default function StaffPayroll() {
               <Search size={16} className="text-default-400" />
               <input
                 type="text"
-                placeholder="Search employee..."
+                placeholder={t('pages.searchEmployee1')}
                 className="flex-1 bg-transparent outline-none text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -739,7 +740,7 @@ export default function StaffPayroll() {
                 <div className="flex items-center gap-2">
                   <button className="flex items-center gap-2 px-3 py-2 bg-default-100 rounded-lg border border-default-300 hover:border-primary transition-all duration-200 cursor-pointer text-sm">
                     <Filter size={16} className="text-default-400" />
-                    <span className="text-default-600">Filters</span>
+                    <span className="text-default-600">{t('pages.filters2')}</span>
                     {(statusFilter !== 'all' || employmentFilter !== 'all') && (
                       <Chip size="sm" color="primary" variant="solid" className="h-5 min-w-5 px-1">
                         {(statusFilter !== 'all' ? 1 : 0) + (employmentFilter !== 'all' ? 1 : 0)}
@@ -754,17 +755,17 @@ export default function StaffPayroll() {
                         setStatusFilter('all');
                         setEmploymentFilter('all');
                         setSearchQuery('');
-                        toast.success('Filters cleared');
+                        toast.success(t('toast.success.filtersCleared'));
                       }}
                       className="flex items-center justify-center w-8 h-8 bg-danger-100 text-danger-600 rounded-lg border border-danger-200 hover:bg-danger-200 transition-all duration-200 cursor-pointer"
-                      title="Clear all filters"
+                      title={t('pages.clearAllFilters')}
                     >
                       <X size={14} />
                     </button>
                   )}
                 </div>
               </DropdownTrigger>
-              <DropdownMenu aria-label="Filters" className="w-64 max-h-[400px] overflow-y-auto">
+              <DropdownMenu aria-label={t('aria.menus.filters')} className="w-64 max-h-[400px] overflow-y-auto">
                 <DropdownItem key="status-header" isReadOnly className="opacity-100 font-semibold text-default-500 text-xs uppercase">
                   Status
                 </DropdownItem>
@@ -774,7 +775,7 @@ export default function StaffPayroll() {
                   className={statusFilter === 'all' ? 'bg-primary-50' : ''}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span>All Status</span>
+                    <span>{t('pages.allStatus1')}</span>
                     {statusFilter === 'all' && <CheckCircle2 size={14} className="text-primary" />}
                   </div>
                 </DropdownItem>
@@ -784,7 +785,7 @@ export default function StaffPayroll() {
                   className={statusFilter === 'generated' ? 'bg-primary-50' : ''}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span>Generated</span>
+                    <span>{t('pages.generated1')}</span>
                     {statusFilter === 'generated' && <CheckCircle2 size={14} className="text-primary" />}
                   </div>
                 </DropdownItem>
@@ -794,7 +795,7 @@ export default function StaffPayroll() {
                   className={statusFilter === 'paid' ? 'bg-primary-50' : ''}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span>Paid</span>
+                    <span>{t('pages.paid2')}</span>
                     {statusFilter === 'paid' && <CheckCircle2 size={14} className="text-primary" />}
                   </div>
                 </DropdownItem>
@@ -810,7 +811,7 @@ export default function StaffPayroll() {
                   className={employmentFilter === 'all' ? 'bg-primary-50' : ''}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span>All Types</span>
+                    <span>{t('pages.allTypes1')}</span>
                     {employmentFilter === 'all' && <CheckCircle2 size={14} className="text-primary" />}
                   </div>
                 </DropdownItem>
@@ -820,7 +821,7 @@ export default function StaffPayroll() {
                   className={employmentFilter === 'full_time' ? 'bg-primary-50' : ''}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span>Full Time</span>
+                    <span>{t('pages.fullTime1')}</span>
                     {employmentFilter === 'full_time' && <CheckCircle2 size={14} className="text-primary" />}
                   </div>
                 </DropdownItem>
@@ -830,7 +831,7 @@ export default function StaffPayroll() {
                   className={employmentFilter === 'part_time' ? 'bg-primary-50' : ''}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span>Part Time</span>
+                    <span>{t('pages.partTime1')}</span>
                     {employmentFilter === 'part_time' && <CheckCircle2 size={14} className="text-primary" />}
                   </div>
                 </DropdownItem>
@@ -840,7 +841,7 @@ export default function StaffPayroll() {
                   className={employmentFilter === 'contractor' ? 'bg-primary-50' : ''}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span>Contractor</span>
+                    <span>{t('pages.contractor1')}</span>
                     {employmentFilter === 'contractor' && <CheckCircle2 size={14} className="text-primary" />}
                   </div>
                 </DropdownItem>
@@ -871,42 +872,40 @@ export default function StaffPayroll() {
               onClick={handleExportPayroll}
             >
               <Download size={16} />
-              <span>Export CSV</span>
+              <span>{t('pages.exportCsv1')}</span>
             </button>
             <button
               className="flex items-center gap-2 px-3 py-2 bg-warning-500 text-white rounded-lg border border-warning-600 hover:bg-warning-600 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap"
               onClick={async () => {
-                if (confirm('This will set a default salary of 50,000 for all staff who have 0 salary. Continue?')) {
+                if (confirm(t('confirm.setDefaultSalary'))) {
                   try {
                     const res = await payrollApi.fixSalaries();
                     if (res.success) {
                       toast.success(res.message);
                       fetchDashboard();
                     } else {
-                        toast.error('Failed to fix salaries');
+                        toast.error(t('toast.error.failedToFixSalaries'));
                     }
                   } catch (e) {
                     console.error(e);
-                    toast.error('Error fixing salaries');
+                    toast.error(t('toast.error.errorFixingSalaries'));
                   }
                 }
               }}
             >
               <Wallet size={16} />
-              <span>Fix Salaries</span>
+              <span>{t('pages.fixSalaries1')}</span>
             </button>
           </div>
         </div>
 
         {/* Table */}
         {loading ? (
-          <div className="flex justify-center py-12">
-            <Spinner size="lg" />
-          </div>
+          <TablePageSkeleton kpiCards={0} searchBar={false} rows={5} />
         ) : (
           <>
             <Table
-              aria-label="Payroll records table"
+              aria-label={t('aria.tables.payrollRecords')}
               selectionMode="multiple"
               selectedKeys={selectedKeys}
               onSelectionChange={setSelectedKeys}
@@ -923,16 +922,29 @@ export default function StaffPayroll() {
               }}
             >
               <TableHeader>
-                <TableColumn>EMPLOYEE</TableColumn>
-                <TableColumn>TYPE</TableColumn>
-                <TableColumn>BASE SALARY</TableColumn>
-                <TableColumn>ALLOWANCES</TableColumn>
-                <TableColumn>DEDUCTIONS</TableColumn>
-                <TableColumn>NET PAY</TableColumn>
-                <TableColumn>STATUS</TableColumn>
-                <TableColumn align="end">ACTIONS</TableColumn>
+                <TableColumn scope="col">{t('pages.eMPLOYEE')}</TableColumn>
+                <TableColumn scope="col">{t('pages.tYPE')}</TableColumn>
+                <TableColumn scope="col">{t('pages.bASESalary')}</TableColumn>
+                <TableColumn scope="col">{t('pages.aLLOWANCES')}</TableColumn>
+                <TableColumn scope="col">{t('pages.dEDUCTIONS')}</TableColumn>
+                <TableColumn scope="col">{t('pages.nETPay')}</TableColumn>
+                <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+                <TableColumn align="end" scope="col">{t('pages.aCTIONS')}</TableColumn>
               </TableHeader>
-              <TableBody emptyContent="No payroll records found">
+              <TableBody emptyContent={
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="w-14 h-14 rounded-full bg-default-100 flex items-center justify-center mb-3">
+                    <Wallet size={24} className="text-default-400" />
+                  </div>
+                  <p className="text-base font-semibold text-default-700 mb-1">No Payroll Records</p>
+                  <p className="text-sm text-default-500 text-center max-w-sm mb-4">
+                    No payroll records found for this period. Run payroll to generate salary records for active staff.
+                  </p>
+                  <Button size="sm" color="primary" startContent={<Play size={14} />} onPress={() => setRunPayrollModalOpen(true)}>
+                    Run Payroll
+                  </Button>
+                </div>
+              }>
                 {visibleRecords.map((record) => {
                   // FIXED: Use _id from MongoDB and string comparison for ID matching
                   const employee = staff.find(s => String(s._id || s.id) === String(record.employeeId));
@@ -1001,7 +1013,7 @@ export default function StaffPayroll() {
                           {record.isLocked && (
                             <div className="flex items-center gap-1 text-xs text-warning-600 bg-warning-50 px-2 py-1 rounded-full border border-warning-200">
                               <Lock size={12} />
-                              <span>Locked</span>
+                              <span>{t('pages.locked1')}</span>
                             </div>
                           )}
                           {record.status === 'generated' && (
@@ -1078,19 +1090,19 @@ export default function StaffPayroll() {
               <AlertCircle className="text-warning-600" size={24} />
             </div>
             <div>
-              <h3 className="text-lg font-semibold">Prepare Salary Records</h3>
-              <p className="text-sm text-default-500">This will generate payroll records for all active staff</p>
+              <h3 className="text-lg font-semibold">{t('pages.prepareSalaryRecords1')}</h3>
+              <p className="text-sm text-default-500">{t('pages.thisWillGeneratePayrollRecordsForAllActiveStaff')}</p>
             </div>
           </ModalHeader>
           <ModalBody>
             <div className="space-y-4">
               <div className="bg-default-50 rounded-lg p-4">
-                <p className="text-sm text-default-600 mb-2">You are about to generate records for:</p>
+                <p className="text-sm text-default-600 mb-2">{t('pages.youAreAboutToGenerateRecordsFor')}</p>
                 <p className="text-lg font-semibold text-default-900">{months[selectedMonth - 1]} {selectedYear}</p>
               </div>
               <div className="bg-warning-50 rounded-lg p-4 border border-warning-200">
                 <p className="text-sm text-warning-800">
-                  <strong>Note:</strong> This step only generates the salary breakdown. You will need to manually log the payment status afterwards.
+                  <strong>{t('pages.note1')}</strong> This step only generates the salary breakdown. You will need to manually log the payment status afterwards.
                 </p>
               </div>
             </div>
@@ -1116,7 +1128,7 @@ export default function StaffPayroll() {
                   <CreditCard className="text-success-600" size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold">Log Bulk Payments</h3>
+                  <h3 className="text-lg font-semibold">{t('pages.logBulkPayments1')}</h3>
                   <p className="text-sm text-default-500">Processing {pendingBulkPay?.count || 0} records</p>
                 </div>
               </ModalHeader>
@@ -1128,15 +1140,15 @@ export default function StaffPayroll() {
                  </div>
                  
                  <Select
-                  label="Payment Method"
+                  label={t('pages.paymentMethod1')}
                   selectedKeys={new Set([paymentForm.paymentMethod])}
                   onSelectionChange={(keys) => setPaymentForm({ ...paymentForm, paymentMethod: Array.from(keys)[0] })}
                   variant="bordered"
                 >
-                  <SelectItem key="bank_transfer" textValue="Bank Transfer">Bank Transfer</SelectItem>
-                  <SelectItem key="cash" textValue="Cash">Cash</SelectItem>
-                  <SelectItem key="cheque" textValue="Cheque">Cheque</SelectItem>
-                  <SelectItem key="online" textValue="Online Payment">Online Payment</SelectItem>
+                  <SelectItem key="bank_transfer" textValue="Bank Transfer">{t('pages.bankTransfer1')}</SelectItem>
+                  <SelectItem key="cash" textValue="Cash">{t('pages.cash1')}</SelectItem>
+                  <SelectItem key="cheque" textValue="Cheque">{t('pages.cheque1')}</SelectItem>
+                  <SelectItem key="online" textValue="Online Payment">{t('pages.onlinePayment1')}</SelectItem>
                 </Select>
 
                 <Input
@@ -1149,8 +1161,8 @@ export default function StaffPayroll() {
                 />
 
                 <Textarea
-                  label="Notes (Optional)"
-                  placeholder="Additional notes for this batch..."
+                  label={t('pages.notesOptional1')}
+                  placeholder={t('pages.additionalNotesForThisBatch')}
                   value={paymentForm.notes}
                   onValueChange={(v) => setPaymentForm({ ...paymentForm, notes: v })}
                   variant="bordered"
@@ -1178,15 +1190,13 @@ export default function StaffPayroll() {
               <ShieldCheck className="text-info-600" size={24} />
             </div>
             <div>
-              <h3 className="text-lg font-semibold">Payroll Validation Results</h3>
-              <p className="text-sm text-default-500">Review before generating records</p>
+              <h3 className="text-lg font-semibold">{t('pages.payrollValidationResults')}</h3>
+              <p className="text-sm text-default-500">{t('pages.reviewBeforeGeneratingRecords')}</p>
             </div>
           </ModalHeader>
           <ModalBody>
             {validating ? (
-              <div className="flex items-center justify-center py-8">
-                <Spinner size="lg" label="Validating payroll..." />
-              </div>
+              <div className="flex justify-center py-8"><div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-900" /></div>
             ) : validationResults && (
               <div className="space-y-4">
                 {/* Valid Employees */}
@@ -1262,20 +1272,20 @@ export default function StaffPayroll() {
               <RotateCcw className="text-warning-600" size={24} />
             </div>
             <div>
-              <h3 className="text-lg font-semibold">Reverse Payment</h3>
-              <p className="text-sm text-default-500">Unlock and reset payment status</p>
+              <h3 className="text-lg font-semibold">{t('pages.reversePayment1')}</h3>
+              <p className="text-sm text-default-500">{t('pages.unlockAndResetPaymentStatus')}</p>
             </div>
           </ModalHeader>
           <ModalBody>
             <div className="space-y-4">
               <div className="bg-warning-50 rounded-lg p-4 border border-warning-200">
                 <p className="text-sm text-warning-800">
-                  <strong>Warning:</strong> This will unlock the record and reset its status to "Generated". You will need to log the payment again.
+                  <strong>{t('pages.warning')}</strong> This will unlock the record and reset its status to "Generated". You will need to log the payment again.
                 </p>
               </div>
               <Textarea
                 label="Reason for Reversal *"
-                placeholder="Please explain why this payment is being reversed..."
+                placeholder={t('pages.pleaseExplainWhyThisPaymentIsBeingReversed')}
                 value={reverseReason}
                 onValueChange={setReverseReason}
                 variant="bordered"
