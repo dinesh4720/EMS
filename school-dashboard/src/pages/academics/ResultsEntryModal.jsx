@@ -13,6 +13,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
   const [results, setResults] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [loadedAt, setLoadedAt] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -26,6 +27,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
     try {
       const examData = await examsApi.getById(examId);
       setExam(examData);
+      setLoadedAt(new Date().toISOString());
 
       if (examData?.classId) {
         const [studentsData, existingResults] = await Promise.all([
@@ -95,7 +97,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
         enteredBy: user.id
       }));
 
-      await resultsApi.bulkCreate(resultsArray, examId, exam.classId);
+      await resultsApi.bulkCreate(resultsArray, examId, exam.classId, loadedAt);
 
       toast.success(t('toast.success.resultsSavedSuccessfully'));
     } catch (error) {
@@ -140,7 +142,22 @@ const ResultsEntryModal = ({ examId, onClose }) => {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-8"><div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-900" /></div>
+      <div className="space-y-4 py-4 px-2">
+        <div className="flex items-center gap-3">
+          <div className="h-6 w-48 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+          <div className="h-5 w-20 bg-gray-200 dark:bg-zinc-700 rounded-full animate-pulse" />
+        </div>
+        <div className="h-10 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+        <div className="space-y-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex gap-4 items-center">
+              <div className="h-10 flex-1 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+              <div className="h-10 w-24 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+              <div className="h-10 w-24 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
     );
   }
 
