@@ -6,6 +6,8 @@ import {
   XCircle, Loader2,
 } from 'lucide-react';
 import { bulkImportApi } from '../../services/api';
+import { API_URL } from '../../config/api.js';
+import { getAuthHeaders } from '../../utils/authSession';
 import toast from 'react-hot-toast';
 
 const IMPORT_TYPES = [
@@ -105,7 +107,7 @@ export default function BulkImportPage() {
 
   const handleDownloadTemplate = async () => {
     try {
-      const response = await fetch(`${API_URL}/bulk-import/template/${importType}`, { credentials: 'include' });
+      const response = await fetch(`${API_URL}/bulk-import/template/${importType}`, { headers: getAuthHeaders(), credentials: 'include' });
       if (!response.ok) throw new Error('Download failed');
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
