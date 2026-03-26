@@ -13,7 +13,7 @@ export const examsApi = {
   getByStaff: (staffId) => request(`/exams/staff/${staffId}`),
   publish: (id) => request(`/exams/${id}/publish`, { method: 'POST' }),
   getResults: (id) => request(`/exams/${id}/results`),
-  publishResults: (id, publish) => request(`/exams/${id}/publish-results`, { method: 'PUT', body: JSON.stringify({ publish }) }),
+  publishResults: (id) => request(`/exams/${id}/publish`, { method: 'POST' }),
 };
 
 // Homework API

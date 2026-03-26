@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Bell, Settings, CheckCircle } from 'lucide-react';
 import NotificationCenter from './components/notifications/NotificationCenter';
 import NotificationSettings from './components/notifications/NotificationSettings';
+import { notificationsApi } from '../../services/api/fees';
 import { useTranslation } from 'react-i18next';
 
 export default function Notifications() {
@@ -14,8 +15,14 @@ export default function Notifications() {
   }, []);
 
   const loadUnreadCount = async () => {
-    // Mock data
-    setUnreadCount(3);
+    try {
+      const data = await notificationsApi.getAll();
+      const notifications = Array.isArray(data) ? data : data?.notifications || [];
+      const count = notifications.filter((n) => !n.isRead).length;
+      setUnreadCount(count);
+    } catch {
+      setUnreadCount(0);
+    }
   };
 
   return (

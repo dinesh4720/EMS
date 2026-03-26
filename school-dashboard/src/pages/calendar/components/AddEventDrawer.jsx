@@ -7,13 +7,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from 'react-i18next';
 import { formatDateWithWeekday, formatDateShortWeekday } from "../../../utils/dateFormatter";
 
+// Must match backend enum: ['event', 'meeting', 'exam', 'holiday']
 const eventTypes = {
-  holiday: { label: 'Holiday', icon: null },
-  exam: { label: 'Exam', icon: null },
   event: { label: 'Event', icon: null },
   meeting: { label: 'Meeting', icon: null },
-  appointment: { label: 'Appointment', icon: null },
-  class: { label: 'Class', icon: null },
+  exam: { label: 'Exam', icon: null },
+  holiday: { label: 'Holiday', icon: null },
 };
 
 export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEvent, eventTypesConfig }) {
@@ -114,7 +113,6 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                   <label className="text-xs font-medium text-default-500 mb-2 block">{t('calendar.addEvent.eventTypeLabel', 'Event Type')}</label>
                   <div className="grid grid-cols-2 gap-2">
                     {Object.entries(types)
-                      .filter(([k]) => k !== 'appointment' && k !== 'class')
                       .map(([key, { label, icon: Icon }]) => (
                         <button
                           key={key}
