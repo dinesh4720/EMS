@@ -11,11 +11,11 @@ export const classesApi = {
   getNextRollNumber: (classId) => request(`/classes/${classId}/next-roll-number`),
   checkCapacity: (id) => request(`/classes/${id}/capacity`),
 
-  // Class Settings
-  getSettings: (id) => request(`/class-settings/${id}`),
+  // Class Settings — uses properly scoped /classes/:id routes instead of separate /class-settings
+  getSettings: (id) => request(`/classes/${id}/settings`),
   updateTag: async (id, tag) => {
     try {
-      return await request(`/class-settings/${id}/tag`, {
+      return await request(`/classes/${id}/tag`, {
         method: 'PUT',
         body: JSON.stringify({ classTag: tag })
       });
@@ -32,9 +32,9 @@ export const classesApi = {
   },
   updateSubjects: async (id, subjects) => {
     try {
-      return await request(`/class-settings/${id}/subjects`, {
+      return await request(`/classes/${id}/subjects`, {
         method: 'PUT',
-        body: JSON.stringify({ subjects: subjects })
+        body: JSON.stringify({ assignedSubjects: subjects })
       });
     } catch (error) {
       // Re-throw validation errors with enhanced information

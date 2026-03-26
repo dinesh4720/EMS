@@ -69,7 +69,7 @@ export default function FormAssignments() {
 
   const fetchForms = async () => {
     try {
-      const data = await intakeFormsApi.getAll("staff", "active");
+      const data = await intakeFormsApi.getAll(null, "active");
       setForms(data);
     } catch (error) {
       toast.error(t('toast.error.failedToLoadForms'));
