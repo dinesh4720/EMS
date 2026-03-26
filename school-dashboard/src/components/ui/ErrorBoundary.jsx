@@ -55,7 +55,12 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    console.error('[ErrorBoundary] Caught error:', error, info.componentStack);
+    // Normalize non-Error objects so they don't log as "[object Object]"
+    const displayError =
+      error instanceof Error
+        ? error
+        : new Error(typeof error === 'string' ? error : JSON.stringify(error) || 'Unknown error');
+    console.error('[ErrorBoundary] Caught error:', displayError.message, info.componentStack);
   }
 
   handleReset = () => {

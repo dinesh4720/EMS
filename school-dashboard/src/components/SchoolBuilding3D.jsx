@@ -549,12 +549,31 @@ function Scene({ enableCinematic, onUserInteraction, isDark }) {
 }
 
 // Main component
+// Error boundary that catches Three.js/Canvas errors and shows the static fallback
+class CanvasErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch() {
+    this.props.onError?.();
+  }
+  render() {
+    if (this.state.hasError) return <StaticSchoolBuildingFallback />;
+    return this.props.children;
+  }
+}
+
 export default function SchoolBuilding3D() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const [enableCinematic, setEnableCinematic] = useState(true);
   const [canvasKey, setCanvasKey] = useState(0);
   const [hasWebGLSupport, setHasWebGLSupport] = useState(false);
+  const [canvasError, setCanvasError] = useState(false);
   const timeoutRef = useRef(null);
 
   const handleUserInteraction = useCallback(() => {
@@ -583,13 +602,30 @@ export default function SchoolBuilding3D() {
   }, []);
 
   useEffect(() => {
-    const canvas = document.createElement("canvas");
-    const context =
-      canvas.getContext("webgl2") ||
-      canvas.getContext("webgl") ||
-      canvas.getContext("experimental-webgl");
+    try {
+      const canvas = document.createElement("canvas");
+      const context =
+        canvas.getContext("webgl2") ||
+        canvas.getContext("webgl") ||
+        canvas.getContext("experimental-webgl");
 
-    setHasWebGLSupport(Boolean(context));
+      if (!context) {
+        setHasWebGLSupport(false);
+        return;
+      }
+
+      // Verify the context actually works (some headless environments report support but fail)
+      const testShader = context.createShader(context.VERTEX_SHADER);
+      if (!testShader) {
+        setHasWebGLSupport(false);
+        return;
+      }
+      context.deleteShader(testShader);
+
+      setHasWebGLSupport(true);
+    } catch {
+      setHasWebGLSupport(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -598,21 +634,31 @@ export default function SchoolBuilding3D() {
     };
   }, []);
 
-  if (!hasWebGLSupport) {
+  if (!hasWebGLSupport || canvasError) {
     return <StaticSchoolBuildingFallback />;
   }
 
   return (
     <div className="absolute inset-0 bg-white dark:bg-zinc-950">
+      <CanvasErrorBoundary onError={() => setCanvasError(true)}>
       <Canvas
         key={canvasKey}
         shadows
         camera={{ position: [0, 8, 25], fov: 45, near: 0.1, far: 200 }}
-        gl={{ antialias: true, alpha: true }}
+        gl={{ antialias: true, alpha: true, failIfMajorPerformanceCaveat: true }}
+        onCreated={(state) => {
+          try {
+            // Compile a test render to verify GPU actually works
+            state.gl.compile(state.scene, state.camera);
+          } catch {
+            setCanvasError(true);
+          }
+        }}
         className="bg-[linear-gradient(180deg,#ffffff_0%,#f8f8f8_50%,#f0f0f0_100%)] dark:bg-[linear-gradient(180deg,#09090b_0%,#18181b_50%,#27272a_100%)]"
       >
         <Scene enableCinematic={enableCinematic} onUserInteraction={handleUserInteraction} isDark={isDark} />
       </Canvas>
+      </CanvasErrorBoundary>
 
       <div className="absolute bottom-8 lg:bottom-24 left-0 right-0 text-center pointer-events-none px-4 lg:px-8">
         <h2 className="text-lg lg:text-2xl font-bold text-gray-800 dark:text-zinc-200 mb-1 lg:mb-2">
