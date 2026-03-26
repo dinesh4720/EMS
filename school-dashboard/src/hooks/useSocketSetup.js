@@ -91,6 +91,10 @@ export function useSocketSetup({
       const handleStudentCreated = (data) => {
         addStudentFromSocket(data);
       };
+      const handleNotificationNew = (data) => {
+        // Dispatch custom event so any component can listen for real-time notifications
+        window.dispatchEvent(new CustomEvent('notification:new', { detail: data }));
+      };
 
       socketService.on('authenticated', handleAuthenticated);
       socketService.on('disconnected', handleDisconnected);
@@ -103,6 +107,7 @@ export function useSocketSetup({
       socketService.on('attendance_updated', handleAttendanceUpdated);
       socketService.on('fee_payment_created', handleFeePaymentCreated);
       socketService.on('student_created', handleStudentCreated);
+      socketService.on('notification:new', handleNotificationNew);
 
       // Store handlers for cleanup
       capturedListeners = [
@@ -117,6 +122,7 @@ export function useSocketSetup({
         ['attendance_updated', handleAttendanceUpdated],
         ['fee_payment_created', handleFeePaymentCreated],
         ['student_created', handleStudentCreated],
+        ['notification:new', handleNotificationNew],
       ];
     }).catch((err) => {
       console.error('Failed to import socket service:', err);

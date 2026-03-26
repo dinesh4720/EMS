@@ -25,55 +25,7 @@ import { useTranslation } from 'react-i18next';
 
 const STATUS_OPTIONS = ['all', 'scheduled', 'ongoing', 'completed', 'results_published'];
 
-function ExamManagementSkeleton() {
-  const { t } = useTranslation();
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <div className="h-9 w-24 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
-          <div className="h-9 w-32 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-28 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
-          <div className="h-9 w-28 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 border border-gray-100 dark:border-zinc-800">
-            <div className="h-3 w-20 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse mb-2" />
-            <div className="h-7 w-10 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-          </div>
-        ))}
-      </div>
-      <div className="border border-gray-100 dark:border-zinc-800 rounded-lg overflow-hidden">
-        <div className="bg-gray-50 dark:bg-zinc-900 px-4 py-3 flex gap-6">
-          {['EXAM', 'TYPE', 'CLASS', 'SUBJECT', 'DATE', 'STATUS', 'ACTIONS'].map((h) => (
-            <div key={h} className="h-3 w-14 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-          ))}
-        </div>
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="px-4 py-3 flex items-center gap-6 border-t border-gray-100 dark:border-zinc-800">
-            <div className="flex items-center gap-3 flex-1">
-              <div className="h-9 w-9 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
-              <div className="space-y-1.5">
-                <div className="h-3 w-32 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-                <div className="h-2.5 w-20 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-              </div>
-            </div>
-            <div className="h-3 w-16 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-            <div className="h-3 w-16 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-            <div className="h-3 w-20 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-            <div className="h-3 w-24 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-            <div className="h-5 w-20 bg-gray-200 dark:bg-zinc-700 rounded-full animate-pulse" />
-            <div className="h-7 w-16 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 // Simple cache
 const examsCache = {
@@ -279,7 +231,7 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
   }, [filteredExams]);
 
   if (loading) {
-    return <ExamManagementSkeleton />;
+    return <TablePageSkeleton kpiCards={4} columns={7} rows={6} />;
   }
 
   return (
@@ -405,7 +357,7 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
                       <TableCell>
                         <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-zinc-400">
                           <Calendar size={14} />
-                          {exam.startDate || 'Not scheduled'}
+                          {exam.startDate ? new Date(exam.startDate).toLocaleDateString() : 'Not scheduled'}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -473,7 +425,7 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
                         <Chip size="sm" color="primary" variant="flat">{t('pages.scheduled')}</Chip>
                       </div>
                       <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.className || exam.classId} - {exam.subjectName}</p>
-                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{exam.startDate}</p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{exam.startDate ? new Date(exam.startDate).toLocaleDateString() : ''}</p>
                     </div>
                   ))}
                 </div>
