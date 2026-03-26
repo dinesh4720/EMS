@@ -5,7 +5,30 @@ import { useAuth } from "../context/AuthContext";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { Eye, EyeOff, Lock, Mail, CheckCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-const SchoolBuilding3D = lazyWithRetry(() => import("../components/SchoolBuilding3D"));
+
+// Only import the 3D component if WebGL is actually available AND we're not in a headless browser
+// Three.js shader compilation can crash in headless/automated environments even if WebGL context exists
+const hasWebGL = (() => {
+  try {
+    // Headless browsers (Puppeteer, Playwright, preview tools) lack full GPU — skip 3D
+    if (navigator.webdriver || /HeadlessChrome/i.test(navigator.userAgent)) return false;
+    const c = document.createElement("canvas");
+    const gl = c.getContext("webgl2") || c.getContext("webgl");
+    if (!gl) return false;
+    // Test actual shader compilation (not just context creation)
+    const vs = gl.createShader(gl.VERTEX_SHADER);
+    if (!vs) return false;
+    gl.shaderSource(vs, "void main(){ gl_Position = vec4(0.0); }");
+    gl.compileShader(vs);
+    const ok = gl.getShaderParameter(vs, gl.COMPILE_STATUS);
+    gl.deleteShader(vs);
+    return ok;
+  } catch { return false; }
+})();
+
+const SchoolBuilding3D = hasWebGL
+  ? lazyWithRetry(() => import("../components/SchoolBuilding3D"))
+  : null;
 
 function LoginVisualFallback() {
   return (
@@ -117,11 +140,15 @@ export default function Login() {
     <div className="h-screen w-screen flex flex-col lg:flex-row overflow-hidden">
       {/* Left Side - 3D School Building - Hidden on mobile */}
       <div className="hidden lg:flex flex-1 relative overflow-hidden h-full">
-        <ErrorBoundary fallback={<LoginVisualFallback />}>
-          <Suspense fallback={<LoginVisualFallback />}>
-            <SchoolBuilding3D />
-          </Suspense>
-        </ErrorBoundary>
+        {SchoolBuilding3D ? (
+          <ErrorBoundary fallback={<LoginVisualFallback />}>
+            <Suspense fallback={<LoginVisualFallback />}>
+              <SchoolBuilding3D />
+            </Suspense>
+          </ErrorBoundary>
+        ) : (
+          <LoginVisualFallback />
+        )}
       </div>
 
       {/* Right Side - Login Form */}

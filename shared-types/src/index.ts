@@ -57,5 +57,5 @@ export type AcademicYear = string;
 export type StudentStatus = 'active' | 'inactive' | 'transferred' | 'graduated';
 export type StaffStatus = 'active' | 'inactive' | 'on_leave' | 'terminated';
 export type FeePaymentStatus = 'paid' | 'partial' | 'unpaid' | 'overdue';
-export type AttendanceStatus = 'present' | 'absent' | 'late' | 'half_day' | 'holiday';
+export type AttendanceStatus = 'present' | 'absent' | 'late' | 'leave' | 'halfday';
 export type ExamStatus = 'draft' | 'scheduled' | 'ongoing' | 'completed' | 'published';
