@@ -31,7 +31,7 @@ export const homeworkApi = {
 // Results API
 export const resultsApi = {
   create: (data) => request('/results', { method: 'POST', body: JSON.stringify(data) }),
-  bulkCreate: (results, examId, classId) => request('/results/bulk', { method: 'POST', body: JSON.stringify({ results, examId, classId }) }),
+  bulkCreate: (results, examId, classId, loadedAt) => request('/results/bulk', { method: 'POST', body: JSON.stringify({ results, examId, classId, ...(loadedAt ? { loadedAt } : {}) }) }),
   update: (id, data) => request(`/results/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   getByStudent: (studentId) => request(`/results/student/${studentId}`),
   getByClassExam: (classId, examId) => request(`/results/class/${classId}/exam/${examId}`),

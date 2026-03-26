@@ -59,7 +59,25 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-8"><div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-900" /></div>
+      <div className="space-y-4 py-4 px-2">
+        <div className="flex items-center gap-3">
+          <div className="h-6 w-48 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+          <div className="h-5 w-20 bg-gray-200 dark:bg-zinc-700 rounded-full animate-pulse" />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="space-y-2 p-3 bg-gray-50 dark:bg-zinc-900 rounded-lg">
+              <div className="h-3 w-16 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+              <div className="h-5 w-24 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-10 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+          ))}
+        </div>
+      </div>
     );
   }
 
@@ -87,7 +105,7 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
             <div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{exam.name}</h3>
               <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">
-                {exam.className || exam.classId} - {exam.subjectName}
+                {exam.className || (typeof exam.classId === 'object' ? exam.classId?.name : null) || 'Class'} - {exam.subjectName}
               </p>
             </div>
           </div>
