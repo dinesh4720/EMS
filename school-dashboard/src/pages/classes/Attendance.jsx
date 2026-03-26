@@ -1,12 +1,25 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardBody, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Select, SelectItem, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Textarea, Spinner } from "@heroui/react";
-import { Download, Check, X, Lock, Bell, AlertTriangle, Users, Clock, TrendingUp } from "lucide-react";
+import { Download, Check, X, Lock, Bell, AlertTriangle, Users, Clock, TrendingUp, TimerOff, LogOut, AlarmClock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { attendanceApi } from "../../services/api";
 import { useTranslation } from 'react-i18next';
 
 const ITEMS_PER_LOAD = 10;
+
+const ATTENDANCE_STATUSES = [
+  { key: 'present', label: 'Present', color: 'success', icon: Check, bgClass: 'bg-green-100', textClass: 'text-green-600' },
+  { key: 'absent', label: 'Absent', color: 'danger', icon: X, bgClass: 'bg-red-100', textClass: 'text-red-600' },
+  { key: 'late', label: 'Late', color: 'warning', icon: AlarmClock, bgClass: 'bg-amber-100', textClass: 'text-amber-600' },
+  { key: 'leave', label: 'Leave', color: 'secondary', icon: LogOut, bgClass: 'bg-purple-100', textClass: 'text-purple-600' },
+  { key: 'halfday', label: 'Half Day', color: 'primary', icon: TimerOff, bgClass: 'bg-blue-100', textClass: 'text-blue-600' },
+];
+
+const STATUS_MAP = Object.fromEntries(ATTENDANCE_STATUSES.map(s => [s.key, s]));
+
+/** Safely extract student ID string, preferring _id (MongoDB) over id (virtual) */
+const sid = (s) => String(s?._id || s?.id || '');
 
 export default function Attendance({
   classId }) {
@@ -89,15 +102,15 @@ export default function Attendance({
         // Merge: set fetched data, default remaining students to "unmarked"
         const merged = {};
         classStudents.forEach(s => {
-          const sid = String(s.id || s._id || '');
-          merged[sid] = existingAttendance[sid] || "unmarked";
+          const studentId = sid(s);
+          merged[studentId] = existingAttendance[studentId] || "unmarked";
         });
         setAttendance(prev => ({ ...prev, ...merged }));
       } else {
         // No existing data - initialize all as unmarked
         const newAttendance = {};
         classStudents.forEach(s => {
-          newAttendance[s.id] = "unmarked";
+          newAttendance[sid(s)] = "unmarked";
         });
         setAttendance(prev => ({ ...prev, ...newAttendance }));
       }
@@ -106,7 +119,7 @@ export default function Attendance({
       console.warn('No existing attendance found, initializing defaults:', error.message);
       const newAttendance = {};
       classStudents.forEach(s => {
-        newAttendance[s.id] = "unmarked";
+        newAttendance[sid(s)] = "unmarked";
       });
       setAttendance(prev => ({ ...prev, ...newAttendance }));
     } finally {
@@ -160,7 +173,7 @@ export default function Attendance({
   const markAllPresent = () => {
     if (!isLocked) {
       const newAttendance = {};
-      classStudents.forEach(s => { newAttendance[s.id] = "present"; });
+      classStudents.forEach(s => { newAttendance[sid(s)] = "present"; });
       setAttendance(prev => ({ ...prev, ...newAttendance }));
     }
   };
@@ -168,9 +181,10 @@ export default function Attendance({
   const handleSaveAttendance = async () => {
     if (isLocked || isSaving) return;
 
-    // Only send students who have been explicitly marked (present or absent)
+    // Only send students who have been explicitly marked with a valid status
+    const validStatuses = ATTENDANCE_STATUSES.map(s => s.key);
     const markedStudents = classStudents.filter(s =>
-      attendance[s.id] === "present" || attendance[s.id] === "absent"
+      validStatuses.includes(attendance[sid(s)])
     );
 
     if (markedStudents.length === 0) {
@@ -194,8 +208,8 @@ export default function Attendance({
 
       // Convert attendance state to API format - only marked students
       const attendanceData = markedStudents.map(student => ({
-        studentId: student.id,
-        status: attendance[student.id]
+        studentId: sid(student),
+        status: attendance[sid(student)]
       }));
 
       // Use the resolved class ID (ObjectId) for the API call
@@ -229,12 +243,15 @@ export default function Attendance({
     }
   };
 
-  const presentCount = classStudents.filter(s => attendance[s.id] === "present").length;
-  const absentCount = classStudents.filter(s => attendance[s.id] === "absent").length;
-  const unmarkedCount = classStudents.filter(s => !attendance[s.id] || attendance[s.id] === "unmarked").length;
-  const markedCount = presentCount + absentCount;
+  const presentCount = classStudents.filter(s => attendance[sid(s)] === "present").length;
+  const absentCount = classStudents.filter(s => attendance[sid(s)] === "absent").length;
+  const lateCount = classStudents.filter(s => attendance[sid(s)] === "late").length;
+  const leaveCount = classStudents.filter(s => attendance[sid(s)] === "leave").length;
+  const halfdayCount = classStudents.filter(s => attendance[sid(s)] === "halfday").length;
+  const unmarkedCount = classStudents.filter(s => !attendance[sid(s)] || attendance[sid(s)] === "unmarked").length;
+  const markedCount = presentCount + absentCount + lateCount + leaveCount + halfdayCount;
   const attendancePercent = markedCount > 0 ? Math.round((presentCount / markedCount) * 100) : 0;
-  const defaulters = classStudents.filter(s => attendance[s.id] === "absent");
+  const defaulters = classStudents.filter(s => attendance[sid(s)] === "absent");
 
   return (
     <div className={`w-full flex flex-col ${isEmbedded ? 'bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5' : ''}`}>
@@ -286,7 +303,7 @@ export default function Attendance({
       )}
 
       {/* KPI Stats - Card Grid Style */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-3 mb-4">
         {/* Total */}
         <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
           <div className="flex items-start justify-between mb-3">
@@ -319,6 +336,45 @@ export default function Attendance({
           <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{absentCount}</h3>
           <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.absent2')}</p>
         </div>
+
+        {/* Late */}
+        {lateCount > 0 && (
+          <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center">
+                <AlarmClock size={16} className="text-amber-600" />
+              </div>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{lateCount}</h3>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">Late</p>
+          </div>
+        )}
+
+        {/* Leave */}
+        {leaveCount > 0 && (
+          <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center">
+                <LogOut size={16} className="text-purple-600" />
+              </div>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{leaveCount}</h3>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">Leave</p>
+          </div>
+        )}
+
+        {/* Half Day */}
+        {halfdayCount > 0 && (
+          <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center">
+                <TimerOff size={16} className="text-blue-600" />
+              </div>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{halfdayCount}</h3>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">Half Day</p>
+          </div>
+        )}
 
         {/* Unmarked */}
         {unmarkedCount > 0 && (
@@ -394,7 +450,7 @@ export default function Attendance({
               : "No data"
         }>
           {visibleStudents.map((student) => (
-            <TableRow key={student.id} className="hover:bg-default-50">
+            <TableRow key={sid(student)} className="hover:bg-default-50">
               <TableCell>
                 <div className="py-4 text-default-600 text-sm">
                   {student.rollNo}
@@ -404,7 +460,7 @@ export default function Attendance({
                 <div className="py-4">
                   <span
                     className="font-medium text-default-900 hover:text-primary cursor-pointer transition-colors"
-                    onClick={() => navigate(`/students/${student.id}`)}
+                    onClick={() => navigate(`/students/${sid(student)}`)}
                   >
                     {student.name}
                   </span>
@@ -414,36 +470,33 @@ export default function Attendance({
                 <div className="py-4">
                   <Chip
                     size="sm"
-                    color={attendance[student.id] === "present" ? "success" : attendance[student.id] === "absent" ? "danger" : "default"}
+                    color={STATUS_MAP[attendance[sid(student)]]?.color || "default"}
                     variant="flat"
                     className="capitalize"
                   >
-                    {attendance[student.id] === "present" ? "Present" : attendance[student.id] === "absent" ? "Absent" : "Not Marked"}
+                    {STATUS_MAP[attendance[sid(student)]]?.label || "Not Marked"}
                   </Chip>
                 </div>
               </TableCell>
               <TableCell>
-                <div className="py-4 flex gap-2">
-                  <Button
-                    isIconOnly
-                    size="sm"
-                    className={attendance[student.id] === "present" ? "bg-success text-white" : "bg-transparent text-default-400 hover:text-success"}
-                    variant={attendance[student.id] === "present" ? "solid" : "light"}
-                    onPress={() => markAttendance(student.id, "present")}
-                    isDisabled={isLocked}
-                  >
-                    <Check size={16} />
-                  </Button>
-                  <Button
-                    isIconOnly
-                    size="sm"
-                    className={attendance[student.id] === "absent" ? "bg-danger text-white" : "bg-transparent text-default-400 hover:text-danger"}
-                    variant={attendance[student.id] === "absent" ? "solid" : "light"}
-                    onPress={() => markAttendance(student.id, "absent")}
-                    isDisabled={isLocked}
-                  >
-                    <X size={16} />
-                  </Button>
+                <div className="py-4 flex gap-1">
+                  {ATTENDANCE_STATUSES.map(({ key, label, color, icon: Icon }) => {
+                    const isActive = attendance[sid(student)] === key;
+                    return (
+                      <Button
+                        key={key}
+                        size="sm"
+                        color={isActive ? color : "default"}
+                        variant={isActive ? "solid" : "light"}
+                        onPress={() => markAttendance(sid(student), key)}
+                        isDisabled={isLocked}
+                        className={`min-w-0 px-2 gap-1 text-xs ${isActive ? '' : 'text-default-400'}`}
+                        startContent={<Icon size={13} />}
+                      >
+                        <span className="hidden sm:inline">{label}</span>
+                      </Button>
+                    );
+                  })}
                 </div>
               </TableCell>
             </TableRow>
@@ -471,12 +524,12 @@ export default function Attendance({
             <div className="flex flex-wrap gap-2">
               {defaulters.map(s => (
                 <Chip
-                  key={s.id}
+                  key={sid(s)}
                   size="sm"
                   variant="flat"
                   color="danger"
                   className="cursor-pointer hover:bg-danger-200/50 transition-colors border border-danger-100"
-                  onClick={() => navigate(`/students/${s.id}`)}
+                  onClick={() => navigate(`/students/${sid(s)}`)}
                 >
                   {s.name}
                 </Chip>

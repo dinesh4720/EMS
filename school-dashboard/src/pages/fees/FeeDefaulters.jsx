@@ -26,8 +26,28 @@ export default function FeeDefaulters() {
     const fetchDefaulters = async () => {
       try {
         setLoading(true);
-        const data = await feesApi.getDefaulters({});
-        setDefaulters(data);
+        const response = await feesApi.getDefaulters({ limit: 500 });
+        // Backend returns { data: [...], pagination: {...} }
+        const raw = Array.isArray(response) ? response : (response?.data || []);
+        // Map backend StudentFeeStructure fields to frontend display fields
+        const mapped = raw.map((d) => {
+          const student = d.studentId || {};
+          const cls = d.classId || {};
+          const daysOverdue = d.lastPaymentDate
+            ? Math.floor((Date.now() - new Date(d.lastPaymentDate).getTime()) / 86400000)
+            : Math.floor((Date.now() - new Date(d.createdAt).getTime()) / 86400000);
+          return {
+            id: d.studentId?._id || d.studentId || d._id,
+            student: student.name || 'Unknown',
+            class: cls.name ? `${cls.name} ${cls.section || ''}`.trim() : '—',
+            rollNo: student.rollNo || '—',
+            pending: d.totalBalance || 0,
+            dueDate: d.lastPaymentDate ? new Date(d.lastPaymentDate).toLocaleDateString('en-IN') : '—',
+            days: daysOverdue > 0 ? daysOverdue : 0,
+            phone: student.parentPhone || student.phone || '',
+          };
+        });
+        setDefaulters(mapped);
       } catch (error) {
         console.error('Error fetching defaulters:', error);
       } finally {
@@ -39,7 +59,7 @@ export default function FeeDefaulters() {
 
   const filteredDefaulters = useMemo(() => {
     return defaulters.filter((d) => {
-      const matchSearch = d.student.toLowerCase().includes(search.toLowerCase());
+      const matchSearch = (d.student || '').toLowerCase().includes(search.toLowerCase());
       const matchFilter =
         filter === "all" ||
         (filter === "7" && d.days >= 7) ||
