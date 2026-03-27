@@ -22,16 +22,16 @@ export default function Payroll() {
       payrollApi.getDashboard(month, year).catch(() => null),
       payrollApi.getRecords({ month, year }).catch(() => []),
     ]).then(([dash, recs]) => {
-      setDashboard(dash);
-      setRecords(Array.isArray(recs) ? recs : (recs?.records || []));
+      setDashboard(dash?.data || null);
+      setRecords(Array.isArray(recs?.data) ? recs.data : []);
     }).finally(() => setLoading(false));
   }, [month, year]);
 
   const fmt = (n) => n != null ? `₹${Number(n).toLocaleString(getDateLocale())}` : '—';
 
-  const totalPayroll = dashboard?.totalPayroll ?? dashboard?.total ?? 0;
-  const paidAmount = dashboard?.paidAmount ?? dashboard?.paid ?? 0;
-  const pendingAmount = dashboard?.pendingAmount ?? dashboard?.pending ?? 0;
+  const paidAmount = dashboard?.totalPayout ?? 0;
+  const pendingAmount = dashboard?.pendingAmount ?? 0;
+  const totalPayroll = paidAmount + pendingAmount;
   const overdueAmount = dashboard?.overdueAmount ?? 0;
   const completedPct = totalPayroll > 0 ? Math.round((paidAmount / totalPayroll) * 100) : 0;
   const pendingPct = 100 - completedPct;
@@ -43,7 +43,7 @@ export default function Payroll() {
     { label: "Overdue", value: fmt(overdueAmount), icon: AlertCircle, color: "bg-rose-100 text-rose-700" },
   ];
 
-  const pendingRecords = records.filter(r => r.status === 'pending' || r.status === 'processing');
+  const pendingRecords = records.filter(r => r.status === 'generated');
 
   return (
     <div className="p-6 space-y-6">
@@ -158,7 +158,7 @@ export default function Payroll() {
                         <Users size={18} className="text-blue-600" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{record.staffName || record.employee || '—'}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{record.employeeId?.name || '—'}</p>
                         <p className="text-xs text-gray-500 dark:text-zinc-400">Due: {record.dueDate ? new Date(record.dueDate).toLocaleDateString() : '—'}</p>
                       </div>
                     </div>
@@ -217,13 +217,13 @@ export default function Payroll() {
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 bg-gray-200 dark:bg-zinc-700 rounded-full flex items-center justify-center">
                             <span className="text-xs font-medium text-gray-600 dark:text-zinc-400">
-                              {(record.staffName || record.employee || '?').charAt(0).toUpperCase()}
+                              {(record.employeeId?.name || '?').charAt(0).toUpperCase()}
                             </span>
                           </div>
-                          <span className="text-sm text-gray-700 dark:text-zinc-300">{record.staffName || record.employee || '—'}</span>
+                          <span className="text-sm text-gray-700 dark:text-zinc-300">{record.employeeId?.name || '—'}</span>
                         </div>
                       </td>
-                      <td className="py-4 text-sm text-gray-600 dark:text-zinc-400">{record.role || record.designation || '—'}</td>
+                      <td className="py-4 text-sm text-gray-600 dark:text-zinc-400">{record.employeeId?.designation || record.employeeId?.role || '—'}</td>
                       <td className="py-4 text-sm font-semibold text-gray-900 dark:text-zinc-100">
                         {fmt(record.netPay ?? record.amount ?? record.salary)}
                       </td>
@@ -231,11 +231,11 @@ export default function Payroll() {
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                           record.status === "paid"
                             ? "bg-green-100 text-green-700"
-                            : record.status === "processing"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-amber-100 text-amber-700"
+                            : record.status === "generated"
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-blue-100 text-blue-700"
                         }`}>
-                          {(record.status || 'pending').charAt(0).toUpperCase() + (record.status || 'pending').slice(1)}
+                          {(record.status || 'generated').charAt(0).toUpperCase() + (record.status || 'generated').slice(1)}
                         </span>
                       </td>
                       <td className="py-4 text-sm text-gray-600 dark:text-zinc-400">

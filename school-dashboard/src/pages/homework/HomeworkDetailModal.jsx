@@ -3,7 +3,7 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Button, Chip, Input,
 } from '@heroui/react';
-import { ClipboardList, Clock, Star, UserCheck } from 'lucide-react';
+import { ClipboardList, Clock, Star, UserCheck, Paperclip, ExternalLink } from 'lucide-react';
 import { request } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -13,7 +13,7 @@ const SUBMISSION_STATUS_COLORS = {
   late: 'bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-300',
 };
 
-export default function HomeworkDetailModal({ homeworkId, onClose }) {
+export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged }) {
   const [hw, setHw] = useState(null);
   const [loading, setLoading] = useState(true);
   const [classStudents, setClassStudents] = useState([]);
@@ -70,6 +70,15 @@ export default function HomeworkDetailModal({ homeworkId, onClose }) {
       toast.error('Enter a marks value');
       return;
     }
+    const maxMarks = hw?.totalMarks ?? 100;
+    if (Number(grading.marks) > maxMarks) {
+      toast.error(`Marks cannot exceed ${maxMarks}`);
+      return;
+    }
+    if (Number(grading.marks) < 0) {
+      toast.error('Marks cannot be negative');
+      return;
+    }
     setSavingGrade(true);
     try {
       await request(`/homework/${homeworkId}/grade`, {
@@ -83,6 +92,7 @@ export default function HomeworkDetailModal({ homeworkId, onClose }) {
       toast.success('Submission graded');
       setGrading(null);
       fetchDetail();
+      onDataChanged?.();
     } catch (e) {
       toast.error(e?.message || 'Failed to grade submission');
     } finally {
@@ -169,6 +179,37 @@ export default function HomeworkDetailModal({ homeworkId, onClose }) {
                 </div>
               )}
 
+              {/* Attachments */}
+              {hw?.attachments?.length > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400 mb-2 flex items-center gap-1">
+                    <Paperclip size={12} /> Attachments ({hw.attachments.length})
+                  </p>
+                  <div className="space-y-1.5">
+                    {hw.attachments.map((att, i) => (
+                      <a
+                        key={i}
+                        href={att.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors group"
+                      >
+                        <Paperclip size={14} className="text-gray-400 dark:text-zinc-500 shrink-0" />
+                        <span className="text-sm text-gray-700 dark:text-zinc-300 truncate flex-1">
+                          {att.name || att.url}
+                        </span>
+                        {att.type && (
+                          <Chip size="sm" variant="flat" className="text-xs bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 shrink-0">
+                            {att.type}
+                          </Chip>
+                        )}
+                        <ExternalLink size={13} className="text-gray-400 dark:text-zinc-500 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Unsubmitted students — paper submission panel */}
               {unsubmittedStudents.length > 0 && (
                 <div className="border border-orange-100 dark:border-orange-900 rounded-lg overflow-hidden">
@@ -247,7 +288,7 @@ export default function HomeworkDetailModal({ homeworkId, onClose }) {
                               {isGraded && (
                                 <div className="flex items-center gap-1">
                                   <Star size={13} className="text-yellow-400 fill-yellow-400" />
-                                  <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">{sub.marks}</span>
+                                  <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">{sub.marks}/{hw?.totalMarks ?? 100}</span>
                                 </div>
                               )}
                               <Chip
@@ -276,13 +317,15 @@ export default function HomeworkDetailModal({ homeworkId, onClose }) {
                           {isEditingThis && (
                             <div className="mt-3 flex items-end gap-2 border-t border-gray-100 dark:border-zinc-800 pt-3">
                               <Input
-                                label="Marks"
+                                label={`Marks (max ${hw?.totalMarks ?? 100})`}
                                 type="number"
                                 size="sm"
+                                min={0}
+                                max={hw?.totalMarks ?? 100}
                                 value={String(grading.marks)}
                                 onChange={e => setGrading(p => ({ ...p, marks: e.target.value }))}
                                 variant="bordered"
-                                className="w-24"
+                                className="w-28"
                                 classNames={{ input: 'dark:text-zinc-100', inputWrapper: 'dark:border-zinc-700' }}
                               />
                               <Input

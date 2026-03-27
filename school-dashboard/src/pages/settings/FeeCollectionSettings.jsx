@@ -4,6 +4,7 @@ import { Card, CardBody, Input, Button, Switch, Select, SelectItem, Divider, Sli
 import { Layers, Calendar, AlertCircle, DollarSign, Save, CheckCircle, Info } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import SkeletonForm from '../../components/skeletons/SkeletonForm';
 
 
 export default function FeeCollectionSettings() {
@@ -125,10 +126,8 @@ export default function FeeCollectionSettings() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-center">
-          <p className="text-default-500">{t('pages.loadingFeeSettings')}</p>
-        </div>
+      <div className="max-w-5xl mx-auto">
+        <SkeletonForm fields={6} showSubmit />
       </div>
     );
   }

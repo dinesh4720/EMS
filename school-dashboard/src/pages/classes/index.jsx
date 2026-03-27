@@ -15,7 +15,7 @@ import { PageLayout, MinimalButton } from "../../components/ui";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 
-const classNames = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+const classNames = ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Class 9", "Class 10", "Class 11", "Class 12"];
 const sections = ["A", "B", "C", "D"];
 
 export default function ClassesPage() {
@@ -25,7 +25,7 @@ export default function ClassesPage() {
   const params = useParams();
   const { teachers, addClass, staff, refetch, schoolSettings } = useApp();
   const [isOpen, setIsOpen] = useState(false);
-  const [formData, setFormData] = useState({ name: "", section: "", strength: "", teacherId: "" });
+  const [formData, setFormData] = useState({ name: "", section: "", strength: "", teacherId: "", room: "", block: "" });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,8 +42,9 @@ export default function ClassesPage() {
     const newErrors = {};
     if (!formData.name) newErrors.name = "Class name is required";
     if (!formData.section) newErrors.section = "Section is required";
-    if (!formData.strength) newErrors.strength = "Strength is required";
-    else if (isNaN(formData.strength) || parseInt(formData.strength) <= 0) newErrors.strength = "Invalid strength";
+    if (!formData.strength) newErrors.strength = "Class capacity is required";
+    else if (isNaN(formData.strength) || parseInt(formData.strength) <= 0) newErrors.strength = "Capacity must be a positive number";
+    else if (parseInt(formData.strength) > 200) newErrors.strength = "Capacity cannot exceed 200";
     if (!formData.teacherId) newErrors.teacherId = "Class teacher is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -72,14 +73,17 @@ export default function ClassesPage() {
         .filter(Boolean);
 
       // Create the class with consistent ID handling
+      const capacity = parseInt(formData.strength);
       await addClass({
         name: formData.name,
         section: formData.section,
-        strength: parseInt(formData.strength),
+        strengthLimit: { current: capacity, default: capacity },
         classTeacherId: String(formData.teacherId), // Ensure string for MongoDB ObjectId
         teacher: selectedTeacher.name,
         teacherPhoto: selectedTeacher.picture || selectedTeacher.photo,
-        subjects: defaultSubjects.length > 0 ? defaultSubjects : ["Hindi", "English", "Math", "Science"]
+        subjects: defaultSubjects.length > 0 ? defaultSubjects : ["Hindi", "English", "Math", "Science"],
+        ...(formData.room && { room: formData.room }),
+        ...(formData.block && { block: formData.block }),
       });
 
       if (refetch) {
@@ -90,7 +94,7 @@ export default function ClassesPage() {
 
       // Close drawer and reset form
       setIsOpen(false);
-      setFormData({ name: "", section: "", strength: "", teacherId: "" });
+      setFormData({ name: "", section: "", strength: "", teacherId: "", room: "", block: "" });
       setErrors({});
     } catch (error) {
       console.error('Error creating class:', error);
@@ -233,7 +237,7 @@ export default function ClassesPage() {
               <DrawerBody className="py-6 px-6">
                 <div className="space-y-4">
                   <Select size="sm" label={t('pages.className1')} placeholder={t('pages.selectClass2')} selectedKeys={formData.name ? new Set([formData.name]) : new Set()} onSelectionChange={(keys) => setFormData({ ...formData, name: Array.from(keys)[0] || "" })} isInvalid={!!errors.name} errorMessage={errors.name} isRequired variant="bordered" radius="lg" aria-label={t('aria.inputs.className')}>
-                    {classNames.map(c => <SelectItem key={c} textValue={`Class ${c}`}>Class {c}</SelectItem>)}
+                    {classNames.map(c => <SelectItem key={c} textValue={c}>{c}</SelectItem>)}
                   </Select>
                   <Select size="sm" label={t('pages.section1')} placeholder={t('pages.selectSection')} selectedKeys={formData.section ? new Set([formData.section]) : new Set()} onSelectionChange={(keys) => setFormData({ ...formData, section: Array.from(keys)[0] || "" })} isInvalid={!!errors.section} errorMessage={errors.section} isRequired variant="bordered" radius="lg" aria-label={t('aria.inputs.section')}>
                     {sections.map(s => <SelectItem key={s} textValue={s}>{s}</SelectItem>)}
@@ -246,6 +250,10 @@ export default function ClassesPage() {
                       return roles.includes('Teacher') || staffTypes.includes('Teacher') || s.isClassTeacher;
                     }).map(t => <SelectItem key={String(t.id || t._id)} textValue={`${t.name} ${t.department || ''}`}>{t.name} {t.department ? `(${t.department})` : ''}</SelectItem>)}
                   </Select>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input size="sm" label="Room" placeholder="e.g. 101" value={formData.room} onValueChange={(value) => setFormData({ ...formData, room: value })} variant="bordered" radius="lg" />
+                    <Input size="sm" label="Block" placeholder="e.g. A Block" value={formData.block} onValueChange={(value) => setFormData({ ...formData, block: value })} variant="bordered" radius="lg" />
+                  </div>
                 </div>
               </DrawerBody>
               <DrawerFooter className="border-t border-gray-100 dark:border-zinc-800 px-6 py-4">

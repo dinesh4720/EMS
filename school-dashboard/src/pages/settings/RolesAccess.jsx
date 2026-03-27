@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -24,13 +24,31 @@ import {
   Tab,
   Select,
   SelectItem,
-  Spinner,
 } from "@heroui/react";
 import { Plus, Edit, Shield, Lock, Unlock, Copy, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { STAFF_ROLES } from "../../constants/roles";
 import { useTranslation } from 'react-i18next';
+import SkeletonTable from '../../components/skeletons/SkeletonTable';
+import { permissionsApi } from '../../services/api';
+
+// Transform backend permissions array to frontend object format
+const permissionsArrayToObject = (permsArray = []) => {
+  const obj = {};
+  permsArray.forEach(p => {
+    obj[p.module] = { view: !!p.view, create: !!p.create, edit: !!p.edit, delete: !!p.delete, publish: !!p.publish };
+  });
+  return obj;
+};
+
+// Transform frontend permissions object to backend array format
+const permissionsObjectToArray = (permsObj = {}) => {
+  return Object.entries(permsObj).map(([module, actions]) => ({
+    module,
+    ...actions,
+  }));
+};
 
 // Define all modules and their actions (keys only — labels are translated in component)
 const MODULES_CONFIG = [
@@ -43,117 +61,175 @@ const MODULES_CONFIG = [
   { key: "timetable", actions: ["view", "create", "edit", "delete"] },
   { key: "fees", actions: ["view", "create", "edit", "delete"] },
   { key: "payroll", actions: ["view", "create", "edit", "delete"] },
-  { key: "communication", actions: ["view", "create", "edit", "delete"] },
+  { key: "messaging", actions: ["view", "create", "edit", "delete"] },
   { key: "reports", actions: ["view", "create", "edit", "delete"] },
   { key: "settings", actions: ["view", "create", "edit", "delete"] },
+  { key: "front-desk", actions: ["view", "create", "edit", "delete"] },
+  { key: "intake-forms", actions: ["view", "create", "edit", "delete"] },
+  { key: "communication", actions: ["view", "create", "edit", "delete"] },
 ];
 
-// Default permission templates - matching backend UserPermission.js
+// Default permission templates — must match backend UserPermission.js exactly.
+// Every module is listed explicitly so applying a template clears stale permissions.
 const PERMISSION_TEMPLATES = {
   admin: {
     name: "Admin",
     description: "Full access to all modules",
-    permissions: MODULES_CONFIG.reduce((acc, module) => {
-      acc[module.key] = module.actions.reduce((a, action) => ({ ...a, [action]: true }), {});
-      return acc;
-    }, {}),
+    permissions: {
+      dashboard: { view: true, create: true, edit: true, delete: true },
+      staff: { view: true, create: true, edit: true, delete: true },
+      students: { view: true, create: true, edit: true, delete: true },
+      classes: { view: true, create: true, edit: true, delete: true },
+      academics: { view: true, create: true, edit: true, delete: true, publish: true },
+      attendance: { view: true, create: true, edit: true, delete: true },
+      timetable: { view: true, create: true, edit: true, delete: true },
+      fees: { view: true, create: true, edit: true, delete: true },
+      payroll: { view: true, create: true, edit: true, delete: true },
+      messaging: { view: true, create: true, edit: true, delete: true },
+      reports: { view: true, create: true, edit: true, delete: true },
+      settings: { view: true, create: true, edit: true, delete: true },
+      "front-desk": { view: true, create: true, edit: true, delete: true },
+      "intake-forms": { view: true, create: true, edit: true, delete: true },
+    },
   },
   principal: {
     name: "Principal",
     description: "Full administrative access except settings deletion",
-    permissions: MODULES_CONFIG.reduce((acc, module) => {
-      if (module.key === 'settings') {
-        acc[module.key] = { view: true, create: true, edit: true, delete: false };
-      } else {
-        acc[module.key] = module.actions.reduce((a, action) => ({ ...a, [action]: true }), {});
-      }
-      return acc;
-    }, {}),
+    permissions: {
+      dashboard: { view: true, create: true, edit: true, delete: true },
+      staff: { view: true, create: true, edit: true, delete: true },
+      students: { view: true, create: true, edit: true, delete: true },
+      classes: { view: true, create: true, edit: true, delete: true },
+      academics: { view: true, create: true, edit: true, delete: true, publish: true },
+      attendance: { view: true, create: true, edit: true, delete: true },
+      timetable: { view: true, create: true, edit: true, delete: true },
+      fees: { view: true, create: true, edit: true, delete: true },
+      payroll: { view: true, create: true, edit: true, delete: true },
+      messaging: { view: true, create: true, edit: true, delete: true },
+      reports: { view: true, create: true, edit: true, delete: true },
+      settings: { view: true, create: true, edit: true, delete: false },
+      "front-desk": { view: true, create: true, edit: true, delete: true },
+      "intake-forms": { view: true, create: true, edit: true, delete: true },
+    },
   },
   "vice-principal": {
     name: "Vice Principal",
     description: "Administrative access without delete permissions",
     permissions: {
-      dashboard: { view: true },
-      staff: { view: true, create: true, edit: true },
-      students: { view: true, create: true, edit: true },
-      classes: { view: true, create: true, edit: true },
-      academics: { view: true, create: true, edit: true, publish: true },
-      attendance: { view: true, create: true, edit: true },
-      timetable: { view: true, create: true, edit: true },
-      fees: { view: true },
-      payroll: { view: true },
-      communication: { view: true, create: true, edit: true },
-      reports: { view: true, create: true },
+      dashboard: { view: true, create: true, edit: true, delete: false },
+      staff: { view: true, create: true, edit: true, delete: false },
+      students: { view: true, create: true, edit: true, delete: false },
+      classes: { view: true, create: true, edit: true, delete: false },
+      academics: { view: true, create: true, edit: true, delete: false, publish: true },
+      attendance: { view: true, create: true, edit: true, delete: false },
+      timetable: { view: true, create: true, edit: true, delete: false },
+      fees: { view: true, create: false, edit: false, delete: false },
+      payroll: { view: true, create: false, edit: false, delete: false },
+      messaging: { view: true, create: true, edit: true, delete: false },
+      reports: { view: true, create: true, edit: false, delete: false },
+      settings: { view: false, create: false, edit: false, delete: false },
+      "front-desk": { view: true, create: true, edit: true, delete: false },
+      "intake-forms": { view: true, create: true, edit: true, delete: false },
     },
   },
   teacher: {
     name: "Teacher",
     description: "Access to classes, attendance, and students",
     permissions: {
-      dashboard: { view: true },
-      staff: { view: true },
-      students: { view: true, edit: true },
-      classes: { view: true },
-      academics: { view: true, create: true, edit: true },
-      attendance: { view: true, create: true, edit: true },
-      timetable: { view: true },
-      fees: { view: true },
-      communication: { view: true, create: true },
-      reports: { view: true },
+      dashboard: { view: true, create: false, edit: false, delete: false },
+      staff: { view: true, create: false, edit: false, delete: false },
+      students: { view: true, create: false, edit: true, delete: false },
+      classes: { view: true, create: false, edit: false, delete: false },
+      academics: { view: true, create: true, edit: true, delete: false, publish: false },
+      attendance: { view: true, create: true, edit: true, delete: false },
+      timetable: { view: true, create: false, edit: false, delete: false },
+      fees: { view: true, create: false, edit: false, delete: false },
+      payroll: { view: false, create: false, edit: false, delete: false },
+      messaging: { view: true, create: true, edit: true, delete: false },
+      reports: { view: true, create: false, edit: false, delete: false },
+      settings: { view: false, create: false, edit: false, delete: false },
+      "front-desk": { view: false, create: false, edit: false, delete: false },
+      "intake-forms": { view: true, create: true, edit: true, delete: false },
     },
   },
   accountant: {
     name: "Accountant",
     description: "Access to fees and payroll",
     permissions: {
-      dashboard: { view: true },
-      staff: { view: true },
-      students: { view: true },
-      academics: { view: true },
+      dashboard: { view: true, create: false, edit: false, delete: false },
+      staff: { view: true, create: false, edit: false, delete: false },
+      students: { view: true, create: false, edit: false, delete: false },
+      classes: { view: true, create: false, edit: false, delete: false },
+      academics: { view: true, create: false, edit: false, delete: false, publish: false },
+      attendance: { view: true, create: false, edit: false, delete: false },
+      timetable: { view: false, create: false, edit: false, delete: false },
       fees: { view: true, create: true, edit: true, delete: true },
-      payroll: { view: true, create: true, edit: true },
-      reports: { view: true },
+      payroll: { view: true, create: true, edit: true, delete: false },
+      messaging: { view: true, create: true, edit: false, delete: false },
+      reports: { view: true, create: false, edit: false, delete: false },
+      settings: { view: false, create: false, edit: false, delete: false },
+      "front-desk": { view: false, create: false, edit: false, delete: false },
+      "intake-forms": { view: true, create: false, edit: false, delete: false },
     },
   },
   librarian: {
     name: "Librarian",
     description: "Limited access for library management",
     permissions: {
-      dashboard: { view: true },
-      staff: { view: true },
-      students: { view: true },
-      classes: { view: true },
-      academics: { view: true },
-      attendance: { view: true },
-      timetable: { view: true },
-      communication: { view: true, create: true },
+      dashboard: { view: true, create: false, edit: false, delete: false },
+      staff: { view: true, create: false, edit: false, delete: false },
+      students: { view: true, create: false, edit: false, delete: false },
+      classes: { view: true, create: false, edit: false, delete: false },
+      academics: { view: true, create: false, edit: false, delete: false, publish: false },
+      attendance: { view: true, create: false, edit: false, delete: false },
+      timetable: { view: true, create: false, edit: false, delete: false },
+      fees: { view: false, create: false, edit: false, delete: false },
+      payroll: { view: false, create: false, edit: false, delete: false },
+      messaging: { view: true, create: true, edit: false, delete: false },
+      reports: { view: false, create: false, edit: false, delete: false },
+      settings: { view: false, create: false, edit: false, delete: false },
+      "front-desk": { view: false, create: false, edit: false, delete: false },
+      "intake-forms": { view: false, create: false, edit: false, delete: false },
     },
   },
   "lab-assistant": {
     name: "Lab Assistant",
     description: "Limited access for lab management",
     permissions: {
-      dashboard: { view: true },
-      staff: { view: true },
-      students: { view: true },
-      classes: { view: true },
-      academics: { view: true },
-      attendance: { view: true },
-      timetable: { view: true },
-      communication: { view: true, create: true },
+      dashboard: { view: true, create: false, edit: false, delete: false },
+      staff: { view: true, create: false, edit: false, delete: false },
+      students: { view: true, create: false, edit: false, delete: false },
+      classes: { view: true, create: false, edit: false, delete: false },
+      academics: { view: true, create: false, edit: false, delete: false, publish: false },
+      attendance: { view: true, create: false, edit: false, delete: false },
+      timetable: { view: true, create: false, edit: false, delete: false },
+      fees: { view: false, create: false, edit: false, delete: false },
+      payroll: { view: false, create: false, edit: false, delete: false },
+      messaging: { view: true, create: true, edit: false, delete: false },
+      reports: { view: false, create: false, edit: false, delete: false },
+      settings: { view: false, create: false, edit: false, delete: false },
+      "front-desk": { view: false, create: false, edit: false, delete: false },
+      "intake-forms": { view: false, create: false, edit: false, delete: false },
     },
   },
   receptionist: {
     name: "Receptionist",
     description: "Basic access for front desk operations",
     permissions: {
-      dashboard: { view: true },
-      staff: { view: true },
-      students: { view: true, create: true, edit: true },
-      classes: { view: true },
-      academics: { view: true },
-      communication: { view: true, create: true },
+      dashboard: { view: true, create: false, edit: false, delete: false },
+      staff: { view: true, create: false, edit: false, delete: false },
+      students: { view: true, create: true, edit: true, delete: false },
+      classes: { view: true, create: false, edit: false, delete: false },
+      academics: { view: true, create: false, edit: false, delete: false, publish: false },
+      attendance: { view: true, create: false, edit: false, delete: false },
+      timetable: { view: false, create: false, edit: false, delete: false },
+      fees: { view: true, create: false, edit: false, delete: false },
+      payroll: { view: false, create: false, edit: false, delete: false },
+      messaging: { view: true, create: true, edit: false, delete: false },
+      reports: { view: false, create: false, edit: false, delete: false },
+      settings: { view: false, create: false, edit: false, delete: false },
+      "front-desk": { view: true, create: true, edit: true, delete: false },
+      "intake-forms": { view: true, create: true, edit: true, delete: false },
     },
   },
 };
@@ -170,66 +246,35 @@ export default function RolesAccess() {
   const [activeTab, setActiveTab] = useState("roles");
   const [editingRole, setEditingRole] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [fetchingRoles, setFetchingRoles] = useState(true);
+  const [roles, setRoles] = useState([]);
 
-  // Mock roles data - in production, this would come from API
-  const [roles, setRoles] = useState([
-    {
-      id: 1,
-      name: "Admin",
-      permissions: PERMISSION_TEMPLATES.admin.permissions,
-      locked: { settings: { delete: true } },
-      userCount: 2,
-    },
-    {
-      id: 2,
-      name: "Principal",
-      permissions: PERMISSION_TEMPLATES.principal.permissions,
-      locked: {},
-      userCount: 1,
-    },
-    {
-      id: 3,
-      name: "Vice Principal",
-      permissions: PERMISSION_TEMPLATES["vice-principal"].permissions,
-      locked: {},
-      userCount: 1,
-    },
-    {
-      id: 4,
-      name: "Teacher",
-      permissions: PERMISSION_TEMPLATES.teacher.permissions,
-      locked: {},
-      userCount: 15,
-    },
-    {
-      id: 5,
-      name: "Accountant",
-      permissions: PERMISSION_TEMPLATES.accountant.permissions,
-      locked: {},
-      userCount: 3,
-    },
-    {
-      id: 6,
-      name: "Librarian",
-      permissions: PERMISSION_TEMPLATES.librarian.permissions,
-      locked: {},
-      userCount: 1,
-    },
-    {
-      id: 7,
-      name: "Lab Assistant",
-      permissions: PERMISSION_TEMPLATES["lab-assistant"].permissions,
-      locked: {},
-      userCount: 2,
-    },
-    {
-      id: 8,
-      name: "Receptionist",
-      permissions: PERMISSION_TEMPLATES.receptionist.permissions,
-      locked: {},
-      userCount: 1,
-    },
-  ]);
+  // Fetch custom roles from backend API
+  const fetchRoles = useCallback(async () => {
+    setFetchingRoles(true);
+    try {
+      const data = await permissionsApi.getCustomRoles();
+      const customRoles = (data?.roles || data || []).map(r => ({
+        id: r._id,
+        name: r.name,
+        description: r.description || '',
+        permissions: permissionsArrayToObject(r.permissions),
+        locked: r.locked || {},
+        isSystem: r.isSystem || false,
+        userCount: r.userCount || 0,
+      }));
+      setRoles(customRoles);
+    } catch (error) {
+      console.error('Failed to fetch roles:', error);
+      toast.error('Failed to load roles');
+    } finally {
+      setFetchingRoles(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRoles();
+  }, [fetchRoles]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -301,35 +346,47 @@ export default function RolesAccess() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.name.trim()) {
       toast.error(t('toast.error.roleNameIsRequired'));
       return;
     }
 
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        permissions: permissionsObjectToArray(formData.permissions),
+        locked: formData.locked,
+      };
+
       if (editingRole) {
-        setRoles(prev => prev.map(r => r.id === editingRole.id ? { ...r, ...formData } : r));
+        await permissionsApi.updateCustomRole(editingRole.id, payload);
         toast.success(t('toast.success.roleUpdatedSuccessfully'));
       } else {
-        const newRole = {
-          id: Date.now(),
-          ...formData,
-          userCount: 0,
-        };
-        setRoles(prev => [...prev, newRole]);
+        await permissionsApi.createCustomRole(payload);
         toast.success(t('toast.success.roleCreatedSuccessfully'));
       }
-      setLoading(false);
       onClose();
-    }, 500);
+      await fetchRoles();
+    } catch (error) {
+      console.error('Failed to save role:', error);
+      toast.error(error.message || 'Failed to save role');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDelete = (roleId) => {
+  const handleDelete = async (roleId) => {
     if (!confirm(t('confirm.deleteRole'))) return;
-    setRoles(prev => prev.filter(r => r.id !== roleId));
-    toast.success(t('toast.success.roleDeletedSuccessfully'));
+    try {
+      await permissionsApi.deleteCustomRole(roleId);
+      toast.success(t('toast.success.roleDeletedSuccessfully'));
+      await fetchRoles();
+    } catch (error) {
+      console.error('Failed to delete role:', error);
+      toast.error(error.message || 'Failed to delete role');
+    }
   };
 
   const countPermissions = (permissions) => {
@@ -365,6 +422,9 @@ export default function RolesAccess() {
       </div>
 
       {/* Roles Table */}
+      {fetchingRoles ? (
+        <SkeletonTable rows={5} columns={5} />
+      ) : (
       <Card className="rounded-lg">
         <CardBody className="p-0">
           <Table
@@ -385,7 +445,7 @@ export default function RolesAccess() {
             <TableBody
               items={roles}
               emptyContent="No roles found"
-              loadingContent={<Spinner />}
+              loadingContent={<SkeletonTable columns={5} rows={5} />}
             >
               {(role) => {
                 const permCount = countPermissions(role.permissions);
@@ -455,6 +515,7 @@ export default function RolesAccess() {
           </Table>
         </CardBody>
       </Card>
+      )}
 
       {/* Add/Edit Role Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="5xl" scrollBehavior="inside">

@@ -12,7 +12,6 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
-  Spinner,
   Chip,
   Table,
   TableHeader,
@@ -26,6 +25,7 @@ import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { useTranslation } from 'react-i18next';
+import SkeletonTable from '../../components/skeletons/SkeletonTable';
 
 export default function ClassSectionsSettings() {
   const { t } = useTranslation();
@@ -211,8 +211,8 @@ export default function ClassSectionsSettings() {
           </TableHeader>
           <TableBody
             items={sortedClasses}
-            emptyContent={loading ? "Loading..." : "No sections found"}
-            loadingContent={<Spinner />}
+            emptyContent="No sections found"
+            loadingContent={<SkeletonTable columns={8} rows={5} />}
           >
             {(section) => {
               const studentCount = getStudentCount(section.id);

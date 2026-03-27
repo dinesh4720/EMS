@@ -9,6 +9,33 @@ export function clearApiCache() {
   void queryClient.invalidateQueries();
 }
 
+// ── Token refresh logic ──────────────────────────────────────────────
+// Prevents multiple concurrent refresh attempts when several requests
+// receive 401 at the same time.
+let _refreshPromise = null;
+
+async function attemptTokenRefresh() {
+  // If a refresh is already in-flight, piggyback on it
+  if (_refreshPromise) return _refreshPromise;
+
+  _refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // sends the httpOnly refresh-token cookie
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      _refreshPromise = null;
+    }
+  })();
+
+  return _refreshPromise;
+}
+
 function parseRetryAfterMs(retryAfterHeader) {
   if (!retryAfterHeader) {
     return null;
@@ -67,9 +94,27 @@ export async function request(endpoint, options = {}) {
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: 'Request failed' }));
 
-        // If unauthorized, clear session storage
+        // If unauthorized, attempt a token refresh before logging the user out.
+        // The refresh endpoint uses the 30-day httpOnly refresh-token cookie.
         if (response.status === 401) {
-          console.warn('⚠️ 401 Unauthorized - clearing session');
+          const refreshed = await attemptTokenRefresh();
+          if (refreshed) {
+            // Retry the original request once with the new access token
+            const retryResponse = await fetch(url, {
+              ...fetchOptions,
+              headers,
+              credentials: fetchOptions.credentials ?? 'include',
+              signal: controller.signal,
+              cache: 'no-store',
+            });
+            if (retryResponse.ok) {
+              clearTimeout(timeoutId);
+              if (retryResponse.status === 204) return null;
+              return await retryResponse.json();
+            }
+          }
+          // Refresh failed or retried request still 401 — log out
+          console.warn('⚠️ 401 Unauthorized - token refresh failed, clearing session');
           clearStoredUser();
           queryClient.clear();
         }
@@ -131,14 +176,15 @@ export async function request(endpoint, options = {}) {
   try {
     return await requestQueue.add(() => retryRequest(makeRequest, 2, 1000));
   } catch (error) {
-    // Only log errors that aren't rate limiting or 404s (reduce console spam)
+    // Only log errors that aren't rate limiting, 404s, or aborts (reduce console spam)
     if (
+      error.name !== 'AbortError' &&
       !error.message?.includes('rate limit') &&
       !error.message?.includes('Too many requests') &&
       error.status !== 404 &&
       !error.message?.includes('not found')
     ) {
-      console.error(`❌ API Error: ${url}`, error);
+      console.error(`❌ API Error: ${url}`, error.message || error);
     }
     throw error;
   }

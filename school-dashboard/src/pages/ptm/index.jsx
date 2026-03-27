@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { request } from '../../services/api';
+import { ptmApi } from '../../services/api/extensions';
 import { PageLayout, MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
 
@@ -42,12 +43,13 @@ export default function PTMPage() {
   const [bookSlotForm, setBookSlotForm] = useState({ parentName: '', studentId: '', scheduledTime: '', notes: '' });
   const [bookingSlot, setBookingSlot] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
+  const [classStudents, setClassStudents] = useState([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [sessRes, classRes, staffRes] = await Promise.all([
-        request('/ptm'),
+        ptmApi.getAll(),
         request('/classes'),
         request('/staff'),
       ]);
@@ -96,10 +98,7 @@ export default function PTMPage() {
     }
     setSaving(true);
     try {
-      await request('/ptm', {
-        method: 'POST',
-        body: JSON.stringify({ ...form, slotDuration: Number(form.slotDuration) }),
-      });
+      await ptmApi.create({ ...form, slotDuration: Number(form.slotDuration) });
       toast.success('PTM session created');
       setCreateOpen(false);
       setForm(EMPTY_FORM);
@@ -113,7 +112,7 @@ export default function PTMPage() {
 
   const handleDelete = async () => {
     try {
-      await request(`/ptm/${deleteModal.id}`, { method: 'DELETE' });
+      await ptmApi.delete(deleteModal.id);
       toast.success('PTM session cancelled');
       setDeleteModal({ open: false, id: null, title: '' });
       fetchData();
@@ -124,8 +123,19 @@ export default function PTMPage() {
 
   const handleViewDetail = async (id) => {
     try {
-      const res = await request(`/ptm/${id}`);
-      setDetailSession(res?.data || res);
+      const res = await ptmApi.getById(id);
+      const session = res?.data || res;
+      setDetailSession(session);
+      // Fetch students for the session's class so admin can select a student when booking
+      const classId = session?.classId?._id || session?.classId;
+      if (classId) {
+        try {
+          const studentsRes = await request(`/students?classId=${classId}`);
+          setClassStudents(studentsRes?.students || studentsRes || []);
+        } catch {
+          setClassStudents([]);
+        }
+      }
     } catch {
       toast.error('Failed to load session details');
     }
@@ -136,25 +146,26 @@ export default function PTMPage() {
       toast.error('Parent name is required');
       return;
     }
+    if (!bookSlotForm.studentId) {
+      toast.error('Please select a student');
+      return;
+    }
     if (!bookSlotForm.scheduledTime) {
       toast.error('Scheduled time is required');
       return;
     }
     setBookingSlot(true);
     try {
-      const res = await request(`/ptm/${detailSession._id}/slots`, {
-        method: 'POST',
-        body: JSON.stringify({
-          parentName: bookSlotForm.parentName,
-          studentId: bookSlotForm.studentId || undefined,
-          scheduledTime: bookSlotForm.scheduledTime,
-          notes: bookSlotForm.notes || undefined,
-        }),
+      const res = await ptmApi.addSlot(detailSession._id, {
+        parentName: bookSlotForm.parentName,
+        studentId: bookSlotForm.studentId || undefined,
+        scheduledTime: bookSlotForm.scheduledTime,
+        notes: bookSlotForm.notes || undefined,
       });
       toast.success('Slot booked successfully');
       setBookSlotForm({ parentName: '', studentId: '', scheduledTime: '', notes: '' });
       // Refresh detail
-      const updated = await request(`/ptm/${detailSession._id}`);
+      const updated = await ptmApi.getById(detailSession._id);
       setDetailSession(updated?.data || updated);
       fetchData();
     } catch (e) {
@@ -167,12 +178,9 @@ export default function PTMPage() {
   const handleStatusChange = async (newStatus) => {
     setChangingStatus(true);
     try {
-      await request(`/ptm/${detailSession._id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: newStatus }),
-      });
+      await ptmApi.update(detailSession._id, { status: newStatus });
       toast.success(`Status changed to ${newStatus}`);
-      const updated = await request(`/ptm/${detailSession._id}`);
+      const updated = await ptmApi.getById(detailSession._id);
       setDetailSession(updated?.data || updated);
       fetchData();
     } catch (e) {
@@ -520,6 +528,23 @@ export default function PTMPage() {
                         variant="bordered"
                         classNames={{ input: 'dark:text-zinc-100 text-xs', inputWrapper: 'dark:border-zinc-700' }}
                       />
+                      <Select
+                        size="sm"
+                        label="Student *"
+                        placeholder="Select student"
+                        selectedKeys={bookSlotForm.studentId ? [bookSlotForm.studentId] : []}
+                        onSelectionChange={keys => setBookSlotForm(p => ({ ...p, studentId: [...keys][0] || '' }))}
+                        variant="bordered"
+                        classNames={{ trigger: 'dark:border-zinc-700 text-xs' }}
+                      >
+                        {classStudents.filter(s => s._id || s.id).map(s => (
+                          <SelectItem key={s._id || s.id} textValue={s.name}>
+                            {s.name}{s.rollNo ? ` (${s.rollNo})` : ''}
+                          </SelectItem>
+                        ))}
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
                       <Input
                         size="sm"
                         label="Time Slot *"

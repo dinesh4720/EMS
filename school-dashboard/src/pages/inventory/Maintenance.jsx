@@ -8,6 +8,7 @@ import { MinimalButton } from "../../components/ui";
 import { inventoryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 const TYPES = ["PREVENTIVE", "CORRECTIVE", "INSPECTION"];
 const STATUSES = ["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
@@ -111,15 +112,7 @@ export default function Maintenance() {
     setErrors((e) => ({ ...e, [key]: '' }));
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-3 animate-pulse">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-14 bg-gray-100 dark:bg-zinc-800 rounded-lg" />
-        ))}
-      </div>
-    );
-  }
+  if (loading) return <TablePageSkeleton title={false} kpiCards={0} columns={5} rows={6} />;
 
   return (
     <div className="space-y-4">

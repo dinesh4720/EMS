@@ -43,7 +43,7 @@ const defaultPeriods = [
 
 export default function CalendarPage() {
   const { t } = useTranslation();
-  const { events, addEvent, deleteEvent, staff, classesWithTeachers, schoolSettings } = useApp();
+  const { events, addEvent, updateEvent, deleteEvent, staff, classesWithTeachers, schoolSettings } = useApp();
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
@@ -63,8 +63,9 @@ export default function CalendarPage() {
   const { isOpen: isDetailOpen, onOpen: onDetailOpen, onClose: onDetailClose } = useDisclosure();
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  // Add event modal
+  // Add/Edit event drawer
   const { isOpen: isAddOpen, onOpen: onAddOpen, onClose: onAddClose } = useDisclosure();
+  const [editingEvent, setEditingEvent] = useState(null);
   const [newEvent, setNewEvent] = useState({
     title: "", type: "event", startTime: "", endTime: "", allDay: false
   });
@@ -242,6 +243,7 @@ export default function CalendarPage() {
   // Handle date click for adding events
   const handleDateClick = (dateKey) => {
     setSelectedDate(dateKey);
+    setEditingEvent(null);
     setNewEvent({ title: "", type: "event", startTime: "", endTime: "", allDay: false });
     onAddOpen();
   };
@@ -264,18 +266,39 @@ export default function CalendarPage() {
   const handleAddEvent = async () => {
     if (!newEvent.title.trim() || !selectedDate) return;
 
-    await addEvent({
+    const eventData = {
       title: newEvent.title,
       date: selectedDate,
       type: newEvent.type,
       startTime: newEvent.allDay ? "" : newEvent.startTime,
       endTime: newEvent.allDay ? "" : newEvent.endTime,
       allDay: newEvent.allDay
-    });
+    };
+
+    if (editingEvent) {
+      await updateEvent(editingEvent.id, eventData);
+    } else {
+      await addEvent(eventData);
+    }
 
     onAddClose();
-    // Reset form
+    setEditingEvent(null);
     setNewEvent({ title: "", type: "event", startTime: "", endTime: "", allDay: false });
+  };
+
+  const handleEditEvent = (event) => {
+    setEditingEvent(event);
+    setSelectedDate(event.date);
+    setNewEvent({
+      title: event.title || "",
+      type: event.type || "event",
+      startTime: event.startTime || "",
+      endTime: event.endTime || "",
+      allDay: event.allDay || false,
+    });
+    onDetailClose();
+    setSelectedEvent(null);
+    onAddOpen();
   };
 
   const handleDeleteEvent = (id) => {
@@ -437,7 +460,7 @@ export default function CalendarPage() {
             ) : (
               <>
                 <p className="text-default-400">{t('pages.noEventsScheduledThisMonth')}</p>
-                <Button size="sm" variant="flat" className="mt-3" onPress={() => onAddOpen()}>
+                <Button size="sm" variant="flat" className="mt-3" onPress={() => { setEditingEvent(null); setNewEvent({ title: "", type: "event", startTime: "", endTime: "", allDay: false }); onAddOpen(); }}>
                   Add Event
                 </Button>
               </>
@@ -887,7 +910,7 @@ export default function CalendarPage() {
               Today
             </Button>
 
-            <Button size="sm" className="bg-foreground text-background font-medium" startContent={<Plus size={14} />} onPress={() => { setSelectedDate(formatDateKey(year, month, currentDate.getDate())); onAddOpen(); }}>
+            <Button size="sm" className="bg-foreground text-background font-medium" startContent={<Plus size={14} />} onPress={() => { setSelectedDate(formatDateKey(year, month, currentDate.getDate())); setEditingEvent(null); setNewEvent({ title: "", type: "event", startTime: "", endTime: "", allDay: false }); onAddOpen(); }}>
               Add Event
             </Button>
           </div>
@@ -1193,9 +1216,14 @@ export default function CalendarPage() {
           </ModalBody>
           <ModalFooter className="border-t border-default-100 pt-3">
             {!selectedEvent?.id?.toString().startsWith('apt-') && !selectedEvent?.id?.toString().startsWith('tt-') && (
-              <Button size="sm" variant="flat" color="danger" startContent={<Trash2 size={14} />} onPress={() => handleDeleteEvent(selectedEvent?.id)}>
-                Delete
-              </Button>
+              <>
+                <Button size="sm" variant="flat" color="danger" startContent={<Trash2 size={14} />} onPress={() => handleDeleteEvent(selectedEvent?.id)}>
+                  Delete
+                </Button>
+                <Button size="sm" variant="flat" startContent={<Edit3 size={14} />} onPress={() => handleEditEvent(selectedEvent)}>
+                  Edit
+                </Button>
+              </>
             )}
             <div className="flex-1" />
             <Button size="sm" variant="light" onPress={onDetailClose}>{t('pages.close2')}</Button>
@@ -1217,10 +1245,10 @@ export default function CalendarPage() {
               <div className="flex items-center justify-between px-6 py-4 border-b border-default-100">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-default-100 flex items-center justify-center">
-                    <Plus size={18} className="text-default-600" />
+                    {editingEvent ? <Edit3 size={18} className="text-default-600" /> : <Plus size={18} className="text-default-600" />}
                   </div>
                   <div>
-                    <span className="text-base font-semibold block">{t('pages.newEvent')}</span>
+                    <span className="text-base font-semibold block">{editingEvent ? t('pages.editEvent', 'Edit Event') : t('pages.newEvent')}</span>
                     {selectedDate && (
                       <span className="text-xs text-default-400">{formatDate(selectedDate)}</span>
                     )}
@@ -1386,7 +1414,7 @@ export default function CalendarPage() {
 
               {/* Drawer Footer */}
               <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-default-100 bg-background">
-                <Button variant="light" size="sm" onPress={onAddClose} className="text-default-500">
+                <Button variant="light" size="sm" onPress={() => { onAddClose(); setEditingEvent(null); }} className="text-default-500">
                   Cancel
                 </Button>
                 <Button
@@ -1394,9 +1422,9 @@ export default function CalendarPage() {
                   className="bg-foreground text-background font-medium"
                   onPress={handleAddEvent}
                   isDisabled={!newEvent.title.trim()}
-                  startContent={<Plus size={14} />}
+                  startContent={editingEvent ? <Edit3 size={14} /> : <Plus size={14} />}
                 >
-                  Create Event
+                  {editingEvent ? 'Update Event' : 'Create Event'}
                 </Button>
               </div>
             </motion.div>

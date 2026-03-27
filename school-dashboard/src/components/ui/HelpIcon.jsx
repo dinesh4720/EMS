@@ -21,16 +21,15 @@
  */
 
 import { useRef, useState } from 'react';
-import PropTypes from 'prop-types';
 
 // ── Component ──────────────────────────────────────────────────────────────────
 export default function HelpIcon({
   text,
   kbSlug,
-  placement,
-  size,
-  className,
-  trigger,
+  placement = 'top',
+  size = 'md',
+  className = '',
+  trigger = 'hover',
 }) {
   const [visible, setVisible] = useState(false);
   const containerRef = useRef(null);
@@ -170,25 +169,4 @@ export default function HelpIcon({
   );
 }
 
-HelpIcon.propTypes = {
-  /** Help text to display in the tooltip */
-  text: PropTypes.string.isRequired,
-  /** Knowledge base article slug — appended to /help/kb/{slug} */
-  kbSlug: PropTypes.string,
-  /** Tooltip placement relative to the icon */
-  placement: PropTypes.oneOf(['top', 'bottom', 'left', 'right']),
-  /** Icon size: 'sm' = 14px, 'md' = 16px (default), 'lg' = 20px */
-  size: PropTypes.oneOf(['sm', 'md', 'lg']),
-  /** Extra CSS class for the wrapper span */
-  className: PropTypes.string,
-  /** How the tooltip is triggered */
-  trigger: PropTypes.oneOf(['hover', 'click']),
-};
 
-HelpIcon.defaultProps = {
-  kbSlug: undefined,
-  placement: 'top',
-  size: 'md',
-  className: '',
-  trigger: 'hover',
-};

@@ -20,6 +20,7 @@ import Timetable from "./Timetable";
 import ClassSettingsPanel from "./ClassSettingsPanel";
 import ClassTeacherAssignmentModal from "./components/ClassTeacherAssignmentModal";
 import { useTranslation } from 'react-i18next';
+import { DetailPageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 export default function ClassDashboard() {
   const { t } = useTranslation();
@@ -101,8 +102,8 @@ export default function ClassDashboard() {
   if (!isValid) return null;
 
   if (loading && !cls) return (
-    <div className="w-full flex-1 bg-gray-50 dark:bg-zinc-950 p-6 min-h-screen flex items-center justify-center">
-      <div className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.loadingClassData')}</div>
+    <div className="w-full flex-1 bg-gray-50 dark:bg-zinc-950 p-6 min-h-screen">
+      <DetailPageSkeleton avatar={false} fields={8} />
     </div>
   );
 
@@ -150,9 +151,9 @@ export default function ClassDashboard() {
                   Grade {cls?.name || 'N/A'} - Section {cls?.section || 'N/A'}
                 </h1>
                 <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-zinc-400">
-                  <span>{cls?.strength || 0} Students</span>
+                  <span>{cls?.studentCount || 0} Students</span>
                   <span className="text-gray-300 dark:text-zinc-600">|</span>
-                  <span>{cls?.strengthLimit || 40} Capacity</span>
+                  <span>{cls?.strengthLimit?.current || 40} Capacity</span>
                 </div>
                 {cls?.classTeacherId ? (
                   <div className="flex items-center gap-2 mt-2 text-xs text-gray-400 dark:text-zinc-500">
@@ -415,7 +416,7 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
     { label: "Attendance", value: `${attendancePercentage}%`, subtext: `${todayStatus?.attendance?.present || 0} present`, icon: CheckCircle2 },
     { label: "Current Class", value: todayStatus?.currentClass?.subject || "Free", subtext: todayStatus?.currentClass?.teacher || "—", icon: BookOpen },
     { label: "Class Rating", value: (classRating?.overallRating || 0).toFixed(1), subtext: "out of 5.0", icon: Star },
-    { label: "Students", value: cls?.strength || 0, subtext: `${cls?.strengthLimit || 40} capacity`, icon: Users },
+    { label: "Students", value: cls?.studentCount || cls?.strength || 0, subtext: `${cls?.strengthLimit?.current || 40} capacity`, icon: Users },
   ];
 
   return (

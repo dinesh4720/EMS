@@ -79,6 +79,7 @@ export const studentsApi = {
   deleteDocument: (id, documentIndex) => request(`/students/${id}/documents/${documentIndex}`, { method: 'DELETE' }),
   fixDocuments: (id) => request(`/students/${id}/fix-documents`, { method: 'POST' }),
   sendReminder: (id, data) => request(`/students/${id}/send-reminder`, { method: 'POST', body: JSON.stringify(data) }),
+  promote: (id, data) => request(`/students/${id}/promote`, { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // Trash API

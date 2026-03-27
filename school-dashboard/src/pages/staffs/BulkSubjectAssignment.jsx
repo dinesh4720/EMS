@@ -530,11 +530,21 @@ export default function BulkSubjectAssignment() {
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="flex flex-col items-center gap-3">
-                <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full"></div>
-                <p className="text-sm text-gray-500">{t('pages.loadingAssignments')}</p>
-              </div>
+            <div className="space-y-3 py-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="grid grid-cols-12 gap-4 items-center px-4 py-3">
+                  <div className="col-span-3 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-zinc-700 animate-pulse" />
+                    <div className="h-4 w-24 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                  </div>
+                  <div className="col-span-2"><div className="h-4 w-16 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" /></div>
+                  <div className="col-span-5 flex gap-2">
+                    <div className="h-6 w-16 bg-gray-200 dark:bg-zinc-700 rounded-full animate-pulse" />
+                    <div className="h-6 w-20 bg-gray-200 dark:bg-zinc-700 rounded-full animate-pulse" />
+                  </div>
+                  <div className="col-span-2"><div className="h-8 w-20 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse ml-auto" /></div>
+                </div>
+              ))}
             </div>
           ) : teachers.length === 0 ? (
             <div className="text-center py-12">

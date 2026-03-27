@@ -3,6 +3,7 @@ import { Building2, DoorOpen, Users, BedDouble, TrendingUp, AlertCircle } from "
 import { hostelApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 function StatCard({ icon: Icon, label, value, sub, color }) {
   const colors = {
@@ -30,26 +31,6 @@ function StatCard({ icon: Icon, label, value, sub, color }) {
   );
 }
 
-function SkeletonDashboard() {
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 p-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-zinc-700 animate-pulse" />
-              <div className="space-y-2">
-                <div className="h-3 w-20 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-                <div className="h-6 w-12 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function HostelDashboard() {
   const { t } = useTranslation();
   const [stats, setStats] = useState(null);
@@ -71,7 +52,7 @@ export default function HostelDashboard() {
     }
   };
 
-  if (isLoading) return <SkeletonDashboard />;
+  if (isLoading) return <CardGridPageSkeleton cards={6} columns="grid-cols-2 lg:grid-cols-3" />;
 
   if (!stats) {
     return (

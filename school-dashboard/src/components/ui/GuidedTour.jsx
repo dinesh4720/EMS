@@ -20,7 +20,6 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import PropTypes from 'prop-types';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const OVERLAY_Z = 9998;
@@ -89,7 +88,7 @@ function getTooltipPosition(rect, tooltipRef, placement = 'auto') {
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────────
-export default function GuidedTour({ steps, isOpen, onClose, tourId, autoStart }) {
+export default function GuidedTour({ steps, isOpen, onClose, tourId, autoStart = false }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({});
@@ -303,35 +302,7 @@ export default function GuidedTour({ steps, isOpen, onClose, tourId, autoStart }
   );
 }
 
-GuidedTour.propTypes = {
-  /** Array of tour steps */
-  steps: PropTypes.arrayOf(
-    PropTypes.shape({
-      /** CSS selector for the target element to highlight */
-      target: PropTypes.string.isRequired,
-      /** Step heading */
-      title: PropTypes.string.isRequired,
-      /** Step body text */
-      content: PropTypes.string.isRequired,
-      /** Tooltip placement: 'auto' | 'top' | 'bottom' | 'left' | 'right' */
-      placement: PropTypes.oneOf(['auto', 'top', 'bottom', 'left', 'right']),
-    })
-  ).isRequired,
-  /** Whether the tour is visible */
-  isOpen: PropTypes.bool.isRequired,
-  /** Called when tour is closed or completed */
-  onClose: PropTypes.func,
-  /** Unique ID used to persist completion state in localStorage */
-  tourId: PropTypes.string,
-  /** If true, auto-start if not already completed */
-  autoStart: PropTypes.bool,
-};
 
-GuidedTour.defaultProps = {
-  onClose: undefined,
-  tourId: undefined,
-  autoStart: false,
-};
 
 // ── Helper hook for managing tour state ───────────────────────────────────────
 /**

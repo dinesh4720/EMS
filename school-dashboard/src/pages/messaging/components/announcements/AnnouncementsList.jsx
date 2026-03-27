@@ -36,6 +36,7 @@ import { announcementsApi } from '../../../../services/api';
 import toast from 'react-hot-toast';
 import { getDateLocale } from '../../../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import SkeletonList from '../../../../components/skeletons/SkeletonList';
 
 
 export default function AnnouncementsList({
@@ -262,22 +263,8 @@ export default function AnnouncementsList({
   );
 
   if (loading) {
-    // MF-23: skeleton loader instead of spinner
     return (
-      <div className="space-y-4 animate-pulse">
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl p-5">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-zinc-700 shrink-0" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 bg-gray-200 dark:bg-zinc-700 rounded w-3/4" />
-                <div className="h-3 bg-gray-100 dark:bg-zinc-800 rounded w-1/2" />
-                <div className="h-3 bg-gray-100 dark:bg-zinc-800 rounded w-full" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <SkeletonList items={5} avatar subtitle />
     );
   }
 

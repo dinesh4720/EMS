@@ -4,12 +4,12 @@ import {
 } from "@heroui/react";
 import {
   Clock, Users, Calendar as CalendarIcon,
-  User, BookOpen, MapPin, Phone, FileText, CheckCircle2, Trash2
+  User, BookOpen, MapPin, Phone, FileText, CheckCircle2, Trash2, Edit3
 } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { formatDateWithWeekday } from "../../../utils/dateFormatter";
 
-export default function EventDetailModal({ isOpen, onClose, event, eventTypes, onDelete, getClassName, defaultPeriods, selectedStaff, getTranslatedPeriodName }) {
+export default function EventDetailModal({ isOpen, onClose, event, eventTypes, onDelete, onEdit, getClassName, defaultPeriods, selectedStaff, getTranslatedPeriodName }) {
   const { t } = useTranslation();
 
   const formatTime = (time) => {
@@ -207,9 +207,16 @@ export default function EventDetailModal({ isOpen, onClose, event, eventTypes, o
         </ModalBody>
         <ModalFooter className="border-t border-default-100 pt-3">
           {!event?.id?.toString().startsWith('apt-') && !event?.id?.toString().startsWith('tt-') && (
-            <Button size="sm" variant="flat" color="danger" startContent={<Trash2 size={14} />} onPress={() => onDelete(event?.id)}>
-              {t('common.delete', 'Delete')}
-            </Button>
+            <>
+              <Button size="sm" variant="flat" color="danger" startContent={<Trash2 size={14} />} onPress={() => onDelete(event?.id)}>
+                {t('common.delete', 'Delete')}
+              </Button>
+              {onEdit && (
+                <Button size="sm" variant="flat" startContent={<Edit3 size={14} />} onPress={() => onEdit(event)}>
+                  {t('common.edit', 'Edit')}
+                </Button>
+              )}
+            </>
           )}
           <div className="flex-1" />
           <Button size="sm" variant="light" onPress={onClose}>{t('common.close', 'Close')}</Button>

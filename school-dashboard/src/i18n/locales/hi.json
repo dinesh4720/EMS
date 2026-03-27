@@ -725,6 +725,7 @@
       "pending": "लंबित",
       "approved": "स्वीकृत",
       "rejected": "अस्वीकृत",
+      "needs_revision": "संशोधन आवश्यक",
       "all": "सभी"
     }
   },

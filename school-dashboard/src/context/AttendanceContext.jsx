@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback } from "react";
-import { staffAttendanceApi } from "../services/api";
+import { staffAttendanceApi, attendanceApi } from "../services/api";
 import { getStoredUser } from "../utils/authSession";
 import toast from "react-hot-toast";
 
@@ -101,11 +101,34 @@ export function AttendanceProvider({ children, staff }) {
     }
   };
 
-  const markStudentAttendance = (studentId, date, status) => {
+  const markStudentAttendance = async (studentId, date, status, classId) => {
+    // Optimistic update
     setStudentAttendance((prev) => ({
       ...prev,
       [studentId]: { ...prev[studentId], [date]: { status } },
     }));
+
+    try {
+      await attendanceApi.mark({
+        studentId,
+        classId,
+        date,
+        status,
+        clientTimestamp: new Date().toISOString(),
+      });
+      toast.success("Student attendance marked");
+    } catch (err) {
+      console.error("Failed to mark student attendance on server:", err);
+      toast.error("Failed to save student attendance");
+      // Revert optimistic update on failure
+      setStudentAttendance((prev) => {
+        const updated = { ...prev };
+        if (updated[studentId]?.[date]) {
+          delete updated[studentId][date];
+        }
+        return updated;
+      });
+    }
   };
 
   const getStaffAttendanceForDate = (date) => {

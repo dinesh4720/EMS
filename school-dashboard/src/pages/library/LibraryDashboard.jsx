@@ -4,6 +4,7 @@ import { BookOpen, BookUp, AlertTriangle, Clock, BookmarkCheck, IndianRupee } fr
 import { libraryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 function StatCard({ icon: Icon, label, value, color, onClick }) {
   const colorMap = {
@@ -54,18 +55,7 @@ export default function LibraryDashboard() {
     load();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="space-y-6 animate-pulse">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-24 bg-gray-100 dark:bg-zinc-800 rounded-xl" />
-          ))}
-        </div>
-        <div className="h-64 bg-gray-100 dark:bg-zinc-800 rounded-xl" />
-      </div>
-    );
-  }
+  if (loading) return <CardGridPageSkeleton cards={6} columns="grid-cols-2 md:grid-cols-3 lg:grid-cols-6" />;
 
   if (!stats) return null;
 

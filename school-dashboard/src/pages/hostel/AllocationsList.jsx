@@ -6,27 +6,13 @@ import toast from "react-hot-toast";
 import { useHostelLookups } from "../../hooks/useHostelLookups";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 
 const INITIAL_FORM = {
   hostelId: "", roomId: "", studentId: "", bedNumber: "",
   startDate: new Date().toISOString().split("T")[0], monthlyFee: 0, notes: "",
 };
-
-function SkeletonTable() {
-  return (
-    <div className="space-y-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 p-4 flex items-center gap-4">
-          <div className="h-4 w-28 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-          <div className="h-4 w-20 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-          <div className="h-4 w-24 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse flex-1" />
-          <div className="h-4 w-16 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export default function AllocationsList() {
   const { t } = useTranslation();
@@ -143,7 +129,7 @@ export default function AllocationsList() {
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString(getDateLocale(), { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
-  if (isLoading) return <SkeletonTable />;
+  if (isLoading) return <TablePageSkeleton title={false} kpiCards={0} columns={5} rows={6} />;
 
   return (
     <div className="space-y-4">

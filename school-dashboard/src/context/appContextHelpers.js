@@ -338,7 +338,14 @@ export async function fetchRoleAwareAppData({
   return fetchOperationalAppData(user, skipCache, { includeStudents });
 }
 
-export async function fetchAppSettingsData() {
+export async function fetchAppSettingsData({ signal } = {}) {
+  const opts = signal ? { signal } : {};
+  // Re-throw AbortError so React Query recognises query cancellation
+  // instead of treating it as a successful fetch with empty data.
+  const swallow = (fallback) => (err) => {
+    if (err?.name === 'AbortError') throw err;
+    return fallback;
+  };
   const [
     schoolData,
     holidaysData,
@@ -347,12 +354,12 @@ export async function fetchAppSettingsData() {
     subjectsData,
     calendarEventsData,
   ] = await Promise.all([
-    settingsApi.getSchoolSettings().catch(() => null),
-    settingsApi.getHolidays().catch(() => []),
-    settingsApi.getLeaveTypes().catch(() => []),
-    settingsApi.getFeeHeads().catch(() => []),
-    settingsApi.getSubjects().catch(() => []),
-    calendarEventsApi.getAll().catch(() => []),
+    settingsApi.getSchoolSettings(opts).catch(swallow(null)),
+    settingsApi.getHolidays(opts).catch(swallow([])),
+    settingsApi.getLeaveTypes(opts).catch(swallow([])),
+    settingsApi.getFeeHeads(opts).catch(swallow([])),
+    settingsApi.getSubjects(opts).catch(swallow([])),
+    calendarEventsApi.getAll(opts).catch(swallow([])),
   ]);
 
   const holidayEvents = (holidaysData || []).map((holiday) => ({

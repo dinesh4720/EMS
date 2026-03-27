@@ -4,6 +4,7 @@ import { ArrowUpCircle, Save } from 'lucide-react';
 import { request } from '../../services/api';
 import toast from 'react-hot-toast';
 import HelpIcon from '../../components/ui/HelpIcon';
+import SkeletonForm from '../../components/skeletons/SkeletonForm';
 
 const FEE_OPTIONS = [
   { key: 'none', label: 'No fee requirement' },
@@ -44,10 +45,8 @@ export default function PromotionRulesSettings() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl space-y-4 animate-pulse">
-        <div className="h-6 bg-gray-100 dark:bg-zinc-800 rounded w-48" />
-        <div className="h-12 bg-gray-100 dark:bg-zinc-800 rounded" />
-        <div className="h-12 bg-gray-100 dark:bg-zinc-800 rounded" />
+      <div className="max-w-2xl">
+        <SkeletonForm fields={3} showSubmit />
       </div>
     );
   }

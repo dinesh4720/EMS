@@ -39,7 +39,8 @@ const ResultsEntryModal = ({ examId, onClose }) => {
 
         const resultsMap = {};
         (existingResults || []).forEach(r => {
-          resultsMap[r.studentId] = {
+          const normalizedId = typeof r.studentId === 'object' ? (r.studentId._id || r.studentId) : r.studentId;
+          resultsMap[normalizedId] = {
             marksObtained: r.marksObtained,
             remarks: r.remarks || ''
           };
@@ -108,6 +109,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
     }
   };
 
+  // Grade calculation must match backend computeGrade() in academics.js
   const calculateGrade = (marks) => {
     if (!exam) return '';
     const percentage = (marks / (exam.maxMarks || 100)) * 100;
@@ -115,9 +117,8 @@ const ResultsEntryModal = ({ examId, onClose }) => {
     if (percentage >= 80) return 'A';
     if (percentage >= 70) return 'B+';
     if (percentage >= 60) return 'B';
-    if (percentage >= 50) return 'C+';
-    if (percentage >= 40) return 'C';
-    if (percentage >= 35) return 'D';
+    if (percentage >= 50) return 'C';
+    if (percentage >= 40) return 'D';
     return 'F';
   };
 

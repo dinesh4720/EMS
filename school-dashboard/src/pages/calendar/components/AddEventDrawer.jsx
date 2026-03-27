@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Button, Input } from "@heroui/react";
+import { useState, useEffect } from "react";
+import { Button, Input, Textarea } from "@heroui/react";
 import {
-  Plus, Clock, Calendar as CalendarIcon, X
+  Plus, Clock, Calendar as CalendarIcon, X, Edit3, Repeat
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from 'react-i18next';
@@ -15,12 +15,33 @@ const eventTypes = {
   holiday: { label: 'Holiday', icon: null },
 };
 
-export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEvent, eventTypesConfig }) {
+export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEvent, eventTypesConfig, editingEvent }) {
   const { t } = useTranslation();
 
-  const [newEvent, setNewEvent] = useState({
-    title: "", type: "event", startTime: "", endTime: "", allDay: false
-  });
+  const defaultState = {
+    title: "", type: "event", startTime: "", endTime: "", allDay: false,
+    description: "", holidayType: "", recurrence: ""
+  };
+
+  const [newEvent, setNewEvent] = useState(defaultState);
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (editingEvent && isOpen) {
+      setNewEvent({
+        title: editingEvent.title || "",
+        type: editingEvent.type || "event",
+        startTime: editingEvent.startTime || "",
+        endTime: editingEvent.endTime || "",
+        allDay: editingEvent.allDay || false,
+        description: editingEvent.description || "",
+        holidayType: editingEvent.holidayType || "",
+        recurrence: editingEvent.recurrence?.freq || "",
+      });
+    } else if (!editingEvent && isOpen) {
+      setNewEvent(defaultState);
+    }
+  }, [editingEvent, isOpen]);
 
   const types = eventTypesConfig || eventTypes;
 
@@ -41,18 +62,31 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
   const handleAddEvent = async () => {
     if (!newEvent.title.trim() || !selectedDate) return;
 
-    await onAddEvent({
+    const payload = {
       title: newEvent.title,
       date: selectedDate,
       type: newEvent.type,
       startTime: newEvent.allDay ? "" : newEvent.startTime,
       endTime: newEvent.allDay ? "" : newEvent.endTime,
-      allDay: newEvent.allDay
-    });
+      allDay: newEvent.allDay,
+      description: newEvent.description || undefined,
+    };
+
+    // Include holidayType only for holiday events
+    if (newEvent.type === 'holiday' && newEvent.holidayType) {
+      payload.holidayType = newEvent.holidayType;
+    }
+
+    // Include recurrence if set
+    if (newEvent.recurrence) {
+      payload.recurrence = { freq: newEvent.recurrence };
+    }
+
+    await onAddEvent(payload);
 
     onClose();
     // Reset form
-    setNewEvent({ title: "", type: "event", startTime: "", endTime: "", allDay: false });
+    setNewEvent(defaultState);
   };
 
   return (
@@ -69,10 +103,10 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
             <div className="flex items-center justify-between px-6 py-4 border-b border-default-100">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-default-100 flex items-center justify-center">
-                  <Plus size={18} className="text-default-600" />
+                  {editingEvent ? <Edit3 size={18} className="text-default-600" /> : <Plus size={18} className="text-default-600" />}
                 </div>
                 <div>
-                  <span className="text-base font-semibold block">{t('calendar.addEvent.title', 'New Event')}</span>
+                  <span className="text-base font-semibold block">{editingEvent ? t('calendar.editEvent.title', 'Edit Event') : t('calendar.addEvent.title', 'New Event')}</span>
                   {selectedDate && (
                     <span className="text-xs text-default-400">{formatDate(selectedDate)}</span>
                   )}
@@ -133,6 +167,76 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                           </span>
                         </button>
                       ))}
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="text-xs font-medium text-default-500 mb-1.5 block">{t('calendar.addEvent.descriptionLabel', 'Description')}</label>
+                  <Textarea
+                    placeholder={t('calendar.addEvent.descriptionPlaceholder', 'Add event details or notes...')}
+                    variant="bordered"
+                    size="sm"
+                    minRows={2}
+                    maxRows={4}
+                    value={newEvent.description}
+                    onValueChange={(v) => setNewEvent({ ...newEvent, description: v })}
+                    classNames={{
+                      inputWrapper: "border-default-200 hover:border-default-400 focus-within:border-default-400",
+                      input: "text-sm"
+                    }}
+                  />
+                </div>
+
+                {/* Holiday Type - only shown for holiday events */}
+                {newEvent.type === 'holiday' && (
+                  <div>
+                    <label className="text-xs font-medium text-default-500 mb-2 block">{t('calendar.addEvent.holidayTypeLabel', 'Holiday Type')}</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {['National', 'Regional', 'School'].map((ht) => (
+                        <button
+                          key={ht}
+                          onClick={() => setNewEvent({ ...newEvent, holidayType: ht })}
+                          className={`p-2.5 rounded-lg border transition-all text-center text-sm font-medium ${
+                            newEvent.holidayType === ht
+                              ? 'border-foreground bg-foreground/[0.03] text-foreground'
+                              : 'border-default-200 hover:border-default-300 bg-background text-default-600'
+                          }`}
+                        >
+                          {ht}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Recurrence */}
+                <div>
+                  <label className="text-xs font-medium text-default-500 mb-2 block">
+                    <span className="flex items-center gap-1.5">
+                      <Repeat size={12} />
+                      {t('calendar.addEvent.recurrenceLabel', 'Recurrence')}
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { key: '', label: t('calendar.addEvent.noRepeat', 'No Repeat') },
+                      { key: 'daily', label: t('calendar.addEvent.daily', 'Daily') },
+                      { key: 'weekly', label: t('calendar.addEvent.weekly', 'Weekly') },
+                      { key: 'monthly', label: t('calendar.addEvent.monthly', 'Monthly') },
+                    ].map(({ key, label }) => (
+                      <button
+                        key={key}
+                        onClick={() => setNewEvent({ ...newEvent, recurrence: key })}
+                        className={`p-2.5 rounded-lg border transition-all text-center text-sm font-medium ${
+                          newEvent.recurrence === key
+                            ? 'border-foreground bg-foreground/[0.03] text-foreground'
+                            : 'border-default-200 hover:border-default-300 bg-background text-default-600'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -245,9 +349,9 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                 className="bg-foreground text-background font-medium"
                 onPress={handleAddEvent}
                 isDisabled={!newEvent.title.trim()}
-                startContent={<Plus size={14} />}
+                startContent={editingEvent ? <Edit3 size={14} /> : <Plus size={14} />}
               >
-                {t('calendar.addEvent.createEvent', 'Create Event')}
+                {editingEvent ? t('calendar.editEvent.updateEvent', 'Update Event') : t('calendar.addEvent.createEvent', 'Create Event')}
               </Button>
             </div>
           </motion.div>

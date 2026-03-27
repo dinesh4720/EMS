@@ -100,6 +100,8 @@ export const classesEnhancedApi = {
 export const attendanceApi = {
   mark: (data) => request('/attendance', { method: 'POST', body: JSON.stringify(data) }),
   markBulk: (data) => request('/attendance/bulk', { method: 'POST', body: JSON.stringify(data) }),
+  /** Fetch today's attendance snapshot for all classes in a single request. */
+  getTodaySnapshot: () => request('/attendance/today-snapshot'),
   getByClassDate: (classId, date) => request(`/attendance/${classId}/${date}`),
   getStudentAttendance: (studentId, startDate, endDate) => {
     const params = new URLSearchParams();
@@ -108,6 +110,7 @@ export const attendanceApi = {
     const queryString = params.toString();
     return request(`/attendance/student/${studentId}${queryString ? `?${queryString}` : ''}`);
   },
+  notifyParents: (data) => request('/attendance/notify-parents', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // Staff Attendance API
@@ -139,7 +142,7 @@ export const timetableApi = {
 
   create: (data) => request('/timetable', { method: 'POST', body: JSON.stringify(data) }),
   update: (classId, data) => request(`/timetable/${classId}`, { method: 'PUT', body: JSON.stringify(data) }),
-  createOrUpdate: (data) => request('/timetable', { method: 'POST', body: JSON.stringify(data) }),
+  createOrUpdate: (data) => request(`/timetable/${data.classId}`, { method: 'PUT', body: JSON.stringify(data) }),
 
   // Generate/regenerate timetables for all classes
   generateAll: (data) => request('/timetable/generate-all', { method: 'POST', body: JSON.stringify(data) }),
@@ -174,9 +177,7 @@ export const timetableApi = {
   updatePeriods: (classId, data) => request(`/timetable/${classId}/periods`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (classId, academicYear) => request(`/timetable/${classId}${academicYear ? `?academicYear=${academicYear}` : ''}`, { method: 'DELETE' }),
 
-  // Cache management
-  clearCache: (pattern) => request('/timetable/cache/clear', { method: 'POST', body: JSON.stringify({ pattern }) }),
-  getCacheStats: () => request('/timetable/cache/stats'),
+  // Cache management (removed dead endpoints - no backend handlers exist)
 };
 
 // Teacher Assignments API

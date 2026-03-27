@@ -1,30 +1,86 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardBody, CardHeader, Button, Input, Switch, Divider, Select, SelectItem, Spinner } from "@heroui/react";
-import { Save } from "lucide-react";
+import { Save, AlertCircle } from "lucide-react";
 import { useTranslation } from 'react-i18next';
+import { settingsApi } from "../../services/api";
+
+const DEFAULT_RULES = {
+  defaulterThreshold: 75,
+  lockTime: "16:00",
+  allowEdit: true,
+  editWindow: 24,
+  notifyAbsent: true,
+  notifyDefaulter: true,
+};
 
 export default function AttendanceRules() {
   const { t } = useTranslation();
-  const [rules, setRules] = useState({
-    defaulterThreshold: 75,
-    lockTime: "16:00",
-    allowEdit: true,
-    editWindow: 24,
-    notifyAbsent: true,
-    notifyDefaulter: true
-  });
+  const [rules, setRules] = useState(DEFAULT_RULES);
   const [editingSection, setEditingSection] = useState(null);
-  const [tempRules, setTempRules] = useState(rules); // Temporary state for editing
+  const [tempRules, setTempRules] = useState(DEFAULT_RULES);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [saveMessage, setSaveMessage] = useState(null);
 
-  // Mock save with delay
-  const handleSave = () => {
+  // Fetch attendance rules from backend on mount
+  const fetchRules = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await settingsApi.getAttendanceRules();
+      const merged = { ...DEFAULT_RULES, ...data };
+      setRules(merged);
+      setTempRules(merged);
+    } catch (err) {
+      console.error('Failed to fetch attendance rules:', err);
+      setError('Failed to load attendance rules. Using defaults.');
+      // Keep defaults on error
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRules();
+  }, [fetchRules]);
+
+  // Save to backend
+  const handleSave = async () => {
     setSaving(true);
-    setTimeout(() => {
-      setRules(tempRules); // Commit changes
-      setSaving(false);
+    setSaveMessage(null);
+    try {
+      // Build only the fields relevant to the editing section
+      let payload = {};
+      if (editingSection === 'defaulter') {
+        payload = { defaulterThreshold: Number(tempRules.defaulterThreshold) };
+      } else if (editingSection === 'lock') {
+        payload = {
+          lockTime: tempRules.lockTime,
+          allowEdit: tempRules.allowEdit,
+          editWindow: Number(tempRules.editWindow),
+        };
+      } else if (editingSection === 'notifications') {
+        payload = {
+          notifyAbsent: tempRules.notifyAbsent,
+          notifyDefaulter: tempRules.notifyDefaulter,
+        };
+      }
+
+      const updated = await settingsApi.updateAttendanceRules(payload);
+      const merged = { ...DEFAULT_RULES, ...updated };
+      setRules(merged);
+      setTempRules(merged);
+      setSaveMessage({ type: 'success', text: 'Settings saved successfully' });
       setEditingSection(null);
-    }, 800);
+      setTimeout(() => setSaveMessage(null), 3000);
+    } catch (err) {
+      console.error('Failed to save attendance rules:', err);
+      setSaveMessage({ type: 'error', text: err.message || 'Failed to save settings' });
+      setTimeout(() => setSaveMessage(null), 5000);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -48,15 +104,37 @@ export default function AttendanceRules() {
           </Button>
         </div>
       ) : (
-        <Button size="sm" variant="light" color="primary" onPress={() => { setTempRules(rules); setEditingSection(section); }} isDisabled={editingSection !== null} className="h-8 min-w-0 px-2 text-xs">
+        <Button size="sm" variant="light" color="primary" onPress={() => { setTempRules(rules); setEditingSection(section); }} isDisabled={editingSection !== null || loading} className="h-8 min-w-0 px-2 text-xs">
           Edit
         </Button>
       )}
     </div>
   );
 
+  if (loading) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center py-12 space-y-3">
+        <Spinner size="lg" color="primary" />
+        <p className="text-sm text-default-500">Loading attendance rules...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full flex flex-col space-y-4">
+
+      {error && (
+        <div className="flex items-center gap-2 p-3 bg-warning-50 border border-warning-200 rounded-lg">
+          <AlertCircle size={16} className="text-warning-600" />
+          <span className="text-sm text-warning-700">{error}</span>
+        </div>
+      )}
+
+      {saveMessage && (
+        <div className={`flex items-center gap-2 p-3 rounded-lg border ${saveMessage.type === 'success' ? 'bg-success-50 border-success-200' : 'bg-danger-50 border-danger-200'}`}>
+          <span className={`text-sm font-medium ${saveMessage.type === 'success' ? 'text-success-700' : 'text-danger-700'}`}>{saveMessage.text}</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'defaulter' ? 'border-primary ring-1 ring-primary' : 'border-default-200'}`}>

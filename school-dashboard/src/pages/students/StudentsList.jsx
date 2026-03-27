@@ -72,18 +72,66 @@ export default function StudentsList() {
 
   if (contextLoading || listLoading) {
     return (
-      <div className="w-full">
-        <SkeletonTable
-          rows={10}
-          columns={[
-            { key: "student",    label: "STUDENT",     width: 240 },
-            { key: "class",      label: "CLASS",       width: 100 },
-            { key: "parent",     label: "PARENT INFO", width: 180 },
-            { key: "attendance", label: "ATTENDANCE",  width: 110 },
-            { key: "fee",        label: "FEE STATUS",  width: 100 },
-            { key: "actions",    label: "ACTIONS",     width: 60  },
-          ]}
-        />
+      <div className="w-full space-y-4">
+        {/* Toolbar skeleton */}
+        <div className="flex items-center gap-3 px-2">
+          <div className="h-8 w-24 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
+          <div className="h-9 flex-1 max-w-xs bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
+          <div className="h-8 w-20 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
+          <div className="h-8 w-20 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
+        </div>
+        {/* Table skeleton */}
+        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center gap-4 px-4 py-3 border-b border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900">
+            <div className="w-5 h-5 rounded bg-gray-200 dark:bg-zinc-700 animate-pulse shrink-0" />
+            <div className="h-3 w-16 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" style={{ minWidth: 240 }} />
+            <div className="h-3 w-10 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" style={{ minWidth: 100 }} />
+            <div className="h-3 w-20 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" style={{ minWidth: 180 }} />
+            <div className="h-3 w-20 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" style={{ minWidth: 110 }} />
+            <div className="h-3 w-16 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" style={{ minWidth: 100 }} />
+            <div className="h-3 w-8 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" style={{ minWidth: 60 }} />
+          </div>
+          {/* Rows */}
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-gray-100 dark:border-zinc-800 last:border-b-0">
+              {/* Checkbox */}
+              <div className="w-5 h-5 rounded bg-gray-200 dark:bg-zinc-700 animate-pulse shrink-0" />
+              {/* Student: avatar + name + roll */}
+              <div className="flex items-center gap-3" style={{ minWidth: 240 }}>
+                <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-zinc-700 animate-pulse shrink-0" />
+                <div className="space-y-1.5">
+                  <div className="h-3.5 rounded animate-pulse bg-gray-200 dark:bg-zinc-700" style={{ width: `${100 + (i % 3) * 30}px` }} />
+                  <div className="h-2.5 w-16 rounded animate-pulse bg-gray-100 dark:bg-zinc-800" />
+                </div>
+              </div>
+              {/* Class */}
+              <div style={{ minWidth: 100 }}>
+                <div className="h-3.5 w-14 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+              </div>
+              {/* Parent info */}
+              <div className="space-y-1.5" style={{ minWidth: 180 }}>
+                <div className="h-3.5 rounded animate-pulse bg-gray-200 dark:bg-zinc-700" style={{ width: `${90 + (i % 4) * 20}px` }} />
+                <div className="h-2.5 w-24 rounded animate-pulse bg-gray-100 dark:bg-zinc-800" />
+              </div>
+              {/* Attendance bar */}
+              <div className="space-y-1" style={{ minWidth: 110 }}>
+                <div className="h-2 w-full bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-gray-200 dark:bg-zinc-700 rounded-full animate-pulse" style={{ width: `${50 + (i % 5) * 10}%` }} />
+                </div>
+                <div className="h-2.5 w-8 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+              </div>
+              {/* Fee status chip */}
+              <div style={{ minWidth: 100 }}>
+                <div className="h-6 w-16 bg-gray-200 dark:bg-zinc-700 rounded-full animate-pulse" />
+              </div>
+              {/* Actions */}
+              <div style={{ minWidth: 60 }}>
+                <div className="h-7 w-7 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

@@ -40,6 +40,7 @@ const ResultsEntry = ({ standalone = false }) => {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [loadedAt, setLoadedAt] = useState(null);
 
   // For standalone mode, fetch all exams first
   useEffect(() => {
@@ -91,6 +92,7 @@ const ResultsEntry = ({ standalone = false }) => {
       }
 
       setExam(examData);
+      setLoadedAt(new Date().toISOString());
 
       // Fetch students and results in parallel once we have classId
       if (examData?.classId) {
@@ -176,7 +178,7 @@ const ResultsEntry = ({ standalone = false }) => {
         };
       });
 
-      await resultsApi.bulkCreate(resultsArray, currentExamId, exam.classId);
+      await resultsApi.bulkCreate(resultsArray, currentExamId, exam.classId, loadedAt);
 
       toast.success(t('toast.success.resultsSavedSuccessfully'));
 
@@ -191,6 +193,7 @@ const ResultsEntry = ({ standalone = false }) => {
     }
   };
 
+  // Grade calculation must match backend computeGrade() in academics.js
   const calculateGrade = (marks) => {
     if (!exam) return '';
     const percentage = (marks / exam.maxMarks) * 100;
@@ -198,9 +201,8 @@ const ResultsEntry = ({ standalone = false }) => {
     if (percentage >= 80) return 'A';
     if (percentage >= 70) return 'B+';
     if (percentage >= 60) return 'B';
-    if (percentage >= 50) return 'C+';
-    if (percentage >= 40) return 'C';
-    if (percentage >= 35) return 'D';
+    if (percentage >= 50) return 'C';
+    if (percentage >= 40) return 'D';
     return 'F';
   };
 

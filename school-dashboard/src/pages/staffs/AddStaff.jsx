@@ -46,12 +46,12 @@ const fallbackClassOptions = Array.from({ length: 12 }, (_, i) => i + 1).flatMap
 
 const emptyForm = {
   // Personal Details
-  fullName: "", dob: "", picture: null, mobile: "", isWhatsapp: false,
+  name: "", dob: "", picture: null, phone: "", isWhatsapp: false,
   whatsappNumber: "", email: "", fatherName: "", bloodGroup: "", gender: "Male", maritalStatus: "",
-  employmentType: "Full-time", fatherMotherNumber: "", idDocuments: [], customDocuments: [],
+  employmentType: "Full-time", idDocuments: [], customDocuments: [],
   emergencyContacts: [{ name: "", relationship: "", phone: "" }], address: "",
   // Qualifications
-  professionalQualifications: [], totalExperience: "", previousOrganization: "", roleInOrganization: "", qualificationDocs: [],
+  professionalQualifications: [], totalExperience: "", experience: 0, previousOrganization: "", roleInOrganization: "", qualificationDocs: [],
   // Staff Info
   staffNumber: "", staffType: [], department: "", assignedClasses: [], isClassTeacher: false, classTeacherOf: "",
   // Salary Details
@@ -105,10 +105,10 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       // EDIT MODE: Populate form with existing staff data
       setFormData({
         // Personal Details
-        fullName: editingStaff.name || "",
+        name: editingStaff.name || "",
         dob: editingStaff.dob || "",
         picture: editingStaff.picture || null,
-        mobile: editingStaff.phone || "",
+        phone: editingStaff.phone || "",
         isWhatsapp: editingStaff.whatsappNumber === editingStaff.phone,
         whatsappNumber: editingStaff.whatsappNumber || "",
         email: editingStaff.email || "",
@@ -117,7 +117,6 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         gender: editingStaff.gender || "Male",
         maritalStatus: editingStaff.maritalStatus || "",
         employmentType: editingStaff.employmentType || "Full-time",
-        fatherMotherNumber: editingStaff.emergencyPhone || "",
         idDocuments: editingStaff.idDocuments || [],
         customDocuments: editingStaff.customDocuments || [],
         emergencyContacts: editingStaff.emergencyContacts ? editingStaff.emergencyContacts : [{ name: "", relationship: "", phone: "" }],
@@ -125,14 +124,18 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         // Qualifications
         professionalQualifications: editingStaff.professionalQualifications || [],
         totalExperience: editingStaff.totalExperience || "",
+        experience: editingStaff.experience ?? (parseInt(editingStaff.totalExperience, 10) || 0),
         previousOrganization: editingStaff.previousOrganization || "",
         roleInOrganization: editingStaff.roleInOrganization || "",
         qualificationDocs: editingStaff.qualificationDocs || [],
         // Staff Info
         staffNumber: editingStaff.staffNumber || editingStaff.code || "",
-        staffType: Array.isArray(editingStaff.staffType)
-          ? editingStaff.staffType
-          : (editingStaff.staffType ? [editingStaff.staffType] : (editingStaff.role ? (Array.isArray(editingStaff.role) ? editingStaff.role : [editingStaff.role]) : [])),
+        // Prefer `role` (canonical) over `staffType` (deprecated) to avoid stale data on re-edit
+        staffType: (() => {
+          const source = editingStaff.role || editingStaff.staffType;
+          if (!source) return [];
+          return Array.isArray(source) ? source : [source];
+        })(),
         department: editingStaff.department || "",
         assignedClasses: editingStaff.assignedClasses || [],
         isClassTeacher: editingStaff.isClassTeacher || false,
@@ -191,17 +194,17 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
   const validateSingleField = (field, value) => {
     let newError = null;
     switch (field) {
-      case "fullName":
+      case "name":
         if (!value.trim()) newError = "Required";
         break;
-      case "mobile":
+      case "phone":
         if (!value.trim()) newError = "Required";
         else if (!/^\d{10}$/.test(value)) newError = "Invalid";
         else {
           // BUG-19: check for duplicate phone among existing staff
           const editingId = editingStaff?._id || editingStaff?.id;
           const phoneDupe = Array.isArray(allStaff) && allStaff.find(s =>
-            s.mobile && s.mobile === value.trim() &&
+            s.phone && s.phone === value.trim() &&
             (s._id || s.id) !== editingId
           );
           if (phoneDupe) {
@@ -317,7 +320,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
     const newErrors = {};
     if (stepNum === 1) {
       // Personal Info validation
-      if (!formData.fullName.trim()) newErrors.fullName = "Required";
+      if (!formData.name.trim()) newErrors.name = "Required";
       if (!formData.dob) {
         newErrors.dob = "Required";
       } else {
@@ -329,8 +332,8 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       }
       if (!formData.gender) newErrors.gender = "Required";
       if (!formData.fatherName.trim()) newErrors.fatherName = "Required";
-      if (!formData.mobile.trim()) newErrors.mobile = "Required";
-      else if (!/^\d{10}$/.test(formData.mobile)) newErrors.mobile = "Invalid";
+      if (!formData.phone.trim()) newErrors.phone = "Required";
+      else if (!/^\d{10}$/.test(formData.phone)) newErrors.phone = "Invalid";
       if (formData.email.trim()) {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
           newErrors.email = "Invalid email";
@@ -529,7 +532,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       // If it's a new staff creation (not editing), show class/subject management modal
       if (!editingStaff && savedStaff) {
         setCreatedStaffId(savedStaff._id || savedStaff.id);
-        setCreatedStaffName(staffData.fullName);
+        setCreatedStaffName(staffData.name);
         setShowClassSubjectModal(true);
       }
 
@@ -639,7 +642,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         <div className="relative group">
           <Avatar
             src={formData.picture ? (formData.picture instanceof File ? picturePreviewUrl : formData.picture) : undefined}
-            name={!formData.picture ? (formData.fullName?.[0] || "") : undefined}
+            name={!formData.picture ? (formData.name?.[0] || "") : undefined}
             className="w-24 h-24 text-3xl"
             isBordered
             radius="full"
@@ -713,10 +716,10 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             label={t('pages.fullName1')}
             labelPlacement="outside"
             placeholder={t('pages.enterFullName')}
-            value={formData.fullName}
-            onValueChange={v => updateField("fullName", v)}
-            isInvalid={!!errors.fullName}
-            errorMessage={errors.fullName}
+            value={formData.name}
+            onValueChange={v => updateField("name", v)}
+            isInvalid={!!errors.name}
+            errorMessage={errors.name}
             variant="bordered"
             radius="sm"
             isRequired
@@ -842,15 +845,15 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             labelPlacement="outside"
             startContent={<span className="text-default-400 text-xs">+91</span>}
             placeholder="10-digit number"
-            value={formData.mobile}
+            value={formData.phone}
             onValueChange={v => {
-              if (v.length <= 10 && /^\d*$/.test(v)) updateField("mobile", v);
+              if (v.length <= 10 && /^\d*$/.test(v)) updateField("phone", v);
             }}
             variant="bordered"
             radius="sm"
             isRequired
-            isInvalid={!!errors.mobile}
-            errorMessage={errors.mobile}
+            isInvalid={!!errors.phone}
+            errorMessage={errors.phone}
             classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
           />
 
@@ -873,7 +876,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
               isSelected={formData.isWhatsapp}
               onValueChange={v => {
                 updateField("isWhatsapp", v);
-                if (v) updateField("whatsappNumber", formData.mobile);
+                if (v) updateField("whatsappNumber", formData.phone);
               }}
             >
               Same as mobile
@@ -1085,7 +1088,8 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
                 <Select
                   className="mt-2"
                   label={t('pages.selectClass1')}
-                  placeholder={loadingClasses ? "Loading classes..." : "Select class"}
+                  placeholder="Select class"
+                  isLoading={loadingClasses}
                   selectedKeys={formData.classTeacherOf ? [formData.classTeacherOf] : []}
                   onSelectionChange={(keys) => updateField("classTeacherOf", Array.from(keys)[0])}
                   variant="bordered"
@@ -1106,7 +1110,8 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
               <label className="text-sm font-semibold text-default-900">{t('pages.assignClassesForSubjectTeaching')}</label>
               <Select
                 selectionMode="multiple"
-                placeholder={loadingClasses ? "Loading classes..." : "Select classes"}
+                placeholder="Select classes"
+                isLoading={loadingClasses}
                 selectedKeys={new Set(formData.assignedClasses)}
                 onSelectionChange={(keys) => updateField("assignedClasses", Array.from(keys))}
                 variant="bordered"

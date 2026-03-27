@@ -36,7 +36,7 @@ export function useMessageActions({ user, chatService, messages, setMessages, se
             newReactions.push({
               emoji,
               userId: user.id,
-              userModel: 'Staff',
+              userModel: user.role === 'parent' ? 'Parent' : user.role === 'student' ? 'Student' : 'Staff',
               createdAt: new Date()
             });
           }

@@ -58,7 +58,7 @@ export default function AnnouncementForm({
     setFormData(prev => {
       const exists = prev.recipients.find(r => r.type === type);
       if (type === 'all') {
-        return [{ type: 'all' }];
+        return { ...prev, recipients: [{ type: 'all' }] };
       }
       const newRecipients = prev.recipients.filter(r => r.type !== 'all');
       if (exists) {
@@ -151,7 +151,6 @@ export default function AnnouncementForm({
       const payload = {
         ...formData,
         status: schedule ? 'scheduled' : 'draft',
-        sentBy: 'current_user_id', // Replace with actual user ID
       };
 
       if (schedule && formData.scheduledFor) {
@@ -196,7 +195,6 @@ export default function AnnouncementForm({
         const created = await announcementsApi.create({
           ...formData,
           status: 'sent',
-          sentBy: 'current_user_id',
         });
         await announcementsApi.send(created._id);
       }

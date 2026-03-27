@@ -87,25 +87,25 @@ describe('classesApi — helper endpoints', () => {
 });
 
 describe('classesApi — class settings', () => {
-  it('getSettings calls GET /class-settings/:id', () => {
+  it('getSettings calls GET /classes/:id/settings', () => {
     classesApi.getSettings('cls006');
-    expect(request).toHaveBeenCalledWith('/class-settings/cls006');
+    expect(request).toHaveBeenCalledWith('/classes/cls006/settings');
   });
 
-  it('updateTag calls PUT /class-settings/:id/tag with classTag in body', async () => {
+  it('updateTag calls PUT /classes/:id/tag with classTag in body', async () => {
     await classesApi.updateTag('cls007', 'Science');
-    expect(request).toHaveBeenCalledWith('/class-settings/cls007/tag', {
+    expect(request).toHaveBeenCalledWith('/classes/cls007/tag', {
       method: 'PUT',
       body: JSON.stringify({ classTag: 'Science' }),
     });
   });
 
-  it('updateSubjects calls PUT /class-settings/:id/subjects with subjects array', async () => {
+  it('updateSubjects calls PUT /classes/:id/subjects with assignedSubjects array', async () => {
     const subjects = ['Math', 'English'];
     await classesApi.updateSubjects('cls008', subjects);
-    expect(request).toHaveBeenCalledWith('/class-settings/cls008/subjects', {
+    expect(request).toHaveBeenCalledWith('/classes/cls008/subjects', {
       method: 'PUT',
-      body: JSON.stringify({ subjects }),
+      body: JSON.stringify({ assignedSubjects: subjects }),
     });
   });
 
@@ -264,6 +264,11 @@ describe('attendanceApi', () => {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  });
+
+  it('getTodaySnapshot calls GET /attendance/today-snapshot', () => {
+    attendanceApi.getTodaySnapshot();
+    expect(request).toHaveBeenCalledWith('/attendance/today-snapshot');
   });
 
   it('getByClassDate calls GET /attendance/:classId/:date', () => {

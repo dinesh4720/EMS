@@ -19,6 +19,8 @@ export default function CommunicationSettings() {
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [templates, setTemplates] = useState([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
 
   // Track editable draft values
   const [smsDraft, setSmsDraft] = useState(DEFAULT_SMS);
@@ -41,22 +43,47 @@ export default function CommunicationSettings() {
       .finally(() => setLoadingSettings(false));
   }, []);
 
-  const templates = [
-    { id: 1, name: "Fee Reminder", type: "SMS", variables: "{student}, {amount}, {date}" },
-    { id: 2, name: "Absence Notification", type: "SMS", variables: "{student}, {date}" },
-    { id: 3, name: "PTM Reminder", type: "Email", variables: "{parent}, {date}, {time}" },
-    { id: 4, name: "Welcome Message", type: "SMS", variables: "{student}, {class}" },
-    { id: 5, name: "Exam Notification", type: "SMS", variables: "{student}, {exam}, {date}" },
-    { id: 6, name: "Result Published", type: "Email", variables: "{student}, {class}, {result}" },
-  ];
+  // Fetch email + SMS templates from backend
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingTemplates(true);
+    Promise.all([
+      settingsApi.getEmailTemplates().catch(() => []),
+      settingsApi.getSmsTemplates().catch(() => []),
+    ])
+      .then(([emailTemplates, smsTemplates]) => {
+        if (cancelled) return;
+        const merged = [
+          ...(Array.isArray(emailTemplates) ? emailTemplates : []).map((t) => ({
+            id: t._id,
+            name: t.name,
+            type: 'Email',
+            variables: (t.variables || []).map((v) => `{${v}}`).join(', '),
+          })),
+          ...(Array.isArray(smsTemplates) ? smsTemplates : []).map((t) => ({
+            id: t._id,
+            name: t.name,
+            type: 'SMS',
+            variables: (t.variables || []).map((v) => `{${v}}`).join(', '),
+          })),
+        ];
+        setTemplates(merged);
+      })
+      .catch((err) => {
+        console.error('Failed to load templates:', err);
+        if (!cancelled) toast.error(t('toast.error.failedToLoadTemplates', 'Failed to load templates'));
+      })
+      .finally(() => { if (!cancelled) setLoadingTemplates(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   const filteredTemplates = useMemo(() => {
-    return templates.filter(t => {
-      const matchesSearch = t.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesType = typeFilter === "all" || t.type.toLowerCase() === typeFilter.toLowerCase();
+    return templates.filter(tmpl => {
+      const matchesSearch = tmpl.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesType = typeFilter === "all" || tmpl.type.toLowerCase() === typeFilter.toLowerCase();
       return matchesSearch && matchesType;
     });
-  }, [searchQuery, typeFilter]);
+  }, [templates, searchQuery, typeFilter]);
 
   const ITEMS_PER_LOAD = 10;
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
@@ -463,29 +490,33 @@ export default function CommunicationSettings() {
                 <TableColumn scope="col">{t('pages.vARIABLES')}</TableColumn>
                 <TableColumn align="end" scope="col">{t('pages.aCTIONS')}</TableColumn>
               </TableHeader>
-              <TableBody emptyContent={
-                <div className="text-center py-12">
-                  <p className="text-default-400 text-sm">{t('pages.noTemplatesFoundMatchingYourSearch')}</p>
-                </div>
-              }>
-                {visibleTemplates.map((t) => (
-                  <TableRow key={t.id}>
+              <TableBody
+                isLoading={loadingTemplates}
+                loadingContent={<Spinner size="sm" color="primary" />}
+                emptyContent={
+                  <div className="text-center py-12">
+                    <p className="text-default-400 text-sm">{t('pages.noTemplatesFoundMatchingYourSearch')}</p>
+                  </div>
+                }
+              >
+                {visibleTemplates.map((tmpl) => (
+                  <TableRow key={tmpl.id}>
                     <TableCell>
-                      <span className="text-default-900 font-medium text-sm">{t.name}</span>
+                      <span className="text-default-900 font-medium text-sm">{tmpl.name}</span>
                     </TableCell>
                     <TableCell>
                       <Chip
                         size="sm"
                         variant="flat"
-                        color={t.type === "SMS" ? "primary" : "secondary"}
+                        color={tmpl.type === "SMS" ? "primary" : "secondary"}
                         classNames={{ base: "h-6", content: "text-xs font-medium" }}
                       >
-                        {t.type}
+                        {tmpl.type}
                       </Chip>
                     </TableCell>
                     <TableCell>
                       <span className="text-xs text-default-600 font-mono bg-default-50 px-2 py-1 rounded-md border border-default-200 inline-block max-w-[200px] truncate">
-                        {t.variables}
+                        {tmpl.variables}
                       </span>
                     </TableCell>
                     <TableCell>

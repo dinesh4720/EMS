@@ -153,9 +153,19 @@ export default function StudentFeeSummary({
         </div>
 
         {loadingFeeStructure ? (
-          <div className="p-6 text-center border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900">
-            <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-gray-600 mx-auto mb-2"></div>
-            <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.loadingFeeStructure')}</p>
+          <div className="border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 overflow-hidden">
+            <div className="flex gap-4 px-4 py-3 border-b border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex-1"><div className="h-3 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" /></div>
+              ))}
+            </div>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex gap-4 px-4 py-3 border-b border-gray-100 dark:border-zinc-800 last:border-b-0">
+                {Array.from({ length: 4 }).map((_, j) => (
+                  <div key={j} className="flex-1"><div className="h-4 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" /></div>
+                ))}
+              </div>
+            ))}
           </div>
         ) : studentFeeStructure?.feeHeads?.length > 0 ? (
           <div className="border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 overflow-hidden">

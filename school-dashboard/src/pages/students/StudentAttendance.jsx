@@ -41,10 +41,11 @@ const StudentAttendance = memo(function StudentAttendance() {
 
             try {
                 if (classFilter !== 'all') {
-                    // Fetch actual attendance for this class+date when a class is selected
-                    const classObj = students.find(s => s.class === classFilter);
-                    if (classObj?.classId) {
-                        const data = await request(`/attendance/${classObj.classId}/${selectedDate}`, { signal: controller.signal });
+                    // Fetch attendance for this class+date — resolve classId from students list
+                    const classObj = students.find(s => s.classId === classFilter || s.class === classFilter);
+                    const targetClassId = classObj?.classId || classFilter;
+                    if (targetClassId) {
+                        const data = await request(`/attendance/${encodeURIComponent(targetClassId)}/${encodeURIComponent(selectedDate)}`, { signal: controller.signal });
                         if (!controller.signal.aborted && data) {
                             Object.entries(data).forEach(([studentId, record]) => {
                                 if (initial[studentId] !== undefined) {
@@ -73,6 +74,14 @@ const StudentAttendance = memo(function StudentAttendance() {
     }, [students, selectedDate, classFilter]);
 
     const uniqueClasses = useMemo(() => [...new Set(students.map(s => s.class))].sort(), [students]);
+
+    // Auto-select the first available class so the default view isn't empty
+    useEffect(() => {
+        if (classFilter === 'all' && uniqueClasses.length > 0 && !initializedRef.current) {
+            initializedRef.current = true;
+            setClassFilter(uniqueClasses[0]);
+        }
+    }, [uniqueClasses, classFilter]);
 
     const filteredStudents = useMemo(() => {
         let filtered = students;
@@ -138,15 +147,33 @@ const StudentAttendance = memo(function StudentAttendance() {
     };
 
     const handleSaveAttendance = async () => {
+        // classId is required by backend for bulk attendance
+        const classStudent = filteredStudents.find(s => s.classId);
+        if (!classStudent?.classId) {
+            toast.error('Please select a class before saving attendance');
+            return;
+        }
+
         try {
-            const attendanceData = filteredStudents.map(s => ({
-                studentId: s.id,
-                status: attendance[s.id]?.status || 'unmarked'
-            }));
+            const attendanceData = filteredStudents
+                .filter(s => {
+                    const status = attendance[s.id]?.status;
+                    return status && status !== 'unmarked';
+                })
+                .map(s => ({
+                    studentId: s.id,
+                    status: attendance[s.id].status
+                }));
+
+            if (attendanceData.length === 0) {
+                toast.error('No students have been marked. Please mark attendance before saving.');
+                return;
+            }
 
             await request('/attendance/bulk', {
                 method: 'POST',
                 body: JSON.stringify({
+                    classId: classStudent.classId,
                     date: selectedDate,
                     attendance: attendanceData
                 })

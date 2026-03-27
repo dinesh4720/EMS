@@ -201,8 +201,8 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
         if (!matchesSearch) return false;
       }
 
-      // Class filter
-      if (filters.classId !== 'all' && exam.classId !== filters.classId) {
+      // Class filter — compare against className (human-readable) since filter options are class names
+      if (filters.classId !== 'all' && (exam.className || exam.classId) !== filters.classId) {
         return false;
       }
 

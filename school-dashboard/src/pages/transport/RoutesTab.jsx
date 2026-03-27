@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import RouteModal from "./RouteModal";
 import StudentAssignModal from "./StudentAssignModal";
 import { useTranslation } from 'react-i18next';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 export default function RoutesTab() {
   const { t } = useTranslation();
@@ -77,15 +78,7 @@ export default function RoutesTab() {
     setIsStudentModalOpen(true);
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-4 animate-pulse">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-24 bg-gray-100 dark:bg-zinc-800 rounded-xl" />
-        ))}
-      </div>
-    );
-  }
+  if (loading) return <TablePageSkeleton title={false} kpiCards={0} columns={5} rows={5} />;
 
   return (
     <div className="space-y-4">

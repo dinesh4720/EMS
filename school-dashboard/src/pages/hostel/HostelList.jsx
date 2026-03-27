@@ -4,29 +4,15 @@ import { Plus, Search, Building2, Edit2, Trash2, Users, DoorOpen } from "lucide-
 import { hostelApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 const INITIAL_FORM = {
   name: "", type: "boys", wardenName: "", wardenPhone: "", wardenEmail: "",
   address: "", description: "",
 };
 
-function SkeletonCards() {
-  const { t } = useTranslation();
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 p-5 space-y-3">
-          <div className="h-5 w-32 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-          <div className="h-4 w-20 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-          <div className="h-4 w-full bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-          <div className="h-4 w-24 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export default function HostelList() {
+  const { t } = useTranslation();
   const [hostels, setHostels] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
@@ -130,7 +116,7 @@ export default function HostelList() {
 
   const typeColors = { boys: "primary", girls: "secondary", mixed: "warning" };
 
-  if (isLoading) return <SkeletonCards />;
+  if (isLoading) return <CardGridPageSkeleton title={false} cards={6} columns="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" />;
 
   return (
     <div className="space-y-4">

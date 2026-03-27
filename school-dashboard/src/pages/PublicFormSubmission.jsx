@@ -63,15 +63,25 @@ export default function PublicFormSubmission() {
 
       // Check if already submitted
       const statusData = await publicApi.getSubmissionStatus(token).catch(() => null);
+      // Normalize backend response shape:
+      // Backend returns { success, data: { formId, formName, formType, fields, ... } }
+      // Map to formDetails with consistent property names for the UI
+      const formPayloadRaw = data?.data || data;
+      const normalizedDetails = {
+        ...formPayloadRaw,
+        formTitle: formPayloadRaw.formName || formPayloadRaw.formTitle,
+        formDescription: formPayloadRaw.formDescription || formPayloadRaw.description || '',
+        formStructure: formPayloadRaw.fields || formPayloadRaw.formStructure || [],
+      };
       setFormData({
-        formDetails: data,
+        formDetails: normalizedDetails,
         submissionStatus: statusData,
       });
 
-      // Initialize form values
+      // Initialize form values from normalized formStructure
       const initialValues = {};
-      if (data.formStructure) {
-        data.formStructure.forEach((field) => {
+      if (normalizedDetails.formStructure) {
+        normalizedDetails.formStructure.forEach((field) => {
           if (field.defaultValue) {
             initialValues[field.id] = field.defaultValue;
           }
@@ -149,7 +159,7 @@ export default function PublicFormSubmission() {
     try {
       setSubmitting(true);
       await publicApi.submitForm(token, {
-        responses: formValues,
+        submissionData: formValues,
         submittedAt: new Date().toISOString(),
       });
 
@@ -324,12 +334,22 @@ export default function PublicFormSubmission() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-default-50 via-background to-default-100 dark:from-default-950 dark:via-background dark:to-default-900">
-        <div className="text-center space-y-4">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto"></div>
-            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-r-secondary rounded-full animate-spin mx-auto [animation-duration:1.5s]"></div>
+        <div className="w-full max-w-2xl mx-auto px-4 space-y-6">
+          <div className="bg-white dark:bg-zinc-950 rounded-2xl border border-gray-200 dark:border-zinc-800 p-8 space-y-6">
+            <div className="space-y-2">
+              <div className="h-7 w-48 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+              <div className="h-4 w-72 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+            </div>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <div className="h-4 w-1/4 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                <div className="h-10 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+              </div>
+            ))}
+            <div className="pt-4">
+              <div className="h-10 w-32 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+            </div>
           </div>
-          <p className="text-foreground/70 font-medium">{t('pages.loadingForm')}</p>
         </div>
       </div>
     );

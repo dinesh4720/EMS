@@ -165,9 +165,14 @@ class ChatServiceEnhanced {
       const formData = new FormData();
       formData.append('file', file);
 
+      // Include auth headers but omit Content-Type so browser sets multipart boundary
+      const authHeaders = getAuthHeaders();
+      delete authHeaders['Content-Type'];
+
       const response = await fetch(`${API_URL}/upload`, {
         method: 'POST',
         credentials: 'include',
+        headers: authHeaders,
         body: formData
       });
 

@@ -62,7 +62,7 @@ export const remindersApi = {
   toggle: (id, active) => request(`/reminders/${id}/toggle`, { method: 'POST', body: JSON.stringify({ active }) }),
   duplicate: (id) => request(`/reminders/${id}/duplicate`, { method: 'POST' }),
   // Templates
-  getTemplates: (type) => request(`/reminders/templates${type ? `?type=${type}` : ''}`),
+  getTemplates: (type) => request(`/reminders/templates/all${type ? `?type=${type}` : ''}`),
   createTemplate: (data) => request('/reminders/templates', { method: 'POST', body: JSON.stringify(data) }),
   updateTemplate: (id, data) => request(`/reminders/templates/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteTemplate: (id) => request(`/reminders/templates/${id}`, { method: 'DELETE' }),
@@ -121,11 +121,12 @@ export const gatePassesApi = {
 
 // Front Desk API
 export const frontDeskApi = {
-  // Visitors
-  getVisitorsToday: () => request('/front-desk/visitors/today'),
-  createVisitor: (data) => request('/front-desk/visitors', { method: 'POST', body: JSON.stringify(data) }),
-  updateVisitor: (id, data) => request(`/front-desk/visitors/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteVisitor: (id) => request(`/front-desk/visitors/${id}`, { method: 'DELETE' }),
+  // Visitors — delegates to dedicated /visitors routes (with Zod validation)
+  getVisitorsToday: () => request('/visitors/today').then((r) => r.data || []),
+  createVisitor: (data) => request('/visitors', { method: 'POST', body: JSON.stringify(data) }).then((r) => r.data),
+  updateVisitor: (id, data) => request(`/visitors/${id}`, { method: 'PUT', body: JSON.stringify(data) }).then((r) => r.data),
+  checkoutVisitor: (id, data = {}) => request(`/visitors/${id}/check-out`, { method: 'POST', body: JSON.stringify(data) }).then((r) => r.data),
+  deleteVisitor: (id) => request(`/visitors/${id}`, { method: 'DELETE' }),
 
   // Admissions
   getAdmissions: (params) => {
@@ -138,11 +139,11 @@ export const frontDeskApi = {
   convertToStudent: (id) => request(`/front-desk/admissions/${id}/convert-to-student`, { method: 'POST' }),
   getAdmissionTracker: (id) => request(`/front-desk/admissions/${id}/tracker`),
 
-  // Gate Passes
-  getGatePassesToday: () => request('/front-desk/gate-passes/today'),
-  createGatePass: (data) => request('/front-desk/gate-passes', { method: 'POST', body: JSON.stringify(data) }),
-  updateGatePass: (id, data) => request(`/front-desk/gate-passes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteGatePass: (id) => request(`/front-desk/gate-passes/${id}`, { method: 'DELETE' }),
+  // Gate Passes — delegates to dedicated /gate-passes routes (with Zod validation)
+  getGatePassesToday: () => request('/gate-passes/today').then((r) => r.data || []),
+  createGatePass: (data) => request('/gate-passes', { method: 'POST', body: JSON.stringify(data) }).then((r) => r.data),
+  updateGatePass: (id, data) => request(`/gate-passes/${id}`, { method: 'PUT', body: JSON.stringify(data) }).then((r) => r.data),
+  deleteGatePass: (id) => request(`/gate-passes/${id}`, { method: 'DELETE' }),
 
   // Appointments
   getAppointments: (params) => {
@@ -222,6 +223,14 @@ export const substitutionAlertsApi = {
     method: 'POST',
     body: JSON.stringify({ assignments })
   })
+};
+
+// Global Search API
+export const searchApi = {
+  search: (params, options = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/search${query ? `?${query}` : ''}`, options);
+  },
 };
 
 // Parent Management API

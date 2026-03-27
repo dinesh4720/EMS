@@ -2,29 +2,29 @@ import { request } from './core.js';
 
 export const settingsApi = {
   // School Settings
-  getSchoolSettings: () => request('/settings/school'),
+  getSchoolSettings: (options) => options?.signal ? request('/settings/school', { signal: options.signal }) : request('/settings/school'),
   updateSchoolSettings: (data) => request('/settings/school', { method: 'PUT', body: JSON.stringify(data) }),
 
   // Holidays
-  getHolidays: () => request('/settings/holidays'),
+  getHolidays: (options) => options?.signal ? request('/settings/holidays', { signal: options.signal }) : request('/settings/holidays'),
   createHoliday: (data) => request('/settings/holidays', { method: 'POST', body: JSON.stringify(data) }),
   updateHoliday: (id, data) => request(`/settings/holidays/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteHoliday: (id) => request(`/settings/holidays/${id}`, { method: 'DELETE' }),
 
   // Leave Types
-  getLeaveTypes: () => request('/settings/leave-types'),
+  getLeaveTypes: (options) => options?.signal ? request('/settings/leave-types', { signal: options.signal }) : request('/settings/leave-types'),
   createLeaveType: (data) => request('/settings/leave-types', { method: 'POST', body: JSON.stringify(data) }),
   updateLeaveType: (id, data) => request(`/settings/leave-types/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteLeaveType: (id) => request(`/settings/leave-types/${id}`, { method: 'DELETE' }),
 
   // Fee Heads
-  getFeeHeads: () => request('/settings/fee-heads'),
+  getFeeHeads: (options) => options?.signal ? request('/settings/fee-heads', { signal: options.signal }) : request('/settings/fee-heads'),
   createFeeHead: (data) => request('/settings/fee-heads', { method: 'POST', body: JSON.stringify(data) }),
   updateFeeHead: (id, data) => request(`/settings/fee-heads/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteFeeHead: (id) => request(`/settings/fee-heads/${id}`, { method: 'DELETE' }),
 
   // Subjects
-  getSubjects: () => request('/settings/subjects'),
+  getSubjects: (options) => options?.signal ? request('/settings/subjects', { signal: options.signal }) : request('/settings/subjects'),
   createSubject: (data) => request('/settings/subjects', { method: 'POST', body: JSON.stringify(data) }),
   updateSubject: (id, data) => request(`/settings/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteSubject: (id) => request(`/settings/subjects/${id}`, { method: 'DELETE' }),
@@ -59,6 +59,50 @@ export const settingsApi = {
   // Communication Settings
   getCommunicationSettings: () => request('/settings/communication'),
   updateCommunicationSettings: (data) => request('/settings/communication', { method: 'PUT', body: JSON.stringify(data) }),
+
+  // Email Templates
+  getEmailTemplates: () => request('/settings/email-templates'),
+  getEmailTemplate: (id) => request(`/settings/email-templates/${id}`),
+  createEmailTemplate: (data) => request('/settings/email-templates', { method: 'POST', body: JSON.stringify(data) }),
+  updateEmailTemplate: (id, data) => request(`/settings/email-templates/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteEmailTemplate: (id) => request(`/settings/email-templates/${id}`, { method: 'DELETE' }),
+  previewEmailTemplate: (id, data) => request(`/settings/email-templates/${id}/preview`, { method: 'POST', body: JSON.stringify(data) }),
+
+  // SMS Templates
+  getSmsTemplates: () => request('/settings/sms-templates'),
+  getSmsTemplate: (id) => request(`/settings/sms-templates/${id}`),
+  createSmsTemplate: (data) => request('/settings/sms-templates', { method: 'POST', body: JSON.stringify(data) }),
+  updateSmsTemplate: (id, data) => request(`/settings/sms-templates/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteSmsTemplate: (id) => request(`/settings/sms-templates/${id}`, { method: 'DELETE' }),
+
+  // Email Domain
+  getEmailDomain: () => request('/settings/email-domain'),
+  createEmailDomain: (data) => request('/settings/email-domain', { method: 'POST', body: JSON.stringify(data) }),
+  verifyEmailDomain: () => request('/settings/email-domain/verify', { method: 'POST' }),
+  deleteEmailDomain: () => request('/settings/email-domain', { method: 'DELETE' }),
+
+  // Data Residency
+  getDataResidency: () => request('/settings/data-residency'),
+  updateDataResidency: (data) => request('/settings/data-residency', { method: 'PUT', body: JSON.stringify(data) }),
+  lockDataResidency: () => request('/settings/data-residency/lock', { method: 'POST' }),
+
+  // Exam Configuration
+  getExamDefaults: () => request('/settings/exam-defaults'),
+  getExamConfig: () => request('/settings/exam-config'),
+  getBoardConfigPresets: () => request('/settings/board-config/presets'),
+
+  // Academic Year
+  getAcademicYear: () => request('/settings/academic-year'),
+  updateAcademicYear: (data) => request('/settings/academic-year', { method: 'PUT', body: JSON.stringify(data) }),
+  getAcademicYearTransitionPreview: () => request('/settings/academic-year/transition-preview'),
+
+  // Attendance Rules
+  getAttendanceRules: () => request('/settings/attendance-rules'),
+  updateAttendanceRules: (data) => request('/settings/attendance-rules', { method: 'PUT', body: JSON.stringify(data) }),
+
+  // Onboarding
+  getOnboardingStatus: () => request('/settings/onboarding-status'),
+  updateOnboardingProgress: (data) => request('/settings/onboarding-progress', { method: 'PUT', body: JSON.stringify(data) }),
 };
 
 export const billingApi = {

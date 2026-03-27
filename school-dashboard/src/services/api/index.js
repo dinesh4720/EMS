@@ -21,6 +21,7 @@ export {
 export {
   uploadApi, announcementsApi, remindersApi, callsApi,
   visitorsApi, gatePassesApi, frontDeskApi, lookupPincode, substitutionAlertsApi,
+  searchApi,
 } from './operations.js';
 export {
   parentApi, inventoryApi, libraryApi, transportApi, reportsApi,
@@ -28,3 +29,4 @@ export {
   ptmApi, webhooksApi, emailCampaignsApi, promotionApi, npsApi,
   cbseReportCardApi, cceApi, expensesApi,
 } from './extensions.js';
+export { permissionsApi } from './permissions.js';

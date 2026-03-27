@@ -23,18 +23,34 @@ import {
   BookOpen,
   AlertCircle,
   X,
+  Bus,
+  Briefcase,
+  ClipboardList,
+  Star,
+  Wallet,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { notificationsApi } from '../../../../services/api';
 import { useTranslation } from 'react-i18next';
 
 const NOTIFICATION_ICONS = {
-  fee: { icon: DollarSign, color: 'warning' },
+  // Matches backend Notification.type enum values
+  payment: { icon: DollarSign, color: 'warning' },
+  fee: { icon: DollarSign, color: 'warning' }, // alias
   attendance: { icon: Users, color: 'danger' },
+  academic: { icon: BookOpen, color: 'secondary' },
+  exam: { icon: BookOpen, color: 'secondary' }, // alias
+  event: { icon: Calendar, color: 'success' },
+  reminder: { icon: Calendar, color: 'success' }, // alias
+  emergency: { icon: AlertCircle, color: 'danger' },
+  alert: { icon: AlertCircle, color: 'danger' }, // alias
+  transport: { icon: Bus, color: 'primary' },
+  salary: { icon: Wallet, color: 'warning' },
+  work: { icon: Briefcase, color: 'default' },
+  chat: { icon: MessageSquare, color: 'primary' },
   announcement: { icon: Bell, color: 'primary' },
-  exam: { icon: BookOpen, color: 'secondary' },
-  reminder: { icon: Calendar, color: 'success' },
-  alert: { icon: AlertCircle, color: 'danger' },
+  remarks: { icon: Star, color: 'secondary' },
+  class_teacher: { icon: ClipboardList, color: 'success' },
 };
 
 const CHANNEL_ICONS = {
@@ -59,7 +75,7 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
     setLoading(true);
     try {
       const data = await notificationsApi.getAll();
-      const list = Array.isArray(data) ? data : [];
+      const list = Array.isArray(data) ? data : (data?.notifications || data?.data || []);
       setNotifications(isPopover ? list.slice(0, 5) : list);
     } catch (error) {
       console.error('Error loading notifications:', error);
@@ -310,8 +326,11 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
 function NotificationItem({ notification, onMarkAsRead, onDelete, formatTime }) {
   const IconComponent = NOTIFICATION_ICONS[notification.type]?.icon || Bell;
   const iconColor = NOTIFICATION_ICONS[notification.type]?.color || 'default';
-  const ChannelIcon = CHANNEL_ICONS[notification.channel]?.icon || Bell;
-  const channelLabel = CHANNEL_ICONS[notification.channel]?.label || notification.channel;
+  // Derive delivery channel from the channels array (notification.channel doesn't exist in schema)
+  const primaryChannel = notification.channels?.[0]?.type || 'in_app';
+  const channelKey = primaryChannel === 'inapp' ? 'in_app' : primaryChannel;
+  const ChannelIcon = CHANNEL_ICONS[channelKey]?.icon || Bell;
+  const channelLabel = CHANNEL_ICONS[channelKey]?.label || primaryChannel;
 
   return (
     <div

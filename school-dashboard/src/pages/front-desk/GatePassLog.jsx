@@ -213,8 +213,8 @@ const GatePassLog = forwardRef((props, ref) => {
       const formData = {
         studentId: student._id || student.id,
         studentName: student.name,
-        class: student.class || '',
-        section: student.section || '',
+        class: student.classId?.name || student.class || '',
+        section: student.classId?.section || student.section || '',
         reason,
         otherReason: reason === 'OTHER' ? otherReason : '',
         leavingDate,
@@ -434,7 +434,7 @@ const GatePassLog = forwardRef((props, ref) => {
               >
                 {students.map((student) => (
                   <AutocompleteItem key={String(student._id || student.id)} textValue={student.name}>
-                    {student.name} {student.admissionId ? `(${student.admissionId})` : ''} - {student.class || ''}
+                    {student.name} {student.admissionId ? `(${student.admissionId})` : ''} - {student.classId?.name || student.class || ''}
                   </AutocompleteItem>
                 ))}
               </Autocomplete>
@@ -444,7 +444,7 @@ const GatePassLog = forwardRef((props, ref) => {
                 <>
                   <div className="col-span-2 bg-default-100 p-3 rounded-lg">
                     <p className="text-sm"><strong>{t('pages.student1')}</strong> {selectedStudent.name}</p>
-                    <p className="text-sm"><strong>{t('pages.class2')}</strong> {selectedStudent.class} {selectedStudent.section ? `- ${selectedStudent.section}` : ''}</p>
+                    <p className="text-sm"><strong>{t('pages.class2')}</strong> {selectedStudent.classId?.name || selectedStudent.class || ''} {selectedStudent.classId?.section || selectedStudent.section ? `- ${selectedStudent.classId?.section || selectedStudent.section}` : ''}</p>
                     {selectedStudent.admissionId && (
                       <p className="text-sm"><strong>{t('pages.admissionId2')}</strong> {selectedStudent.admissionId}</p>
                     )}

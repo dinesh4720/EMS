@@ -5,7 +5,7 @@ import {
 } from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import {
-  ClipboardList, Calendar, Eye, Trash2, AlertTriangle, Plus, Clock, Users, Home,
+  ClipboardList, Calendar, Eye, Trash2, AlertTriangle, Plus, Clock, Users, Home, Pencil,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { homeworkApi, classesApi } from '../../services/api';
@@ -31,6 +31,7 @@ const HomeworkPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editingHomework, setEditingHomework] = useState(null);
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null, title: '' });
   const [detailId, setDetailId] = useState(null);
   const [filters, setFilters] = useState({ classId: 'all', status: 'all' });
@@ -91,9 +92,11 @@ const HomeworkPage = () => {
     }
     setLoading(true);
     try {
-      const data = await homeworkApi.getAll();
-      setHomework(data || []);
-      homeworkCache.data = data || [];
+      const response = await homeworkApi.getAll({ limit: 100 });
+      // Support both paginated { data, pagination } and plain array responses
+      const items = Array.isArray(response) ? response : (response?.data || []);
+      setHomework(items);
+      homeworkCache.data = items;
       homeworkCache.timestamp = now;
     } catch (error) {
       console.error('Error fetching homework:', error);
@@ -172,7 +175,7 @@ const HomeworkPage = () => {
   };
 
   const actions = (
-    <MinimalButton icon={<Plus size={16} />} onClick={() => setCreateModalOpen(true)}>
+    <MinimalButton icon={<Plus size={16} />} onClick={() => { setEditingHomework(null); setCreateModalOpen(true); }}>
       Create Homework
     </MinimalButton>
   );
@@ -237,7 +240,7 @@ const HomeworkPage = () => {
                       Clear Filters
                     </Button>
                   ) : (
-                    <MinimalButton icon={<Plus size={16} />} onClick={() => setCreateModalOpen(true)}>
+                    <MinimalButton icon={<Plus size={16} />} onClick={() => { setEditingHomework(null); setCreateModalOpen(true); }}>
                       Create First Homework
                     </MinimalButton>
                   )}
@@ -313,6 +316,16 @@ const HomeworkPage = () => {
                                 <Eye size={15} className="text-gray-500 dark:text-zinc-400" />
                               </button>
                               <button
+                                className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
+                                onClick={() => {
+                                  setEditingHomework(hw);
+                                  setCreateModalOpen(true);
+                                }}
+                                title="Edit"
+                              >
+                                <Pencil size={15} className="text-blue-500 dark:text-blue-400" />
+                              </button>
+                              <button
                                 className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
                                 onClick={() => handleDeleteClick(id, hw.title)}
                                 title={t('pages.delete1')}
@@ -332,10 +345,10 @@ const HomeworkPage = () => {
         </div>
       </PageLayout>
 
-      {/* Create Homework Modal */}
+      {/* Create/Edit Homework Modal */}
       <Modal
         isOpen={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
+        onClose={() => { setCreateModalOpen(false); setEditingHomework(null); }}
         size="2xl"
         scrollBehavior="inside"
         classNames={{
@@ -351,16 +364,23 @@ const HomeworkPage = () => {
                 <ClipboardList size={20} className="text-gray-600 dark:text-zinc-300" />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.createHomework')}</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">{t('pages.assignNewHomeworkToStudents')}</p>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">
+                  {editingHomework ? 'Edit Homework' : t('pages.createHomework')}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">
+                  {editingHomework ? 'Update homework assignment details' : t('pages.assignNewHomeworkToStudents')}
+                </p>
               </div>
             </div>
           </ModalHeader>
           <ModalBody className="px-6 pb-6 pt-4">
             <CreateHomeworkModal
-              onClose={() => setCreateModalOpen(false)}
+              key={editingHomework?._id || editingHomework?.id || 'create'}
+              editingHomework={editingHomework}
+              onClose={() => { setCreateModalOpen(false); setEditingHomework(null); }}
               onSuccess={() => {
                 setCreateModalOpen(false);
+                setEditingHomework(null);
                 refreshHomework();
               }}
             />

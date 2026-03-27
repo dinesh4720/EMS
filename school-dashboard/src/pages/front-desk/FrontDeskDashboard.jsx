@@ -30,6 +30,7 @@ export default function FrontDeskDashboard() {
     openFeedbacks: 0,
     todayCalls: 0,
   });
+  const [recentActivity, setRecentActivity] = useState([]);
 
   useEffect(() => {
     loadStats();
@@ -55,6 +56,24 @@ export default function FrontDeskDashboard() {
         openFeedbacks: feedbacks.length,
         todayCalls: todayCalls.length,
       });
+
+      // Build recent activity from real data
+      const activities = [];
+      const timeAgo = (dateStr) => {
+        if (!dateStr) return '';
+        const diff = Date.now() - new Date(dateStr).getTime();
+        const mins = Math.floor(diff / 60000);
+        if (mins < 1) return 'just now';
+        if (mins < 60) return `${mins} min ago`;
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return `${hrs}h ago`;
+        return `${Math.floor(hrs / 24)}d ago`;
+      };
+      visitors.slice(0, 3).forEach(v => activities.push({ _id: v._id, type: 'visitor', text: `${v.name || 'Visitor'} checked in`, time: timeAgo(v.checkInTime || v.createdAt), date: v.checkInTime || v.createdAt }));
+      gatePasses.slice(0, 3).forEach(g => activities.push({ _id: g._id, type: 'gatepass', text: `Gate pass for ${g.studentName || 'student'}`, time: timeAgo(g.createdAt), date: g.createdAt }));
+      todayCalls.slice(0, 2).forEach(c => activities.push({ _id: c._id, type: 'call', text: `Call: ${c.callerName || c.purpose || 'logged'}`, time: timeAgo(c.dateTime || c.createdAt), date: c.dateTime || c.createdAt }));
+      activities.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+      setRecentActivity(activities);
     } catch (error) {
       console.error('Error loading stats:', error);
     }
@@ -169,25 +188,24 @@ export default function FrontDeskDashboard() {
               <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.recentActivity1')}</h3>
             </div>
             <div className="divide-y divide-gray-50 dark:divide-zinc-800">
-              {[
-                { type: 'visitor', text: 'John Doe checked in', time: '10 min ago' },
-                { type: 'appointment', text: 'Meeting with parent', time: '25 min ago' },
-                { type: 'call', text: 'Incoming call logged', time: '1 hour ago' },
-                { type: 'gatepass', text: 'Gate pass issued', time: '2 hours ago' },
-              ].map((activity) => (
-                <div key={activity.text} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-900/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                      {activity.type === 'visitor' && <Users size={12} className="text-gray-500 dark:text-zinc-400" />}
-                      {activity.type === 'appointment' && <Calendar size={12} className="text-gray-500 dark:text-zinc-400" />}
-                      {activity.type === 'call' && <Phone size={12} className="text-gray-500 dark:text-zinc-400" />}
-                      {activity.type === 'gatepass' && <DoorOpen size={12} className="text-gray-500 dark:text-zinc-400" />}
+              {recentActivity.length === 0 ? (
+                <p className="px-4 py-6 text-sm text-gray-400 dark:text-zinc-500 text-center">No recent activity</p>
+              ) : (
+                recentActivity.slice(0, 6).map((activity, idx) => (
+                  <div key={activity._id || idx} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-900/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                        {activity.type === 'visitor' && <Users size={12} className="text-gray-500 dark:text-zinc-400" />}
+                        {activity.type === 'appointment' && <Calendar size={12} className="text-gray-500 dark:text-zinc-400" />}
+                        {activity.type === 'call' && <Phone size={12} className="text-gray-500 dark:text-zinc-400" />}
+                        {activity.type === 'gatepass' && <DoorOpen size={12} className="text-gray-500 dark:text-zinc-400" />}
+                      </div>
+                      <p className="text-sm text-gray-700 dark:text-zinc-300">{activity.text}</p>
                     </div>
-                    <p className="text-sm text-gray-700 dark:text-zinc-300">{activity.text}</p>
+                    <span className="text-xs text-gray-400 dark:text-zinc-500">{activity.time}</span>
                   </div>
-                  <span className="text-xs text-gray-400 dark:text-zinc-500">{activity.time}</span>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>

@@ -250,20 +250,20 @@ export default function FormAssignments() {
               isLoading={loading}
             >
               {(assignment) => (
-                <TableRow key={assignment.id}>
+                <TableRow key={assignment._id}>
                   <TableCell>
                     <div className="font-medium text-gray-900 dark:text-zinc-100">
-                      {assignment.formName}
+                      {assignment.formId?.formName || 'Unknown Form'}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-zinc-500">
-                      {assignment.formType}
+                      {assignment.formId?.formType || '—'}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm">{assignment.assignedTo}</div>
+                    <div className="text-sm">{assignment.assignedToEmail || assignment.assignedToPhone || '—'}</div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm">{assignment.assignedBy}</div>
+                    <div className="text-sm">{assignment.assignedBy?.name || '—'}</div>
                   </TableCell>
                   <TableCell>
                     <Chip
@@ -309,7 +309,7 @@ export default function FormAssignments() {
                         <DropdownItem
                           key="resend"
                           startContent={<RefreshCw size={16} />}
-                          onPress={() => handleResend(assignment.id)}
+                          onPress={() => handleResend(assignment._id)}
                         >
                           Resend Notification
                         </DropdownItem>
@@ -318,7 +318,7 @@ export default function FormAssignments() {
                           className="text-danger"
                           color="danger"
                           startContent={<Trash2 size={16} />}
-                          onPress={() => handleDelete(assignment.id)}
+                          onPress={() => handleDelete(assignment._id)}
                         >
                           Cancel Assignment
                         </DropdownItem>
@@ -431,7 +431,7 @@ export default function FormAssignments() {
                     Form Name
                   </label>
                   <p className="text-base font-semibold">
-                    {selectedAssignment.formName}
+                    {selectedAssignment.formId?.formName || 'Unknown Form'}
                   </p>
                 </div>
 
@@ -439,7 +439,7 @@ export default function FormAssignments() {
                   <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
                     Assigned To
                   </label>
-                  <p className="text-base">{selectedAssignment.assignedTo}</p>
+                  <p className="text-base">{selectedAssignment.assignedToEmail || selectedAssignment.assignedToPhone || '—'}</p>
                 </div>
 
                 <div>

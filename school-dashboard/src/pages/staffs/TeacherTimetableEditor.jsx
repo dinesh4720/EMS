@@ -633,8 +633,16 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+          {Array.from({ length: 7 }).map((_, row) => (
+            <div key={row} className="flex gap-4 px-4 py-3 border-b border-gray-100 dark:border-zinc-800 last:border-b-0">
+              {Array.from({ length: 6 }).map((_, col) => (
+                <div key={col} className="flex-1">
+                  <div className="h-10 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       ) : (
         <div className="overflow-x-auto -mx-6 px-6">

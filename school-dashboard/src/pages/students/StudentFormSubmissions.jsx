@@ -368,7 +368,7 @@ export default function StudentFormSubmissions() {
               <h3 className="text-xl font-semibold">{t('pages.reviewAdmissionSubmission')}</h3>
               {selectedSubmission && (
                 <p className="text-sm text-gray-600 dark:text-zinc-400 font-normal mt-1">
-                  {selectedSubmission.form?.formName || selectedSubmission.formName} -{" "}
+                  {selectedSubmission.formId?.formName || selectedSubmission.formName} -{" "}
                   {getStudentName(selectedSubmission)}
                 </p>
               )}
@@ -383,7 +383,7 @@ export default function StudentFormSubmissions() {
                     Submitted Information
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
-                    {selectedSubmission.form?.fields?.map((field) => (
+                    {selectedSubmission.formId?.fields?.map((field) => (
                       <div
                         key={field.id}
                         className={`${
