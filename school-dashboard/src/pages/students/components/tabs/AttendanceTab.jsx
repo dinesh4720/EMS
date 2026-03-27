@@ -57,10 +57,12 @@ export default function AttendanceTab({
 
     const total = attendanceData.length;
     const present = attendanceData.filter(a => a.status === 'present').length;
+    const late = attendanceData.filter(a => a.status === 'late').length;
     const absent = attendanceData.filter(a => a.status === 'absent').length;
-    const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
+    // Align with backend: late counts as present for percentage calculation
+    const percentage = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
 
-    return { total, present, absent, percentage };
+    return { total, present, absent, late, percentage };
   }, [attendanceData]);
 
   // Calculate monthly attendance
@@ -82,10 +84,12 @@ export default function AttendanceTab({
 
     const total = monthlyAttendance.length;
     const present = monthlyAttendance.filter(a => a.status === 'present').length;
+    const late = monthlyAttendance.filter(a => a.status === 'late').length;
     const absent = monthlyAttendance.filter(a => a.status === 'absent').length;
-    const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
+    // Align with backend: late counts as present for percentage calculation
+    const percentage = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
 
-    return { total, present, absent, percentage };
+    return { total, present, absent, late, percentage };
   }, [monthlyAttendance]);
 
   // Generate calendar days for selected month
@@ -99,14 +103,24 @@ export default function AttendanceTab({
     const year = new Date().getFullYear();
     const daysInMonth = new Date(year, monthNum + 1, 0).getDate();
 
-    return Array.from({ length: daysInMonth }, (_, i) => {
+    // Calculate what weekday the 1st falls on (0=Sun, 6=Sat)
+    const firstDayOfWeek = new Date(year, monthNum, 1).getDay();
+
+    // Add empty placeholder cells so day 1 aligns to the correct column
+    const emptyCells = Array.from({ length: firstDayOfWeek }, (_, i) => ({
+      day: null, date: null, status: null, isEmpty: true
+    }));
+
+    const dayCells = Array.from({ length: daysInMonth }, (_, i) => {
       const day = i + 1;
       const dateStr = `${year}-${String(monthNum + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const attendanceRecord = attendanceData.find(a => a.date === dateStr);
       const status = attendanceRecord?.status || null;
 
-      return { day, date: dateStr, status };
+      return { day, date: dateStr, status, isEmpty: false };
     });
+
+    return [...emptyCells, ...dayCells];
   }, [attendanceData, selectedMonth]);
 
   // Available months for selection
@@ -145,7 +159,9 @@ export default function AttendanceTab({
     const calcPercentage = (arr) => {
       if (!arr.length) return 0;
       const present = arr.filter(a => a.status === 'present').length;
-      return Math.round((present / arr.length) * 100);
+      const late = arr.filter(a => a.status === 'late').length;
+      // Align with backend: late counts as present for percentage
+      return Math.round(((present + late) / arr.length) * 100);
     };
 
     return {
@@ -215,12 +231,12 @@ export default function AttendanceTab({
     try {
       const message = `Attendance Report for ${student.name}: ${calculatedStats.percentage}% attendance (${calculatedStats.present} present, ${calculatedStats.absent} absent out of ${calculatedStats.total} days this year).`;
       await studentsApi.sendReminder(student.id, {
+        type: 'attendance',
         message,
         channel,
         parentPhone: student.parentPhone,
         parentEmail: student.parentEmail,
         studentName: student.name,
-        type: 'attendance_report'
       });
       toast.success(`Report sent via ${channel === 'email' ? 'Email' : 'SMS'}`, { id: loadingToast });
     } catch (error) {
@@ -453,7 +469,10 @@ export default function AttendanceTab({
             ))}
           </div>
           <div className="grid grid-cols-7 gap-2">
-            {calendarDays.map((day) => (
+            {calendarDays.map((day, idx) => (
+              day.isEmpty ? (
+                <div key={`empty-${idx}`} className="aspect-square" />
+              ) : (
               <Tooltip
                 key={day.day}
                 content={`${day.day} ${selectedMonth.charAt(0).toUpperCase() + selectedMonth.slice(1)} - ${day.status ? day.status.charAt(0).toUpperCase() + day.status.slice(1) : 'No data'}`}
@@ -469,6 +488,7 @@ export default function AttendanceTab({
                   {day.day}
                 </div>
               </Tooltip>
+              )
             ))}
           </div>
             <div className="flex items-center justify-center gap-4 mt-6 pt-4 border-t border-gray-100 dark:border-zinc-800">

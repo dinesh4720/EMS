@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Select, SelectItem } from '@heroui/react';
+import { Select, SelectItem, Input } from '@heroui/react';
 import {
   BarChart3, TrendingUp, Users, IndianRupee, GraduationCap,
   ClipboardList, UserCheck, Calendar, ChevronRight, Download,
 } from 'lucide-react';
 import { Button } from '@heroui/react';
-import { reportsApi } from '../../services/api';
+import { reportsApi, examsApi } from '../../services/api';
 import { useApp } from '../../context/AppContext';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import toast from 'react-hot-toast';
@@ -71,16 +71,33 @@ const REPORT_CATEGORIES = [
   },
 ];
 
+// Reports that require examId parameter
+const ACADEMIC_REPORTS = ['classResults', 'subjectAnalysis', 'rankList', 'gradeDistribution'];
+// Reports that require startDate/endDate parameters
+const DATE_RANGE_REPORTS = ['studentAttendance', 'classwiseAttendance', 'staffAttendance'];
+
 export default function ReportsPage() {
   const { t } = useTranslation();
   const { classesWithTeachers, currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [reportData, setReportData] = useState(null);
+  const [exams, setExams] = useState([]);
   const [filters, setFilters] = useState({
     classId: '',
     academicYear: currentAcademicYear || '',
+    examId: '',
+    startDate: '',
+    endDate: '',
   });
+
+  // Fetch exams list for academic reports
+  useEffect(() => {
+    examsApi.getAll().then((res) => {
+      const list = res?.exams || res || [];
+      setExams(Array.isArray(list) ? list : []);
+    }).catch(() => {});
+  }, []);
 
   const handleExportCSV = () => {
     const data = reportData?.data || reportData;
@@ -89,12 +106,14 @@ export default function ReportsPage() {
       return;
     }
     const columns = Object.keys(data[0]);
+    const formatCell = (val) => {
+      if (val === null || val === undefined) return '';
+      if (typeof val === 'object') return val.name || val.title || val.label || JSON.stringify(val);
+      return String(val);
+    };
     const rows = [
       columns,
-      ...data.map(row => columns.map(col => {
-        const val = row[col];
-        return val !== null && val !== undefined ? String(val) : '';
-      }))
+      ...data.map(row => columns.map(col => formatCell(row[col])))
     ];
     const csv = rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -110,16 +129,36 @@ export default function ReportsPage() {
   };
 
   const handleRunReport = async (reportKey) => {
+    // Validate required params before calling API
+    if (ACADEMIC_REPORTS.includes(reportKey) && !filters.examId) {
+      toast.error('Please select an exam to generate this academic report');
+      return;
+    }
+    if (DATE_RANGE_REPORTS.includes(reportKey) && (!filters.startDate || !filters.endDate)) {
+      toast.error('Please select a start date and end date for this report');
+      return;
+    }
+
     setSelectedReport(reportKey);
     setLoading(true);
     setReportData(null);
     try {
       const fn = reportsApi[reportKey];
       if (!fn) throw new Error('Report not available');
-      const data = await fn({
+      const params = {
         ...(filters.classId && { classId: filters.classId }),
         ...(filters.academicYear && { academicYear: filters.academicYear }),
-      });
+      };
+      // Pass examId for academic reports
+      if (ACADEMIC_REPORTS.includes(reportKey) && filters.examId) {
+        params.examId = filters.examId;
+      }
+      // Pass date range for attendance/date-based reports
+      if (DATE_RANGE_REPORTS.includes(reportKey)) {
+        params.startDate = filters.startDate;
+        params.endDate = filters.endDate;
+      }
+      const data = await fn(params);
       setReportData(data);
     } catch (err) {
       toast.error(err.message || 'Failed to generate report');
@@ -170,6 +209,42 @@ export default function ReportsPage() {
                 <SelectItem key={c._id || c.id} textValue={c.name}>{c.name} {c.section || ''}</SelectItem>
               ))}
             </Select>
+          </div>
+          <div className="w-48">
+            <Select
+              label="Exam"
+              size="sm"
+              selectedKeys={filters.examId ? [filters.examId] : []}
+              onChange={(e) => setFilters((f) => ({ ...f, examId: e.target.value }))}
+            >
+              {exams.filter(ex => ex._id || ex.id).map((ex) => (
+                <SelectItem key={ex._id || ex.id} textValue={ex.name || ex.title}>
+                  {ex.name || ex.title}
+                </SelectItem>
+              ))}
+            </Select>
+          </div>
+          <div className="w-40">
+            <Input
+              label="Start Date"
+              type="date"
+              size="sm"
+              value={filters.startDate}
+              onChange={(e) => setFilters((f) => ({ ...f, startDate: e.target.value }))}
+              variant="bordered"
+              classNames={{ input: 'dark:text-zinc-100', inputWrapper: 'dark:border-zinc-700' }}
+            />
+          </div>
+          <div className="w-40">
+            <Input
+              label="End Date"
+              type="date"
+              size="sm"
+              value={filters.endDate}
+              onChange={(e) => setFilters((f) => ({ ...f, endDate: e.target.value }))}
+              variant="bordered"
+              classNames={{ input: 'dark:text-zinc-100', inputWrapper: 'dark:border-zinc-700' }}
+            />
           </div>
         </div>
       </div>
@@ -276,10 +351,17 @@ function ReportTable({ data }) {
             {columns.map((col) => {
               let displayVal;
               if ((col === 'rank' || col === 'rankInClass') && (row[col] === null || row[col] === undefined)) {
-                // If rank is missing fall back to 1-based row position within this full dataset (BUG-41)
                 displayVal = i + 1;
+              } else if (row[col] === null || row[col] === undefined) {
+                displayVal = '—';
+              } else if (typeof row[col] === 'object' && row[col] !== null) {
+                // Handle nested objects (e.g. populated refs) — show name/title or stringify
+                displayVal = row[col].name || row[col].title || row[col].label || (row[col]._id ? String(row[col]._id).slice(-6) : JSON.stringify(row[col]));
+              } else if (typeof row[col] === 'string' && /^[0-9a-f]{24}$/i.test(row[col]) && !['_id', 'id'].includes(col)) {
+                // ObjectId strings in non-id columns — show last 6 chars
+                displayVal = `...${row[col].slice(-6)}`;
               } else {
-                displayVal = row[col] !== null && row[col] !== undefined ? String(row[col]) : '—';
+                displayVal = String(row[col]);
               }
               return (
                 <td key={col} className="px-4 py-2.5 text-gray-700 dark:text-zinc-300">

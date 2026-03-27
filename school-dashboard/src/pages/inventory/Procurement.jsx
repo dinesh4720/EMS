@@ -8,9 +8,10 @@ import { MinimalButton } from "../../components/ui";
 import { inventoryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 const CATEGORIES = ["FURNITURE", "ELECTRONICS", "LAB_EQUIPMENT", "SPORTS", "STATIONERY", "VEHICLE", "OTHER"];
-const STATUSES = ["PENDING", "APPROVED", "REJECTED", "PURCHASED"];
+const STATUSES = ["PENDING", "APPROVED", "REJECTED", "ORDERED", "RECEIVED", "PURCHASED", "CANCELLED"];
 
 const statusColors = {
   PENDING: "bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400",
@@ -21,7 +22,7 @@ const statusColors = {
 
 const emptyForm = {
   itemName: "", category: "FURNITURE", quantity: 1, estimatedCost: "",
-  justification: "", vendorId: "", notes: "",
+  actualCost: "", status: "PENDING", justification: "", vendorId: "", notes: "",
 };
 
 export default function Procurement() {
@@ -57,6 +58,7 @@ export default function Procurement() {
     setForm({
       itemName: r.itemName || "", category: r.category || "FURNITURE",
       quantity: r.quantity ?? 1, estimatedCost: r.estimatedCost ?? "",
+      actualCost: r.actualCost ?? "", status: r.status || "PENDING",
       justification: r.justification || "", vendorId: r.vendorId?._id || r.vendorId || "",
       notes: r.notes || "",
     });
@@ -75,6 +77,7 @@ export default function Procurement() {
         ...form,
         quantity: Number(form.quantity),
         estimatedCost: form.estimatedCost ? Number(form.estimatedCost) : undefined,
+        actualCost: form.actualCost !== "" ? Number(form.actualCost) : undefined,
         vendorId: form.vendorId || undefined,
       };
       if (editing) {
@@ -113,15 +116,7 @@ export default function Procurement() {
     setErrors((e) => ({ ...e, [key]: '' }));
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-3 animate-pulse">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-14 bg-gray-100 dark:bg-zinc-800 rounded-lg" />
-        ))}
-      </div>
-    );
-  }
+  if (loading) return <TablePageSkeleton title={false} kpiCards={0} columns={5} rows={6} />;
 
   return (
     <div className="space-y-4">
@@ -203,6 +198,10 @@ export default function Procurement() {
               </Select>
               <Input label={t('pages.quantity')} isRequired type="number" value={String(form.quantity)} onValueChange={(v) => set("quantity", v)} />
               <Input label={t('pages.estimatedCost')} type="number" value={String(form.estimatedCost)} onValueChange={(v) => set("estimatedCost", v)} startContent="₹" />
+              <Input label="Actual Cost" type="number" value={String(form.actualCost)} onValueChange={(v) => set("actualCost", v)} startContent="₹" />
+              <Select label={t('pages.status2')} selectedKeys={[form.status]} onSelectionChange={(keys) => set("status", [...keys][0])}>
+                {STATUSES.map((s) => <SelectItem key={s}>{s.replace(/_/g, " ")}</SelectItem>)}
+              </Select>
               <Select label={t('pages.vendor')} selectedKeys={form.vendorId ? [form.vendorId] : []} onSelectionChange={(keys) => set("vendorId", [...keys][0] || "")} className="sm:col-span-2">
                 {vendors.map((v) => <SelectItem key={v._id}>{v.name}</SelectItem>)}
               </Select>

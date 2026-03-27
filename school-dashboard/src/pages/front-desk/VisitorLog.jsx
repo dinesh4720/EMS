@@ -130,7 +130,6 @@ const VisitorLog = forwardRef((props, ref) => {
     }
 
     setErrors(newErrors);
-    setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
@@ -172,16 +171,34 @@ const VisitorLog = forwardRef((props, ref) => {
     }
 
     try {
-      const submitData = {
-        ...formData,
-        reason: formData.reasonForVisit === 'OTHER' ? formData.otherPurpose : formData.reasonForVisit,
-      };
-
       if (editingId) {
-        await frontDeskApi.updateVisitor(editingId, submitData);
+        // Update uses backend field names: name, phone, whomToMeet, notes, etc.
+        const updateData = {
+          name: formData.visitorName,
+          phone: formData.phoneNumber,
+          email: formData.email || undefined,
+          whomToMeet: formData.concernedPerson || undefined,
+          notes: formData.notes || undefined,
+        };
+        await frontDeskApi.updateVisitor(editingId, updateData);
         toast.success(t('toast.success.visitorUpdatedSuccessfully'));
       } else {
-        await frontDeskApi.createVisitor(submitData);
+        // Create uses backend field names: name, phone, purpose, otherPurpose, etc.
+        const createData = {
+          name: formData.visitorName,
+          phone: formData.phoneNumber,
+          email: formData.email || undefined,
+          purpose: formData.reasonForVisit,
+          whomToMeet: formData.concernedPerson || undefined,
+          studentId: formData.studentId || undefined,
+          gatePassRequired: formData.gatePassRequired,
+          appointmentRequired: formData.appointmentRequired,
+          otherPurpose: formData.reasonForVisit === 'OTHER' ? formData.otherPurpose : undefined,
+          companyName: formData.companyName || undefined,
+          deliveryPerson: formData.deliveryPerson || undefined,
+          notes: formData.notes || undefined,
+        };
+        await frontDeskApi.createVisitor(createData);
         toast.success(t('toast.success.visitorCheckedInSuccessfully'));
       }
       onClose();
@@ -194,9 +211,7 @@ const VisitorLog = forwardRef((props, ref) => {
 
   const handleCheckout = async (id) => {
     try {
-      await frontDeskApi.updateVisitor(id, {
-        checkOutTime: new Date().toTimeString().slice(0, 5),
-      });
+      await frontDeskApi.checkoutVisitor(id);
       toast.success(t('toast.success.visitorCheckedOutSuccessfully'));
       loadVisitors();
     } catch (error) {
@@ -215,7 +230,7 @@ const VisitorLog = forwardRef((props, ref) => {
       date: visitor.date || new Date().toISOString().split('T')[0],
       checkInTime: visitor.checkInTime || new Date().toTimeString().slice(0, 5),
       reasonForVisit: visitor.reasonForVisit || '',
-      concernedPerson: visitor.concernedPerson || '',
+      concernedPerson: visitor.whomToMeet || visitor.concernedPerson || '',
       studentId: visitor.studentId || '',
       studentName: visitor.studentName || '',
       parentMapping: visitor.parentMapping || false,
@@ -309,7 +324,7 @@ const VisitorLog = forwardRef((props, ref) => {
   const filteredVisitors = visitors.filter(visitor =>
     (visitor.visitorName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     (visitor.phoneNumber?.includes(searchTerm)) ||
-    (visitor.concernedPerson?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+    ((visitor.whomToMeet || visitor.concernedPerson)?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   ) || []; // Ensure array is never null
 
   return (
@@ -352,22 +367,22 @@ const VisitorLog = forwardRef((props, ref) => {
               <TableCell>
                 <Chip size="sm" variant="flat">{getReasonLabel(visitor.reasonForVisit)}</Chip>
               </TableCell>
-              <TableCell>{visitor.concernedPerson || '-'}</TableCell>
+              <TableCell>{visitor.whomToMeet || visitor.concernedPerson || '-'}</TableCell>
               <TableCell>{visitor.studentName || '-'}</TableCell>
               <TableCell>{visitor.checkInTime}</TableCell>
               <TableCell>{visitor.checkOutTime || '-'}</TableCell>
               <TableCell>
                 <Chip
                   size="sm"
-                  color={visitor.status === 'checked-in' ? 'success' : 'default'}
+                  color={visitor.status === 'ACTIVE' ? 'success' : 'default'}
                   variant="flat"
                 >
-                  {visitor.status === 'checked-in' ? 'In' : 'Out'}
+                  {visitor.status === 'ACTIVE' ? 'In' : 'Out'}
                 </Chip>
               </TableCell>
               <TableCell>
                 <div className="flex gap-2">
-                  {visitor.status === 'checked-in' && (
+                  {visitor.status === 'ACTIVE' && (
                     <Button
                       size="sm"
                       color="warning"

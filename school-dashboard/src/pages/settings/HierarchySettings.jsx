@@ -6,7 +6,6 @@ import {
   Select,
   SelectItem,
   Chip,
-  Spinner,
   Table,
   TableHeader,
   TableColumn,
@@ -18,6 +17,7 @@ import { Network, Save, Users } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import SkeletonTable from '../../components/skeletons/SkeletonTable';
 
 export default function HierarchySettings() {
   const { t } = useTranslation();
@@ -235,7 +235,7 @@ export default function HierarchySettings() {
             <TableBody
               items={activeStaff}
               emptyContent="No staff members found"
-              loadingContent={<Spinner />}
+              loadingContent={<SkeletonTable columns={5} rows={5} />}
             >
               {(staffMember) => {
                 const directReportees = getDirectReportees(staffMember.id);

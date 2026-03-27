@@ -22,17 +22,33 @@ beforeEach(() => {
 // feesApi — Payments
 // ---------------------------------------------------------------------------
 describe('feesApi — payments', () => {
-  it('getPayments — calls /fees/payments with no query string when filters are empty', () => {
-    feesApi.getPayments({});
+  it('getPayments — calls /fees/payments with no query string when filters are empty', async () => {
+    request.mockResolvedValue({ payments: [], pagination: {} });
+    await feesApi.getPayments({});
     expect(request).toHaveBeenCalledWith('/fees/payments');
   });
 
-  it('getPayments — appends filters as query string', () => {
-    feesApi.getPayments({ classId: 'cls1', academicYear: '2025-26' });
+  it('getPayments — appends filters as query string', async () => {
+    request.mockResolvedValue({ payments: [], pagination: {} });
+    await feesApi.getPayments({ classId: 'cls1', academicYear: '2025-26' });
     const [url] = request.mock.calls[0];
     expect(url).toMatch(/^\/fees\/payments\?/);
     expect(url).toContain('classId=cls1');
     expect(url).toContain('academicYear=2025-26');
+  });
+
+  it('getPayments — unwraps paginated response into payments array', async () => {
+    const mockPayments = [{ _id: 'p1', amount: 100 }];
+    request.mockResolvedValue({ payments: mockPayments, pagination: { total: 1 } });
+    const result = await feesApi.getPayments({});
+    expect(result).toEqual(mockPayments);
+  });
+
+  it('getPayments — returns raw array for backward-compatible responses', async () => {
+    const mockPayments = [{ _id: 'p1', amount: 100 }];
+    request.mockResolvedValue(mockPayments);
+    const result = await feesApi.getPayments({});
+    expect(result).toEqual(mockPayments);
   });
 
   it('getPaymentById — calls /fees/payments/:id', () => {
@@ -265,23 +281,17 @@ describe('payrollApi', () => {
 // notificationsApi
 // ---------------------------------------------------------------------------
 describe('notificationsApi', () => {
-  it('getAll — calls /notifications with no query string when email and phone are omitted', () => {
+  it('getAll — calls /notifications with no query string when no params', () => {
     notificationsApi.getAll();
     expect(request).toHaveBeenCalledWith('/notifications');
   });
 
-  it('getAll — appends email param when email is provided', () => {
-    notificationsApi.getAll('user@school.com');
+  it('getAll — appends query params when provided', () => {
+    notificationsApi.getAll({ unreadOnly: 'true', type: 'fee_due' });
     const [url] = request.mock.calls[0];
     expect(url).toContain('/notifications?');
-    expect(url).toContain('email=user@school.com');
-  });
-
-  it('getAll — appends phone param when phone is provided', () => {
-    notificationsApi.getAll(undefined, '9999999999');
-    const [url] = request.mock.calls[0];
-    expect(url).toContain('/notifications?');
-    expect(url).toContain('phone=9999999999');
+    expect(url).toContain('unreadOnly=true');
+    expect(url).toContain('type=fee_due');
   });
 
   it('markAsRead — PUTs to /notifications/:id/read', () => {
@@ -289,12 +299,9 @@ describe('notificationsApi', () => {
     expect(request).toHaveBeenCalledWith('/notifications/notif1/read', { method: 'PUT' });
   });
 
-  it('markAllAsRead — PUTs to /notifications/read-all with email and phone in body', () => {
-    notificationsApi.markAllAsRead('user@school.com', '9999999999');
-    expect(request).toHaveBeenCalledWith('/notifications/read-all', {
-      method: 'PUT',
-      body: JSON.stringify({ email: 'user@school.com', phone: '9999999999' }),
-    });
+  it('markAllAsRead — PUTs to /notifications/read-all', () => {
+    notificationsApi.markAllAsRead();
+    expect(request).toHaveBeenCalledWith('/notifications/read-all', { method: 'PUT' });
   });
 
   it('delete — sends DELETE to /notifications/:id', () => {
@@ -302,12 +309,9 @@ describe('notificationsApi', () => {
     expect(request).toHaveBeenCalledWith('/notifications/notif1', { method: 'DELETE' });
   });
 
-  it('clearAll — sends DELETE to /notifications/clear-all with email and phone in body', () => {
-    notificationsApi.clearAll('user@school.com', '9999999999');
-    expect(request).toHaveBeenCalledWith('/notifications/clear-all', {
-      method: 'DELETE',
-      body: JSON.stringify({ email: 'user@school.com', phone: '9999999999' }),
-    });
+  it('clearAll — sends DELETE to /notifications/clear-all', () => {
+    notificationsApi.clearAll();
+    expect(request).toHaveBeenCalledWith('/notifications/clear-all', { method: 'DELETE' });
   });
 
   it('getPreferences — calls /notifications/preferences/me', () => {

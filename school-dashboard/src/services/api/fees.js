@@ -2,7 +2,7 @@ import { request } from './core.js';
 import { API_URL } from '../../config/api.js';
 
 export const calendarEventsApi = {
-  getAll: () => request('/calendar/events'),
+  getAll: (options) => options?.signal ? request('/calendar/events', { signal: options.signal }) : request('/calendar/events'),
   create: (data) => request('/calendar/events', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/calendar/events/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => request(`/calendar/events/${id}`, { method: 'DELETE' }),
@@ -54,7 +54,7 @@ export const intakeFormsApi = {
   deleteSubmission: (id) => request(`/form-submissions/${id}`, { method: 'DELETE' }),
 };
 
-// Public API (for Teacher App - no auth required)
+// Public API (for parent form submissions - no auth required, uses secured public.js routes)
 export const publicApi = {
   getFormByToken: (token) => request(`/public/form-assignment/${token}`),
   submitForm: (token, data) => request(`/public/form-submission/${token}`, { method: 'POST', body: JSON.stringify(data) }),
@@ -63,11 +63,14 @@ export const publicApi = {
 
 // Notifications API
 export const notificationsApi = {
-  getAll: (email, phone) => request(`/notifications${email || phone ? `?${email ? `email=${email}` : ''}${phone ? `&phone=${phone}` : ''}` : ''}`),
+  getAll: (params) => {
+    const query = params ? new URLSearchParams(params).toString() : '';
+    return request(`/notifications${query ? `?${query}` : ''}`);
+  },
   markAsRead: (id) => request(`/notifications/${id}/read`, { method: 'PUT' }),
-  markAllAsRead: (email, phone) => request('/notifications/read-all', { method: 'PUT', body: JSON.stringify({ email, phone }) }),
+  markAllAsRead: () => request('/notifications/read-all', { method: 'PUT' }),
   delete: (id) => request(`/notifications/${id}`, { method: 'DELETE' }),
-  clearAll: (email, phone) => request('/notifications/clear-all', { method: 'DELETE', body: JSON.stringify({ email, phone }) }),
+  clearAll: () => request('/notifications/clear-all', { method: 'DELETE' }),
   getPreferences: () => request('/notifications/preferences/me'),
   updatePreferences: (data) => request('/notifications/preferences/me', { method: 'PUT', body: JSON.stringify(data) }),
   resetPreferences: () => request('/notifications/preferences/reset', { method: 'POST' }),
@@ -76,9 +79,11 @@ export const notificationsApi = {
 // Fees API
 export const feesApi = {
   // Payments
-  getPayments: (filters) => {
+  getPayments: async (filters) => {
     const params = new URLSearchParams(filters).toString();
-    return request(`/fees/payments${params ? `?${params}` : ''}`);
+    const res = await request(`/fees/payments${params ? `?${params}` : ''}`);
+    // Backend returns { payments, pagination }; unwrap for callers expecting an array
+    return Array.isArray(res) ? res : (res?.payments ?? res);
   },
   getPaymentById: (id) => request(`/fees/payments/${id}`),
   createPayment: (data) => request('/fees/payments', { method: 'POST', body: JSON.stringify(data) }),

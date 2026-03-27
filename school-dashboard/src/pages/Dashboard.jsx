@@ -285,69 +285,51 @@ function Dashboard() {
         return;
       }
 
-      const today = new Date().toISOString().split("T")[0];
-      const classAttendance = await Promise.all(
-        classesWithStudents.map(async (classItem) => {
-          const classStudents = activeStudents.filter(
-            (student) => String(student.classId) === String(classItem.id)
-          );
+      try {
+        // Single API call replaces N per-class calls (fixes 429 rate-limit issue)
+        const snapshot = await attendanceApi.getTodaySnapshot();
 
-          try {
-            const records = await attendanceApi.getByClassDate(classItem.id, today);
-            const entries = Array.isArray(records) ? records : [];
-            const statusByStudent = new Map(
-              entries.map((record) => [String(record?.studentId?._id || record?.studentId || ""), record?.status])
-            );
+        if (cancelled) return;
 
-            let present = 0;
-            let marked = 0;
+        const classSummaries = snapshot?.classes || {};
+        let totalPresent = 0;
+        let totalStudentsInMarkedClasses = 0;
+        let markedClassCount = 0;
 
-            classStudents.forEach((student) => {
-              const status = String(statusByStudent.get(String(student.id)) || "").toLowerCase();
-
-              if (!status) {
-                return;
-              }
-
-              marked += 1;
-              if (status === "present" || status === "p") {
-                present += 1;
-              }
-            });
-
-            return {
-              classSize: classStudents.length,
-              marked,
-              present,
-            };
-          } catch {
-            return {
-              classSize: classStudents.length,
-              marked: 0,
-              present: 0,
-            };
+        classesWithStudents.forEach((classItem) => {
+          const classData = classSummaries[String(classItem.id)];
+          if (classData && classData.total > 0) {
+            markedClassCount += 1;
+            const classStudentCount = activeStudents.filter(
+              (student) => String(student.classId) === String(classItem.id)
+            ).length;
+            totalStudentsInMarkedClasses += classStudentCount;
+            totalPresent += classData.present || 0;
           }
-        })
-      );
+        });
 
-      if (cancelled) {
-        return;
+        setAttendanceSnapshot((current) => ({
+          ...current,
+          studentRate: totalStudentsInMarkedClasses > 0
+            ? Math.round((totalPresent / totalStudentsInMarkedClasses) * 100)
+            : null,
+          studentPresent: totalPresent,
+          studentTotal: totalStudentsInMarkedClasses,
+          markedClasses: markedClassCount,
+          totalClasses: classesWithStudents.length,
+        }));
+      } catch {
+        if (!cancelled) {
+          setAttendanceSnapshot((current) => ({
+            ...current,
+            studentRate: null,
+            studentPresent: 0,
+            studentTotal: 0,
+            markedClasses: 0,
+            totalClasses: classesWithStudents.length,
+          }));
+        }
       }
-
-      const markedClasses = classAttendance.filter((entry) => entry.marked > 0).length;
-      const studentTotal = classAttendance
-        .filter((entry) => entry.marked > 0)
-        .reduce((sum, entry) => sum + entry.classSize, 0);
-      const studentPresent = classAttendance.reduce((sum, entry) => sum + entry.present, 0);
-
-      setAttendanceSnapshot((current) => ({
-        ...current,
-        studentRate: studentTotal > 0 ? Math.round((studentPresent / studentTotal) * 100) : null,
-        studentPresent,
-        studentTotal,
-        markedClasses,
-        totalClasses: classesWithStudents.length,
-      }));
     };
 
     loadStudentAttendanceSnapshot();

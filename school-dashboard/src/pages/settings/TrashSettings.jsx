@@ -16,7 +16,6 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
-  Spinner,
   Input,
   Select,
   SelectItem,
@@ -63,6 +62,7 @@ export const trashApi = {
 import { request } from "../../services/api";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import SkeletonTable from '../../components/skeletons/SkeletonTable';
 
 
 export default function TrashSettings() {
@@ -497,8 +497,8 @@ export default function TrashSettings() {
             </TableHeader>
             <TableBody
               items={filteredItems}
-              emptyContent={loading ? "Loading..." : "No items in trash"}
-              loadingContent={<Spinner size="lg" color="primary" />}
+              emptyContent="No items in trash"
+              loadingContent={<SkeletonTable columns={6} rows={5} />}
               isLoading={loading}
             >
               {(item) => {

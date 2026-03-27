@@ -11,6 +11,19 @@ const EXAM_TYPES = [
   { value: 'quiz', label: 'Quiz' },
   { value: 'midterm', label: 'Mid Term' },
   { value: 'final', label: 'Final Exam' },
+  { value: 'quarterly', label: 'Quarterly' },
+  { value: 'half_yearly', label: 'Half Yearly' },
+  { value: 'annual', label: 'Annual' },
+  { value: 'practice', label: 'Practice' },
+  { value: 'class_test', label: 'Class Test' },
+  { value: 'assignment', label: 'Assignment' },
+];
+
+const TERM_OPTIONS = [
+  { value: 'term_1', label: 'Term 1' },
+  { value: 'term_2', label: 'Term 2' },
+  { value: 'term_3', label: 'Term 3' },
+  { value: 'final', label: 'Final' },
 ];
 
 const GRADING_TYPES = [
@@ -40,6 +53,8 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
     passingMarks: '35',
     weightage: '10',
     gradingType: new Set(['numerical']),
+    term: new Set([]),
+    duration: '',
     instructions: '',
   });
 
@@ -160,6 +175,8 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
         weightage: parseInt(formData.weightage) || 10,
         gradingType: Array.from(formData.gradingType)[0],
         instructions: formData.instructions,
+        term: formData.term.size > 0 ? Array.from(formData.term)[0] : undefined,
+        duration: formData.duration ? parseInt(formData.duration) : undefined,
         createdBy: user.id,
         status: 'scheduled'
       };
@@ -219,12 +236,13 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
           <Select
             label={t('pages.class1')}
             labelPlacement="outside"
-            placeholder={loadingData ? "Loading..." : "Select class"}
+            placeholder="Select class"
             selectedKeys={formData.classId}
             onSelectionChange={handleSelectionChange('classId')}
             isInvalid={!!errors.classId}
             errorMessage={errors.classId}
             isRequired
+            isLoading={loadingData}
             isDisabled={loadingData}
             classNames={{
               trigger: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
@@ -240,12 +258,13 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
           <Select
             label={t('pages.subject2')}
             labelPlacement="outside"
-            placeholder={loadingData ? "Loading..." : "Select subject"}
+            placeholder="Select subject"
             selectedKeys={formData.subjectId}
             onSelectionChange={handleSelectionChange('subjectId')}
             isInvalid={!!errors.subjectId}
             errorMessage={errors.subjectId}
             isRequired
+            isLoading={loadingData}
             isDisabled={loadingData}
             classNames={{
               trigger: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
@@ -302,6 +321,36 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             onValueChange={(value) => handleInputChange('endDate', value)}
             isInvalid={!!errors.endDate}
             errorMessage={errors.endDate}
+            classNames={{
+              inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
+            }}
+          />
+
+          <Select
+            label="Term"
+            labelPlacement="outside"
+            placeholder="Select term (optional)"
+            selectedKeys={formData.term}
+            onSelectionChange={handleSelectionChange('term')}
+            classNames={{
+              trigger: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
+            }}
+          >
+            {TERM_OPTIONS.map((term) => (
+              <SelectItem key={term.value} value={term.value}>
+                {term.label}
+              </SelectItem>
+            ))}
+          </Select>
+
+          <Input
+            type="number"
+            label="Duration (minutes)"
+            labelPlacement="outside"
+            placeholder="e.g., 60"
+            value={formData.duration}
+            onValueChange={(value) => handleInputChange('duration', value)}
+            min={1}
             classNames={{
               inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
             }}

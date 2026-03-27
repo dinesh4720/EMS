@@ -197,7 +197,7 @@ function AppContextCore({ children }) {
     queryKey: settingsQueryKey,
     enabled: Boolean(storedUser?.id) && !isSuperAdmin,
     placeholderData: (previousData) => previousData,
-    queryFn: fetchAppSettingsData,
+    queryFn: ({ signal }) => fetchAppSettingsData({ signal }),
   });
 
   const loading = Boolean(storedUser?.id) && !isSuperAdmin && appDataQuery.isPending;
@@ -242,7 +242,7 @@ function AppContextCore({ children }) {
     if (!storedUser?.id || isSuperAdmin) return null;
     return queryClient.fetchQuery({
       queryKey: settingsQueryKey,
-      queryFn: fetchAppSettingsData,
+      queryFn: ({ signal }) => fetchAppSettingsData({ signal }),
     });
   }, [isSuperAdmin, queryClient, settingsQueryKey, storedUser?.id]);
 

@@ -51,7 +51,7 @@ export default function StaffList({
     });
 
     const roles = STAFF_ROLES; // Use centralized roles
-    const statusOptions = ["active", "inactive"];
+    const statusOptions = ["active", "inactive", "on-leave", "suspended", "terminated"];
 
     // Calculate counts for filters
     const getRoleCounts = () => {
@@ -490,6 +490,39 @@ tr:nth-child(even) td{background:#f9fafb}
                                 <span className="flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-danger-500"></span>
                                     Inactive
+                                </span>
+                            </DropdownItem>
+                            <DropdownItem
+                                key="on-leave"
+                                startContent={statusFilter === "on-leave" ? <Check size={14} className="text-primary" /> : <span className="w-3.5"></span>}
+                                endContent={<span className="text-default-400 text-xs">{statusCounts["on-leave"]}</span>}
+                                className="capitalize"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-warning-500"></span>
+                                    On Leave
+                                </span>
+                            </DropdownItem>
+                            <DropdownItem
+                                key="suspended"
+                                startContent={statusFilter === "suspended" ? <Check size={14} className="text-primary" /> : <span className="w-3.5"></span>}
+                                endContent={<span className="text-default-400 text-xs">{statusCounts.suspended}</span>}
+                                className="capitalize"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                                    Suspended
+                                </span>
+                            </DropdownItem>
+                            <DropdownItem
+                                key="terminated"
+                                startContent={statusFilter === "terminated" ? <Check size={14} className="text-primary" /> : <span className="w-3.5"></span>}
+                                endContent={<span className="text-default-400 text-xs">{statusCounts.terminated}</span>}
+                                className="capitalize"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-gray-500"></span>
+                                    Terminated
                                 </span>
                             </DropdownItem>
                         </DropdownMenu>

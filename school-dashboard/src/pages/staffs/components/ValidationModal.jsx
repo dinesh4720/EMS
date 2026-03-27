@@ -30,7 +30,15 @@ export default function ValidationModal({
         </ModalHeader>
         <ModalBody>
           {validating ? (
-            <div className="flex justify-center py-8"><div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-900" /></div>
+            <div className="space-y-4 py-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="rounded-lg p-4 border border-gray-200 dark:border-zinc-800 space-y-2">
+                  <div className="h-4 w-32 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                  <div className="h-3 w-full bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                  <div className="h-3 w-2/3 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
           ) : validationResults && (
             <div className="space-y-4">
               {/* Valid Employees */}

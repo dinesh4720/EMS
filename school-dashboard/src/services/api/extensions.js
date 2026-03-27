@@ -35,6 +35,7 @@ export const inventoryApi = {
   updateAsset: (id, data) => request(`/inventory/assets/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteAsset: (id) => request(`/inventory/assets/${id}`, { method: 'DELETE' }),
   assignAsset: (id, data) => request(`/inventory/assets/${id}/assign`, { method: 'PUT', body: JSON.stringify(data) }),
+  getAssetDepreciation: (id) => request(`/inventory/assets/${id}/depreciation`),
 
   getCategories: () => request('/inventory/categories'),
   createCategory: (data) => request('/inventory/categories', { method: 'POST', body: JSON.stringify(data) }),

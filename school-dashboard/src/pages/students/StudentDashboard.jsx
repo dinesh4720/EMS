@@ -38,6 +38,7 @@ import InvoicePrintModal from "./components/InvoicePrintModal";
 import { useStudentAttendance, useStudentData, useStudentFees, useStudentRemarks, useStudentResults } from "./hooks";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import { DetailPageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 
 // ============================================================================
@@ -345,6 +346,7 @@ export default function StudentDashboard() {
     }
     try {
       await studentsApi.sendReminder(id, {
+        type: 'fee',
         message: reminderMessage,
         parentPhone: student.parentPhone,
         parentEmail: student.parentEmail,
@@ -384,12 +386,12 @@ export default function StudentDashboard() {
     try {
       const message = `Attendance Report for ${student.name}: ${attendanceStats.percentage}% attendance (${attendanceStats.present} present, ${attendanceStats.absent} absent out of ${attendanceStats.total} days).`;
       await studentsApi.sendReminder(id, {
+        type: 'attendance',
         message,
         channel,
         parentPhone: student.parentPhone,
         parentEmail: student.parentEmail,
         studentName: student.name,
-        type: 'attendance_report'
       });
       toast.success(`Report sent via ${channel === 'email' ? 'Email' : 'SMS'}`, { id: loadingToast });
     } catch (error) {
@@ -488,8 +490,8 @@ ${studentResults.length > 0 ? `
 
   // Loading/Error states
   if (loading || studentDataLoading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.loading')}</div>
+    <div className="min-h-screen p-6">
+      <DetailPageSkeleton avatar fields={8} />
     </div>
   );
 

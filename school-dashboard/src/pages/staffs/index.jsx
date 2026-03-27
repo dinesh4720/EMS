@@ -82,10 +82,10 @@ export default function StaffsPage() {
     const roleArray = Array.isArray(staffData.staffType) ? staffData.staffType : (staffData.staffType ? [staffData.staffType] : []);
 
     const transformedData = {
-      name: staffData.fullName,
+      name: staffData.name,
       role: roleArray,
       department: staffData.department || "General",
-      phone: staffData.mobile,
+      phone: staffData.phone,
       email: staffData.email,
       status: "active",
       address: staffData.address,
@@ -101,7 +101,7 @@ export default function StaffsPage() {
       emergencyContact: staffData.emergencyContacts?.[0]?.name || '',
       emergencyPhone: staffData.emergencyContacts?.[0]?.phone || '',
       isWhatsapp: staffData.isWhatsapp,
-      whatsappNumber: staffData.isWhatsapp ? staffData.mobile : staffData.whatsappNumber,
+      whatsappNumber: staffData.isWhatsapp ? staffData.phone : staffData.whatsappNumber,
       picture: staffData.picture,
       idDocuments: staffData.idDocuments,
       professionalQualifications: staffData.professionalQualifications,
@@ -111,7 +111,7 @@ export default function StaffsPage() {
       qualificationDocs: staffData.qualificationDocs,
       customDocuments: staffData.customDocuments,
       staffNumber: staffData.staffNumber,
-      staffType: staffData.staffType,
+      staffType: roleArray, // Keep in sync with `role` to prevent stale deprecated field
       assignedClasses: staffData.assignedClasses || [],
       isClassTeacher: staffData.isClassTeacher,
       classTeacherOf: staffData.classTeacherOf,

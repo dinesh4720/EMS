@@ -96,16 +96,19 @@ function OverviewTab({
   };
 
   // Generate chart data
+  // Backend populates examId with { name, type, ... } so exam name is at r.examId?.name
   const performanceChartData = results.map((r, i) => ({
-    name: r.examName || `Exam ${i + 1}`,
+    name: r.examId?.name || r.examName || `Exam ${i + 1}`,
     percentage: r.percentage || 0,
   }));
 
+  // Backend returns multi-subject data in r.marks[] with subjectName / marksObtained
+  const latestResult = results.length > 0 ? results[0] : null;
   const subjectChartData =
-    results.length > 0 && results[0]?.subjects
-      ? results[0].subjects.map((s) => ({
-          name: s.name,
-          marks: s.marks || 0,
+    latestResult?.marks?.length > 0
+      ? latestResult.marks.map((s) => ({
+          name: s.subjectName || s.name || 'Unknown',
+          marks: s.marksObtained ?? s.marks ?? 0,
         }))
       : [];
 

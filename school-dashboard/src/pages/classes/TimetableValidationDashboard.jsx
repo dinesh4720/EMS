@@ -3,6 +3,7 @@ import { Card, CardBody, CardHeader, Progress, Badge, Button, Tabs, Tab, Select,
 import { request } from '../../services/api';
 import { CURRENT_ACADEMIC_YEAR } from '../../utils/constants';
 import { useTranslation } from 'react-i18next';
+import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 /**
  * TimetableValidationDashboard Component
@@ -237,14 +238,7 @@ const TimetableValidationDashboard = () => {
   if (loading) {
     return (
       <div className="p-6">
-        <Card>
-          <CardBody>
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <div className="text-gray-600 dark:text-zinc-400 text-lg">{t('pages.loadingValidationReports')}</div>
-            </div>
-          </CardBody>
-        </Card>
+        <CardGridPageSkeleton cards={4} columns="grid-cols-1 md:grid-cols-2" />
       </div>
     );
   }

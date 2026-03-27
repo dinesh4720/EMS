@@ -253,11 +253,14 @@ export default function FormBuilder({ isOpen, onClose, formData: initialFormData
                     variant="bordered"
                     size="sm"
                   >
-                    <SelectItem key="admission" value="admission" textValue={t('settings.intakeForms.formTypeAdmission', 'Admission')}>
-                      {t('settings.intakeForms.formTypeAdmission', 'Admission')}
+                    <SelectItem key="student" value="student" textValue={t('settings.intakeForms.formTypeStudent', 'Student / Admission')}>
+                      {t('settings.intakeForms.formTypeStudent', 'Student / Admission')}
                     </SelectItem>
-                    <SelectItem key="teacher" value="teacher" textValue={t('settings.intakeForms.formTypeTeacher', 'Teacher Application')}>
-                      {t('settings.intakeForms.formTypeTeacher', 'Teacher Application')}
+                    <SelectItem key="staff" value="staff" textValue={t('settings.intakeForms.formTypeStaff', 'Staff / Teacher')}>
+                      {t('settings.intakeForms.formTypeStaff', 'Staff / Teacher')}
+                    </SelectItem>
+                    <SelectItem key="parent" value="parent" textValue={t('settings.intakeForms.formTypeParent', 'Parent')}>
+                      {t('settings.intakeForms.formTypeParent', 'Parent')}
                     </SelectItem>
                     <SelectItem key="custom" value="custom" textValue={t('settings.intakeForms.formTypeCustom', 'Custom')}>
                       {t('settings.intakeForms.formTypeCustom', 'Custom')}

@@ -92,7 +92,7 @@ export default function FormSubmissions() {
 
     try {
       setLoading(true);
-      await intakeFormsApi.reviewSubmission(selectedSubmission.id, {
+      await intakeFormsApi.reviewSubmission(selectedSubmission._id || selectedSubmission.id, {
         reviewStatus: status,
         reviewNotes: reviewNotes,
         reviewedBy: user?.id || user?.name || user?.email,
@@ -120,6 +120,7 @@ export default function FormSubmissions() {
       pending: "warning",
       approved: "success",
       rejected: "danger",
+      needs_revision: "secondary",
     };
     return colors[status] || "default";
   };
@@ -165,7 +166,7 @@ export default function FormSubmissions() {
 
       {/* Filters */}
       <div className="flex gap-2">
-        {["pending", "approved", "rejected", "all"].map((status) => (
+        {["pending", "approved", "rejected", "needs_revision", "all"].map((status) => (
           <Button
             key={status}
             size="sm"
@@ -204,17 +205,17 @@ export default function FormSubmissions() {
               isLoading={loading}
             >
               {(submission) => (
-                <TableRow key={submission.id}>
+                <TableRow key={submission._id || submission.id}>
                   <TableCell>
                     <div className="font-medium text-gray-900 dark:text-zinc-100">
-                      {submission.formName}
+                      {submission.formId?.formName || submission.formName || '-'}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-zinc-500">
-                      {submission.formType}
+                      {submission.formId?.formType || submission.formType || '-'}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm">{submission.submittedBy}</div>
+                    <div className="text-sm">{submission.submittedByEmail || submission.submittedByPhone || submission.submittedBy || '-'}</div>
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">
@@ -249,7 +250,7 @@ export default function FormSubmissions() {
                         <DropdownItem
                           key="view"
                           startContent={<Eye size={16} />}
-                          onPress={() => handleViewSubmission(submission.id)}
+                          onPress={() => handleViewSubmission(submission._id || submission.id)}
                         >
                           {t('formSubmissions.reviewSubmission')}
                         </DropdownItem>
@@ -287,8 +288,8 @@ export default function FormSubmissions() {
               <h3 className="text-xl font-semibold">{t('formSubmissions.modalTitle')}</h3>
               {selectedSubmission && (
                 <p className="text-sm text-gray-600 dark:text-zinc-400 font-normal mt-1">
-                  {selectedSubmission.form?.formName} - Submitted by{" "}
-                  {selectedSubmission.submittedBy}
+                  {selectedSubmission.formId?.formName || '-'} - Submitted by{" "}
+                  {selectedSubmission.submittedByEmail || selectedSubmission.submittedByPhone || '-'}
                 </p>
               )}
             </div>
@@ -302,7 +303,7 @@ export default function FormSubmissions() {
                     {t('formSubmissions.submittedInfo')}
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
-                    {selectedSubmission.form?.fields?.map((field) => (
+                    {selectedSubmission.formId?.fields?.map((field) => (
                       <div
                         key={field.id}
                         className={`${

@@ -103,10 +103,10 @@ function PersonalInfoStep({
             label={t('staff.form.fullNameLabel')}
             labelPlacement="outside"
             placeholder={t('staff.form.fullNamePlaceholder')}
-            value={formData.fullName}
-            onValueChange={v => updateField("fullName", v)}
-            isInvalid={!!errors.fullName}
-            errorMessage={errors.fullName}
+            value={formData.name}
+            onValueChange={v => updateField("name", v)}
+            isInvalid={!!errors.name}
+            errorMessage={errors.name}
             variant="bordered"
             radius="sm"
             isRequired
@@ -214,18 +214,18 @@ function PersonalInfoStep({
               labelPlacement="outside"
               startContent={<span className="text-default-400 text-xs">+91</span>}
               placeholder={t('staff.form.mobilePlaceholder')}
-              value={formData.mobile}
+              value={formData.phone}
               onValueChange={v => {
                 if (v.length <= 10 && /^\d*$/.test(v)) {
-                  updateField("mobile", v);
+                  updateField("phone", v);
                   if (formData.isWhatsapp) updateField("whatsappNumber", v);
                 }
               }}
               variant="bordered"
               radius="sm"
               isRequired
-              isInvalid={!!errors.mobile}
-              errorMessage={errors.mobile}
+              isInvalid={!!errors.phone}
+              errorMessage={errors.phone}
               classNames={inputStyles}
             />
             <Checkbox
@@ -234,7 +234,7 @@ function PersonalInfoStep({
               isSelected={formData.isWhatsapp}
               onValueChange={v => {
                 updateField("isWhatsapp", v);
-                if (v) updateField("whatsappNumber", formData.mobile);
+                if (v) updateField("whatsappNumber", formData.phone);
               }}
             >
               {t('staff.form.sameAsWhatsapp')}

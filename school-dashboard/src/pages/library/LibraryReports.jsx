@@ -3,6 +3,7 @@ import { BookOpen, AlertTriangle, IndianRupee } from "lucide-react";
 import { libraryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 export default function LibraryReports() {
   const { t } = useTranslation();
@@ -33,15 +34,7 @@ export default function LibraryReports() {
     load();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="space-y-6 animate-pulse">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-64 bg-gray-100 dark:bg-zinc-800 rounded-xl" />
-        ))}
-      </div>
-    );
-  }
+  if (loading) return <CardGridPageSkeleton title={false} cards={3} columns="grid-cols-1" />;
 
   if (!report) return null;
 

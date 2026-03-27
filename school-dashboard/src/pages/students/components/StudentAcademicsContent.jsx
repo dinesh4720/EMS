@@ -60,8 +60,13 @@ const StudentAcademicsContent = memo(function StudentAcademicsContent({
           <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{t("students.academics.basedOnExamResults", "Based on exam results")}</p>
         </div>
         {resultsLoading ? (
-          <div className="p-8 flex justify-center">
-            <div className="animate-spin w-6 h-6 border-2 border-gray-300 dark:border-zinc-600 border-t-gray-600 dark:border-t-zinc-300 rounded-full" />
+          <div className="p-4 space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between px-2">
+                <div className="h-4 w-24 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                <div className="h-4 w-12 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+              </div>
+            ))}
           </div>
         ) : results && results.length > 0 ? (
           <div className="divide-y divide-gray-50 dark:divide-zinc-700">
@@ -113,7 +118,7 @@ const StudentAcademicsContent = memo(function StudentAcademicsContent({
             <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t("students.academics.examResults", "Exam Results")}</h3>
             <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{t("students.academics.assessmentHistory", "Assessment history")}</p>
           </div>
-          {resultsLoading && <div className="animate-spin w-4 h-4 border-2 border-gray-300 dark:border-zinc-600 border-t-gray-600 dark:border-t-zinc-300 rounded-full" />}
+          {resultsLoading && <div className="w-4 h-4 border-2 border-gray-300 dark:border-zinc-600 border-t-gray-600 dark:border-t-zinc-300 rounded-full animate-spin" />}
         </div>
         {results?.length > 0 ? (
           <div className="divide-y divide-gray-50 dark:divide-zinc-700">

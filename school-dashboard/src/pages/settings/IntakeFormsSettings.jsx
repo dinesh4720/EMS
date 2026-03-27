@@ -12,7 +12,6 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
-  Spinner,
   Chip,
   Table,
   TableHeader,
@@ -44,6 +43,7 @@ import { formTemplates } from "../../data/formTemplates";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useTranslation } from 'react-i18next';
+import SkeletonTable from '../../components/skeletons/SkeletonTable';
 
 // Field types available in form builder
 const FIELD_TYPES = [
@@ -203,7 +203,7 @@ export default function IntakeFormsSettings() {
       // Force fresh mount
       setBuilderKey(prev => prev + 1);
 
-      const formType = location.state.formType || 'admission';
+      const formType = location.state.formType || 'student';
       setFormData({
         name: "",
         type: formType,
@@ -641,7 +641,7 @@ export default function IntakeFormsSettings() {
           <TableBody
             items={forms}
             emptyContent="No forms found"
-            loadingContent={<Spinner />}
+            loadingContent={<SkeletonTable columns={7} rows={5} />}
           >
             {(form) => (
               <TableRow key={form.id}>
@@ -778,11 +778,14 @@ export default function IntakeFormsSettings() {
                       variant="bordered"
                       size="sm"
                     >
-                      <SelectItem key="admission" value="admission" textValue="Admission">
-                        Admission
+                      <SelectItem key="student" value="student" textValue="Student / Admission">
+                        Student / Admission
                       </SelectItem>
-                      <SelectItem key="teacher" value="teacher" textValue="Teacher Application">
-                        Teacher Application
+                      <SelectItem key="staff" value="staff" textValue="Staff / Teacher">
+                        Staff / Teacher
+                      </SelectItem>
+                      <SelectItem key="parent" value="parent" textValue="Parent">
+                        Parent
                       </SelectItem>
                       <SelectItem key="custom" value="custom" textValue="Custom">
                         Custom

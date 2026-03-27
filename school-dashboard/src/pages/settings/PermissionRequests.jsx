@@ -20,7 +20,6 @@ import {
   Textarea,
   Tabs,
   Tab,
-  Spinner,
   Avatar,
 } from "@heroui/react";
 import { CheckCircle, XCircle, Clock, User, Calendar, MessageSquare } from "lucide-react";
@@ -28,6 +27,7 @@ import { useAuth } from "../../context/AuthContext";
 import { usePermissions } from "../../context/PermissionContext";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import SkeletonTable from '../../components/skeletons/SkeletonTable';
 
 
 export default function PermissionRequests() {
@@ -273,9 +273,9 @@ export default function PermissionRequests() {
             </TableHeader>
             <TableBody
               items={requests}
-              emptyContent={loading ? <Spinner /> : "No requests found"}
+              emptyContent="No requests found"
               isLoading={loading}
-              loadingContent={<Spinner />}
+              loadingContent={<SkeletonTable columns={7} rows={5} />}
             >
               {(request) => (
                 <TableRow key={request._id}>

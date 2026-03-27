@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardBody, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Select, SelectItem, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Textarea, Spinner } from "@heroui/react";
 import { Download, Check, X, Lock, Bell, AlertTriangle, Users, Clock, TrendingUp, TimerOff, LogOut, AlarmClock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { attendanceApi } from "../../services/api";
+import { attendanceApi, classesApi } from "../../services/api";
 import { useTranslation } from 'react-i18next';
 
 const ITEMS_PER_LOAD = 10;
@@ -35,6 +35,7 @@ export default function Attendance({
   const [saveMessage, setSaveMessage] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editReason, setEditReason] = useState("");
+  const [isNotifying, setIsNotifying] = useState(false);
 
   // Determine if we're embedded inside ClassDashboard (classId prop is an ObjectId)
   const isEmbedded = !!classId;
@@ -178,6 +179,25 @@ export default function Attendance({
     }
   };
 
+  const handleNotifyParents = async () => {
+    if (!selectedClass || !date || isNotifying) return;
+    setIsNotifying(true);
+    try {
+      const res = await classesApi.notifyParents({ classId: selectedClass, date });
+      setSaveMessage({
+        type: 'success',
+        text: res?.message || `Notified parents of ${absentCount} absent student(s)`,
+      });
+    } catch (error) {
+      setSaveMessage({
+        type: 'error',
+        text: error?.message || 'Failed to notify parents',
+      });
+    } finally {
+      setIsNotifying(false);
+    }
+  };
+
   const handleSaveAttendance = async () => {
     if (isLocked || isSaving) return;
 
@@ -271,7 +291,7 @@ export default function Attendance({
                 trigger: "bg-default-100 data-[hover=true]:bg-default-200",
               }}
             >
-              {classesWithTeachers.map(c => <SelectItem key={`${c.name}-${c.section}`} textValue={`Class ${c.name} - ${c.section}`}>Class {c.name} - {c.section}</SelectItem>)}
+              {classesWithTeachers.map(c => <SelectItem key={c.id || c._id || `${c.name}-${c.section}`} textValue={`Class ${c.name} - ${c.section}`}>Class {c.name} - {c.section}</SelectItem>)}
             </Select>
           )}
           <Input
@@ -291,7 +311,7 @@ export default function Attendance({
         {/* Right Side - Actions */}
         <div className="flex gap-2 w-full sm:w-auto justify-end">
           <Button size="sm" color="success" variant="flat" startContent={<Check size={14} />} onPress={markAllPresent} isDisabled={isLocked}>{t('pages.markAllPresent')}</Button>
-          {absentCount > 0 && <Button size="sm" color="warning" variant="flat" startContent={<Bell size={14} />}>Notify Parents ({absentCount})</Button>}
+          {absentCount > 0 && <Button size="sm" color="warning" variant="flat" startContent={<Bell size={14} />} onPress={handleNotifyParents} isLoading={isNotifying}>Notify Parents ({absentCount})</Button>}
         </div>
       </div>
 

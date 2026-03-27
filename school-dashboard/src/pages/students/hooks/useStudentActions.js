@@ -215,6 +215,7 @@ export function useStudentActions({
     }
     try {
       await studentsApi.sendReminder(studentId, {
+        type: 'fee',
         message: reminderMessage,
         parentPhone: student.parentPhone,
         parentEmail: student.parentEmail,

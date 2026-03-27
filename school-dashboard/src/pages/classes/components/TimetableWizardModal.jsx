@@ -932,9 +932,22 @@ export default function TimetableWizardModal({
               </div>
 
               {isGenerating ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-900" />
-                  <p className="mt-4 text-gray-500 dark:text-zinc-400">{t('pages.generatingTimetable')}</p>
+                <div className="space-y-4 py-4">
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.generatingTimetable')}</p>
+                  </div>
+                  <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+                    {Array.from({ length: 6 }).map((_, row) => (
+                      <div key={row} className="flex gap-px bg-gray-100 dark:bg-zinc-800">
+                        {Array.from({ length: 7 }).map((_, col) => (
+                          <div key={col} className="flex-1 bg-white dark:bg-zinc-950 p-2">
+                            <div className="h-8 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : generatedSchedule ? (
                 <div className="overflow-x-auto">

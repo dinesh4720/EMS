@@ -3,13 +3,15 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Input, Select, SelectItem, Textarea,
 } from "@heroui/react";
-import { Plus, Edit3, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Edit3, Trash2, ChevronDown, ChevronUp, X } from "lucide-react";
 import { MinimalButton } from "../../components/ui";
 import { inventoryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 const STATUSES = ["PENDING", "IN_PROGRESS", "COMPLETED"];
+const CONDITIONS = ["GOOD", "FAIR", "POOR", "DAMAGED"];
 
 const statusColors = {
   PENDING: "bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400",
@@ -17,11 +19,13 @@ const statusColors = {
   COMPLETED: "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400",
 };
 
-const emptyForm = { title: "", status: "PENDING", startDate: "", notes: "" };
+const emptyAuditItem = { assetId: "", expectedQuantity: "", actualQuantity: "", condition: "", notes: "" };
+const emptyForm = { title: "", status: "PENDING", startDate: "", notes: "", auditItems: [] };
 
 export default function Audits() {
   const { t } = useTranslation();
   const [audits, setAudits] = useState([]);
+  const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("all");
   const [isOpen, setIsOpen] = useState(false);
@@ -34,8 +38,12 @@ export default function Audits() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const data = await inventoryApi.getAudits(filterStatus !== "all" ? filterStatus : undefined);
+      const [data, assetData] = await Promise.all([
+        inventoryApi.getAudits(filterStatus !== "all" ? filterStatus : undefined),
+        inventoryApi.getAssets({}),
+      ]);
       setAudits(Array.isArray(data) ? data : []);
+      setAssets(assetData?.data || (Array.isArray(assetData) ? assetData : []));
     } catch { toast.error(t('toast.error.failedToLoadAudits')); }
     finally { setLoading(false); }
   };
@@ -50,6 +58,13 @@ export default function Audits() {
       status: a.status || "PENDING",
       startDate: a.startDate ? a.startDate.slice(0, 10) : "",
       notes: a.notes || "",
+      auditItems: (a.auditItems || []).map((item) => ({
+        assetId: item.assetId?._id || item.assetId || "",
+        expectedQuantity: item.expectedQuantity ?? "",
+        actualQuantity: item.actualQuantity ?? "",
+        condition: item.condition || "",
+        notes: item.notes || "",
+      })),
     });
     setErrors({});
     setIsOpen(true);
@@ -62,7 +77,19 @@ export default function Audits() {
     }
     try {
       setSaving(true);
-      const payload = { ...form, startDate: form.startDate || undefined };
+      const payload = {
+        ...form,
+        startDate: form.startDate || undefined,
+        auditItems: (form.auditItems || [])
+          .filter((item) => item.assetId)
+          .map((item) => ({
+            assetId: item.assetId,
+            expectedQuantity: item.expectedQuantity !== "" ? Number(item.expectedQuantity) : undefined,
+            actualQuantity: item.actualQuantity !== "" ? Number(item.actualQuantity) : undefined,
+            condition: item.condition || undefined,
+            notes: item.notes || undefined,
+          })),
+      };
       if (editing) {
         await inventoryApi.updateAudit(editing._id, payload);
         toast.success(t('toast.success.auditUpdated'));
@@ -91,15 +118,23 @@ export default function Audits() {
     setErrors((e) => ({ ...e, [key]: '' }));
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-3 animate-pulse">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-20 bg-gray-100 dark:bg-zinc-800 rounded-xl" />
-        ))}
-      </div>
-    );
-  }
+  const addAuditItem = () => {
+    setForm((f) => ({ ...f, auditItems: [...(f.auditItems || []), { ...emptyAuditItem }] }));
+  };
+
+  const removeAuditItem = (idx) => {
+    setForm((f) => ({ ...f, auditItems: f.auditItems.filter((_, i) => i !== idx) }));
+  };
+
+  const setAuditItem = (idx, key, val) => {
+    setForm((f) => {
+      const items = [...(f.auditItems || [])];
+      items[idx] = { ...items[idx], [key]: val };
+      return { ...f, auditItems: items };
+    });
+  };
+
+  if (loading) return <TablePageSkeleton title={false} kpiCards={0} columns={4} rows={5} />;
 
   return (
     <div className="space-y-4">
@@ -195,6 +230,53 @@ export default function Audits() {
               <Input label={t('pages.startDate1')} type="date" value={form.startDate} onValueChange={(v) => set("startDate", v)} />
             </div>
             <Textarea label={t('pages.notes1')} value={form.notes} onValueChange={(v) => set("notes", v)} className="mt-2" />
+
+            {/* Audit Items Sub-form */}
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-zinc-300">Audit Items</h4>
+                <MinimalButton variant="ghost" size="sm" icon={<Plus size={14} />} onClick={addAuditItem}>
+                  Add Item
+                </MinimalButton>
+              </div>
+              {(form.auditItems || []).length === 0 && (
+                <p className="text-xs text-gray-500 dark:text-zinc-400 text-center py-3 border border-dashed border-gray-200 dark:border-zinc-700 rounded-lg">
+                  No items added yet. Click "Add Item" to audit assets.
+                </p>
+              )}
+              <div className="space-y-3">
+                {(form.auditItems || []).map((item, idx) => (
+                  <div key={idx} className="border border-gray-100 dark:border-zinc-800 rounded-lg p-3 relative">
+                    <button
+                      onClick={() => removeAuditItem(idx)}
+                      className="absolute top-2 right-2 p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-950 text-gray-400 hover:text-red-600"
+                    >
+                      <X size={14} />
+                    </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pr-6">
+                      <Select
+                        label="Asset"
+                        selectedKeys={item.assetId ? [item.assetId] : []}
+                        onSelectionChange={(keys) => setAuditItem(idx, "assetId", [...keys][0] || "")}
+                        className="sm:col-span-2"
+                      >
+                        {assets.map((a) => <SelectItem key={a._id}>{a.name}{a.assetTag ? ` (${a.assetTag})` : ""}</SelectItem>)}
+                      </Select>
+                      <Input label="Expected Qty" type="number" value={String(item.expectedQuantity)} onValueChange={(v) => setAuditItem(idx, "expectedQuantity", v)} />
+                      <Input label="Actual Qty" type="number" value={String(item.actualQuantity)} onValueChange={(v) => setAuditItem(idx, "actualQuantity", v)} />
+                      <Select
+                        label="Condition"
+                        selectedKeys={item.condition ? [item.condition] : []}
+                        onSelectionChange={(keys) => setAuditItem(idx, "condition", [...keys][0] || "")}
+                      >
+                        {CONDITIONS.map((c) => <SelectItem key={c}>{c}</SelectItem>)}
+                      </Select>
+                      <Input label="Notes" value={item.notes} onValueChange={(v) => setAuditItem(idx, "notes", v)} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </ModalBody>
           <ModalFooter>
             <MinimalButton variant="ghost" onClick={() => setIsOpen(false)}>{t('pages.cancel2')}</MinimalButton>

@@ -5,9 +5,10 @@ import {
 } from "@heroui/react";
 import { Search, Plus, Edit3, Trash2 } from "lucide-react";
 import { MinimalButton } from "../../components/ui";
-import { inventoryApi } from "../../services/api";
+import { inventoryApi, staffApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 const CATEGORIES = ["FURNITURE", "ELECTRONICS", "LAB_EQUIPMENT", "SPORTS", "STATIONERY", "VEHICLE", "OTHER"];
 const CONDITIONS = ["GOOD", "FAIR", "POOR", "DAMAGED"];
@@ -30,14 +31,15 @@ const statusColors = {
 const emptyForm = {
   name: "", category: "FURNITURE", serialNumber: "", assetTag: "", description: "",
   location: "", assignedTo: "", quantity: 1, minimumQuantity: 0,
-  purchaseDate: "", purchasePrice: "", warrantyExpiry: "", vendorId: "",
-  condition: "GOOD", status: "ACTIVE", notes: "",
+  purchaseDate: "", purchasePrice: "", currentValue: "", warrantyExpiry: "", vendorId: "",
+  condition: "GOOD", status: "ACTIVE", notes: "", depreciationRate: "",
 };
 
 export default function Assets() {
   const { t } = useTranslation();
   const [assets, setAssets] = useState([]);
   const [vendors, setVendors] = useState([]);
+  const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -51,12 +53,14 @@ export default function Assets() {
   const fetchAssets = async () => {
     try {
       setLoading(true);
-      const [res, vendorList] = await Promise.all([
+      const [res, vendorList, staffData] = await Promise.all([
         inventoryApi.getAssets({ search, category: filterCategory !== "all" ? filterCategory : undefined, status: filterStatus !== "all" ? filterStatus : undefined }),
         inventoryApi.getVendors(),
+        staffApi.getAll(),
       ]);
       setAssets(res?.data || []);
       setVendors(Array.isArray(vendorList) ? vendorList : []);
+      setStaffList(Array.isArray(staffData) ? staffData : staffData?.data || []);
     } catch { toast.error(t('toast.error.failedToLoadAssets')); }
     finally { setLoading(false); }
   };
@@ -69,11 +73,12 @@ export default function Assets() {
     setForm({
       name: a.name || "", category: a.category || "FURNITURE", serialNumber: a.serialNumber || "",
       assetTag: a.assetTag || "", description: a.description || "", location: a.location || "",
-      assignedTo: a.assignedTo || "", quantity: a.quantity ?? 1, minimumQuantity: a.minimumQuantity ?? 0,
+      assignedTo: a.assignedTo?._id || a.assignedTo || "", quantity: a.quantity ?? 1, minimumQuantity: a.minimumQuantity ?? 0,
       purchaseDate: a.purchaseDate ? a.purchaseDate.slice(0, 10) : "",
-      purchasePrice: a.purchasePrice ?? "", warrantyExpiry: a.warrantyExpiry ? a.warrantyExpiry.slice(0, 10) : "",
+      purchasePrice: a.purchasePrice ?? "", currentValue: a.currentValue ?? "",
+      warrantyExpiry: a.warrantyExpiry ? a.warrantyExpiry.slice(0, 10) : "",
       vendorId: a.vendorId?._id || a.vendorId || "", condition: a.condition || "GOOD",
-      status: a.status || "ACTIVE", notes: a.notes || "",
+      status: a.status || "ACTIVE", notes: a.notes || "", depreciationRate: a.depreciationRate ?? "",
     });
     setErrors({});
     setIsOpen(true);
@@ -92,9 +97,12 @@ export default function Assets() {
         quantity: Number(form.quantity),
         minimumQuantity: Number(form.minimumQuantity),
         purchasePrice: form.purchasePrice ? Number(form.purchasePrice) : undefined,
+        currentValue: form.currentValue !== "" ? Number(form.currentValue) : undefined,
+        depreciationRate: form.depreciationRate !== "" ? Number(form.depreciationRate) : undefined,
         purchaseDate: form.purchaseDate || undefined,
         warrantyExpiry: form.warrantyExpiry || undefined,
         vendorId: form.vendorId || undefined,
+        assignedTo: form.assignedTo || null,
       };
       if (editing) {
         await inventoryApi.updateAsset(editing._id, payload);
@@ -124,15 +132,7 @@ export default function Assets() {
     setErrors((e) => ({ ...e, [key]: '' }));
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-3 animate-pulse">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-14 bg-gray-100 dark:bg-zinc-800 rounded-lg" />
-        ))}
-      </div>
-    );
-  }
+  if (loading) return <TablePageSkeleton title={false} kpiCards={0} columns={6} rows={6} />;
 
   return (
     <div className="space-y-4">
@@ -172,14 +172,14 @@ export default function Assets() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 dark:bg-zinc-900 border-b border-gray-100 dark:border-zinc-800">
-                {["Name", "Category", "Location", "Qty", "Condition", "Status", "Vendor", "Actions"].map((h) => (
+                {["Name", "Category", "Location", "Assigned To", "Qty", "Current Value", "Condition", "Status", "Vendor", "Actions"].map((h) => (
                   <th key={h} className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {assets.length === 0 ? (
-                <tr><td colSpan={8} className="text-center py-12 text-gray-500 dark:text-zinc-400">{t('pages.noAssetsFound')}</td></tr>
+                <tr><td colSpan={10} className="text-center py-12 text-gray-500 dark:text-zinc-400">{t('pages.noAssetsFound')}</td></tr>
               ) : (
                 assets.map((a) => (
                   <tr key={a._id} className="border-b border-gray-50 dark:border-zinc-800 hover:bg-gray-50/50 dark:hover:bg-zinc-900/50">
@@ -191,7 +191,14 @@ export default function Assets() {
                       <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400">{a.category?.replace(/_/g, " ")}</span>
                     </td>
                     <td className="px-4 py-3 text-gray-600 dark:text-zinc-400">{a.location || "—"}</td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-zinc-400">{a.assignedTo?.name || a.assignedToName || "—"}</td>
                     <td className="px-4 py-3 text-gray-700 dark:text-zinc-300">{a.quantity}</td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-zinc-300">
+                      {a.currentValue != null ? `₹${Number(a.currentValue).toLocaleString()}` : (a.purchasePrice ? `₹${Number(a.purchasePrice).toLocaleString()}` : "—")}
+                      {a.purchasePrice && a.currentValue != null && a.currentValue < a.purchasePrice && (
+                        <p className="text-xs text-gray-400 dark:text-zinc-500 line-through">₹{Number(a.purchasePrice).toLocaleString()}</p>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full ${conditionColors[a.condition] || ""}`}>{a.condition}</span>
                     </td>
@@ -226,12 +233,16 @@ export default function Assets() {
               <Input label={t('pages.assetTag')} value={form.assetTag} onValueChange={(v) => set("assetTag", v)} />
               <Input label={t('pages.serialNumber')} value={form.serialNumber} onValueChange={(v) => set("serialNumber", v)} />
               <Input label={t('pages.location')} value={form.location} onValueChange={(v) => set("location", v)} />
-              <Input label={t('pages.assignedTo')} value={form.assignedTo} onValueChange={(v) => set("assignedTo", v)} />
+              <Select label={t('pages.assignedTo')} selectedKeys={form.assignedTo ? [form.assignedTo] : []} onSelectionChange={(keys) => set("assignedTo", [...keys][0] || "")}>
+                {staffList.map((s) => <SelectItem key={s._id || s.id}>{s.name}</SelectItem>)}
+              </Select>
               <Input label={t('pages.quantity')} type="number" value={String(form.quantity)} onValueChange={(v) => set("quantity", v)} />
               <Input label={t('pages.minimumQuantity')} type="number" value={String(form.minimumQuantity)} onValueChange={(v) => set("minimumQuantity", v)} />
               <Input label={t('pages.purchaseDate')} type="date" value={form.purchaseDate} onValueChange={(v) => set("purchaseDate", v)} />
               <Input label={t('pages.purchasePrice')} type="number" value={String(form.purchasePrice)} onValueChange={(v) => set("purchasePrice", v)} />
+              <Input label="Current Value" type="number" value={String(form.currentValue)} onValueChange={(v) => set("currentValue", v)} description="Auto-calculated if depreciation rate is set" />
               <Input label={t('pages.warrantyExpiry')} type="date" value={form.warrantyExpiry} onValueChange={(v) => set("warrantyExpiry", v)} />
+              <Input label="Depreciation Rate (%)" type="number" value={String(form.depreciationRate)} onValueChange={(v) => set("depreciationRate", v)} />
               <Select label={t('pages.vendor')} selectedKeys={form.vendorId ? [form.vendorId] : []} onSelectionChange={(keys) => set("vendorId", [...keys][0] || "")}>
                 {vendors.map((v) => <SelectItem key={v._id}>{v.name}</SelectItem>)}
               </Select>

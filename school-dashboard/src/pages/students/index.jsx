@@ -109,7 +109,7 @@ export default function StudentsPage() {
     try {
       const forms = await intakeFormsApi.getAll();
       const admissionForms = forms
-        .filter(f => (f.formType === 'admission' || f.formType === 'student') && f.status === 'active')
+        .filter(f => f.formType === 'student' && f.status === 'active')
         .map(f => ({ ...f, id: f._id || f.id }));
       setAvailableForms(admissionForms);
       setSelectedForm(null);
@@ -291,7 +291,7 @@ export default function StudentsPage() {
                 </Button>
               </DrawerHeader>
               <DrawerBody className="p-0 overflow-hidden">
-                <Suspense fallback={<div className="flex justify-center py-8"><div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-900" /></div>}>
+                <Suspense fallback={<div className="p-6 space-y-4">{Array.from({ length: 6 }).map((_, i) => (<div key={i} className="space-y-2"><div className="h-4 w-1/4 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" /><div className="h-10 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" /></div>))}</div>}>
                   <AddStudent
                     onClose={handleCloseAddStudent}
                     onSave={handleSaveStudent}

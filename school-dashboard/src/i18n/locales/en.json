@@ -680,7 +680,8 @@
     "reject": "Reject"
   },
   "globalSearch": {
-    "placeholder": "Search students, staff, classes, or pages...",
+    "placeholder": "Search students, staff, exams, announcements...",
+    "searching": "Searching...",
     "searchingStudents": "Searching students...",
     "noResults": "No results found for \"{{query}}\"",
     "navigate": "Navigate",
@@ -690,7 +691,10 @@
       "pages": "Pages",
       "staff": "Staff",
       "students": "Students",
-      "classes": "Classes"
+      "classes": "Classes",
+      "exams": "Exams",
+      "fees": "Fee Payments",
+      "announcements": "Announcements"
     }
   },
   "formSubmissions": {
@@ -725,6 +729,7 @@
       "pending": "Pending",
       "approved": "Approved",
       "rejected": "Rejected",
+      "needs_revision": "Needs Revision",
       "all": "All"
     }
   },

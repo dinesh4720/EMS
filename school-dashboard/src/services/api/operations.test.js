@@ -141,14 +141,14 @@ describe('remindersApi', () => {
     expect(request).toHaveBeenCalledWith('/reminders/rem33/duplicate', { method: 'POST' });
   });
 
-  it('getTemplates without type calls /reminders/templates', () => {
+  it('getTemplates without type calls /reminders/templates/all', () => {
     remindersApi.getTemplates();
-    expect(request).toHaveBeenCalledWith('/reminders/templates');
+    expect(request).toHaveBeenCalledWith('/reminders/templates/all');
   });
 
   it('getTemplates with type appends query param', () => {
     remindersApi.getTemplates('fee');
-    expect(request).toHaveBeenCalledWith('/reminders/templates?type=fee');
+    expect(request).toHaveBeenCalledWith('/reminders/templates/all?type=fee');
   });
 });
 
@@ -234,9 +234,9 @@ describe('visitorsApi', () => {
 // ─── frontDeskApi ─────────────────────────────────────────────────────────────
 
 describe('frontDeskApi', () => {
-  it('getVisitorsToday calls correct endpoint', () => {
+  it('getVisitorsToday calls dedicated visitors endpoint', () => {
     frontDeskApi.getVisitorsToday();
-    expect(request).toHaveBeenCalledWith('/front-desk/visitors/today');
+    expect(request).toHaveBeenCalledWith('/visitors/today');
   });
 
   it('createAppointment sends POST with data', () => {

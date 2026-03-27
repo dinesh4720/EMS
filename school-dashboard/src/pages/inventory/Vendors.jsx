@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Input, Textarea, Select, SelectItem,
+  Input, Textarea, Select, SelectItem, Switch,
 } from "@heroui/react";
 import { Search, Plus, Edit3, Trash2, Phone, Mail } from "lucide-react";
 import { MinimalButton } from "../../components/ui";
 import { inventoryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 const emptyForm = {
-  name: "", contactPerson: "", phone: "", email: "", address: "", category: "", notes: "",
+  name: "", contactPerson: "", phone: "", email: "", address: "", category: "", notes: "", isActive: true,
 };
 
 export default function Vendors() {
@@ -41,6 +42,7 @@ export default function Vendors() {
     setForm({
       name: v.name || "", contactPerson: v.contactPerson || "", phone: v.phone || "",
       email: v.email || "", address: v.address || "", category: v.category || "", notes: v.notes || "",
+      isActive: v.isActive !== false,
     });
     setErrors({});
     setIsOpen(true);
@@ -81,15 +83,7 @@ export default function Vendors() {
     setErrors((e) => ({ ...e, [key]: '' }));
   };
 
-  if (loading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-36 bg-gray-100 dark:bg-zinc-800 rounded-xl" />
-        ))}
-      </div>
-    );
-  }
+  if (loading) return <CardGridPageSkeleton title={false} cards={6} columns="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" />;
 
   return (
     <div className="space-y-4">
@@ -180,6 +174,10 @@ export default function Vendors() {
             </div>
             <Textarea label={t('pages.address2')} value={form.address} onValueChange={(v) => set("address", v)} className="mt-2" />
             <Textarea label={t('pages.notes1')} value={form.notes} onValueChange={(v) => set("notes", v)} />
+            <div className="flex items-center justify-between mt-2 px-1">
+              <span className="text-sm text-gray-700 dark:text-zinc-300">Active Vendor</span>
+              <Switch isSelected={form.isActive} onValueChange={(v) => set("isActive", v)} size="sm" />
+            </div>
           </ModalBody>
           <ModalFooter>
             <MinimalButton variant="ghost" onClick={() => setIsOpen(false)}>{t('pages.cancel2')}</MinimalButton>

@@ -39,7 +39,7 @@ export default function ClassTeacherAssignmentModal({
     title: "",
     message: "",
     onConfirm: null,
-    variant: "default"
+    variant: "info"
   });
 
   // Filter teachers by search query and role
@@ -99,7 +99,7 @@ export default function ClassTeacherAssignmentModal({
         onConfirm: async () => {
           await performAssignment(teacher.id);
         },
-        variant: "default"
+        variant: "info"
       });
     }
   }, [currentTeacherId, className, section, classesWithTeachers]);

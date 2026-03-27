@@ -65,8 +65,9 @@ export default function SubstitutionAlertPanel({ className = '' }) {
   useEffect(() => {
     fetchAlerts();
 
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchAlerts, 30000);
+    // Refresh every 2 minutes (reduced from 30s to avoid rate-limit issues —
+    // real-time updates come via socket, polling is just a fallback)
+    const interval = setInterval(fetchAlerts, 120000);
 
     // Listen for real-time substitution alerts via socket
     const handleSubstitutionAlert = (data) => {

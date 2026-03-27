@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { inventoryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 const conditionColors = {
   GOOD: "bg-green-500",
@@ -18,6 +19,7 @@ const statusColors = {
 };
 
 function BarChart({ data, colorMap, label }) {
+  const { t } = useTranslation();
   const total = data.reduce((sum, d) => sum + d.count, 0) || 1;
 
   return (
@@ -61,15 +63,7 @@ export default function Reports() {
     load();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-pulse">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-48 bg-gray-100 dark:bg-zinc-800 rounded-xl" />
-        ))}
-      </div>
-    );
-  }
+  if (loading) return <CardGridPageSkeleton title={false} cards={4} columns="grid-cols-1 md:grid-cols-2" />;
 
   const totals = reports?.totals || {};
 
