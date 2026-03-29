@@ -36,7 +36,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
     [currentAcademicYear]
   );
   const [templates, setTemplates] = useState([]);
-  const [loading, setLoading] = useState(false);
+
   const [templateError, setTemplateError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [applying, setApplying] = useState(false);
@@ -456,7 +456,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                       <div key={installment._id || installment.name} className="p-4 bg-primary-50 rounded-xl border border-primary-200">
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-semibold text-primary-900">{installment.name}</span>
-                          <Chip size="sm" color="primary" variant="flat">Due: {new Date(installment.dueDate).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric' })}</Chip>
+                          <Chip size="sm" color="primary" variant="flat">Due: {installment.dueDate ? new Date(installment.dueDate).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric' }) : '—'}</Chip>
                         </div>
                         <p className="text-2xl font-bold text-primary-700">₹{installment.amount.toLocaleString()}</p>
                       </div>

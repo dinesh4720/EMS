@@ -6,6 +6,7 @@ import { TransferCertificateTemplate } from "./TransferCertificateTemplate";
 import { useReactToPrint } from "react-to-print";
 import { useTranslation } from 'react-i18next';
 import { request } from "../../services/api";
+import { DetailPageSkeleton } from "../../components/skeletons/PageSkeletons";
 
 export default function TCGeneratorModal({ isOpen, onClose, students }) {
   const { t } = useTranslation();
@@ -15,6 +16,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
     const [generationProgress, setGenerationProgress] = useState(0);
     const [hasMovedNext, setHasMovedNext] = useState(false);
     const [baseNumber, setBaseNumber] = useState(null); // fetched from backend
+    const [formLoading, setFormLoading] = useState(true);
     const printRef = useRef();
 
     const currentStudent = students[currentIndex];
@@ -29,6 +31,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
             setHasMovedNext(false);
             setIsGenerating(false);
             setGenerationProgress(0);
+            setFormLoading(true);
             // Fetch next TC number from backend, then init forms
             request('/students/tc/next-number')
                 .then(res => {
@@ -41,7 +44,8 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                     const fallback = `TC-${new Date().getFullYear()}-0001`;
                     setBaseNumber(fallback);
                     initializeForm(students[0], 0, fallback);
-                });
+                })
+                .finally(() => setFormLoading(false));
         }
     }, [isOpen, students]);
 
@@ -386,7 +390,9 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                 </ModalHeader>
 
                 <ModalBody>
-                    {!isGenerating ? (
+                    {formLoading ? (
+                        <DetailPageSkeleton fields={8} />
+                    ) : !isGenerating ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {/* TC Number */}
                             <div className="col-span-full font-bold text-lg border-b pb-2 mt-2">Certificate Details</div>
@@ -394,7 +400,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                                 label="TC Number *"
                                 value={formData.tcNumber || ""}
                                 onValueChange={(v) => handleInputChange("tcNumber", v)}
-                                placeholder="e.g. TC-2026-0001"
+                                placeholder={t('students.form.tcNumberPlaceholder')}
                                 description="Auto-generated from backend"
                             />
                             {/* Personal Details */}
@@ -457,7 +463,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                                 label={t('pages.admissionClass')}
                                 value={formData.admissionClass || ""}
                                 onValueChange={(v) => handleInputChange("admissionClass", v)}
-                                placeholder="e.g. Standard I"
+                                placeholder={t('students.form.admissionClassPlaceholder')}
                             />
                             <Input
                                 label={t('pages.classLeaving')}

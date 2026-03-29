@@ -118,7 +118,7 @@ export default function RouteModal({ isOpen, onClose, route, vehicles, academicY
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label={t('pages.routeName')}
-              placeholder="e.g. North Route"
+              placeholder={t('transport.routeNamePlaceholder')}
               value={form.routeName}
               onValueChange={(v) => updateField("routeName", v)}
               isRequired
@@ -127,7 +127,7 @@ export default function RouteModal({ isOpen, onClose, route, vehicles, academicY
             />
             <Input
               label={t('pages.routeNumber')}
-              placeholder="e.g. R001"
+              placeholder={t('transport.routeNumberPlaceholder')}
               value={form.routeNumber}
               onValueChange={(v) => updateField("routeNumber", v)}
               isRequired

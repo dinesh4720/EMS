@@ -1,4 +1,5 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import logger from "../../utils/logger";
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select, SelectItem,
@@ -10,6 +11,7 @@ import { validatePhone } from '../../utils/validations';
 import toast from 'react-hot-toast';
 import GatePassPrint from './GatePassPrint.jsx';
 import { useTranslation } from 'react-i18next';
+import { formatShortDate } from '../../utils/dateFormatter';
 
 const GATE_PASS_REASONS = [
   { key: 'MEDICAL_EMERGENCY', label: 'Medical Emergency' },
@@ -60,6 +62,7 @@ const GatePassLog = forwardRef((props, ref) => {
   const [approvedBy, setApprovedBy] = useState(null);
   const [approvedByStaffId, setApprovedByStaffId] = useState(null);
   const [notes, setNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -74,7 +77,7 @@ const GatePassLog = forwardRef((props, ref) => {
 
         await loadStaff();
       } catch (error) {
-        console.error('Error loading data:', error);
+        logger.error('Error loading data:', error);
       } finally {
         setLoading(false);
       }
@@ -105,7 +108,7 @@ const GatePassLog = forwardRef((props, ref) => {
       const response = await frontDeskApi.getGatePassesToday();
       setGatePasses(response);
     } catch (error) {
-      console.error('Failed to load gate passes:', error);
+      logger.error('Failed to load gate passes:', error);
       toast.error(t('toast.error.failedToLoadGatePasses'));
     }
   };
@@ -121,7 +124,7 @@ const GatePassLog = forwardRef((props, ref) => {
       });
       setStudents(response.data || []);
     } catch (error) {
-      console.error('Failed to load students:', error);
+      logger.error('Failed to load students:', error);
     } finally {
       setStudentsLoading(false);
     }
@@ -132,7 +135,7 @@ const GatePassLog = forwardRef((props, ref) => {
       const response = await staffApi.getAll();
       setStaff(response);
     } catch (error) {
-      console.error('Failed to load staff:', error);
+      logger.error('Failed to load staff:', error);
     }
   };
 
@@ -166,6 +169,8 @@ const GatePassLog = forwardRef((props, ref) => {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const student = getSelectedStudent();
       const staffMember = getSelectedStaff();
@@ -243,8 +248,10 @@ const GatePassLog = forwardRef((props, ref) => {
       resetForm();
       loadGatePasses();
     } catch (error) {
-      console.error('Failed to save gate pass:', error);
+      logger.error('Failed to save gate pass:', error);
       toast.error(error.response?.data?.message || 'Failed to save gate pass');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -365,7 +372,7 @@ const GatePassLog = forwardRef((props, ref) => {
               <TableCell>{getApprovedByLabel(gatePass)}</TableCell>
               <TableCell>
                 {gatePass.leavingDate && gatePass.leavingTime
-                  ? `${new Date(gatePass.leavingDate).toLocaleDateString()} ${gatePass.leavingTime}`
+                  ? `${formatShortDate(gatePass.leavingDate)} ${gatePass.leavingTime}`
                   : '-'
                 }
               </TableCell>
@@ -537,7 +544,7 @@ const GatePassLog = forwardRef((props, ref) => {
                       />
                       <Input
                         label={t('pages.escortRelation')}
-                        placeholder="e.g., Uncle, Aunt, Grandparent"
+                        placeholder={t('pages.escortRelationPlaceholder')}
                         value={escortRelation}
                         onChange={(e) => setEscortRelation(e.target.value)}
                       />
@@ -615,7 +622,7 @@ const GatePassLog = forwardRef((props, ref) => {
             >
               Cancel
             </Button>
-            <Button color="primary" onPress={handleSubmit}>
+            <Button color="primary" onPress={handleSubmit} isLoading={isSubmitting}>
               {editingId ? 'Update' : 'Issue Gate Pass'}
             </Button>
           </ModalFooter>

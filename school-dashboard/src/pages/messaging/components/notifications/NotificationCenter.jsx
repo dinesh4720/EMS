@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import logger from '../../../../utils/logger';
 import {
   Card,
   CardBody,
@@ -32,6 +33,7 @@ import {
 import toast from 'react-hot-toast';
 import { notificationsApi } from '../../../../services/api';
 import { useTranslation } from 'react-i18next';
+import { formatShortDate } from '../../../../utils/dateFormatter';
 
 const NOTIFICATION_ICONS = {
   // Matches backend Notification.type enum values
@@ -78,7 +80,7 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
       const list = Array.isArray(data) ? data : (data?.notifications || data?.data || []);
       setNotifications(isPopover ? list.slice(0, 5) : list);
     } catch (error) {
-      console.error('Error loading notifications:', error);
+      logger.error('Error loading notifications:', error);
     } finally {
       setLoading(false);
     }
@@ -93,7 +95,7 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
         )
       );
     } catch (error) {
-      console.error('Error marking as read:', error);
+      logger.error('Error marking as read:', error);
       toast.error(t('toast.error.failedToMarkAsRead'));
     }
   };
@@ -107,7 +109,7 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
       );
       toast.success(t('toast.success.allNotificationsMarkedAsRead'));
     } catch (error) {
-      console.error('Error marking all as read:', error);
+      logger.error('Error marking all as read:', error);
       toast.error(t('toast.error.failedToMarkAllAsRead'));
     } finally {
       setMarkingAll(false);
@@ -120,7 +122,7 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
       setNotifications(prev => prev.filter(n => n._id !== notificationId));
       toast.success(t('toast.success.notificationDeleted'));
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      logger.error('Error deleting notification:', error);
       toast.error(t('toast.error.failedToDeleteNotification'));
     }
   };
@@ -133,7 +135,7 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
       setNotifications([]);
       toast.success(t('toast.success.allNotificationsCleared'));
     } catch (error) {
-      console.error('Error clearing notifications:', error);
+      logger.error('Error clearing notifications:', error);
       toast.error(t('toast.error.failedToClearNotifications'));
     }
   };
@@ -185,7 +187,7 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
     if (minutes < 60) return `${minutes}m ago`;
     if (hours < 24) return `${hours}h ago`;
     if (days < 7) return `${days}d ago`;
-    return new Date(date).toLocaleDateString();
+    return formatShortDate(date);
   };
 
   return (

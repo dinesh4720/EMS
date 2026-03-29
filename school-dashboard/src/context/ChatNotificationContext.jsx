@@ -1,11 +1,12 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getStoredAuthToken } from '../utils/authSession';
 import socketService from '../services/socketServiceEnhanced';
 import chatService from '../services/chatServiceEnhanced';
 import { MessageCircle, X, Reply, Send } from 'lucide-react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea } from '@heroui/react';
+import { useTranslation } from 'react-i18next';
+import logger from '../utils/logger';
 
 const ChatNotificationContext = createContext();
 
@@ -17,6 +18,7 @@ export function ChatNotificationProvider({ children }) {
   const { user, isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -25,11 +27,18 @@ export function ChatNotificationProvider({ children }) {
   const [replyMessage, setReplyMessage] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
   const locationRef = useRef(location.pathname);
+  const dismissTimersRef = useRef(new Map());
 
   // Update location ref when location changes
   useEffect(() => {
     locationRef.current = location.pathname;
   }, [location.pathname]);
+
+  // Cleanup all dismiss timers on unmount
+  useEffect(() => {
+    const timers = dismissTimersRef.current;
+    return () => { timers.forEach(clearTimeout); timers.clear(); };
+  }, []);
 
   // Check if user is on chat page
   const isOnChatPage = location.pathname.includes('/messaging');
@@ -39,13 +48,13 @@ export function ChatNotificationProvider({ children }) {
 
     let isSubscribed = true;
 
-    // Initialize socket connection
+    // Initialize socket connection (auth via httpOnly cookies, no token needed)
     const initSocket = async () => {
       try {
-        await socketService.connect(getStoredAuthToken());
-        
+        await socketService.connect();
+
         if (!isSubscribed) return;
-        
+
         setIsConnected(true);
 
         // Store callback reference for proper cleanup
@@ -71,7 +80,7 @@ export function ChatNotificationProvider({ children }) {
         };
 
       } catch (error) {
-        console.error('❌ Failed to initialize chat notifications:', error);
+        logger.error('❌ Failed to initialize chat notifications:', error);
       }
     };
 
@@ -98,7 +107,7 @@ export function ChatNotificationProvider({ children }) {
         const totalUnread = conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
         setUnreadCount(totalUnread);
       } catch (error) {
-        console.error('❌ Failed to fetch unread count:', error);
+        logger.error('❌ Failed to fetch unread count:', error);
       }
     };
 
@@ -124,13 +133,17 @@ export function ChatNotificationProvider({ children }) {
 
     setNotifications(prev => [...prev, notification]);
 
-    // Auto-dismiss after 5 seconds
-    setTimeout(() => {
+    // Auto-dismiss after 5 seconds — tracked for cleanup
+    const timerId = setTimeout(() => {
+      dismissTimersRef.current.delete(notification.id);
       dismissNotification(notification.id);
     }, 5000);
+    dismissTimersRef.current.set(notification.id, timerId);
   };
 
   const dismissNotification = (id) => {
+    const timerId = dismissTimersRef.current.get(id);
+    if (timerId) { clearTimeout(timerId); dismissTimersRef.current.delete(id); }
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
@@ -138,7 +151,7 @@ export function ChatNotificationProvider({ children }) {
     // Create a pleasant notification sound using Web Audio API
     try {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      
+
       // Create a two-tone notification sound (like WhatsApp/Messenger)
       const playTone = (frequency, startTime, duration, volume) => {
         const oscillator = audioContext.createOscillator();
@@ -160,13 +173,18 @@ export function ChatNotificationProvider({ children }) {
       };
 
       const now = audioContext.currentTime;
-      
+
       // First tone (higher pitch) - increased volume to 0.3
       playTone(800, now, 0.15, 0.3);
-      
+
       // Second tone (slightly lower pitch) - increased volume to 0.3
       playTone(600, now + 0.1, 0.2, 0.3);
-      
+
+      // Close AudioContext after tones finish to prevent resource leak
+      // Safe fire-and-forget — close() is idempotent and doesn't call setState
+      const closeTimer = setTimeout(() => audioContext.close().catch(() => {}), 500);
+      dismissTimersRef.current.set('audio-' + Date.now(), closeTimer);
+
     } catch (error) {
       console.warn('Could not play notification sound:', error);
     }
@@ -198,11 +216,7 @@ export function ChatNotificationProvider({ children }) {
         socketService.sendMessage(messageData);
       } else {
         // Fallback to REST API
-        await chatService.sendMessage({
-          ...messageData,
-          senderId: user.id,
-          senderModel: 'Staff'
-        });
+        await chatService.sendMessage(messageData);
       }
 
       // Close modal and clear
@@ -211,7 +225,7 @@ export function ChatNotificationProvider({ children }) {
       dismissNotification(replyingTo.id);
       setReplyingTo(null);
     } catch (error) {
-      console.error('❌ Error sending reply:', error);
+      logger.error('❌ Error sending reply:', error);
       alert('Failed to send reply');
     } finally {
       setSendingReply(false);
@@ -318,7 +332,7 @@ export function ChatNotificationProvider({ children }) {
               </div>
             )}
             <Textarea
-              placeholder="Type your reply..."
+              placeholder={t('messaging.replyPlaceholder')}
               value={replyMessage}
               onChange={(e) => setReplyMessage(e.target.value)}
               onKeyDown={(e) => {

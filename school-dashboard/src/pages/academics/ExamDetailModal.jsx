@@ -5,6 +5,7 @@ import { examsApi, resultsApi, classesApi } from '../../services/api';
 import { MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { formatShortDate } from '../../utils/dateFormatter';
 
 const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
   const { t } = useTranslation();
@@ -129,7 +130,7 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
                 <span className="text-xs">{t('pages.startDate1')}</span>
               </div>
               <p className="font-medium text-gray-900 dark:text-zinc-100">
-                {exam.startDate ? new Date(exam.startDate).toLocaleDateString() : 'Not set'}
+                {exam.startDate ? formatShortDate(exam.startDate) : 'Not set'}
               </p>
             </div>
             <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
@@ -138,7 +139,7 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
                 <span className="text-xs">{t('pages.endDate1')}</span>
               </div>
               <p className="font-medium text-gray-900 dark:text-zinc-100">
-                {exam.endDate ? new Date(exam.endDate).toLocaleDateString() : 'Not set'}
+                {exam.endDate ? formatShortDate(exam.endDate) : 'Not set'}
               </p>
             </div>
             <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">

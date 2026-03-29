@@ -34,6 +34,7 @@ const StarRating = ({ rating, onRatingChange, editable, dimension }) => {
         key={star}
         type="button"
         disabled={!editable}
+        aria-label={`Rate ${dimension} ${star} out of 5${fill ? ' (selected)' : ''}`}
         className={`transition-all duration-150 ${editable ? "cursor-pointer hover:scale-110" : "cursor-default"}`}
         onClick={() => editable && onRatingChange(dimension, star)}
         onMouseEnter={() => editable && setHover(star)}

@@ -1,5 +1,6 @@
 import { io } from 'socket.io-client';
 import Peer from 'peerjs';
+import logger from '../utils/logger';
 
 class VideoCallService {
   constructor() {
@@ -28,7 +29,7 @@ class VideoCallService {
         });
 
         this.peer.on('error', (error) => {
-          console.error('❌ PeerJS error:', error);
+          logger.error('❌ PeerJS error:', error);
           this.emit('peerError', error);
           reject(error);
         });
@@ -42,7 +43,7 @@ class VideoCallService {
         setTimeout(() => reject(new Error('PeerJS initialization timeout')), 10000);
       });
     } catch (error) {
-      console.error('❌ Failed to initialize PeerJS:', error);
+      logger.error('❌ Failed to initialize PeerJS:', error);
       throw error;
     }
   }
@@ -91,7 +92,7 @@ class VideoCallService {
 
       return call;
     } catch (error) {
-      console.error('❌ Failed to start call:', error);
+      logger.error('❌ Failed to start call:', error);
       this.emit('callError', error);
       throw error;
     }
@@ -140,7 +141,7 @@ class VideoCallService {
 
       this.emit('callAccepted', { callId });
     } catch (error) {
-      console.error('❌ Failed to accept call:', error);
+      logger.error('❌ Failed to accept call:', error);
       this.emit('callError', error);
       throw error;
     }
@@ -201,7 +202,7 @@ class VideoCallService {
     });
 
     call.on('error', (error) => {
-      console.error('❌ Call error:', error);
+      logger.error('❌ Call error:', error);
       this.emit('callError', error);
     });
   }

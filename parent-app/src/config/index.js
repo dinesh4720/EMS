@@ -76,12 +76,14 @@ export const CONFIG = {
     STUDENT_RESULTS: '/api/parent/students', // + /:id/results
     STUDENT_EXAMS: '/api/parent/students', // + /:id/exams
     STUDENT_REMARKS: '/api/parent/students', // + /:id/remarks
+    STUDENT_HOMEWORK: '/api/parent/students', // + /:id/homework
     STUDENT_TIMETABLE: '/api/parent/timetable', // + /:studentId
     ANNOUNCEMENTS: '/api/parent/announcements',
     FCM_TOKEN: '/api/parent/fcm-token',
     CHAT_LIST: '/api/parent/messages/conversations',
     CHAT_MESSAGES: '/api/parent/messages', // + /:conversationId
     SEND_MESSAGE: '/api/parent/messages/send',
+    NOTIFICATION_SETTINGS: '/api/parent/notification-settings',
   },
 
   // Pagination

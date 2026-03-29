@@ -30,7 +30,7 @@ const FormAssignments = lazyWithRetry(() => import("./pages/intake-forms/FormAss
 const FormSubmissions = lazyWithRetry(() => import("./pages/intake-forms/FormSubmissions"));
 const EnrollmentFunnel = lazyWithRetry(() => import("./pages/intake-forms/EnrollmentFunnel"));
 const HomeworkPage = lazyWithRetry(() => import("./pages/homework"));
-const InventoryPage = lazyWithRetry(() => import("./pages/inventory"));
+// const InventoryPage = lazyWithRetry(() => import("./pages/inventory")); // Commented out — not needed for launch
 const HostelPage = lazyWithRetry(() => import("./pages/hostel"));
 const TransportPage = lazyWithRetry(() => import("./pages/transport"));
 const LibraryPage = lazyWithRetry(() => import("./pages/library"));
@@ -46,7 +46,9 @@ const SuperAdminDashboard = lazyWithRetry(() => import("./pages/super-admin"));
 const PTMPage = lazyWithRetry(() => import("./pages/ptm"));
 const CBSEReportCardPage = lazyWithRetry(() => import("./pages/academics/CBSEReportCardPage"));
 const CCEGradingPage = lazyWithRetry(() => import("./pages/academics/CCEGradingPage"));
-const EmailCampaignsPage = lazyWithRetry(() => import("./pages/messaging/EmailCampaignsPage"));
+const ExamDetail = lazyWithRetry(() => import("./pages/academics/ExamDetail"));
+const ResultsEntry = lazyWithRetry(() => import("./pages/academics/ResultsEntry"));
+// const EmailCampaignsPage = lazyWithRetry(() => import("./pages/messaging/EmailCampaignsPage")); // Commented out — using announcements instead
 const StudentPromotionPage = lazyWithRetry(() => import("./pages/students/StudentPromotionPage"));
 const TransferCertificatePage = lazyWithRetry(() => import("./pages/students/TransferCertificatePage"));
 
@@ -188,6 +190,7 @@ function AuthenticatedApp() {
   }, [location.pathname]);
 
   const isSettingsPage = location.pathname.startsWith("/settings");
+  const isFullWidthPage = isSettingsPage || location.pathname === "/timetable-wizard";
   // Use user preference for sidebar state
   const effectiveSidebarOpen = isSidebarOpen;
 
@@ -222,8 +225,8 @@ function AuthenticatedApp() {
                 <StaleDataBanner />
               </Suspense>
               <BeforeSchoolAlert />
-              <main id="main-content" tabIndex={-1} className={`flex-1 flex flex-col min-h-0 ${isSettingsPage ? 'p-0' : 'p-2 md:p-3'}`}>
-                <div className={`flex-1 flex flex-col min-h-0 ${isSettingsPage ? 'w-full' : 'max-w-[1600px] mx-auto w-full'}`}>
+              <main id="main-content" tabIndex={-1} className={`flex-1 flex flex-col min-h-0 ${isFullWidthPage ? 'p-0' : 'p-2 md:p-3'}`}>
+                <div className={`flex-1 flex flex-col min-h-0 ${isFullWidthPage ? 'w-full' : 'max-w-[1600px] mx-auto w-full'}`}>
                   <Routes>
                     <Route path="/" element={<RouteEB><Dashboard /></RouteEB>} />
                     <Route path="/analytics" element={
@@ -282,6 +285,7 @@ function AuthenticatedApp() {
                         </PermissionGuard>
                       </RouteEB>
                     } />
+                    {/* Inventory route commented out — not needed for launch
                     <Route path="/inventory/*" element={
                       <RouteEB>
                         <PermissionGuard module="inventory">
@@ -289,6 +293,7 @@ function AuthenticatedApp() {
                         </PermissionGuard>
                       </RouteEB>
                     } />
+                    */}
                     <Route path="/hostel/*" element={
                       <RouteEB>
                         <PermissionGuard module="hostel">
@@ -311,6 +316,20 @@ function AuthenticatedApp() {
                       </RouteEB>
                     } />
                     <Route path="/accounts/*" element={<Navigate to="/fees" replace />} />
+                    <Route path="/academics/exams/:examId/results" element={
+                      <RouteEB>
+                        <PermissionGuard module="academics">
+                          <ResultsEntry />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
+                    <Route path="/academics/exams/:examId" element={
+                      <RouteEB>
+                        <PermissionGuard module="academics">
+                          <ExamDetail />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
                     <Route path="/academics/*" element={
                       <RouteEB>
                         <PermissionGuard module="academics">
@@ -346,6 +365,7 @@ function AuthenticatedApp() {
                         </PermissionGuard>
                       </RouteEB>
                     } />
+                    {/* Email Campaigns route commented out — using announcements instead
                     <Route path="/messaging/email-campaigns" element={
                       <RouteEB>
                         <PermissionGuard module="messaging">
@@ -353,6 +373,7 @@ function AuthenticatedApp() {
                         </PermissionGuard>
                       </RouteEB>
                     } />
+                    */}
                     <Route path="/students/promotion" element={
                       <RouteEB>
                         <PermissionGuard module="students">
@@ -374,9 +395,27 @@ function AuthenticatedApp() {
                         </PermissionGuard>
                       </RouteEB>
                     } />
-                    <Route path="/intake-forms/assignments" element={<RouteEB><FormAssignments /></RouteEB>} />
-                    <Route path="/intake-forms/submissions" element={<RouteEB><FormSubmissions /></RouteEB>} />
-                    <Route path="/intake-forms/funnel" element={<RouteEB><EnrollmentFunnel /></RouteEB>} />
+                    <Route path="/intake-forms/assignments" element={
+                      <RouteEB>
+                        <PermissionGuard module="intake-forms">
+                          <FormAssignments />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
+                    <Route path="/intake-forms/submissions" element={
+                      <RouteEB>
+                        <PermissionGuard module="intake-forms">
+                          <FormSubmissions />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
+                    <Route path="/intake-forms/funnel" element={
+                      <RouteEB>
+                        <PermissionGuard module="intake-forms">
+                          <EnrollmentFunnel />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
                     <Route path="/ai-assistant" element={
                       <RouteEB>
                         <Suspense fallback={null}>

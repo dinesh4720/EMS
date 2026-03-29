@@ -48,7 +48,7 @@ const modules = {
       title: "Communication",
       items: [
         { icon: MessageSquare, label: "Messages", href: "/messaging" },
-        { icon: Mail, label: "Email Campaigns", href: "/messaging/email-campaigns" },
+        // { icon: Mail, label: "Email Campaigns", href: "/messaging/email-campaigns" }, // Commented out — using announcements instead
       ]
     },
     {
@@ -60,7 +60,7 @@ const modules = {
     {
       title: "Operations",
       items: [
-        { icon: Package, label: "Inventory", href: "/inventory" },
+        // { icon: Package, label: "Inventory", href: "/inventory" }, // Commented out — not needed for launch
         // Hostel, Transport, Library modules are disabled for now
         // Uncomment to re-enable:
         // { icon: Building2, label: "Hostel", href: "/hostel" },

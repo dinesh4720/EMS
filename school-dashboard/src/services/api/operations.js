@@ -2,6 +2,7 @@ import { request } from './core.js';
 import { getAuthHeaders, clearStoredUser } from '../../utils/authSession';
 import { API_URL } from '../../config/api.js';
 import { retryRequest } from '../../utils/requestQueue.js';
+import logger from '../../utils/logger';
 
 export const uploadApi = {
   uploadFile: async (file) => {
@@ -189,7 +190,7 @@ export const lookupPincode = async (pincode) => {
     }
     return null;
   } catch (error) {
-    console.error('PIN code lookup failed:', error);
+    logger.error('PIN code lookup failed:', error);
     return null;
   }
 };

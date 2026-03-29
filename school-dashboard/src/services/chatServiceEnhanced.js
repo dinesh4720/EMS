@@ -2,6 +2,7 @@
 import { getAuthHeaders } from '../utils/authSession';
 import { API_URL } from '../config/api.js';
 import { parseApiError } from '../utils/apiError.js';
+import logger from '../utils/logger';
 
 class ChatServiceEnhanced {
   getHeaders() {
@@ -17,7 +18,7 @@ class ChatServiceEnhanced {
       if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
-      console.error('Error getting permissions:', error);
+      logger.error('Error getting permissions:', error);
       throw error;
     }
   }
@@ -31,7 +32,7 @@ class ChatServiceEnhanced {
       if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
-      console.error('Error getting conversations:', error?.message || error);
+      logger.error('Error getting conversations:', error?.message || error);
       return [];
     }
   }
@@ -47,7 +48,7 @@ class ChatServiceEnhanced {
       if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
-      console.error('Error creating conversation:', error);
+      logger.error('Error creating conversation:', error);
       throw error;
     }
   }
@@ -64,7 +65,7 @@ class ChatServiceEnhanced {
       if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
-      console.error('Error getting messages:', error);
+      logger.error('Error getting messages:', error);
       return [];
     }
   }
@@ -82,7 +83,7 @@ class ChatServiceEnhanced {
       if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
-      console.error('Error sending message:', error);
+      logger.error('Error sending message:', error);
       throw error;
     }
   }
@@ -98,7 +99,7 @@ class ChatServiceEnhanced {
       if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
-      console.error('Error marking as read:', error);
+      logger.error('Error marking as read:', error);
       throw error;
     }
   }
@@ -113,7 +114,7 @@ class ChatServiceEnhanced {
       if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
-      console.error('Error deleting message:', error);
+      logger.error('Error deleting message:', error);
       throw error;
     }
   }
@@ -127,7 +128,7 @@ class ChatServiceEnhanced {
       if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
-      console.error('Error searching messages:', error);
+      logger.error('Error searching messages:', error);
       return [];
     }
   }
@@ -141,7 +142,7 @@ class ChatServiceEnhanced {
       if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
-      console.error('Error getting presence:', error);
+      logger.error('Error getting presence:', error);
       return { status: 'offline', lastSeen: null };
     }
   }
@@ -155,7 +156,7 @@ class ChatServiceEnhanced {
       if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
-      console.error('Error getting online users:', error);
+      logger.error('Error getting online users:', error);
       return [];
     }
   }
@@ -179,7 +180,7 @@ class ChatServiceEnhanced {
       if (!response.ok) throw await parseApiError(response);
       return await response.json();
     } catch (error) {
-      console.error('Error uploading file:', error);
+      logger.error('Error uploading file:', error);
       throw error;
     }
   }

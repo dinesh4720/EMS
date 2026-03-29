@@ -232,7 +232,7 @@ export default function OnboardingFlow({ onComplete }) {
                                                 <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('components.schoolName')}</label>
                                                 <input
                                                     type="text"
-                                                    placeholder="Ex: Springfield High School"
+                                                    placeholder={t('components.schoolNamePlaceholder')}
                                                     className="w-full p-4 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                                                     value={formData.schoolName}
                                                     onChange={(e) => setFormData({ ...formData, schoolName: e.target.value })}
@@ -304,7 +304,7 @@ export default function OnboardingFlow({ onComplete }) {
                                                 <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('components.adminName')}</label>
                                                 <input
                                                     type="text"
-                                                    placeholder="Ex: Dr. John Doe"
+                                                    placeholder={t('components.adminNamePlaceholder')}
                                                     className="w-full p-4 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium"
                                                     value={formData.adminName}
                                                     onChange={(e) => setFormData({ ...formData, adminName: e.target.value })}

@@ -9,6 +9,7 @@ import { frontDeskApi } from '../../services/api';
 import { validatePhone, validateFutureDate } from '../../utils/validations';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { formatShortDate, formatDateTime} from '../../utils/dateFormatter';
 
 const CALL_PURPOSES = [
   { key: 'ADMISSION_INQUIRY', label: 'Admission Inquiry' },
@@ -29,6 +30,7 @@ const CallLogsList = forwardRef((props, ref) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isDetailOpen, onOpen: onDetailOpen, onClose: onDetailClose } = useDisclosure();
   const [editingId, setEditingId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedLog, setSelectedLog] = useState(null);
   const [formData, setFormData] = useState({
     callerName: '',
@@ -97,10 +99,12 @@ const CallLogsList = forwardRef((props, ref) => {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     if (!validateForm()) {
       toast.error(t('toast.error.pleaseFixTheErrorsBeforeSubmitting'));
       return;
     }
+    setIsSubmitting(true);
     try {
       const submitData = {
         ...formData,
@@ -119,6 +123,8 @@ const CallLogsList = forwardRef((props, ref) => {
       loadCallLogs();
     } catch (error) {
       toast.error(t('toast.error.failedToSaveCallLog'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -209,11 +215,11 @@ const CallLogsList = forwardRef((props, ref) => {
               <TableCell>
                 <span className="text-sm">{getPurposeLabel(log.purpose)}</span>
               </TableCell>
-              <TableCell>{new Date(log.dateTime).toLocaleString()}</TableCell>
+              <TableCell>{formatDateTime(log.dateTime)}</TableCell>
               <TableCell>
                 {log.callbackRequired ? (
                   <span className="text-sm text-warning">
-                    {log.callbackDate ? new Date(log.callbackDate).toLocaleDateString() : 'Required'}
+                    {log.callbackDate ? formatShortDate(log.callbackDate) : 'Required'}
                     {log.callbackTime && ` ${log.callbackTime}`}
                   </span>
                 ) : (
@@ -401,7 +407,7 @@ const CallLogsList = forwardRef((props, ref) => {
             <Button variant="light" onPress={onClose}>
               Cancel
             </Button>
-            <Button color="primary" onPress={handleSubmit}>
+            <Button color="primary" onPress={handleSubmit} isLoading={isSubmitting}>
               {editingId ? 'Update' : 'Create'}
             </Button>
           </ModalFooter>
@@ -432,7 +438,7 @@ const CallLogsList = forwardRef((props, ref) => {
                   </div>
                   <div>
                     <p className="text-sm text-default-500">{t('pages.dateTime')}</p>
-                    <p className="font-medium">{new Date(selectedLog.dateTime).toLocaleString()}</p>
+                    <p className="font-medium">{formatDateTime(selectedLog.dateTime)}</p>
                   </div>
                   <div>
                     <p className="text-sm text-default-500">{t('pages.purpose1')}</p>
@@ -455,7 +461,7 @@ const CallLogsList = forwardRef((props, ref) => {
                   <div className="bg-warning-50 border border-warning-200 p-3 rounded-lg">
                     <p className="text-sm text-warning-700">📞 Callback Required</p>
                     <p className="text-sm font-medium">
-                      {selectedLog.callbackDate ? new Date(selectedLog.callbackDate).toLocaleDateString() : 'Date not set'}
+                      {selectedLog.callbackDate ? formatShortDate(selectedLog.callbackDate) : 'Date not set'}
                       {selectedLog.callbackTime && ` at ${selectedLog.callbackTime}`}
                     </p>
                   </div>

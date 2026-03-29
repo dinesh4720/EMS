@@ -12,6 +12,8 @@ import { useNavigate } from 'react-router-dom';
 import { request } from '../../services/api';
 import { PageLayout, MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
+import { formatShortDate, formatDateTime} from '../../utils/dateFormatter';
+import { useTranslation } from 'react-i18next';
 
 const STATUS_COLORS = {
   draft: 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400',
@@ -37,6 +39,7 @@ const EMPTY_FORM = {
 
 export default function EmailCampaignsPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
@@ -236,13 +239,13 @@ export default function EmailCampaignsPage() {
                             {c.scheduledFor && (
                               <span className="flex items-center gap-1">
                                 <Clock size={11} />
-                                {new Date(c.scheduledFor).toLocaleString()}
+                                {formatDateTime(c.scheduledFor)}
                               </span>
                             )}
                             {c.sentAt && (
                               <span className="flex items-center gap-1">
                                 <CheckCircle size={11} />
-                                Sent {new Date(c.sentAt).toLocaleDateString()}
+                                Sent {formatShortDate(c.sentAt)}
                               </span>
                             )}
                             {(c.status === 'sent' || c.status === 'partial' || c.status === 'failed') && (
@@ -318,7 +321,7 @@ export default function EmailCampaignsPage() {
           <ModalBody className="px-6 py-4 space-y-4">
             <Input
               label="Campaign Name *"
-              placeholder="e.g. Fee Reminder — January 2025"
+              placeholder={t('messaging.campaignNamePlaceholder')}
               value={form.name}
               onChange={e => { setForm(p => ({ ...p, name: e.target.value })); setErrors(prev => ({ ...prev, name: '' })); }}
               variant="bordered"
@@ -328,7 +331,7 @@ export default function EmailCampaignsPage() {
             />
             <Input
               label="Email Subject *"
-              placeholder="e.g. Reminder: Fee payment due by 31 Jan"
+              placeholder={t('messaging.emailSubjectPlaceholder')}
               value={form.subject}
               onChange={e => { setForm(p => ({ ...p, subject: e.target.value })); setErrors(prev => ({ ...prev, subject: '' })); }}
               variant="bordered"
@@ -338,7 +341,7 @@ export default function EmailCampaignsPage() {
             />
             <Textarea
               label="Email Body (HTML) *"
-              placeholder="<p>Dear {{parentName}},</p><p>This is a reminder...</p>"
+              placeholder={t('messaging.emailBodyPlaceholder')}
               value={form.htmlBody}
               onChange={e => { setForm(p => ({ ...p, htmlBody: e.target.value })); setErrors(prev => ({ ...prev, htmlBody: '' })); }}
               variant="bordered"
@@ -462,7 +465,7 @@ export default function EmailCampaignsPage() {
           <ModalBody className="py-4">
             <Input
               label="Send test to *"
-              placeholder="your@email.com"
+              placeholder={t('messaging.testEmailPlaceholder')}
               type="email"
               value={testModal.email}
               onChange={e => setTestModal(p => ({ ...p, email: e.target.value }))}

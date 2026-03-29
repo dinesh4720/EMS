@@ -6,7 +6,8 @@
  */
 
 import { useEffect } from "react";
-import { getStoredUser, getStoredAuthToken } from "../../utils/authSession";
+import { getStoredUser } from "../../utils/authSession";
+import logger from "../../utils/logger";
 
 /**
  * @param {object} handlers - Stable setter/updater functions from domain contexts
@@ -24,16 +25,17 @@ export function useSocketSync({
     const user = getStoredUser();
     if (!user?.id) return;
 
+    let capturedService = null;
     import("../../services/socketServiceEnhanced")
       .then(({ default: socketService }) => {
-        window.socketService = socketService;
-        socketService.connect(getStoredAuthToken());
+        capturedService = socketService;
+        socketService.connect();
 
         socketService.on("connect_error", (err) => {
-          console.error("Socket connection error:", err);
+          logger.error("Socket connection error:", err);
         });
         socketService.on("error", (err) => {
-          console.error("Socket error:", err);
+          logger.error("Socket error:", err);
         });
 
         socketService.on("staff_updated", (data) => {
@@ -137,13 +139,13 @@ export function useSocketSync({
         });
       })
       .catch((err) => {
-        console.error("Failed to import socket service:", err);
+        logger.error("Failed to import socket service:", err);
       });
 
     return () => {
-      if (window.socketService) {
-        window.socketService.off("student_created");
-        window.socketService.disconnect();
+      if (capturedService) {
+        capturedService.off("student_created");
+        capturedService.disconnect();
       }
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

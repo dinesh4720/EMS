@@ -5,7 +5,7 @@ import {
   Input, Select, SelectItem, Textarea, Checkbox, Chip, Button
 } from "@heroui/react";
 import { MessageSquare, Mail, Plus } from "lucide-react";
-import { request } from "../../../../services/apiClient";
+import { request } from "../../../../services/api";
 import toast from "react-hot-toast";
 
 export default function AddRemarkDrawer({

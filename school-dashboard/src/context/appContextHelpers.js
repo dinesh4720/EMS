@@ -15,6 +15,7 @@ import {
   calendarEventsApi,
 } from "../services/api";
 import { initialSchoolSettings } from "./SettingsContext";
+import logger from "../utils/logger";
 
 // ---------------------------------------------------------------------------
 // Role constants
@@ -166,7 +167,7 @@ async function fetchStaffAttendanceData() {
     }
     return transformedData;
   } catch (error) {
-    console.error("Failed to fetch staff attendance:", error);
+    logger.error("Failed to fetch staff attendance:", error);
     return {};
   }
 }

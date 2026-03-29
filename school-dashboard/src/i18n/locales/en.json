@@ -127,7 +127,9 @@
     "yes": "Yes",
     "optional": "Optional",
     "offlineBanner": "You are offline. Some features may be unavailable.",
-    "staleDataBanner": "Data may be outdated. Please refresh."
+    "staleDataBanner": "Data may be outdated. Please refresh.",
+    "searchPlaceholder": "Search...",
+    "permissionReasonPlaceholder": "Please explain why you need this permission..."
   },
   "messaging": {
     "chat": {
@@ -148,7 +150,12 @@
       "messagePinned": "Message pinned",
       "messageUnpinned": "Message unpinned",
       "voiceMessageSent": "Voice message sent"
-    }
+    },
+    "replyPlaceholder": "Type your reply...",
+    "campaignNamePlaceholder": "e.g. Fee Reminder — January 2025",
+    "emailSubjectPlaceholder": "e.g. Reminder: Fee payment due by 31 Jan",
+    "emailBodyPlaceholder": "<p>Dear {{parentName}},</p><p>This is a reminder...</p>",
+    "testEmailPlaceholder": "your@email.com"
   },
   "settings": {
     "academics": {
@@ -214,7 +221,8 @@
         "useGradePoints": "Display Grade Points (e.g. IB scale)"
       },
       "workingDaysDesc": "Days the school operates",
-      "workingDaysTitle": "Working Days"
+      "workingDaysTitle": "Working Days",
+      "sessionPlaceholder": "e.g., 2024-2025"
     },
     "intakeForms": {
       "addDescription": "Add a description to your form...",
@@ -289,7 +297,27 @@
       "perMonth": "/ month",
       "perYear": "/ year",
       "switchTo": "Switch to {{plan}}"
-    }
+    },
+    "admissionPrefixPlaceholder": "e.g., ADM, STU",
+    "paddingPlaceholder": "4",
+    "startingNumberPlaceholder": "1",
+    "documentNamePlaceholder": "e.g., Birth Certificate",
+    "salaryTemplateNamePlaceholder": "e.g., Teacher, Lab Assistant",
+    "salaryComponentPlaceholder": "e.g., Basic Salary",
+    "webhookUrlPlaceholder": "https://your-server.com/webhook",
+    "webhookSecretPlaceholder": "Leave blank to auto-generate",
+    "smtpHostPlaceholder": "smtp.gmail.com",
+    "smtpPortPlaceholder": "587",
+    "smtpEmailPlaceholder": "noreply@school.com",
+    "roleNamePlaceholder": "e.g., Teacher, Accountant",
+    "leaveTypeNamePlaceholder": "e.g., Sick Leave",
+    "leaveQuotaPlaceholder": "12",
+    "staffIdPrefixPlaceholder": "e.g., EMP, STF, STAFF",
+    "digitsPlaceholder": "3",
+    "payrollComponentPlaceholder": "e.g. Travel Allowance",
+    "disburseDatePlaceholder": "e.g. 1, 15, 30",
+    "holidayNamePlaceholder": "e.g., Independence Day",
+    "regexPatternPlaceholder": "e.g. ^[A-Za-z]+$"
   },
   "staff": {
     "about": {
@@ -368,7 +396,12 @@
       "whatsappPlaceholder": "Enter WhatsApp number",
       "workExperience": "Work Experience",
       "yearLabel": "Year",
-      "yearPlaceholder": "e.g. 2020"
+      "yearPlaceholder": "e.g. 2020",
+      "ifscPlaceholder": "e.g. SBIN0001234",
+      "amountPlaceholder": "0",
+      "experiencePlaceholder": "0",
+      "selectClassesPlaceholder": "Select classes",
+      "regularizationReasonPlaceholder": "e.g., Forgot to checkout, System error, worked from home..."
     },
     "payroll": {
       "aboutToGenerateFor": "About to generate salary records for {{count}} staff",
@@ -483,7 +516,23 @@
       "personalInfoRequired": "Please fill in all required fields in Personal Information",
       "rollNumberTaken": "This roll number is already taken. Please contact administrator to check roll number settings for this section.",
       "saveFailed": "Failed to save student. Please try again.",
-      "sectionFull": "Section {{section}} is full ({{current}}/{{capacity}} students). Please create a new section."
+      "sectionFull": "Section {{section}} is full ({{current}}/{{capacity}} students). Please create a new section.",
+      "dobPlaceholder": "DD/MM/YYYY",
+      "studentEmailPlaceholder": "student@email.com",
+      "aadhaarPlaceholder": "12 digit Aadhaar",
+      "nationalityPlaceholder": "e.g., Indian",
+      "phonePlaceholder": "10 digit number",
+      "parentEmailPlaceholder": "parent@email.com",
+      "guardianEmailPlaceholder": "guardian@email.com",
+      "occupationPlaceholder": "e.g., Engineer, Doctor",
+      "searchStudentPlaceholder": "Name, admission number, or roll number",
+      "selectSourceClassPlaceholder": "Select class to promote from",
+      "selectTargetClassPlaceholder": "Select target class",
+      "academicYearPlaceholder": "e.g. 2024-25",
+      "rollbackReasonPlaceholder": "Why are you rolling this back?",
+      "tcNumberPlaceholder": "e.g. TC-2026-0001",
+      "admissionClassPlaceholder": "e.g. Standard I",
+      "searchNameIdPhonePlaceholder": "Search name, ID, phone…"
     },
     "fullName": "Full Name",
     "modals": {
@@ -773,7 +822,7 @@
     "backToLogin": "Back to login",
     "inviteVerified": "Invite verified",
     "fullNameLabel": "Full Name",
-    "fullNamePlaceholder": "John Doe",
+    "fullNamePlaceholder": "Aarav Sharma",
     "emailLabel": "Email",
     "schoolNameLabel": "School Name",
     "passwordLabel": "Password",
@@ -1925,7 +1974,9 @@
     "totalSubjects": "Total Subjects",
     "periodsPerWeek": "Periods per Week",
     "assignSubjects": "Assign Subjects",
-    "selectMultipleSubjects": "Select multiple subjects..."
+    "selectMultipleSubjects": "Select multiple subjects...",
+    "schoolNamePlaceholder": "Ex: Sunrise Public School",
+    "adminNamePlaceholder": "Ex: Dr. Rajesh Kumar"
   },
   "pages": {
     "analytics": "Analytics",
@@ -4482,6 +4533,66 @@
     "securitySignature": "Security Signature",
     "shareWithStaff": "Share with staff",
     "plansComparison": "Plans comparison",
-    "attendanceReport": "Attendance Report"
+    "attendanceReport": "Attendance Report",
+    "escortRelationPlaceholder": "e.g., Uncle, Aunt, Grandparent",
+    "selectStaffToNotify": "Select staff to notify",
+    "selectStaffToShareWith": "Select staff to share with",
+    "featureFlagKeyPlaceholder": "flag_key (snake_case)",
+    "changelogBodyPlaceholder": "Description / body"
+  },
+  "academics": {
+    "subjectNamePlaceholder": "Subject name",
+    "marksPlaceholder": "0–100",
+    "admissionNumberPlaceholder": "Enter student admission number",
+    "examNamePlaceholder": "e.g., Unit Test 1, Mid-Term Examination",
+    "selectClassPlaceholder": "Select class",
+    "selectSubjectPlaceholder": "Select subject",
+    "selectTermPlaceholder": "Select term (optional)",
+    "durationPlaceholder": "e.g., 60",
+    "maxMarksPlaceholder": "100",
+    "passingMarksPlaceholder": "35",
+    "weightagePlaceholder": "10",
+    "marksInputPlaceholder": "0"
+  },
+  "classes": {
+    "roomPlaceholder": "e.g. 101",
+    "blockPlaceholder": "e.g. A Block",
+    "roomOptionalPlaceholder": "e.g., Room 101 (optional)",
+    "subjectNamePlaceholder": "e.g., Mathematics"
+  },
+  "fees": {
+    "feeHeadNamePlaceholder": "e.g., Tuition Fee",
+    "amountPlaceholder": "0",
+    "dueDayPlaceholder": "10",
+    "concessionNamePlaceholder": "e.g., Sibling Discount",
+    "classRangePlaceholder": "Or enter range: 1-5 or 6,7,8,9"
+  },
+  "transport": {
+    "regNumberPlaceholder": "e.g. KA-01-AB-1234",
+    "makePlaceholder": "e.g. Tata",
+    "modelPlaceholder": "e.g. Starbus",
+    "yearPlaceholder": "2024",
+    "capacityPlaceholder": "40",
+    "colorPlaceholder": "e.g. Yellow",
+    "routeNamePlaceholder": "e.g. North Route",
+    "routeNumberPlaceholder": "e.g. R001"
+  },
+  "ptm": {
+    "sessionTitlePlaceholder": "e.g. Term 1 PTM - Class 10A",
+    "notesPlaceholder": "Optional notes or agenda",
+    "selectClassPlaceholder": "Select class",
+    "selectTeacherPlaceholder": "Select teacher",
+    "venuePlaceholder": "e.g. Room 101, Auditorium",
+    "selectStudentPlaceholder": "Select student"
+  },
+  "homework": {
+    "titlePlaceholder": "e.g., Chapter 5 Practice Problems",
+    "totalMarksPlaceholder": "100",
+    "fileNamePlaceholder": "File name (optional)",
+    "urlPlaceholder": "URL (required)"
+  },
+  "hostel": {
+    "searchStudentPlaceholder": "Type at least 2 characters...",
+    "bedNumberPlaceholder": "e.g. B1"
   }
 }

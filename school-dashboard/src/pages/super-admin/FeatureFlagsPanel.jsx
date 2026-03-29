@@ -94,6 +94,7 @@ export default function FeatureFlagsPanel() {
   };
 
   const handleDelete = async (key) => {
+    if (!window.confirm(`Are you sure you want to delete the feature flag "${key}"? This action cannot be undone.`)) return;
     setSaving((prev) => ({ ...prev, [key]: true }));
     try {
       await featureFlagsAdminApi.delete(key);
@@ -151,7 +152,7 @@ export default function FeatureFlagsPanel() {
             <input
               value={form.key}
               onChange={(e) => setForm({ ...form, key: e.target.value })}
-              placeholder="flag_key (snake_case)"
+              placeholder={t('pages.featureFlagKeyPlaceholder')}
               required
               className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             />

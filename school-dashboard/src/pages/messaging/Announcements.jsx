@@ -6,6 +6,7 @@ import AnnouncementAnalyticsModal from "./components/announcements/AnnouncementA
 import toast from "react-hot-toast";
 import { announcementsApi } from "../../services/api";
 import { useTranslation } from 'react-i18next';
+import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
   const { t } = useTranslation();
@@ -15,6 +16,7 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
   const [editAnnouncement, setEditAnnouncement] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [announcementStats, setAnnouncementStats] = useState({ sent: 0, delivered: 0, scheduled: 0 });
+  const [loading, setLoading] = useState(true);
 
   // Sync with parent drawer state
   useEffect(() => {
@@ -24,6 +26,7 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
   }, [isDrawerOpen]);
 
   useEffect(() => {
+    if (refreshKey === 0) setLoading(true);
     announcementsApi.getAll()
       .then((data) => {
         const list = Array.isArray(data) ? data : (data?.announcements || []);
@@ -32,7 +35,8 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
         const delivered = list.reduce((sum, a) => sum + (a.deliveredCount || a.recipientCount || 0), 0);
         setAnnouncementStats({ sent, delivered, scheduled });
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [refreshKey]);
 
   const handleView = (announcement) => {
@@ -81,6 +85,28 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
       color: "bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400"
     },
   ];
+
+  if (loading) {
+    return (
+      <div className="space-y-6 bg-white dark:bg-zinc-950">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={`skel-stat-${i}`} className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 p-5">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-zinc-700 animate-pulse" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 w-16 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                  <div className="h-6 w-12 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                  <div className="h-3 w-24 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <CardGridPageSkeleton title={false} cards={3} columns="grid-cols-1" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 bg-white dark:bg-zinc-950">

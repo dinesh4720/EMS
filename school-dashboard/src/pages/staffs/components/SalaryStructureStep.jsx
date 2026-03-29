@@ -46,7 +46,7 @@ function SalaryStructureStep({
         <p className="text-xs text-gray-500 -mt-1">{t('staff.form.bankAccountHint')}</p>
         <div className="grid grid-cols-2 gap-4">
           <Input label={t('staff.form.accountNumberLabel')} labelPlacement="outside" placeholder={t('pages.enterAccountNumber')} value={formData.accountNumber} onValueChange={v => updateField("accountNumber", v)} variant="bordered" radius="sm" classNames={inputStyles} />
-          <Input label={t('staff.form.ifscCodeLabel')} labelPlacement="outside" placeholder="e.g. SBIN0001234" value={formData.ifscCode} onValueChange={v => updateField("ifscCode", v)} variant="bordered" radius="sm" isInvalid={!!errors.ifscCode} errorMessage={errors.ifscCode} classNames={inputStyles} />
+          <Input label={t('staff.form.ifscCodeLabel')} labelPlacement="outside" placeholder={t('staff.form.ifscPlaceholder')} value={formData.ifscCode} onValueChange={v => updateField("ifscCode", v)} variant="bordered" radius="sm" isInvalid={!!errors.ifscCode} errorMessage={errors.ifscCode} classNames={inputStyles} />
           <Input label={t('staff.form.bankNameLabel')} labelPlacement="outside" placeholder={t('pages.enterBankName')} value={formData.bankName} onValueChange={v => updateField("bankName", v)} variant="bordered" radius="sm" classNames={inputStyles} />
           <Input label={t('staff.form.branchNameLabel')} labelPlacement="outside" placeholder={t('pages.enterBranchName')} value={formData.branchName} onValueChange={v => updateField("branchName", v)} variant="bordered" radius="sm" classNames={inputStyles} />
         </div>
@@ -64,7 +64,7 @@ function SalaryStructureStep({
           {formData.salaryBreakdown.map((item, i) => (
             <div key={`salary-${i}`} className="flex items-center gap-2 p-2 border-b border-gray-100 last:border-0 hover:bg-gray-50">
               <Input size="sm" value={item.component} onValueChange={v => updateBreakdownItem(i, "component", v)} variant="flat" placeholder={t('staff.form.componentNamePlaceholder')} classNames={{ inputWrapper: "bg-transparent shadow-none" }} />
-              <Input size="sm" type="number" value={item.amount} onValueChange={v => updateBreakdownItem(i, "amount", v)} variant="flat" placeholder="0" startContent="₹" classNames={{ inputWrapper: "bg-transparent shadow-none w-24" }} />
+              <Input size="sm" type="number" value={item.amount} onValueChange={v => updateBreakdownItem(i, "amount", v)} variant="flat" placeholder={t('staff.form.amountPlaceholder')} startContent="₹" classNames={{ inputWrapper: "bg-transparent shadow-none w-24" }} />
               <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => updateField("salaryBreakdown", formData.salaryBreakdown.filter((_, idx) => idx !== i))}><X size={14} /></Button>
             </div>
           ))}

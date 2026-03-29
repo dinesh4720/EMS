@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { studentsApi } from "../services/api";
+import toast from "react-hot-toast";
+import logger from "../utils/logger";
 
 export const StudentsContext = createContext();
 
@@ -21,27 +23,41 @@ export function StudentsProvider({ children }) {
   }, []);
 
   const addStudent = async (newStudent) => {
-    const created = await studentsApi.create(newStudent);
-    setStudents((prev) => [...prev, created]);
-    void invalidateAppData();
-    return created;
+    try {
+      const created = await studentsApi.create(newStudent);
+      setStudents((prev) => [...prev, created]);
+      void invalidateAppData();
+      return created;
+    } catch (err) {
+      logger.error("Failed to add student:", err);
+      toast.error("Failed to add student");
+      throw err;
+    }
   };
 
   const updateStudent = async (id, updates) => {
-    const updated = await studentsApi.update(id, updates);
+    const prev = students;
+    try {
+      const updated = await studentsApi.update(id, updates);
 
-    // Ensure photo from updates is always included in state update
-    // This is critical for instant photo reflection after upload
-    const finalUpdates = { ...updated };
-    if (updates.photo) {
-      finalUpdates.photo = updates.photo;
+      // Ensure photo from updates is always included in state update
+      // This is critical for instant photo reflection after upload
+      const finalUpdates = { ...updated };
+      if (updates.photo) {
+        finalUpdates.photo = updates.photo;
+      }
+
+      setStudents((curr) =>
+        curr.map((s) => (String(s.id) === String(id) ? { ...s, ...finalUpdates } : s))
+      );
+      void invalidateAppData();
+      return finalUpdates;
+    } catch (err) {
+      logger.error("Failed to update student:", err);
+      toast.error("Failed to update student");
+      setStudents(prev);
+      throw err;
     }
-
-    setStudents((prev) =>
-      prev.map((s) => (String(s.id) === String(id) ? { ...s, ...finalUpdates } : s))
-    );
-    void invalidateAppData();
-    return finalUpdates;
   };
 
   // Update student in state without API call (for real-time socket updates)
@@ -52,10 +68,18 @@ export function StudentsProvider({ children }) {
   };
 
   const deleteStudent = async (id) => {
-    const result = await studentsApi.delete(id);
-    setStudents((prev) => prev.filter((s) => String(s.id) !== String(id)));
-    void invalidateAppData();
-    return result;
+    const prev = students;
+    try {
+      const result = await studentsApi.delete(id);
+      setStudents((curr) => curr.filter((s) => String(s.id) !== String(id)));
+      void invalidateAppData();
+      return result;
+    } catch (err) {
+      logger.error("Failed to delete student:", err);
+      toast.error("Failed to delete student");
+      setStudents(prev);
+      throw err;
+    }
   };
 
   const getStudentById = (id) =>

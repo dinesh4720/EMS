@@ -14,7 +14,11 @@ import FiltersDropdown from "../../components/FiltersDropdown";
 import { STAFF_ROLES } from "../../constants/roles";
 import ScrollToTopButton from "../../components/ui/ScrollToTopButton";
 import { useTranslation } from 'react-i18next';
+import { getSocketService } from "../../services/socketServiceEnhanced.js";
+import { escapeHtml } from "../../utils/sanitize";
 
+
+import { formatShortDate } from '../../utils/dateFormatter';
 
 const ITEMS_PER_LOAD = 10;
 
@@ -218,8 +222,8 @@ export default function StaffList({
 
     // Listen for real-time staff updates via Socket.IO
     useEffect(() => {
-        const socketService = window.socketService;
-        if (!socketService) {
+        const socketService = getSocketService();
+        if (!socketService?.isConnected()) {
             return;
         }
 
@@ -303,6 +307,17 @@ export default function StaffList({
         toast.success(`Applied preset: ${preset.label}`);
     };
 
+    // Sanitize a cell value to prevent CSV formula injection.
+    // Values starting with =, +, -, @, \t, or \r are prefixed with a
+    // single-quote so spreadsheet apps treat them as plain text.
+    const sanitizeCsvCell = (value) => {
+        const str = String(value ?? '');
+        if (/^[=+\-@\t\r]/.test(str)) {
+            return "'" + str;
+        }
+        return str;
+    };
+
     // Export functions
     const exportToCSV = () => {
         const headers = ["Staff Name", "Employee ID", "Role", "Contact", "Email", "Status", "Attendance %"];
@@ -318,7 +333,7 @@ export default function StaffList({
 
         const csvContent = [
             headers.join(","),
-            ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+            ...rows.map(row => row.map(cell => `"${sanitizeCsvCell(cell)}"`).join(","))
         ].join("\n");
 
         const blob = new Blob([csvContent], { type: "text/csv" });
@@ -333,13 +348,13 @@ export default function StaffList({
     const exportToPDF = () => {
         const rows = filteredItems.map(s => `
           <tr>
-            <td>${s.name || ''}</td>
-            <td>${s.code || ''}</td>
-            <td>${Array.isArray(s.role) ? s.role.join(', ') : (s.role || '')}</td>
-            <td>${s.department || ''}</td>
-            <td>${s.phone || 'N/A'}</td>
-            <td>${s.email || ''}</td>
-            <td>${s.status || ''}</td>
+            <td>${escapeHtml(s.name || '')}</td>
+            <td>${escapeHtml(s.code || '')}</td>
+            <td>${escapeHtml(Array.isArray(s.role) ? s.role.join(', ') : (s.role || ''))}</td>
+            <td>${escapeHtml(s.department || '')}</td>
+            <td>${escapeHtml(s.phone || 'N/A')}</td>
+            <td>${escapeHtml(s.email || '')}</td>
+            <td>${escapeHtml(s.status || '')}</td>
           </tr>`).join('');
 
         const html = `<!DOCTYPE html>
@@ -356,7 +371,7 @@ tr:nth-child(even) td{background:#f9fafb}
 </style></head>
 <body>
 <h1>Staff List</h1>
-<p>Generated on ${new Date().toLocaleDateString()} — ${filteredItems.length} staff member(s)</p>
+<p>Generated on ${formatShortDate(new Date())} — ${filteredItems.length} staff member(s)</p>
 <table>
 <thead><tr><th>Name</th><th>Code</th><th>Role</th><th>Department</th><th>Phone</th><th>Email</th><th>Status</th></tr></thead>
 <tbody>${rows}</tbody>
@@ -712,10 +727,10 @@ tr:nth-child(even) td{background:#f9fafb}
                 classNames={{
                     base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0 [&_table]:select-text",
                     thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12 [&>tr>th:first-child]:sticky [&>tr>th:first-child]:left-0 [&>tr>th:first-child]:z-20 [&>tr>th:first-child]:bg-white [&>tr>th:first-child]:dark:bg-zinc-950 [&>tr>th:nth-child(2)]:sticky [&>tr>th:nth-child(2)]:left-12 [&>tr>th:nth-child(2)]:z-20 [&>tr>th:nth-child(2)]:bg-white [&>tr>th:nth-child(2)]:dark:bg-zinc-950",
-                    th: "bg-transparent text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 dark:border-zinc-800 last:pr-6 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors first:hover:bg-transparent select-none",
-                    td: "py-5 border-b border-gray-200 dark:border-zinc-800 group-data-[last=true]:border-none last:pr-6 select-text transition-colors",
-                    tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr>td:first-child]:sticky [&>tr>td:first-child]:left-0 [&>tr>td:first-child]:z-20 [&>tr>td:first-child]:bg-white [&>tr>td:first-child]:dark:bg-zinc-950 [&>tr>td:nth-child(2)]:sticky [&>tr>td:nth-child(2)]:left-12 [&>tr>td:nth-child(2)]:z-20 [&>tr>td:nth-child(2)]:bg-white [&>tr>td:nth-child(2)]:dark:bg-zinc-950 [&>tr:hover>td:first-child]:bg-gray-50 [&>tr:hover>td:first-child]:dark:bg-zinc-900 [&>tr:hover>td:nth-child(2)]:bg-gray-50 [&>tr:hover>td:nth-child(2)]:dark:bg-zinc-900 [&>tr[data-selected=true]>td]:bg-primary-50 [&>tr[data-selected=true]>td:first-child]:bg-primary-50 [&>tr[data-selected=true]>td:nth-child(2)]:bg-primary-50",
-                    tr: "group cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-zinc-900 data-[selected=true]:bg-primary-50"
+                    th: "bg-white dark:bg-zinc-950 text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 dark:border-zinc-800 last:pr-6 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors first:hover:bg-transparent select-none",
+                    td: "py-5 bg-white dark:bg-zinc-950 border-b border-gray-200 dark:border-zinc-800 group-data-[last=true]:border-none last:pr-6 select-text transition-colors group-hover:bg-gray-50 dark:group-hover:bg-zinc-900/50",
+                    tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr>td:first-child]:sticky [&>tr>td:first-child]:left-0 [&>tr>td:first-child]:z-20 [&>tr>td:first-child]:bg-white [&>tr>td:first-child]:dark:bg-zinc-950 [&>tr>td:nth-child(2)]:sticky [&>tr>td:nth-child(2)]:left-12 [&>tr>td:nth-child(2)]:z-20 [&>tr>td:nth-child(2)]:bg-white [&>tr>td:nth-child(2)]:dark:bg-zinc-950 [&>tr:hover>td:first-child]:!bg-gray-50 dark:[&>tr:hover>td:first-child]:!bg-zinc-900/50 [&>tr:hover>td:nth-child(2)]:!bg-gray-50 dark:[&>tr:hover>td:nth-child(2)]:!bg-zinc-900/50 [&>tr[data-selected=true]>td]:bg-primary-50 [&>tr[data-selected=true]>td]:dark:bg-primary-950/30 [&>tr[data-selected=true]>td:first-child]:bg-primary-50 [&>tr[data-selected=true]>td:first-child]:dark:bg-primary-950/30 [&>tr[data-selected=true]>td:nth-child(2)]:bg-primary-50 [&>tr[data-selected=true]>td:nth-child(2)]:dark:bg-primary-950/30",
+                    tr: "group cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-zinc-900/50 data-[selected=true]:bg-primary-50 dark:data-[selected=true]:bg-primary-950/30"
                 }}
             >
                 <TableHeader>

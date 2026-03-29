@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 
 
 export default function StudentFeeSummary({
-  const { t } = useTranslation();
   studentFeeStructure,
   feeHistory,
   loadingFeeStructure,
@@ -14,6 +13,7 @@ export default function StudentFeeSummary({
   onSendReminder,
   onDownloadInvoice
 }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   // Calculate payment progress percentage
@@ -238,10 +238,10 @@ export default function StudentFeeSummary({
             )}
           </div>
         ) : (
-          <div className="p-6 text-center border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900">
+          <div className="p-6 text-center border border-dashed border-gray-200 dark:border-zinc-800 rounded-lg bg-gray-50 dark:bg-zinc-900/50">
             <IndianRupee size={24} className="mx-auto text-gray-300 dark:text-zinc-600 mb-2" />
-            <p className="text-sm text-gray-500 dark:text-zinc-400 mb-1">{t('pages.noFeeStructureAssigned')}</p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.feeHeadsAreAssignedBasedOnClass')}</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 mb-1">{t('pages.noFeeStructureAssigned', 'No fee structure assigned yet')}</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.feeHeadsAssignedByClass', 'Fee heads will appear once the class fee structure is configured in Fee Settings.')}</p>
           </div>
         )}
       </div>

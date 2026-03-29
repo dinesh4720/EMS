@@ -21,7 +21,7 @@ import {
     Tabs,
     Tab
 } from "@heroui/react";
-import { Shield, Key, Search, Phone, RefreshCw, Copy, AlertTriangle, Users as UsersIcon, Network } from "lucide-react";
+import { Shield, Key, Search, Phone, RefreshCw, Copy, AlertTriangle, Users as UsersIcon, Network, Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
 import { staffApi } from "../../services/api";
@@ -45,8 +45,9 @@ export default function UserManagement() {
     const [generatedPassword, setGeneratedPassword] = useState("");
     const [resetSuccess, setResetSuccess] = useState(false);
     const [copiedPassword, setCopiedPassword] = useState(false);
+    const [showGeneratedPassword, setShowGeneratedPassword] = useState(false);
 
-    // Secure password generator
+    // Secure password generator using crypto.getRandomValues()
     const generateSecurePassword = (length = 12) => {
         const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         const lowercase = "abcdefghijklmnopqrstuvwxyz";
@@ -54,21 +55,33 @@ export default function UserManagement() {
         const special = "!@#$%^&*()_+-=[]{}|;:,.<>?";
         const allChars = uppercase + lowercase + numbers + special;
 
+        // Cryptographically secure random index helper
+        const secureRandomIndex = (max) => {
+            const array = new Uint32Array(1);
+            crypto.getRandomValues(array);
+            return array[0] % max;
+        };
+
         let password = "";
 
         // Ensure at least one character from each category
-        password += uppercase[Math.floor(Math.random() * uppercase.length)];
-        password += lowercase[Math.floor(Math.random() * lowercase.length)];
-        password += numbers[Math.floor(Math.random() * numbers.length)];
-        password += special[Math.floor(Math.random() * special.length)];
+        password += uppercase[secureRandomIndex(uppercase.length)];
+        password += lowercase[secureRandomIndex(lowercase.length)];
+        password += numbers[secureRandomIndex(numbers.length)];
+        password += special[secureRandomIndex(special.length)];
 
         // Fill the rest randomly
         for (let i = 4; i < length; i++) {
-            password += allChars[Math.floor(Math.random() * allChars.length)];
+            password += allChars[secureRandomIndex(allChars.length)];
         }
 
-        // Shuffle the password
-        return password.split('').sort(() => Math.random() - 0.5).join('');
+        // Shuffle the password using Fisher-Yates with crypto random
+        const chars = password.split('');
+        for (let i = chars.length - 1; i > 0; i--) {
+            const j = secureRandomIndex(i + 1);
+            [chars[i], chars[j]] = [chars[j], chars[i]];
+        }
+        return chars.join('');
     };
 
     const copyGeneratedPassword = async () => {
@@ -117,6 +130,7 @@ export default function UserManagement() {
         setGeneratedPassword("");
         setResetSuccess(false);
         setCopiedPassword(false);
+        setShowGeneratedPassword(false);
         onResetModalOpen();
 
         // Generate password immediately
@@ -400,8 +414,17 @@ export default function UserManagement() {
                                             <p className="text-xs text-default-500 mb-2">{t('pages.newTemporaryPassword')}</p>
                                             <div className="flex items-center gap-2">
                                                 <div className="flex-1 font-mono text-lg font-semibold text-center py-3 bg-content1 rounded-lg border-2 border-primary">
-                                                    {generatedPassword}
+                                                    {showGeneratedPassword ? generatedPassword : '\u2022'.repeat(generatedPassword.length)}
                                                 </div>
+                                                <Button
+                                                    isIconOnly
+                                                    size="lg"
+                                                    variant="flat"
+                                                    onPress={() => setShowGeneratedPassword(prev => !prev)}
+                                                    className="flex-shrink-0"
+                                                >
+                                                    {showGeneratedPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                                </Button>
                                                 <Button
                                                     isIconOnly
                                                     size="lg"
@@ -431,6 +454,7 @@ export default function UserManagement() {
                                     <Button color="primary" onPress={() => {
                                         setGeneratedPassword("");
                                         setResetSuccess(false);
+                                        setShowGeneratedPassword(false);
                                         onClose();
                                     }}>
                                         I've Saved the Password

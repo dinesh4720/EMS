@@ -9,6 +9,7 @@ import ClassDetailScreen from '../screens/classes/ClassDetailScreen';
 import AttendanceScreen from '../screens/classes/AttendanceScreen';
 import AttendanceHistoryScreen from '../screens/classes/AttendanceHistoryScreen';
 import ClassStudentsScreen from '../screens/classes/ClassStudentsScreen';
+import HomeworkScreen from '../screens/HomeworkScreen';
 
 const Stack = createStackNavigator();
 
@@ -87,6 +88,14 @@ const ClassStackNavigator = () => {
           title: route.params?.className ? `${route.params.className} - Students` : 'Students',
           headerBackTitle: 'Back',
         })}
+      />
+      <Stack.Screen
+        name="Homework"
+        component={HomeworkScreen}
+        options={{
+          title: 'Homework',
+          headerBackTitle: 'Back',
+        }}
       />
     </Stack.Navigator>
   );

@@ -3,9 +3,8 @@ import { useEffect, useRef } from 'react'
 import { init as initOwlinTracker, destroy as destroyOwlinTracker } from '@owlin/tracker-sdk'
 import { useAuth } from '../context/AuthContext'
 
-if (typeof window !== 'undefined' && !window.__OWLIN_TRACKER__) {
-  window.__OWLIN_TRACKER__ = null
-}
+// Module-scoped tracker instance (not exposed on window)
+let _trackerInstance = null
 
 const OWLIN_ENABLED_KEY = 'owlinTrackerEnabled'
 const OWLIN_ENDPOINT = import.meta.env.VITE_OWLIN_ENDPOINT?.trim() || ''
@@ -30,9 +29,9 @@ export function setOwlinEnabled(enabled) {
 }
 
 function destroyTracker() {
-  if (window.__OWLIN_TRACKER__) {
+  if (_trackerInstance) {
     destroyOwlinTracker()
-    window.__OWLIN_TRACKER__ = null
+    _trackerInstance = null
   }
 }
 
@@ -58,7 +57,7 @@ export function useOwlinTracking() {
         flushInterval: 1000,
       })
 
-      window.__OWLIN_TRACKER__ = tracker
+      _trackerInstance = tracker
 
       tracker.track({
         type: 'pageview',
@@ -71,25 +70,24 @@ export function useOwlinTracking() {
 
   useEffect(() => {
     const checkAndSetUser = async () => {
-      const tracker = window.__OWLIN_TRACKER__
+      const tracker = _trackerInstance
 
       if (user && tracker && user.id !== userIdRef.current) {
         userIdRef.current = user.id
 
         try {
-          const userName = user.name || user.username || 'Unknown User'
-          const userEmail = user.email || ''
           const userRole = user.role || 'User'
+          const schoolId = user.schoolId || ''
 
           tracker.setUserId(user.id)
           tracker.setUserProperties({
-            name: userName,
-            email: userEmail,
             role: userRole,
+            schoolId,
           })
 
           // Register the user immediately so server-side event enrichment has metadata
           // before the next queued batch flushes.
+          // NOTE: Only send non-PII data (role, schoolId). Never send name or email.
           const owlinHeaders = { 'Content-Type': 'application/json' }
           if (OWLIN_API_KEY) owlinHeaders['X-API-Key'] = OWLIN_API_KEY
 
@@ -99,7 +97,7 @@ export function useOwlinTracking() {
               headers: owlinHeaders,
               body: JSON.stringify({
                 userId: user.id,
-                metadata: { name: userName, email: userEmail, role: userRole },
+                metadata: { role: userRole, schoolId },
               }),
             })
           } catch (err) {
@@ -113,9 +111,8 @@ export function useOwlinTracking() {
               body: JSON.stringify({
                 userId: user.id,
                 metadata: {
-                  name: userName,
-                  email: userEmail,
                   role: userRole,
+                  schoolId,
                 },
               }),
             })
@@ -134,13 +131,13 @@ export function useOwlinTracking() {
     return () => clearTimeout(timeout)
   }, [user])
 
-  return window.__OWLIN_TRACKER__
+  return _trackerInstance
 }
 
 export function trackEvent(eventName, properties = {}) {
   if (!isOwlinEnabled()) return
 
-  const tracker = window.__OWLIN_TRACKER__
+  const tracker = _trackerInstance
   if (tracker) {
     tracker.trackEvent(eventName, properties)
   }
@@ -149,7 +146,7 @@ export function trackEvent(eventName, properties = {}) {
 export function trackPageView(pageName, properties = {}) {
   if (!isOwlinEnabled()) return
 
-  const tracker = window.__OWLIN_TRACKER__
+  const tracker = _trackerInstance
   if (tracker) {
     tracker.track({
       type: 'pageview',

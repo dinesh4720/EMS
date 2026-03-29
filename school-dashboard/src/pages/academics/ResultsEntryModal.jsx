@@ -2,9 +2,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { ModalHeader, ModalBody, Chip, Input } from '@heroui/react';
 import { FileText, Users, Save, AlertCircle, Award, CheckCircle2, Search } from 'lucide-react';
 import { examsApi, resultsApi, classesApi } from '../../services/api';
+import { getStoredUser } from '../../utils/authSession';
 import { MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { calculateGrade as calculateGradeUtil } from '../../utils/grading';
 
 const ResultsEntryModal = ({ examId, onClose }) => {
   const { t } = useTranslation();
@@ -30,12 +32,14 @@ const ResultsEntryModal = ({ examId, onClose }) => {
       setLoadedAt(new Date().toISOString());
 
       if (examData?.classId) {
-        const [studentsData, existingResults] = await Promise.all([
+        const [studentsResponse, existingResults] = await Promise.all([
           classesApi.getStudents(examData.classId),
           resultsApi.getByClassExam(examData.classId, examId)
         ]);
 
-        setStudents(studentsData || []);
+        // Backend returns { students: [...], hasMore, total } — extract the array
+        const studentsData = Array.isArray(studentsResponse) ? studentsResponse : studentsResponse?.students || [];
+        setStudents(studentsData);
 
         const resultsMap = {};
         (existingResults || []).forEach(r => {
@@ -89,7 +93,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
     setSaving(true);
 
     try {
-      const user = JSON.parse(sessionStorage.getItem('app_user') || '{}');
+      const user = getStoredUser() || {};
 
       const resultsArray = students.map(student => ({
         studentId: student.id || student._id,
@@ -109,17 +113,10 @@ const ResultsEntryModal = ({ examId, onClose }) => {
     }
   };
 
-  // Grade calculation must match backend computeGrade() in academics.js
+  // Grade calculation — uses centralized grading utility
   const calculateGrade = (marks) => {
     if (!exam) return '';
-    const percentage = (marks / (exam.maxMarks || 100)) * 100;
-    if (percentage >= 90) return 'A+';
-    if (percentage >= 80) return 'A';
-    if (percentage >= 70) return 'B+';
-    if (percentage >= 60) return 'B';
-    if (percentage >= 50) return 'C';
-    if (percentage >= 40) return 'D';
-    return 'F';
+    return calculateGradeUtil(marks, exam.maxMarks || 100);
   };
 
   const getStatus = (marks) => {
@@ -133,7 +130,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
     const query = searchQuery.toLowerCase();
     return students.filter(s =>
       s.name?.toLowerCase().includes(query) ||
-      s.rollNo?.toLowerCase().includes(query)
+      String(s.rollNo ?? '').toLowerCase().includes(query)
     );
   }, [students, searchQuery]);
 
@@ -279,7 +276,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
                             min={0}
                             max={exam.maxMarks || 100}
                             className="w-20 px-3 py-2 bg-gray-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 focus:border-green-500 dark:focus:border-green-400 focus:ring-2 focus:ring-green-100 dark:focus:ring-green-900 outline-none text-sm dark:text-zinc-100"
-                            placeholder="0"
+                            placeholder={t('academics.marksInputPlaceholder')}
                           />
                         </td>
                         <td className="px-4 py-3">

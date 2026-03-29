@@ -34,9 +34,9 @@ const ClassPerformance = () => {
   const [performance, setPerformance] = useState([]);
   const [exams, setExams] = useState([]);
   const [selectedYearOverride, setSelectedYearOverride] = useState(null);
-  const [selectedTerm, setSelectedTerm] = useState('all');
+  const [selectedTerm] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('rank');
+
   const selectedYear = selectedYearOverride || currentAcademicYear;
   const academicYearOptions = getAcademicYearOptions(currentAcademicYear, { past: 2, future: 1 });
 

@@ -24,7 +24,7 @@ import { useTranslation } from 'react-i18next';
 const CameraCaptureModal = ({ isOpen, onClose, onPhotoCaptured, title, description }) => {
   const { t } = useTranslation();
   const [mode, setMode] = useState(null); // 'upload' | 'camera' | null
-  const [capturedFile, setCapturedFile] = useState(null);
+  const [, setCapturedFile] = useState(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editorImage, setEditorImage] = useState(null);
   const fileInputRef = useRef(null);

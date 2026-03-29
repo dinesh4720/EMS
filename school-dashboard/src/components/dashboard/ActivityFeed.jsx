@@ -31,8 +31,11 @@ const getActivityIcon = (type) => {
 };
 
 const getRelativeTime = (date) => {
+  if (!date) return '—';
   const now = new Date();
-  const diff = now - new Date(date);
+  const parsed = new Date(date);
+  if (isNaN(parsed.getTime())) return '—';
+  const diff = now - parsed;
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
@@ -41,7 +44,7 @@ const getRelativeTime = (date) => {
   if (minutes < 60) return `${minutes}m ago`;
   if (hours < 24) return `${hours}h ago`;
   if (days < 7) return `${days}d ago`;
-  return new Date(date).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric' });
+  return parsed.toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric' });
 };
 
 function ActivityFeed({ payments, announcements, communications }) {

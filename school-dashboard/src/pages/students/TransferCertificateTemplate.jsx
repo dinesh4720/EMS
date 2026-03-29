@@ -1,8 +1,17 @@
 import React from "react";
 import { useTranslation } from 'react-i18next';
+import { useApp } from "../../context/AppContext";
 
-export const TransferCertificateTemplate = React.forwardRef(({ data }, ref) => {
+export const TransferCertificateTemplate = React.forwardRef(({ data, schoolData: schoolDataProp }, ref) => {
   const { t } = useTranslation();
+  const { schoolSettings } = useApp();
+  const school = schoolDataProp || schoolSettings || {};
+  const schoolName = school.schoolName || school.name || 'School Name Not Configured';
+  const schoolAddress = school.address || school.schoolAddress || '';
+  const affiliationInfo = school.affiliationBoard
+    ? `Affiliated to ${school.affiliationBoard}${school.affiliationNumber ? ` | Affiliation Number ${school.affiliationNumber}` : ''}`
+    : '';
+
     if (!data) return null;
 
     return (
@@ -32,9 +41,9 @@ export const TransferCertificateTemplate = React.forwardRef(({ data }, ref) => {
 
                             {/* School Details */}
                             <div className="text-center flex-grow px-2">
-                                <h1 className="text-xl font-extrabold uppercase tracking-wide leading-tight mb-0">{t('pages.sCHOOLNameHere')}</h1>
-                                <p className="text-[0.7rem] font-bold uppercase leading-tight">Affiliated to CBSE, New Delhi | Affiliation Number XXXXXX</p>
-                                <p className="text-[0.7rem] font-bold leading-tight">{t('pages.addressLine1CityStatePinCode')}</p>
+                                <h1 className="text-xl font-extrabold uppercase tracking-wide leading-tight mb-0">{schoolName}</h1>
+                                {affiliationInfo && <p className="text-[0.7rem] font-bold uppercase leading-tight">{affiliationInfo}</p>}
+                                {schoolAddress && <p className="text-[0.7rem] font-bold leading-tight">{schoolAddress}</p>}
                             </div>
 
                             {/* Logo Balancer */}

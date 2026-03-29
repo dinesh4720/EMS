@@ -102,3 +102,32 @@ export const STUDENT_STATUS = {
   TRANSFERRED: 'transferred',
   ALUMNI: 'alumni'
 };
+
+/**
+ * App Config Defaults
+ * These should eventually be fetched from school settings.
+ * In the meantime, centralizing them here makes them easy to find and configure.
+ */
+export const APP_CONFIG = {
+  // Security
+  MAX_LOGIN_ATTEMPTS: 5,
+  LOCKOUT_DURATION_MS: 15 * 60 * 1000,     // 15 minutes
+  SESSION_IDLE_TIMEOUT_MS: 30 * 60 * 1000,  // 30 minutes
+  SESSION_WARNING_COUNTDOWN_S: 120,          // 2 minutes
+  ACTIVITY_THROTTLE_MS: 30 * 1000,           // 30 seconds
+
+  // Uploads
+  MAX_FILE_SIZE_BYTES: 10 * 1024 * 1024,     // 10 MB
+
+  // Library
+  MAX_LIBRARY_FINE: 5000,                    // ₹5000
+
+  // Pagination
+  ITEMS_PER_PAGE: 10,
+
+  // Search
+  SEARCH_DEBOUNCE_MS: 300,
+
+  // Fee defaulter thresholds (days)
+  DEFAULTER_THRESHOLDS: [7, 15, 30],
+};

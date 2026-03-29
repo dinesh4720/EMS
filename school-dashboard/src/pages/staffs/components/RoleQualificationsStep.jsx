@@ -246,7 +246,7 @@ function RoleQualificationsStep({
         <div className="space-y-3">
           <div className="flex gap-4">
             <Input label={t('staff.form.prevOrgLabel')} labelPlacement="outside" placeholder={t('staff.form.prevOrgPlaceholder')} value={formData.previousOrganization} onValueChange={v => updateField("previousOrganization", v)} variant="bordered" radius="sm" className="flex-1" classNames={inputStyles} />
-            <Input label={t('staff.form.expYearsLabel')} labelPlacement="outside" placeholder="0" value={formData.totalExperience} onValueChange={v => { const numericValue = v.replace(/\D/g, '').slice(0, 2); updateField("totalExperience", numericValue); }} variant="bordered" radius="sm" className="w-28" classNames={inputStyles} maxLength={2} />
+            <Input label={t('staff.form.expYearsLabel')} labelPlacement="outside" placeholder={t('staff.form.experiencePlaceholder')} value={formData.totalExperience} onValueChange={v => { const numericValue = v.replace(/\D/g, '').slice(0, 2); updateField("totalExperience", numericValue); }} variant="bordered" radius="sm" className="w-28" classNames={inputStyles} maxLength={2} />
           </div>
           <Input label={t('staff.form.designationLabel')} labelPlacement="outside" placeholder={t('staff.form.designationPlaceholder')} value={formData.roleInOrganization} onValueChange={v => updateField("roleInOrganization", v)} variant="bordered" radius="sm" classNames={inputStyles} />
         </div>

@@ -14,6 +14,8 @@ import PhotoEditorModal from "../../../components/PhotoEditorModal";
 import CameraCaptureModal from "../../../components/CameraCaptureModal";
 import { useState } from "react";
 import { useTranslation } from 'react-i18next';
+import { escapeHtml } from "../../../utils/sanitize";
+import { formatShortDate } from '../../../utils/dateFormatter';
 
 export default function StaffProfileHeader({
   const { t } = useTranslation();
@@ -315,9 +317,9 @@ export default function StaffProfileHeader({
                 key="download"
                 startContent={<Download size={16} />}
                 onPress={() => {
-                  const roles = Array.isArray(staff.role) ? staff.role.join(', ') : (staff.role || 'Staff');
+                  const roles = escapeHtml(Array.isArray(staff.role) ? staff.role.join(', ') : (staff.role || 'Staff'));
                   const html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"/><title>Staff Profile – ${staff.name || ''}</title>
+<html><head><meta charset="utf-8"/><title>Staff Profile – ${escapeHtml(staff.name || '')}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:40px;max-width:680px;margin:auto}
@@ -336,29 +338,29 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
 </style></head>
 <body>
 <div class="header">
-  <div><h1>${staff.name || 'Staff Profile'}</h1><p>${roles} • ${staff.department || 'General'}</p></div>
-  <span class="badge">${staff.status || 'Active'}</span>
+  <div><h1>${escapeHtml(staff.name || 'Staff Profile')}</h1><p>${roles} • ${escapeHtml(staff.department || 'General')}</p></div>
+  <span class="badge">${escapeHtml(staff.status || 'Active')}</span>
 </div>
 <div class="section">
   <div class="section-title">Basic Information</div>
   <div class="rows">
-    <div class="row"><span class="lbl">Employee Code</span><span class="val">${staff.code || '—'}</span></div>
-    <div class="row"><span class="lbl">Full Name</span><span class="val">${staff.name || '—'}</span></div>
+    <div class="row"><span class="lbl">Employee Code</span><span class="val">${escapeHtml(staff.code || '—')}</span></div>
+    <div class="row"><span class="lbl">Full Name</span><span class="val">${escapeHtml(staff.name || '—')}</span></div>
     <div class="row"><span class="lbl">Role</span><span class="val">${roles}</span></div>
-    <div class="row"><span class="lbl">Department</span><span class="val">${staff.department || '—'}</span></div>
-    <div class="row"><span class="lbl">Qualification</span><span class="val">${staff.qualification || '—'}</span></div>
-    <div class="row"><span class="lbl">Join Date</span><span class="val">${staff.joinDate || '—'}</span></div>
+    <div class="row"><span class="lbl">Department</span><span class="val">${escapeHtml(staff.department || '—')}</span></div>
+    <div class="row"><span class="lbl">Qualification</span><span class="val">${escapeHtml(staff.qualification || '—')}</span></div>
+    <div class="row"><span class="lbl">Join Date</span><span class="val">${escapeHtml(staff.joinDate || '—')}</span></div>
   </div>
 </div>
 <div class="section">
   <div class="section-title">Contact Information</div>
   <div class="rows">
-    <div class="row"><span class="lbl">Email</span><span class="val">${staff.email || '—'}</span></div>
-    <div class="row"><span class="lbl">Phone</span><span class="val">${staff.phone || '—'}</span></div>
-    <div class="row"><span class="lbl">Address</span><span class="val">${staff.address || '—'}</span></div>
+    <div class="row"><span class="lbl">Email</span><span class="val">${escapeHtml(staff.email || '—')}</span></div>
+    <div class="row"><span class="lbl">Phone</span><span class="val">${escapeHtml(staff.phone || '—')}</span></div>
+    <div class="row"><span class="lbl">Address</span><span class="val">${escapeHtml(staff.address || '—')}</span></div>
   </div>
 </div>
-<div class="footer">Generated on ${new Date().toLocaleDateString()} — Confidential</div>
+<div class="footer">Generated on ${formatShortDate(new Date())} — Confidential</div>
 </body></html>`;
                   const w = window.open('', '_blank', 'width=750,height=650');
                   if (!w) { toast.error('Pop-up blocked. Allow pop-ups to download profile.'); return; }

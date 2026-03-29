@@ -33,7 +33,7 @@ export const resultsApi = {
   create: (data) => request('/results', { method: 'POST', body: JSON.stringify(data) }),
   bulkCreate: (results, examId, classId, loadedAt) => request('/results/bulk', { method: 'POST', body: JSON.stringify({ results, examId, classId, ...(loadedAt ? { loadedAt } : {}) }) }),
   update: (id, data) => request(`/results/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  getByStudent: (studentId) => request(`/results/student/${studentId}`),
+  getByStudent: (studentId) => request(`/students/${studentId}/results`),
   getByClassExam: (classId, examId) => request(`/results/class/${classId}/exam/${examId}`),
 };
 
@@ -58,10 +58,10 @@ export const academicPerformanceApi = {
   }),
 };
 
-// Subjects API
+// Subjects API — uses /settings/subjects (backend settings route)
 export const subjectsApi = {
-  getAll: () => request('/subjects'),
-  create: (data) => request('/subjects', { method: 'POST', body: JSON.stringify(data) }),
+  getAll: () => request('/settings/subjects'),
+  create: (data) => request('/settings/subjects', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // Classes API

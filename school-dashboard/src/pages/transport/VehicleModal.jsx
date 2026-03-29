@@ -133,7 +133,7 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label={t('pages.registrationNumber')}
-              placeholder="e.g. KA-01-AB-1234"
+              placeholder={t('transport.regNumberPlaceholder')}
               value={form.registrationNumber}
               onValueChange={(v) => updateField("registrationNumber", v)}
               isRequired
@@ -152,13 +152,13 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <Input label={t('pages.make')} placeholder="e.g. Tata" value={form.make} onValueChange={(v) => updateField("make", v)} />
-            <Input label={t('pages.model')} placeholder="e.g. Starbus" value={form.model} onValueChange={(v) => updateField("model", v)} />
-            <Input label={t('pages.year1')} placeholder="2024" type="number" value={form.year} onValueChange={(v) => updateField("year", v)} />
-            <Input label={t('pages.capacity')} placeholder="40" type="number" value={form.capacity} onValueChange={(v) => updateField("capacity", v)} />
+            <Input label={t('pages.make')} placeholder={t('transport.makePlaceholder')} value={form.make} onValueChange={(v) => updateField("make", v)} />
+            <Input label={t('pages.model')} placeholder={t('transport.modelPlaceholder')} value={form.model} onValueChange={(v) => updateField("model", v)} />
+            <Input label={t('pages.year1')} placeholder={t('transport.yearPlaceholder')} type="number" value={form.year} onValueChange={(v) => updateField("year", v)} />
+            <Input label={t('pages.capacity')} placeholder={t('transport.capacityPlaceholder')} type="number" value={form.capacity} onValueChange={(v) => updateField("capacity", v)} />
           </div>
 
-          <Input label={t('pages.color')} placeholder="e.g. Yellow" value={form.color} onValueChange={(v) => updateField("color", v)} />
+          <Input label={t('pages.color')} placeholder={t('transport.colorPlaceholder')} value={form.color} onValueChange={(v) => updateField("color", v)} />
 
           <Textarea
             label={t('pages.notes1')}

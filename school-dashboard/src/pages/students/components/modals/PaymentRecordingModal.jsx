@@ -9,6 +9,7 @@ import { toDateInputValue } from "../../../../utils/dateFormatter";
 
 export default function PaymentRecordingModal({ isOpen, onClose, studentFeeStructure, onRecordPayment }) {
   const { t } = useTranslation();
+  const [isRecording, setIsRecording] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     amount: "",
     paymentMode: "cash",
@@ -40,7 +41,12 @@ export default function PaymentRecordingModal({ isOpen, onClose, studentFeeStruc
       return;
     }
 
-    await onRecordPayment(paymentForm);
+    setIsRecording(true);
+    try {
+      await onRecordPayment(paymentForm);
+    } finally {
+      setIsRecording(false);
+    }
 
     // Reset form after successful payment
     setPaymentForm({
@@ -100,6 +106,7 @@ export default function PaymentRecordingModal({ isOpen, onClose, studentFeeStruc
             color="primary"
             onPress={handleRecordPayment}
             isDisabled={!paymentForm.amount || !paymentForm.paymentMode}
+            isLoading={isRecording}
           >
             {t('students.profile.overview.recordPayment', 'Record Payment')}
           </Button>

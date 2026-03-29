@@ -1,4 +1,5 @@
 import { Sentry } from './sentry'
+import logger from '../utils/logger'
 
 /**
  * Install window-level handlers for unhandled promise rejections and
@@ -13,7 +14,7 @@ export function initGlobalErrorHandlers() {
   // --- Unhandled promise rejections --------------------------------
   window.addEventListener('unhandledrejection', (event) => {
     const error = event.reason
-    console.error('[Unhandled Promise Rejection]', error)
+    logger.error('[Unhandled Promise Rejection]', error)
 
     // Forward to Sentry when available (production)
     if (Sentry?.captureException) {
@@ -28,7 +29,7 @@ export function initGlobalErrorHandlers() {
     // Ignore errors from cross-origin scripts (no useful info)
     if (event.message === 'Script error.' && !event.filename) return
 
-    console.error('[Uncaught Error]', event.error || event.message)
+    logger.error('[Uncaught Error]', event.error || event.message)
 
     if (Sentry?.captureException && event.error) {
       Sentry.captureException(event.error, {

@@ -46,6 +46,7 @@ const AdmissionsList = forwardRef((props, ref) => {
   const [editingId, setEditingId] = useState(null);
   const [selectedAdmission, setSelectedAdmission] = useState(null);
   const [selectedAdmissionForTracker, setSelectedAdmissionForTracker] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     studentName: '',
     dateOfBirth: '',
@@ -87,7 +88,8 @@ const AdmissionsList = forwardRef((props, ref) => {
   const loadAdmissions = async () => {
     try {
       const response = await frontDeskApi.getAdmissions();
-      setAdmissions(response);
+      const data = Array.isArray(response) ? response : (response?.data || []);
+      setAdmissions(data);
     } catch (error) {
       console.error('Failed to load admissions:', error);
       toast.error(t('toast.error.failedToLoadAdmissions'));
@@ -99,7 +101,8 @@ const AdmissionsList = forwardRef((props, ref) => {
   const loadStaff = async () => {
     try {
       const response = await staffApi.getAll();
-      setStaff(response.filter(s => s.role === 'Teacher'));
+      const data = Array.isArray(response) ? response : (response?.data || []);
+      setStaff(data.filter(s => s.role === 'Teacher'));
     } catch (error) {
       console.error('Failed to load staff:', error);
     }
@@ -156,7 +159,6 @@ const AdmissionsList = forwardRef((props, ref) => {
     }
 
     setErrors(newErrors);
-    setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
@@ -201,6 +203,7 @@ const AdmissionsList = forwardRef((props, ref) => {
       toast.error(t('toast.error.pleaseFixTheErrorsBeforeSubmitting'));
       return;
     }
+    setIsSubmitting(true);
     try {
       // Clean up data before sending - remove assignedTeacher if not required
       const dataToSend = { ...formData };
@@ -220,6 +223,8 @@ const AdmissionsList = forwardRef((props, ref) => {
       loadAdmissions();
     } catch (error) {
       toast.error(t('toast.error.failedToSaveAdmission'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -759,7 +764,7 @@ const AdmissionsList = forwardRef((props, ref) => {
             <Button variant="light" onPress={onClose}>
               Cancel
             </Button>
-            <Button color="primary" onPress={handleSubmit}>
+            <Button color="primary" onPress={handleSubmit} isLoading={isSubmitting} isDisabled={isSubmitting}>
               {editingId ? 'Update' : 'Create'}
             </Button>
           </ModalFooter>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback, useLayoutEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardBody, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Select, SelectItem, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Textarea, Spinner } from "@heroui/react";
 import { Download, Check, X, Lock, Bell, AlertTriangle, Users, Clock, TrendingUp, TimerOff, LogOut, AlarmClock } from "lucide-react";
@@ -29,12 +29,12 @@ export default function Attendance({
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedClass, setSelectedClass] = useState(classId || "");
   const [attendance, setAttendance] = useState({});
-  const [isLocked, setIsLocked] = useState(false);
+  const [isLocked] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
   const [saveMessage, setSaveMessage] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [editReason, setEditReason] = useState("");
+  // editReason state removed - was unused
   const [isNotifying, setIsNotifying] = useState(false);
 
   // Determine if we're embedded inside ClassDashboard (classId prop is an ObjectId)
@@ -86,53 +86,74 @@ export default function Attendance({
     return students.filter(s => s.class === selectedClass);
   }, [students, selectedClass, classId]);
 
+  // Keep a ref to classStudents so fetchAttendance doesn't re-trigger
+  // whenever the context gives students a new array reference
+  const classStudentsRef = useRef(classStudents);
+  useLayoutEffect(() => {
+    classStudentsRef.current = classStudents;
+  }, [classStudents]);
+
   // Fetch existing attendance from API when date or class changes
   const fetchAttendance = useCallback(async () => {
     if (!resolvedClassId || !date) return;
+    const currentStudents = classStudentsRef.current;
 
     try {
       setIsLoadingAttendance(true);
       const data = await attendanceApi.getByClassDate(resolvedClassId, date);
 
-      if (data && Array.isArray(data) && data.length > 0) {
-        const existingAttendance = {};
-        data.forEach(record => {
-          const studentId = String(record.studentId?._id || record.studentId || '');
-          if (studentId) existingAttendance[studentId] = record.status || "present";
-        });
-        // Merge: set fetched data, default remaining students to "unmarked"
-        const merged = {};
-        classStudents.forEach(s => {
-          const studentId = sid(s);
-          merged[studentId] = existingAttendance[studentId] || "unmarked";
-        });
-        setAttendance(prev => ({ ...prev, ...merged }));
-      } else {
-        // No existing data - initialize all as unmarked
-        const newAttendance = {};
-        classStudents.forEach(s => {
-          newAttendance[sid(s)] = "unmarked";
-        });
-        setAttendance(prev => ({ ...prev, ...newAttendance }));
+      // Backend returns an object map: { [studentId]: { status, markedBy } }
+      // or an array of records — handle both formats
+      const existingAttendance = {};
+      if (data && typeof data === 'object') {
+        if (Array.isArray(data)) {
+          // Array format: [{ studentId, status, ... }]
+          data.forEach(record => {
+            const studentId = String(record.studentId?._id || record.studentId || '');
+            if (studentId) existingAttendance[studentId] = record.status || "present";
+          });
+        } else {
+          // Object map format: { [studentId]: { status, markedBy } }
+          Object.entries(data).forEach(([studentId, record]) => {
+            if (studentId && record?.status) {
+              existingAttendance[studentId] = record.status;
+            }
+          });
+        }
       }
+
+      // Merge: set fetched data, default remaining students to "unmarked"
+      const merged = {};
+      currentStudents.forEach(s => {
+        const studentId = sid(s);
+        merged[studentId] = existingAttendance[studentId] || "unmarked";
+      });
+      setAttendance(prev => ({ ...prev, ...merged }));
     } catch (error) {
       // If 404 or no data, initialize all as unmarked
       console.warn('No existing attendance found, initializing defaults:', error.message);
       const newAttendance = {};
-      classStudents.forEach(s => {
+      currentStudents.forEach(s => {
         newAttendance[sid(s)] = "unmarked";
       });
       setAttendance(prev => ({ ...prev, ...newAttendance }));
     } finally {
       setIsLoadingAttendance(false);
     }
-  }, [resolvedClassId, date, classStudents]);
+  // Only re-fetch when the actual classId or date changes, NOT when classStudents reference changes
+  }, [resolvedClassId, date]);
 
+  // Fetch attendance when classId or date changes, or when students first become available
+  const prevFetchKeyRef = useRef('');
   useEffect(() => {
-    if (classStudents.length > 0) {
-      fetchAttendance();
+    if (classStudents.length > 0 && resolvedClassId && date) {
+      const fetchKey = `${resolvedClassId}|${date}`;
+      if (fetchKey !== prevFetchKeyRef.current) {
+        prevFetchKeyRef.current = fetchKey;
+        fetchAttendance();
+      }
     }
-  }, [fetchAttendance]);
+  }, [classStudents.length, resolvedClassId, date, fetchAttendance]);
 
   const visibleStudents = useMemo(() => {
     return classStudents.slice(0, visibleCount);

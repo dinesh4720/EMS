@@ -251,8 +251,8 @@ export default function ClassesPage() {
                     }).map(t => <SelectItem key={String(t.id || t._id)} textValue={`${t.name} ${t.department || ''}`}>{t.name} {t.department ? `(${t.department})` : ''}</SelectItem>)}
                   </Select>
                   <div className="grid grid-cols-2 gap-3">
-                    <Input size="sm" label="Room" placeholder="e.g. 101" value={formData.room} onValueChange={(value) => setFormData({ ...formData, room: value })} variant="bordered" radius="lg" />
-                    <Input size="sm" label="Block" placeholder="e.g. A Block" value={formData.block} onValueChange={(value) => setFormData({ ...formData, block: value })} variant="bordered" radius="lg" />
+                    <Input size="sm" label="Room" placeholder={t('classes.roomPlaceholder')} value={formData.room} onValueChange={(value) => setFormData({ ...formData, room: value })} variant="bordered" radius="lg" />
+                    <Input size="sm" label="Block" placeholder={t('classes.blockPlaceholder')} value={formData.block} onValueChange={(value) => setFormData({ ...formData, block: value })} variant="bordered" radius="lg" />
                   </div>
                 </div>
               </DrawerBody>

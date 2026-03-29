@@ -7,6 +7,7 @@ import { libraryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import { APP_CONFIG } from '../../utils/constants';
 
 
 const CONDITIONS = [
@@ -33,8 +34,8 @@ export default function ReturnBookModal({ isOpen, onClose, issue, onSaved }) {
 
   const isOverdue = new Date(issue.dueDate) < new Date();
   const daysLate = isOverdue ? Math.ceil((new Date() - new Date(issue.dueDate)) / (1000 * 60 * 60 * 24)) : 0;
-  // BUG-38: clamp fine to non-negative and cap at a reasonable ceiling (₹5000)
-  const MAX_FINE = 5000;
+  // Clamp fine to non-negative and cap at configurable ceiling
+  const MAX_FINE = APP_CONFIG.MAX_LIBRARY_FINE;
   const rawFine = issue.accruedFine || (daysLate * (issue.finePerDay || 0));
   const accruedFine = Math.min(Math.max(0, rawFine), MAX_FINE);
 
@@ -67,7 +68,7 @@ export default function ReturnBookModal({ isOpen, onClose, issue, onSaved }) {
               Issued to: {issue.studentId?.name || "Unknown"}
             </p>
             <p className="text-sm text-gray-500 dark:text-zinc-400">
-              Due: {new Date(issue.dueDate).toLocaleDateString(getDateLocale(), { day: "2-digit", month: "short", year: "numeric" })}
+              Due: {issue.dueDate ? new Date(issue.dueDate).toLocaleDateString(getDateLocale(), { day: "2-digit", month: "short", year: "numeric" }) : '—'}
             </p>
             {isOverdue && (
               <div className="flex items-center gap-2 pt-1">

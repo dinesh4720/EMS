@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import logger from "../../utils/logger";
 import { Card, Button, Input, Select, SelectItem, Switch, Tabs, Tab, Chip, Divider, RadioGroup, Radio } from "@heroui/react";
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { Save, Plus, Trash2, Hash, FileText } from "lucide-react";
@@ -108,7 +109,7 @@ export default function AdmissionFormSettings() {
         ]);
       }
     } catch (error) {
-      console.error('Error loading configurations:', error);
+      logger.error('Error loading configurations:', error);
       toast.error(t('toast.error.failedToLoadConfigurations'));
     } finally {
       setLoading(false);
@@ -121,7 +122,7 @@ export default function AdmissionFormSettings() {
       await settingsApi.updateAdmissionIdConfig(admissionIdConfig);
       toast.success(t('toast.success.admissionIdConfigurationSavedSuccessfully'));
     } catch (error) {
-      console.error('Error saving admission ID config:', error);
+      logger.error('Error saving admission ID config:', error);
       toast.error(t('toast.error.failedToSaveConfiguration'));
     } finally {
       setSaving(false);
@@ -134,7 +135,7 @@ export default function AdmissionFormSettings() {
       await settingsApi.updateRollNumberConfig(rollNumberConfig);
       toast.success(t('toast.success.rollNumberConfigurationSavedSuccessfully'));
     } catch (error) {
-      console.error('Error saving roll number config:', error);
+      logger.error('Error saving roll number config:', error);
       toast.error(t('toast.error.failedToSaveConfiguration'));
     } finally {
       setSaving(false);
@@ -159,7 +160,7 @@ export default function AdmissionFormSettings() {
       toast.success(t('toast.success.documentConfigurationSavedSuccessfully'));
       await loadConfigurations();
     } catch (error) {
-      console.error('Error saving document config:', error);
+      logger.error('Error saving document config:', error);
       toast.error(t('toast.error.failedToSaveConfiguration'));
     } finally {
       setSaving(false);
@@ -240,7 +241,7 @@ export default function AdmissionFormSettings() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
                   label={t('pages.prefix')}
-                  placeholder="e.g., ADM, STU"
+                  placeholder={t('settings.admissionPrefixPlaceholder')}
                   value={admissionIdConfig.prefix}
                   onValueChange={(value) => setAdmissionIdConfig({ ...admissionIdConfig, prefix: value })}
                   variant="bordered"
@@ -276,7 +277,7 @@ export default function AdmissionFormSettings() {
                 <Input
                   type="number"
                   label={t('pages.numberPadding')}
-                  placeholder="4"
+                  placeholder={t('settings.paddingPlaceholder')}
                   value={String(admissionIdConfig.numberPadding)}
                   onValueChange={(value) => setAdmissionIdConfig({ ...admissionIdConfig, numberPadding: parseInt(value) || 4 })}
                   variant="bordered"
@@ -288,7 +289,7 @@ export default function AdmissionFormSettings() {
                 <Input
                   type="number"
                   label={t('pages.startingNumber')}
-                  placeholder="1"
+                  placeholder={t('settings.startingNumberPlaceholder')}
                   value={String(admissionIdConfig.startingNumber)}
                   onValueChange={(value) => setAdmissionIdConfig({ ...admissionIdConfig, startingNumber: parseInt(value) || 1 })}
                   variant="bordered"
@@ -390,7 +391,7 @@ export default function AdmissionFormSettings() {
                   type="number"
                   label={t('pages.startingNumber')}
                   labelPlacement="outside"
-                  placeholder="1"
+                  placeholder={t('settings.startingNumberPlaceholder')}
                   value={rollNumberConfig.startingNumber.toString()}
                   onValueChange={(value) => setRollNumberConfig({ ...rollNumberConfig, startingNumber: parseInt(value) || 1 })}
                   description="The first roll number to assign"
@@ -479,7 +480,7 @@ export default function AdmissionFormSettings() {
                       <div className="flex items-start justify-between gap-4">
                         <Input
                           label={t('pages.documentName')}
-                          placeholder="e.g., Birth Certificate"
+                          placeholder={t('settings.documentNamePlaceholder')}
                           value={doc.documentName}
                           onValueChange={(value) => updateDocumentConfig(index, 'documentName', value)}
                           variant="bordered"

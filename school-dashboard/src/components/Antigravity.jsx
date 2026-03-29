@@ -7,7 +7,7 @@ export default function Antigravity({
 }) {
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
-    const [isMounted, setIsMounted] = useState(false);
+    const [, setIsMounted] = useState(false);
 
     useEffect(() => {
         setIsMounted(true);

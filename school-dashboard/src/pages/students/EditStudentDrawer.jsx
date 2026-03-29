@@ -1,3 +1,4 @@
+import { useRef, useEffect } from "react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerBody, Button } from "@heroui/react";
 import { X, GraduationCap } from "lucide-react";
 import AddStudent from "./AddStudent";
@@ -26,6 +27,22 @@ export default function EditStudentDrawer({
   classesWithTeachers = []
 }) {
   const { t } = useTranslation();
+  const addStudentRef = useRef(null);
+
+  // Handle backdrop click for unsaved changes check
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleBackdropClick = (e) => {
+      const backdrop = e.target.closest?.('[data-slot="backdrop"]') || (e.target.getAttribute?.('data-slot') === 'backdrop' ? e.target : null);
+      if (backdrop) {
+        if (addStudentRef.current) addStudentRef.current.attemptClose();
+        else handleClose();
+      }
+    };
+    document.addEventListener('click', handleBackdropClick, true);
+    return () => document.removeEventListener('click', handleBackdropClick, true);
+  }, [isOpen]);
+
   /**
    * Handles saving the updated student data
    * Calls the studentsApi.update endpoint and triggers the onUpdate callback
@@ -67,7 +84,10 @@ export default function EditStudentDrawer({
     <Drawer
       isOpen={isOpen}
       onOpenChange={(open) => {
-        if (!open) handleClose();
+        if (!open) {
+          if (addStudentRef.current) addStudentRef.current.attemptClose();
+          else handleClose();
+        }
       }}
       placement="right"
       size="xl"
@@ -98,7 +118,10 @@ export default function EditStudentDrawer({
                 isIconOnly
                 size="sm"
                 variant="light"
-                onPress={handleClose}
+                onPress={() => {
+                  if (addStudentRef.current) addStudentRef.current.attemptClose();
+                  else handleClose();
+                }}
               >
                 <X size={20} className="text-default-500" />
               </Button>
@@ -108,6 +131,7 @@ export default function EditStudentDrawer({
             <DrawerBody className="p-0 overflow-hidden">
               {student && (
                 <AddStudent
+                  ref={addStudentRef}
                   onClose={handleClose}
                   onSave={handleSave}
                   classOptions={classOptions}

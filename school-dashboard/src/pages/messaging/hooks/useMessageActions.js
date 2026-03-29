@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import logger from '../../../utils/logger';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { request } from '../../../services/api';
@@ -54,7 +55,7 @@ export function useMessageActions({ user, chatService, messages, setMessages, se
 
       toast.success(isRemoving ? 'Reaction removed' : 'Reaction added');
     } catch (error) {
-      console.error('Error reacting to message:', error);
+      logger.error('Error reacting to message:', error);
       toast.error(t('messaging.toast.failedToReact', 'Failed to react'));
     }
   }, [user, messages, setMessages, t]);
@@ -93,7 +94,7 @@ export function useMessageActions({ user, chatService, messages, setMessages, se
 
       toast.success(t('messaging.toast.messagePinned', 'Message pinned'));
     } catch (error) {
-      console.error('Error pinning message:', error);
+      logger.error('Error pinning message:', error);
       toast.error(error.response?.data?.error || 'Failed to pin');
     }
   }, [user, setMessages, setPinnedMessages, t]);
@@ -124,7 +125,7 @@ export function useMessageActions({ user, chatService, messages, setMessages, se
 
       toast.success(t('messaging.toast.messageUnpinned', 'Message unpinned'));
     } catch (error) {
-      console.error('Error unpinning message:', error);
+      logger.error('Error unpinning message:', error);
       toast.error(error.response?.data?.error || 'Failed to unpin');
     }
   }, [user, setMessages, setPinnedMessages, t]);
@@ -138,7 +139,7 @@ export function useMessageActions({ user, chatService, messages, setMessages, se
         ? t('messaging.toast.messageDeletedForEveryone', 'Message deleted for everyone')
         : t('messaging.toast.messageDeleted', 'Message deleted'));
     } catch (error) {
-      console.error('Error deleting message:', error);
+      logger.error('Error deleting message:', error);
       toast.error(t('messaging.toast.failedToDeleteMessage', 'Failed to delete message'));
     }
   }, [chatService, user, setMessages, t]);
@@ -163,7 +164,7 @@ export function useMessageActions({ user, chatService, messages, setMessages, se
       setEditText('');
       toast.success(t('messaging.toast.messageEdited', 'Message edited'));
     } catch (error) {
-      console.error('Error editing message:', error);
+      logger.error('Error editing message:', error);
       toast.error(t('messaging.toast.failedToEditMessage', 'Failed to edit message'));
     }
   }, [user, setMessages, setEditingMessage, setEditText, t]);

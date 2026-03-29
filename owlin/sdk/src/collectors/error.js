@@ -60,11 +60,21 @@ export class ErrorCollector {
         return;
       }
 
+      // Store in recent console errors buffer for breadcrumb context
+      const message = args.map(arg => self.formatArgument(arg)).join(' ');
+      self.consoleErrors.push({
+        level: 'error',
+        message: message.slice(0, 500),
+        timestamp: Date.now(),
+      });
+      // Keep only last 10 console errors
+      if (self.consoleErrors.length > 10) self.consoleErrors.shift();
+
       // Build error data from console args
       const errorData = {
         type: 'console_error',
         source: 'console',
-        message: args.map(arg => self.formatArgument(arg)).join(' '),
+        message,
         args: args.map(arg => self.sanitizeArgument(arg)),
         timestamp: Date.now(),
         page: {
@@ -91,28 +101,81 @@ export class ErrorCollector {
     });
   }
 
+  /** Detect module from current URL path. */
+  detectModule() {
+    const path = window.location.pathname;
+    const map = {
+      '/students': 'Students', '/classes': 'Classes', '/fees': 'Fees',
+      '/academics': 'Academics', '/staffs': 'Staff', '/attendance': 'Attendance',
+      '/messaging': 'Messaging', '/settings': 'Settings', '/front-desk': 'Front Desk',
+      '/transport': 'Transport', '/library': 'Library', '/hostel': 'Hostel',
+      '/homework': 'Homework', '/payroll': 'Payroll', '/timetable': 'Timetable',
+    };
+    for (const [prefix, name] of Object.entries(map)) {
+      if (path.startsWith(prefix)) return name;
+    }
+    return path === '/' || path === '/dashboard' ? 'Dashboard' : 'Other';
+  }
+
+  /** Get recent console errors captured by the interceptor. */
+  getRecentConsoleErrors() {
+    return this.consoleErrors.slice(-5);
+  }
+
+  /** Build the enriched error payload with breadcrumbs and context. */
+  buildErrorPayload(base) {
+    const breadcrumbs = this.tracker.breadcrumbs?.getBreadcrumbs() ?? [];
+    // Add the error itself as the final breadcrumb
+    this.tracker.breadcrumbs?.error(base.message || 'Unknown error');
+
+    return {
+      ...base,
+      type: 'error',
+      severity: base.severity || 'error',
+      source: base.source || 'frontend',
+      file: base.file || base.source || null,
+      line: base.line || base.lineno || null,
+      col: base.col || base.colno || null,
+      stackTrace: base.stack || null,
+      module: this.detectModule(),
+      page: window.location.pathname,
+      action: base.action || null,
+      breadcrumbs,
+      consoleErrors: this.getRecentConsoleErrors(),
+      metadata: {
+        ...(base.metadata || {}),
+        message: base.message,
+        source: base.file || base.source,
+        lineno: base.line || base.lineno,
+        colno: base.col || base.colno,
+        stack: base.stack,
+        browser: navigator.userAgent,
+        os: navigator.platform,
+      },
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      },
+      timestamp: Date.now(),
+    };
+  }
+
   /**
    * Handle JavaScript runtime errors
    */
   handleError(event) {
     if (!this.isEnabled) return;
 
-    const errorData = {
-      type: 'runtime_error',
+    const errorPayload = this.buildErrorPayload({
       message: event.message || 'Unknown error',
-      source: event.filename || 'unknown',
+      file: event.filename || 'unknown',
       line: event.lineno,
-      column: event.colno,
+      col: event.colno,
       stack: event.error?.stack || undefined,
-      error: event.error?.name || 'Error',
-      timestamp: Date.now(),
-      page: {
-        url: window.location.href,
-        path: window.location.pathname,
-      },
-    };
+      severity: 'error',
+    });
 
-    this.tracker.track(errorData);
+    this.tracker.track(errorPayload);
   }
 
   /**
@@ -123,20 +186,13 @@ export class ErrorCollector {
 
     const reason = event.reason;
 
-    const errorData = {
-      type: 'unhandled_rejection',
+    const errorPayload = this.buildErrorPayload({
       message: reason?.message || String(reason),
       stack: reason?.stack || undefined,
-      reason: this.formatReason(reason),
-      timestamp: Date.now(),
-      page: {
-        url: window.location.href,
-        path: window.location.pathname,
-      },
-      promise: true,
-    };
+      severity: 'unhandled_rejection',
+    });
 
-    this.tracker.track(errorData);
+    this.tracker.track(errorPayload);
   }
 
   /**
@@ -240,20 +296,15 @@ export class ErrorCollector {
   trackError(error, context = {}) {
     if (!this.isEnabled) return;
 
-    const errorData = {
-      type: 'manual_error',
+    const errorPayload = this.buildErrorPayload({
       message: error?.message || String(error),
       stack: error?.stack || undefined,
-      error: error?.name || 'Error',
-      context,
-      timestamp: Date.now(),
-      page: {
-        url: window.location.href,
-        path: window.location.pathname,
-      },
-    };
+      severity: 'error',
+      action: context.action || null,
+      ...(context.apiError ? { apiError: context.apiError } : {}),
+    });
 
-    this.tracker.track(errorData);
+    this.tracker.track(errorPayload);
   }
 
   /**

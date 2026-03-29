@@ -13,6 +13,7 @@ import PhotoAvatar from "../../components/PhotoAvatar";
 import toast from "react-hot-toast";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 
 const StudentAttendance = memo(function StudentAttendance() {
@@ -24,6 +25,7 @@ const StudentAttendance = memo(function StudentAttendance() {
     const [statusFilter, setStatusFilter] = useState("all");
     const [selectedKeys, setSelectedKeys] = useState(new Set([]));
     const [attendance, setAttendance] = useState({});
+    const [attendanceLoading, setAttendanceLoading] = useState(true);
     const initializedRef = useRef(false);
 
     // Fetch existing attendance from backend, fall back to "unmarked"
@@ -31,6 +33,7 @@ const StudentAttendance = memo(function StudentAttendance() {
         if (students.length === 0) return;
 
         const controller = new AbortController();
+        setAttendanceLoading(true);
 
         const fetchAttendance = async () => {
             // Initialize all students as unmarked first
@@ -66,6 +69,7 @@ const StudentAttendance = memo(function StudentAttendance() {
 
             if (!controller.signal.aborted) {
                 setAttendance(initial);
+                setAttendanceLoading(false);
             }
         };
 
@@ -402,6 +406,11 @@ const StudentAttendance = memo(function StudentAttendance() {
             </div>
 
             {/* Table */}
+            {attendanceLoading ? (
+                <div className="py-4 -mx-6 px-6">
+                    <TablePageSkeleton title={false} searchBar={false} kpiCards={0} columns={6} rows={8} hasAvatar />
+                </div>
+            ) :
             <Table
                 aria-label={t('aria.tables.studentAttendance')}
                 selectionMode="multiple"
@@ -483,6 +492,7 @@ const StudentAttendance = memo(function StudentAttendance() {
                     }}
                 </TableBody>
             </Table>
+            }
         </div>
     );
 });

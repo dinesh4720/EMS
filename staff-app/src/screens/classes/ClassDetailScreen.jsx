@@ -33,6 +33,7 @@ const QUICK_ACTIONS = [
   { id: 'attendance', label: 'Take Attendance', Icon: ClipboardList, colorRole: 'primary' },
   { id: 'students', label: 'View Students', Icon: Users, colorRole: 'secondary' },
   { id: 'exams', label: 'Exams', Icon: FileText, colorRole: 'tertiary' },
+  { id: 'homework', label: 'Homework', Icon: BookOpen, colorRole: 'secondary' },
   { id: 'history', label: 'History', Icon: History, colorRole: 'error' },
 ];
 
@@ -126,6 +127,9 @@ const ClassDetailScreen = () => {
         break;
       case 'exams':
         navigation.navigate('ExamsTab');
+        break;
+      case 'homework':
+        navigation.navigate('Homework');
         break;
     }
   };

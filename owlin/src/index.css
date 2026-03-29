@@ -8,15 +8,198 @@
   box-sizing: border-box;
 }
 
+html, body, #root {
+  height: 100%;
+  background: transparent;
+  color-scheme: dark;
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
+    'Helvetica Neue', 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color: #e4e4e7;
+  background: #1a1a1e;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace;
+}
+
+/* ── macOS Liquid Glass Sidebar ──────────────────────────────────────────── */
+
+.sidebar-glass {
+  background: rgba(30, 30, 34, 0.65);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+}
+
+/* Subtle inner glow on the sidebar */
+.sidebar-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ── Dark Mode Card Styles ───────────────────────────────────────────────── */
+
+/* Override all bg-white to dark */
+.bg-white {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Override gray backgrounds */
+.bg-gray-50 {
+  background-color: #1e1e22 !important;
+}
+
+.bg-gray-100 {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Override text colors for dark mode */
+.text-gray-900 {
+  color: #f4f4f5 !important;
+}
+
+.text-gray-700 {
+  color: #d4d4d8 !important;
+}
+
+.text-gray-600 {
+  color: #a1a1aa !important;
+}
+
+.text-gray-500 {
+  color: #71717a !important;
+}
+
+.text-gray-400 {
+  color: #52525b !important;
+}
+
+/* Override borders */
+.border-gray-200,
+.border-gray-100 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.border {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Input styling for dark mode */
+input, select, textarea {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #e4e4e7 !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #52525b !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Button overrides */
+.bg-gray-900 {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.bg-gray-900:hover,
+.hover\:bg-gray-800:hover {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+/* Hover states */
+.hover\:bg-gray-50:hover {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.hover\:bg-gray-100:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.hover\:shadow-sm:hover {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Table header */
+thead .bg-gray-50,
+.bg-gray-50 th {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Divider */
+.divide-y > * + * {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Modal overlay */
+.bg-black\/50 {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(4px);
+}
+
+
+/* Status badges — keep their colors but adapt */
+.bg-green-100 { background-color: rgba(34, 197, 94, 0.15) !important; }
+.bg-yellow-100 { background-color: rgba(234, 179, 8, 0.15) !important; }
+.bg-red-100 { background-color: rgba(239, 68, 68, 0.15) !important; }
+.bg-red-50 { background-color: rgba(239, 68, 68, 0.1) !important; }
+.bg-green-50 { background-color: rgba(34, 197, 94, 0.1) !important; }
+.bg-yellow-50 { background-color: rgba(234, 179, 8, 0.1) !important; }
+.bg-blue-50 { background-color: rgba(59, 130, 246, 0.1) !important; }
+.bg-orange-100 { background-color: rgba(249, 115, 22, 0.15) !important; }
+.bg-purple-100 { background-color: rgba(168, 85, 247, 0.15) !important; }
+
+/* Stack trace dark background */
+.bg-gray-900 pre, pre.bg-gray-900 {
+  background-color: #0d0d0f !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Skeleton animation for dark mode */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-pulse {
+  animation: shimmer 1.5s ease-in-out infinite !important;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%) !important;
+  background-size: 200% 100% !important;
+}
+
+/* Font mono in dark mode */
+.font-mono {
+  color: #a1a1aa;
 }

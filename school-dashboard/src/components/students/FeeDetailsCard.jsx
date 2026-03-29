@@ -40,12 +40,28 @@ export default function FeeDetailsCard({ student }) {
     fetchFeeSummary();
   }, [student?.id]);
 
-  const handleSendReminder = () => {
-    toast.success(`Reminder sent to ${student.name}'s parents`);
+  const handleSendReminder = async () => {
+    try {
+      await request(`/students/${student.id || student._id}/send-reminder`, { method: 'POST' });
+      toast.success(`Reminder sent to ${student.name}'s parents`);
+    } catch (error) {
+      toast.error(error.message || 'Failed to send reminder');
+    }
   };
 
-  const handleDownloadInvoice = () => {
-    toast.success('Downloading invoice...');
+  const handleDownloadInvoice = async () => {
+    try {
+      toast.loading('Generating invoice...', { id: 'invoice' });
+      const response = await request(`/students/${student.id || student._id}/fee-invoice`);
+      if (response?.url) {
+        window.open(response.url, '_blank');
+      }
+      toast.dismiss('invoice');
+      toast.success('Invoice downloaded');
+    } catch (error) {
+      toast.dismiss('invoice');
+      toast.error(error.message || 'Failed to download invoice');
+    }
   };
 
   const handleCollectPayment = () => {

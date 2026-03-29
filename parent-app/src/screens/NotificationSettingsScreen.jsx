@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../context/ThemeContext';
 import { Card } from '../components';
+import api from '../services/api';
 
 const STORAGE_KEY = 'notification_settings';
 
@@ -45,6 +46,20 @@ const NotificationSettingsScreen = () => {
 
   const loadSettings = async () => {
     try {
+      // Try fetching from backend first (source of truth)
+      const response = await api.getNotificationSettings();
+      if (response?.settings) {
+        const merged = { ...DEFAULT_SETTINGS, ...response.settings };
+        setSettings(merged);
+        // Update local cache to match backend
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+        return;
+      }
+    } catch {
+      // Backend unavailable — fall back to local cache
+    }
+
+    try {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       if (stored) {
         setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(stored) });
@@ -57,7 +72,17 @@ const NotificationSettingsScreen = () => {
   const saveSettings = async (newSettings) => {
     setSaving(true);
     try {
+      // Save to local cache immediately for responsiveness
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
+
+      // Sync to backend (fire-and-forget with error handling)
+      try {
+        await api.updateNotificationSettings(newSettings);
+      } catch {
+        // Backend sync failed — local cache is still up to date.
+        // Settings will be re-synced on next app launch via loadSettings.
+        console.warn('Failed to sync notification settings to backend');
+      }
     } catch {
       Alert.alert('Error', 'Failed to save settings. Please try again.');
     } finally {

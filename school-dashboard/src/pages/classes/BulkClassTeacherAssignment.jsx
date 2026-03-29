@@ -195,7 +195,12 @@ export default function BulkClassTeacherAssignment() {
           <TableColumn scope="col">{t('pages.sTUDENTS')}</TableColumn>
           <TableColumn align="center" scope="col">{t('pages.aCTIONS')}</TableColumn>
         </TableHeader>
-        <TableBody items={filteredClasses} emptyContent="No classes found">
+        <TableBody items={filteredClasses} emptyContent={
+          <div className="py-12 text-center">
+            <p className="text-sm font-medium text-default-600 mb-1">No classes found</p>
+            <p className="text-xs text-default-400">Create classes first before assigning teachers</p>
+          </div>
+        }>
           {(cls) => (
             <TableRow key={cls.id}>
               <TableCell>

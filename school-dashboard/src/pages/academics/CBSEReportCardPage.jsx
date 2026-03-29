@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { CURRENT_ACADEMIC_YEAR } from '../../utils/constants';
 import {
   Card, CardBody, Input, Button, Select, SelectItem,
   Breadcrumbs, BreadcrumbItem, Chip,
@@ -12,6 +13,7 @@ import { request } from '../../services/api';
 import { classesApi } from '../../services/classesService';
 import { PageLayout } from '../../components/ui';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const GRADE_COLORS = {
   A1: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200',
@@ -29,6 +31,7 @@ const DEFAULT_SUBJECTS = ['English', 'Hindi', 'Mathematics', 'Science', 'Social 
 
 // ── Mark Entry Modal (single student) ─────────────────────────────────────────
 function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term, onSaved }) {
+  const { t } = useTranslation();
   const [subjects, setSubjects] = useState(() =>
     DEFAULT_SUBJECTS.map(name => ({ subjectName: name, theoryMarks: '', practicalMarks: '' }))
   );
@@ -93,7 +96,7 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
               <div key={i} className="grid grid-cols-12 gap-2 items-center">
                 <Input
                   size="sm"
-                  placeholder="Subject name"
+                  placeholder={t('academics.subjectNamePlaceholder')}
                   value={s.subjectName}
                   onChange={e => updateSubject(i, 'subjectName', e.target.value)}
                   variant="bordered"
@@ -103,7 +106,7 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
                 <Input
                   size="sm"
                   type="number"
-                  placeholder="0–100"
+                  placeholder={t('academics.marksPlaceholder')}
                   min={0} max={100}
                   value={s.theoryMarks}
                   onChange={e => updateSubject(i, 'theoryMarks', e.target.value)}
@@ -114,7 +117,7 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
                 <Input
                   size="sm"
                   type="number"
-                  placeholder="0–100"
+                  placeholder={t('academics.marksPlaceholder')}
                   min={0} max={100}
                   value={s.practicalMarks}
                   onChange={e => updateSubject(i, 'practicalMarks', e.target.value)}
@@ -153,14 +156,21 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const [classesError, setClassesError] = useState(false);
+
   // Load classes when modal opens
-  useState(() => {
+  useEffect(() => {
     if (isOpen) {
+      setClassesError(false);
       classesApi.getAll().then(data => {
         setClasses(Array.isArray(data) ? data : data?.classes || []);
-      }).catch(() => {});
+      }).catch((err) => {
+        console.error('Failed to load classes:', err);
+        setClassesError(true);
+        toast.error('Failed to load classes. Please close and try again.');
+      });
     }
-  });
+  }, [isOpen]);
 
   const loadStudents = async () => {
     if (!selectedClassId) return;
@@ -233,6 +243,13 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
         </ModalHeader>
         <ModalBody>
           <div className="space-y-4">
+            {/* Class load error */}
+            {classesError && (
+              <div className="p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400">
+                Failed to load classes. Please close the modal and try again.
+              </div>
+            )}
+
             {/* Class selector */}
             <div className="flex gap-3 items-end">
               <Select
@@ -242,6 +259,7 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
                 variant="bordered"
                 className="flex-1"
                 classNames={{ trigger: 'dark:border-zinc-700' }}
+                isDisabled={classesError}
               >
                 {classes.map(c => (
                   <SelectItem key={c._id || c.id} value={c._id || c.id}>
@@ -355,6 +373,7 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function CBSEReportCardPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [admissionNo, setAdmissionNo] = useState('');
   const [term, setTerm] = useState('term_1');
   const [loading, setLoading] = useState(false);
@@ -385,8 +404,10 @@ export default function CBSEReportCardPage() {
 
   const handlePrint = useCallback(() => {
     if (!printRef.current) return;
+    // printContent is React-rendered innerHTML (already escaped by React)
     const printContent = printRef.current.innerHTML;
     const w = window.open('', '_blank', 'width=800,height=600');
+    if (!w) { toast.error('Pop-up blocked. Allow pop-ups to print report card.'); return; }
     w.document.write(`
       <html><head><title>CBSE Report Card</title>
       <style>
@@ -439,7 +460,7 @@ export default function CBSEReportCardPage() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <Input
                   label="Admission Number"
-                  placeholder="Enter student admission number"
+                  placeholder={t('academics.admissionNumberPlaceholder')}
                   value={admissionNo}
                   onChange={e => setAdmissionNo(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSearch()}
@@ -651,7 +672,7 @@ export default function CBSEReportCardPage() {
         isOpen={bulkDisclosure.isOpen}
         onClose={bulkDisclosure.onClose}
         term={term}
-        academicYear={new Date().getFullYear() + '-' + (new Date().getFullYear() + 1)}
+        academicYear={CURRENT_ACADEMIC_YEAR}
       />
     </div>
   );

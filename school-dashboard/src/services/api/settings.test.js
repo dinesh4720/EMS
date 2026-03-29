@@ -223,9 +223,9 @@ describe('billingApi', () => {
     });
   });
 
-  it('validateCoupon calls POST /billing/coupon/validate with code', () => {
+  it('validateCoupon calls POST /coupons/validate with code', () => {
     billingApi.validateCoupon('SAVE20');
-    expect(request).toHaveBeenCalledWith('/billing/coupon/validate', {
+    expect(request).toHaveBeenCalledWith('/coupons/validate', {
       method: 'POST',
       body: JSON.stringify({ code: 'SAVE20' }),
     });

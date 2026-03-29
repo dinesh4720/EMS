@@ -1,13 +1,11 @@
 import { useState, useCallback } from 'react';
-import { useNavigate, useLocation, useParams } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Breadcrumbs, BreadcrumbItem, Modal, ModalContent, ModalHeader, ModalBody } from '@heroui/react';
 import { Home, BarChart3, FileText, Plus, BookOpen, Award, ClipboardList } from 'lucide-react';
 import { PageLayout, MinimalButton } from '../../components/ui';
 import PerformanceDashboard from './PerformanceDashboard';
 import ExamManagement from './ExamManagement';
 import CreateExamModal from './CreateExamModal';
-import ExamDetailModal from './ExamDetailModal';
-import ResultsEntryModal from './ResultsEntryModal';
 import SubjectAssignment from '../../components/SubjectAssignment';
 import CBSEReportCardPage from './CBSEReportCardPage';
 import CCEGradingPage from './CCEGradingPage';
@@ -20,9 +18,6 @@ const AcademicLayout = () => {
 
   // Modal states
   const [createExamOpen, setCreateExamOpen] = useState(false);
-  const [examDetailOpen, setExamDetailOpen] = useState(false);
-  const [selectedExamId, setSelectedExamId] = useState(null);
-  const [resultsEntryOpen, setResultsEntryOpen] = useState(false);
 
   // Determine active tab from URL
   const getActiveTab = () => {
@@ -125,29 +120,6 @@ const AcademicLayout = () => {
     setRefreshKey(k => k + 1); // Trigger refresh of exam list
   }, []);
 
-  // Exam Detail handlers
-  const handleViewExam = useCallback((examId) => {
-    setSelectedExamId(examId);
-    setExamDetailOpen(true);
-  }, []);
-
-  const handleCloseExamDetail = useCallback(() => {
-    setExamDetailOpen(false);
-    setSelectedExamId(null);
-  }, []);
-
-  // Results Entry handlers
-  const handleOpenResultsEntry = useCallback((examId) => {
-    setSelectedExamId(examId);
-    setResultsEntryOpen(true);
-  }, []);
-
-  const handleCloseResultsEntry = useCallback(() => {
-    setResultsEntryOpen(false);
-    setSelectedExamId(null);
-    setRefreshKey(k => k + 1); // Trigger refresh after results saved
-  }, []);
-
   const actions = activeTab === 'exams' ? (
     <MinimalButton
       icon={<Plus size={16} />}
@@ -190,8 +162,6 @@ const AcademicLayout = () => {
             <ExamManagement
               key={refreshKey}
               onCreateExam={handleOpenCreateExam}
-              onViewExam={handleViewExam}
-              onEnterResults={handleOpenResultsEntry}
             />
           )}
           {activeTab === 'subjects' && (
@@ -239,47 +209,6 @@ const AcademicLayout = () => {
         </ModalContent>
       </Modal>
 
-      {/* Exam Detail Modal */}
-      <Modal
-        isOpen={examDetailOpen}
-        onClose={handleCloseExamDetail}
-        size="3xl"
-        scrollBehavior="inside"
-        classNames={{
-          backdrop: 'bg-black/30',
-          base: 'bg-white dark:bg-zinc-950 max-h-[90vh]',
-        }}
-      >
-        <ModalContent>
-          <ExamDetailModal
-            examId={selectedExamId}
-            onClose={handleCloseExamDetail}
-            onEnterResults={() => {
-              handleCloseExamDetail();
-              handleOpenResultsEntry(selectedExamId);
-            }}
-          />
-        </ModalContent>
-      </Modal>
-
-      {/* Results Entry Modal */}
-      <Modal
-        isOpen={resultsEntryOpen}
-        onClose={handleCloseResultsEntry}
-        size="5xl"
-        scrollBehavior="inside"
-        classNames={{
-          backdrop: 'bg-black/30',
-          base: 'bg-white dark:bg-zinc-950 max-h-[95vh]',
-        }}
-      >
-        <ModalContent>
-          <ResultsEntryModal
-            examId={selectedExamId}
-            onClose={handleCloseResultsEntry}
-          />
-        </ModalContent>
-      </Modal>
     </div>
   );
 };

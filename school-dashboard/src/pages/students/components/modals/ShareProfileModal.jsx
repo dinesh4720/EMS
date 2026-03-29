@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "../../../../context/AuthContext";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Avatar, Checkbox } from "@heroui/react";
 import { Share2, Search } from "lucide-react";
 import toast from "react-hot-toast";
@@ -15,6 +16,7 @@ import { useTranslation } from 'react-i18next';
  */
 export default function ShareProfileModal({ isOpen, onClose, student, staff = [] }) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSharing, setIsSharing] = useState(false);
@@ -26,7 +28,7 @@ export default function ShareProfileModal({ isOpen, onClose, student, staff = []
     }
 
     setIsSharing(true);
-    const loadingToast = toast.loading(`Sharing profile with ${selectedUsers.length} user(s)...`);
+    const loadingToast = toast.loading(t('toast.loading.sharingProfile', { count: selectedUsers.length, defaultValue: `Sharing profile with ${selectedUsers.length} user(s)...` }));
 
     try {
       // Generate a shareable link to the student profile
@@ -35,24 +37,13 @@ export default function ShareProfileModal({ isOpen, onClose, student, staff = []
 
       const { request } = await import("../../../../services/api");
 
-      // Get current user from session
-      const storedUser = sessionStorage.getItem('app_user');
-      let currentUser = null;
-      if (storedUser) {
-        try {
-          currentUser = JSON.parse(storedUser);
-        } catch (err) {
-          console.error('Failed to parse user data:', err);
-        }
-      }
-
       // Send message to each selected user
       const sendPromises = selectedUsers.map(async (userId) => {
         try {
           await request('/messages', {
             method: 'POST',
             body: JSON.stringify({
-              senderId: currentUser?.id,
+              senderId: user?.id,
               receiverId: userId,
               content: message,
               type: 'text',
@@ -67,11 +58,11 @@ export default function ShareProfileModal({ isOpen, onClose, student, staff = []
 
       await Promise.all(sendPromises);
 
-      toast.success(`Profile shared successfully with ${selectedUsers.length} user(s)`, { id: loadingToast });
+      toast.success(t('toast.success.profileShared', { count: selectedUsers.length, defaultValue: `Profile shared successfully with ${selectedUsers.length} user(s)` }), { id: loadingToast });
       handleClose();
     } catch (error) {
       console.error("Error sharing profile:", error);
-      toast.error("Failed to share profile: " + (error.message || "Unknown error"), { id: loadingToast });
+      toast.error(t('toast.error.failedToShareProfile', 'Failed to share profile') + ": " + (error.message || t('common.unknownError', 'Unknown error')), { id: loadingToast });
     } finally {
       setIsSharing(false);
     }
@@ -174,7 +165,7 @@ export default function ShareProfileModal({ isOpen, onClose, student, staff = []
           isDisabled={selectedUsers.length === 0 || isSharing}
           isLoading={isSharing}
         >
-          Share Profile
+          {t('pages.shareProfile', 'Share Profile')}
         </Button>
       </ModalFooter>
     </Modal>

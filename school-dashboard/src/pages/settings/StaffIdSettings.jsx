@@ -119,7 +119,7 @@ export default function StaffIdSettings() {
           {/* Prefix */}
           <Input
             label={t('pages.prefix')}
-            placeholder="e.g., EMP, STF, STAFF"
+            placeholder={t('settings.staffIdPrefixPlaceholder')}
             value={config.prefix}
             onChange={(e) => setConfig({ ...config, prefix: e.target.value.toUpperCase() })}
             description="The prefix that appears at the start of the staff ID"
@@ -158,7 +158,7 @@ export default function StaffIdSettings() {
           <Input
             type="number"
             label={t('pages.startingNumber')}
-            placeholder="1"
+            placeholder={t('settings.startingNumberPlaceholder')}
             value={config.startingNumber}
             onChange={(e) => setConfig({ ...config, startingNumber: parseInt(e.target.value) || 1 })}
             description="The number to start counting from"
@@ -170,7 +170,7 @@ export default function StaffIdSettings() {
           <Input
             type="number"
             label={t('pages.numberOfDigits')}
-            placeholder="3"
+            placeholder={t('settings.digitsPlaceholder')}
             value={config.digits}
             onChange={(e) => setConfig({ ...config, digits: parseInt(e.target.value) || 3 })}
             description="How many digits to use for the number (with leading zeros)"

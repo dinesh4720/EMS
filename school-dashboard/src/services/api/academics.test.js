@@ -160,9 +160,9 @@ describe('resultsApi', () => {
     });
   });
 
-  it('getByStudent — calls /results/student/:studentId', () => {
+  it('getByStudent — calls /students/:studentId/results', () => {
     resultsApi.getByStudent('stu1');
-    expect(request).toHaveBeenCalledWith('/results/student/stu1');
+    expect(request).toHaveBeenCalledWith('/students/stu1/results');
   });
 
   it('getByClassExam — calls /results/class/:classId/exam/:examId', () => {

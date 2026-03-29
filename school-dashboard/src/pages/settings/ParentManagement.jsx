@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import logger from "../../utils/logger";
 import { parentApi } from "../../services/api";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
@@ -44,7 +45,7 @@ export default function ParentManagement() {
         setPagination(response.data.pagination);
       }
     } catch (error) {
-      console.error("Error fetching parents:", error);
+      logger.error("Error fetching parents:", error);
     } finally {
       setLoading(false);
     }
@@ -68,7 +69,7 @@ export default function ParentManagement() {
         setGeneratedPassword(null);
       }
     } catch (error) {
-      console.error("Error fetching parent details:", error);
+      logger.error("Error fetching parent details:", error);
     }
   };
 
@@ -81,7 +82,7 @@ export default function ParentManagement() {
         setCopiedPassword(false);
       }
     } catch (error) {
-      console.error("Error resetting password:", error);
+      logger.error("Error resetting password:", error);
     } finally {
       setActionLoading(null);
     }
@@ -99,7 +100,7 @@ export default function ParentManagement() {
         }
       }
     } catch (error) {
-      console.error("Error updating status:", error);
+      logger.error("Error updating status:", error);
     } finally {
       setActionLoading(null);
     }
@@ -115,7 +116,7 @@ export default function ParentManagement() {
         fetchParents(1);
       }
     } catch (error) {
-      console.error("Error bulk creating:", error);
+      logger.error("Error bulk creating:", error);
     } finally {
       setBulkLoading(false);
     }
@@ -357,7 +358,7 @@ export default function ParentManagement() {
                   <div>
                     <span className="text-gray-500 dark:text-zinc-400">{t('pages.created')}</span>
                     <p className="font-medium text-gray-900 dark:text-zinc-100">
-                      {new Date(selectedParent.createdAt).toLocaleDateString(getDateLocale())}
+                      {selectedParent.createdAt ? new Date(selectedParent.createdAt).toLocaleDateString(getDateLocale()) : '—'}
                     </p>
                   </div>
                 </div>

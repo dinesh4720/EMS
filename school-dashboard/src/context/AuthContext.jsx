@@ -4,6 +4,7 @@ import { clearStoredUser, getAuthHeaders, getStoredUser, saveStoredUser } from "
 import { isSuperAdminRole } from "../utils/roleUtils";
 import { clearApiCache } from "../services/api";
 import { API_URL } from "../config/api.js";
+import logger from "../utils/logger";
 
 const AuthContext = createContext();
 
@@ -47,7 +48,10 @@ export const AuthProvider = ({ children }) => {
 
           saveStoredUser(sessionUser);
 
-          setUser(sessionUser);
+          // SECURITY: Mark role as server-verified. The role in this object
+          // came from the backend /auth/session endpoint (which reads from the
+          // DB), so it cannot be tampered with via sessionStorage.
+          setUser({ ...sessionUser, _roleVerified: true });
           setIsAuthenticated(true);
           setLoading(false);
           return;
@@ -66,8 +70,12 @@ export const AuthProvider = ({ children }) => {
         console.warn('Session restore failed, using stored user fallback:', error.message);
       }
 
+      // SECURITY: When falling back to sessionStorage, the role is NOT
+      // verified by the server. Mark it so the permission system can
+      // refuse to grant elevated privileges based on a potentially
+      // tampered sessionStorage value.
       if (storedUser?.id && isMounted) {
-        setUser(storedUser);
+        setUser({ ...storedUser, _roleVerified: false });
         setIsAuthenticated(true);
       }
 
@@ -119,12 +127,13 @@ export const AuthProvider = ({ children }) => {
 
       const userData = await response.json();
       saveStoredUser(userData);
-      setUser(userData);
+      // SECURITY: Role came from the server login response — mark as verified.
+      setUser({ ...userData, _roleVerified: true });
       setIsAuthenticated(true);
       navigate(isSuperAdminRole(userData.role) ? '/super-admin' : '/');
       return userData;
     } catch (error) {
-      console.error('Login error:', error?.message || error);
+      logger.error('Login error:', error?.message || error);
       throw error;
     }
   };

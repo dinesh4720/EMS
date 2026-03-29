@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import logger from "../../utils/logger";
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Button, Spinner, Chip, Card, Breadcrumbs, BreadcrumbItem,
@@ -122,7 +123,7 @@ export default function StaffPayroll() {
         setDashboardData(response.data);
       }
     } catch (error) {
-      console.error('Error fetching dashboard:', error);
+      logger.error('Error fetching dashboard:', error);
     }
   };
 
@@ -139,10 +140,10 @@ export default function StaffPayroll() {
         const records = response.data || [];
         setPayrollRecords(records);
       } else {
-        console.error('❌ API returned success=false:', response);
+        logger.error('❌ API returned success=false:', response);
       }
     } catch (error) {
-      console.error('❌ Error fetching records:', error);
+      logger.error('❌ Error fetching records:', error);
     } finally {
       setLoading(false);
     }
@@ -168,7 +169,7 @@ export default function StaffPayroll() {
         toast.error(response.error || 'Validation failed');
       }
     } catch (error) {
-      console.error('Error validating payroll:', error);
+      logger.error('Error validating payroll:', error);
       toast.error(error.message || 'Validation failed');
     } finally {
       setValidating(false);
@@ -203,7 +204,7 @@ export default function StaffPayroll() {
         fetchPayrollRecords();
       }
     } catch (error) {
-      console.error('Error preparing records:', error);
+      logger.error('Error preparing records:', error);
       toast.error(error.message || 'Error preparing records');
     } finally {
       setPreparingRecords(false);
@@ -227,7 +228,7 @@ export default function StaffPayroll() {
         fetchPayrollRecords();
       }
     } catch (error) {
-      console.error('Error marking as paid:', error);
+      logger.error('Error marking as paid:', error);
       toast.error(error.message || 'Failed to record payment');
     }
   };
@@ -272,7 +273,7 @@ export default function StaffPayroll() {
         fetchPayrollRecords();
       }
     } catch (error) {
-      console.error('Error logging bulk payments:', error);
+      logger.error('Error logging bulk payments:', error);
       toast.error(error.message || 'Failed to log bulk payments');
     }
   };
@@ -305,7 +306,7 @@ export default function StaffPayroll() {
         fetchPayrollRecords();
       }
     } catch (error) {
-      console.error('Error reversing payment:', error);
+      logger.error('Error reversing payment:', error);
       toast.error(error.message || 'Failed to reverse payment');
     } finally {
       setReversing(false);
@@ -321,7 +322,7 @@ export default function StaffPayroll() {
       toast.success(t('toast.success.payrollExportDownloaded'));
     } catch (error) {
       toast.dismiss();
-      console.error('Error exporting payroll:', error);
+      logger.error('Error exporting payroll:', error);
       toast.error(error.message || 'Failed to export payroll');
     }
   };
@@ -437,7 +438,7 @@ export default function StaffPayroll() {
                 </Select>
                 <Input
                   label={t('pages.paymentReference1')}
-                  placeholder="Transaction ID / Cheque Number"
+                  placeholder={t('staff.payroll.paymentReferencePlaceholder')}
                   value={paymentForm.paymentReference}
                   onValueChange={(v) => setPaymentForm({ ...paymentForm, paymentReference: v })}
                   variant="bordered"
@@ -510,7 +511,7 @@ export default function StaffPayroll() {
                 : 'text-default-600'
             }`}>
               {dashboardData.payrollRun.status === 'completed'
-                ? `Records for ${months[selectedMonth - 1]} ${selectedYear} were prepared on ${new Date(dashboardData.payrollRun.completedAt).toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short', year: 'numeric' })}. `
+                ? `Records for ${months[selectedMonth - 1]} ${selectedYear} were prepared on ${dashboardData.payrollRun.completedAt ? new Date(dashboardData.payrollRun.completedAt).toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}. `
                 : `Payroll records for ${months[selectedMonth - 1]} ${selectedYear} are currently being generated. `
               }
               {dashboardData.payrollRun.processedEmployees} of {dashboardData.payrollRun.totalEmployees} active {dashboardData.payrollRun.totalEmployees === 1 ? 'employee' : 'employees'} processed
@@ -887,7 +888,7 @@ export default function StaffPayroll() {
                         toast.error(t('toast.error.failedToFixSalaries'));
                     }
                   } catch (e) {
-                    console.error(e);
+                    logger.error(e);
                     toast.error(t('toast.error.errorFixingSalaries'));
                   }
                 }
@@ -1153,7 +1154,7 @@ export default function StaffPayroll() {
 
                 <Input
                   label="Payment Reference / Batch ID"
-                  placeholder="e.g. BATCH-2024-001"
+                  placeholder={t('staff.payroll.batchIdPlaceholder')}
                   value={paymentForm.paymentReference}
                   onValueChange={(v) => setPaymentForm({ ...paymentForm, paymentReference: v })}
                   variant="bordered"

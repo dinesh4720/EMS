@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Select, SelectItem, Input, Button, Textarea, Divider } from '@heroui/react';
 import { Calendar, Award, BookOpen, Users, AlertCircle } from 'lucide-react';
 import { examsApi, subjectsApi, classesApi } from '../../services/api';
+import { getStoredUser } from '../../utils/authSession';
 import toast from 'react-hot-toast';
 import { useApp } from '../../context/AppContext';
 import { useTranslation } from 'react-i18next';
@@ -156,7 +157,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
     setLoading(true);
 
     try {
-      const user = JSON.parse(sessionStorage.getItem('app_user') || '{}');
+      const user = getStoredUser() || {};
       const classId = Array.from(formData.classId)[0];
       const subjectId = Array.from(formData.subjectId)[0];
       const selectedSubject = subjects.find(s => (s.id || s._id) === subjectId);
@@ -204,7 +205,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
           <Input
             label={t('pages.examName')}
             labelPlacement="outside"
-            placeholder="e.g., Unit Test 1, Mid-Term Examination"
+            placeholder={t('academics.examNamePlaceholder')}
             value={formData.name}
             onValueChange={(value) => handleInputChange('name', value)}
             isInvalid={!!errors.name}
@@ -236,7 +237,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
           <Select
             label={t('pages.class1')}
             labelPlacement="outside"
-            placeholder="Select class"
+            placeholder={t('academics.selectClassPlaceholder')}
             selectedKeys={formData.classId}
             onSelectionChange={handleSelectionChange('classId')}
             isInvalid={!!errors.classId}
@@ -258,7 +259,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
           <Select
             label={t('pages.subject2')}
             labelPlacement="outside"
-            placeholder="Select subject"
+            placeholder={t('academics.selectSubjectPlaceholder')}
             selectedKeys={formData.subjectId}
             onSelectionChange={handleSelectionChange('subjectId')}
             isInvalid={!!errors.subjectId}
@@ -329,7 +330,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
           <Select
             label="Term"
             labelPlacement="outside"
-            placeholder="Select term (optional)"
+            placeholder={t('academics.selectTermPlaceholder')}
             selectedKeys={formData.term}
             onSelectionChange={handleSelectionChange('term')}
             classNames={{
@@ -347,7 +348,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             type="number"
             label="Duration (minutes)"
             labelPlacement="outside"
-            placeholder="e.g., 60"
+            placeholder={t('academics.durationPlaceholder')}
             value={formData.duration}
             onValueChange={(value) => handleInputChange('duration', value)}
             min={1}
@@ -371,7 +372,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             type="number"
             label={t('pages.maxMarks2')}
             labelPlacement="outside"
-            placeholder="100"
+            placeholder={t('academics.maxMarksPlaceholder')}
             value={formData.maxMarks}
             onValueChange={(value) => handleInputChange('maxMarks', value)}
             isInvalid={!!errors.maxMarks}
@@ -384,7 +385,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             type="number"
             label={t('pages.passingMarks')}
             labelPlacement="outside"
-            placeholder="35"
+            placeholder={t('academics.passingMarksPlaceholder')}
             value={formData.passingMarks}
             onValueChange={(value) => handleInputChange('passingMarks', value)}
             isInvalid={!!errors.passingMarks}
@@ -397,7 +398,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             type="number"
             label="Weightage (%)"
             labelPlacement="outside"
-            placeholder="10"
+            placeholder={t('academics.weightagePlaceholder')}
             value={formData.weightage}
             onValueChange={(value) => handleInputChange('weightage', value)}
             classNames={{

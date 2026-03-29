@@ -147,7 +147,7 @@ function ParentCard({
             label={t('pages.phoneNumber')}
             labelPlacement="outside"
             startContent={<span className="text-default-400 text-xs">+91</span>}
-            placeholder="10 digit number"
+            placeholder={t('students.form.phonePlaceholder')}
             value={parent.phone}
             onValueChange={(v) => {
               const digitsOnly = v.replace(/\D/g, "").slice(0, 10);
@@ -173,7 +173,7 @@ function ParentCard({
         <Input
           label={t('pages.email1')}
           labelPlacement="outside"
-          placeholder="parent@email.com"
+          placeholder={t('students.form.parentEmailPlaceholder')}
           value={parent.email}
           onValueChange={(v) => updateParent(index, "email", v)}
           variant="bordered"
@@ -183,7 +183,7 @@ function ParentCard({
         <Input
           label={t('pages.occupation')}
           labelPlacement="outside"
-          placeholder="e.g., Engineer, Doctor"
+          placeholder={t('students.form.occupationPlaceholder')}
           value={parent.occupation}
           onValueChange={(v) => updateParent(index, "occupation", v)}
           variant="bordered"

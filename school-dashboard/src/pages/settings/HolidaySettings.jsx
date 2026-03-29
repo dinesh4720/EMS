@@ -280,7 +280,7 @@ export default function HolidaySettings() {
             <Input
               size="sm"
               label={t('pages.holidayName')}
-              placeholder="e.g., Independence Day"
+              placeholder={t('settings.holidayNamePlaceholder')}
               value={formData.title}
               onValueChange={(v) => setFormData({ ...formData, title: v })}
               variant="bordered"

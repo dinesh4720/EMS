@@ -79,6 +79,11 @@ export class ClickCollector {
       };
     }
 
+    // Add to breadcrumbs for error context
+    if (this.tracker.breadcrumbs) {
+      this.tracker.breadcrumbs.click(element, clickData.element.text);
+    }
+
     this.tracker.track(clickData);
   }
 

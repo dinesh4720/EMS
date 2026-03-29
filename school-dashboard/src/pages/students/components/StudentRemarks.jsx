@@ -5,6 +5,7 @@ import { MessageSquare, AlertCircle, Award, CalendarCheck, Heart, Mail, Plus, Ed
 import toast from "react-hot-toast";
 import { getDateLocale } from '../../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 
 
 export default function StudentRemarks({
@@ -41,6 +42,7 @@ export default function StudentRemarks({
       return;
     }
 
+    setIsSavingRemark(true);
     try {
       const remarkData = {
         title: remarkForm.title.trim(),
@@ -49,19 +51,29 @@ export default function StudentRemarks({
         sentToParent: remarkForm.sendToParent
       };
 
-      const savedRemark = await request(`/students/${studentId}/remarks`, {
-        method: 'POST',
-        body: JSON.stringify(remarkData)
-      });
+      if (editingRemark) {
+        const updatedRemark = await request(`/students/${studentId}/remarks/${editingRemark._id}`, {
+          method: 'PUT',
+          body: JSON.stringify(remarkData)
+        });
+        onRemarksChange(remarks.map(r => r._id === editingRemark._id ? { ...r, ...updatedRemark } : r));
+      } else {
+        const savedRemark = await request(`/students/${studentId}/remarks`, {
+          method: 'POST',
+          body: JSON.stringify(remarkData)
+        });
+        onRemarksChange([savedRemark, ...remarks]);
+      }
 
-      onRemarksChange([savedRemark, ...remarks]);
-
-      if (remarkForm.sendToParent) {
-        toast.success(`Remark added and sent to ${student.parentName || 'parent'}`);
+      if (editingRemark) {
+        toast.success(t('toast.success.remarkUpdated', 'Remark updated successfully'));
+      } else if (remarkForm.sendToParent) {
+        toast.success(t('toast.success.remarkSentToParent', { name: student.parentName || t('common.parent', 'parent'), defaultValue: `Remark added and sent to ${student.parentName || 'parent'}` }));
       } else {
         toast.success(t('toast.success.remarkAddedSuccessfully'));
       }
 
+      setEditingRemark(null);
       setRemarkForm({
         type: "",
         customType: "",
@@ -72,7 +84,56 @@ export default function StudentRemarks({
       setIsRemarkOpen(false);
     } catch (error) {
       console.error("Error saving remark:", error);
-      toast.error(error.message || "Failed to save remark");
+      toast.error(error.message || t('toast.error.failedToSaveRemark', 'Failed to save remark'));
+    } finally {
+      setIsSavingRemark(false);
+    }
+  };
+
+  const [editingRemark, setEditingRemark] = useState(null);
+  const [remarkToDelete, setRemarkToDelete] = useState(null);
+  const [isDeletingRemark, setIsDeletingRemark] = useState(false);
+  const [isSavingRemark, setIsSavingRemark] = useState(false);
+
+  const handleEditRemark = (remark) => {
+    setEditingRemark(remark);
+    setRemarkForm({
+      type: remark.category || "",
+      customType: "",
+      title: remark.title || "",
+      description: remark.description || "",
+      sendToParent: remark.sentToParent || false
+    });
+    setIsRemarkOpen(true);
+  };
+
+  const handleDeleteRemark = async (remark) => {
+    setRemarkToDelete(remark);
+  };
+
+  const confirmDeleteRemark = async () => {
+    if (!remarkToDelete) return;
+    setIsDeletingRemark(true);
+    try {
+      await request(`/students/${studentId}/remarks/${remarkToDelete._id}`, { method: 'DELETE' });
+      onRemarksChange(remarks.filter(r => r._id !== remarkToDelete._id));
+      toast.success(t('toast.success.remarkDeleted', 'Remark deleted'));
+    } catch (error) {
+      console.error("Error deleting remark:", error);
+      toast.error(error.message || t('toast.error.failedToDeleteRemark', 'Failed to delete remark'));
+    } finally {
+      setIsDeletingRemark(false);
+      setRemarkToDelete(null);
+    }
+  };
+
+  const handleResendRemark = async (remark) => {
+    try {
+      await request(`/students/${studentId}/remarks/${remark._id}/resend`, { method: 'POST' });
+      toast.success(`Remark resent to ${student.parentName || 'parent'}`);
+    } catch (error) {
+      console.error("Error resending remark:", error);
+      toast.error(error.message || "Failed to resend remark");
     }
   };
 
@@ -163,7 +224,7 @@ export default function StudentRemarks({
                             <Chip size="sm" variant="flat" className="bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400">{t('pages.staffOnly')}</Chip>
                           )}
                           <span className="text-xs text-gray-400 dark:text-zinc-500">
-                            • {remark.authorName || 'System'} • {new Date(remark.date).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric', year: 'numeric' })}
+                            • {remark.authorName || 'System'} • {remark.date ? new Date(remark.date).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                           </span>
                         </div>
                       </div>
@@ -174,9 +235,9 @@ export default function StudentRemarks({
                           </Button>
                         </DropdownTrigger>
                         <DropdownMenu aria-label={t('aria.menus.remarkActions')}>
-                          <DropdownItem key="edit" startContent={<Edit size={14} />}>{t('pages.edit1')}</DropdownItem>
-                          <DropdownItem key="resend" startContent={<Mail size={14} />}>{t('pages.resendToParent')}</DropdownItem>
-                          <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 size={14} />}>{t('pages.delete1')}</DropdownItem>
+                          <DropdownItem key="edit" startContent={<Edit size={14} />} onPress={() => handleEditRemark(remark)}>{t('pages.edit1')}</DropdownItem>
+                          <DropdownItem key="resend" startContent={<Mail size={14} />} onPress={() => handleResendRemark(remark)}>{t('pages.resendToParent')}</DropdownItem>
+                          <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 size={14} />} onPress={() => handleDeleteRemark(remark)}>{t('pages.delete1')}</DropdownItem>
                         </DropdownMenu>
                       </Dropdown>
                     </div>
@@ -212,8 +273,8 @@ export default function StudentRemarks({
                     <MessageSquare size={20} className="text-gray-600 dark:text-zinc-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold">{t('pages.addRemark')}</h3>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.addANoteOrObservationAboutTheStudent')}</p>
+                    <h3 className="text-lg font-semibold">{editingRemark ? 'Edit Remark' : t('pages.addRemark')}</h3>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{editingRemark ? 'Update this remark' : t('pages.addANoteOrObservationAboutTheStudent')}</p>
                   </div>
                 </div>
               </DrawerHeader>
@@ -256,7 +317,7 @@ export default function StudentRemarks({
                 {/* Title with Character Limit */}
                 <Input
                   label={t('pages.title1')}
-                  placeholder="e.g. Excellent Performance in Mathematics"
+                  placeholder={t('students.profile.remarks.titlePlaceholder')}
                   variant="bordered"
                   value={remarkForm.title}
                   onChange={(e) => setRemarkForm({ ...remarkForm, title: e.target.value })}
@@ -323,6 +384,7 @@ export default function StudentRemarks({
                 <Button
                   variant="flat"
                   onPress={() => {
+                    setEditingRemark(null);
                     setRemarkForm({
                       type: "",
                       customType: "",
@@ -338,16 +400,30 @@ export default function StudentRemarks({
                 <Button
                   color="primary"
                   onPress={handleSaveRemark}
-                  startContent={<Plus size={16} />}
+                  startContent={!isSavingRemark && <Plus size={16} />}
                   isDisabled={!remarkForm.title.trim() || !remarkForm.description.trim() || (!remarkForm.type && !remarkForm.customType.trim())}
+                  isLoading={isSavingRemark}
                 >
-                  {remarkForm.sendToParent ? "Save & Send" : "Save Remark"}
+                  {editingRemark ? t('common.updateRemark', 'Update Remark') : remarkForm.sendToParent ? t('common.saveAndSend', 'Save & Send') : t('common.saveRemark', 'Save Remark')}
                 </Button>
               </DrawerFooter>
             </>
           )}
         </DrawerContent>
       </Drawer>
+
+      {/* Delete Remark Confirmation */}
+      <ConfirmDialog
+        isOpen={!!remarkToDelete}
+        onClose={() => setRemarkToDelete(null)}
+        onConfirm={confirmDeleteRemark}
+        title={t('confirm.deleteRemarkTitle', 'Delete Remark')}
+        message={t('confirm.deleteRemarkMessage', { title: remarkToDelete?.title, defaultValue: `Are you sure you want to delete "${remarkToDelete?.title}"? This action cannot be undone.` })}
+        confirmText={t('common.delete', 'Delete')}
+        cancelText={t('common.cancel', 'Cancel')}
+        variant="danger"
+        isLoading={isDeletingRemark}
+      />
     </>
   );
 }

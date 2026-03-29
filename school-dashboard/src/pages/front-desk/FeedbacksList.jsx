@@ -1,4 +1,5 @@
 import { useState, useEffect, forwardRef, useImperativeHandle, useMemo } from 'react';
+import logger from "../../utils/logger";
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, Chip, useDisclosure,
@@ -37,6 +38,7 @@ const FeedbacksList = forwardRef((props, ref) => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingId, setEditingId] = useState(null);
@@ -72,9 +74,10 @@ const FeedbacksList = forwardRef((props, ref) => {
   const loadFeedbacks = async () => {
     try {
       const response = await frontDeskApi.getFeedbacks();
-      setFeedbacks(response);
+      const data = Array.isArray(response) ? response : (response?.data || []);
+      setFeedbacks(data);
     } catch (error) {
-      console.error('Failed to load feedbacks:', error);
+      logger.error('Failed to load feedbacks:', error);
       toast.error(t('toast.error.failedToLoadFeedbacks'));
     } finally {
       setLoading(false);
@@ -84,9 +87,10 @@ const FeedbacksList = forwardRef((props, ref) => {
   const loadStaff = async () => {
     try {
       const response = await staffApi.getAll();
-      setStaff(response);
+      const data = Array.isArray(response) ? response : (response?.data || []);
+      setStaff(data);
     } catch (error) {
-      console.error('Failed to load staff:', error);
+      logger.error('Failed to load staff:', error);
     }
   };
 
@@ -123,6 +127,7 @@ const FeedbacksList = forwardRef((props, ref) => {
       toast.error(t('toast.error.pleaseFixTheErrorsBeforeSubmitting'));
       return;
     }
+    setIsSubmitting(true);
     try {
       const submitData = {
         ...formData,
@@ -154,7 +159,7 @@ const FeedbacksList = forwardRef((props, ref) => {
           });
           toast.success('Task notification sent to assigned staff');
         } catch (taskErr) {
-          console.error('Task creation error:', taskErr);
+          logger.error('Task creation error:', taskErr);
           toast.error('Feedback saved but failed to send task notification');
         }
       }
@@ -174,7 +179,7 @@ const FeedbacksList = forwardRef((props, ref) => {
           });
           toast.success(`Feedback shared with ${formData.shareWithStaff.length} staff member(s)`);
         } catch (shareErr) {
-          console.error('Feedback share error:', shareErr);
+          logger.error('Feedback share error:', shareErr);
           toast.error('Feedback saved but failed to share with staff');
         }
       }
@@ -184,6 +189,8 @@ const FeedbacksList = forwardRef((props, ref) => {
       loadFeedbacks();
     } catch (error) {
       toast.error(t('toast.error.failedToSaveFeedback'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -501,7 +508,7 @@ const FeedbacksList = forwardRef((props, ref) => {
                     <p className="text-sm font-medium text-default-700 mb-2">📤 Share via Internal Messaging</p>
                     <Select
                       label={t('pages.shareWithStaff')}
-                      placeholder="Select staff to share with"
+                      placeholder={t('pages.selectStaffToShareWith')}
                       selectionMode="multiple"
                       selectedKeys={new Set(formData.shareWithStaff || [])}
                       onSelectionChange={(keys) => setFormData({ ...formData, shareWithStaff: Array.from(keys) })}
@@ -519,10 +526,10 @@ const FeedbacksList = forwardRef((props, ref) => {
             </Tabs>
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={onClose}>
+            <Button variant="light" onPress={onClose} isDisabled={isSubmitting}>
               Cancel
             </Button>
-            <Button color="primary" onPress={handleSubmit}>
+            <Button color="primary" onPress={handleSubmit} isLoading={isSubmitting} isDisabled={isSubmitting}>
               {editingId ? 'Update' : 'Create'}
             </Button>
           </ModalFooter>

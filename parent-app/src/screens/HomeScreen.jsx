@@ -349,6 +349,13 @@ const HomeScreen = ({ navigation }) => {
               <CreditCard size={24} color={themeColors.text} />
               <Text style={[styles.actionText, { color: themeColors.text }]}>{t('screens.payFees')}</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: themeColors.backgroundSecondary }]}
+              onPress={() => navigation.navigate('Homework')}
+            >
+              <FileText size={24} color={themeColors.text} />
+              <Text style={[styles.actionText, { color: themeColors.text }]}>Homework</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import { request } from "../services/api.js";
+import logger from "../utils/logger";
 
 const PermissionContext = createContext();
 
@@ -19,8 +20,10 @@ export const PermissionProvider = ({ children }) => {
       setLoading(false);
     }
   // Use user?.id instead of user object to avoid re-running on every render
-  // when AuthContext creates a new user object reference (AP-13)
-  }, [isAuthenticated, user?.id]);
+  // when AuthContext creates a new user object reference (AP-13).
+  // Also depend on _roleVerified so permissions are re-fetched once the
+  // server confirms the role (transitions from false -> true).
+  }, [isAuthenticated, user?.id, user?._roleVerified]);
 
   const fetchUserPermissions = async () => {
     try {
@@ -33,24 +36,7 @@ export const PermissionProvider = ({ children }) => {
       if (apiPermissions.length === 0) {
         grantDefaultPermissions();
       } else {
-        // Check if academics is included, if not add it based on role
-        const roleStr = typeof user?.role === 'string' ? user.role :
-                        user?.role?.toString?.() || '';
-        const normalizedRole = roleStr.toLowerCase().trim();
-        const hasAcademicsPermission = apiPermissions.some(p => p.module === 'academics');
-
-        // For teachers and above, always include academics if missing
-        if (!hasAcademicsPermission && ['teacher', 'principal', 'vice principal', 'vice-principal', 'admin', 'super admin', 'superadmin'].includes(normalizedRole)) {
-          const academicsPermission = {
-            module: 'academics',
-            actions: normalizedRole === 'teacher'
-              ? ['view', 'create', 'edit']
-              : ['view', 'create', 'edit', 'publish']
-          };
-          setPermissions([...apiPermissions, academicsPermission]);
-        } else {
-          setPermissions(apiPermissions);
-        }
+        setPermissions(apiPermissions);
       }
     } catch (error) {
       console.warn('Permissions system not available, using role-based fallback:', error.message);
@@ -61,12 +47,42 @@ export const PermissionProvider = ({ children }) => {
   };
 
   const grantDefaultPermissions = () => {
+    // SECURITY: The role used here may come from sessionStorage, which a user
+    // can tamper with via the browser console. Only grant elevated (admin/
+    // principal) permissions when the role has been verified by the server
+    // (i.e. _roleVerified === true, set by AuthContext after a successful
+    // /auth/session or /auth/login response). When the role is unverified,
+    // fall through to basic view-only permissions to prevent privilege
+    // escalation via sessionStorage manipulation.
+    const roleVerified = user?._roleVerified === true;
+
     // Normalize role for case-insensitive comparison - handle various types safely
     const roleStr = typeof user?.role === 'string' ? user.role :
                     user?.role?.toString?.() || '';
     const normalizedRole = roleStr.toLowerCase().trim();
 
-    // Grant all permissions for Admin roles
+    // Only trust elevated roles when verified by the server
+    if (!roleVerified) {
+      // Unverified role — grant minimal view-only permissions regardless of
+      // what the role field says. The user will get proper permissions once
+      // the /auth/session call succeeds and re-triggers this flow.
+      console.warn(
+        'PermissionContext: role not server-verified, granting view-only fallback permissions'
+      );
+      setPermissions([
+        { module: 'dashboard', actions: ['view'] },
+        { module: 'staff', actions: ['view'] },
+        { module: 'students', actions: ['view'] },
+        { module: 'classes', actions: ['view'] },
+        { module: 'academics', actions: ['view'] },
+        { module: 'attendance', actions: ['view'] },
+        { module: 'timetable', actions: ['view'] },
+        { module: 'communication', actions: ['view'] },
+      ]);
+      return;
+    }
+
+    // Grant all permissions for Admin roles (role verified by server)
     if (normalizedRole === 'super admin' || normalizedRole === 'admin' || normalizedRole === 'superadmin') {
       setPermissions([{ module: '*', actions: ['view', 'create', 'edit', 'delete', 'publish'] }]);
     } else if (normalizedRole === 'principal') {
@@ -131,13 +147,19 @@ export const PermissionProvider = ({ children }) => {
   };
 
   const hasPermission = (module, action = 'view') => {
+    // SECURITY: Only trust the role for admin short-circuit when the role has
+    // been verified by the server. This prevents privilege escalation via
+    // sessionStorage tampering. The _roleVerified flag is set by AuthContext
+    // only when user data comes from /auth/session or /auth/login responses.
+    const roleVerified = user?._roleVerified === true;
+
     // Normalize role for case-insensitive comparison - handle various types safely
     const roleStr = typeof user?.role === 'string' ? user.role :
                     user?.role?.toString?.() || '';
     const normalizedRole = roleStr.toLowerCase().trim();
 
-    // Super Admin has all permissions
-    if (normalizedRole === 'super admin' || normalizedRole === 'admin' || normalizedRole === 'superadmin') {
+    // Super Admin has all permissions — but ONLY when role is server-verified
+    if (roleVerified && (normalizedRole === 'super admin' || normalizedRole === 'admin' || normalizedRole === 'superadmin')) {
       return true;
     }
 
@@ -183,7 +205,7 @@ export const PermissionProvider = ({ children }) => {
         }),
       });
     } catch (error) {
-      console.error('Error requesting permission:', error);
+      logger.error('Error requesting permission:', error);
       throw error;
     }
   };

@@ -395,7 +395,7 @@ export default function PublicFormSubmission() {
             <h2 className="text-xl font-bold text-foreground">{t('pages.alreadySubmitted')}</h2>
             <p className="text-foreground/70">
               This form has already been submitted on{" "}
-              {format(new Date(formData.submissionStatus.submittedAt), "MMMM d, yyyy 'at' h:mm a")}.
+              {formData.submissionStatus?.submittedAt ? format(new Date(formData.submissionStatus.submittedAt), "MMMM d, yyyy 'at' h:mm a") : '—'}.
             </p>
             <div className="flex items-center justify-center gap-2 text-sm text-default-500">
               <User className="w-4 h-4" />

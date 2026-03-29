@@ -15,6 +15,7 @@ import CreateHomeworkModal from './CreateHomeworkModal';
 import HomeworkDetailModal from './HomeworkDetailModal';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { formatShortDate } from '../../utils/dateFormatter';
 
 const STATUS_OPTIONS = ['all', 'active', 'completed', 'cancelled'];
 
@@ -292,7 +293,7 @@ const HomeworkPage = () => {
                           <div className="flex items-center gap-4 text-sm">
                             <span className="flex items-center gap-1 text-gray-500 dark:text-zinc-400">
                               <Calendar size={14} />
-                              {hw.dueDate ? (() => { const d = new Date(hw.dueDate); return isNaN(d.getTime()) ? 'Invalid date' : d.toLocaleDateString(); })() : 'No due date'}
+                              {hw.dueDate ? formatShortDate(hw.dueDate, 'Invalid date') : 'No due date'}
                             </span>
                             <button
                               onClick={() => setDetailId(id)}

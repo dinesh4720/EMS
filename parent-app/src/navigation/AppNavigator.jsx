@@ -16,6 +16,7 @@ import RemarksScreen from '../screens/RemarksScreen';
 import AnnouncementsScreen from '../screens/AnnouncementsScreen';
 import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
+import HomeworkScreen from '../screens/HomeworkScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -108,6 +109,13 @@ const AppNavigator = () => {
               component={NotificationSettingsScreen}
               options={{
                 title: 'Notification Settings',
+              }}
+            />
+            <Stack.Screen
+              name="Homework"
+              component={HomeworkScreen}
+              options={{
+                title: 'Homework',
               }}
             />
             <Stack.Screen

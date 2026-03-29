@@ -20,6 +20,7 @@ import { MinimalButton } from '../../components/ui';
 import { getAcademicYearOptions } from '../../utils/constants';
 import { useChartTheme, CHART_COLORS } from '../../utils/chartTheme';
 import { useTranslation } from 'react-i18next';
+import { formatShortDate } from '../../utils/dateFormatter';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -523,7 +524,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                     <h4 className="font-medium text-gray-900 dark:text-zinc-100 mb-1">{exam.name}</h4>
                     <p className="text-sm text-gray-500 dark:text-zinc-400">{exam.classId} - {exam.subjectName}</p>
                     <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2">
-                      {exam.date ? new Date(exam.date).toLocaleDateString() : 'No date'}
+                      {exam.date ? formatShortDate(exam.date) : 'No date'}
                     </p>
                   </CardBody>
                 </Card>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useDeferredValue } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Table,
@@ -23,8 +23,10 @@ import {
 import { Search, X, IndianRupee, Download, Printer, Bell, SlidersHorizontal } from "lucide-react";
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { feesApi, studentsApi, studentFeesApi } from "../../services/api";
+import { showErrorToast } from "../../utils/errorHandling";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { formatShortDate } from '../../utils/dateFormatter';
 
 function getCurrentUser() {
   try {
@@ -60,6 +62,7 @@ export default function Payments() {
   const [feeStructures, setFeeStructures] = useState({});
   const [loading, setLoading] = useState(true);
   const [studentsLoading, setStudentsLoading] = useState(true);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -69,22 +72,37 @@ export default function Payments() {
     hasNextPage: false,
     hasPrevPage: false,
   });
-  const deferredSearchQuery = useDeferredValue(searchQuery.trim());
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+
+  // Debounce search to avoid API call on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const fetchPayments = useCallback(async () => {
+    try {
+      setLoading(true);
+      const filters = {};
+      if (dateFrom) filters.dateFrom = dateFrom;
+      if (dateTo) filters.dateTo = dateTo;
+      if (amountMin) filters.amountMin = amountMin;
+      if (amountMax) filters.amountMax = amountMax;
+      const paymentsData = await feesApi.getPayments(filters);
+      setPayments(paymentsData);
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+      toast.error(t('toast.error.failedToLoadPayments', 'Failed to load payments'));
+    } finally {
+      setLoading(false);
+    }
+  }, [dateFrom, dateTo, amountMin, amountMax]);
 
   useEffect(() => {
-    const fetchPayments = async () => {
-      try {
-        setLoading(true);
-        const paymentsData = await feesApi.getPayments({});
-        setPayments(paymentsData);
-      } catch (error) {
-        console.error('Error fetching payments:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchPayments();
-  }, []);
+  }, [fetchPayments]);
 
   const loadStudents = useCallback(async (pageToLoad) => {
     try {
@@ -93,7 +111,8 @@ export default function Payments() {
         page: pageToLoad,
         limit: 20,
         status: 'active',
-        search: deferredSearchQuery || undefined,
+        search: debouncedSearchQuery || undefined,
+        ...(statusFilter !== 'all' && { feeStatus: statusFilter }),
       });
       const studentList = response.data || [];
       setStudents(studentList);
@@ -126,12 +145,13 @@ export default function Payments() {
       setFeeStructures({});
     } finally {
       setStudentsLoading(false);
+      setInitialLoadDone(true);
     }
-  }, [deferredSearchQuery]);
+  }, [debouncedSearchQuery, statusFilter]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [deferredSearchQuery]);
+  }, [debouncedSearchQuery, statusFilter]);
 
   useEffect(() => {
     loadStudents(currentPage);
@@ -187,8 +207,8 @@ export default function Payments() {
   const filteredPayments = useMemo(() => {
     return feePayments.filter((p) => {
       const matchesSearch =
-        p.student.toLowerCase().includes(deferredSearchQuery.toLowerCase()) ||
-        p.rollNo?.toString().includes(deferredSearchQuery);
+        p.student.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        p.rollNo?.toString().includes(debouncedSearchQuery);
       const matchesStatus = statusFilter === "all" || p.status === statusFilter;
 
       // Date range filter — exclude students with no payment history when date filter is active
@@ -209,7 +229,7 @@ export default function Payments() {
 
       return matchesSearch && matchesStatus && matchesDate && matchesAmount;
     });
-  }, [feePayments, deferredSearchQuery, statusFilter, dateFrom, dateTo, amountMin, amountMax]);
+  }, [feePayments, debouncedSearchQuery, statusFilter, dateFrom, dateTo, amountMin, amountMax]);
 
   // Build fee line items from the student's actual StudentFeeStructure data
   const getStudentFees = (student) => {
@@ -280,7 +300,7 @@ export default function Payments() {
         student: selectedStudent.student,
         class: selectedStudent.class,
         paymentMode,
-        date: new Date().toLocaleDateString()
+        date: formatShortDate(new Date())
       });
 
       setSelectedStudent(null);
@@ -294,8 +314,22 @@ export default function Payments() {
     }
   };
 
-  const handleSendReminder = (payment) => {
-    toast.success(`Reminder will be sent to ${payment.student}'s parents`);
+  const handleSendReminder = async (payment) => {
+    const studentId = payment.studentId?._id || payment.studentId || payment.id;
+    if (!studentId) {
+      toast.error('Cannot send reminder: student not found');
+      return;
+    }
+    const loadingToast = toast.loading(`Sending reminder to ${payment.student}'s parents...`);
+    try {
+      await studentsApi.sendReminder(studentId, {
+        type: 'fee',
+        message: `Fee payment reminder for ${payment.student}. Please pay at your earliest convenience.`,
+      });
+      toast.success(`Reminder sent to ${payment.student}'s parents`, { id: loadingToast });
+    } catch (error) {
+      toast.error(error.message || 'Failed to send reminder', { id: loadingToast });
+    }
   };
 
   const escapeHtml = (str) => String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
@@ -355,7 +389,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;paddi
       student: payment.student,
       class: payment.class,
       paymentMode: latest.paymentMode || 'cash',
-      date: latest.paymentDate ? new Date(latest.paymentDate).toLocaleDateString() : new Date().toLocaleDateString(),
+      date: latest.paymentDate ? formatShortDate(latest.paymentDate) : formatShortDate(new Date()),
     });
   };
 
@@ -392,7 +426,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;paddi
   const totalCollected = filteredPayments.reduce((sum, p) => sum + p.paid, 0);
   const pendingCount = filteredPayments.filter(p => p.status === "pending").length;
 
-  if (loading || studentsLoading) {
+  if (!initialLoadDone && (loading || studentsLoading)) {
     return <TablePageSkeleton />;
   }
 
@@ -505,7 +539,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;paddi
       </div>
 
       {/* Table */}
-      <div className="border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden -mx-6 sm:mx-0">
+      <div className={`border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden -mx-6 sm:mx-0 transition-opacity duration-200 ${studentsLoading ? 'opacity-50 pointer-events-none' : ''}`}>
         <Table
           aria-label={t('aria.misc.feePayments')}
           removeWrapper
@@ -731,7 +765,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;paddi
                   </div>
                   <p className="text-gray-600 dark:text-zinc-400 text-sm font-medium">{t('pages.paymentSuccessful')}</p>
                   <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100">
-                    ₹{receiptData?.amount.toLocaleString()}
+                    ₹{(receiptData?.amount ?? 0).toLocaleString()}
                   </p>
                   <p className="text-xs text-gray-400 dark:text-zinc-500">Receipt No: {receiptData?.receiptNumber}</p>
                   <div className="border-t border-gray-200 dark:border-zinc-800 my-4"></div>

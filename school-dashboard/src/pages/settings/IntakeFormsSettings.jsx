@@ -170,7 +170,7 @@ export default function IntakeFormsSettings() {
   const [editingForm, setEditingForm] = useState(null);
   const [previewForm, setPreviewForm] = useState(null);
   const [forms, setForms] = useState([]);
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [, setSelectedTemplate] = useState(null);
   const [builderKey, setBuilderKey] = useState(0); // Key to force remount the modal
 
   const [formData, setFormData] = useState({
@@ -1041,7 +1041,7 @@ export default function IntakeFormsSettings() {
 
                         <Input
                           label={t('pages.regexPattern1')}
-                          placeholder="e.g. ^[A-Za-z]+$"
+                          placeholder={t('settings.regexPatternPlaceholder')}
                           size="sm"
                           variant="bordered"
                           labelPlacement="outside"

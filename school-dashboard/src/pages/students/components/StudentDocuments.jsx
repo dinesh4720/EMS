@@ -5,6 +5,7 @@ import { FileText, Upload, FolderPlus, AlertTriangle, Eye, Download, Trash2 } fr
 import toast from "react-hot-toast";
 import { uploadApi } from "../../../services/api";
 import { useTranslation } from 'react-i18next';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 
 export default function StudentDocuments({
   studentId,
@@ -15,6 +16,8 @@ export default function StudentDocuments({
 }) {
   const { t } = useTranslation();
   const documentInputRef = useRef(null);
+  const [docToDelete, setDocToDelete] = useState(null);
+  const [isDeletingDoc, setIsDeletingDoc] = useState(false);
 
   const handleDocumentUpload = async (e) => {
     const files = Array.from(e.target.files || []);
@@ -119,7 +122,7 @@ export default function StudentDocuments({
             toast.success(t('toast.success.allDocumentsUploadedSuccessfully'));
           }, 3000);
         } else {
-          toast.error(`Uploaded ${successCount}, Failed ${failCount}`);
+          toast.error(t('toast.error.uploadPartialFailure', { success: successCount, fail: failCount, defaultValue: `Uploaded ${successCount}, Failed ${failCount}` }));
         }
 
       } catch (error) {
@@ -131,35 +134,42 @@ export default function StudentDocuments({
     }
   };
 
-  const handleDeleteDocument = async (docId) => {
-    // Find the index of the document to delete
-    // Handle both doc.id and fallback doc-{index} format
-    let docIndex = documents.findIndex(d => d.id === docId);
+  const handleDeleteDocument = (docId) => {
+    // Find the document to show its name in confirmation
+    const docIndex = documents.findIndex(d => d.id === docId);
+    const doc = docIndex !== -1 ? documents[docIndex] : documents[parseInt(docId.replace('doc-', ''))];
+    setDocToDelete({ id: docId, name: doc?.name || t('common.document', 'Document') });
+  };
 
-    // If not found by id, try to extract index from doc-{index} format
+  const confirmDeleteDocument = async () => {
+    if (!docToDelete) return;
+    const docId = docToDelete.id;
+
+    // Find the index of the document to delete
+    let docIndex = documents.findIndex(d => d.id === docId);
     if (docIndex === -1 && docId.startsWith('doc-')) {
       docIndex = parseInt(docId.replace('doc-', ''));
     }
 
     if (docIndex === -1 || docIndex >= documents.length) {
-      console.error('🗑️ Document not found or invalid index');
       toast.error(t('toast.error.documentNotFound'));
+      setDocToDelete(null);
       return;
     }
 
-    const loadingToast = toast.loading(t('toast.loading.deletingDocument'));
-
+    setIsDeletingDoc(true);
     try {
       const result = await request(`/students/${studentId}/documents/${docIndex}`, {
         method: 'DELETE'
       });
-
-      // Update local state with the documents array from server
       onDocumentsChange(result.documents || []);
-      toast.success("Document deleted successfully", { id: loadingToast });
+      toast.success(t('toast.success.documentDeleted', 'Document deleted successfully'));
     } catch (error) {
-      console.error("🗑️ Delete error:", error);
-      toast.error("Failed to delete document: " + (error.message || "Unknown error"), { id: loadingToast });
+      console.error("Delete error:", error);
+      toast.error(t('toast.error.failedToDeleteDocument', 'Failed to delete document') + ": " + (error.message || t('common.unknownError', 'Unknown error')));
+    } finally {
+      setIsDeletingDoc(false);
+      setDocToDelete(null);
     }
   };
 
@@ -173,14 +183,15 @@ export default function StudentDocuments({
 
       // Update local state with fixed documents
       onDocumentsChange(result.documents || []);
-      toast.success("Documents fixed successfully", { id: loadingToast });
+      toast.success(t('toast.success.documentsFixed', 'Documents fixed successfully'), { id: loadingToast });
     } catch (error) {
       console.error("Fix error:", error);
-      toast.error("Failed to fix documents: " + (error.message || "Unknown error"), { id: loadingToast });
+      toast.error(t('toast.error.failedToFixDocuments', 'Failed to fix documents') + ": " + (error.message || t('common.unknownError', 'Unknown error')), { id: loadingToast });
     }
   };
 
   return (
+    <>
     <div className="space-y-6 animate-fade-in">
       {/* Documents Section */}
       <input
@@ -213,7 +224,7 @@ export default function StudentDocuments({
       </div>
 
       {documents.length === 0 ? (
-        <div className="text-center py-16 border-2 border-dashed border-gray-200 dark:border-zinc-700 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer group" onClick={() => documentInputRef.current?.click()}>
+        <div className="text-center py-16 border-2 border-dashed border-gray-200 dark:border-zinc-700 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer group" role="button" tabIndex={0} onClick={() => documentInputRef.current?.click()} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); documentInputRef.current?.click(); } }}>
           <div className="inline-flex p-4 bg-white dark:bg-zinc-900 rounded-full mb-4 ring-1 ring-gray-200 dark:ring-zinc-700 shadow-sm dark:shadow-zinc-900/50 group-hover:scale-110 transition-transform">
             <FolderPlus size={32} className="text-gray-600 dark:text-zinc-400" />
           </div>
@@ -344,5 +355,19 @@ export default function StudentDocuments({
         </div>
       )}
     </div>
+
+    {/* Delete Document Confirmation */}
+    <ConfirmDialog
+      isOpen={!!docToDelete}
+      onClose={() => setDocToDelete(null)}
+      onConfirm={confirmDeleteDocument}
+      title={t('confirm.deleteDocumentTitle', 'Delete Document')}
+      message={t('confirm.deleteDocumentMessage', { name: docToDelete?.name, defaultValue: `Are you sure you want to delete "${docToDelete?.name}"? This action cannot be undone.` })}
+      confirmText={t('common.delete', 'Delete')}
+      cancelText={t('common.cancel', 'Cancel')}
+      variant="danger"
+      isLoading={isDeletingDoc}
+    />
+    </>
   );
 }

@@ -1,4 +1,4 @@
-import { clearStoredUser } from '../utils/authSession';
+import { clearStoredUser, getAuthHeaders } from '../utils/authSession';
 import { API_URL } from '../config/api.js';
 
 const PREBUILT_PROMPTS = [
@@ -60,10 +60,10 @@ async function parseJsonResponse(response) {
 
 async function aiRequest(endpoint, options = {}) {
   const hasFormDataBody = options.body instanceof FormData;
-  const headers = {
+  const headers = getAuthHeaders({
     ...(hasFormDataBody ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers || {})
-  };
+  });
 
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,

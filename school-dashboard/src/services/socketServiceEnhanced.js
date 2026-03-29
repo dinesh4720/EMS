@@ -1,5 +1,6 @@
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../config/api.js';
+import logger from '../utils/logger';
 
 class SocketServiceEnhanced {
   constructor() {
@@ -14,7 +15,10 @@ class SocketServiceEnhanced {
   }
 
   connect(token) {
-    this._authToken = token || this._authToken || null;
+    // Only update _authToken if an explicit token was provided
+    if (token) {
+      this._authToken = token;
+    }
 
     // If already connected and authenticated, reuse the connection
     if (this.socket?.connected && this.authenticated) {
@@ -92,17 +96,17 @@ class SocketServiceEnhanced {
       });
 
       this.socket.on('error', (error) => {
-        console.error('❌ Socket error:', error);
+        logger.error('❌ Socket error:', error);
         this.emit('error', error);
         reject(error);
       });
 
       this.socket.on('connect_error', (error) => {
-        console.error('❌ Connection error:', error);
+        logger.error('❌ Connection error:', error);
         this.reconnectAttempts++;
 
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-          console.error('❌ Max reconnection attempts reached');
+          logger.error('❌ Max reconnection attempts reached');
           reject(new Error('Failed to connect after multiple attempts'));
         }
 
@@ -165,7 +169,7 @@ class SocketServiceEnhanced {
   // Join a conversation room
   joinConversation(conversationId) {
     if (!this.socket?.connected) {
-      console.error('❌ Socket not connected');
+      logger.error('❌ Socket not connected');
       return;
     }
 
@@ -175,7 +179,7 @@ class SocketServiceEnhanced {
   // Send a message
   sendMessage(data) {
     if (!this.socket?.connected) {
-      console.error('❌ Socket not connected');
+      logger.error('❌ Socket not connected');
       throw new Error('Socket not connected');
     }
 
@@ -236,7 +240,7 @@ class SocketServiceEnhanced {
       try {
         callback(data);
       } catch (error) {
-        console.error(`Error in ${event} callback:`, error);
+        logger.error(`Error in ${event} callback:`, error);
       }
     });
   }
@@ -259,3 +263,12 @@ class SocketServiceEnhanced {
 // Export singleton instance
 const socketServiceEnhanced = new SocketServiceEnhanced();
 export default socketServiceEnhanced;
+
+/**
+ * Returns the singleton socket service instance.
+ * Use this in components that need lazy access to the socket
+ * (e.g. inside useEffect where the socket may not be connected yet).
+ */
+export function getSocketService() {
+  return socketServiceEnhanced;
+}

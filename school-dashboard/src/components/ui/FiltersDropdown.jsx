@@ -114,7 +114,7 @@ export default function FiltersDropdown({
                                 <Search size={14} className="text-default-400 flex-shrink-0" />
                                 <input
                                     type="search"
-                                    placeholder="Search..."
+                                    placeholder={t('common.searchPlaceholder')}
                                     className="flex-1 bg-transparent outline-none text-sm min-w-0"
                                     value={searchQuery}
                                     onChange={(e) => onSearchChange(e.target.value)}

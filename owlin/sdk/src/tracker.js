@@ -8,11 +8,13 @@ import { InputCollector } from './collectors/input.js';
 import { NavigationCollector } from './collectors/navigation.js';
 import { ApiCollector } from './collectors/api.js';
 import { ErrorCollector } from './collectors/error.js';
+import { BreadcrumbCollector } from './collectors/breadcrumbs.js';
 
 export class OwlinTracker {
   constructor(config = {}) {
     this.config = {
-      endpoint: config.endpoint || '/api/events',
+      endpoint: config.endpoint || '/api/v1/events/batch',
+      apiKey: config.apiKey || null,
       batchSize: config.batchSize || 10,
       flushInterval: config.flushInterval || 5000,
       autoStart: config.autoStart !== false,
@@ -28,9 +30,13 @@ export class OwlinTracker {
     // Initialize sender
     this.sender = new EventSender({
       endpoint: this.config.endpoint,
+      apiKey: this.config.apiKey,
       batchSize: this.config.batchSize,
       flushInterval: this.config.flushInterval,
     });
+
+    // Initialize breadcrumb collector (shared across all collectors for error context)
+    this.breadcrumbs = new BreadcrumbCollector(this);
 
     // Initialize collectors
     this.collectors = {

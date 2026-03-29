@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import logger from "../../utils/logger";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -82,7 +83,7 @@ export default function PermissionDenied({ module, action, onRequestSubmitted })
         }, 2000);
       }
     } catch (error) {
-      console.error('Error submitting permission request:', error);
+      logger.error('Error submitting permission request:', error);
     } finally {
       setLoading(false);
     }
@@ -199,7 +200,7 @@ export default function PermissionDenied({ module, action, onRequestSubmitted })
                 <div>
                   <Textarea
                     label="Reason for Request"
-                    placeholder="Please explain why you need this permission..."
+                    placeholder={t('common.permissionReasonPlaceholder')}
                     value={formData.reason}
                     onValueChange={(value) => setFormData({ ...formData, reason: value })}
                     variant="bordered"

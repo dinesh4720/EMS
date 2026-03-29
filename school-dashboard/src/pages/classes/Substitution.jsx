@@ -34,6 +34,7 @@ export default function Substitution() {
     type: 'auto'
   });
   const [formErrors, setFormErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Additional modals for assign/change teacher
   const { isOpen: isAssignOpen, onOpen: onAssignOpen, onClose: onAssignClose } = useDisclosure();
@@ -102,6 +103,7 @@ export default function Substitution() {
   }, [substitutions, searchQuery, statusFilter]);
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     const newErrors = {};
     if (!formData.classId) newErrors.classId = t('toast.error.pleaseFillAllRequiredFields');
     if (!formData.period) newErrors.period = t('toast.error.pleaseFillAllRequiredFields');
@@ -112,6 +114,7 @@ export default function Substitution() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await request('/substitutions', { method: 'POST', body: JSON.stringify(formData) });
       toast.success(t('toast.success.substitutionAssignedSuccessfully'));
@@ -120,6 +123,8 @@ export default function Substitution() {
       loadSubstitutions();
     } catch (error) {
       toast.error(error.message || 'Failed to assign substitution');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -363,7 +368,12 @@ export default function Substitution() {
             <TableColumn scope="col">{t('pages.rEASON')}</TableColumn>
             <TableColumn align="center" scope="col">{t('pages.aCTIONS')}</TableColumn>
           </TableHeader>
-          <TableBody items={filteredSubstitutions}>
+          <TableBody items={filteredSubstitutions} emptyContent={
+            <div className="py-12 text-center">
+              <p className="text-sm font-medium text-default-600 mb-1">No substitutions scheduled</p>
+              <p className="text-xs text-default-400">Create a substitution when a teacher is absent</p>
+            </div>
+          }>
             {(sub) => (
               <TableRow key={sub._id}>
                 <TableCell>
@@ -548,7 +558,7 @@ export default function Substitution() {
             <Button variant="light" onPress={onClose}>
               Cancel
             </Button>
-            <Button color="primary" onPress={handleSubmit}>
+            <Button color="primary" onPress={handleSubmit} isLoading={isSubmitting}>
               Create Substitution
             </Button>
           </ModalFooter>

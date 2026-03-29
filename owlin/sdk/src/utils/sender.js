@@ -5,7 +5,8 @@
 
 export class EventSender {
   constructor(config = {}) {
-    this.endpoint = config.endpoint || '/api/events';
+    this.endpoint = config.endpoint || '/api/v1/events/batch';
+    this.apiKey = config.apiKey || null;
     this.batchSize = config.batchSize || 10;
     this.flushInterval = config.flushInterval || 5000;
     this.maxRetries = config.maxRetries || 3;
@@ -90,12 +91,15 @@ export class EventSender {
     const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     try {
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-Tracker-Version': '2.0.0',
+      };
+      if (this.apiKey) headers['X-API-Key'] = this.apiKey;
+
       const response = await fetch(this.endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Tracker-Version': '1.0.0',
-        },
+        headers,
         body: JSON.stringify(payload),
         signal: controller.signal,
       });

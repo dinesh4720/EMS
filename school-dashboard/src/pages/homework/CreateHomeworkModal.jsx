@@ -179,7 +179,7 @@ const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework }) => {
           <Input
             label={t('pages.title1')}
             labelPlacement="outside"
-            placeholder="e.g., Chapter 5 Practice Problems"
+            placeholder={t('homework.titlePlaceholder')}
             value={formData.title}
             onValueChange={(value) => handleInputChange('title', value)}
             isInvalid={!!errors.title}
@@ -243,7 +243,7 @@ const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework }) => {
             type="number"
             label="Total Marks"
             labelPlacement="outside"
-            placeholder="100"
+            placeholder={t('homework.totalMarksPlaceholder')}
             value={String(formData.totalMarks)}
             onValueChange={(value) => handleInputChange('totalMarks', value)}
             min={0}
@@ -278,10 +278,10 @@ const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework }) => {
           Attachments
         </h4>
         {formData.attachments.map((attachment, index) => (
-          <div key={index} className="flex items-start gap-2 mb-2">
+          <div key={attachment._key || `attachment-${index}`} className="flex items-start gap-2 mb-2">
             <Input
               size="sm"
-              placeholder="File name (optional)"
+              placeholder={t('homework.fileNamePlaceholder')}
               value={attachment.name}
               onValueChange={(value) => handleAttachmentChange(index, 'name', value)}
               className="flex-1"
@@ -289,7 +289,7 @@ const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework }) => {
             />
             <Input
               size="sm"
-              placeholder="URL (required)"
+              placeholder={t('homework.urlPlaceholder')}
               value={attachment.url}
               onValueChange={(value) => handleAttachmentChange(index, 'url', value)}
               className="flex-[2]"

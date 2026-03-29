@@ -9,6 +9,7 @@ import { inventoryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import { formatShortDate } from '../../utils/dateFormatter';
 
 const STATUSES = ["PENDING", "IN_PROGRESS", "COMPLETED"];
 const CONDITIONS = ["GOOD", "FAIR", "POOR", "DAMAGED"];
@@ -167,7 +168,7 @@ export default function Audits() {
                     <div className="flex items-center gap-3 mt-1">
                       <span className={`text-xs px-2 py-0.5 rounded-full ${statusColors[audit.status] || ""}`}>{audit.status?.replace(/_/g, " ")}</span>
                       {audit.startDate && (
-                        <span className="text-xs text-gray-500 dark:text-zinc-400">Started: {new Date(audit.startDate).toLocaleDateString()}</span>
+                        <span className="text-xs text-gray-500 dark:text-zinc-400">Started: {formatShortDate(audit.startDate)}</span>
                       )}
                       <span className="text-xs text-gray-500 dark:text-zinc-400">{audit.auditItems?.length || 0} items</span>
                     </div>
@@ -200,7 +201,7 @@ export default function Audits() {
                     </thead>
                     <tbody>
                       {audit.auditItems.map((item, idx) => (
-                        <tr key={idx} className="border-t border-gray-50 dark:border-zinc-800">
+                        <tr key={item._id || item.assetId?._id || `audit-item-${idx}`} className="border-t border-gray-50 dark:border-zinc-800">
                           <td className="py-2 text-gray-900 dark:text-zinc-100">{item.assetId?.name || "Unknown"}</td>
                           <td className="py-2 text-gray-600 dark:text-zinc-400">{item.expectedQuantity ?? "—"}</td>
                           <td className="py-2 text-gray-600 dark:text-zinc-400">{item.actualQuantity ?? "—"}</td>
@@ -246,7 +247,7 @@ export default function Audits() {
               )}
               <div className="space-y-3">
                 {(form.auditItems || []).map((item, idx) => (
-                  <div key={idx} className="border border-gray-100 dark:border-zinc-800 rounded-lg p-3 relative">
+                  <div key={item.assetId || `form-audit-item-${idx}`} className="border border-gray-100 dark:border-zinc-800 rounded-lg p-3 relative">
                     <button
                       onClick={() => removeAuditItem(idx)}
                       className="absolute top-2 right-2 p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-950 text-gray-400 hover:text-red-600"

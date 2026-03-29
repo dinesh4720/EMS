@@ -35,11 +35,14 @@ const emptyForm = {
   condition: "GOOD", status: "ACTIVE", notes: "", depreciationRate: "",
 };
 
+const ITEMS_PER_PAGE = 25;
+
 export default function Assets() {
   const { t } = useTranslation();
   const [assets, setAssets] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [staffList, setStaffList] = useState([]);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -49,23 +52,31 @@ export default function Assets() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
 
-  const fetchAssets = async () => {
+  const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
+
+  const fetchAssets = async (pageToLoad = page) => {
     try {
       setLoading(true);
       const [res, vendorList, staffData] = await Promise.all([
-        inventoryApi.getAssets({ search, category: filterCategory !== "all" ? filterCategory : undefined, status: filterStatus !== "all" ? filterStatus : undefined }),
+        inventoryApi.getAssets({ search, category: filterCategory !== "all" ? filterCategory : undefined, status: filterStatus !== "all" ? filterStatus : undefined, page: pageToLoad, limit: ITEMS_PER_PAGE }),
         inventoryApi.getVendors(),
         staffApi.getAll(),
       ]);
       setAssets(res?.data || []);
+      setTotal(res?.total || 0);
       setVendors(Array.isArray(vendorList) ? vendorList : []);
       setStaffList(Array.isArray(staffData) ? staffData : staffData?.data || []);
     } catch { toast.error(t('toast.error.failedToLoadAssets')); }
-    finally { setLoading(false); }
+    finally { setLoading(false); setInitialLoading(false); }
   };
 
-  useEffect(() => { fetchAssets(); }, [search, filterCategory, filterStatus]);
+  // Reset to page 1 when filters change
+  useEffect(() => { setPage(1); }, [search, filterCategory, filterStatus]);
+
+  useEffect(() => { fetchAssets(page); }, [page, search, filterCategory, filterStatus]);
 
   const openCreate = () => { setEditing(null); setForm(emptyForm); setErrors({}); setIsOpen(true); };
   const openEdit = (a) => {
@@ -132,7 +143,7 @@ export default function Assets() {
     setErrors((e) => ({ ...e, [key]: '' }));
   };
 
-  if (loading) return <TablePageSkeleton title={false} kpiCards={0} columns={6} rows={6} />;
+  if (initialLoading) return <TablePageSkeleton title={false} kpiCards={0} columns={6} rows={6} />;
 
   return (
     <div className="space-y-4">
@@ -177,7 +188,7 @@ export default function Assets() {
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className={loading ? "opacity-50 pointer-events-none" : ""}>
               {assets.length === 0 ? (
                 <tr><td colSpan={10} className="text-center py-12 text-gray-500 dark:text-zinc-400">{t('pages.noAssetsFound')}</td></tr>
               ) : (
@@ -218,6 +229,34 @@ export default function Assets() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between px-1">
+        <p className="text-sm text-gray-500 dark:text-zinc-400">
+          {total} {total === 1 ? "asset" : "assets"} total
+        </p>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              disabled={page <= 1 || loading}
+              className="px-3 py-1.5 text-sm border border-gray-200 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 disabled:opacity-50 text-gray-700 dark:text-zinc-300"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-gray-600 dark:text-zinc-400 px-2">
+              {page} / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+              disabled={page >= totalPages || loading}
+              className="px-3 py-1.5 text-sm border border-gray-200 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 disabled:opacity-50 text-gray-700 dark:text-zinc-300"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Create/Edit Modal */}

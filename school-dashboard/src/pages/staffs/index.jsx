@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import logger from "../../utils/logger";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { Button, Drawer, DrawerContent, DrawerHeader, DrawerBody, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 import { Plus, X, Mail, Phone, Send, UserPlus, FileText, CheckCircle2, ChevronDown, Briefcase, CalendarDays, BookOpen } from "lucide-react";
@@ -34,6 +35,20 @@ export default function StaffsPage() {
   const [isFormDropdownOpen, setIsFormDropdownOpen] = useState(false);
   const formDropdownRef = useRef(null);
   const addStaffRef = useRef(null);
+
+  // Handle backdrop click for unsaved changes check
+  useEffect(() => {
+    if (!isAddStaffOpen) return;
+    const handleBackdropClick = (e) => {
+      const backdrop = e.target.closest('[data-slot="backdrop"]') || (e.target.getAttribute?.('data-slot') === 'backdrop' ? e.target : null);
+      if (backdrop) {
+        if (addStaffRef.current) addStaffRef.current.attemptClose();
+        else handleCloseAddStaff();
+      }
+    };
+    document.addEventListener('click', handleBackdropClick, true);
+    return () => document.removeEventListener('click', handleBackdropClick, true);
+  }, [isAddStaffOpen]);
 
   useEffect(() => {
     if (location.state?.editStaffId) {
@@ -143,7 +158,7 @@ export default function StaffsPage() {
             await classesApi.updateClassTeacher(staffData.classTeacherOf, staffId);
             toast.success(t('toast.success.classTeacherAssignedSuccessfully'));
           } catch (ctError) {
-            console.error('Failed to assign class teacher:', ctError);
+            logger.error('Failed to assign class teacher:', ctError);
             toast.error(ctError.message || 'Failed to assign class teacher. The staff was saved but class assignment failed.');
           }
         }
@@ -162,7 +177,7 @@ export default function StaffsPage() {
       if (returnPath) navigate(returnPath);
       return savedStaff;
     } catch (err) {
-      console.error('Failed to save staff:', err);
+      logger.error('Failed to save staff:', err);
       toast.error(editingStaffId ? 'Failed to update staff member' : 'Failed to add staff member');
       throw err;
     }
@@ -191,7 +206,7 @@ export default function StaffsPage() {
       setIsFormSelectModalOpen(true);
     } catch (error) {
       toast.error(t('toast.error.failedToLoadForms'));
-      console.error(error);
+      logger.error(error);
     }
   };
 
@@ -215,7 +230,7 @@ export default function StaffsPage() {
       setRecipientEmail('');
       setRecipientPhone('');
     } catch (error) {
-      console.error('Form send error:', error);
+      logger.error('Form send error:', error);
       toast.error(error.message || 'Failed to send form');
     } finally {
       setIsSendingForm(false);
@@ -293,16 +308,8 @@ export default function StaffsPage() {
       {shouldRenderAddStaff && (
         <Drawer
           isOpen={isAddStaffOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              if (addStaffRef.current) addStaffRef.current.attemptClose();
-              else if (window.staffDrawerCloseHandler) {
-                const canClose = window.staffDrawerCloseHandler();
-                if (!canClose) return;
-              }
-              handleCloseAddStaff();
-            }
-          }}
+          onOpenChange={(open) => { if (!open) handleCloseAddStaff(); }}
+          isDismissable={false}
           placement="right"
           hideCloseButton
           classNames={{ wrapper: "justify-end", base: "w-[720px] max-w-[95vw]", backdrop: "bg-black/30" }}

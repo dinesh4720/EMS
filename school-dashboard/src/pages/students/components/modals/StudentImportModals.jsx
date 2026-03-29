@@ -368,7 +368,7 @@ export function StudentCsvPreviewModal({
                                                 <div className="pt-2 pb-1 px-1 space-y-2">
                                                     {classData.students.map((student, idx) => (
                                                         <div
-                                                            key={idx}
+                                                            key={student.data?.admissionId || student.data?.name || `import-student-${idx}`}
                                                             className={`rounded-lg border p-3 transition-all ${
                                                                 student.isDuplicate ? 'border-warning-300 bg-warning-50/70'
                                                                     : student.valid ? 'border-success-200 bg-success-50/50'

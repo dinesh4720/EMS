@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
+import logger from "../../utils/logger";
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { useApp } from "../../context/AppContext";
 import { useAuth } from "../../context/AuthContext";
-import { getStoredAuthToken } from "../../utils/authSession";
 import socketService from "../../services/socketServiceEnhanced";
 import chatService from "../../services/chatServiceEnhanced";
 import { request } from "../../services/api";
@@ -34,7 +34,7 @@ export default function ChatFull() {
   const [sending, setSending] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
   const [typingUsers, setTypingUsers] = useState(new Set());
-  const [onlineUsers, setOnlineUsers] = useState(new Set());
+  const [, setOnlineUsers] = useState(new Set());
 
   // New chat modal state
   const [showNewChatModal, setShowNewChatModal] = useState(false);
@@ -65,7 +65,7 @@ export default function ChatFull() {
   const [activeCall, setActiveCall] = useState(null);
 
   // Upload progress + delivery tracking (used by voice message handler)
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [, setUploadProgress] = useState(0);
 
   // Refs
   const messagesEndRef = useRef(null);
@@ -144,7 +144,7 @@ export default function ChatFull() {
       loadContacts();
 
       try {
-        await socketService.connect(getStoredAuthToken());
+        await socketService.connect();
         setSocketConnected(true);
         setupSocketListeners();
         await loadConversations();
@@ -154,7 +154,7 @@ export default function ChatFull() {
         await loadConversations();
       }
     } catch (error) {
-      console.error('❌ Error initializing chat:', error);
+      logger.error('❌ Error initializing chat:', error);
       toast.error(t('toast.error.failedToLoadChatPleaseRefreshThePage'));
     } finally {
       setLoading(false);
@@ -322,7 +322,7 @@ export default function ChatFull() {
 
       setContacts([...staffContacts, ...studentContacts]);
     } catch (error) {
-      console.error('❌ Error loading contacts:', error);
+      logger.error('❌ Error loading contacts:', error);
     }
   };
 
@@ -336,7 +336,7 @@ export default function ChatFull() {
         .map(c => c.otherParticipant.userId);
       setOnlineUsers(new Set(onlineUserIds));
     } catch (error) {
-      console.error('❌ Error loading conversations:', error);
+      logger.error('❌ Error loading conversations:', error);
     }
   };
 
@@ -360,7 +360,7 @@ export default function ChatFull() {
         c.id === conversation.id ? { ...c, unreadCount: 0 } : c
       ));
     } catch (error) {
-      console.error('❌ Error selecting conversation:', error);
+      logger.error('❌ Error selecting conversation:', error);
     }
   };
 
@@ -390,7 +390,7 @@ export default function ChatFull() {
         socketService.joinConversation(conversation.id);
       }
     } catch (error) {
-      console.error('❌ Error starting conversation:', error);
+      logger.error('❌ Error starting conversation:', error);
       alert(error.message || 'Failed to start conversation');
     }
   };
@@ -507,7 +507,7 @@ export default function ChatFull() {
       setReplyToMessage(null);
       loadConversations();
     } catch (error) {
-      console.error('❌ Error sending message:', error);
+      logger.error('❌ Error sending message:', error);
       setNewMessage(messageContent);
       alert('Failed to send message');
     } finally {
@@ -614,7 +614,7 @@ export default function ChatFull() {
       setFilePreview(null);
       loadConversations();
     } catch (error) {
-      console.error('❌ Error uploading file:', error);
+      logger.error('❌ Error uploading file:', error);
       alert(`Failed to upload file: ${error.message}`);
       setNewMessage(newMessage);
     } finally {
@@ -666,7 +666,7 @@ export default function ChatFull() {
       setShowVideoCall(true);
       toast.success(`${callType === 'video' ? 'Video' : 'Audio'} call initiated`);
     } catch (error) {
-      console.error('Error initiating call:', error);
+      logger.error('Error initiating call:', error);
       toast.error(t('toast.error.failedToInitiateCall'));
     }
   };
@@ -793,7 +793,7 @@ export default function ChatFull() {
 
       toast.success(isRemoving ? 'Reaction removed' : 'Reaction added');
     } catch (error) {
-      console.error('Error reacting to message:', error);
+      logger.error('Error reacting to message:', error);
       toast.error(t('toast.error.failedToReact'));
     }
   };
@@ -832,7 +832,7 @@ export default function ChatFull() {
 
       toast.success(t('toast.success.messagePinned'));
     } catch (error) {
-      console.error('❌ Error pinning message:', error);
+      logger.error('❌ Error pinning message:', error);
       toast.error(error.response?.data?.error || 'Failed to pin');
     }
   };
@@ -863,7 +863,7 @@ export default function ChatFull() {
 
       toast.success(t('toast.success.messageUnpinned'));
     } catch (error) {
-      console.error('❌ Error unpinning message:', error);
+      logger.error('❌ Error unpinning message:', error);
       toast.error(error.response?.data?.error || 'Failed to unpin');
     }
   };
@@ -874,7 +874,7 @@ export default function ChatFull() {
       setMessages(prev => prev.filter(m => m.id !== messageId));
       toast.success(deleteForEveryone ? 'Message deleted for everyone' : 'Message deleted');
     } catch (error) {
-      console.error('Error deleting message:', error);
+      logger.error('Error deleting message:', error);
       toast.error(t('toast.error.failedToDeleteMessage'));
     }
   };
@@ -901,7 +901,7 @@ export default function ChatFull() {
       setEditText('');
       toast.success(t('toast.success.messageEdited'));
     } catch (error) {
-      console.error('Error editing message:', error);
+      logger.error('Error editing message:', error);
       toast.error(t('toast.error.failedToEditMessage'));
     }
   };
@@ -949,7 +949,7 @@ export default function ChatFull() {
       setShowForwardModal(false);
       setSelectedMessage(null);
     } catch (error) {
-      console.error('Error forwarding message:', error);
+      logger.error('Error forwarding message:', error);
       toast.error(t('toast.error.failedToForwardMessage'));
     }
   };
@@ -1042,7 +1042,7 @@ export default function ChatFull() {
               await videoCallService.acceptCall(callId);
               setActiveCall(prev => ({ ...prev, status: 'connected' }));
             } catch (error) {
-              console.error('Error accepting call:', error);
+              logger.error('Error accepting call:', error);
               toast.error(t('toast.error.failedToAcceptCall'));
             }
           }}
@@ -1053,7 +1053,7 @@ export default function ChatFull() {
               setShowVideoCall(false);
               setActiveCall(null);
             } catch (error) {
-              console.error('Error rejecting call:', error);
+              logger.error('Error rejecting call:', error);
               toast.error(t('toast.error.failedToRejectCall'));
             }
           }}
@@ -1065,7 +1065,7 @@ export default function ChatFull() {
               setActiveCall(null);
               toast.success(t('toast.success.callEnded'));
             } catch (error) {
-              console.error('Error ending call:', error);
+              logger.error('Error ending call:', error);
               toast.error(t('toast.error.failedToEndCall'));
             }
           }}

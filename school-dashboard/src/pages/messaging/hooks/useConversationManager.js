@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import logger from '../../../utils/logger';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
@@ -32,7 +33,7 @@ export function useConversationManager({ chatService, socketService, user, staff
 
       setContacts([...staffContacts, ...studentContacts]);
     } catch (error) {
-      console.error('Error loading contacts:', error);
+      logger.error('Error loading contacts:', error);
     }
   }, [staff, students, user?.id]);
 
@@ -47,7 +48,7 @@ export function useConversationManager({ chatService, socketService, user, staff
         .map(c => c.otherParticipant.userId);
       setOnlineUsers(new Set(onlineUserIds));
     } catch (error) {
-      console.error('Error loading conversations:', error);
+      logger.error('Error loading conversations:', error);
     }
   }, [chatService, user?.id, setOnlineUsers]);
 
@@ -77,7 +78,7 @@ export function useConversationManager({ chatService, socketService, user, staff
         c.id === conversation.id ? { ...c, unreadCount: 0 } : c
       ));
     } catch (error) {
-      console.error('Error selecting conversation:', error);
+      logger.error('Error selecting conversation:', error);
     }
   }, [chatService, socketService, user?.id, setMessages, setShowMessageSearch, scrollToBottom]);
 
@@ -114,7 +115,7 @@ export function useConversationManager({ chatService, socketService, user, staff
         socketService.joinConversation(conversation.id);
       }
     } catch (error) {
-      console.error('Error starting conversation:', error);
+      logger.error('Error starting conversation:', error);
       toast.error(t('messaging.chat.startFailed', 'Failed to start conversation'));
     }
   }, [chatService, socketService, user?.id, handleSelectConversation, t]);

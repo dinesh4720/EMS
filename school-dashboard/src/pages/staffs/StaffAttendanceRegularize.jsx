@@ -14,11 +14,12 @@ import { ArrowLeft, Calendar as CalendarIcon, Check, X, AlertCircle, Clock } fro
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 export default function StaffAttendanceRegularize() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { staff, staffAttendance, markStaffAttendance, fetchStaffAttendanceByStaff } = useApp();
+  const { staff, staffAttendance, markStaffAttendance, fetchStaffAttendanceByStaff, loading } = useApp();
   const [selectedStaffId, setSelectedStaffId] = useState("");
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -188,6 +189,21 @@ export default function StaffAttendanceRegularize() {
 
     return stats;
   }, [selectedStaffId, calendarData]);
+
+  if (loading) {
+    return (
+      <div className="w-full space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="h-7 w-7 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+          <div className="space-y-2">
+            <div className="h-7 w-56 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+            <div className="h-4 w-72 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+          </div>
+        </div>
+        <CardGridPageSkeleton title={false} cards={5} columns="grid-cols-2 sm:grid-cols-5" />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">

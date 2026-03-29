@@ -1,5 +1,7 @@
 import { request } from '../../services/api.js';
+import { getSocketService } from '../../services/socketServiceEnhanced.js';
 import { useState, useEffect, useMemo } from "react";
+import logger from "../../utils/logger";
 import {
   Card,
   CardBody,
@@ -29,6 +31,8 @@ import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import SkeletonTable from '../../components/skeletons/SkeletonTable';
 
+
+import { formatShortDate, formatDateTime} from '../../utils/dateFormatter';
 
 export default function PermissionRequests() {
   const { t } = useTranslation();
@@ -71,7 +75,8 @@ export default function PermissionRequests() {
 
   // Listen for new permission requests via socket
   useEffect(() => {
-    if (!window.socketService || !isAdmin()) return;
+    const socketService = getSocketService();
+    if (!socketService?.isConnected() || !isAdmin()) return;
 
     const handleNewRequest = () => {
       fetchRequests();
@@ -80,10 +85,10 @@ export default function PermissionRequests() {
       });
     };
 
-    window.socketService.on('permission_request_created', handleNewRequest);
+    socketService.on('permission_request_created', handleNewRequest);
 
     return () => {
-      window.socketService.off('permission_request_created', handleNewRequest);
+      socketService.off('permission_request_created', handleNewRequest);
     };
   }, [isAdmin]);
 
@@ -95,7 +100,7 @@ export default function PermissionRequests() {
       const data = await request(`/permissions/requests${status ? `?status=${status}` : ''}`);
       setRequests(data);
     } catch (error) {
-      console.error('Error fetching requests:', error);
+      logger.error('Error fetching requests:', error);
       setFetchError(error.message || 'Failed to load permission requests');
       toast.error(t('toast.error.failedToLoadPermissionRequests'));
     } finally {
@@ -122,7 +127,7 @@ export default function PermissionRequests() {
       fetchRequests();
       onClose();
     } catch (error) {
-      console.error('Error approving request:', error);
+      logger.error('Error approving request:', error);
       toast.error(t('toast.error.failedToApproveRequest'));
     } finally {
       setProcessing(false);
@@ -147,7 +152,7 @@ export default function PermissionRequests() {
       fetchRequests();
       onClose();
     } catch (error) {
-      console.error('Error rejecting request:', error);
+      logger.error('Error rejecting request:', error);
       toast.error(t('toast.error.failedToRejectRequest'));
     } finally {
       setProcessing(false);
@@ -319,7 +324,7 @@ export default function PermissionRequests() {
                   </TableCell>
                   <TableCell>
                     <p className="text-sm text-gray-600 dark:text-zinc-400">
-                      {new Date(request.requestedAt).toLocaleDateString()}
+                      {formatShortDate(request.requestedAt)}
                     </p>
                   </TableCell>
                   <TableCell>
@@ -431,7 +436,7 @@ export default function PermissionRequests() {
                       Requested On
                     </label>
                     <p className="mt-1 text-sm text-gray-600 dark:text-zinc-400">
-                      {new Date(selectedRequest.requestedAt).toLocaleString()}
+                      {formatDateTime(selectedRequest.requestedAt)}
                     </p>
                   </div>
 
@@ -443,7 +448,7 @@ export default function PermissionRequests() {
                         </label>
                         <p className="mt-1 text-sm text-gray-600 dark:text-zinc-400">
                           {selectedRequest.reviewerName} on{' '}
-                          {new Date(selectedRequest.reviewedAt).toLocaleString()}
+                          {formatDateTime(selectedRequest.reviewedAt)}
                         </p>
                       </div>
 

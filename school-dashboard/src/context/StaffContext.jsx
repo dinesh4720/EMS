@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useMemo, useCallback } from "react
 import { useQueryClient } from "@tanstack/react-query";
 import { staffApi } from "../services/api";
 import { useSalaryState } from "./hooks/useSalaryState";
+import toast from "react-hot-toast";
+import logger from "../utils/logger";
 
 export const StaffContext = createContext();
 
@@ -35,25 +37,39 @@ export function StaffProvider({ children }) {
   }, []);
 
   const addStaff = async (newStaff) => {
-    const created = await staffApi.create(newStaff);
-    setStaff((prev) => [...prev, created]);
-    void invalidateAppData();
-    return created;
+    try {
+      const created = await staffApi.create(newStaff);
+      setStaff((prev) => [...prev, created]);
+      void invalidateAppData();
+      return created;
+    } catch (err) {
+      logger.error("Failed to add staff:", err);
+      toast.error("Failed to add staff member");
+      throw err;
+    }
   };
 
   const updateStaff = async (id, updates) => {
-    const updated = await staffApi.update(id, updates);
+    const prev = staff;
+    try {
+      const updated = await staffApi.update(id, updates);
 
-    // Ensure picture from updates is always included in state update
-    // This is critical for instant photo reflection after upload
-    const finalUpdates = { ...updated };
-    if (updates.picture) {
-      finalUpdates.picture = updates.picture;
+      // Ensure picture from updates is always included in state update
+      // This is critical for instant photo reflection after upload
+      const finalUpdates = { ...updated };
+      if (updates.picture) {
+        finalUpdates.picture = updates.picture;
+      }
+
+      setStaff((curr) => curr.map((s) => (String(s.id) === String(id) ? finalUpdates : s)));
+      void invalidateAppData();
+      return finalUpdates;
+    } catch (err) {
+      logger.error("Failed to update staff:", err);
+      toast.error("Failed to update staff member");
+      setStaff(prev);
+      throw err;
     }
-
-    setStaff((prev) => prev.map((s) => (String(s.id) === String(id) ? finalUpdates : s)));
-    void invalidateAppData();
-    return finalUpdates;
   };
 
   // Update staff in state without API call (for real-time socket updates)
@@ -64,9 +80,17 @@ export function StaffProvider({ children }) {
   };
 
   const deleteStaff = async (id) => {
-    await staffApi.delete(id);
-    setStaff((prev) => prev.filter((s) => String(s.id) !== String(id)));
-    void invalidateAppData();
+    const prev = staff;
+    try {
+      await staffApi.delete(id);
+      setStaff((curr) => curr.filter((s) => String(s.id) !== String(id)));
+      void invalidateAppData();
+    } catch (err) {
+      logger.error("Failed to delete staff:", err);
+      toast.error("Failed to delete staff member");
+      setStaff(prev);
+      throw err;
+    }
   };
 
   const toggleStaffStatus = async (id) => {

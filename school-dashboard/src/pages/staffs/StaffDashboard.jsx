@@ -3,12 +3,13 @@
  * Clean, minimal gray palette with white cards
  */
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import logger from "../../utils/logger";
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
   Textarea, Button, Drawer, DrawerContent, DrawerHeader, DrawerBody,
   Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Chip
 } from "@heroui/react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useValidatedParams } from "../../hooks/useValidatedParams";
 import {
   ArrowLeft, Phone, Clock, Calendar, Briefcase, X, Users, GraduationCap,
@@ -39,12 +40,14 @@ import { DetailPageSkeleton } from "../../components/skeletons/PageSkeletons";
 import { useApp } from "../../context/AppContext";
 import { usePermissions } from "../../context/PermissionContext";
 import { uploadApi } from "../../services/api";
+import { getSocketService } from "../../services/socketServiceEnhanced.js";
 import { useTranslation } from 'react-i18next';
 
 export default function StaffDashboard() {
   const { t } = useTranslation();
   const { params: { id }, isValid } = useValidatedParams({ id: 'objectId' }, { redirectTo: '/staffs' });
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { hasPermission } = usePermissions();
 
   const {
@@ -60,6 +63,20 @@ export default function StaffDashboard() {
   const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
   const [shouldRenderAddStaff, setShouldRenderAddStaff] = useState(false);
   const addStaffRef = useRef(null);
+
+  // Handle backdrop click for unsaved changes check
+  useEffect(() => {
+    if (!isAddStaffOpen) return;
+    const handleBackdropClick = (e) => {
+      const backdrop = e.target.closest?.('[data-slot="backdrop"]') || (e.target.getAttribute?.('data-slot') === 'backdrop' ? e.target : null);
+      if (backdrop) {
+        if (addStaffRef.current) addStaffRef.current.attemptClose();
+        else handleCloseAddStaff();
+      }
+    };
+    document.addEventListener('click', handleBackdropClick, true);
+    return () => document.removeEventListener('click', handleBackdropClick, true);
+  }, [isAddStaffOpen]);
 
   // Assign Class Modal State
   const [isAssignClassModalOpen, setIsAssignClassModalOpen] = useState(false);
@@ -87,7 +104,19 @@ export default function StaffDashboard() {
   }, []);
 
   const [message, setMessage] = useState("");
-  const [activeTab, setActiveTab] = useState("overview");
+  const validTabs = ["overview", "attendance", "about", "timetable", "classes", "payroll", "documents"];
+  const tabFromUrl = searchParams.get("tab");
+  const [activeTab, setActiveTabState] = useState(validTabs.includes(tabFromUrl) ? tabFromUrl : "overview");
+
+  // Clear the tab param from URL after initial consumption
+  useEffect(() => {
+    if (tabFromUrl) {
+      searchParams.delete("tab");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const setActiveTab = (tab) => setActiveTabState(tab);
   const [subjectAssignments, setSubjectAssignments] = useState([]);
 
   // Document State
@@ -127,7 +156,7 @@ export default function StaffDashboard() {
       const start = format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd');
       const end = format(new Date(now.getFullYear(), now.getMonth() + 1, 0), 'yyyy-MM-dd');
       fetchStaffAttendanceByStaff(id, start, end).catch(err => {
-        console.error('Failed to fetch staff attendance:', err);
+        logger.error('Failed to fetch staff attendance:', err);
         toast.error(t('toast.error.failedToLoadAttendanceData'));
       });
     }
@@ -248,7 +277,7 @@ export default function StaffDashboard() {
           setSubjectAssignments(data.assignments);
         }
       } catch (error) {
-        console.error("Error loading subject assignments:", error);
+        logger.error("Error loading subject assignments:", error);
       }
     };
 
@@ -257,8 +286,8 @@ export default function StaffDashboard() {
 
   // Socket.IO listener for real-time updates
   useEffect(() => {
-    const socketService = window.socketService;
-    if (!socketService || !staff) return;
+    const socketService = getSocketService();
+    if (!socketService?.isConnected() || !staff) return;
 
     const handleStaffUpdate = (data) => {
       if (data.staffId === staff.id) {
@@ -330,7 +359,7 @@ export default function StaffDashboard() {
       setTimeout(() => setActiveUploads([]), 2000);
       toast.success(t('toast.success.documentsUploadedSuccessfully'));
     } catch (error) {
-      console.error("Upload error:", error);
+      logger.error("Upload error:", error);
       toast.error(t('toast.error.uploadFailed'));
     } finally {
       e.target.value = null;
@@ -364,7 +393,7 @@ export default function StaffDashboard() {
       setPicturePreview(response.url);
       toast.success("Photo updated successfully", { id: loadingToast });
     } catch (error) {
-      console.error("Photo upload error:", error);
+      logger.error("Photo upload error:", error);
       toast.error("Photo upload failed", { id: loadingToast });
     }
   };
@@ -388,7 +417,7 @@ export default function StaffDashboard() {
       setPicturePreview(response.url);
       toast.success("Photo updated successfully", { id: loadingToast });
     } catch (error) {
-      console.error("Photo upload error:", error);
+      logger.error("Photo upload error:", error);
       toast.error("Photo upload failed", { id: loadingToast });
     }
   };
@@ -571,7 +600,7 @@ export default function StaffDashboard() {
             {/* Actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
               <Button variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Phone size={16} />}
-                onPress={() => { if (staff.phone) { window.location.href = `tel:${staff.phone}`; toast.success(`Calling...`); } else { toast.error(t('toast.error.noPhoneNumber')); } }}
+                onPress={() => { if (staff.phone) { window.location.href = `tel:${staff.phone.replace(/[^\d+]/g, '')}`; toast.success(`Calling...`); } else { toast.error(t('toast.error.noPhoneNumber')); } }}
                 isDisabled={!staff.phone}>{t('pages.call')}</Button>
               <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200" startContent={<Edit size={16} />} onPress={handleEditClick}>{t('pages.edit1')}</Button>
               <Dropdown>
@@ -785,19 +814,7 @@ export default function StaffDashboard() {
 
           {/* ─── CLASSES TAB ─── */}
           {activeTab === "classes" && (
-            <div className="space-y-4">
-              <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-                <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Briefcase size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                    <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.subjectClassAssignments')}</h3><p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.manageWhichSubjectsAndClassesThisTeacherCanTeach')}</p></div>
-                  </div>
-                </div>
-                <div className="p-5">
-                  <StaffAssignmentPanel staffId={id} />
-                </div>
-              </div>
-            </div>
+            <StaffAssignmentPanel staffId={id} onAssignClassTeacher={handleOpenAssignClassModal} />
           )}
 
           {/* ─── PAYROLL TAB ─── */}
@@ -831,7 +848,7 @@ export default function StaffDashboard() {
             <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">{t('pages.quickActions1')}</h3>
             <div className="grid grid-cols-2 gap-2">
               <button onClick={handleEditClick} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-700"><Edit size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.edit1')}</span></button>
-              <button onClick={() => staff.phone && (window.location.href = `tel:${staff.phone}`)} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-700"><Phone size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.call')}</span></button>
+              <button onClick={() => staff.phone && (window.location.href = `tel:${staff.phone.replace(/[^\d+]/g, '')}`)} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-700"><Phone size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.call')}</span></button>
               <button onClick={onOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-700"><Mail size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.message1')}</span></button>
               <button onClick={() => navigate('/staffs')} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-700"><Users size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.allStaff1')}</span></button>
             </div>
@@ -953,11 +970,7 @@ export default function StaffDashboard() {
           onOpenChange={(open) => {
             if (!open) {
               if (addStaffRef.current) addStaffRef.current.attemptClose();
-              else if (window.staffDrawerCloseHandler) {
-                const canClose = window.staffDrawerCloseHandler();
-                if (!canClose) return;
-              }
-              handleCloseAddStaff();
+              else handleCloseAddStaff();
             }
           }}
           placement="right"

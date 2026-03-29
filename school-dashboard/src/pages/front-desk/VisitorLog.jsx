@@ -29,6 +29,7 @@ const VisitorLog = forwardRef((props, ref) => {
   const [errors, setErrors] = useState({});
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingId, setEditingId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [studentLookupQuery, setStudentLookupQuery] = useState('');
   const [studentsLoading, setStudentsLoading] = useState(false);
@@ -165,11 +166,13 @@ const VisitorLog = forwardRef((props, ref) => {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     if (!validateForm()) {
       toast.error(t('toast.error.pleaseFixTheErrorsBeforeSubmitting'));
       return;
     }
 
+    setIsSubmitting(true);
     try {
       if (editingId) {
         // Update uses backend field names: name, phone, whomToMeet, notes, etc.
@@ -206,6 +209,8 @@ const VisitorLog = forwardRef((props, ref) => {
       loadVisitors();
     } catch (error) {
       toast.error(t('toast.error.failedToSaveVisitor'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -587,7 +592,7 @@ const VisitorLog = forwardRef((props, ref) => {
             <Button variant="light" onPress={onClose}>
               Cancel
             </Button>
-            <Button color="primary" onPress={handleSubmit}>
+            <Button color="primary" onPress={handleSubmit} isLoading={isSubmitting}>
               {editingId ? 'Update' : 'Check In'}
             </Button>
           </ModalFooter>

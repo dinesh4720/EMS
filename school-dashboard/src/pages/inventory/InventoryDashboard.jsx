@@ -5,6 +5,7 @@ import { inventoryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
+import { formatShortDate } from '../../utils/dateFormatter';
 
 function StatCard({ icon: Icon, label, value, color, onClick }) {
   const colorMap = {
@@ -144,7 +145,7 @@ export default function InventoryDashboard() {
                       {log.assetId?.name || "Unknown Asset"}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-zinc-400">
-                      {log.maintenanceType} &middot; {new Date(log.scheduledDate).toLocaleDateString()}
+                      {log.maintenanceType} &middot; {formatShortDate(log.scheduledDate)}
                     </p>
                   </div>
                   <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400">

@@ -1,0 +1,26 @@
+electronVersion: "41.0.4"
+appId: com.owlin.analytics
+productName: Owlin
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**/*
+  - dist-electron/**/*
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: dmg
+      arch:
+        - arm64
+  artifactName: "Owlin-${version}-${arch}.${ext}"
+  darkModeSupport: true
+dmg:
+  title: "Owlin Analytics"
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications

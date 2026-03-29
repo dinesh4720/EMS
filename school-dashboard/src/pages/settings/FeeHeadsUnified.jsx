@@ -431,7 +431,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g., Tuition Fee, Lab Fee, Transport..."
+                    placeholder={t('fees.feeHeadNamePlaceholder')}
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:border-gray-400 dark:bg-zinc-950 dark:text-zinc-100"
@@ -448,7 +448,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 text-sm">₹</span>
                       <input
                         type="number"
-                        placeholder="0"
+                        placeholder={t('fees.amountPlaceholder')}
                         value={formData.amount || ""}
                         onChange={(e) => setFormData({ ...formData, amount: parseInt(e.target.value) || 0 })}
                         className="w-full pl-7 pr-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:border-gray-400 dark:bg-zinc-950 dark:text-zinc-100"
@@ -522,7 +522,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
                   {/* Class range input */}
                   <input
                     type="text"
-                    placeholder="Or enter range: 1-5 or 6,7,8,9"
+                    placeholder={t('fees.classRangePlaceholder')}
                     value={classRangeInput}
                     onChange={(e) => handleClassRangeChange(e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:border-gray-400 dark:bg-zinc-950 dark:text-zinc-100"

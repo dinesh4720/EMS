@@ -1,16 +1,17 @@
 import { CURRENT_ACADEMIC_YEAR } from "../../../utils/constants";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from '@heroui/react';
-import { useRef, useCallback } from 'react';
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Checkbox } from '@heroui/react';
+import { useRef, useCallback, useState } from 'react';
 import { getDateLocale } from '../../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import { useApp } from '../../../context/AppContext';
 
 
-// School configuration
-const getSchoolConfig = () => ({
-  name: import.meta.env.VITE_SCHOOL_NAME || 'EduMaster School',
-  address: import.meta.env.VITE_SCHOOL_ADDRESS || '123 Education Street, Knowledge City',
-  contact: import.meta.env.VITE_SCHOOL_CONTACT || 'Phone: +91 XXXX-XXXXXX | Email: info@school.com',
-  gstin: import.meta.env.VITE_SCHOOL_GSTIN || 'GSTIN: 29XXXXX1234X1XX'
+// School configuration - prefers live school settings from API
+const getSchoolConfig = (schoolSettings) => ({
+  name: schoolSettings?.schoolName || schoolSettings?.name || 'School name not configured',
+  address: schoolSettings?.address || schoolSettings?.schoolAddress || '',
+  contact: schoolSettings?.phone || schoolSettings?.contactNumber || '',
+  gstin: schoolSettings?.gstin || ''
 });
 
 // Generate invoice number
@@ -51,8 +52,10 @@ export default function InvoicePrintModal({
   selectedPayment = null
 }) {
   const { t } = useTranslation();
+  const { schoolSettings } = useApp();
   const printRef = useRef();
-  const schoolConfig = getSchoolConfig();
+  const [includePending, setIncludePending] = useState(false);
+  const schoolConfig = getSchoolConfig(schoolSettings);
 
   const invoiceNumber = generateInvoiceNumber(student?.id || student?._id, new Date());
 
@@ -73,6 +76,7 @@ export default function InvoicePrintModal({
       <!DOCTYPE html>
       <html>
       <head>
+        <meta charset="UTF-8">
         <title>${safeTitle}</title>
         <style>
           * {
@@ -259,10 +263,13 @@ export default function InvoicePrintModal({
   const dueDate = formatDate(new Date(Date.now() + 15 * 24 * 60 * 60 * 1000));
 
   const feeHeads = studentFeeStructure?.feeHeads || [];
+  const paidHeads = feeHeads.filter(fh => (fh.paidAmount || 0) > 0);
+  const pendingHeads = feeHeads.filter(fh => (fh.balanceAmount || 0) > 0);
   const totalFee = studentFeeStructure?.totalFee || 0;
   const totalPaid = studentFeeStructure?.totalPaid || 0;
   const totalBalance = studentFeeStructure?.totalBalance || 0;
   const discount = studentFeeStructure?.discountApplied || 0;
+  const pendingTotal = pendingHeads.reduce((sum, fh) => sum + (fh.balanceAmount || 0), 0);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside">
@@ -327,7 +334,7 @@ export default function InvoicePrintModal({
               </div>
             </div>
 
-            {/* Fee Details Table */}
+            {/* Paid Fee Details Table */}
             <div className="fee-table-section border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden mb-4">
               <table className="w-full">
                 <thead>
@@ -337,12 +344,11 @@ export default function InvoicePrintModal({
                     <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('pages.period2')}</th>
                     <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('pages.amount1')}</th>
                     <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('pages.paid2')}</th>
-                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('pages.balance1')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-zinc-700">
-                  {feeHeads.length > 0 ? (
-                    feeHeads.map((fee, index) => (
+                  {paidHeads.length > 0 ? (
+                    paidHeads.map((fee, index) => (
                       <tr key={fee._id || fee.name}>
                         <td className="px-4 py-2 text-sm text-gray-500 dark:text-zinc-400">{index + 1}</td>
                         <td className="px-4 py-2">
@@ -351,18 +357,25 @@ export default function InvoicePrintModal({
                         </td>
                         <td className="px-4 py-2 text-sm text-gray-600 dark:text-zinc-400 capitalize">{fee.frequency || 'Annual'}</td>
                         <td className="px-4 py-2 text-sm text-gray-900 dark:text-zinc-100 text-right font-mono">{formatCurrency(fee.amount)}</td>
-                        <td className="px-4 py-2 text-sm text-gray-600 dark:text-zinc-400 text-right font-mono">{formatCurrency(fee.paidAmount)}</td>
-                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-zinc-100 text-right font-mono">{formatCurrency(fee.balanceAmount)}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-zinc-100 text-right font-mono">{formatCurrency(fee.paidAmount)}</td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" className="px-4 py-6 text-center text-sm text-gray-500 dark:text-zinc-400">
-                        No fee structure assigned
+                      <td colSpan="5" className="px-4 py-6 text-center text-sm text-gray-500 dark:text-zinc-400">
+                        No payments recorded yet
                       </td>
                     </tr>
                   )}
                 </tbody>
+                {paidHeads.length > 0 && (
+                  <tfoot>
+                    <tr className="bg-gray-50 dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
+                      <td colSpan="4" className="px-4 py-2 text-sm font-semibold text-gray-900 dark:text-zinc-100 text-right">{t('pages.amountPaid')}</td>
+                      <td className="px-4 py-2 text-sm font-bold text-gray-900 dark:text-zinc-100 text-right font-mono">{formatCurrency(totalPaid)}</td>
+                    </tr>
+                  </tfoot>
+                )}
               </table>
             </div>
 
@@ -393,6 +406,46 @@ export default function InvoicePrintModal({
                 </div>
               </div>
             </div>
+
+            {/* Pending Payments Section (only shown when checkbox is checked) */}
+            {includePending && pendingHeads.length > 0 && (
+              <div className="fee-table-section border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden mb-4">
+                <div className="bg-gray-50 dark:bg-zinc-900 px-4 py-2 border-b border-gray-200 dark:border-zinc-800">
+                  <h3 className="text-xs font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider">Pending Payments</h3>
+                </div>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-zinc-800">
+                      <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">#</th>
+                      <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('pages.feeHead')}</th>
+                      <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('pages.period2')}</th>
+                      <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('pages.amount1')}</th>
+                      <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('pages.balance1')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-zinc-700">
+                    {pendingHeads.map((fee, index) => (
+                      <tr key={fee._id || fee.name}>
+                        <td className="px-4 py-2 text-sm text-gray-500 dark:text-zinc-400">{index + 1}</td>
+                        <td className="px-4 py-2">
+                          <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fee.name}</p>
+                          <p className="text-xs text-gray-400 dark:text-zinc-500 capitalize">{fee.category}</p>
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-600 dark:text-zinc-400 capitalize">{fee.frequency || 'Annual'}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-zinc-100 text-right font-mono">{formatCurrency(fee.amount)}</td>
+                        <td className="px-4 py-2 text-sm font-semibold text-gray-900 dark:text-zinc-100 text-right font-mono">{formatCurrency(fee.balanceAmount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-gray-50 dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
+                      <td colSpan="4" className="px-4 py-2 text-sm font-semibold text-gray-900 dark:text-zinc-100 text-right">Total Pending</td>
+                      <td className="px-4 py-2 text-sm font-bold text-gray-900 dark:text-zinc-100 text-right font-mono">{formatCurrency(pendingTotal)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
 
             {/* Payment History (if any) */}
             {feeHistory && feeHistory.length > 0 && (
@@ -462,31 +515,38 @@ export default function InvoicePrintModal({
             </div>
           </div>
 
-          {/* Instructions */}
-          <div className="mt-4 p-3 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg">
-            <p className="text-sm text-gray-600 dark:text-zinc-400">
-              <strong>{t('pages.note1')}</strong> Click "Download / Print" to save this invoice as PDF.
-              In the print dialog, select "Save as PDF" as the printer destination.
-            </p>
-          </div>
         </ModalBody>
-        <ModalFooter>
-          <Button variant="light" onPress={onClose} className="text-gray-600 dark:text-zinc-400">
-            Close
-          </Button>
-          <Button
-            className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200"
-            onPress={handlePrint}
-            startContent={
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-            }
-          >
-            Download / Print
-          </Button>
+        <ModalFooter className="flex-col items-stretch gap-3">
+          {pendingHeads.length > 0 && (
+            <div className="px-1">
+              <Checkbox
+                isSelected={includePending}
+                onValueChange={setIncludePending}
+                size="sm"
+                classNames={{ label: "text-sm text-gray-700 dark:text-zinc-300" }}
+              >
+                Include pending payment section ({pendingHeads.length} item{pendingHeads.length > 1 ? 's' : ''} &middot; {formatCurrency(pendingTotal)})
+              </Checkbox>
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="light" onPress={onClose} className="text-gray-600 dark:text-zinc-400">
+              Close
+            </Button>
+            <Button
+              className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200"
+              onPress={handlePrint}
+              startContent={
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+              }
+            >
+              Download / Print
+            </Button>
+          </div>
         </ModalFooter>
       </ModalContent>
     </Modal>

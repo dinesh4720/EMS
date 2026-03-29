@@ -1,6 +1,7 @@
 import { forwardRef, useMemo } from "react";
 import { format } from "date-fns";
 import { useTranslation } from 'react-i18next';
+import { getGradeFromPercentage } from '../../../utils/grading';
 
 const PrintableStudentProfile = forwardRef(({ 
   student, 
@@ -51,15 +52,7 @@ const PrintableStudentProfile = forwardRef(({
   const performance = getPerformanceBadge();
 
   // Get grade from percentage
-  const getGrade = (percentage) => {
-    if (percentage >= 90) return 'A+';
-    if (percentage >= 80) return 'A';
-    if (percentage >= 70) return 'B+';
-    if (percentage >= 60) return 'B';
-    if (percentage >= 50) return 'C';
-    if (percentage >= 40) return 'D';
-    return 'F';
-  };
+  const getGrade = (percentage) => getGradeFromPercentage(percentage);
 
   // Minimalistic Styles
   const styles = {

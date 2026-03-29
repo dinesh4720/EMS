@@ -1,5 +1,6 @@
 import { request } from '../../services/api.js';
 import { useState, useEffect, useCallback } from "react";
+import logger from "../../utils/logger";
 import {
   Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
@@ -19,6 +20,7 @@ export function ConcessionsTab() {
   const { currentAcademicYear } = useApp();
   const [concessions, setConcessions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingConcession, setEditingConcession] = useState(null);
@@ -37,7 +39,7 @@ export function ConcessionsTab() {
       const data = await request(`/fee-settings/concessions?academicYear=${currentAcademicYear}`);
       setConcessions(data);
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       setFetchError(error.message || 'Failed to load concessions');
     } finally {
       setLoading(false);
@@ -65,6 +67,7 @@ export function ConcessionsTab() {
 
   const handleSave = async () => {
     if (!formData.name.trim()) { toast.error(t('toast.error.nameRequired')); return; }
+    setSaving(true);
     try {
       const payload = {
         ...formData,
@@ -81,6 +84,8 @@ export function ConcessionsTab() {
       onClose();
     } catch (error) {
       toast.error(error.message || t('toast.error.failedToSave'));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -155,7 +160,7 @@ export function ConcessionsTab() {
           <ModalBody className="p-6 space-y-4">
             <div>
               <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.name1')}</label>
-              <input type="text" placeholder="e.g., Sibling Discount" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
+              <input type="text" placeholder={t('fees.concessionNamePlaceholder')} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -192,8 +197,8 @@ export function ConcessionsTab() {
             </div>
           </ModalBody>
           <ModalFooter className="border-t border-gray-200 dark:border-zinc-800 px-6 py-4 gap-3">
-            <button onClick={onClose} className="px-4 py-2 text-sm text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900">{t('pages.cancel2')}</button>
-            <button onClick={handleSave} className="px-4 py-2 text-sm text-white bg-gray-900 rounded-lg hover:bg-gray-800">{t('pages.save')}</button>
+            <button onClick={onClose} disabled={saving} className="px-4 py-2 text-sm text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 disabled:opacity-50">{t('pages.cancel2')}</button>
+            <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50">{saving ? 'Saving...' : t('pages.save')}</button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -214,7 +219,7 @@ export function LateFeeTab() {
       setLoading(true);
       const data = await request(`/fee-settings/late-fee-rules?academicYear=${currentAcademicYear}`);
       if (data.length > 0) setFormData(prev => ({ ...prev, ...data[0] }));
-    } catch (error) { console.error(error); }
+    } catch (error) { logger.error(error); }
     finally { setLoading(false); }
   }, [currentAcademicYear]);
 
@@ -323,7 +328,7 @@ export function PaymentMethodsTab() {
       setLoading(true);
       const data = await request(`/fee-settings/payment-methods?academicYear=${currentAcademicYear}`);
       if (data.length > 0) setFormData(data[0]);
-    } catch (error) { console.error(error); }
+    } catch (error) { logger.error(error); }
     finally { setLoading(false); }
   }, [currentAcademicYear]);
 
@@ -423,7 +428,7 @@ export function CollectionPeriodTab() {
       setLoading(true);
       const data = await request(`/fee-settings/collection-period?academicYear=${currentAcademicYear}`);
       if (data.length > 0) setFormData({ collectionInterval: data[0].collectionInterval, reminders: data[0].autoPay || { enabled: true, daysBefore: 3 } });
-    } catch (error) { console.error(error); }
+    } catch (error) { logger.error(error); }
     finally { setLoading(false); }
   }, [currentAcademicYear]);
 
@@ -500,7 +505,7 @@ export function GeneralRulesTab() {
       setLoading(true);
       const data = await request(`/fee-settings/rules?academicYear=${currentAcademicYear}`);
       if (data.length > 0) setFormData(data[0]);
-    } catch (error) { console.error(error); }
+    } catch (error) { logger.error(error); }
     finally { setLoading(false); }
   }, [currentAcademicYear]);
 

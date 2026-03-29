@@ -309,7 +309,7 @@ export default function LeaveSettings() {
             <Input
               size="sm"
               label={t('pages.leaveTypeName')}
-              placeholder="e.g., Sick Leave"
+              placeholder={t('settings.leaveTypeNamePlaceholder')}
               value={formData.name}
               onValueChange={(v) => setFormData({ ...formData, name: v })}
               variant="bordered"
@@ -329,7 +329,7 @@ export default function LeaveSettings() {
               size="sm"
               type="number"
               label={t('pages.annualQuotaDays')}
-              placeholder="12"
+              placeholder={t('settings.leaveQuotaPlaceholder')}
               value={formData.quota}
               onValueChange={(v) => setFormData({ ...formData, quota: parseInt(v) || 0 })}
               variant="bordered"

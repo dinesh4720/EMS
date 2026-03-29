@@ -24,7 +24,7 @@ export default function ConflictIndicator({
   const { t } = useTranslation();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedConflict, setSelectedConflict] = useState(null);
-  const [resolutionAction, setResolutionAction] = useState(null);
+  const [, setResolutionAction] = useState(null);
 
   if (!conflicts || conflicts.length === 0) {
     return null;

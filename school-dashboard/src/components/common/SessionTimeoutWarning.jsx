@@ -4,13 +4,12 @@ import { Clock, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { silentRefresh } from '../../services/api';
 import { useTranslation } from 'react-i18next';
+import { APP_CONFIG } from '../../utils/constants';
 
-// Show warning after 30 minutes of inactivity
-const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
-// Auto-logout 2 minutes after warning appears
-const WARNING_COUNTDOWN_S = 120;
-// Throttle activity tracking to once per 30 seconds
-const ACTIVITY_THROTTLE_MS = 30 * 1000;
+// Configurable via APP_CONFIG in utils/constants.js
+const IDLE_TIMEOUT_MS = APP_CONFIG.SESSION_IDLE_TIMEOUT_MS;
+const WARNING_COUNTDOWN_S = APP_CONFIG.SESSION_WARNING_COUNTDOWN_S;
+const ACTIVITY_THROTTLE_MS = APP_CONFIG.ACTIVITY_THROTTLE_MS;
 
 const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'scroll', 'touchstart', 'pointermove'];
 
@@ -22,8 +21,11 @@ export default function SessionTimeoutWarning() {
 
   const idleTimerRef = useRef(null);
   const countdownRef = useRef(null);
-  const lastActivityRef = useRef(Date.now());
   const throttleRef = useRef(false);
+
+  // Timestamp-based deadlines — immune to browser timer throttling
+  const idleDeadlineRef = useRef(Date.now() + IDLE_TIMEOUT_MS);
+  const countdownDeadlineRef = useRef(null);
 
   const clearAllTimers = useCallback(() => {
     if (idleTimerRef.current) {
@@ -40,18 +42,59 @@ export default function SessionTimeoutWarning() {
     if (idleTimerRef.current) {
       clearTimeout(idleTimerRef.current);
     }
+    idleDeadlineRef.current = Date.now() + IDLE_TIMEOUT_MS;
     idleTimerRef.current = setTimeout(() => {
       setShowWarning(true);
       setSecondsLeft(WARNING_COUNTDOWN_S);
+      countdownDeadlineRef.current = Date.now() + WARNING_COUNTDOWN_S * 1000;
     }, IDLE_TIMEOUT_MS);
   }, []);
+
+  // When the tab becomes visible again, check timestamps to catch up
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible' || !isAuthenticated) return;
+
+      const now = Date.now();
+
+      // If countdown is active, check if it expired while minimized
+      if (countdownDeadlineRef.current) {
+        const remaining = Math.ceil((countdownDeadlineRef.current - now) / 1000);
+        if (remaining <= 0) {
+          clearAllTimers();
+          countdownDeadlineRef.current = null;
+          logout();
+          return;
+        }
+        setSecondsLeft(remaining);
+        return;
+      }
+
+      // If idle deadline passed while minimized, show warning immediately
+      if (idleDeadlineRef.current && now >= idleDeadlineRef.current) {
+        clearAllTimers();
+        // Check if the full countdown would have also expired
+        const overdue = now - idleDeadlineRef.current;
+        if (overdue >= WARNING_COUNTDOWN_S * 1000) {
+          logout();
+          return;
+        }
+        const remaining = WARNING_COUNTDOWN_S - Math.floor(overdue / 1000);
+        setShowWarning(true);
+        setSecondsLeft(remaining);
+        countdownDeadlineRef.current = idleDeadlineRef.current + WARNING_COUNTDOWN_S * 1000;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isAuthenticated, logout, clearAllTimers]);
 
   const handleActivity = useCallback(() => {
     if (throttleRef.current) return;
     throttleRef.current = true;
     setTimeout(() => { throttleRef.current = false; }, ACTIVITY_THROTTLE_MS);
 
-    lastActivityRef.current = Date.now();
     // Only reset if warning is NOT showing — user must explicitly click "Stay Logged In"
     if (!showWarning) {
       resetIdleTimer();
@@ -63,6 +106,7 @@ export default function SessionTimeoutWarning() {
     if (!isAuthenticated) {
       clearAllTimers();
       setShowWarning(false);
+      countdownDeadlineRef.current = null;
       return;
     }
 
@@ -80,26 +124,31 @@ export default function SessionTimeoutWarning() {
     };
   }, [isAuthenticated, handleActivity, resetIdleTimer, clearAllTimers]);
 
-  // Countdown timer when warning is showing
+  // Countdown timer when warning is showing — uses deadline for accuracy
   useEffect(() => {
     if (!showWarning) {
       if (countdownRef.current) {
         clearInterval(countdownRef.current);
         countdownRef.current = null;
       }
+      countdownDeadlineRef.current = null;
       return;
     }
 
+    if (!countdownDeadlineRef.current) {
+      countdownDeadlineRef.current = Date.now() + WARNING_COUNTDOWN_S * 1000;
+    }
+
     countdownRef.current = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(countdownRef.current);
-          countdownRef.current = null;
-          logout();
-          return 0;
-        }
-        return prev - 1;
-      });
+      const remaining = Math.ceil((countdownDeadlineRef.current - Date.now()) / 1000);
+      if (remaining <= 0) {
+        clearInterval(countdownRef.current);
+        countdownRef.current = null;
+        countdownDeadlineRef.current = null;
+        logout();
+        return;
+      }
+      setSecondsLeft(remaining);
     }, 1000);
 
     return () => {
@@ -113,6 +162,7 @@ export default function SessionTimeoutWarning() {
   const handleStayLoggedIn = async () => {
     setShowWarning(false);
     clearAllTimers();
+    countdownDeadlineRef.current = null;
 
     // Refresh the token to extend the session
     const refreshed = await silentRefresh();
@@ -121,13 +171,13 @@ export default function SessionTimeoutWarning() {
       return;
     }
 
-    lastActivityRef.current = Date.now();
     resetIdleTimer();
   };
 
   const handleLogout = () => {
     setShowWarning(false);
     clearAllTimers();
+    countdownDeadlineRef.current = null;
     logout();
   };
 

@@ -77,7 +77,7 @@ export default function ReminderForm({
     frequency: 'once',
   });
 
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [, setSelectedTemplate] = useState(null);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {

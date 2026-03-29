@@ -1,128 +1,55 @@
-import { useState } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
-import { CheckCircle2, Users, BookOpen } from "lucide-react";
+import { CheckCircle2, ArrowRight } from "lucide-react";
+import { Modal, ModalContent, ModalHeader, ModalFooter, Button } from "@heroui/react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 
+/**
+ * ClassSubjectManagementModal — Shown after creating a new staff member.
+ * Single, clear CTA: navigate to the staff profile's "Classes & Subjects" tab
+ * where they can manage both class teacher assignment AND subject assignments
+ * in one place, instead of a confusing multi-step redirect flow.
+ */
 const ClassSubjectManagementModal = ({ isOpen, onClose, staffId, staffName }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [showStepModal, setShowStepModal] = useState(false);
 
-  const handleManageClick = () => {
-    setShowStepModal(true);
-  };
-
-  const handleStepModalClose = () => {
-    setShowStepModal(false);
+  const handleManageNow = () => {
     onClose();
-  };
-
-  // Navigate to the staff profile page (has class assignment tab) — MF-26
-  const handleManageClasses = () => {
-    handleStepModalClose();
     if (staffId) {
-      navigate(`/staffs/${staffId}`);
+      navigate(`/staffs/${staffId}?tab=classes`);
     }
   };
 
-  // Navigate to the bulk subject assignment page — MF-26
-  const handleManageSubjects = () => {
-    handleStepModalClose();
-    navigate('/staffs/bulk-subjects', { state: { preselectedStaffId: staffId } });
-  };
-
   return (
-    <>
-      {/* Initial Success Modal */}
-      <Modal isOpen={isOpen && !showStepModal} onClose={onClose} size="md">
-        <ModalContent>
-          <ModalHeader className="flex gap-2 items-center">
-            <CheckCircle2 size={24} className="text-success" />
-            <div>
-              <span className="text-lg font-semibold">{t('pages.staffCreatedSuccessfully')}</span>
-              <p className="text-sm text-default-500 mt-1">
-                Would you like to manage class details and subjects for this staff member?
-              </p>
-            </div>
-          </ModalHeader>
-          <ModalFooter>
-            <Button variant="light" onPress={onClose}>
-              No, Maybe Later
-            </Button>
-            <Button color="primary" onPress={handleManageClick}>
-              Yes, Manage Now
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      {/* Step Management Modal */}
-      <Modal isOpen={showStepModal} onClose={handleStepModalClose} size="lg">
-        <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            <span className="text-lg font-semibold">{t('pages.manageClassSubjectDetails')}</span>
-            <p className="text-sm text-default-500 font-normal">
-              Configure class assignments and subjects for {staffName}
+    <Modal isOpen={isOpen} onClose={onClose} size="md">
+      <ModalContent>
+        <ModalHeader className="flex gap-3 items-start pb-2">
+          <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+            <CheckCircle2 size={20} className="text-green-600 dark:text-green-400" />
+          </div>
+          <div>
+            <span className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
+              {t('pages.staffCreatedSuccessfully')}
+            </span>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1 font-normal">
+              <strong className="text-gray-700 dark:text-zinc-300">{staffName}</strong> has been added. You can now assign them as a class teacher and configure which subjects they teach.
             </p>
-          </ModalHeader>
-          <ModalBody className="py-6">
-            <div className="space-y-4">
-              {/* Step 1: Manage Classes */}
-              <div
-                className="p-4 border-2 border-default-200 rounded-lg hover:border-primary hover:bg-primary-50/30 transition-all cursor-pointer group"
-                onClick={handleManageClasses}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center group-hover:bg-primary-200 transition-colors">
-                    <Users size={20} className="text-primary-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-bold text-primary-600 bg-primary-100 px-2 py-0.5 rounded">
-                        STEP 1
-                      </span>
-                      <h3 className="text-base font-semibold text-default-900">{t('pages.manageClasses')}</h3>
-                    </div>
-                    <p className="text-sm text-default-600">
-                      Assign this staff member to specific classes and sections
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Step 2: Manage Subjects */}
-              <div
-                className="p-4 border-2 border-default-200 rounded-lg hover:border-primary hover:bg-primary-50/30 transition-all cursor-pointer group"
-                onClick={handleManageSubjects}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center group-hover:bg-primary-200 transition-colors">
-                    <BookOpen size={20} className="text-primary-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-bold text-primary-600 bg-primary-100 px-2 py-0.5 rounded">
-                        STEP 2
-                      </span>
-                      <h3 className="text-base font-semibold text-default-900">{t('pages.manageSubjects')}</h3>
-                    </div>
-                    <p className="text-sm text-default-600">
-                      Configure which subjects this staff member will teach
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={handleStepModalClose}>
-              Close
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </>
+          </div>
+        </ModalHeader>
+        <ModalFooter className="pt-2">
+          <Button variant="light" onPress={onClose}>
+            Maybe Later
+          </Button>
+          <Button
+            color="primary"
+            onPress={handleManageNow}
+            endContent={<ArrowRight size={16} />}
+          >
+            Manage Classes & Subjects
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 };
 

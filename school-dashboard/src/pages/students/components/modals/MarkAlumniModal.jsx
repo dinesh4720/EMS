@@ -23,14 +23,9 @@ export default function MarkAlumniModal({ isOpen, onClose, student, onMark }) {
 
     try {
       const { request } = await import("../../../../services/api");
-      const token = sessionStorage.getItem('app_user') ? JSON.parse(sessionStorage.getItem('app_user')).token : null;
-
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
 
       await request(`/students/${student.id}`, {
         method: 'PUT',
-        headers,
         body: JSON.stringify({ status: "alumni" })
       });
 
