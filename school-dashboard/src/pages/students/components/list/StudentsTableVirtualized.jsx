@@ -475,7 +475,7 @@ export default function StudentsTableVirtualized({
                                                 }
 
                                                 if (column.key === "attendance") {
-                                                    const isInvalid = isNaN(attendance);
+                                                    const isInvalid = attendance === null || attendance === undefined || isNaN(attendance);
                                                     return (
                                                         <td key="attendance" className={baseTd}>
                                                             <div className="flex flex-col gap-1">
@@ -483,7 +483,11 @@ export default function StudentsTableVirtualized({
                                                                     className={`text-xs font-semibold ${
                                                                         isInvalid
                                                                             ? "text-default-400"
-                                                                            : `text-${getAttendanceColor(attendance)}`
+                                                                            : getAttendanceColor(attendance) === 'success'
+                                                                              ? 'text-success'
+                                                                              : getAttendanceColor(attendance) === 'warning'
+                                                                                ? 'text-warning'
+                                                                                : 'text-danger'
                                                                     }`}
                                                                 >
                                                                     {isInvalid
