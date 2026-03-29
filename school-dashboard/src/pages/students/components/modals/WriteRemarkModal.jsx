@@ -90,7 +90,7 @@ export default function WriteRemarkModal({ isOpen, onClose, student, onSave }) {
 
             <Input
               label={t('pages.title1')}
-              placeholder="e.g. Excellent performance"
+              placeholder={t('students.profile.remarks.titlePlaceholder')}
               value={form.title}
               onChange={(e) => {
                 setForm({ ...form, title: e.target.value });

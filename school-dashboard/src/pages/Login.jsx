@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { Eye, EyeOff, Lock, Mail, CheckCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { APP_CONFIG } from "../utils/constants";
 
 // Only import the 3D component if WebGL is actually available AND we're not in a headless browser
 // Three.js shader compilation can crash in headless/automated environments even if WebGL context exists
@@ -36,8 +37,8 @@ function LoginVisualFallback() {
   );
 }
 
-const MAX_ATTEMPTS = 5;
-const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+const MAX_ATTEMPTS = APP_CONFIG.MAX_LOGIN_ATTEMPTS;
+const LOCKOUT_MS = APP_CONFIG.LOCKOUT_DURATION_MS;
 const LOCKOUT_KEY = 'login_lockout';
 
 function getLockoutState() {
@@ -82,20 +83,23 @@ export default function Login() {
   // Countdown timer for lockout
   React.useEffect(() => {
     const state = getLockoutState();
-    if (state.lockedUntil && Date.now() < state.lockedUntil) {
-      const interval = setInterval(() => {
-        const remaining = Math.ceil((state.lockedUntil - Date.now()) / 1000);
-        if (remaining <= 0) {
-          clearLockoutState();
-          setLockoutRemaining(0);
-          clearInterval(interval);
-        } else {
-          setLockoutRemaining(remaining);
-        }
-      }, 1000);
-      setLockoutRemaining(Math.ceil((state.lockedUntil - Date.now()) / 1000));
-      return () => clearInterval(interval);
-    }
+    if (!state.lockedUntil || Date.now() >= state.lockedUntil) return;
+
+    let active = true;
+    setLockoutRemaining(Math.ceil((state.lockedUntil - Date.now()) / 1000));
+
+    const interval = setInterval(() => {
+      const remaining = Math.ceil((state.lockedUntil - Date.now()) / 1000);
+      if (remaining <= 0) {
+        clearLockoutState();
+        if (active) setLockoutRemaining(0);
+        clearInterval(interval);
+      } else if (active) {
+        setLockoutRemaining(remaining);
+      }
+    }, 1000);
+
+    return () => { active = false; clearInterval(interval); };
   }, []);
 
   const handleSubmit = useCallback(async (e) => {

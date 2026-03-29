@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Phone, Mail } from "lucide-react";
+import { Phone, Mail, MapPin } from "lucide-react";
 
 /**
  * StudentContactCard - Right sidebar contact information card
@@ -42,7 +42,7 @@ export default function StudentContactCard({ student }) {
         {student.address && (
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
-              <Mail size={14} className="text-gray-600 dark:text-zinc-400" />
+              <MapPin size={14} className="text-gray-600 dark:text-zinc-400" />
             </div>
             <div>
               <p className="text-xs text-gray-400 dark:text-zinc-500">{t('common.address', 'Address')}</p>

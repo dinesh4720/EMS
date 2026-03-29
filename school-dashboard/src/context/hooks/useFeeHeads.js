@@ -1,6 +1,7 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { settingsApi } from "../../services/api";
+import logger from "../../utils/logger";
 
 export function useFeeHeads(invalidateSettingsData) {
   const [feeHeads, setFeeHeads] = useState([]);
@@ -13,7 +14,7 @@ export function useFeeHeads(invalidateSettingsData) {
       toast.success("Fee head added successfully");
       return created;
     } catch (err) {
-      console.error("Failed to add fee head:", err);
+      logger.error("Failed to add fee head:", err);
       toast.error("Failed to add fee head");
       const feeHeadWithId = { ...feeHead, id: Date.now() };
       setFeeHeads((prev) => [...prev, feeHeadWithId]);
@@ -29,7 +30,7 @@ export function useFeeHeads(invalidateSettingsData) {
       toast.success("Fee head updated successfully");
       return updated;
     } catch (err) {
-      console.error("Failed to update fee head:", err);
+      logger.error("Failed to update fee head:", err);
       toast.error("Failed to update fee head");
       setFeeHeads((prev) => prev.map((fh) => (fh.id === id ? { ...fh, ...updates } : fh)));
     }
@@ -42,7 +43,7 @@ export function useFeeHeads(invalidateSettingsData) {
       void invalidateSettingsData();
       toast.success("Fee head deleted successfully");
     } catch (err) {
-      console.error("Failed to delete fee head:", err);
+      logger.error("Failed to delete fee head:", err);
       toast.error("Failed to delete fee head");
       throw err;
     }

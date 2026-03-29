@@ -16,7 +16,7 @@ export default function StudentsList() {
     // filter state
     searchQuery, setSearchQuery, statusFilter, setStatusFilter,
     // filter helpers
-    filtersConfig, filterPresets, activeFiltersCount,
+    filtersConfig, filterPresets, activeFiltersCount, isSearching,
     handleFilterChange, handlePresetClick, clearAllFilters,
     // dropdown state
     statusDropdownOpen, setStatusDropdownOpen,
@@ -148,6 +148,7 @@ export default function StudentsList() {
         students={students}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        isSearching={isSearching}
         selectedCount={selectedCount}
         bulkDropdownOpen={bulkDropdownOpen}
         setBulkDropdownOpen={setBulkDropdownOpen}
@@ -209,6 +210,8 @@ export default function StudentsList() {
         handleBulkAction={handleBulkAction}
         onPromoteOpen={() => {}}
         closeAllDropdowns={closeAllDropdowns}
+        hasActiveFilters={activeFiltersCount > 0}
+        onClearFilters={clearAllFilters}
       />
 
       {/* ── Footer: row count ──────────────────────────────────────────────── */}

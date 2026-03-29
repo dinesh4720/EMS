@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useChat } from '../context/ChatContext';
+import api from '../services/api';
 import {
   Bell,
   MessageCircle,
@@ -48,17 +49,35 @@ const NotificationsScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
-  // Build notifications from various sources
+  // Build notifications from backend API and chat sources
   const loadNotifications = useCallback(async () => {
     setLoading(true);
     try {
       const allNotifications = [];
 
+      // Fetch real notifications from backend API
+      try {
+        const data = await api.notifications.getAll({ limit: 50 });
+        const backendNotifications = data?.notifications || [];
+        backendNotifications.forEach(n => {
+          allNotifications.push({
+            id: n._id,
+            type: n.type || 'info',
+            title: n.title,
+            message: n.message,
+            timestamp: n.createdAt,
+            read: !!n.read,
+            data: n.data || {},
+          });
+        });
+      } catch (apiError) {
+        console.warn('Failed to fetch notifications from API:', apiError.message);
+      }
+
       // Add unread chat messages as notifications
       conversations.forEach(conv => {
         if (conv.unreadCount > 0) {
           const otherName = conv.name || conv.otherParticipant?.name || 'Unknown';
-          // Extract message text - lastMessage could be a string or an object
           let messageText = 'You have a new message';
           if (conv.lastMessage) {
             if (typeof conv.lastMessage === 'string') {
@@ -101,11 +120,22 @@ const NotificationsScreen = () => {
     setRefreshing(false);
   }, [loadNotifications]);
 
-  const handleNotificationPress = useCallback((notification) => {
+  const handleNotificationPress = useCallback(async (notification) => {
     triggerHaptic('light');
 
+    // Mark backend notification as read
+    if (!notification.read && !notification.id.startsWith('chat-')) {
+      try {
+        await api.notifications.markAsRead(notification.id);
+        setNotifications(prev =>
+          prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
+        );
+      } catch (err) {
+        console.warn('Failed to mark notification as read:', err.message);
+      }
+    }
+
     if (notification.type === 'message' && notification.data?.conversationId) {
-      // Navigate to ChatTab, then to ChatDetail within that stack
       navigation.navigate('ChatTab', {
         screen: 'ChatDetail',
         params: {

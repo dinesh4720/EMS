@@ -194,6 +194,10 @@ class ApiService {
     return this.get(`${CONFIG.API_ENDPOINTS.STUDENT_REMARKS}/${studentId}/remarks`, params);
   }
 
+  async getStudentHomework(studentId) {
+    return this.get(`${CONFIG.API_ENDPOINTS.STUDENT_HOMEWORK}/${studentId}/homework`);
+  }
+
   async getStudentTimetable(studentId) {
     return this.get(`${CONFIG.API_ENDPOINTS.STUDENT_TIMETABLE}/${studentId}`);
   }
@@ -214,6 +218,15 @@ class ApiService {
 
   async sendMessage(data) {
     return this.post(CONFIG.API_ENDPOINTS.SEND_MESSAGE, data);
+  }
+
+  // Notification Settings
+  async getNotificationSettings() {
+    return this.get(CONFIG.API_ENDPOINTS.NOTIFICATION_SETTINGS);
+  }
+
+  async updateNotificationSettings(settings) {
+    return this.put(CONFIG.API_ENDPOINTS.NOTIFICATION_SETTINGS, settings);
   }
 
   // FCM Token

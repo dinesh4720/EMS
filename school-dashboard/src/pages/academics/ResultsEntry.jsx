@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useValidatedParams } from '../../hooks/useValidatedParams';
+import { getStoredUser } from '../../utils/authSession';
 import {
   Card,
   CardBody,
@@ -21,6 +22,7 @@ import { examsApi, resultsApi, classesApi } from '../../services/api';
 import { MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { calculateGrade as calculateGradeUtil } from '../../utils/grading';
 
 // Simple cache for exam data
 const examCache = new Map();
@@ -96,12 +98,14 @@ const ResultsEntry = ({ standalone = false }) => {
 
       // Fetch students and results in parallel once we have classId
       if (examData?.classId) {
-        const [studentsData, existingResults] = await Promise.all([
+        const [studentsResponse, existingResults] = await Promise.all([
           classesApi.getStudents(examData.classId),
           resultsApi.getByClassExam(examData.classId, id)
         ]);
 
-        setStudents(studentsData || []);
+        // Backend returns { students: [...], hasMore, total } — extract the array
+        const studentsData = Array.isArray(studentsResponse) ? studentsResponse : studentsResponse?.students || [];
+        setStudents(studentsData);
 
         const resultsMap = {};
         (existingResults || []).forEach(r => {
@@ -166,7 +170,7 @@ const ResultsEntry = ({ standalone = false }) => {
     setSaving(true);
 
     try {
-      const user = JSON.parse(sessionStorage.getItem('app_user') || '{}');
+      const user = getStoredUser() || {};
 
       const resultsArray = students.map(student => {
         const sid = String(student.id || student._id);
@@ -193,17 +197,10 @@ const ResultsEntry = ({ standalone = false }) => {
     }
   };
 
-  // Grade calculation must match backend computeGrade() in academics.js
+  // Grade calculation — uses centralized grading utility
   const calculateGrade = (marks) => {
     if (!exam) return '';
-    const percentage = (marks / exam.maxMarks) * 100;
-    if (percentage >= 90) return 'A+';
-    if (percentage >= 80) return 'A';
-    if (percentage >= 70) return 'B+';
-    if (percentage >= 60) return 'B';
-    if (percentage >= 50) return 'C';
-    if (percentage >= 40) return 'D';
-    return 'F';
+    return calculateGradeUtil(marks, exam.maxMarks);
   };
 
   const getStatus = (marks) => {
@@ -217,7 +214,7 @@ const ResultsEntry = ({ standalone = false }) => {
     const query = searchQuery.toLowerCase();
     return students.filter(s =>
       s.name?.toLowerCase().includes(query) ||
-      s.rollNo?.toLowerCase().includes(query)
+      String(s.rollNo ?? '').toLowerCase().includes(query)
     );
   }, [students, searchQuery]);
 
@@ -376,7 +373,7 @@ const ResultsEntry = ({ standalone = false }) => {
                                   min={0}
                                   max={exam.maxMarks}
                                   className="w-full px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100"
-                                  placeholder="0"
+                                  placeholder={t('academics.marksInputPlaceholder')}
                                 />
                               </div>
                             </TableCell>
@@ -531,7 +528,7 @@ const ResultsEntry = ({ standalone = false }) => {
                             min={0}
                             max={exam.maxMarks}
                             className="w-full px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100"
-                            placeholder="0"
+                            placeholder={t('academics.marksInputPlaceholder')}
                           />
                         </div>
                       </TableCell>

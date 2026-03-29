@@ -438,7 +438,7 @@ export default function FeeTemplatesManagement() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <Input
                         label={t('pages.feeHeadName')}
-                        placeholder="e.g., Tuition Fee"
+                        placeholder={t('fees.feeHeadNamePlaceholder')}
                         value={head.name}
                         onValueChange={(v) => updateFeeHead(index, 'name', v)}
                         variant="bordered"
@@ -472,7 +472,7 @@ export default function FeeTemplatesManagement() {
                       <Input
                         type="number"
                         label="Amount (₹)"
-                        placeholder="0"
+                        placeholder={t('fees.amountPlaceholder')}
                         value={head.amount}
                         onValueChange={(v) => updateFeeHead(index, 'amount', parseInt(v) || 0)}
                         variant="bordered"
@@ -482,7 +482,7 @@ export default function FeeTemplatesManagement() {
                       <Input
                         type="number"
                         label={t('pages.dueDay')}
-                        placeholder="10"
+                        placeholder={t('fees.dueDayPlaceholder')}
                         value={head.dueDay}
                         onValueChange={(v) => updateFeeHead(index, 'dueDay', parseInt(v) || 10)}
                         variant="bordered"

@@ -433,7 +433,7 @@ export default function StaffAttendanceTab({ staffId }) {
                   <div>
                     <label className="text-xs font-semibold text-gray-600 dark:text-zinc-400 mb-1.5 block">{t('pages.reasonForCorrection')}</label>
                     <Textarea
-                      placeholder="e.g., Forgot to checkout, System error, worked from home..."
+                      placeholder={t('staff.form.regularizationReasonPlaceholder')}
                       value={regularizationReason}
                       onValueChange={setRegularizationReason}
                       minRows={3}

@@ -13,3 +13,4 @@ export { default as RemarksScreen } from './RemarksScreen';
 export { default as AnnouncementsScreen } from './AnnouncementsScreen';
 export { default as NotificationSettingsScreen } from './NotificationSettingsScreen';
 export { default as EditProfileScreen } from './EditProfileScreen';
+export { default as HomeworkScreen } from './HomeworkScreen';

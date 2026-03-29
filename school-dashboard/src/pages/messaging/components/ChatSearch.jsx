@@ -130,10 +130,10 @@ export default function ChatSearch({ messages = [], onResultClick }) {
                       {msg.senderId?.name || 'Unknown'}
                     </span>
                     <span className="text-xs text-default-400">
-                      {new Date(msg.createdAt).toLocaleTimeString([], {
+                      {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit'
-                      })}
+                      }) : ''}
                     </span>
                   </div>
                   <p className="text-sm text-default-600 line-clamp-2">

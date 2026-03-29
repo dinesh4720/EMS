@@ -109,6 +109,59 @@ export function formatNumericDate(value, fallback = '—') {
 }
 
 /**
+ * Convert a Date (or date-like value) to "YYYY-MM-DD" for HTML <input type="date"> elements.
+ * Always uses UTC-safe local date parts so the value doesn't shift across time zones.
+ */
+export function toDateInputValue(value, fallback = '') {
+  if (!value) return fallback;
+  try {
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return fallback;
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Format a date with the full weekday name: "Monday, 27 March 2026"
+ * In Hindi this renders "सोमवार, 27 मार्च 2026" automatically.
+ */
+export function formatDateWithWeekday(value, fallback = '—') {
+  if (!value) return fallback;
+  try {
+    return new Intl.DateTimeFormat(getDateLocale(), {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(new Date(value));
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Format a date with the abbreviated weekday: "Mon, 27 Mar 2026"
+ */
+export function formatDateShortWeekday(value, fallback = '—') {
+  if (!value) return fallback;
+  try {
+    return new Intl.DateTimeFormat(getDateLocale(), {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }).format(new Date(value));
+  } catch {
+    return fallback;
+  }
+}
+
+/**
  * Return relative time string: "3 days ago", "in 2 hours"
  * Falls back to formatShortDate if RelativeTimeFormat is unsupported.
  */

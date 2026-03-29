@@ -19,6 +19,7 @@ import FeatureFlagsPanel from './FeatureFlagsPanel';
 import GrowthAnalyticsPanel from './GrowthAnalyticsPanel';
 import ChangelogPanel from './ChangelogPanel';
 import { useTranslation } from 'react-i18next';
+import { formatDateTime } from '../../utils/dateFormatter';
 
 const TABS = [
   { key: 'schools', label: 'Schools', icon: Building2 },
@@ -90,6 +91,7 @@ function SelectField({ value, onChange, options }) {
 }
 
 function SchoolsPanel({ overview, loadData, loading, tableRows, updateSchoolDraft, handleSaveSchool, handleProvisionSchool, rowSaving, provisioning, form, updateForm, handleCreateSchool, submitting }) {
+  const { t } = useTranslation();
   return (
     <>
       <div className="mb-8 grid gap-4 md:grid-cols-4">
@@ -259,7 +261,7 @@ function SchoolsPanel({ overview, loadData, loading, tableRows, updateSchoolDraf
                         <div className="font-medium capitalize text-slate-800 dark:text-zinc-200">{school.provisioning?.status || 'pending'}</div>
                         <div className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
                           {school.provisioning?.lastProvisionedAt
-                            ? new Date(school.provisioning.lastProvisionedAt).toLocaleString()
+                            ? formatDateTime(school.provisioning.lastProvisionedAt)
                             : 'Not provisioned yet'}
                         </div>
                       </td>

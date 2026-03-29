@@ -243,7 +243,7 @@ export default function RolesAccess() {
   const navigate = useNavigate();
   const { staff } = useApp();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [activeTab, setActiveTab] = useState("roles");
+  // activeTab state removed - was unused
   const [editingRole, setEditingRole] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetchingRoles, setFetchingRoles] = useState(true);
@@ -528,7 +528,7 @@ export default function RolesAccess() {
               {/* Role Name */}
               <Input
                 label={t('pages.roleName')}
-                placeholder="e.g., Teacher, Accountant"
+                placeholder={t('settings.roleNamePlaceholder')}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 variant="bordered"

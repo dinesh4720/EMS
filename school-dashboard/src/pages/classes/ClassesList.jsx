@@ -1,12 +1,13 @@
 import { safeGetItem, safeSetItem } from '../../utils/safeStorage';
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import logger from "../../utils/logger";
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Chip, Button, Progress, Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Checkbox, Select, SelectItem
 } from "@heroui/react";
 import { useNavigate } from "react-router-dom";
-import { Eye, MessageSquare, Search, Filter, ArrowUpDown, X, MoreVertical, Settings, UserPlus, ChevronRight, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { Eye, MessageSquare, Search, Filter, ArrowUpDown, X, MoreVertical, Settings, UserPlus, ChevronRight, ChevronDown, ChevronUp, RefreshCw, CheckCircle2, Clock, BookOpen, AlertCircle } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -43,7 +44,7 @@ export default function ClassesList() {
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
   const [isLoading, setIsLoading] = useState(false);
   const loaderRef = useRef(null);
-  const [sortDescriptor, setSortDescriptor] = useState({ column: "name", direction: "ascending" });
+  const [sortDescriptor] = useState({ column: "name", direction: "ascending" });
   const [selectedKeys, setSelectedKeys] = useState(new Set([]));
 
   // Expanded classes state
@@ -70,8 +71,8 @@ export default function ClassesList() {
   const [selectedClassForTeacher, setSelectedClassForTeacher] = useState(null);
 
   // Actions modal state
-  const [actionsModal, setActionsModal] = useState(false);
-  const [selectedClassForActions, setSelectedClassForActions] = useState(null);
+  const [, setActionsModal] = useState(false);
+  const [, setSelectedClassForActions] = useState(null);
   const classDetailsRequestStateRef = useRef(new Map());
 
   // Debounced search effect
@@ -135,7 +136,7 @@ export default function ClassesList() {
 
       return Object.values(groups).sort((a, b) => a.classNum - b.classNum);
     } catch (error) {
-      console.error('Error grouping classes:', error);
+      logger.error('Error grouping classes:', error);
       return [];
     }
   }, [classesData, feeDefaulters]);
@@ -167,7 +168,7 @@ export default function ClassesList() {
         });
       });
     } catch (error) {
-      console.error('Error filtering grouped classes:', error);
+      logger.error('Error filtering grouped classes:', error);
       return groupedClasses || [];
     }
   }, [groupedClasses, debouncedSearchQuery]);
@@ -215,7 +216,7 @@ export default function ClassesList() {
 
       return items;
     } catch (error) {
-      console.error('Error in visibleItems useMemo:', error);
+      logger.error('Error in visibleItems useMemo:', error);
       return [];
     }
   }, [filteredGroupedClasses, expandedClasses, visibleCount]);
@@ -232,7 +233,7 @@ export default function ClassesList() {
 
       return visibleItems.length < totalItems;
     } catch (error) {
-      console.error('Error calculating hasMore:', error);
+      logger.error('Error calculating hasMore:', error);
       return false;
     }
   }, [visibleItems.length, filteredGroupedClasses, groupedClasses, expandedClasses]);
@@ -299,19 +300,19 @@ export default function ClassesList() {
           const [academic, attendance, settings] = await Promise.all([
             needsAcademic
               ? classesEnhancedApi.getAcademicPerformance(classId).catch((error) => {
-                  console.error(`Error loading academic performance for class ${classId}:`, error);
+                  logger.error(`Error loading academic performance for class ${classId}:`, error);
                   return { classAverage: cls.averageAcademicPerformance || 0 };
                 })
               : Promise.resolve(academicPerformance[classId]),
             needsAttendance
               ? classesEnhancedApi.getAttendanceAnalytics(classId, 'month').catch((error) => {
-                  console.error(`Error loading attendance analytics for class ${classId}:`, error);
+                  logger.error(`Error loading attendance analytics for class ${classId}:`, error);
                   return null;
                 })
               : Promise.resolve(attendanceData[classId]),
             needsSettings
               ? classesApi.getSettings(classId).catch((error) => {
-                  console.error(`Error loading settings for class ${classId}:`, error);
+                  logger.error(`Error loading settings for class ${classId}:`, error);
                   return null;
                 })
               : Promise.resolve(classSettingsMap[classId]),
@@ -423,7 +424,7 @@ export default function ClassesList() {
           return col;
         }).filter(col => col != null); // Remove any null columns
       } catch (error) {
-        console.error('Error toggling column:', error);
+        logger.error('Error toggling column:', error);
         return AVAILABLE_COLUMNS.map(col => ({ ...col }));
       }
     });
@@ -439,7 +440,7 @@ export default function ClassesList() {
       // Fallback to defaults if no valid columns
       return filtered.length > 0 ? filtered : AVAILABLE_COLUMNS.filter(col => col && typeof col === 'object' && col.visible);
     } catch (error) {
-      console.error('Error getting visible columns:', error);
+      logger.error('Error getting visible columns:', error);
       return AVAILABLE_COLUMNS.filter(col => col && typeof col === 'object' && col.visible);
     }
   };
@@ -550,7 +551,13 @@ export default function ClassesList() {
         </TableHeader>
         <TableBody
           items={visibleItems.filter(item => item && item.type && item.data)}
-          emptyContent="No classes found"
+          emptyContent={
+            <div className="py-12 text-center">
+              <BookOpen size={48} className="mx-auto text-default-200 mb-4" />
+              <h3 className="text-lg font-semibold text-default-700 mb-1">No classes found</h3>
+              <p className="text-sm text-default-400 mb-4">Get started by creating your first class</p>
+            </div>
+          }
         >
           {(item) => {
             // Safety check - ensure item has type and data
@@ -797,9 +804,21 @@ export default function ClassesList() {
                             </Chip>
                           )}
                         </div>
-                        <span className="text-default-500 text-xs">
-                          {cls?.studentCount || cls?.strength || 0} students
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-default-500 text-xs">
+                            {cls?.studentCount || cls?.strength || 0} students
+                          </span>
+                          {/* Health indicator dots */}
+                          {(attendanceValue != null && attendanceValue < 75) && (
+                            <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0" title="Low attendance" />
+                          )}
+                          {!cls?.classTeacherId && (
+                            <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" title="No class teacher" />
+                          )}
+                          {pendingCount > 0 && pendingCount > (cls?.studentCount || 0) * 0.3 && (
+                            <span className="w-2 h-2 rounded-full bg-rose-400 flex-shrink-0" title="High fee defaulters" />
+                          )}
+                        </div>
                       </div>
                     </div>
                   </TableCell>
@@ -942,42 +961,30 @@ export default function ClassesList() {
                     </TableCell>
                   )}
 
-                  {/* Actions - Child */}
+                  {/* Actions - Child (Quick action buttons) */}
                   <TableCell>
-                    <div className="flex justify-end py-3" onClick={(e) => e.stopPropagation()}>
-                      <Dropdown>
-                        <DropdownTrigger>
-                          <Button isIconOnly size="sm" variant="light" className="text-default-400">
-                            <MoreVertical size={18} />
-                          </Button>
-                        </DropdownTrigger>
-                        <DropdownMenu aria-label={t('aria.menus.classActions')} onAction={(key) => cls && handleActionMenuItem(key, cls)}>
-                          <DropdownItem
-                            key="view"
-                            startContent={<Eye size={14} />}
-                          >
-                            View Details
-                          </DropdownItem>
-                          <DropdownItem
-                            key="settings"
-                            startContent={<Settings size={14} />}
-                          >
-                            Class Settings
-                          </DropdownItem>
-                          <DropdownItem
-                            key="download-report"
-                            startContent={"📥"}
-                          >
-                            Download Report
-                          </DropdownItem>
-                          <DropdownItem
-                            key="send-announcement"
-                            startContent={<MessageSquare size={14} />}
-                          >
-                            Send Announcement
-                          </DropdownItem>
-                        </DropdownMenu>
-                      </Dropdown>
+                    <div className="flex items-center justify-end gap-1 py-3" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => cls?.id && navigate(`/classes/${cls.id}`)}
+                        className="p-1.5 hover:bg-default-100 rounded-lg transition-colors"
+                        title="View class"
+                      >
+                        <Eye size={14} className="text-default-400" />
+                      </button>
+                      <button
+                        onClick={() => cls?.id && navigate(`/classes/${cls.id}?tab=attendance`)}
+                        className="p-1.5 hover:bg-default-100 rounded-lg transition-colors"
+                        title="Mark attendance"
+                      >
+                        <CheckCircle2 size={14} className="text-default-400" />
+                      </button>
+                      <button
+                        onClick={() => cls?.id && navigate(`/classes/${cls.id}?tab=timetable`)}
+                        className="p-1.5 hover:bg-default-100 rounded-lg transition-colors"
+                        title="View timetable"
+                      >
+                        <Clock size={14} className="text-default-400" />
+                      </button>
                     </div>
                   </TableCell>
                 </TableRow>

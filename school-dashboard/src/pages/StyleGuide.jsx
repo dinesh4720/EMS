@@ -31,7 +31,7 @@ export default function StyleGuide() {
                         <FormInput
                             label={t('pages.emailAddress')}
                             type="email"
-                            placeholder="john@example.com"
+                            placeholder="aarav@example.com"
                             startContent={<Mail size={18} />}
                         />
 

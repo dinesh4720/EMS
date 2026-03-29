@@ -45,7 +45,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
   const { user } = useAuth();
   const { hasPermission } = usePermissions();
   const [timetable, setTimetable] = useState(null);
-  const [periods, setPeriods] = useState(defaultPeriods);
+  const [periods] = useState(defaultPeriods);
   const [schedule, setSchedule] = useState({});
   const [loading, setLoading] = useState(false);
   const [teacher, setTeacher] = useState(null);

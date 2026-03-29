@@ -114,3 +114,104 @@ export interface UserActivity {
   eventsCount: number;
   lastActivity: Date;
 }
+
+// ── Project Management Types ────────────────────────────────────────────────
+
+export interface Project {
+  id: string;
+  name: string;
+  description: string | null;
+  apiKeyPrefix: string;
+  status: 'active' | 'suspended' | 'archived';
+  rateLimitPerMinute: number;
+  quotaEventsPerDay: number;
+  retentionDays: number;
+  totalEvents: number;
+  lastEventAt: string | null;
+  ownerEmail: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectCreateResponse {
+  project: Project;
+  rawApiKey: string;
+}
+
+// ── Access Log Types ────────────────────────────────────────────────────────
+
+export interface AccessLog {
+  id: string;
+  projectId: string | null;
+  projectName: string | null;
+  timestamp: string;
+  method: string;
+  endpoint: string;
+  statusCode: number;
+  responseTimeMs: number;
+  ip: string;
+  userAgent: string;
+  eventCount: number | null;
+  errorMessage: string | null;
+}
+
+export interface AccessLogStats {
+  totalRequests: number;
+  errorRate: number;
+  avgResponseTime: number;
+  requestsLastHour: number;
+  byProject: Array<{ projectId: string; name: string; count: number }>;
+  byEndpoint: Array<{ endpoint: string; count: number }>;
+}
+
+// ── Error Tracking Types ────────────────────────────────────────────────────
+
+export interface ErrorGroup {
+  id: string;
+  projectId: string;
+  fingerprint: string;
+  message: string;
+  file: string | null;
+  line: number | null;
+  col: number | null;
+  module: string;
+  count: number;
+  userCount: number;
+  status: 'unresolved' | 'resolved' | 'ignored';
+  firstSeen: string;
+  lastSeen: string;
+  lastPage: string | null;
+  lastUserAction: string | null;
+}
+
+export interface ErrorIncident {
+  id: string;
+  source: 'frontend' | 'backend' | 'network';
+  severity: string;
+  message: string;
+  stackTrace: string | null;
+  file: string | null;
+  line: number | null;
+  module: string | null;
+  page: string | null;
+  action: string | null;
+  apiError: Record<string, unknown> | null;
+  consoleErrors: Array<Record<string, unknown>> | null;
+  breadcrumbs: Array<{ time: string; type: string; detail: string }> | null;
+  userId: string | null;
+  userName: string | null;
+  userRole: string | null;
+  browser: string | null;
+  os: string | null;
+  viewport: { width: number; height: number } | null;
+  screenshotUrl: string | null;
+  timestamp: string;
+}
+
+export interface ErrorStats {
+  totalGroups: number;
+  unresolved: number;
+  incidentsToday: number;
+  byModule: Array<{ module: string; count: number }>;
+  byPage: Array<{ page: string; count: number }>;
+}

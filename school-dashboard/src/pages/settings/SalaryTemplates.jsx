@@ -181,7 +181,7 @@ export default function SalaryTemplates() {
                   <div className="space-y-4">
                     <Input
                       label={t('pages.templateName')}
-                      placeholder="e.g., Teacher, Lab Assistant"
+                      placeholder={t('settings.salaryTemplateNamePlaceholder')}
                       value={editingTemplate.name}
                       onValueChange={v => setEditingTemplate({ ...editingTemplate, name: v })}
                       variant="bordered"
@@ -205,7 +205,7 @@ export default function SalaryTemplates() {
                             <Input
                               size="sm"
                               label={t('pages.componentName')}
-                              placeholder="e.g., Basic Salary"
+                              placeholder={t('settings.salaryComponentPlaceholder')}
                               value={item.component}
                               onValueChange={v => updateBreakdownItem(i, "component", v)}
                               variant="bordered"

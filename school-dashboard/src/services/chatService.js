@@ -1,4 +1,5 @@
 import { request } from './api';
+import logger from '../utils/logger';
 
 class ChatService {
   // Get all conversations for a user (identity derived from session)
@@ -6,7 +7,7 @@ class ChatService {
     try {
       return await request('/messages/conversations');
     } catch (error) {
-      console.error('Error fetching conversations:', error);
+      logger.error('Error fetching conversations:', error);
       throw error;
     }
   }
@@ -18,7 +19,7 @@ class ChatService {
       if (before) params.set('before', before);
       return await request(`/messages/conversations/${conversationId}/messages?${params}`);
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      logger.error('Error fetching messages:', error);
       throw error;
     }
   }
@@ -31,7 +32,7 @@ class ChatService {
         body: JSON.stringify({ user2Id, user2Type })
       });
     } catch (error) {
-      console.error('Error creating conversation:', error);
+      logger.error('Error creating conversation:', error);
       throw error;
     }
   }
@@ -46,7 +47,7 @@ class ChatService {
         body: JSON.stringify(payload)
       });
     } catch (error) {
-      console.error('Error sending message:', error);
+      logger.error('Error sending message:', error);
       throw error;
     }
   }
@@ -59,7 +60,7 @@ class ChatService {
         body: JSON.stringify({ conversationId })
       });
     } catch (error) {
-      console.error('Error marking messages as read:', error);
+      logger.error('Error marking messages as read:', error);
       throw error;
     }
   }
@@ -69,7 +70,7 @@ class ChatService {
     try {
       return await request(`/messages/messages/${messageId}`, { method: 'DELETE' });
     } catch (error) {
-      console.error('Error deleting message:', error);
+      logger.error('Error deleting message:', error);
       throw error;
     }
   }
@@ -80,7 +81,7 @@ class ChatService {
       const params = new URLSearchParams({ query, limit });
       return await request(`/messages/messages/search?${params}`);
     } catch (error) {
-      console.error('Error searching messages:', error);
+      logger.error('Error searching messages:', error);
       throw error;
     }
   }
@@ -90,7 +91,7 @@ class ChatService {
     try {
       return await request(`/messages/presence/${userId}`);
     } catch (error) {
-      console.error('Error fetching user presence:', error);
+      logger.error('Error fetching user presence:', error);
       throw error;
     }
   }
@@ -100,7 +101,7 @@ class ChatService {
     try {
       return await request('/messages/presence/online');
     } catch (error) {
-      console.error('Error fetching online users:', error);
+      logger.error('Error fetching online users:', error);
       throw error;
     }
   }
@@ -111,7 +112,7 @@ class ChatService {
       const { uploadApi } = await import('./api');
       return await uploadApi.uploadFile(file);
     } catch (error) {
-      console.error('Error uploading file:', error);
+      logger.error('Error uploading file:', error);
       throw error;
     }
   }

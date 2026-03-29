@@ -1,6 +1,7 @@
 import { request } from '../../services/api.js';
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback, forwardRef, useImperativeHandle } from "react";
 import { parseDate } from "@internationalized/date";
+import logger from "../../utils/logger";
 import { Button, Input, Select, SelectItem, Checkbox, Textarea, Chip, Avatar, RadioGroup, Radio, cn, Divider, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, DatePicker, Popover, PopoverTrigger, PopoverContent, Calendar as CalendarIcon } from "@heroui/react";
 import { ArrowLeft, ArrowRight, Upload, X, Plus, User, FileText, Users, GraduationCap, Check, Heart, Bus, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, getDaysInMonth, isValid, parse } from "date-fns";
@@ -12,6 +13,7 @@ import CameraCaptureModal from "../../components/CameraCaptureModal";
 import { GENDERS, BLOOD_GROUPS, PARENT_RELATIONSHIPS, GUARDIAN_RELATIONSHIPS, RELIGIONS, CATEGORIES, MOTHER_TONGUES, DEFAULT_STUDENT_FORM } from "../../constants/studentConstants";
 import { INDIAN_STATES, normalizeStateName } from "../../constants/states";
 import { useTranslation } from 'react-i18next';
+import { formatShortDate } from '../../utils/dateFormatter';
 
 // Note: Constants now imported from constants/ folder
 
@@ -222,7 +224,7 @@ function CustomCalendar({ selectedDate, onSelect, onClose }) {
   );
 }
 
-export default function AddStudent({ onClose, onSave, classOptions = [], classesWithTeachers = [], initialData = null }) {
+const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOptions = [], classesWithTeachers = [], initialData = null }, ref) {
   const { t } = useTranslation();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -277,7 +279,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     return emptyForm;
   });
   const [errors, setErrors] = useState({});
-  const [documentConfigs, setDocumentConfigs] = useState([]);
+  const [, setDocumentConfigs] = useState([]);
   const [dobValidation, setDobValidation] = useState({ isValid: false, message: '', warning: '' });
   const [isDobCalendarOpen, setIsDobCalendarOpen] = useState(false);
   const scrollContainerRef = useRef(null);
@@ -316,7 +318,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         const docConfigs = await settingsApi.getDocumentConfig();
         setDocumentConfigs(docConfigs);
       } catch (error) {
-        console.error('❌ Error loading configurations:', error);
+        logger.error('❌ Error loading configurations:', error);
         // Don't show error toast - just log it and continue with empty configs
         setDocumentConfigs([]);
       }
@@ -370,7 +372,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             updateField("rollNumber", data.rollNumber.toString());
           }
         } catch (error) {
-          console.error('❌ Error generating roll number:', error);
+          logger.error('❌ Error generating roll number:', error);
           // Set to 1 as fallback
           updateField("rollNumber", "1");
         }
@@ -507,15 +509,34 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     updateField("siblings", formData.siblings.filter((_, i) => i !== index));
   };
 
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+  const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024; // 10MB
+
   const handleFileUpload = (field, file) => {
     if (file) {
+      const maxSize = file.type?.startsWith('image/') ? MAX_IMAGE_SIZE : MAX_DOCUMENT_SIZE;
+      const label = file.type?.startsWith('image/') ? '5MB' : '10MB';
+      if (file.size > maxSize) {
+        toast.error(t('toast.error.fileTooLarge', `File size must be less than ${label}`));
+        return;
+      }
       updateField(field, file);
     }
   };
 
   const handleMultiFileUpload = (field, files) => {
     if (files && files.length > 0) {
-      updateField(field, [...formData[field], ...Array.from(files)]);
+      const validFiles = Array.from(files).filter((file) => {
+        const maxSize = file.type?.startsWith('image/') ? MAX_IMAGE_SIZE : MAX_DOCUMENT_SIZE;
+        if (file.size > maxSize) {
+          toast.error(t('toast.error.fileTooLarge', `${file.name} exceeds the size limit`));
+          return false;
+        }
+        return true;
+      });
+      if (validFiles.length > 0) {
+        updateField(field, [...formData[field], ...validFiles]);
+      }
     }
   };
 
@@ -534,6 +555,11 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > MAX_IMAGE_SIZE) {
+        toast.error(t('toast.error.fileTooLarge', 'File size must be less than 5MB'));
+        e.target.value = null;
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setSelectedImageForEdit(reader.result);
@@ -698,6 +724,11 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
     setIsDirtyModalOpen(false);
   };
 
+  useImperativeHandle(ref, () => ({
+    attemptClose: handleClose,
+    hasUnsavedChanges: () => hasUnsavedChanges
+  }));
+
   // Helper function to validate DOB in real-time with strict blocking
   const validateDOBInRealTime = (dateStr) => {
     const digits = dateStr.replace(/\D/g, '');
@@ -839,16 +870,16 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       const selectedClass = classesWithTeachers.find(c => c.name === formData.classGrade && c.section === formData.section);
 
       if (!selectedClass) {
-        console.error('❌ Selected class not found!');
-        console.error('❌ Looking for classGrade:', formData.classGrade, 'section:', formData.section);
-        console.error('❌ Available classes:', classesWithTeachers.map(c => ({ id: c.id, name: c.name, section: c.section })));
+        logger.error('❌ Selected class not found!');
+        logger.error('❌ Looking for classGrade:', formData.classGrade, 'section:', formData.section);
+        logger.error('❌ Available classes:', classesWithTeachers.map(c => ({ id: c.id, name: c.name, section: c.section })));
         toast.error(t('toast.error.selectedClassNotFound'));
         setIsSubmitting(false);
         return;
       }
 
       if (!selectedClass.id) {
-        console.error('❌ Selected class has no ID!', selectedClass);
+        logger.error('❌ Selected class has no ID!', selectedClass);
         toast.error(t('toast.error.classIdIsMissingPleaseRefreshAndTryAgain'));
         setIsSubmitting(false);
         return;
@@ -868,7 +899,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         }
 
       } catch (error) {
-        console.error('Failed to check capacity:', error);
+        logger.error('Failed to check capacity:', error);
         // Continue anyway - let backend handle it
       }
 
@@ -881,7 +912,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           photoUrl = uploadResponse.url;
           toast.success("Photo uploaded", { id: loadingToast });
         } catch (error) {
-          console.error('❌ Photo upload failed:', error);
+          logger.error('❌ Photo upload failed:', error);
           toast.error("Photo upload failed", { id: loadingToast });
           // Continue without photo
         }
@@ -915,10 +946,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               url: uploadResponse.url,
               uploadDate: uploadDate,
               size: formData.birthCertificate.size || 'Unknown',
-              date: new Date().toLocaleDateString()
+              date: formatShortDate(new Date())
             });
           } catch (error) {
-            console.error('❌ Birth certificate upload failed:', error);
+            logger.error('❌ Birth certificate upload failed:', error);
             // Continue with other documents
           }
         }
@@ -935,10 +966,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               url: uploadResponse.url,
               uploadDate: uploadDate,
               size: formData.transferCertificate.size || 'Unknown',
-              date: new Date().toLocaleDateString()
+              date: formatShortDate(new Date())
             });
           } catch (error) {
-            console.error('❌ Transfer certificate upload failed:', error);
+            logger.error('❌ Transfer certificate upload failed:', error);
             // Continue with other documents
           }
         }
@@ -953,7 +984,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
               category: "aadhaarCard",
               uploadDate: uploadDate,
               size: 'Unknown',
-              date: new Date().toLocaleDateString()
+              date: formatShortDate(new Date())
             };
 
             // Upload front side
@@ -976,7 +1007,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
 
             documents.push(aadhaarDoc);
           } catch (error) {
-            console.error('❌ Aadhaar card upload failed:', error);
+            logger.error('❌ Aadhaar card upload failed:', error);
             // Continue with other documents
           }
         }
@@ -996,10 +1027,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                   url: uploadResponse.url,
                   uploadDate: uploadDate,
                   size: doc.size || 'Unknown',
-                  date: new Date().toLocaleDateString()
+                  date: formatShortDate(new Date())
                 });
               } catch (error) {
-                console.error(`❌ Other document ${i + 1} upload failed:`, error);
+                logger.error(`❌ Other document ${i + 1} upload failed:`, error);
                 // Continue with next document
               }
             }
@@ -1012,7 +1043,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           toast.dismiss(docsLoadingToast);
         }
       } catch (error) {
-        console.error('❌ Document upload error:', error);
+        logger.error('❌ Document upload error:', error);
         toast.dismiss(docsLoadingToast);
         // Continue even if document uploads fail
       }
@@ -1032,7 +1063,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           const response = await studentsApi.getNextAdmissionId();
           admissionId = response.admissionId;
         } catch (error) {
-          console.error('❌ Failed to get admission ID:', error);
+          logger.error('❌ Failed to get admission ID:', error);
           toast.error(t('toast.error.failedToGenerateAdmissionId'));
           setIsSubmitting(false);
           return;
@@ -1126,7 +1157,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       setHasUnsavedChanges(false);
       // Success toast is shown in parent component
     } catch (error) {
-      console.error('Error submitting student:', error);
+      logger.error('Error submitting student:', error);
 
       // For roll number conflicts, show clear error
       if (error.message && error.message.toLowerCase().includes('roll number')) {
@@ -1217,7 +1248,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
             <div className="relative">
               <Input
                 labelPlacement="outside"
-                placeholder="DD/MM/YYYY"
+                placeholder={t('students.form.dobPlaceholder')}
                 value={formData.dateOfBirth || ''}
                 onClick={() => setIsDobCalendarOpen(true)}
                 onFocus={() => setIsDobCalendarOpen(true)}
@@ -1566,7 +1597,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           <Input
             label={t('pages.emailAddress')}
             labelPlacement="outside"
-            placeholder="student@email.com"
+            placeholder={t('students.form.studentEmailPlaceholder')}
             value={formData.email}
             onValueChange={v => updateField("email", v)}
             variant="bordered"
@@ -1672,7 +1703,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                         }
                       }
                     } catch (error) {
-                      console.error('PIN code lookup failed:', error);
+                      logger.error('PIN code lookup failed:', error);
                       // Silent fail - allow manual entry
                     } finally {
                       setIsZipLookupLoading(false);
@@ -1705,7 +1736,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           <Input
             label={t('pages.aadhaarNumber')}
             labelPlacement="outside"
-            placeholder="12 digit Aadhaar"
+            placeholder={t('students.form.aadhaarPlaceholder')}
             value={formData.aadhaarNumber}
             onValueChange={v => updateField("aadhaarNumber", v.replace(/\D/g, '').slice(0, 12))}
             variant="bordered"
@@ -1728,7 +1759,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
           <Input
             label={t('pages.nationality1')}
             labelPlacement="outside"
-            placeholder="e.g., Indian"
+            placeholder={t('students.form.nationalityPlaceholder')}
             value={formData.nationality}
             onValueChange={v => updateField("nationality", v)}
             variant="bordered"
@@ -1855,7 +1886,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                       label={t('pages.phoneNumber')}
                       labelPlacement="outside"
                       startContent={<span className="text-default-400 text-xs">+91</span>}
-                      placeholder="10 digit number"
+                      placeholder={t('students.form.phonePlaceholder')}
                       value={parent.phone}
                       onValueChange={v => {
                         // Only allow digits and limit to 10 characters
@@ -1878,7 +1909,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                   <Input
                     label={t('pages.email1')}
                     labelPlacement="outside"
-                    placeholder="parent@email.com"
+                    placeholder={t('students.form.parentEmailPlaceholder')}
                     value={parent.email}
                     onValueChange={v => updateParent(index, "email", v)}
                     variant="bordered"
@@ -1888,7 +1919,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                   <Input
                     label={t('pages.occupation')}
                     labelPlacement="outside"
-                    placeholder="e.g., Engineer, Doctor"
+                    placeholder={t('students.form.occupationPlaceholder')}
                     value={parent.occupation}
                     onValueChange={v => updateParent(index, "occupation", v)}
                     variant="bordered"
@@ -1960,7 +1991,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                       label={t('pages.phoneNumber')}
                       labelPlacement="outside"
                       startContent={<span className="text-default-400 text-xs">+91</span>}
-                      placeholder="10 digit number"
+                      placeholder={t('students.form.phonePlaceholder')}
                       value={guardian.phone}
                       onValueChange={v => {
                         const digitsOnly = v.replace(/\D/g, '').slice(0, 10);
@@ -1979,7 +2010,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                   <Input
                     label={t('pages.email1')}
                     labelPlacement="outside"
-                    placeholder="guardian@email.com"
+                    placeholder={t('students.form.guardianEmailPlaceholder')}
                     value={guardian.email}
                     onValueChange={v => updateParent(index, "email", v)}
                     variant="bordered"
@@ -1989,7 +2020,7 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
                   <Input
                     label={t('pages.occupation')}
                     labelPlacement="outside"
-                    placeholder="e.g., Engineer, Doctor"
+                    placeholder={t('students.form.occupationPlaceholder')}
                     value={guardian.occupation}
                     onValueChange={v => updateParent(index, "occupation", v)}
                     variant="bordered"
@@ -2155,7 +2186,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         <label className="text-xs font-medium text-default-600">{t('pages.birthCertificate')}</label>
         <div
           className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors"
+          role="button"
+          tabIndex={0}
           onClick={() => birthCertRef.current?.click()}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); birthCertRef.current?.click(); } }}
         >
           <div className="flex items-center gap-3">
             <FileText size={20} className="text-default-400" />
@@ -2182,7 +2216,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         <label className="text-xs font-medium text-default-600">{t('pages.transferCertificateTc')}</label>
         <div
           className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors"
+          role="button"
+          tabIndex={0}
           onClick={() => tcRef.current?.click()}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tcRef.current?.click(); } }}
         >
           <div className="flex items-center gap-3">
             <FileText size={20} className="text-default-400" />
@@ -2212,7 +2249,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         {/* Front Side */}
         <div
           className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors"
+          role="button"
+          tabIndex={0}
           onClick={() => aadhaarFrontRef.current?.click()}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); aadhaarFrontRef.current?.click(); } }}
         >
           <div className="flex items-center gap-3">
             <FileText size={20} className="text-default-400" />
@@ -2236,7 +2276,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         {/* Back Side */}
         <div
           className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors"
+          role="button"
+          tabIndex={0}
           onClick={() => aadhaarBackRef.current?.click()}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); aadhaarBackRef.current?.click(); } }}
         >
           <div className="flex items-center gap-3">
             <FileText size={20} className="text-default-400" />
@@ -2264,7 +2307,10 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
         <p className="text-xs text-default-500">Upload any other relevant documents (medical records, previous report cards, etc.)</p>
         <div
           className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-center gap-2 cursor-pointer hover:bg-default-50 transition-colors"
+          role="button"
+          tabIndex={0}
           onClick={() => otherDocsRef.current?.click()}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); otherDocsRef.current?.click(); } }}
         >
           <Upload size={14} className="text-default-500" />
           <span className="text-sm text-default-600">{t('pages.uploadAdditionalDocuments')}</span>
@@ -2430,4 +2476,6 @@ export default function AddStudent({ onClose, onSave, classOptions = [], classes
       </Modal>
     </>
   );
-}
+});
+
+export default AddStudent;

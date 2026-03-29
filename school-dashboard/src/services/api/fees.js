@@ -1,5 +1,6 @@
 import { request } from './core.js';
 import { API_URL } from '../../config/api.js';
+import { getAuthHeaders } from '../../utils/authSession.js';
 
 export const calendarEventsApi = {
   getAll: (options) => options?.signal ? request('/calendar/events', { signal: options.signal }) : request('/calendar/events'),
@@ -113,8 +114,8 @@ export const feesApi = {
   deleteRefund: (id) => request(`/fees/refunds/${id}`, { method: 'DELETE' }),
 
   // Fee Structure
-  getFeeStructure: (classId, academicYear) => request(`/fees/structure/${classId}${academicYear ? `?academicYear=${academicYear}` : ''}`),
-  saveFeeStructure: (data) => request('/fees/structure', { method: 'POST', body: JSON.stringify(data) }),
+  getFeeStructure: (classId, academicYear) => request(`/fee-structure/class/${classId}${academicYear ? `?academicYear=${academicYear}` : ''}`),
+  saveFeeStructure: (data) => request('/fee-structure', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 export const studentFeesApi = {
@@ -146,9 +147,22 @@ export const payrollApi = {
   reversePayment: (id, data) => request(`/payroll/records/${id}/reverse`, { method: 'PUT', body: JSON.stringify(data) }),
   bulkPay: (data) => request('/payroll/records/bulk-pay', { method: 'POST', body: JSON.stringify(data) }),
   fixSalaries: (data) => request('/payroll/fix-salaries', { method: 'POST', body: JSON.stringify(data || {}) }),
-  exportPayroll: (month, year) => {
-    window.location.href = `${API_URL}/payroll/export/${month}/${year}`;
-    return Promise.resolve({ success: true });
+  exportPayroll: async (month, year) => {
+    const response = await fetch(`${API_URL}/payroll/export/${month}/${year}`, {
+      credentials: 'include',
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Export failed');
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `payroll-${month}-${year}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove();
+    return { success: true };
   },
   getAuditLogs: (params) => {
     const query = new URLSearchParams(params).toString();

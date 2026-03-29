@@ -126,7 +126,7 @@ export default function CriticalAlerts({ data }) {
                         "{req.reason}"
                       </div>
                       <div className="text-xs text-default-400 mt-2">
-                        {new Date(req.createdAt).toLocaleString()}
+                        {req.createdAt ? new Date(req.createdAt).toLocaleString() : '—'}
                       </div>
                     </div>
                     <div className="flex flex-row md:flex-col gap-2 justify-center">

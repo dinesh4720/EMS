@@ -28,6 +28,7 @@ import {
 import { announcementsApi } from '../../../../services/api';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { formatDateTime } from '../../../../utils/dateFormatter';
 
 export default function AnnouncementAnalyticsModal({
   isOpen,
@@ -369,7 +370,7 @@ export default function AnnouncementAnalyticsModal({
           <div className="flex items-center justify-between text-sm">
             <span className="text-default-500">{t('pages.sentOn')}</span>
             <span className="font-medium text-gray-900 dark:text-zinc-100">
-              {new Date(analytics.sentAt).toLocaleString()}
+              {formatDateTime(analytics.sentAt)}
             </span>
           </div>
         </ModalBody>

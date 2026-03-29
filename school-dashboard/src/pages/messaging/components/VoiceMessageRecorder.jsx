@@ -14,11 +14,15 @@ export default function VoiceMessageRecorder({ onSend, onCancel }) {
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const animationFrameRef = useRef(null);
+  const timerIntervalRef = useRef(null);
   const chunksRef = useRef([]);
 
   useEffect(() => {
     return () => {
       // Cleanup
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
@@ -70,15 +74,12 @@ export default function VoiceMessageRecorder({ onSend, onCancel }) {
 
       // Start timer
       const startTime = Date.now();
-      const timerInterval = setInterval(() => {
+      timerIntervalRef.current = setInterval(() => {
         setRecordingTime(Math.floor((Date.now() - startTime) / 1000));
       }, 100);
 
       // Start waveform visualization
       visualize();
-
-      // Store timer interval
-      mediaRecorder.timerInterval = timerInterval;
 
     } catch (error) {
       console.error('Error starting recording:', error);
@@ -91,8 +92,9 @@ export default function VoiceMessageRecorder({ onSend, onCancel }) {
       setIsRecording(false);
 
       // Clear timer
-      if (mediaRecorderRef.current.timerInterval) {
-        clearInterval(mediaRecorderRef.current.timerInterval);
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
       }
 
       // Stop visualization

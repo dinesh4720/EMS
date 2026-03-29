@@ -14,6 +14,8 @@ import { request } from '../../services/api';
 import { ptmApi } from '../../services/api/extensions';
 import { PageLayout, MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
+import { formatShortDate } from '../../utils/dateFormatter';
+import { useTranslation } from 'react-i18next';
 
 const STATUS_COLORS = {
   scheduled: 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300',
@@ -29,6 +31,7 @@ const EMPTY_FORM = {
 
 export default function PTMPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [sessions, setSessions] = useState([]);
   const [classes, setClasses] = useState([]);
   const [staff, setStaff] = useState([]);
@@ -291,7 +294,7 @@ export default function PTMPage() {
                       <div className="space-y-1.5 text-sm text-gray-600 dark:text-zinc-300">
                         <div className="flex items-center gap-2">
                           <Calendar size={14} className="text-gray-400" />
-                          {new Date(session.sessionDate).toLocaleDateString()}
+                          {formatShortDate(session.sessionDate)}
                         </div>
                         <div className="flex items-center gap-2">
                           <Clock size={14} className="text-gray-400" />
@@ -360,7 +363,7 @@ export default function PTMPage() {
           <ModalBody className="px-6 py-4 space-y-4">
             <Input
               label="Session Title *"
-              placeholder="e.g. Term 1 PTM - Class 10A"
+              placeholder={t('ptm.sessionTitlePlaceholder')}
               value={form.title}
               onChange={e => { setForm(p => ({ ...p, title: e.target.value })); setErrors(prev => ({ ...prev, title: '' })); }}
               variant="bordered"
@@ -370,7 +373,7 @@ export default function PTMPage() {
             />
             <Textarea
               label="Description"
-              placeholder="Optional notes or agenda"
+              placeholder={t('ptm.notesPlaceholder')}
               value={form.description}
               onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
               variant="bordered"
@@ -421,7 +424,7 @@ export default function PTMPage() {
             <div className="grid grid-cols-2 gap-3">
               <Select
                 label="Class *"
-                placeholder="Select class"
+                placeholder={t('ptm.selectClassPlaceholder')}
                 selectedKeys={form.classId ? [form.classId] : []}
                 onSelectionChange={keys => { setForm(p => ({ ...p, classId: [...keys][0] || '' })); setErrors(prev => ({ ...prev, classId: '' })); }}
                 variant="bordered"
@@ -437,7 +440,7 @@ export default function PTMPage() {
               </Select>
               <Select
                 label="Teacher *"
-                placeholder="Select teacher"
+                placeholder={t('ptm.selectTeacherPlaceholder')}
                 selectedKeys={form.staffId ? [form.staffId] : []}
                 onSelectionChange={keys => { setForm(p => ({ ...p, staffId: [...keys][0] || '' })); setErrors(prev => ({ ...prev, staffId: '' })); }}
                 variant="bordered"
@@ -452,7 +455,7 @@ export default function PTMPage() {
             </div>
             <Input
               label="Venue"
-              placeholder="e.g. Room 101, Auditorium"
+              placeholder={t('ptm.venuePlaceholder')}
               value={form.venue}
               onChange={e => setForm(p => ({ ...p, venue: e.target.value }))}
               variant="bordered"
@@ -486,7 +489,7 @@ export default function PTMPage() {
               <div>
                 <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{detailSession.title}</h3>
                 <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">
-                  {new Date(detailSession.sessionDate).toLocaleDateString()} · {detailSession.startTime}–{detailSession.endTime}
+                  {formatShortDate(detailSession.sessionDate)} · {detailSession.startTime}–{detailSession.endTime}
                 </p>
               </div>
             </ModalHeader>
@@ -531,7 +534,7 @@ export default function PTMPage() {
                       <Select
                         size="sm"
                         label="Student *"
-                        placeholder="Select student"
+                        placeholder={t('ptm.selectStudentPlaceholder')}
                         selectedKeys={bookSlotForm.studentId ? [bookSlotForm.studentId] : []}
                         onSelectionChange={keys => setBookSlotForm(p => ({ ...p, studentId: [...keys][0] || '' }))}
                         variant="bordered"

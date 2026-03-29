@@ -3,6 +3,8 @@
  * No React or component dependencies — safe to import from plain .js files.
  */
 
+import { formatShortDate } from '../../../utils/dateFormatter';
+
 export const formatTime = (date) => {
   return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
@@ -16,7 +18,7 @@ export const formatLastSeen = (lastSeen) => {
   if (diff < 60000) return 'Just now';
   if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
   if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-  return date.toLocaleDateString();
+  return formatShortDate(date);
 };
 
 export const getFileIcon = (fileName) => {

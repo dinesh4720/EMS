@@ -50,6 +50,7 @@ import WebhooksPage from "./WebhooksPage";
 import NPSAnalyticsPage from "./NPSAnalyticsPage";
 import SCIMSettings from "./SCIMSettings";
 import PromotionRulesSettings from "./PromotionRulesSettings";
+import PeriodSettings from "./PeriodSettings";
 import { useTranslation } from 'react-i18next';
 
 export default function SettingsPage() {
@@ -96,6 +97,7 @@ export default function SettingsPage() {
         { key: "attendance", label: "Attendance Rules", icon: Calendar, path: "/settings/attendance-rules" },
         { key: "holidays", label: "Holiday Calendar", icon: Palmtree, path: "/settings/holidays" },
         { key: "leaves", label: "Leave Types", icon: UserCheck, path: "/settings/leaves" },
+        { key: "periods", label: "Period Timings", icon: Clock, path: "/settings/periods", isNew: true },
         { key: "timetable-cleanup", label: "Timetable Cleanup", icon: Trash2, path: "/settings/timetable-cleanup", isNew: true },
         { key: "promotion-rules", label: "Promotion Rules", icon: GraduationCap, path: "/settings/promotion-rules", isNew: true },
       ]
@@ -279,6 +281,7 @@ export default function SettingsPage() {
             <Route path="trash" element={<TrashSettings />} />
             <Route path="webhooks" element={<WebhooksPage />} />
             <Route path="scim" element={<SCIMSettings />} />
+            <Route path="periods" element={<PeriodSettings />} />
             <Route path="promotion-rules" element={<PromotionRulesSettings />} />
             <Route path="nps" element={<NPSAnalyticsPage />} />
             <Route path="timetable-cleanup" element={

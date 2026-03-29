@@ -46,23 +46,26 @@ export default function Signup() {
 
       try {
         const response = await fetch(
-          `${API_URL}/auth/signup/invite-details?token=${encodeURIComponent(inviteToken)}`
+          `${API_URL}/auth/signup/invite-details?token=${encodeURIComponent(inviteToken)}`,
+          { credentials: 'include' }
         );
-        const data = await response.json();
 
         if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
           throw new Error(data.error || "Invite link is invalid or expired");
         }
+
+        const data = await response.json();
 
         if (cancelled) {
           return;
         }
 
-        setInviteDetails(data.invite);
+        setInviteDetails(data?.invite || null);
         setFormData((prev) => ({
           ...prev,
-          email: data.invite.email,
-          schoolName: data.invite.schoolName,
+          email: data?.invite?.email || '',
+          schoolName: data?.invite?.schoolName || '',
         }));
       } catch (error) {
         if (!cancelled) {
@@ -150,6 +153,7 @@ export default function Signup() {
     try {
       const response = await fetch(`${API_URL}/auth/signup`, {
         method: "POST",
+        credentials: 'include',
         headers: {
           "Content-Type": "application/json",
         },
@@ -162,11 +166,12 @@ export default function Signup() {
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
         throw new Error(data.error || "Signup failed");
       }
+
+      const data = await response.json();
 
       navigate("/login", {
         state: { message: "Invite accepted. Please sign in with your new admin account." },

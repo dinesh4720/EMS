@@ -28,6 +28,7 @@ export const settingsApi = {
   createSubject: (data) => request('/settings/subjects', { method: 'POST', body: JSON.stringify(data) }),
   updateSubject: (id, data) => request(`/settings/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteSubject: (id) => request(`/settings/subjects/${id}`, { method: 'DELETE' }),
+  syncSubjectsToClasses: () => request('/settings/subjects/sync', { method: 'POST' }),
 
   // Payroll Settings
   getPayrollSettings: () => request('/settings/payroll'),
@@ -116,7 +117,7 @@ export const billingApi = {
     method: 'POST',
     body: JSON.stringify(data)
   }),
-  validateCoupon: (code) => request('/billing/coupon/validate', {
+  validateCoupon: (code) => request('/coupons/validate', {
     method: 'POST',
     body: JSON.stringify({ code })
   }),

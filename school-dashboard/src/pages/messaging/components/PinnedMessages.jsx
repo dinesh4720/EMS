@@ -1,6 +1,7 @@
-import { Pin, X } from 'lucide-react';
+import { Pin as PushPin, X } from 'lucide-react';
 import { ScrollShadow } from '@heroui/react';
 import { useTranslation } from 'react-i18next';
+import { formatShortDate } from '../../../utils/dateFormatter';
 
 export default function PinnedMessages({ messages = [], onUnpin, onJumpToMessage }) {
   const { t } = useTranslation();
@@ -38,7 +39,7 @@ export default function PinnedMessages({ messages = [], onUnpin, onJumpToMessage
                   <PushPin size={14} className="text-primary" />
                   <span>Pinned by {pinnedBy?.name || 'Unknown'}</span>
                   <span>•</span>
-                  <span>{new Date(pinnedAt).toLocaleDateString()}</span>
+                  <span>{formatShortDate(pinnedAt)}</span>
                 </div>
                 <button
                   onClick={() => onUnpin(messageId._id)}

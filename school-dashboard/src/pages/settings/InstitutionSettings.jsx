@@ -6,6 +6,7 @@ import { useApp } from "../../context/AppContext";
 import { useTranslation } from 'react-i18next';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import UnsavedChangesModal from '../../components/modals/UnsavedChangesModal';
+import toast from 'react-hot-toast';
 
 export default function InstitutionSettings() {
   const { t } = useTranslation();
@@ -47,9 +48,16 @@ export default function InstitutionSettings() {
     setEditingSection(null);
   };
 
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+
   const handleFileUpload = (field, event) => {
     const file = event.target.files[0];
     if (file) {
+      if (file.size > MAX_IMAGE_SIZE) {
+        toast.error(t('toast.error.fileTooLarge', 'File size must be less than 5MB'));
+        event.target.value = null;
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         updateLocalSettings((prev) => ({ ...prev, [field]: reader.result }));

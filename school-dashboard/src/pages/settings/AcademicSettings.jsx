@@ -1,5 +1,6 @@
 import { safeGetItem, safeSetItem } from '../../utils/safeStorage';
 import { useState, useEffect, useCallback, useMemo } from "react";
+import logger from "../../utils/logger";
 import {
   Tabs, Tab, Card, CardBody, Input, Button, Chip, Divider, Switch,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Tooltip
@@ -7,9 +8,10 @@ import {
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import {
   BookOpen, Calendar, Clock, GraduationCap, Plus, Save, Trash2,
-  Edit2, AlertCircle, Check, Users, Layers
+  Edit2, AlertCircle, Check, Users, Layers, RefreshCw
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { settingsApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 
@@ -78,7 +80,7 @@ export default function AcademicSettings() {
   });
   const [localSettings, setLocalSettings] = useState(schoolSettings);
   const [saving, setSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [, setSaveSuccess] = useState(false);
   const [subjectErrors, setSubjectErrors] = useState({});
   const [sectionError, setSectionError] = useState('');
 
@@ -126,7 +128,7 @@ export default function AcademicSettings() {
       setTimeout(() => setSaveSuccess(false), 2000);
       closeModal();
     } catch (error) {
-      console.error('Failed to save settings:', error);
+      logger.error('Failed to save settings:', error);
       toast.error(t('toast.error.failedToSaveSettings'));
     } finally {
       setSaving(false);
@@ -149,7 +151,7 @@ export default function AcademicSettings() {
       subjectModal.onClose();
       toast.success(t('toast.success.subjectAddedSuccessfully'));
     } catch (error) {
-      console.error('Failed to add subject:', error);
+      logger.error('Failed to add subject:', error);
       toast.error(t('toast.error.failedToAddSubject'));
     }
   };
@@ -180,7 +182,7 @@ export default function AcademicSettings() {
       subjectModal.onClose();
       toast.success(t('toast.success.subjectUpdatedSuccessfully'));
     } catch (error) {
-      console.error('Failed to update subject:', error);
+      logger.error('Failed to update subject:', error);
       toast.error(t('toast.error.failedToUpdateSubject'));
     }
   };
@@ -196,7 +198,7 @@ export default function AcademicSettings() {
       await deleteSubject(subjectId);
       toast.success(t('toast.success.subjectDeletedSuccessfully'));
     } catch (error) {
-      console.error('Failed to delete subject:', error);
+      logger.error('Failed to delete subject:', error);
       toast.error(t('toast.error.failedToDeleteSubject'));
     }
   };
@@ -224,7 +226,7 @@ export default function AcademicSettings() {
       classModal.onClose();
       toast.success(`Section ${newSection.toUpperCase()} added to Class ${selectedClassNum}`);
     } catch (error) {
-      console.error('Failed to add section:', error);
+      logger.error('Failed to add section:', error);
       toast.error(t('toast.error.failedToAddSection'));
     }
   };
@@ -251,7 +253,7 @@ export default function AcademicSettings() {
       classModal.onClose();
       toast.success(t('toast.success.sectionUpdatedSuccessfully'));
     } catch (error) {
-      console.error('Failed to update section:', error);
+      logger.error('Failed to update section:', error);
       toast.error(t('toast.error.failedToUpdateSection'));
     }
   };
@@ -268,7 +270,7 @@ export default function AcademicSettings() {
       await deleteClass(classId);
       toast.success(t('toast.success.sectionDeletedSuccessfully'));
     } catch (error) {
-      console.error('Failed to delete section:', error);
+      logger.error('Failed to delete section:', error);
       // Check for specific error message
       if (error.message?.includes('students')) {
         toast.error(t('toast.error.cannotDeleteStudentsAreEnrolledInThisSection'));
@@ -299,7 +301,7 @@ export default function AcademicSettings() {
       }
       toast.success(`Class ${classNum} disabled`);
     } catch (error) {
-      console.error('Failed to disable class:', error);
+      logger.error('Failed to disable class:', error);
       if (error.message?.includes('students')) {
         toast.error(t('toast.error.cannotDisableStudentsAreEnrolledInThisClass'));
       } else {
@@ -593,15 +595,33 @@ export default function AcademicSettings() {
                 <h3 className="text-lg font-bold text-default-900">{t('pages.subjectRepository')}</h3>
                 <p className="text-sm text-default-500">{localSettings.subjects?.length || 0} subjects configured</p>
               </div>
-              <Button
-                color="primary"
-                radius="full"
-                startContent={<Plus size={16} />}
-                onPress={() => { setEditingSubject(null); setNewSubject({ name: "", code: "", assignedClasses: [] }); subjectModal.onOpen(); }}
-                className="shadow-md"
-              >
-                Add Subject
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="flat"
+                  radius="full"
+                  startContent={<RefreshCw size={16} />}
+                  onPress={async () => {
+                    try {
+                      const result = await settingsApi.syncSubjectsToClasses();
+                      toast.success(`Synced subjects to ${result.classesUpdated} classes`);
+                    } catch {
+                      toast.error('Failed to sync subjects');
+                    }
+                  }}
+                  isDisabled={!localSettings.subjects?.length}
+                >
+                  Sync to Classes
+                </Button>
+                <Button
+                  color="primary"
+                  radius="full"
+                  startContent={<Plus size={16} />}
+                  onPress={() => { setEditingSubject(null); setNewSubject({ name: "", code: "", assignedClasses: [] }); subjectModal.onOpen(); }}
+                  className="shadow-md"
+                >
+                  Add Subject
+                </Button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -864,7 +884,7 @@ export default function AcademicSettings() {
             <div className="space-y-4 py-2">
               <Input
                 label={t('pages.subjectName1')}
-                placeholder="e.g., Mathematics"
+                placeholder={t('settings.academics.subjectNamePlaceholder')}
                 value={newSubject.name}
                 onValueChange={(v) => { setNewSubject({ ...newSubject, name: v }); setSubjectErrors(prev => ({ ...prev, name: '' })); }}
                 variant="bordered"
@@ -874,7 +894,7 @@ export default function AcademicSettings() {
               />
               <Input
                 label={t('pages.subjectCode1')}
-                placeholder="e.g., MATH"
+                placeholder={t('settings.academics.subjectCodePlaceholder')}
                 value={newSubject.code}
                 onValueChange={(v) => { setNewSubject({ ...newSubject, code: v.toUpperCase() }); setSubjectErrors(prev => ({ ...prev, code: '' })); }}
                 variant="bordered"
@@ -964,7 +984,7 @@ export default function AcademicSettings() {
             <div className="space-y-4 py-2">
               <Input
                 label={t('pages.section1')}
-                placeholder="e.g., A"
+                placeholder={t('settings.academics.sectionPlaceholder')}
                 value={newSection}
                 onValueChange={(v) => { setNewSection(v.toUpperCase().slice(0, 1)); setSectionError(''); }}
                 variant="bordered"
@@ -1006,7 +1026,7 @@ function AcademicYearForm({ settings, onSave, onCancel, saving }) {
       <Input
         label={t('pages.sessionName')}
         labelPlacement="outside"
-        placeholder="e.g., 2024-2025"
+        placeholder={t('settings.academics.sessionPlaceholder')}
         value={formData.academicYear}
         onValueChange={(v) => setFormData({ ...formData, academicYear: v })}
         variant="bordered"

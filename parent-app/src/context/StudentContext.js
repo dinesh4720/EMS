@@ -15,6 +15,7 @@ export const StudentProvider = ({ children }) => {
   const [results, setResults] = useState([]);
   const [timetable, setTimetable] = useState([]);
   const [remarks, setRemarks] = useState([]);
+  const [homework, setHomework] = useState(null);
   const [loading, setLoading] = useState({
     attendance: false,
     fees: false,
@@ -22,6 +23,7 @@ export const StudentProvider = ({ children }) => {
     results: false,
     timetable: false,
     remarks: false,
+    homework: false,
   });
   const [errors, setErrors] = useState({
     attendance: null,
@@ -30,6 +32,7 @@ export const StudentProvider = ({ children }) => {
     results: null,
     timetable: null,
     remarks: null,
+    homework: null,
   });
 
   // Track if fee fetch is needed due to socket event
@@ -47,6 +50,7 @@ export const StudentProvider = ({ children }) => {
       setResults([]);
       setTimetable([]);
       setRemarks([]);
+      setHomework(null);
       // Auto-fetch essential data on student selection
       fetchAttendanceInternal();
       fetchFees();
@@ -227,6 +231,28 @@ export const StudentProvider = ({ children }) => {
     }
   }, [studentId]);
 
+  const fetchHomework = useCallback(async () => {
+    if (!studentId) return;
+    setLoading((prev) => {
+      if (prev.homework) return prev;
+      return { ...prev, homework: true };
+    });
+    setErrors((prev) => ({ ...prev, homework: null }));
+    try {
+      const response = await api.getStudentHomework(studentId);
+      if (response.success) {
+        setHomework(response.data?.homework || []);
+      } else {
+        setErrors((prev) => ({ ...prev, homework: 'Failed to load homework.' }));
+      }
+    } catch (error) {
+      console.error('Error fetching homework:', error);
+      setErrors((prev) => ({ ...prev, homework: 'Unable to load homework. Please try again.' }));
+    } finally {
+      setLoading((prev) => ({ ...prev, homework: false }));
+    }
+  }, [studentId]);
+
   const value = {
     student,
     attendance,
@@ -235,6 +261,7 @@ export const StudentProvider = ({ children }) => {
     results,
     timetable,
     remarks,
+    homework,
     loading,
     errors,
     fetchAttendance,
@@ -243,6 +270,7 @@ export const StudentProvider = ({ children }) => {
     fetchResults,
     fetchTimetable,
     fetchRemarks,
+    fetchHomework,
   };
 
   return (

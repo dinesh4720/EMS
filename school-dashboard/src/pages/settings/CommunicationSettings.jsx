@@ -335,7 +335,7 @@ export default function CommunicationSettings() {
                     </Select>
                     <Input
                       label={t('pages.sMTPHost')}
-                      placeholder="smtp.gmail.com"
+                      placeholder={t('settings.smtpHostPlaceholder')}
                       value={emailDraft.smtpHost}
                       onValueChange={(val) => setEmailDraft(prev => ({ ...prev, smtpHost: val }))}
                       variant="bordered"
@@ -344,7 +344,7 @@ export default function CommunicationSettings() {
                     />
                     <Input
                       label={t('pages.port')}
-                      placeholder="587"
+                      placeholder={t('settings.smtpPortPlaceholder')}
                       value={emailDraft.port}
                       onValueChange={(val) => setEmailDraft(prev => ({ ...prev, port: val }))}
                       variant="bordered"
@@ -353,7 +353,7 @@ export default function CommunicationSettings() {
                     />
                     <Input
                       label="Username/Email"
-                      placeholder="noreply@school.com"
+                      placeholder={t('settings.smtpEmailPlaceholder')}
                       value={emailDraft.username}
                       onValueChange={(val) => setEmailDraft(prev => ({ ...prev, username: val }))}
                       variant="bordered"

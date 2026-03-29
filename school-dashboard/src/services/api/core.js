@@ -2,6 +2,7 @@ import { queryClient } from '../../lib/queryClient.js';
 import { requestQueue, retryRequest } from '../../utils/requestQueue.js';
 import { clearStoredUser, getAuthHeaders } from '../../utils/authSession';
 import { API_URL } from '../../config/api.js';
+import logger from '../../utils/logger';
 
 
 // Export cache clearing function
@@ -138,7 +139,7 @@ export async function request(endpoint, options = {}) {
 
         // Log validation details if available
         if (error.details) {
-          console.error('Validation details:', JSON.stringify(error.details, null, 2));
+          logger.error('Validation details:', JSON.stringify(error.details, null, 2));
         }
 
         const finalError = new Error(error.error || error.message || `Request failed with status ${response.status}`);
@@ -163,7 +164,7 @@ export async function request(endpoint, options = {}) {
           abortErr.name = 'AbortError';
           throw abortErr;
         }
-        console.error(`⏱️ API Timeout: ${url}`);
+        logger.error(`⏱️ API Timeout: ${url}`);
         throw new Error('Request timed out');
       }
       throw error;
@@ -184,7 +185,7 @@ export async function request(endpoint, options = {}) {
       error.status !== 404 &&
       !error.message?.includes('not found')
     ) {
-      console.error(`❌ API Error: ${url}`, error.message || error);
+      logger.error(`❌ API Error: ${url}`, error.message || error);
     }
     throw error;
   }

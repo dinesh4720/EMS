@@ -2,6 +2,8 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from
 import { useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { useTranslation } from 'react-i18next';
+import { useApp } from '../../context/AppContext';
+import { formatShortDate } from '../../utils/dateFormatter';
 
 const GATE_PASS_REASONS = {
   'MEDICAL_EMERGENCY': 'Medical Emergency',
@@ -12,15 +14,30 @@ const GATE_PASS_REASONS = {
   'OTHER': 'Other'
 };
 
-// School configuration - uses environment variables or provided props
-const getSchoolConfig = (schoolName) => ({
-  name: schoolName || import.meta.env.VITE_SCHOOL_NAME || 'EduMaster School',
-  address: import.meta.env.VITE_SCHOOL_ADDRESS || 'School Address',
-  contact: import.meta.env.VITE_SCHOOL_CONTACT || 'Phone: XXXX-XXXXXXX | Email: info@school.com'
+// Hardcoded UI strings — centralised here for future i18n migration
+const STRINGS = {
+  gatePassExitSlip: 'Gate Pass / Exit Slip',
+  na: 'N/A',
+  parentsGuardian: 'Parents / Guardian',
+  parentGuardianSignature: 'Parent/Guardian Signature',
+  importantNotice: 'This gate pass is valid only for the date mentioned above. Please return this slip to the security guard when leaving.',
+  printInstructions: 'Click "Download PDF" or "Print" to save the gate pass. You can also save it as PDF from the print dialog by selecting "Save as PDF" as the printer.',
+  close: 'Close',
+  cancel: 'Cancel',
+  downloadPdfPrint: 'Download PDF / Print',
+  frontDesk: 'Front Desk',
+};
+
+// School configuration - prefers live school settings from API, then component prop fallback
+const getSchoolConfig = (schoolSettings, schoolNameProp) => ({
+  name: schoolSettings?.schoolName || schoolSettings?.name || schoolNameProp || 'School name not configured',
+  address: schoolSettings?.address || schoolSettings?.schoolAddress || '',
+  contact: schoolSettings?.phone || schoolSettings?.contactNumber || ''
 });
 
 export default function GatePassPrint({ gatePass, isOpen, onClose, schoolName }) {
   const { t } = useTranslation();
+  const { schoolSettings } = useApp();
   const printRef = useRef();
 
   const handlePrint = useReactToPrint({
@@ -44,7 +61,7 @@ export default function GatePassPrint({ gatePass, isOpen, onClose, schoolName })
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={onClose}>
-              Close
+              {STRINGS.close}
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -52,7 +69,7 @@ export default function GatePassPrint({ gatePass, isOpen, onClose, schoolName })
     );
   }
 
-  const schoolConfig = getSchoolConfig(schoolName);
+  const schoolConfig = getSchoolConfig(schoolSettings, schoolName);
 
   const getReasonLabel = (reason) => {
     return GATE_PASS_REASONS[reason] || reason || '-';
@@ -68,14 +85,14 @@ export default function GatePassPrint({ gatePass, isOpen, onClose, schoolName })
             {/* Header */}
             <div className="text-center border-b-2 border-gray-800 pb-4 mb-4">
               <h1 className="text-2xl font-bold text-gray-800">{schoolConfig.name}</h1>
-              <p className="text-sm text-gray-600">Gate Pass / Exit Slip</p>
+              <p className="text-sm text-gray-600">{STRINGS.gatePassExitSlip}</p>
             </div>
 
             {/* Gate Pass Details */}
             <div className="space-y-3">
               <div className="flex justify-between items-center border-b pb-2">
                 <span className="text-gray-600 font-medium">{t('pages.gatePassId')}</span>
-                <span className="font-bold">{gatePass._id?.slice(-8).toUpperCase() || 'N/A'}</span>
+                <span className="font-bold">{gatePass._id?.slice(-8).toUpperCase() || STRINGS.na}</span>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -94,7 +111,7 @@ export default function GatePassPrint({ gatePass, isOpen, onClose, schoolName })
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <span className="text-gray-600 text-sm">{t('pages.date3')}</span>
-                  <p className="font-medium">{gatePass.leavingDate ? new Date(gatePass.leavingDate).toLocaleDateString() : '-'}</p>
+                  <p className="font-medium">{gatePass.leavingDate ? formatShortDate(gatePass.leavingDate) : '-'}</p>
                 </div>
                 <div>
                   <span className="text-gray-600 text-sm">{t('pages.time')}</span>
@@ -115,7 +132,7 @@ export default function GatePassPrint({ gatePass, isOpen, onClose, schoolName })
                   <div>
                     <span className="text-gray-600 text-sm">{t('pages.expectedReturn')}</span>
                     <p className="font-medium">
-                      {gatePass.expectedReturnDate ? new Date(gatePass.expectedReturnDate).toLocaleDateString() : '-'}
+                      {gatePass.expectedReturnDate ? formatShortDate(gatePass.expectedReturnDate) : '-'}
                     </p>
                   </div>
                   <div>
@@ -128,7 +145,7 @@ export default function GatePassPrint({ gatePass, isOpen, onClose, schoolName })
               <div className="border-t pt-3">
                 <span className="text-gray-600 text-sm font-medium">{t('pages.leavingWith')}</span>
                 {gatePass.leavingWith === 'PARENTS' ? (
-                  <p className="font-medium">Parents / Guardian</p>
+                  <p className="font-medium">{STRINGS.parentsGuardian}</p>
                 ) : (
                   <div>
                     <p className="font-medium">{gatePass.escortName || '-'}</p>
@@ -163,15 +180,15 @@ export default function GatePassPrint({ gatePass, isOpen, onClose, schoolName })
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <p className="font-medium">{t('pages.issuedBy')}</p>
-                    <p>{gatePass.requestedByName || 'Front Desk'}</p>
+                    <p>{gatePass.requestedByName || STRINGS.frontDesk}</p>
                   </div>
                   <div>
                     <p className="font-medium">{t('pages.issueDate1')}</p>
-                    <p>{gatePass.createdAt ? new Date(gatePass.createdAt).toLocaleDateString() : '-'}</p>
+                    <p>{gatePass.createdAt ? formatShortDate(gatePass.createdAt) : '-'}</p>
                   </div>
                   <div>
                     <p className="font-medium">{t('pages.validUntil')}</p>
-                    <p>{gatePass.leavingDate ? new Date(gatePass.leavingDate).toLocaleDateString() : '-'}</p>
+                    <p>{gatePass.leavingDate ? formatShortDate(gatePass.leavingDate) : '-'}</p>
                   </div>
                 </div>
               </div>
@@ -184,15 +201,14 @@ export default function GatePassPrint({ gatePass, isOpen, onClose, schoolName })
                 </div>
                 <div className="text-center">
                   <div className="border-b border-gray-400 mb-1"></div>
-                  <p className="text-xs text-gray-600">Parent/Guardian Signature</p>
+                  <p className="text-xs text-gray-600">{STRINGS.parentGuardianSignature}</p>
                 </div>
               </div>
 
               {/* Important Notice */}
               <div className="bg-red-50 border border-red-200 p-2 rounded mt-3">
                 <p className="text-xs font-bold text-red-700 text-center">
-                  ⚠️ This gate pass is valid only for the date mentioned above.
-                  Please return this slip to the security guard when leaving.
+                  {STRINGS.importantNotice}
                 </p>
               </div>
             </div>
@@ -201,17 +217,16 @@ export default function GatePassPrint({ gatePass, isOpen, onClose, schoolName })
           {/* Instructions for non-print view */}
           <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
             <p className="text-sm text-blue-700 dark:text-blue-300">
-              <strong>{t('pages.note1')}</strong> Click "Download PDF" or "Print" to save the gate pass.
-              You can also save it as PDF from the print dialog by selecting "Save as PDF" as the printer.
+              <strong>{t('pages.note1')}</strong> {STRINGS.printInstructions}
             </p>
           </div>
         </ModalBody>
         <ModalFooter>
           <Button variant="light" onPress={onClose}>
-            Cancel
+            {STRINGS.cancel}
           </Button>
           <Button color="primary" onPress={handlePrint}>
-            Download PDF / Print
+            {STRINGS.downloadPdfPrint}
           </Button>
         </ModalFooter>
       </ModalContent>

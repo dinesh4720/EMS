@@ -1,6 +1,7 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { settingsApi } from "../../services/api";
+import logger from "../../utils/logger";
 
 export function useLeaveTypes(invalidateSettingsData) {
   const [leaveTypes, setLeaveTypes] = useState([]);
@@ -13,7 +14,7 @@ export function useLeaveTypes(invalidateSettingsData) {
       toast.success("Leave type added successfully");
       return created;
     } catch (err) {
-      console.error("Failed to add leave type:", err);
+      logger.error("Failed to add leave type:", err);
       toast.error("Failed to add leave type");
       const leaveTypeWithId = { ...leaveType, id: Date.now() };
       setLeaveTypes((prev) => [...prev, leaveTypeWithId]);
@@ -29,7 +30,7 @@ export function useLeaveTypes(invalidateSettingsData) {
       toast.success("Leave type updated successfully");
       return updated;
     } catch (err) {
-      console.error("Failed to update leave type:", err);
+      logger.error("Failed to update leave type:", err);
       toast.error("Failed to update leave type");
       setLeaveTypes((prev) => prev.map((lt) => (lt.id === id ? { ...lt, ...updates } : lt)));
     }
@@ -42,7 +43,7 @@ export function useLeaveTypes(invalidateSettingsData) {
       void invalidateSettingsData();
       toast.success("Leave type deleted successfully");
     } catch (err) {
-      console.error("Failed to delete leave type:", err);
+      logger.error("Failed to delete leave type:", err);
       toast.error("Failed to delete leave type");
       throw err;
     }

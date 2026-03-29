@@ -6,10 +6,11 @@
  *   VITE_MIXPANEL_TOKEN     — Mixpanel project token
  *
  * Both are optional; the module gracefully no-ops when a provider is unconfigured.
+ * Mixpanel is loaded via dynamic import so the build succeeds even if
+ * mixpanel-browser is not installed.
  * Respects cookie consent — analytics only fire when the user has accepted the
  * "analytics" category in the cookie consent banner (localStorage key: ems_cookie_consent).
  */
-import mixpanel from 'mixpanel-browser';
 import { safeGetItem } from '../utils/safeStorage';
 
 // ---------------------------------------------------------------------------
@@ -20,6 +21,9 @@ const MIXPANEL_TOKEN = import.meta.env.VITE_MIXPANEL_TOKEN?.trim() || '';
 
 let ga4Ready = false;
 let mixpanelReady = false;
+
+// Mixpanel SDK reference — loaded lazily via dynamic import in initMixpanel()
+let mixpanel = null;
 
 // ---------------------------------------------------------------------------
 // Cookie consent check
@@ -61,17 +65,20 @@ function initGA4() {
   ga4Ready = true;
 }
 
-function initMixpanel() {
+async function initMixpanel() {
   if (!MIXPANEL_TOKEN) return;
 
   try {
+    // Dynamic import so the build doesn't fail when mixpanel-browser is not installed
+    const mod = await import('mixpanel-browser');
+    mixpanel = mod.default || mod;
     mixpanel.init(MIXPANEL_TOKEN, {
       track_pageview: false, // we track manually
       persistence: 'localStorage',
     });
     mixpanelReady = true;
   } catch {
-    // Mixpanel init failed — non-fatal
+    // mixpanel-browser not installed or init failed — non-fatal
   }
 }
 
@@ -103,7 +110,7 @@ export function trackPageView(path, title) {
     });
   }
 
-  if (mixpanelReady) {
+  if (mixpanelReady && mixpanel) {
     mixpanel.track('Page View', { path, title: pageTitle });
   }
 }
@@ -120,7 +127,7 @@ export function trackEvent(eventName, properties = {}) {
     window.gtag('event', eventName, properties);
   }
 
-  if (mixpanelReady) {
+  if (mixpanelReady && mixpanel) {
     mixpanel.track(eventName, properties);
   }
 }
@@ -140,7 +147,7 @@ export function identifyUser(user) {
     });
   }
 
-  if (mixpanelReady) {
+  if (mixpanelReady && mixpanel) {
     mixpanel.identify(user.id);
     mixpanel.people.set({
       $name: user.name || user.username,
@@ -152,7 +159,7 @@ export function identifyUser(user) {
 
 /** Reset analytics state on logout. */
 export function resetAnalytics() {
-  if (mixpanelReady) {
+  if (mixpanelReady && mixpanel) {
     mixpanel.reset();
   }
 }

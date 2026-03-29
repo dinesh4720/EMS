@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { isChunkError } from '../../utils/lazyWithRetry';
+import logger from '../../utils/logger';
 
 function ChunkErrorFallback({ onReload }) {
   const { t } = useTranslation();
@@ -60,7 +61,7 @@ class ErrorBoundary extends React.Component {
       error instanceof Error
         ? error
         : new Error(typeof error === 'string' ? error : JSON.stringify(error) || 'Unknown error');
-    console.error('[ErrorBoundary] Caught error:', displayError.message, info.componentStack);
+    logger.error('[ErrorBoundary] Caught error:', displayError.message, info.componentStack);
   }
 
   handleReset = () => {

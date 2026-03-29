@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, Suspense, useTransition } from "react";
+import logger from "../../utils/logger";
 import lazyWithRetry from "../../utils/lazyWithRetry";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { Drawer, DrawerContent, DrawerHeader, DrawerBody, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter as ModalFooterUI, Chip } from "@heroui/react";
@@ -13,6 +14,7 @@ import { useApp } from "../../context/AppContext";
 import { intakeFormsApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { PageLayout, MinimalButton } from "../../components/ui";
+import ErrorBoundary from "../../components/ui/ErrorBoundary";
 import { useTranslation } from 'react-i18next';
 
 const ModalFooter = ModalFooterUI;
@@ -32,12 +34,26 @@ export default function StudentsPage() {
   const [recipientPhones, setRecipientPhones] = useState([]);
   const [isSendingForm, setIsSendingForm] = useState(false);
   const [isFormDropdownOpen, setIsFormDropdownOpen] = useState(false);
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-  const [previewForm, setPreviewForm] = useState(null);
+  // isPreviewModalOpen and previewForm state removed - were unused
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const formDropdownRef = useRef(null);
+  const addStudentRef = useRef(null);
+
+  // Handle backdrop click for unsaved changes check
+  useEffect(() => {
+    if (!isAddStudentOpen) return;
+    const handleBackdropClick = (e) => {
+      const backdrop = e.target.closest?.('[data-slot="backdrop"]') || (e.target.getAttribute?.('data-slot') === 'backdrop' ? e.target : null);
+      if (backdrop) {
+        if (addStudentRef.current) addStudentRef.current.attemptClose();
+        else handleCloseAddStudent();
+      }
+    };
+    document.addEventListener('click', handleBackdropClick, true);
+    return () => document.removeEventListener('click', handleBackdropClick, true);
+  }, [isAddStudentOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -119,7 +135,7 @@ export default function StudentsPage() {
       setIsFormSelectModalOpen(true);
     } catch (error) {
       toast.error(t('toast.error.failedToLoadForms'));
-      console.error(error);
+      logger.error(error);
     }
   };
 
@@ -148,7 +164,7 @@ export default function StudentsPage() {
       setFormModalKey(prev => prev + 1);
       setShowSuccessModal(true);
     } catch (error) {
-      console.error('Form send error:', error);
+      logger.error('Form send error:', error);
       toast.error(error.message || 'Failed to send form');
     } finally {
       setIsSendingForm(false);
@@ -170,7 +186,7 @@ export default function StudentsPage() {
       toast.success(t('toast.success.studentAddedSuccessfully'));
       handleCloseAddStudent();
     } catch (err) {
-      console.error('Failed to add student:', err);
+      logger.error('Failed to add student:', err);
       toast.error('Failed to add student: ' + (err.message || 'Unknown error'));
       throw err;
     }
@@ -207,9 +223,11 @@ export default function StudentsPage() {
 
   if (isProfileView) {
     return (
-      <Routes>
-        <Route path=":id" element={<StudentDashboard />} />
-      </Routes>
+      <ErrorBoundary>
+        <Routes>
+          <Route path=":id" element={<StudentDashboard />} />
+        </Routes>
+      </ErrorBoundary>
     );
   }
 
@@ -267,7 +285,12 @@ export default function StudentsPage() {
       <Suspense fallback={null}>
       <Drawer
         isOpen={isAddStudentOpen}
-        onOpenChange={(open) => { if (!open) handleCloseAddStudent(); }}
+        onOpenChange={(open) => {
+          if (!open) {
+            if (addStudentRef.current) addStudentRef.current.attemptClose();
+            else handleCloseAddStudent();
+          }
+        }}
         placement="right"
         size="xl"
         hideCloseButton
@@ -286,13 +309,17 @@ export default function StudentsPage() {
                     <p className="text-xs text-default-500">{t('pages.registerANewStudentManually')}</p>
                   </div>
                 </div>
-                <Button isIconOnly size="sm" variant="light" onPress={handleCloseAddStudent}>
+                <Button isIconOnly size="sm" variant="light" onPress={() => {
+                  if (addStudentRef.current) addStudentRef.current.attemptClose();
+                  else handleCloseAddStudent();
+                }}>
                   <X size={20} className="text-default-400" />
                 </Button>
               </DrawerHeader>
               <DrawerBody className="p-0 overflow-hidden">
                 <Suspense fallback={<div className="p-6 space-y-4">{Array.from({ length: 6 }).map((_, i) => (<div key={i} className="space-y-2"><div className="h-4 w-1/4 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" /><div className="h-10 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" /></div>))}</div>}>
                   <AddStudent
+                    ref={addStudentRef}
                     onClose={handleCloseAddStudent}
                     onSave={handleSaveStudent}
                     classOptions={classOptions}

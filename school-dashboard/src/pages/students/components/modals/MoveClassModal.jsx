@@ -21,7 +21,7 @@ export default function MoveClassModal({ isOpen, onClose, student, availableClas
 
   const handleMove = async () => {
     if (!newClass) {
-      setClassError("Please select a new class");
+      setClassError(t('toast.error.pleaseSelectANewClass', 'Please select a new class'));
       return;
     }
 
@@ -30,18 +30,13 @@ export default function MoveClassModal({ isOpen, onClose, student, availableClas
 
     try {
       const { request } = await import("../../../../services/api");
-      const token = sessionStorage.getItem('app_user') ? JSON.parse(sessionStorage.getItem('app_user')).token : null;
-
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
 
       await request(`/students/${student.id}`, {
         method: 'PUT',
-        headers,
         body: JSON.stringify({ classId: newClass })
       });
 
-      toast.success(`Student moved to ${newClass}`, { id: loadingToast });
+      toast.success(t('toast.success.studentMovedToClass', { className: newClass, defaultValue: `Student moved to ${newClass}` }), { id: loadingToast });
 
       if (onMove) {
         onMove(newClass);
@@ -49,7 +44,7 @@ export default function MoveClassModal({ isOpen, onClose, student, availableClas
       onClose();
     } catch (error) {
       console.error("Error moving student:", error);
-      toast.error("Failed to move student: " + (error.message || "Unknown error"), { id: loadingToast });
+      toast.error(t('toast.error.failedToMoveStudent', 'Failed to move student') + ": " + (error.message || t('common.unknownError', 'Unknown error')), { id: loadingToast });
     } finally {
       setIsMoving(false);
     }
@@ -58,7 +53,7 @@ export default function MoveClassModal({ isOpen, onClose, student, availableClas
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="md">
       <ModalContent>
-        <ModalHeader>Move to Another Class/Section</ModalHeader>
+        <ModalHeader>{t('pages.moveToAnotherClass', 'Move to Another Class/Section')}</ModalHeader>
         <ModalBody>
           <div className="space-y-4">
             <div className="p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">

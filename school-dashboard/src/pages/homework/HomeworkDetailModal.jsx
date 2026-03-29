@@ -6,6 +6,7 @@ import {
 import { ClipboardList, Clock, Star, UserCheck, Paperclip, ExternalLink } from 'lucide-react';
 import { request } from '../../services/api';
 import toast from 'react-hot-toast';
+import { formatShortDate } from '../../utils/dateFormatter';
 
 const SUBMISSION_STATUS_COLORS = {
   submitted: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
@@ -154,7 +155,7 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
                 <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 border border-gray-100 dark:border-zinc-800">
                   <p className="text-xs text-gray-500 dark:text-zinc-400">Due Date</p>
                   <p className={`text-sm font-medium mt-0.5 ${isOverdue ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-zinc-100'}`}>
-                    {dueDate ? dueDate.toLocaleDateString() : '—'}
+                    {dueDate ? formatShortDate(dueDate) : '—'}
                   </p>
                 </div>
                 <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 border border-gray-100 dark:border-zinc-800">
@@ -277,7 +278,7 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
                                 {student?.name || 'Student'}
                               </p>
                               <p className="text-xs text-gray-500 dark:text-zinc-400">
-                                Roll: {student?.rollNo || '—'} · Submitted {sub.submittedAt ? new Date(sub.submittedAt).toLocaleDateString() : '—'}
+                                Roll: {student?.rollNo || '—'} · Submitted {sub.submittedAt ? formatShortDate(sub.submittedAt) : '—'}
                                 {isLate && <span className="ml-1 text-orange-500">(Late)</span>}
                               </p>
                               {sub.remarks && (

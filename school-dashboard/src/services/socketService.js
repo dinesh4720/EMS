@@ -1,5 +1,6 @@
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../config/api.js';
+import logger from '../utils/logger';
 
 class SocketService {
   constructor() {
@@ -16,7 +17,7 @@ class SocketService {
     }
 
     if (!token) {
-      console.error('❌ Socket connect called without auth token');
+      logger.error('❌ Socket connect called without auth token');
       return;
     }
 
@@ -73,21 +74,21 @@ class SocketService {
     });
     
     this.socket.on('reconnect_error', (error) => {
-      console.error('❌ Reconnection error:', error);
+      logger.error('❌ Reconnection error:', error);
     });
     
     this.socket.on('reconnect_failed', () => {
-      console.error('❌ All reconnection attempts failed');
+      logger.error('❌ All reconnection attempts failed');
       this.emit('reconnect_failed');
     });
 
     this.socket.on('error', (error) => {
-      console.error('❌ Socket error:', error);
+      logger.error('❌ Socket error:', error);
       this.emit('error', error);
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('❌ Connection error:', error);
+      logger.error('❌ Connection error:', error);
       this.emit('connect_error', error);
     });
 
@@ -165,7 +166,7 @@ class SocketService {
   // Join a conversation room
   joinConversation(conversationId) {
     if (!this.socket?.connected) {
-      console.error('Socket not connected');
+      logger.error('Socket not connected');
       return;
     }
 
@@ -176,7 +177,7 @@ class SocketService {
   // Send a message
   sendMessage(data) {
     if (!this.socket?.connected) {
-      console.error('Socket not connected');
+      logger.error('Socket not connected');
       return;
     }
 

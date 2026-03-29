@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Select, SelectItem, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button, Spinner } from "@heroui/react";
 import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
 import { Search, X, Download, Bell, MoreVertical, CreditCard } from "lucide-react";
-import { feesApi } from "../../services/api";
+import { feesApi, studentsApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 
@@ -15,6 +15,8 @@ export default function FeeDefaulters() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [defaulters, setDefaulters] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isTruncated, setIsTruncated] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Lazy loading state
@@ -26,9 +28,13 @@ export default function FeeDefaulters() {
     const fetchDefaulters = async () => {
       try {
         setLoading(true);
-        const response = await feesApi.getDefaulters({ limit: 500 });
+        const DEFAULTER_LIMIT = 500;
+        const response = await feesApi.getDefaulters({ limit: DEFAULTER_LIMIT });
         // Backend returns { data: [...], pagination: {...} }
         const raw = Array.isArray(response) ? response : (response?.data || []);
+        const serverTotal = response?.pagination?.total || response?.total || raw.length;
+        setTotalCount(serverTotal);
+        setIsTruncated(raw.length >= DEFAULTER_LIMIT && serverTotal > DEFAULTER_LIMIT);
         // Map backend StudentFeeStructure fields to frontend display fields
         const mapped = raw.map((d) => {
           const student = d.studentId || {};
@@ -93,8 +99,33 @@ export default function FeeDefaulters() {
 
   const totalPending = filteredDefaulters.reduce((sum, d) => sum + d.pending, 0);
 
-  const handleSendReminders = () => {
-    toast.success(`Reminders will be sent to ${filteredDefaulters.length} defaulters`);
+  const [, setSendingReminders] = useState(false);
+
+  const handleSendReminders = async () => {
+    if (filteredDefaulters.length === 0) return;
+    setSendingReminders(true);
+    const loadingToast = toast.loading(`Sending reminders to ${filteredDefaulters.length} defaulters...`);
+    try {
+      const results = await Promise.allSettled(
+        filteredDefaulters.map(d =>
+          studentsApi.sendReminder(d.id, {
+            type: 'fee',
+            message: `Fee payment of \u20B9${d.pending?.toLocaleString()} is pending. Please pay at your earliest convenience.`,
+          })
+        )
+      );
+      const succeeded = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      if (failed > 0) {
+        toast.success(`Reminders sent: ${succeeded} succeeded, ${failed} failed`, { id: loadingToast });
+      } else {
+        toast.success(`Reminders sent to ${succeeded} defaulters`, { id: loadingToast });
+      }
+    } catch (error) {
+      toast.error(error.message || 'Failed to send reminders', { id: loadingToast });
+    } finally {
+      setSendingReminders(false);
+    }
   };
 
   const handleExportDefaulters = () => {
@@ -112,8 +143,17 @@ export default function FeeDefaulters() {
     window.URL.revokeObjectURL(url);
   };
 
-  const handleSendReminder = (defaulter) => {
-    toast.success(`Reminder will be sent to ${defaulter.student}`);
+  const handleSendReminder = async (defaulter) => {
+    const loadingToast = toast.loading(`Sending reminder to ${defaulter.student}...`);
+    try {
+      await studentsApi.sendReminder(defaulter.id, {
+        type: 'fee',
+        message: `Fee payment of \u20B9${defaulter.pending?.toLocaleString()} is pending for ${defaulter.student}. Please pay at your earliest convenience.`,
+      });
+      toast.success(`Reminder sent to ${defaulter.student}`, { id: loadingToast });
+    } catch (error) {
+      toast.error(error.message || `Failed to send reminder to ${defaulter.student}`, { id: loadingToast });
+    }
   };
 
   const handleCollectFee = (defaulter) => {
@@ -141,6 +181,14 @@ export default function FeeDefaulters() {
           <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{defaulters.filter((d) => d.days >= 30).length}</p>
         </div>
       </div>
+
+      {/* Truncation Warning */}
+      {isTruncated && (
+        <div className="flex items-center gap-2 px-4 py-2.5 -mx-6 px-6 mb-2 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm text-yellow-700 dark:text-yellow-400">
+          <span className="font-medium">Showing 500 of {totalCount.toLocaleString()} total defaulters.</span>
+          <span>Use filters to narrow results.</span>
+        </div>
+      )}
 
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-gray-200 dark:border-zinc-800 py-4 -mx-6 px-6 mb-6">

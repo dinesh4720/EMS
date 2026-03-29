@@ -9,6 +9,7 @@ import { inventoryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import { formatShortDate } from '../../utils/dateFormatter';
 
 const TYPES = ["PREVENTIVE", "CORRECTIVE", "INSPECTION"];
 const STATUSES = ["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
@@ -154,7 +155,7 @@ export default function Maintenance() {
                     </td>
                     <td className="px-4 py-3 text-gray-600 dark:text-zinc-400">{log.maintenanceType}</td>
                     <td className="px-4 py-3 text-gray-700 dark:text-zinc-300 max-w-[200px] truncate">{log.description}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-zinc-400">{new Date(log.scheduledDate).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-zinc-400">{formatShortDate(log.scheduledDate)}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full ${statusColors[log.status] || ""}`}>{log.status?.replace(/_/g, " ")}</span>
                     </td>

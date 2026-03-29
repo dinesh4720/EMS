@@ -13,6 +13,7 @@ import { GraduationCap } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import PhotoAvatar from "../../../../components/PhotoAvatar";
+import { getGradeFromPercentage as getAcademicGradeUtil, getGradeColor as getGradeColorUtil, getAttendanceColor as getAttendanceColorUtil } from "../../../../utils/grading";
 
 const COLUMN_WIDTHS = {
     class: 100,
@@ -32,30 +33,10 @@ function getFeeStatusStyle(status) {
     }
 }
 
-/** ── Helper: attendance progress bar color ───────────────────────── */
-function getAttendanceColor(percentage) {
-    return percentage >= 90 ? "success" : percentage >= 75 ? "warning" : "danger";
-}
-
-/** ── Helper: academic grade chip color ──────────────────────────── */
-function getGradeColor(grade) {
-    if (!grade) return "default";
-    if (grade.startsWith("A")) return "success";
-    if (grade.startsWith("B")) return "primary";
-    return "warning";
-}
-
-/** ── Helper: derive letter grade from percentage ─────────────────── */
-function getAcademicGrade(percentage) {
-    if (percentage == null || isNaN(percentage)) return null;
-    if (percentage >= 90) return "A+";
-    if (percentage >= 80) return "A";
-    if (percentage >= 70) return "B+";
-    if (percentage >= 60) return "B";
-    if (percentage >= 50) return "C";
-    if (percentage >= 40) return "D";
-    return "F";
-}
+/** ── Grading helpers (delegated to central util) ─────────────────── */
+const getAttendanceColor = getAttendanceColorUtil;
+const getGradeColor = getGradeColorUtil;
+const getAcademicGrade = getAcademicGradeUtil;
 
 /** ── Helper: phone number formatter ─────────────────────────────── */
 function formatPhoneNumber(phone) {
@@ -117,6 +98,10 @@ export default function StudentsTableVirtualized({
 
     // ── Dropdown close helper ────────────────────────────────────────────
     closeAllDropdowns,
+
+    // ── Empty state context ────────────────────────────────────────────
+    hasActiveFilters = false,
+    onClearFilters,
 }) {
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -233,9 +218,25 @@ export default function StudentsTableVirtualized({
                         <tr>
                             <td
                                 colSpan={visibleColumnsArray.length + 2}
-                                className="text-center py-12 text-default-500"
+                                className="text-center py-16"
                             >
-                                No students found
+                                <div className="flex flex-col items-center gap-2">
+                                    <p className="text-default-500 text-sm">
+                                        {hasActiveFilters
+                                            ? t('students.list.noMatchingStudents', 'No students match your current filters')
+                                            : t('students.list.noStudentsYet', 'No students found')}
+                                    </p>
+                                    {hasActiveFilters && onClearFilters && (
+                                        <Button
+                                            size="sm"
+                                            variant="bordered"
+                                            onPress={onClearFilters}
+                                            className="mt-1"
+                                        >
+                                            {t('common.clearFilters', 'Clear Filters')}
+                                        </Button>
+                                    )}
+                                </div>
                             </td>
                         </tr>
                     ) : (

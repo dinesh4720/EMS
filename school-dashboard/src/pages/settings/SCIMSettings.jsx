@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button, Switch, Chip, Divider } from "@heroui/react";
 import {
   Shield, Copy, RefreshCw, Eye, EyeOff, AlertTriangle, CheckCircle, Info
@@ -13,10 +13,10 @@ export default function SCIMSettings() {
   const [isTokenVisible, setIsTokenVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
-  const [initialized, setInitialized] = useState(false);
+  const [, setInitialized] = useState(false);
 
   // Load config on first render
-  useState(() => {
+  useEffect(() => {
     ssoApi.getConfig().then((data) => {
       const scim = data?.ssoConfig?.scim || {};
       setScimEnabled(scim.enabled || false);
@@ -25,7 +25,7 @@ export default function SCIMSettings() {
     }).catch(() => {
       setInitialized(true);
     });
-  });
+  }, []);
 
   const handleRevealToken = useCallback(async () => {
     if (revealedToken) {

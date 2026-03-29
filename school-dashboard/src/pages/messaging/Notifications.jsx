@@ -4,11 +4,13 @@ import NotificationCenter from './components/notifications/NotificationCenter';
 import NotificationSettings from './components/notifications/NotificationSettings';
 import { notificationsApi } from '../../services/api/fees';
 import { useTranslation } from 'react-i18next';
+import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 export default function Notifications() {
   const { t } = useTranslation();
   const [selectedTab, setSelectedTab] = useState('center');
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadUnreadCount();
@@ -22,8 +24,26 @@ export default function Notifications() {
       setUnreadCount(count);
     } catch {
       setUnreadCount(0);
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="w-full bg-white dark:bg-zinc-950 space-y-6">
+        <div className="space-y-2">
+          <div className="h-7 w-40 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+          <div className="h-4 w-64 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+        </div>
+        <div className="flex gap-4 border-b border-gray-200 dark:border-zinc-800 pb-2">
+          <div className="h-8 w-36 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+          <div className="h-8 w-24 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+        </div>
+        <CardGridPageSkeleton title={false} cards={4} columns="grid-cols-1" />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-white dark:bg-zinc-950">

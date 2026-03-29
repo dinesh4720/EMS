@@ -5,6 +5,7 @@ import {
 } from "@heroui/react";
 import { BarChart4, Download, ExternalLink } from "lucide-react";
 import toast from "react-hot-toast";
+import { escapeHtml } from "../../../../utils/sanitize";
 
 export default function ProgressCardModal({ isOpen, onClose, student, onNavigateToAcademics }) {
   const { t } = useTranslation();
@@ -24,13 +25,13 @@ export default function ProgressCardModal({ isOpen, onClose, student, onNavigate
       const printWindow = window.open('', '_blank', 'width=800,height=600');
       if (printWindow) {
         printWindow.document.write(`
-          <html><head><title>Progress Card - ${student.name}</title>
+          <html><head><title>Progress Card - ${escapeHtml(student.name)}</title>
           <style>body{font-family:sans-serif;padding:20px;max-width:800px;margin:0 auto}h1{font-size:24px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f3f4f6}@media print{button{display:none}}</style>
           </head><body>
           <h1>Student Progress Card</h1>
-          <p><strong>Name:</strong> ${student.name}</p>
-          <p><strong>Class:</strong> ${student.class || 'N/A'} &nbsp; <strong>Roll No:</strong> ${student.rollNo || 'N/A'}</p>
-          <p><strong>Admission No:</strong> ${student.admissionNo || 'N/A'}</p>
+          <p><strong>Name:</strong> ${escapeHtml(student.name)}</p>
+          <p><strong>Class:</strong> ${escapeHtml(student.class || 'N/A')} &nbsp; <strong>Roll No:</strong> ${escapeHtml(student.rollNo || 'N/A')}</p>
+          <p><strong>Admission No:</strong> ${escapeHtml(student.admissionNo || 'N/A')}</p>
           <p style="margin-top:16px;color:#6b7280;font-size:14px">For detailed marks and grades, visit the Academics tab of the student profile.</p>
           <script>window.onload=function(){window.print()}</script>
           </body></html>

@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback } from "react";
 import { staffAttendanceApi, attendanceApi } from "../services/api";
 import { getStoredUser } from "../utils/authSession";
 import toast from "react-hot-toast";
+import logger from "../utils/logger";
 
 export const AttendanceContext = createContext();
 
@@ -35,7 +36,7 @@ export function AttendanceProvider({ children, staff }) {
       });
       return data;
     } catch (err) {
-      console.error("Failed to fetch staff attendance for date:", err);
+      logger.error("Failed to fetch staff attendance for date:", err);
       // Don't throw, just return empty to fail gracefully
       return [];
     }
@@ -60,7 +61,7 @@ export function AttendanceProvider({ children, staff }) {
       });
       return data;
     } catch (err) {
-      console.error("Failed to fetch staff attendance history:", err);
+      logger.error("Failed to fetch staff attendance history:", err);
       return [];
     }
   }, []);
@@ -73,6 +74,9 @@ export function AttendanceProvider({ children, staff }) {
     outTime = "-",
     reason = ""
   ) => {
+    // Save previous state for rollback
+    const prevAttendance = staffAttendance;
+
     // Optimistic update
     setStaffAttendance((prev) => ({
       ...prev,
@@ -95,9 +99,10 @@ export function AttendanceProvider({ children, staff }) {
       });
       toast.success("Attendance marked successfully");
     } catch (err) {
-      console.error("Failed to mark attendance on server:", err);
+      logger.error("Failed to mark attendance on server:", err);
       toast.error("Failed to save attendance");
-      // Ideally revert state here, but for now we keep optimistic update
+      // Revert optimistic update on failure
+      setStaffAttendance(prevAttendance);
     }
   };
 
@@ -108,17 +113,20 @@ export function AttendanceProvider({ children, staff }) {
       [studentId]: { ...prev[studentId], [date]: { status } },
     }));
 
+    // Extract plain ID if classId is a populated object
+    const resolvedClassId = classId?._id || classId;
+
     try {
       await attendanceApi.mark({
         studentId,
-        classId,
+        classId: resolvedClassId,
         date,
         status,
         clientTimestamp: new Date().toISOString(),
       });
       toast.success("Student attendance marked");
     } catch (err) {
-      console.error("Failed to mark student attendance on server:", err);
+      logger.error("Failed to mark student attendance on server:", err);
       toast.error("Failed to save student attendance");
       // Revert optimistic update on failure
       setStudentAttendance((prev) => {
@@ -162,6 +170,9 @@ export function AttendanceProvider({ children, staff }) {
     const checkIn = inTime || (status === "present" ? "09:00" : "-");
     const checkOut = outTime || "-";
 
+    // Save previous state for rollback
+    const prevAttendance = staffAttendance;
+
     // Optimistic update
     setStaffAttendance((prev) => {
       const newAtt = { ...prev };
@@ -185,8 +196,10 @@ export function AttendanceProvider({ children, staff }) {
       });
       toast.success("Bulk attendance marked successfully");
     } catch (err) {
-      console.error("Failed to bulk mark attendance:", err);
+      logger.error("Failed to bulk mark attendance:", err);
       toast.error("Failed to save bulk attendance");
+      // Revert optimistic update on failure
+      setStaffAttendance(prevAttendance);
     }
   };
 
@@ -219,7 +232,7 @@ export function AttendanceProvider({ children, staff }) {
       toast.success("Attendance regularized successfully");
       return response;
     } catch (err) {
-      console.error("Regularization failed:", err);
+      logger.error("Regularization failed:", err);
       toast.error("Failed to regularize attendance");
       throw err;
     }

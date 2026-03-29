@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useValidatedParams } from '../../hooks/useValidatedParams';
 import {
@@ -13,11 +13,12 @@ import {
   ModalFooter
 } from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
-import { FileText, Calendar, Award, Users, Eye, Pencil, Send, AlertTriangle, ArrowLeft, BookOpen } from 'lucide-react';
-import { examsApi, resultsApi } from '../../services/api';
+import { FileText, Award, Users, Eye, Pencil, Send, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
+import { examsApi, resultsApi, classesApi } from '../../services/api';
 import { MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { formatShortDate } from '../../utils/dateFormatter';
 
 const ExamDetail = () => {
   const { t } = useTranslation();
@@ -25,25 +26,42 @@ const ExamDetail = () => {
   const navigate = useNavigate();
   const [exam, setExam] = useState(null);
   const [results, setResults] = useState([]);
+  const [studentMap, setStudentMap] = useState({}); // studentId → { name, rollNo }
   const [loading, setLoading] = useState(true);
   const [publishModal, setPublishModal] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     setExam(null);
     setResults([]);
-    fetchExamDetails();
+    setStudentMap({});
+    if (examId) fetchAll();
   }, [examId]);
 
-  const fetchExamDetails = async () => {
-    if (!examId) return;
+  const fetchAll = async () => {
     setLoading(true);
     try {
       const examData = await examsApi.getById(examId);
       setExam(examData);
 
       if (examData?.classId) {
-        const resultsData = await resultsApi.getByClassExam(examData.classId, examId);
+        const [resultsData, studentsResponse] = await Promise.all([
+          resultsApi.getByClassExam(examData.classId, examId),
+          classesApi.getStudents(examData.classId)
+        ]);
+
         setResults(resultsData || []);
+
+        // Build name map from students list
+        const students = Array.isArray(studentsResponse)
+          ? studentsResponse
+          : studentsResponse?.students || [];
+        const map = {};
+        students.forEach(s => {
+          const id = String(s._id || s.id);
+          map[id] = { name: s.name, rollNo: s.rollNo };
+        });
+        setStudentMap(map);
       }
     } catch (error) {
       console.error('Error fetching exam details:', error);
@@ -54,14 +72,17 @@ const ExamDetail = () => {
   };
 
   const handlePublish = async () => {
+    setPublishing(true);
     try {
       await examsApi.publish(examId);
       toast.success(t('toast.success.resultsPublishedSuccessfully'));
       setPublishModal(false);
-      fetchExamDetails();
+      fetchAll();
     } catch (error) {
       console.error('Error publishing results:', error);
       toast.error(t('toast.error.failedToPublishResults'));
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -75,13 +96,41 @@ const ExamDetail = () => {
     return colors[status] || 'default';
   };
 
+  const getStatusLabel = (status) => {
+    if (status === 'results_published') return 'Published';
+    return status ? status.charAt(0).toUpperCase() + status.slice(1) : '';
+  };
+
+  // Resolve student name: try backend-populated name first, then local map, then fallback
+  const getStudentName = (result) => {
+    if (result.studentName) return result.studentName;
+    const rawId = typeof result.studentId === 'object'
+      ? String(result.studentId?._id || result.studentId)
+      : String(result.studentId);
+    return studentMap[rawId]?.name || rawId;
+  };
+
+  const getStudentRollNo = (result) => {
+    if (result.studentRollNo) return result.studentRollNo;
+    const rawId = typeof result.studentId === 'object'
+      ? String(result.studentId?._id || result.studentId)
+      : String(result.studentId);
+    return studentMap[rawId]?.rollNo;
+  };
+
+  // Computed stats
+  const stats = useMemo(() => {
+    const passed = results.filter(r => r.status === 'passed' || r.marksObtained >= (exam?.passingMarks || 35)).length;
+    const failed = results.length - passed;
+    const avg = results.length > 0
+      ? (results.reduce((s, r) => s + (r.percentage ?? 0), 0) / results.length).toFixed(1)
+      : 0;
+    return { passed, failed, avg };
+  }, [results, exam]);
+
   if (!isValid) return null;
 
-  if (loading) {
-    return (
-      <TablePageSkeleton />
-    );
-  }
+  if (loading) return <TablePageSkeleton />;
 
   if (!exam) {
     return (
@@ -95,10 +144,12 @@ const ExamDetail = () => {
     );
   }
 
+  const className = exam.className || (typeof exam.classId === 'object' ? exam.classId?.name : exam.classId);
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-lg">
+      <div className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl">
         <div className="flex items-center justify-between p-6">
           <div className="flex items-center gap-4">
             <button
@@ -111,21 +162,28 @@ const ExamDetail = () => {
               <FileText size={24} className="text-gray-600 dark:text-zinc-400" />
             </div>
             <div>
-              <h1 className="text-xl font-medium text-gray-900 dark:text-zinc-100">{exam.name}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-medium text-gray-900 dark:text-zinc-100">{exam.name}</h1>
+                <Chip size="sm" color={getStatusColor(exam.status)} variant="flat" className="capitalize">
+                  {getStatusLabel(exam.status)}
+                </Chip>
+              </div>
               <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">
-                {exam.classId} - {exam.subjectName}
+                {className} · {exam.subjectName} · {exam.academicYear}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <MinimalButton
-              variant="ghost"
-              icon={<Pencil size={16} />}
-              onClick={() => navigate(`/academics/results/entry/${examId}`)}
-            >
-              Enter Results
-            </MinimalButton>
-            {!exam.isPublished && (
+            {exam.status !== 'results_published' && (
+              <MinimalButton
+                variant="ghost"
+                icon={<Pencil size={16} />}
+                onClick={() => navigate(`/academics/exams/${examId}/results`)}
+              >
+                Enter Results
+              </MinimalButton>
+            )}
+            {exam.status !== 'results_published' && results.length > 0 && (
               <MinimalButton
                 icon={<Send size={16} />}
                 onClick={() => setPublishModal(true)}
@@ -133,76 +191,65 @@ const ExamDetail = () => {
                 Publish Results
               </MinimalButton>
             )}
+            {exam.status === 'results_published' && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-950 rounded-lg border border-green-100 dark:border-green-800">
+                <CheckCircle2 size={14} className="text-green-600 dark:text-green-400" />
+                <span className="text-sm text-green-700 dark:text-green-300 font-medium">Results Published</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Exam Details */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
-          <CardBody className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
-                <FileText size={18} className="text-gray-600 dark:text-zinc-400" />
-              </div>
-              <h3 className="font-medium text-gray-900 dark:text-zinc-100">{t('pages.examDetails1')}</h3>
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between py-2 border-b border-gray-50 dark:border-zinc-800">
-                <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.type1')}</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100 capitalize">
-                  {exam.type?.replace('_', ' ')}
-                </span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-gray-50 dark:border-zinc-800">
-                <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.status2')}</span>
-                <Chip size="sm" color={getStatusColor(exam.status)} variant="flat" className="capitalize">
-                  {exam.status?.replace('_', ' ')}
-                </Chip>
-              </div>
-              <div className="flex justify-between py-2 border-b border-gray-50 dark:border-zinc-800">
-                <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.date2')}</span>
-                <span className="text-sm text-gray-900 dark:text-zinc-100">{exam.startDate || 'Not scheduled'}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.academicYear1')}</span>
-                <span className="text-sm text-gray-900 dark:text-zinc-100">{exam.academicYear}</span>
-              </div>
-            </div>
+          <CardBody className="p-4">
+            <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Type</p>
+            <p className="font-medium text-gray-900 dark:text-zinc-100 capitalize">
+              {exam.type?.replace(/_/g, ' ')}
+            </p>
           </CardBody>
         </Card>
-
-        {/* Marks Configuration */}
         <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
-          <CardBody className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
-                <Award size={18} className="text-gray-600 dark:text-zinc-400" />
-              </div>
-              <h3 className="font-medium text-gray-900 dark:text-zinc-100">{t('pages.marksConfiguration')}</h3>
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between py-2 border-b border-gray-50 dark:border-zinc-800">
-                <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.maxMarks2')}</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{exam.maxMarks}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-gray-50 dark:border-zinc-800">
-                <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.passingMarks')}</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{exam.passingMarks}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-gray-50 dark:border-zinc-800">
-                <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.weightage')}</span>
-                <span className="text-sm text-gray-900 dark:text-zinc-100">{exam.weightage}%</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.resultsEntered')}</span>
-                <span className="text-sm text-gray-900 dark:text-zinc-100">{results.length} students</span>
-              </div>
-            </div>
+          <CardBody className="p-4">
+            <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Date</p>
+            <p className="font-medium text-gray-900 dark:text-zinc-100">
+              {exam.startDate ? formatShortDate(exam.startDate) : 'Not set'}
+            </p>
+          </CardBody>
+        </Card>
+        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
+          <CardBody className="p-4">
+            <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Max Marks</p>
+            <p className="font-medium text-gray-900 dark:text-zinc-100">{exam.maxMarks || 100}</p>
+          </CardBody>
+        </Card>
+        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
+          <CardBody className="p-4">
+            <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Passing Marks</p>
+            <p className="font-medium text-gray-900 dark:text-zinc-100">{exam.passingMarks || 35}</p>
           </CardBody>
         </Card>
       </div>
+
+      {/* Stats (only when results exist) */}
+      {results.length > 0 && (
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-blue-50 dark:bg-blue-950 rounded-xl p-4 border border-blue-100 dark:border-blue-800">
+            <p className="text-xs text-blue-600 dark:text-blue-400">Total Results</p>
+            <p className="text-2xl font-semibold text-blue-700 dark:text-blue-300">{results.length}</p>
+          </div>
+          <div className="bg-green-50 dark:bg-green-950 rounded-xl p-4 border border-green-100 dark:border-green-800">
+            <p className="text-xs text-green-600 dark:text-green-400">Passed</p>
+            <p className="text-2xl font-semibold text-green-700 dark:text-green-300">{stats.passed}</p>
+          </div>
+          <div className="bg-red-50 dark:bg-red-950 rounded-xl p-4 border border-red-100 dark:border-red-800">
+            <p className="text-xs text-red-600 dark:text-red-400">Failed</p>
+            <p className="text-2xl font-semibold text-red-700 dark:text-red-300">{stats.failed}</p>
+          </div>
+        </div>
+      )}
 
       {/* Results Summary */}
       <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
@@ -212,20 +259,28 @@ const ExamDetail = () => {
               <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
                 <Users size={18} className="text-gray-600 dark:text-zinc-400" />
               </div>
-              <h3 className="font-medium text-gray-900 dark:text-zinc-100">{t('pages.resultsSummary')}</h3>
+              <div>
+                <h3 className="font-medium text-gray-900 dark:text-zinc-100">{t('pages.resultsSummary')}</h3>
+                {results.length > 0 && (
+                  <p className="text-xs text-gray-400 dark:text-zinc-500">Class avg: {stats.avg}%</p>
+                )}
+              </div>
             </div>
-            {results.length > 0 && (
-              <MinimalButton variant="ghost" size="sm" onClick={() => navigate(`/academics/results/entry/${examId}`)}>
-                Edit Results
-              </MinimalButton>
-            )}
+            <MinimalButton
+              variant="ghost"
+              size="sm"
+              icon={<Pencil size={14} />}
+              onClick={() => navigate(`/academics/exams/${examId}/results`)}
+            >
+              {results.length > 0 ? 'Edit Results' : 'Enter Results'}
+            </MinimalButton>
           </div>
 
           {results.length === 0 ? (
-            <div className="text-center py-8">
+            <div className="text-center py-10">
               <Eye size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
               <p className="text-gray-500 dark:text-zinc-400 mb-4">{t('pages.noResultsEnteredYet')}</p>
-              <MinimalButton onClick={() => navigate(`/academics/results/entry/${examId}`)}>
+              <MinimalButton onClick={() => navigate(`/academics/exams/${examId}/results`)}>
                 Enter Results
               </MinimalButton>
             </div>
@@ -234,35 +289,56 @@ const ExamDetail = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-100 dark:border-zinc-800">
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.studentId')}</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.marks')}</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.percentage2')}</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.grade2')}</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.status2')}</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Student</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Roll No</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Marks</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">%</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Grade</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {results.map((result) => (
-                    <tr key={result.id || result._id} className="border-b border-gray-50 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-900">
-                      <td className="py-3 px-4 text-sm text-gray-900 dark:text-zinc-100">{result.studentId}</td>
-                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-zinc-400">
-                        {result.marksObtained}/{result.maxMarks}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-zinc-400">{Math.max(0, Math.min(100, result.percentage ?? 0)).toFixed(1)}%</td>
-                      <td className="py-3 px-4">
-                        <Chip size="sm" variant="flat">{result.grade}</Chip>
-                      </td>
-                      <td className="py-3 px-4">
-                        <Chip
-                          size="sm"
-                          color={result.status === 'pass' ? 'success' : 'danger'}
-                          variant="flat"
-                        >
-                          {result.status}
-                        </Chip>
-                      </td>
-                    </tr>
-                  ))}
+                  {results.map((result) => {
+                    const isPassed = result.status === 'passed' || result.marksObtained >= (exam.passingMarks || 35);
+                    return (
+                      <tr key={result.id || result._id} className="border-b border-gray-50 dark:border-zinc-800/50 hover:bg-gray-50 dark:hover:bg-zinc-900">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
+                              <span className="text-xs font-medium text-gray-600 dark:text-zinc-400">
+                                {getStudentName(result)?.charAt(0)?.toUpperCase() || 'S'}
+                              </span>
+                            </div>
+                            <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">
+                              {getStudentName(result)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-500 dark:text-zinc-400">
+                          {getStudentRollNo(result) || '—'}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-zinc-300 font-medium">
+                          {result.marksObtained}/{exam.maxMarks || 100}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-zinc-400">
+                          {Math.max(0, Math.min(100, result.percentage ?? 0)).toFixed(1)}%
+                        </td>
+                        <td className="py-3 px-4">
+                          <Chip size="sm" variant="flat">{result.grade || '—'}</Chip>
+                        </td>
+                        <td className="py-3 px-4">
+                          <Chip
+                            size="sm"
+                            color={isPassed ? 'success' : 'danger'}
+                            variant="flat"
+                            startContent={isPassed ? <CheckCircle2 size={11} /> : <AlertCircle size={11} />}
+                          >
+                            {isPassed ? 'Passed' : 'Failed'}
+                          </Chip>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -291,18 +367,25 @@ const ExamDetail = () => {
           </ModalHeader>
           <ModalBody className="py-4">
             <p className="text-sm text-gray-600 dark:text-zinc-400">
-              Are you sure you want to publish the results for <span className="font-medium">{exam.name}</span>?
-              This will make the results visible to students and parents.
+              Publishing results for <span className="font-medium">{exam.name}</span> will make them visible to all students and parents.
             </p>
-            <div className="bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg p-3 mt-2">
-              <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.thisActionCannotBeUndone2')}</p>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="bg-green-50 dark:bg-green-950 rounded-lg p-3 border border-green-100 dark:border-green-800 text-center">
+                <p className="text-xl font-semibold text-green-700 dark:text-green-300">{stats.passed}</p>
+                <p className="text-xs text-green-600 dark:text-green-400">Passing</p>
+              </div>
+              <div className="bg-red-50 dark:bg-red-950 rounded-lg p-3 border border-red-100 dark:border-red-800 text-center">
+                <p className="text-xl font-semibold text-red-700 dark:text-red-300">{stats.failed}</p>
+                <p className="text-xs text-red-600 dark:text-red-400">Failing</p>
+              </div>
             </div>
+            <p className="text-xs text-gray-400 dark:text-zinc-500 mt-3">{t('pages.thisActionCannotBeUndone2')}</p>
           </ModalBody>
           <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
-            <Button variant="light" onPress={() => setPublishModal(false)}>
+            <Button variant="light" onPress={() => setPublishModal(false)} isDisabled={publishing}>
               Cancel
             </Button>
-            <Button color="success" onPress={handlePublish}>
+            <Button color="success" onPress={handlePublish} isLoading={publishing}>
               Publish Results
             </Button>
           </ModalFooter>

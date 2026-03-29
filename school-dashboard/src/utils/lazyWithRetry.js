@@ -21,15 +21,19 @@ function retryImport(importFn, retriesLeft) {
     // All retries exhausted — attempt one-time page reload for stale chunks
     if (isChunkError(error)) {
       const reloadKey = 'chunk_reload_' + window.location.pathname;
-      if (!sessionStorage.getItem(reloadKey)) {
-        sessionStorage.setItem(reloadKey, '1');
-        window.location.reload();
-        // Return a never-resolving promise so React doesn't render an error
-        // before the reload takes effect
-        return new Promise(() => {});
+      try {
+        if (!sessionStorage.getItem(reloadKey)) {
+          sessionStorage.setItem(reloadKey, '1');
+          window.location.reload();
+          // Return a never-resolving promise so React doesn't render an error
+          // before the reload takes effect
+          return new Promise(() => {});
+        }
+        // Already tried reloading — clear flag and let error propagate to ErrorBoundary
+        sessionStorage.removeItem(reloadKey);
+      } catch (_) {
+        // sessionStorage unavailable (private browsing) — skip reload strategy
       }
-      // Already tried reloading — clear flag and let error propagate to ErrorBoundary
-      sessionStorage.removeItem(reloadKey);
     }
 
     // Wrap non-Error values so ErrorBoundary receives a proper Error instance

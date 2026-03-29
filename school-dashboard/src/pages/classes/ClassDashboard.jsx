@@ -1,16 +1,18 @@
 import { useState, useMemo, useEffect } from "react";
+import logger from "../../utils/logger";
 import {
   Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
-  Input, Chip
+  Chip, Progress
 } from "@heroui/react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useValidatedParams } from "../../hooks/useValidatedParams";
 import {
-  Calendar, IndianRupee, MessageSquare, Users, Clock,
-  BookOpen, TrendingUp, AlertCircle, CheckCircle2, Search, Phone,
+  IndianRupee, MessageSquare, Users, Clock,
+  BookOpen, AlertCircle, CheckCircle2, Search,
   GraduationCap, Award, ArrowLeft, Star, StarHalf,
-  Activity, FileText, Settings, AlertTriangle, Download,
-  Edit, MoreVertical, Send, Mail
+  Activity, FileText, AlertTriangle, Download,
+  MoreVertical, Send, ChevronRight, ArrowUpDown,
+  Megaphone
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { toast } from "react-hot-toast";
@@ -21,6 +23,11 @@ import ClassSettingsPanel from "./ClassSettingsPanel";
 import ClassTeacherAssignmentModal from "./components/ClassTeacherAssignmentModal";
 import { useTranslation } from 'react-i18next';
 import { DetailPageSkeleton } from '../../components/skeletons/PageSkeletons';
+import { formatShortDate } from '../../utils/dateFormatter';
+
+const Bone = ({ className = "" }) => (
+  <div className={`bg-gray-200 dark:bg-zinc-700 rounded animate-pulse ${className}`} />
+);
 
 export default function ClassDashboard() {
   const { t } = useTranslation();
@@ -29,7 +36,6 @@ export default function ClassDashboard() {
   const location = useLocation();
   const { classesWithTeachers, students, classesEnhancedApi, classesApi, refetch, loading } = useApp();
 
-  // Get tab from URL query parameter or default to "overview"
   const searchParams = new URLSearchParams(location.search);
   const tabFromUrl = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
@@ -39,56 +45,78 @@ export default function ClassDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAssignTeacherModalOpen, setIsAssignTeacherModalOpen] = useState(false);
 
+  // Lifted state: todayStatus + classRating fetched at parent level for header + sidebar + overview
+  const [todayStatus, setTodayStatus] = useState(null);
+  const [classRating, setClassRating] = useState(null);
+  const [announcements, setAnnouncements] = useState([]);
+
   const cls = classesWithTeachers.find(c => String(c.id) === String(id) || String(c._id) === String(id)) || null;
 
-  // Update active tab when URL changes
   useEffect(() => {
-    if (tabFromUrl) {
-      setActiveTab(tabFromUrl);
-    }
+    if (tabFromUrl) setActiveTab(tabFromUrl);
   }, [tabFromUrl]);
 
-  // Refresh class data when component mounts or when focusing on window
+  // Refresh class data on mount
   useEffect(() => {
-    const refreshClassData = async () => {
-      if (id && refetch && !isRefreshing) {
-        try {
-          setIsRefreshing(true);
-          await refetch(true);
-        } catch (error) {
-          console.error('Error refreshing class data:', error);
-        } finally {
-          setIsRefreshing(false);
-        }
-      }
-    };
-
-    refreshClassData();
+    if (id && refetch && !isRefreshing) {
+      setIsRefreshing(true);
+      refetch(true).catch(e => logger.error('Error refreshing class data:', e)).finally(() => setIsRefreshing(false));
+    }
   }, [id, refetch]);
 
   // Load class settings
   useEffect(() => {
     if (!id || !classesApi) return;
     const controller = new AbortController();
-    loadClassSettings(controller.signal);
+    (async () => {
+      try {
+        setSettingsLoading(true);
+        const settings = await classesApi.getSettings(id);
+        if (!controller.signal.aborted) setClassSettings(settings);
+      } catch (error) {
+        if (error.name !== 'AbortError') logger.error("Error loading class settings:", error);
+      } finally {
+        if (!controller.signal.aborted) setSettingsLoading(false);
+      }
+    })();
     return () => controller.abort();
   }, [id, classesApi]);
 
-  const loadClassSettings = async (signal) => {
-    try {
-      setSettingsLoading(true);
-      const settings = await classesApi.getSettings(id);
-      if (!signal?.aborted) setClassSettings(settings);
-    } catch (error) {
-      if (error.name === 'AbortError') return;
-      console.error("Error loading class settings:", error);
-    } finally {
-      if (!signal?.aborted) setSettingsLoading(false);
-    }
+  // Lifted fetches: todayStatus, classRating, announcements (used by header + sidebar + overview)
+  useEffect(() => {
+    if (!id || !classesEnhancedApi) return;
+    const controller = new AbortController();
+    const aborted = () => controller.signal.aborted;
+
+    classesEnhancedApi.getTodayStatus(id).then(d => { if (!aborted()) setTodayStatus(d); }).catch(e => { if (!aborted()) logger.error('todayStatus:', e); });
+    classesEnhancedApi.getRating(id).then(d => { if (!aborted()) setClassRating(d); }).catch(e => { if (!aborted()) logger.error('rating:', e); });
+    classesEnhancedApi.getAnnouncements(id, 3).then(d => { if (!aborted()) setAnnouncements(d || []); }).catch(e => { if (!aborted()) logger.error('announcements:', e); });
+
+    return () => controller.abort();
+  }, [id, classesEnhancedApi]);
+
+  const handleExportReport = () => {
+    const classStudents = students.filter(s => String(s.classId?._id || s.classId) === String(id));
+    if (classStudents.length === 0) { toast.error(t('toast.error.noStudentsToExport', 'No students to export')); return; }
+    const headers = ['Name', 'Roll No', 'Admission No', 'Gender', 'Parent Name', 'Parent Phone'];
+    const rows = classStudents.map(s => [s.name || '', s.rollNo || '', s.admissionNo || '', s.gender || '', s.parentName || s.fatherName || '', s.parentPhone || '']);
+    const csvContent = [headers.join(','), ...rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${cls?.name || 'class'}-${cls?.section || ''}-report-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    toast.success(t('toast.success.reportExported', 'Report exported'));
   };
 
+  const handleSendNotice = () => {
+    navigate('/messaging', { state: { prefillClass: id, className: cls ? `${cls.name}-${cls.section}` : '' } });
+  };
 
-  // Tabs configuration
   const tabs = [
     { key: "overview", label: "Overview" },
     { key: "students", label: "Students" },
@@ -125,87 +153,126 @@ export default function ClassDashboard() {
     );
   }
 
+  const attendancePercentage = todayStatus?.attendance?.percentage || cls?.attendanceToday || 0;
+
+  // Header KPI stats (always visible)
+  const headerStats = [
+    {
+      label: "Attendance",
+      value: `${attendancePercentage}%`,
+      subtext: `${todayStatus?.attendance?.present || 0} present today`,
+      icon: CheckCircle2,
+      color: attendancePercentage >= 75 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400',
+    },
+    {
+      label: "Current Period",
+      value: todayStatus?.currentClass?.subject || "Free",
+      subtext: todayStatus?.currentClass?.teacher || "No class now",
+      icon: BookOpen,
+      color: 'text-blue-600 dark:text-blue-400',
+    },
+    {
+      label: "Class Rating",
+      value: (classRating?.overallRating || classRating?.rating || 0).toFixed(1),
+      subtext: "out of 5.0",
+      icon: Star,
+      color: 'text-amber-500 dark:text-amber-400',
+    },
+    {
+      label: "Students",
+      value: `${cls?.studentCount || 0}`,
+      subtext: `of ${cls?.strengthLimit?.current || 40} capacity`,
+      icon: Users,
+      color: 'text-gray-600 dark:text-zinc-400',
+    },
+  ];
+
+  const fullWidthTabs = ["timetable", "settings", "overview"];
+
   return (
     <div className="w-full flex-1 bg-gray-50 dark:bg-zinc-950 p-6 min-h-screen">
-      {/* ═══════════════════════════════════════════════════════════════════
-          HEADER SECTION
-      ═══════════════════════════════════════════════════════════════════ */}
-      <div className="mb-6">
-        <button onClick={() => navigate('/classes')} className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors mb-2">
+      {/* HEADER */}
+      <div className="mb-6 space-y-4">
+        <button onClick={() => navigate('/classes')} className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors">
           <ArrowLeft size={16} /><span>{t('pages.backToClasses')}</span>
         </button>
 
         <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
-          <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4">
-            <div className="flex items-center gap-5">
-              {/* Avatar */}
-              <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                <span className="text-xl font-semibold text-gray-600 dark:text-zinc-400">
+          {/* Top row: class info + actions */}
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-5">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                <span className="text-lg font-bold text-gray-600 dark:text-zinc-400">
                   {cls?.name?.replace("Class ", "")}{cls?.section}
                 </span>
               </div>
-
-              {/* Info */}
               <div>
                 <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
-                  Grade {cls?.name || 'N/A'} - Section {cls?.section || 'N/A'}
+                  {cls?.name || 'N/A'} - Section {cls?.section || 'N/A'}
                 </h1>
-                <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-zinc-400">
+                <div className="flex items-center gap-2 mt-1 text-sm text-gray-500 dark:text-zinc-400 flex-wrap">
                   <span>{cls?.studentCount || 0} Students</span>
-                  <span className="text-gray-300 dark:text-zinc-600">|</span>
+                  <span className="text-gray-300 dark:text-zinc-600">·</span>
                   <span>{cls?.strengthLimit?.current || 40} Capacity</span>
+                  {cls?.room && (<><span className="text-gray-300 dark:text-zinc-600">·</span><span>Room {cls.room}</span></>)}
                 </div>
                 {cls?.classTeacherId ? (
-                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-400 dark:text-zinc-500">
-                    <Users size={12} />
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <Users size={12} className="text-gray-400 dark:text-zinc-500" />
                     <span
-                      className="text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 cursor-pointer"
+                      className="text-xs text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 cursor-pointer"
                       onClick={() => navigate(`/staffs/${cls.classTeacherId}`)}
                     >
                       {cls?.teacher || 'Class Teacher'}
                     </span>
-                    <span className="text-gray-300 dark:text-zinc-600">|</span>
-                    <span>{t('pages.classTeacher2')}</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-400 dark:text-zinc-500">
-                    <AlertCircle size={12} />
-                    <span>{t('pages.noClassTeacherAssigned')}</span>
-                    <button
-                      onClick={() => setIsAssignTeacherModalOpen(true)}
-                      className="ml-2 text-xs font-medium text-blue-600 hover:text-blue-800 underline"
-                    >
-                      Assign class teacher
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <AlertCircle size={12} className="text-amber-500" />
+                    <span className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.noClassTeacherAssigned')}</span>
+                    <button onClick={() => setIsAssignTeacherModalOpen(true)} className="text-xs font-medium text-blue-600 hover:text-blue-800 underline">
+                      Assign
                     </button>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
-              <Button variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<MessageSquare size={16} />}
+              <Button size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<MessageSquare size={14} />}
                 onPress={() => navigate('/messaging')}>{t('pages.message1')}</Button>
-              <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200" startContent={<Edit size={16} />}
-                onPress={() => setActiveTab("settings")}>{t('pages.settings2')}</Button>
               <Dropdown>
                 <DropdownTrigger>
-                  <Button isIconOnly variant="light" className="text-gray-400 dark:text-zinc-500"><MoreVertical size={20} /></Button>
+                  <Button isIconOnly size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400"><MoreVertical size={16} /></Button>
                 </DropdownTrigger>
                 <DropdownMenu className="min-w-[180px]">
-                  <DropdownItem key="export" startContent={<Download size={14} className="text-gray-400 dark:text-zinc-500" />}>{t('pages.exportReport')}</DropdownItem>
-                  <DropdownItem key="notice" startContent={<Send size={14} className="text-gray-400 dark:text-zinc-500" />}>{t('pages.sendNotice')}</DropdownItem>
-                  <DropdownItem key="timetable" startContent={<Clock size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={() => setActiveTab("timetable")}>{t('pages.viewTimetable')}</DropdownItem>
+                  <DropdownItem key="export" startContent={<Download size={14} className="text-gray-400" />} onPress={handleExportReport}>{t('pages.exportReport')}</DropdownItem>
+                  <DropdownItem key="notice" startContent={<Send size={14} className="text-gray-400" />} onPress={handleSendNotice}>{t('pages.sendNotice')}</DropdownItem>
+                  <DropdownItem key="timetable" startContent={<Clock size={14} className="text-gray-400" />} onPress={() => setActiveTab("timetable")}>{t('pages.viewTimetable')}</DropdownItem>
+                  <DropdownItem key="settings" startContent={<GraduationCap size={14} className="text-gray-400" />} onPress={() => setActiveTab("settings")}>Settings</DropdownItem>
                 </DropdownMenu>
               </Dropdown>
             </div>
           </div>
+
+          {/* KPI stat cards row — always visible */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {headerStats.map((stat) => (
+              <div key={stat.label} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800">
+                <div className={`w-9 h-9 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center flex-shrink-0`}>
+                  <stat.icon size={16} className={stat.color} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-lg font-semibold text-gray-900 dark:text-zinc-100 leading-tight">{stat.value}</p>
+                  <p className="text-[11px] text-gray-500 dark:text-zinc-400 truncate">{stat.subtext}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          TABS
-      ═══════════════════════════════════════════════════════════════════ */}
+      {/* TABS */}
       <div className="mb-5">
         <div className="flex items-center gap-1 border-b border-gray-200 dark:border-zinc-800 overflow-x-auto">
           {tabs.map(tab => (
@@ -220,121 +287,93 @@ export default function ClassDashboard() {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          CONTENT AREA
-      ═══════════════════════════════════════════════════════════════════ */}
+      {/* CONTENT AREA */}
 
-      {/* ─── FULL-WIDTH TABS (Timetable, Settings) ─── */}
-      {activeTab === "timetable" && (
-        <Timetable classId={id} />
+      {/* Full-width tabs */}
+      {activeTab === "timetable" && <Timetable classId={id} />}
+      {activeTab === "settings" && <ClassSettingsPanel classId={id} />}
+      {activeTab === "overview" && (
+        <OverviewTab id={id} cls={cls} classesEnhancedApi={classesEnhancedApi} todayStatus={todayStatus} classRating={classRating} />
       )}
 
-      {activeTab === "settings" && (
-        <ClassSettingsPanel classId={id} />
-      )}
-
-      {/* ─── GRID LAYOUT TABS (Overview, Students, Fees, Academics) ─── */}
-      {!["timetable", "settings"].includes(activeTab) && (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-        {/* MAIN CONTENT - 2/3 */}
-        <div className="lg:col-span-2 space-y-4">
-
-          {/* ─── OVERVIEW TAB ─── */}
-          {activeTab === "overview" && (
-            <OverviewTab id={id} cls={cls} classesEnhancedApi={classesEnhancedApi} />
-          )}
-
-          {/* ─── STUDENTS TAB ─── */}
-          {activeTab === "students" && (
-            <StudentsTab id={id} cls={cls} navigate={navigate} />
-          )}
-
-          {/* ─── FEES TAB ─── */}
-          {activeTab === "fees" && (
-            <FeesTab id={id} cls={cls} classesEnhancedApi={classesEnhancedApi} navigate={navigate} />
-          )}
-
-          {/* ─── ATTENDANCE TAB ─── */}
-          {activeTab === "attendance" && <Attendance classId={id} />}
-
-          {/* ─── ACADEMICS TAB ─── */}
-          {activeTab === "academics" && (
-            <AcademicsTab id={id} cls={cls} classesEnhancedApi={classesEnhancedApi} />
-          )}
-        </div>
-
-        {/* RIGHT SIDEBAR - 1/3 */}
-        <div className="lg:col-span-1 space-y-4">
-
-          {/* Quick Actions */}
-          <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">{t('pages.quickActions1')}</h3>
-            <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => setActiveTab("students")} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800">
-                <Users size={18} className="text-gray-600 dark:text-zinc-400" />
-                <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.students1')}</span>
-              </button>
-              <button onClick={() => setActiveTab("attendance")} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800">
-                <CheckCircle2 size={18} className="text-gray-600 dark:text-zinc-400" />
-                <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.attendance2')}</span>
-              </button>
-              <button onClick={() => setActiveTab("fees")} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800">
-                <IndianRupee size={18} className="text-gray-600 dark:text-zinc-400" />
-                <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.fees1')}</span>
-              </button>
-              <button onClick={() => setActiveTab("timetable")} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800">
-                <Clock size={18} className="text-gray-600 dark:text-zinc-400" />
-                <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.timetable2')}</span>
-              </button>
-            </div>
+      {/* Grid layout tabs (with sidebar) */}
+      {!fullWidthTabs.includes(activeTab) && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 space-y-4">
+            {activeTab === "students" && (
+              <StudentsTab id={id} cls={cls} navigate={navigate} classesEnhancedApi={classesEnhancedApi} />
+            )}
+            {activeTab === "fees" && (
+              <FeesTab id={id} cls={cls} classesEnhancedApi={classesEnhancedApi} navigate={navigate} />
+            )}
+            {activeTab === "attendance" && <Attendance classId={id} />}
+            {activeTab === "academics" && (
+              <AcademicsTab id={id} cls={cls} classesEnhancedApi={classesEnhancedApi} />
+            )}
           </div>
 
-          {/* Class Teacher Card */}
-          {cls?.classTeacherId && (
-            <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">{t('pages.classTeacher2')}</h3>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                  <span className="text-sm font-medium text-gray-600 dark:text-zinc-400">
-                    {cls?.teacher?.charAt(0) || 'T'}
-                  </span>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{cls?.teacher || 'Teacher'}</p>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.classTeacher2')}</p>
-                </div>
-                <button
-                  onClick={() => navigate(`/messages?to=${cls.classTeacherId}`)}
-                  className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-900 rounded-lg"
-                >
-                  <MessageSquare size={16} className="text-gray-400 dark:text-zinc-500" />
-                </button>
-              </div>
-            </div>
-          )}
+          {/* RIGHT SIDEBAR */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* Today's Schedule */}
+            <SidebarSchedule todayStatus={todayStatus} onViewTimetable={() => setActiveTab("timetable")} />
 
-          {/* Assigned Subjects */}
-          {!settingsLoading && classSettings?.assignedSubjects && classSettings.assignedSubjects.length > 0 && (
+            {/* Quick Actions */}
             <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">{t('pages.assignedSubjects')}</h3>
-              <div className="flex flex-wrap gap-2">
-                {classSettings.assignedSubjects.map((subject) => (
-                  <span
-                    key={subject}
-                    className="px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-md"
-                  >
-                    {subject}
-                  </span>
+              <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-3">{t('pages.quickActions1')}</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { key: 'students', icon: Users, label: t('pages.students1') },
+                  { key: 'attendance', icon: CheckCircle2, label: t('pages.attendance2') },
+                  { key: 'fees', icon: IndianRupee, label: t('pages.fees1') },
+                  { key: 'timetable', icon: Clock, label: t('pages.timetable2') },
+                ].map(action => (
+                  <button key={action.key} onClick={() => setActiveTab(action.key)} className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
+                    <action.icon size={16} className="text-gray-600 dark:text-zinc-400" />
+                    <span className="text-[11px] text-gray-600 dark:text-zinc-400">{action.label}</span>
+                  </button>
                 ))}
               </div>
             </div>
-          )}
+
+            {/* Class Teacher Card */}
+            {cls?.classTeacherId && (
+              <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-3">{t('pages.classTeacher2')}</h3>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                    <span className="text-sm font-medium text-gray-600 dark:text-zinc-400">{cls?.teacher?.charAt(0) || 'T'}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{cls?.teacher || 'Teacher'}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.classTeacher2')}</p>
+                  </div>
+                  <button onClick={() => navigate(`/messages?to=${cls.classTeacherId}`)} className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-900 rounded-lg">
+                    <MessageSquare size={14} className="text-gray-400 dark:text-zinc-500" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Announcements */}
+            <SidebarAnnouncements announcements={announcements} onSend={handleSendNotice} />
+
+            {/* Assigned Subjects */}
+            {!settingsLoading && classSettings?.assignedSubjects?.length > 0 && (
+              <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-3">{t('pages.assignedSubjects')} ({classSettings.assignedSubjects.length})</h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {classSettings.assignedSubjects.map((subject) => (
+                    <span key={subject} className="px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-md">
+                      {subject}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
       )}
 
-      {/* Assign Class Teacher Modal */}
       {cls && (
         <ClassTeacherAssignmentModal
           isOpen={isAssignTeacherModalOpen}
@@ -349,138 +388,193 @@ export default function ClassDashboard() {
   );
 }
 
-// --- Sub-components ---
+// ═══════════════════════════════════════════════════════════════════
+// SIDEBAR COMPONENTS
+// ═══════════════════════════════════════════════════════════════════
 
-function OverviewTab({ id, cls, classesEnhancedApi }) {
-  const { t } = useTranslation();
-  const { classesApi } = useApp();
-  const [todayStatus, setTodayStatus] = useState(null);
-  const [todayStatusLoading, setTodayStatusLoading] = useState(false);
-  const [academicPerformance, setAcademicPerformance] = useState(null);
-  const [academicPerformanceLoading, setAcademicPerformanceLoading] = useState(false);
-  const [classRating, setClassRating] = useState(null);
-  const [ratingLoading, setRatingLoading] = useState(false);
-
-  // Fetch data
-  useEffect(() => {
-    if (!id || !classesEnhancedApi) return;
-    const controller = new AbortController();
-
-    const fetchData = async () => {
-      setTodayStatusLoading(true);
-      setAcademicPerformanceLoading(true);
-      setRatingLoading(true);
-
-      try {
-        const status = await classesEnhancedApi.getTodayStatus(id);
-        if (!controller.signal.aborted) setTodayStatus(status);
-      } catch (e) {
-        if (!controller.signal.aborted) console.error('Error loading today status:', e);
-      } finally { if (!controller.signal.aborted) setTodayStatusLoading(false); }
-
-      try {
-        const perf = await classesEnhancedApi.getAcademicPerformance(id);
-        if (!controller.signal.aborted) setAcademicPerformance(perf);
-      } catch (e) {
-        if (!controller.signal.aborted) console.error('Error loading academic performance:', e);
-      } finally { if (!controller.signal.aborted) setAcademicPerformanceLoading(false); }
-
-      try {
-        const rating = await classesEnhancedApi.getRating(id);
-        if (!controller.signal.aborted) setClassRating(rating);
-      } catch (e) {
-        if (!controller.signal.aborted) console.error('Error loading class rating:', e);
-      } finally { if (!controller.signal.aborted) setRatingLoading(false); }
-    };
-
-    fetchData();
-    return () => controller.abort();
-  }, [id, classesEnhancedApi]);
-
-  const renderStars = (rating) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-    for (let i = 0; i < fullStars; i++) stars.push(<Star key={`full-${i}`} size={14} className="fill-gray-400 dark:fill-zinc-500 text-gray-400 dark:text-zinc-500" />);
-    if (hasHalfStar) stars.push(<StarHalf key="half" size={14} className="fill-gray-400 dark:fill-zinc-500 text-gray-400 dark:text-zinc-500" />);
-    for (let i = 0; i < emptyStars; i++) stars.push(<Star key={`empty-${i}`} size={14} className="text-gray-300 dark:text-zinc-600" />);
-    return stars;
-  };
-
-  const attendancePercentage = todayStatus?.attendance?.percentage || cls?.attendanceToday || 0;
-  const needsAttention = attendancePercentage < 75;
-
-  // Stats
-  const stats = [
-    { label: "Attendance", value: `${attendancePercentage}%`, subtext: `${todayStatus?.attendance?.present || 0} present`, icon: CheckCircle2 },
-    { label: "Current Class", value: todayStatus?.currentClass?.subject || "Free", subtext: todayStatus?.currentClass?.teacher || "—", icon: BookOpen },
-    { label: "Class Rating", value: (classRating?.overallRating || 0).toFixed(1), subtext: "out of 5.0", icon: Star },
-    { label: "Students", value: cls?.studentCount || cls?.strength || 0, subtext: `${cls?.strengthLimit?.current || 40} capacity`, icon: Users },
-  ];
+function SidebarSchedule({ todayStatus, onViewTimetable }) {
+  const periods = [];
+  if (todayStatus?.currentClass) periods.push({ ...todayStatus.currentClass, isCurrent: true });
+  if (todayStatus?.upcomingClass) periods.push({ ...todayStatus.upcomingClass, isCurrent: false });
 
   return (
-    <div className="space-y-4">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => (
-          <div key={stat.label} className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
-            <div className="flex items-start justify-between mb-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                <stat.icon size={16} className="text-gray-600 dark:text-zinc-400" />
+    <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Today's Schedule</h3>
+        <button onClick={onViewTimetable} className="text-xs text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 flex items-center gap-1">
+          Full <ChevronRight size={12} />
+        </button>
+      </div>
+      {periods.length > 0 ? (
+        <div className="space-y-2">
+          {periods.map((p, i) => (
+            <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg transition-colors ${p.isCurrent ? 'bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800' : 'bg-gray-50 dark:bg-zinc-900'}`}>
+              <div className={`w-1 h-8 rounded-full flex-shrink-0 ${p.isCurrent ? 'bg-blue-500' : 'bg-gray-200 dark:bg-zinc-700'}`} />
+              <div className="min-w-0 flex-1">
+                <p className={`text-sm font-medium truncate ${p.isCurrent ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-zinc-300'}`}>
+                  {p.subject || 'Free Period'}
+                </p>
+                <p className="text-[11px] text-gray-500 dark:text-zinc-400 truncate">
+                  {p.isCurrent ? 'Now' : p.time || 'Next'}{p.teacher ? ` · ${p.teacher}` : ''}
+                </p>
               </div>
             </div>
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{stat.value}</h3>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{stat.label}</p>
-            {stat.subtext && <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2">{stat.subtext}</p>}
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-gray-400 dark:text-zinc-500 text-center py-3">No schedule data available</p>
+      )}
+    </div>
+  );
+}
+
+function SidebarAnnouncements({ announcements, onSend }) {
+  if (!announcements || announcements.length === 0) {
+    return (
+      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-3">Announcements</h3>
+        <div className="text-center py-3">
+          <Megaphone size={24} className="mx-auto text-gray-200 dark:text-zinc-700 mb-2" />
+          <p className="text-xs text-gray-400 dark:text-zinc-500 mb-3">No announcements yet</p>
+          <button onClick={onSend} className="text-xs font-medium text-blue-600 hover:text-blue-800">Send Announcement</button>
+        </div>
+      </div>
+    );
+  }
+
+  const priorityColors = { urgent: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', high: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', normal: 'bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400', low: 'bg-gray-50 text-gray-500 dark:bg-zinc-900 dark:text-zinc-500' };
+
+  return (
+    <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Announcements</h3>
+        <button onClick={onSend} className="text-xs text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300">Send</button>
+      </div>
+      <div className="space-y-2">
+        {announcements.slice(0, 3).map((a, i) => (
+          <div key={a._id || i} className="p-2.5 rounded-lg bg-gray-50 dark:bg-zinc-900">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-xs font-medium text-gray-700 dark:text-zinc-300 line-clamp-1">{a.title}</p>
+              {a.priority && a.priority !== 'normal' && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 font-medium ${priorityColors[a.priority] || priorityColors.normal}`}>
+                  {a.priority}
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-1">
+              {a.createdAt ? formatShortDate(a.createdAt) : ''}
+            </p>
           </div>
         ))}
       </div>
+    </div>
+  );
+}
 
-      {/* Action Needed */}
+// ═══════════════════════════════════════════════════════════════════
+// OVERVIEW TAB (Full Width)
+// ═══════════════════════════════════════════════════════════════════
+
+function OverviewTab({ id, cls, classesEnhancedApi, todayStatus, classRating }) {
+  const { t } = useTranslation();
+  const [academicPerformance, setAcademicPerformance] = useState(null);
+  const [academicLoading, setAcademicLoading] = useState(true);
+  const [chronicAbsentees, setChronicAbsentees] = useState([]);
+  const [activityLog, setActivityLog] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id || !classesEnhancedApi) return;
+    const controller = new AbortController();
+    const aborted = () => controller.signal.aborted;
+
+    setAcademicLoading(true);
+    setActivityLoading(true);
+
+    classesEnhancedApi.getAcademicPerformance(id)
+      .then(d => { if (!aborted()) setAcademicPerformance(d); })
+      .catch(e => { if (!aborted()) logger.error('academic:', e); })
+      .finally(() => { if (!aborted()) setAcademicLoading(false); });
+
+    classesEnhancedApi.getChronicAbsentees(id)
+      .then(d => { if (!aborted()) setChronicAbsentees(d || []); })
+      .catch(e => { if (!aborted()) logger.error('chronic:', e); });
+
+    classesEnhancedApi.getActivityLog(id, { limit: 5 })
+      .then(d => { if (!aborted()) setActivityLog(d || []); })
+      .catch(e => { if (!aborted()) logger.error('activity:', e); })
+      .finally(() => { if (!aborted()) setActivityLoading(false); });
+
+    return () => controller.abort();
+  }, [id, classesEnhancedApi]);
+
+  const attendancePercentage = todayStatus?.attendance?.percentage || cls?.attendanceToday || 0;
+  const needsAttention = attendancePercentage < 75 || chronicAbsentees.length > 0;
+
+  return (
+    <div className="space-y-4">
+      {/* Alerts Banner */}
       {needsAttention && (
-        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-          <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                <AlertTriangle size={16} className="text-gray-600 dark:text-zinc-400" />
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.actionNeeded1')}</h3>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Attendance is below 75%</p>
-              </div>
-            </div>
-          </div>
-          <div className="p-5">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-zinc-900">
-              <AlertCircle size={18} className="text-gray-500 dark:text-zinc-400" />
-              <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.lowAttendanceAlert')}</p>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">Current: {attendancePercentage}% (target: 75%)</p>
-              </div>
+        <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800/50 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+            <div className="space-y-1">
+              {attendancePercentage < 75 && (
+                <p className="text-sm text-amber-800 dark:text-amber-300">
+                  Attendance is at <strong>{attendancePercentage}%</strong> today — below the 75% target
+                </p>
+              )}
+              {chronicAbsentees.length > 0 && (
+                <p className="text-sm text-amber-800 dark:text-amber-300">
+                  <strong>{chronicAbsentees.length} student{chronicAbsentees.length > 1 ? 's' : ''}</strong> with attendance below 60% this month
+                </p>
+              )}
             </div>
           </div>
         </div>
       )}
 
+      {/* Today's Schedule Strip */}
+      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-4">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-3">Today's Schedule</h3>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {todayStatus?.currentClass && (
+            <div className="flex-shrink-0 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+              <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">Now</p>
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-200">{todayStatus.currentClass.subject}</p>
+              {todayStatus.currentClass.teacher && <p className="text-[11px] text-blue-600 dark:text-blue-400">{todayStatus.currentClass.teacher}</p>}
+            </div>
+          )}
+          {todayStatus?.upcomingClass && (
+            <div className="flex-shrink-0 px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800">
+              <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400">Next{todayStatus.upcomingClass.time ? ` · ${todayStatus.upcomingClass.time}` : ''}</p>
+              <p className="text-sm font-medium text-gray-800 dark:text-zinc-200">{todayStatus.upcomingClass.subject}</p>
+              {todayStatus.upcomingClass.teacher && <p className="text-[11px] text-gray-500 dark:text-zinc-400">{todayStatus.upcomingClass.teacher}</p>}
+            </div>
+          )}
+          {!todayStatus?.currentClass && !todayStatus?.upcomingClass && (
+            <p className="text-xs text-gray-400 dark:text-zinc-500 py-2">No schedule data for today</p>
+          )}
+        </div>
+      </div>
+
+      {/* Academic Overview + Ratings Breakdown (2-col) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Academic Overview */}
-        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-          <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                <Award size={16} className="text-gray-600 dark:text-zinc-400" />
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.academicOverview')}</h3>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.topPerformersImprovements')}</p>
-              </div>
+        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 overflow-hidden">
+          <div className="p-4 border-b border-gray-100 dark:border-zinc-800 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+              <Award size={14} className="text-gray-600 dark:text-zinc-400" />
+            </div>
+            <div>
+              <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.academicOverview')}</h3>
+              <p className="text-[11px] text-gray-500 dark:text-zinc-400">{t('pages.topPerformersImprovements')}</p>
             </div>
           </div>
-          <div className="p-5">
-            {academicPerformanceLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin w-6 h-6 border-2 border-gray-300 dark:border-zinc-600 border-t-gray-600 dark:border-t-zinc-400 rounded-full" />
+          <div className="p-4">
+            {academicLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => <Bone key={i} className="h-8 w-full" />)}
               </div>
             ) : (
               <div className="space-y-4">
@@ -489,7 +583,7 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
                   {academicPerformance?.topPerformers?.slice(0, 3).map((s) => (
                     <div key={s._id || s.name} className="flex justify-between items-center py-2 border-b border-gray-50 dark:border-zinc-800 last:border-0">
                       <span className="text-sm text-gray-700 dark:text-zinc-300">{s.name}</span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{s.percentage}%</span>
+                      <span className="text-sm font-semibold text-green-600 dark:text-green-400">{s.percentage}%</span>
                     </div>
                   ))}
                   {(!academicPerformance?.topPerformers || academicPerformance.topPerformers.length === 0) && (
@@ -501,7 +595,7 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
                   {academicPerformance?.needsImprovement?.slice(0, 3).map((s) => (
                     <div key={s._id || s.name} className="flex justify-between items-center py-2 border-b border-gray-50 dark:border-zinc-800 last:border-0">
                       <span className="text-sm text-gray-700 dark:text-zinc-300">{s.name}</span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{s.percentage}%</span>
+                      <span className="text-sm font-semibold text-red-500 dark:text-red-400">{s.percentage}%</span>
                     </div>
                   ))}
                   {(!academicPerformance?.needsImprovement || academicPerformance.needsImprovement.length === 0) && (
@@ -514,58 +608,153 @@ function OverviewTab({ id, cls, classesEnhancedApi }) {
         </div>
 
         {/* Ratings Breakdown */}
-        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-          <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                <Star size={16} className="text-gray-600 dark:text-zinc-400" />
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.classRatings')}</h3>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.detailedBreakdown')}</p>
-              </div>
+        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 overflow-hidden">
+          <div className="p-4 border-b border-gray-100 dark:border-zinc-800 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+              <Star size={14} className="text-gray-600 dark:text-zinc-400" />
+            </div>
+            <div>
+              <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.classRatings')}</h3>
+              <p className="text-[11px] text-gray-500 dark:text-zinc-400">Overall: {(classRating?.overallRating || classRating?.rating || 0).toFixed(1)} / 5.0</p>
             </div>
           </div>
-          <div className="p-5">
-            {ratingLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin w-6 h-6 border-2 border-gray-300 dark:border-zinc-600 border-t-gray-600 dark:border-t-zinc-400 rounded-full" />
+          <div className="p-4">
+            {!classRating ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4].map(i => <Bone key={i} className="h-6 w-full" />)}
+              </div>
+            ) : classRating?.breakdown && Object.keys(classRating.breakdown).length > 0 ? (
+              <div className="space-y-3">
+                {Object.entries(classRating.breakdown).map(([key, val]) => {
+                  const pct = ((val || 0) / 5) * 100;
+                  const colors = { attendance: 'bg-blue-500', academic: 'bg-green-500', behavior: 'bg-purple-500', fee: 'bg-amber-500' };
+                  return (
+                    <div key={key}>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="capitalize text-gray-600 dark:text-zinc-400">{key}</span>
+                        <span className="font-medium text-gray-900 dark:text-zinc-100">{(val || 0).toFixed(1)}</span>
+                      </div>
+                      <div className="h-2 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${colors[key] || 'bg-gray-500'}`} style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
-              <div className="space-y-3">
-                {classRating?.breakdown && Object.entries(classRating.breakdown).map(([key, val]) => (
-                  <div key={key}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="capitalize text-gray-600 dark:text-zinc-400">{key}</span>
-                      <span className="font-medium text-gray-900 dark:text-zinc-100">{val.toFixed(1)}</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gray-800 dark:bg-zinc-200 rounded-full"
-                        style={{ width: `${(val / 5) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-                {(!classRating?.breakdown || Object.keys(classRating.breakdown).length === 0) && (
-                  <p className="text-xs text-gray-400 dark:text-zinc-500 text-center py-4">{t('pages.noRatingsAvailable')}</p>
-                )}
-              </div>
+              <p className="text-xs text-gray-400 dark:text-zinc-500 text-center py-4">{t('pages.noRatingsAvailable')}</p>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Chronic Absentees */}
+      {chronicAbsentees.length > 0 && (
+        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 overflow-hidden">
+          <div className="p-4 border-b border-gray-100 dark:border-zinc-800 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-950/30 flex items-center justify-center">
+              <AlertCircle size={14} className="text-red-500 dark:text-red-400" />
+            </div>
+            <div>
+              <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Chronic Absentees</h3>
+              <p className="text-[11px] text-gray-500 dark:text-zinc-400">Students below 60% attendance this month</p>
+            </div>
+          </div>
+          <div className="divide-y divide-gray-50 dark:divide-zinc-800">
+            {chronicAbsentees.slice(0, 5).map((s, i) => (
+              <div key={s.studentId || i} className="px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-zinc-400">
+                    {s.studentName?.charAt(0) || '?'}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{s.studentName}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">Roll {s.rollNo || '-'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-red-500 dark:text-red-400">{s.percentage?.toFixed(0) || 0}%</p>
+                    <p className="text-[11px] text-gray-400 dark:text-zinc-500">attendance</p>
+                  </div>
+                  {s.hasParentContact && (
+                    <div className="w-6 h-6 rounded-full bg-green-50 dark:bg-green-950/30 flex items-center justify-center" title="Parent contact available">
+                      <CheckCircle2 size={12} className="text-green-500" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Activity */}
+      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 overflow-hidden">
+        <div className="p-4 border-b border-gray-100 dark:border-zinc-800 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+            <Activity size={14} className="text-gray-600 dark:text-zinc-400" />
+          </div>
+          <div>
+            <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Recent Activity</h3>
+            <p className="text-[11px] text-gray-500 dark:text-zinc-400">Latest actions on this class</p>
+          </div>
+        </div>
+        <div className="p-4">
+          {activityLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => <Bone key={i} className="h-10 w-full" />)}
+            </div>
+          ) : activityLog.length > 0 ? (
+            <div className="relative pl-6">
+              <div className="absolute left-2 top-2 bottom-2 w-px bg-gray-200 dark:bg-zinc-700" />
+              <div className="space-y-4">
+                {activityLog.slice(0, 5).map((entry, i) => (
+                  <div key={entry._id || i} className="relative">
+                    <div className="absolute -left-[18px] top-1 w-2.5 h-2.5 rounded-full bg-gray-400 dark:bg-zinc-500 border-2 border-white dark:border-zinc-950" />
+                    <p className="text-sm text-gray-700 dark:text-zinc-300">{entry.description || entry.activityType?.replace(/_/g, ' ')}</p>
+                    <p className="text-[11px] text-gray-400 dark:text-zinc-500">
+                      {entry.performedBy?.name || 'System'}{entry.createdAt ? ` · ${formatShortDate(entry.createdAt)}` : ''}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-gray-400 dark:text-zinc-500 text-center py-4">No activity recorded yet</p>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function StudentsTab({ id, cls, navigate }) {
+// ═══════════════════════════════════════════════════════════════════
+// STUDENTS TAB (Enhanced)
+// ═══════════════════════════════════════════════════════════════════
+
+function StudentsTab({ id, cls, navigate, classesEnhancedApi }) {
   const { t } = useTranslation();
   const { students } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("rollNo");
+  const [sortDir, setSortDir] = useState("asc");
+  const [performanceMap, setPerformanceMap] = useState({});
 
-  // Use String() comparison for ObjectId matching
+  // Fetch academic performance for student lookup
+  useEffect(() => {
+    if (!id || !classesEnhancedApi) return;
+    classesEnhancedApi.getAcademicPerformance(id).then(perf => {
+      const map = {};
+      (perf?.topPerformers || []).concat(perf?.needsImprovement || []).forEach(s => {
+        const key = s.studentId || s._id;
+        if (key) map[String(key)] = s.percentage || s.averagePercentage || 0;
+      });
+      setPerformanceMap(map);
+    }).catch(() => {});
+  }, [id, classesEnhancedApi]);
+
   const classStudents = useMemo(() => students.filter(s =>
     String(s.classId) === String(cls?.id) &&
     (s.status || 'active') === 'active' &&
@@ -573,37 +762,65 @@ function StudentsTab({ id, cls, navigate }) {
   ), [students, cls]);
 
   const filteredStudents = useMemo(() => {
-    return classStudents.filter(s => {
-      const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.rollNo.toString().includes(searchQuery);
+    let list = classStudents.filter(s => {
+      const matchesSearch = s.name?.toLowerCase().includes(searchQuery.toLowerCase()) || String(s.rollNo).includes(searchQuery);
       const matchesFilter = filter === "all" ? true : s.feeStatus === filter;
       return matchesSearch && matchesFilter;
     });
-  }, [classStudents, searchQuery, filter]);
+
+    list.sort((a, b) => {
+      let aVal, bVal;
+      switch (sortBy) {
+        case 'name': aVal = a.name || ''; bVal = b.name || ''; break;
+        case 'feeStatus': aVal = a.feeStatus || 'pending'; bVal = b.feeStatus || 'pending'; break;
+        case 'academic':
+          aVal = performanceMap[String(a.id || a._id)] || 0;
+          bVal = performanceMap[String(b.id || b._id)] || 0;
+          return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+        default: aVal = a.rollNo || 0; bVal = b.rollNo || 0; return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      if (typeof aVal === 'string') return sortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+
+    return list;
+  }, [classStudents, searchQuery, filter, sortBy, sortDir, performanceMap]);
+
+  const handleSort = (col) => {
+    if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortBy(col); setSortDir('asc'); }
+  };
+
+  const paidCount = classStudents.filter(s => s.feeStatus === 'paid').length;
+  const pendingCount = classStudents.filter(s => s.feeStatus !== 'paid').length;
 
   return (
     <div className="space-y-4">
-      {/* Search and Filter */}
+      {/* Summary chips */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 rounded-lg">
+          {classStudents.length} Students
+        </span>
+        <span className="px-3 py-1.5 text-xs font-medium bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 rounded-lg">
+          {paidCount} Paid
+        </span>
+        <span className="px-3 py-1.5 text-xs font-medium bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 rounded-lg">
+          {pendingCount} Pending
+        </span>
+      </div>
+
+      {/* Search + Filter */}
       <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
-            <input
-              type="text"
-              placeholder={t('pages.searchStudents')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:border-gray-400 dark:focus:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
-            />
+            <input type="text" placeholder={t('pages.searchStudents')} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:border-gray-400 dark:focus:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500" />
           </div>
           <div className="flex items-center gap-1 bg-gray-100 dark:bg-zinc-800 p-1 rounded-lg">
             {["all", "paid", "pending"].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  filter === f ? 'bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 shadow-sm' : 'text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300'
-                }`}
-              >
+              <button key={f} onClick={() => setFilter(f)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${filter === f ? 'bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 shadow-sm' : 'text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300'}`}>
                 {f.charAt(0).toUpperCase() + f.slice(1)}
               </button>
             ))}
@@ -611,52 +828,91 @@ function StudentsTab({ id, cls, navigate }) {
         </div>
       </div>
 
-      {/* Students List */}
+      {/* Students Table */}
       <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.classStudents')}</h3>
-            <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{filteredStudents.length} students</p>
+        {/* Table header */}
+        <div className="hidden sm:grid grid-cols-12 gap-2 px-5 py-3 bg-gray-50 dark:bg-zinc-900 border-b border-gray-100 dark:border-zinc-800 text-xs font-medium text-gray-500 dark:text-zinc-400">
+          <div className="col-span-1 cursor-pointer flex items-center gap-1" onClick={() => handleSort('rollNo')}>
+            Roll {sortBy === 'rollNo' && <ArrowUpDown size={10} />}
           </div>
+          <div className="col-span-4 cursor-pointer flex items-center gap-1" onClick={() => handleSort('name')}>
+            Student {sortBy === 'name' && <ArrowUpDown size={10} />}
+          </div>
+          <div className="col-span-2 cursor-pointer flex items-center gap-1" onClick={() => handleSort('academic')}>
+            Academic {sortBy === 'academic' && <ArrowUpDown size={10} />}
+          </div>
+          <div className="col-span-2">Attendance</div>
+          <div className="col-span-2 cursor-pointer flex items-center gap-1" onClick={() => handleSort('feeStatus')}>
+            Fee {sortBy === 'feeStatus' && <ArrowUpDown size={10} />}
+          </div>
+          <div className="col-span-1"></div>
         </div>
 
         {filteredStudents.length > 0 ? (
           <div className="divide-y divide-gray-50 dark:divide-zinc-800">
-            {filteredStudents.map(student => (
-              <div
-                key={student.id}
-                className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-900 transition-colors cursor-pointer"
-                onClick={() => navigate(`/students/${student.id}`)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                    {student.photo ? (
-                      <img src={student.photo} alt={student.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+            {filteredStudents.map(student => {
+              const academicPct = performanceMap[String(student.id || student._id)] || null;
+              return (
+                <div key={student.id} className="sm:grid grid-cols-12 gap-2 px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-900 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/students/${student.id}`)}>
+                  {/* Roll */}
+                  <div className="col-span-1 text-xs font-mono text-gray-500 dark:text-zinc-400 hidden sm:block">
+                    {student.rollNo || '-'}
+                  </div>
+                  {/* Student */}
+                  <div className="col-span-4 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      {student.photo ? (
+                        <img src={student.photo} alt={student.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                      ) : (
+                        <span className="text-xs font-medium text-gray-600 dark:text-zinc-400">{student.name?.charAt(0)}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{student.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400 truncate sm:hidden">Roll {student.rollNo} · {student.parentName || 'Parent'}</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400 truncate hidden sm:block">{student.parentName || 'Parent'}</p>
+                    </div>
+                  </div>
+                  {/* Academic */}
+                  <div className="col-span-2 hidden sm:block">
+                    {academicPct !== null ? (
+                      <span className={`text-sm font-medium ${academicPct >= 75 ? 'text-green-600 dark:text-green-400' : academicPct >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>
+                        {academicPct}%
+                      </span>
                     ) : (
-                      <span className="text-xs font-medium text-gray-600 dark:text-zinc-400">{student.name?.charAt(0)}</span>
+                      <span className="text-xs text-gray-300 dark:text-zinc-600">—</span>
                     )}
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{student.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">Roll {student.rollNo} • {student.parentName || 'Parent'}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1.5">
-                    <div className={`w-2 h-2 rounded-full ${student.attendanceStatus === 'present' ? "bg-gray-600 dark:bg-zinc-400" : "bg-gray-300 dark:bg-zinc-600"}`} />
+                  {/* Attendance */}
+                  <div className="col-span-2 hidden sm:flex items-center gap-1.5">
+                    <div className={`w-2 h-2 rounded-full ${student.attendanceStatus === 'present' ? "bg-green-500" : student.attendanceStatus === 'absent' ? "bg-red-400" : "bg-gray-300 dark:bg-zinc-600"}`} />
                     <span className="text-xs text-gray-500 dark:text-zinc-400">
-                      {student.attendanceStatus === 'present' ? 'Present' : 'Absent'}
+                      {student.attendanceStatus === 'present' ? 'Present' : student.attendanceStatus === 'absent' ? 'Absent' : '—'}
                     </span>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-md ${
-                    student.feeStatus === 'paid' ? 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400' : 'bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400'
-                  }`}>
-                    {student.feeStatus || 'Pending'}
-                  </span>
-                  <ArrowLeft size={16} className="text-gray-300 dark:text-zinc-600 rotate-180" />
+                  {/* Fee */}
+                  <div className="col-span-2 hidden sm:block">
+                    <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
+                      student.feeStatus === 'paid' ? 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400' : 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400'
+                    }`}>
+                      {student.feeStatus === 'paid' ? 'Paid' : 'Pending'}
+                    </span>
+                  </div>
+                  {/* Arrow */}
+                  <div className="col-span-1 text-right hidden sm:block">
+                    <ChevronRight size={14} className="text-gray-300 dark:text-zinc-600 inline" />
+                  </div>
+                  {/* Mobile badges */}
+                  <div className="flex items-center gap-2 sm:hidden">
+                    <span className={`text-xs px-2 py-0.5 rounded-md ${student.feeStatus === 'paid' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+                      {student.feeStatus === 'paid' ? 'Paid' : 'Pending'}
+                    </span>
+                    <ChevronRight size={14} className="text-gray-300" />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="px-5 py-12 text-center">
@@ -669,41 +925,49 @@ function StudentsTab({ id, cls, navigate }) {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// FEES TAB
+// ═══════════════════════════════════════════════════════════════════
+
 function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
   const { t } = useTranslation();
   const [feesOverview, setFeesOverview] = useState(null);
+  const [feesLoading, setFeesLoading] = useState(true);
   const { students } = useApp();
 
   useEffect(() => {
     if (classesEnhancedApi && id) {
-      classesEnhancedApi.getFeesOverview(id).then(setFeesOverview).catch(console.error);
+      setFeesLoading(true);
+      classesEnhancedApi.getFeesOverview(id).then(setFeesOverview).catch(logger.error).finally(() => setFeesLoading(false));
     }
   }, [id, classesEnhancedApi]);
 
-  // Use String() comparison for ObjectId matching
   const classStudents = students.filter(s =>
-    String(s.classId) === String(cls?.id) &&
-    (s.status || 'active') === 'active' &&
-    s.isDeleted !== true
+    String(s.classId) === String(cls?.id) && (s.status || 'active') === 'active' && s.isDeleted !== true
   );
   const pendingStudents = classStudents.filter(s => s.feeStatus !== 'paid');
 
-  // Stats
   const stats = [
-    { label: "Collected", value: `₹${feesOverview?.collected?.toLocaleString() || "0"}`, icon: CheckCircle2 },
-    { label: "Pending", value: `₹${feesOverview?.pending?.toLocaleString() || "0"}`, icon: AlertCircle },
-    { label: "Overdue", value: `₹${feesOverview?.overdue?.toLocaleString() || "0"}`, icon: AlertTriangle },
+    { label: "Collected", value: `₹${feesOverview?.collected?.toLocaleString('en-IN') || "0"}`, icon: CheckCircle2, bg: 'bg-green-50 dark:bg-green-950/30', iconColor: 'text-green-600 dark:text-green-400' },
+    { label: "Pending", value: `₹${feesOverview?.pending?.toLocaleString('en-IN') || "0"}`, icon: AlertCircle, bg: 'bg-amber-50 dark:bg-amber-950/30', iconColor: 'text-amber-600 dark:text-amber-400' },
+    { label: "Overdue", value: `₹${feesOverview?.overdue?.toLocaleString('en-IN') || "0"}`, icon: AlertTriangle, bg: 'bg-red-50 dark:bg-red-950/30', iconColor: 'text-red-500 dark:text-red-400' },
   ];
 
   return (
     <div className="space-y-4">
       {/* Fee Stats */}
       <div className="grid grid-cols-3 gap-4">
-        {stats.map((stat) => (
+        {feesLoading ? (
+          [1, 2, 3].map(i => (
+            <div key={i} className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 space-y-2">
+              <Bone className="h-3 w-20" /><Bone className="h-6 w-16" />
+            </div>
+          ))
+        ) : stats.map((stat) => (
           <div key={stat.label} className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
             <div className="flex items-start justify-between mb-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                <stat.icon size={16} className="text-gray-600 dark:text-zinc-400" />
+              <div className={`w-9 h-9 rounded-lg ${stat.bg} flex items-center justify-center`}>
+                <stat.icon size={16} className={stat.iconColor} />
               </div>
             </div>
             <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{stat.value}</h3>
@@ -739,7 +1003,7 @@ function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{student.pendingFees || "5,000"}</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{student.pendingFees ? Number(student.pendingFees).toLocaleString('en-IN') : "0"}</span>
                   <Button size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" onPress={() => navigate(`/fees/collect?student=${student.id}`)}>{t('pages.collect')}</Button>
                 </div>
               </div>
@@ -748,7 +1012,8 @@ function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
         ) : (
           <div className="px-5 py-12 text-center">
             <IndianRupee size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
-            <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noPendingFees')}</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-zinc-300 mb-1">All fees collected!</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.noPendingFees')}</p>
           </div>
         )}
       </div>
@@ -756,149 +1021,106 @@ function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// ACADEMICS TAB
+// ═══════════════════════════════════════════════════════════════════
+
 function AcademicsTab({ id, cls, classesEnhancedApi }) {
   const { t } = useTranslation();
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Fetch exams for this class
   useEffect(() => {
     if (!id) return;
     const controller = new AbortController();
-    const fetchExams = async () => {
-      setLoading(true);
-      try {
-        const data = await examsApi.getByClass(id);
-        if (!controller.signal.aborted) setExams(data || []);
-      } catch (error) {
-        if (!controller.signal.aborted) {
-          console.error('Error fetching exams:', error);
-          toast.error(t('toast.error.failedToLoadExams'));
-        }
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
-      }
-    };
-    fetchExams();
+    setLoading(true);
+    examsApi.getByClass(id)
+      .then(data => { if (!controller.signal.aborted) setExams(data || []); })
+      .catch(error => { if (!controller.signal.aborted) { logger.error('Error fetching exams:', error); toast.error(t('toast.error.failedToLoadExams')); } })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [id]);
 
-  // Get status color
   const getStatusColor = (status) => {
     switch (status) {
       case 'scheduled': return 'primary';
       case 'ongoing': return 'warning';
-      case 'completed': return 'success';
-      case 'results_published': return 'success';
+      case 'completed': case 'results_published': return 'success';
       default: return 'default';
     }
   };
 
-  // Group exams by status
-  const examsByStatus = useMemo(() => {
-    return {
-      scheduled: exams.filter(e => e.status === 'scheduled'),
-      ongoing: exams.filter(e => e.status === 'ongoing'),
-      completed: exams.filter(e => e.status === 'completed' || e.status === 'results_published'),
-    };
-  }, [exams]);
+  const examsByStatus = useMemo(() => ({
+    scheduled: exams.filter(e => e.status === 'scheduled'),
+    ongoing: exams.filter(e => e.status === 'ongoing'),
+    completed: exams.filter(e => e.status === 'completed' || e.status === 'results_published'),
+  }), [exams]);
 
   return (
     <div className="space-y-4">
       {/* Stats Row */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.totalExams')}</p>
-          <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{exams.length}</p>
-        </div>
-        <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-blue-600">{t('pages.scheduled')}</p>
-          <p className="text-xl font-semibold text-blue-700">{examsByStatus.scheduled.length}</p>
-        </div>
-        <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-amber-600">{t('pages.ongoing')}</p>
-          <p className="text-xl font-semibold text-amber-700">{examsByStatus.ongoing.length}</p>
-        </div>
-        <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-green-600">{t('pages.completed')}</p>
-          <p className="text-xl font-semibold text-green-700">{examsByStatus.completed.length}</p>
-        </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: t('pages.totalExams'), value: exams.length, color: 'text-gray-900 dark:text-zinc-100' },
+          { label: t('pages.scheduled'), value: examsByStatus.scheduled.length, color: 'text-blue-600' },
+          { label: t('pages.ongoing'), value: examsByStatus.ongoing.length, color: 'text-amber-600' },
+          { label: t('pages.completed'), value: examsByStatus.completed.length, color: 'text-green-600' },
+        ].map(stat => (
+          <div key={stat.label} className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
+            <p className="text-xs text-gray-500 dark:text-zinc-400">{stat.label}</p>
+            <p className={`text-xl font-semibold ${stat.color}`}>{stat.value}</p>
+          </div>
+        ))}
       </div>
 
       {/* Exams List */}
       <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-        <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
+        <div className="p-4 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-              <FileText size={16} className="text-gray-600 dark:text-zinc-400" />
+            <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+              <FileText size={14} className="text-gray-600 dark:text-zinc-400" />
             </div>
             <div>
               <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.classExams')}</h3>
-              <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.allScheduledAndCompletedExams')}</p>
+              <p className="text-[11px] text-gray-500 dark:text-zinc-400">{t('pages.allScheduledAndCompletedExams')}</p>
             </div>
           </div>
-          <Button
-            size="sm"
-            className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
-            startContent={<FileText size={14} />}
-            onPress={() => navigate('/academics/exams')}
-          >
-            Manage Exams
-          </Button>
+          <Button size="sm" className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900" startContent={<FileText size={14} />}
+            onPress={() => navigate('/academics/exams')}>Manage Exams</Button>
         </div>
 
         {loading ? (
-          <div className="p-8 flex items-center justify-center">
-            <div className="animate-spin w-6 h-6 border-2 border-gray-300 dark:border-zinc-600 border-t-gray-600 dark:border-t-zinc-400 rounded-full" />
+          <div className="p-4 space-y-3">
+            {[1, 2, 3].map(i => <Bone key={i} className="h-14 w-full" />)}
           </div>
         ) : exams.length === 0 ? (
           <div className="p-8 text-center">
             <FileText size={40} className="mx-auto text-gray-200 dark:text-zinc-700 mb-4" />
             <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noExamsScheduledForThisClassYet')}</p>
-            <Button
-              className="mt-4 bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
-              startContent={<FileText size={16} />}
-              onPress={() => navigate('/academics/exams')}
-            >
-              Create Exam
-            </Button>
+            <Button className="mt-4 bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900" startContent={<FileText size={16} />}
+              onPress={() => navigate('/academics/exams')}>Create Exam</Button>
           </div>
         ) : (
           <div className="divide-y divide-gray-50 dark:divide-zinc-800">
             {exams.map((exam) => (
-              <div
-                key={exam._id || exam.id}
-                className="px-5 py-4 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-900 transition-colors cursor-pointer"
-                onClick={() => navigate(`/academics/exams/${exam._id || exam.id}`)}
-              >
+              <div key={exam._id || exam.id} className="px-5 py-4 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-900 transition-colors cursor-pointer"
+                onClick={() => navigate(`/academics/exams/${exam._id || exam.id}`)}>
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
                     <FileText size={18} className="text-gray-600 dark:text-zinc-400" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{exam.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">
-                      {exam.subjectName || 'General'} • {exam.type?.replace('_', ' ') || 'Exam'}
-                    </p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.subjectName || 'General'} · {exam.type?.replace('_', ' ') || 'Exam'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">
-                      {exam.startDate ? new Date(exam.startDate).toLocaleDateString() : 'Not scheduled'}
-                    </p>
-                    <p className="text-xs text-gray-400 dark:text-zinc-500">
-                      Max: {exam.maxMarks || 100} | Pass: {exam.passingMarks || 35}
-                    </p>
+                  <div className="text-right hidden sm:block">
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.startDate ? formatShortDate(exam.startDate) : 'Not scheduled'}</p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500">Max: {exam.maxMarks || 100} | Pass: {exam.passingMarks || 35}</p>
                   </div>
-                  <Chip
-                    size="sm"
-                    color={getStatusColor(exam.status)}
-                    variant="flat"
-                  >
-                    {exam.status?.replace('_', ' ') || 'scheduled'}
-                  </Chip>
+                  <Chip size="sm" color={getStatusColor(exam.status)} variant="flat">{exam.status?.replace('_', ' ') || 'scheduled'}</Chip>
                 </div>
               </div>
             ))}

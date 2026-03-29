@@ -24,10 +24,12 @@ const AttendanceCard = ({ student }) => {
           <Text style={styles.value}>{student.attendance}%</Text>
         </View>
 
-        {/* Status */}
+        {/* Status - dynamic based on attendance percentage */}
         <View style={styles.status}>
           <View style={styles.statusDot} />
-          <Text style={styles.statusText}>Excellent Record</Text>
+          <Text style={styles.statusText}>
+            {student.attendance >= 90 ? 'Excellent Record' : student.attendance >= 75 ? 'Good Record' : student.attendance >= 50 ? 'Average Record' : 'Needs Improvement'}
+          </Text>
         </View>
       </LinearGradient>
     </View>

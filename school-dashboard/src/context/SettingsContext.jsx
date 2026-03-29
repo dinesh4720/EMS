@@ -7,6 +7,7 @@ import { useThemeSettings } from "./hooks/useThemeSettings";
 import toast from "react-hot-toast";
 import { CURRENT_ACADEMIC_YEAR } from "../utils/constants";
 import { syncSchoolLanguage } from "../i18n";
+import logger from "../utils/logger";
 
 // NOTE: These are minimal fallback values only.
 // The application fetches actual data from the API on mount.
@@ -94,7 +95,7 @@ export function SettingsProvider({ children }) {
       toast.success("School settings updated successfully");
       return updated;
     } catch (err) {
-      console.error("Failed to update school settings:", err);
+      logger.error("Failed to update school settings:", err);
       toast.error("Failed to update school settings");
       throw err;
     }
@@ -102,13 +103,19 @@ export function SettingsProvider({ children }) {
 
   const addSubject = async (subject) => {
     try {
-      const created = await settingsApi.createSubject(subject);
-      setSchoolSettings((prev) => ({ ...prev, subjects: [...prev.subjects, created] }));
+      const result = await settingsApi.createSubject(subject);
+      // Backend now returns { subjects, classesUpdated }
+      const subjects = Array.isArray(result) ? result : result.subjects || result;
+      const classesUpdated = result.classesUpdated || 0;
+      setSchoolSettings((prev) => ({ ...prev, subjects }));
       void invalidateSettingsData();
-      toast.success("Subject added successfully");
-      return created;
+      const msg = classesUpdated > 0
+        ? `Subject added and synced to ${classesUpdated} class${classesUpdated > 1 ? 'es' : ''}`
+        : "Subject added successfully";
+      toast.success(msg);
+      return subjects;
     } catch (err) {
-      console.error("Failed to add subject:", err);
+      logger.error("Failed to add subject:", err);
       toast.error("Failed to add subject");
       // Fallback to local state
       const subjectWithId = { ...subject, id: nextSubjectId };
@@ -123,19 +130,18 @@ export function SettingsProvider({ children }) {
 
   const updateSubject = async (id, updates) => {
     try {
-      const updated = await settingsApi.updateSubject(id, updates);
-      setSchoolSettings((prev) => ({
-        ...prev,
-        subjects: prev.subjects.map((s) => {
-          const subjectId = s.id || s._id;
-          return String(subjectId) === String(id) ? updated : s;
-        }),
-      }));
+      const result = await settingsApi.updateSubject(id, updates);
+      const subjects = Array.isArray(result) ? result : result.subjects || result;
+      const classesUpdated = result.classesUpdated || 0;
+      setSchoolSettings((prev) => ({ ...prev, subjects }));
       void invalidateSettingsData();
-      toast.success("Subject updated successfully");
-      return updated;
+      const msg = classesUpdated > 0
+        ? `Subject updated and synced to ${classesUpdated} class${classesUpdated > 1 ? 'es' : ''}`
+        : "Subject updated successfully";
+      toast.success(msg);
+      return subjects;
     } catch (err) {
-      console.error("Failed to update subject:", err);
+      logger.error("Failed to update subject:", err);
       toast.error("Failed to update subject");
       // Fallback to local state
       setSchoolSettings((prev) => ({
@@ -150,18 +156,17 @@ export function SettingsProvider({ children }) {
 
   const deleteSubject = async (id) => {
     try {
-      await settingsApi.deleteSubject(id);
-      setSchoolSettings((prev) => ({
-        ...prev,
-        subjects: prev.subjects.filter((s) => {
-          const subjectId = s.id || s._id;
-          return String(subjectId) !== String(id);
-        }),
-      }));
+      const result = await settingsApi.deleteSubject(id);
+      const subjects = Array.isArray(result) ? result : result.subjects || result;
+      const classesUpdated = result.classesUpdated || 0;
+      setSchoolSettings((prev) => ({ ...prev, subjects }));
       void invalidateSettingsData();
-      toast.success("Subject deleted successfully");
+      const msg = classesUpdated > 0
+        ? `Subject deleted and removed from ${classesUpdated} class${classesUpdated > 1 ? 'es' : ''}`
+        : "Subject deleted successfully";
+      toast.success(msg);
     } catch (err) {
-      console.error("Failed to delete subject:", err);
+      logger.error("Failed to delete subject:", err);
       toast.error("Failed to delete subject");
       throw err;
     }
@@ -192,7 +197,7 @@ export function SettingsProvider({ children }) {
         toast.success("Holiday added successfully");
         return eventWithId;
       } catch (err) {
-        console.error("Failed to add holiday:", err);
+        logger.error("Failed to add holiday:", err);
         toast.error("Failed to add holiday");
         throw err;
       }
@@ -224,7 +229,7 @@ export function SettingsProvider({ children }) {
         toast.success("Event added successfully");
         return created;
       } catch (err) {
-        console.error("Failed to save event to server:", err);
+        logger.error("Failed to save event to server:", err);
         toast.error("Event saved locally (server unavailable)");
         return localEvent;
       }
@@ -245,7 +250,7 @@ export function SettingsProvider({ children }) {
         void invalidateSettingsData();
         toast.success("Holiday updated successfully");
       } catch (err) {
-        console.error("Failed to update holiday:", err);
+        logger.error("Failed to update holiday:", err);
         toast.error("Failed to update holiday");
         throw err;
       }
@@ -256,7 +261,7 @@ export function SettingsProvider({ children }) {
         void invalidateSettingsData();
         toast.success("Event updated successfully");
       } catch (err) {
-        console.error("Failed to update event:", err);
+        logger.error("Failed to update event:", err);
         toast.error("Failed to update event");
         throw err;
       }
@@ -272,7 +277,7 @@ export function SettingsProvider({ children }) {
         void invalidateSettingsData();
         toast.success("Holiday deleted successfully");
       } catch (err) {
-        console.error("Failed to delete holiday:", err);
+        logger.error("Failed to delete holiday:", err);
         toast.error("Failed to delete holiday");
         throw err;
       }
@@ -283,7 +288,7 @@ export function SettingsProvider({ children }) {
         void invalidateSettingsData();
         toast.success("Event deleted successfully");
       } catch (err) {
-        console.error("Failed to delete event:", err);
+        logger.error("Failed to delete event:", err);
         toast.error("Failed to delete event");
         throw err;
       }

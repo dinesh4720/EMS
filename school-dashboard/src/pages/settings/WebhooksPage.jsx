@@ -11,6 +11,8 @@ import {
 import { request } from '../../services/api';
 import { MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
+import { formatDateTime } from '../../utils/dateFormatter';
+import { useTranslation } from 'react-i18next';
 
 const FALLBACK_EVENTS = [
   'student.created', 'student.updated', 'student.deleted',
@@ -25,6 +27,7 @@ const FALLBACK_EVENTS = [
 const EMPTY_FORM = { url: '', events: [], isActive: true, secret: '' };
 
 export default function WebhooksPage() {
+  const { t } = useTranslation();
   const [webhooks, setWebhooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
@@ -292,7 +295,7 @@ export default function WebhooksPage() {
                               </div>
                               <span className="text-gray-400 dark:text-zinc-500 shrink-0 flex items-center gap-1">
                                 <Clock size={10} />
-                                {log.createdAt ? new Date(log.createdAt).toLocaleString() : '—'}
+                                {log.createdAt ? formatDateTime(log.createdAt) : '—'}
                               </span>
                             </div>
                           ))}
@@ -330,7 +333,7 @@ export default function WebhooksPage() {
           <ModalBody className="px-6 py-4 space-y-4">
             <Input
               label="Endpoint URL *"
-              placeholder="https://your-server.com/webhook"
+              placeholder={t('settings.webhookUrlPlaceholder')}
               value={form.url}
               onChange={e => { setForm(p => ({ ...p, url: e.target.value })); setErrors(prev => ({ ...prev, url: '' })); }}
               variant="bordered"
@@ -340,7 +343,7 @@ export default function WebhooksPage() {
             />
             <Input
               label="Secret (optional — auto-generated if empty)"
-              placeholder="Leave blank to auto-generate"
+              placeholder={t('settings.webhookSecretPlaceholder')}
               value={form.secret}
               onChange={e => setForm(p => ({ ...p, secret: e.target.value }))}
               variant="bordered"

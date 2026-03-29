@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import logger from "../../utils/logger";
 import {
   Card,
   CardBody,
@@ -47,14 +48,14 @@ export const trashApi = {
     return response.byType || response;
   },
   restore: (id) => request(`/trash/${id}/restore`, { method: "POST" }),
-  restoreBulk: (ids) => request("/trash/restore-bulk", {
+  restoreBulk: (ids) => request("/trash/bulk-restore", {
     method: "POST",
-    body: JSON.stringify({ ids })
+    body: JSON.stringify({ trashItemIds: ids })
   }),
-  permanentDelete: (id) => request(`/trash/${id}/permanent`, { method: "DELETE" }),
-  permanentDeleteBulk: (ids) => request("/trash/permanent-bulk", {
+  permanentDelete: (id) => request(`/trash/${id}`, { method: "DELETE" }),
+  permanentDeleteBulk: (ids) => request("/trash/bulk-delete", {
     method: "DELETE",
-    body: JSON.stringify({ ids })
+    body: JSON.stringify({ trashItemIds: ids })
   }),
 };
 
@@ -128,7 +129,7 @@ export default function TrashSettings() {
       };
       setStats(transformedStats);
     } catch (error) {
-      console.error("Failed to load trash data:", error);
+      logger.error("Failed to load trash data:", error);
       toast.error(t('toast.error.failedToLoadTrashData'));
     } finally {
       setLoading(false);
@@ -194,7 +195,7 @@ export default function TrashSettings() {
       await loadTrashData();
       setSelectedItems(new Set());
     } catch (error) {
-      console.error("Failed to restore item:", error);
+      logger.error("Failed to restore item:", error);
       toast.error(error.message || "Failed to restore item");
     } finally {
       setActionInProgress(false);
@@ -214,7 +215,7 @@ export default function TrashSettings() {
       await loadTrashData();
       setSelectedItems(new Set());
     } catch (error) {
-      console.error("Failed to permanently delete item:", error);
+      logger.error("Failed to permanently delete item:", error);
       toast.error(error.message || "Failed to delete item");
     } finally {
       setActionInProgress(false);
@@ -248,7 +249,7 @@ export default function TrashSettings() {
       setSelectedItems(new Set());
       setPendingAction(null);
     } catch (error) {
-      console.error("Failed to execute bulk action:", error);
+      logger.error("Failed to execute bulk action:", error);
       toast.error(error.message || "Failed to complete action");
     } finally {
       setActionInProgress(false);
@@ -399,7 +400,7 @@ export default function TrashSettings() {
               size="sm"
               placeholder={t('pages.filterByType')}
               selectedKeys={[typeFilter]}
-              onChange={(e) => setTypeFilter(e.target.value)}
+              onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
               variant="bordered"
               className="max-w-xs"
               classNames={{

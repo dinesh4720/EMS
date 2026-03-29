@@ -463,6 +463,43 @@ export const subjectsApi = {
   },
 };
 
+// === HOMEWORK API ===
+export const homeworkApi = {
+  // Get all homework for a teacher
+  getTeacherHomework: async (teacherId, params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return await request(`/homework/teacher/${teacherId}${query ? `?${query}` : ''}`);
+  },
+
+  // Get homework by ID
+  getById: async (homeworkId) => {
+    return await request(`/homework/${homeworkId}`);
+  },
+
+  // Create homework
+  create: async (homeworkData) => {
+    return await request('/homework', {
+      method: 'POST',
+      body: JSON.stringify(homeworkData),
+    });
+  },
+
+  // Update homework
+  update: async (homeworkId, homeworkData) => {
+    return await request(`/homework/${homeworkId}`, {
+      method: 'PUT',
+      body: JSON.stringify(homeworkData),
+    });
+  },
+
+  // Delete homework
+  delete: async (homeworkId) => {
+    return await request(`/homework/${homeworkId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
 // === PAYSLIPS API ===
 export const payslipsApi = {
   // Get all payslips for a staff member
@@ -590,6 +627,18 @@ export const uploadApi = {
   },
 };
 
+// Notifications API
+const notificationsApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/notifications${query ? `?${query}` : ''}`);
+  },
+  markAsRead: (id) => request(`/notifications/${id}/read`, { method: 'PUT' }),
+  markAllAsRead: () => request('/notifications/read-all', { method: 'PUT' }),
+  delete: (id) => request(`/notifications/${id}`, { method: 'DELETE' }),
+  clearAll: () => request('/notifications/clear-all', { method: 'DELETE' }),
+};
+
 export default {
   auth: authApi,
   staff: staffApi,
@@ -598,8 +647,10 @@ export default {
   exams: examsApi,
   results: resultsApi,
   subjects: subjectsApi,
+  homework: homeworkApi,
   payslips: payslipsApi,
   leaves: leavesApi,
   remarks: remarksApi,
   upload: uploadApi,
+  notifications: notificationsApi,
 };

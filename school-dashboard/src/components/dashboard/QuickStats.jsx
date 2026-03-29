@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next';
 
 export default function QuickStats({ data }) {
   const { t } = useTranslation();
-  const feeProgress = Math.round((data.monthlyFeeCollected / data.monthlyFeeTarget) * 100);
+  const feeProgress = data.monthlyFeeTarget > 0
+    ? Math.round((data.monthlyFeeCollected / data.monthlyFeeTarget) * 100)
+    : 0;
 
   return (
     <div className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-lg p-4">

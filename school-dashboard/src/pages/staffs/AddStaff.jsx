@@ -73,7 +73,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
   const [tempImage, setTempImage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCameraCaptureOpen, setIsCameraCaptureOpen] = useState(false);
-  const [showTimetableModal, setShowTimetableModal] = useState(false);
+  // showTimetableModal state removed - was unused
 
   // Create blob URL once per picture change to avoid memory leaks from calling createObjectURL on every render
   const picturePreviewUrl = useMemo(() => {
@@ -188,7 +188,8 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
   };
 
   useImperativeHandle(ref, () => ({
-    attemptClose: handleClose
+    attemptClose: handleClose,
+    hasUnsavedChanges: () => hasChanges
   }));
 
   const validateSingleField = (field, value) => {
@@ -844,7 +845,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             label={t('pages.mobileNumber')}
             labelPlacement="outside"
             startContent={<span className="text-default-400 text-xs">+91</span>}
-            placeholder="10-digit number"
+            placeholder={t('staff.form.mobilePlaceholder')}
             value={formData.phone}
             onValueChange={v => {
               if (v.length <= 10 && /^\d*$/.test(v)) updateField("phone", v);
@@ -1088,7 +1089,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
                 <Select
                   className="mt-2"
                   label={t('pages.selectClass1')}
-                  placeholder="Select class"
+                  placeholder={t('staff.form.selectClassPlaceholder')}
                   isLoading={loadingClasses}
                   selectedKeys={formData.classTeacherOf ? [formData.classTeacherOf] : []}
                   onSelectionChange={(keys) => updateField("classTeacherOf", Array.from(keys)[0])}
@@ -1110,7 +1111,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
               <label className="text-sm font-semibold text-default-900">{t('pages.assignClassesForSubjectTeaching')}</label>
               <Select
                 selectionMode="multiple"
-                placeholder="Select classes"
+                placeholder={t('staff.form.selectClassesPlaceholder')}
                 isLoading={loadingClasses}
                 selectedKeys={new Set(formData.assignedClasses)}
                 onSelectionChange={(keys) => updateField("assignedClasses", Array.from(keys))}
@@ -1296,7 +1297,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             <Input
               label={t('pages.expYears')}
               labelPlacement="outside"
-              placeholder="0"
+              placeholder={t('staff.form.experiencePlaceholder')}
               value={formData.totalExperience}
               onValueChange={v => {
                 // Only allow numbers and limit to 2 digits
@@ -1315,7 +1316,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
           <Input
             label="Role / Designation"
             labelPlacement="outside"
-            placeholder="e.g. Senior Teacher"
+            placeholder={t('staff.form.designationPlaceholder')}
             value={formData.roleInOrganization}
             onValueChange={v => updateField("roleInOrganization", v)}
             variant="bordered"
@@ -1468,7 +1469,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
                   value={item.amount}
                   onValueChange={v => updateBreakdownItem(i, "amount", v)}
                   variant="flat"
-                  placeholder="0"
+                  placeholder={t('staff.form.amountPlaceholder')}
                   startContent="₹"
                   classNames={{ inputWrapper: "bg-transparent shadow-none w-24" }}
                 />
@@ -1589,7 +1590,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       </div>
 
       {/* Confirmation Modal */}
-      <Modal isOpen={showConfirmClose} onClose={cancelClose} size="sm">
+      <Modal isOpen={showConfirmClose} onClose={cancelClose} size="sm" isDismissable={false} hideCloseButton>
         <ModalContent>
           <ModalHeader className="flex gap-2 items-center">
             <AlertTriangle size={20} className="text-warning" />

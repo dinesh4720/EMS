@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import logger from '../../utils/logger';
 import {
   Card, CardHeader, CardBody, Button, Select, SelectItem,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
@@ -55,7 +56,7 @@ export default function SubstitutionAlertPanel({ className = '' }) {
         }
       }
     } catch (error) {
-      console.error('Error fetching alerts:', error);
+      logger.error('Error fetching alerts:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -73,8 +74,8 @@ export default function SubstitutionAlertPanel({ className = '' }) {
     const handleSubstitutionAlert = (data) => {
       if (data.type === 'new_alerts') {
         // Show notification toast
-        toast.custom((t) => (
-          <div className={`flex items-center gap-3 p-4 bg-white dark:bg-zinc-950 rounded-lg shadow-lg border-l-4 border-danger-500 ${t.visible ? 'animate-enter' : 'animate-leave'}`}>
+        toast.custom((toastInstance) => (
+          <div className={`flex items-center gap-3 p-4 bg-white dark:bg-zinc-950 rounded-lg shadow-lg border-l-4 border-danger-500 ${toastInstance.visible ? 'animate-enter' : 'animate-leave'}`}>
             <div className="p-2 bg-danger-100 rounded-full">
               <AlertTriangle className="w-5 h-5 text-danger-600" />
             </div>
@@ -85,7 +86,7 @@ export default function SubstitutionAlertPanel({ className = '' }) {
               </p>
             </div>
             <button
-              onClick={() => toast.dismiss(t.id)}
+              onClick={() => toast.dismiss(toastInstance.id)}
               className="ml-2 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300"
             >
               ×
@@ -120,7 +121,7 @@ export default function SubstitutionAlertPanel({ className = '' }) {
         setAvailableTeachers(response.available || []);
       }
     } catch (error) {
-      console.error('Error fetching available teachers:', error);
+      logger.error('Error fetching available teachers:', error);
       setAvailableTeachers([]);
     } finally {
       setLoadingTeachers(false);
@@ -154,7 +155,7 @@ export default function SubstitutionAlertPanel({ className = '' }) {
       }
     } catch (error) {
       toast.error('Failed to assign substitute');
-      console.error('Error assigning substitute:', error);
+      logger.error('Error assigning substitute:', error);
     } finally {
       setAssigning(false);
     }
@@ -381,7 +382,7 @@ export default function SubstitutionAlertPanel({ className = '' }) {
                     </div>
                     <div>
                       <p className="text-default-400">{t('components.date1')}</p>
-                      <p className="font-medium">{new Date(selectedAlert.date).toLocaleDateString()}</p>
+                      <p className="font-medium">{selectedAlert.date ? new Date(selectedAlert.date).toLocaleDateString() : '—'}</p>
                     </div>
                     <div>
                       <p className="text-default-400">{t('components.day1')}</p>

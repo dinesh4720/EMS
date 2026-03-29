@@ -178,7 +178,7 @@ export default function AttendanceTab({
     try {
       await attendanceApi.mark({
         studentId: student.id,
-        classId: student.classId,
+        classId: student.classId?._id || student.classId,
         date: selectedDate,
         status,
         clientTimestamp: new Date().toISOString()
@@ -478,6 +478,8 @@ export default function AttendanceTab({
                 content={`${day.day} ${selectedMonth.charAt(0).toUpperCase() + selectedMonth.slice(1)} - ${day.status ? day.status.charAt(0).toUpperCase() + day.status.slice(1) : 'No data'}`}
               >
                 <div
+                  role="gridcell"
+                  aria-label={`${day.day} ${selectedMonth} - ${day.status ? day.status.charAt(0).toUpperCase() + day.status.slice(1) : 'No data'}`}
                   className={`aspect-square flex items-center justify-center text-xs font-medium rounded-lg cursor-pointer transition-all hover:scale-110 ${
                     day.status === 'present' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600' :
                     day.status === 'absent' ? 'bg-gray-200 text-gray-800 dark:bg-zinc-600 dark:text-zinc-200' :

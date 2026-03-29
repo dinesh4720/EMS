@@ -140,6 +140,11 @@ export class NavigationCollector {
     // Update current page
     this.currentPage = pageData.page.url;
 
+    // Add to breadcrumbs for error context
+    if (this.tracker.breadcrumbs) {
+      this.tracker.breadcrumbs.navigation(pageData.page.path, `Navigated to ${pageData.page.path}`);
+    }
+
     this.tracker.track(pageData);
   }
 

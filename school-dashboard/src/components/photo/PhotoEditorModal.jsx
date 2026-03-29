@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import Cropper from "react-easy-crop";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Slider, Tooltip } from "@heroui/react";
 import { RotateCw, RotateCcw, ZoomIn, ZoomOut, FlipHorizontal, FlipVertical, Check, X, Move } from "lucide-react";
@@ -11,10 +11,21 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [rotation, setRotation] = useState(0);
     const [zoom, setZoom] = useState(1);
-    const [aspect, setAspect] = useState(1); // Square for profile
+    const [aspect] = useState(1); // Square for profile
     const [flip, setFlip] = useState({ horizontal: false, vertical: false });
     const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    // Reset editing state when a new image is loaded or modal reopens
+    useEffect(() => {
+      if (isOpen && imageSrc) {
+        setCrop({ x: 0, y: 0 });
+        setRotation(0);
+        setZoom(1);
+        setFlip({ horizontal: false, vertical: false });
+        setCroppedAreaPixels(null);
+      }
+    }, [isOpen, imageSrc]);
 
     const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
         setCroppedAreaPixels(croppedAreaPixels);

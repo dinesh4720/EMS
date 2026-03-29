@@ -1,52 +1,89 @@
 import { NavLink } from 'react-router-dom'
 
-const navItems = [
+const analyticsItems = [
   { path: '/', label: 'Dashboard', icon: '📊' },
   { path: '/events', label: 'Events', icon: '📋' },
+  { path: '/errors', label: 'Errors', icon: '🔴' },
   { path: '/sessions', label: 'Sessions', icon: '🔗' },
   { path: '/users', label: 'Users', icon: '👥' },
   { path: '/page-usage', label: 'Page Usage', icon: '📈' },
-  { path: '/live', label: 'Live View', icon: '🔴' },
+  { path: '/live', label: 'Live View', icon: '⚡' },
 ]
+
+const adminItems = [
+  { path: '/projects', label: 'Projects', icon: '🔑' },
+  { path: '/access-logs', label: 'Access Logs', icon: '📜' },
+]
+
+function NavSection({ title, items }: { title?: string; items: typeof analyticsItems }) {
+  return (
+    <>
+      {title && (
+        <li className="px-3 pt-5 pb-1">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30">
+            {title}
+          </span>
+        </li>
+      )}
+      {items.map((item) => (
+        <li key={item.path}>
+          <NavLink
+            to={item.path}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-[7px] rounded-lg text-[13px] transition-all duration-150 ${
+                isActive
+                  ? 'bg-white/15 text-white font-medium shadow-[inset_0_0.5px_0_rgba(255,255,255,0.1)]'
+                  : 'text-white/60 hover:bg-white/8 hover:text-white/90'
+              }`
+            }
+          >
+            <span className="text-base w-5 text-center">{item.icon}</span>
+            {item.label}
+          </NavLink>
+        </li>
+      ))}
+    </>
+  )
+}
 
 export default function Sidebar() {
   return (
-    <aside className="w-64 min-h-screen bg-white border-r border-gray-200 flex flex-col">
+    <aside
+      className="sidebar-glass w-60 min-h-screen flex flex-col select-none"
+      style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+    >
+      {/* Drag region spacer for traffic lights */}
+      <div className="h-[52px] flex-shrink-0" />
+
       {/* Logo */}
-      <div className="p-4 border-b border-gray-200">
-        <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-          <span className="text-2xl">🦉</span>
+      <div className="px-4 pb-3">
+        <h1 className="text-[15px] font-semibold text-white/90 flex items-center gap-2">
+          <span className="text-xl">🦉</span>
           Owlin
         </h1>
-        <p className="text-xs text-gray-500 mt-1">Activity Tracker</p>
+        <p className="text-[10px] text-white/30 mt-0.5 ml-[30px]">Analytics Platform</p>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-2">
-        <ul className="space-y-1">
-          {navItems.map((item) => (
-            <li key={item.path}>
-              <NavLink
-                to={item.path}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 rounded text-sm transition-colors ${
-                    isActive
-                      ? 'bg-gray-100 text-gray-900 font-medium'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`
-                }
-              >
-                <span className="text-lg">{item.icon}</span>
-                {item.label}
-              </NavLink>
-            </li>
-          ))}
+      <nav
+        className="flex-1 px-2 overflow-y-auto"
+        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+      >
+        <ul className="space-y-0.5">
+          <NavSection items={analyticsItems} />
+          <NavSection title="Admin" items={adminItems} />
         </ul>
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-200">
-        <p className="text-xs text-gray-400">v0.0.1</p>
+      <div className="px-4 py-3 border-t border-white/5">
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] text-white/20">v2.0.0</p>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/80 animate-pulse" />
+            <span className="text-[10px] text-white/30">Connected</span>
+          </div>
+        </div>
       </div>
     </aside>
   )

@@ -154,7 +154,9 @@ export default function AnnouncementsList({
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return '—';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '—';
     return date.toLocaleDateString(getDateLocale(), {
       year: 'numeric',
       month: 'short',

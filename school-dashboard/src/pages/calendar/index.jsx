@@ -14,6 +14,7 @@ import { frontDeskApi, teacherTimetableApi } from "../../services/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 
 const eventTypes = {
@@ -62,6 +63,10 @@ export default function CalendarPage() {
   // Event detail modal
   const { isOpen: isDetailOpen, onOpen: onDetailOpen, onClose: onDetailClose } = useDisclosure();
   const [selectedEvent, setSelectedEvent] = useState(null);
+
+  // Delete confirmation dialog
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState(null);
 
   // Add/Edit event drawer
   const { isOpen: isAddOpen, onOpen: onAddOpen, onClose: onAddClose } = useDisclosure();
@@ -302,9 +307,18 @@ export default function CalendarPage() {
   };
 
   const handleDeleteEvent = (id) => {
-    deleteEvent(id);
-    onDetailClose();
-    setSelectedEvent(null);
+    setEventToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteEvent = () => {
+    if (eventToDelete) {
+      deleteEvent(eventToDelete);
+      onDetailClose();
+      setSelectedEvent(null);
+    }
+    setDeleteConfirmOpen(false);
+    setEventToDelete(null);
   };
 
   const getClassName = (classId) => {
@@ -1173,7 +1187,7 @@ export default function CalendarPage() {
                             </div>
                             <div className="text-[10px] text-success-600 mt-1 flex items-center gap-1">
                               <Clock size={10} />
-                              {new Date(apt.fromDateTime).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                              {apt.fromDateTime ? new Date(apt.fromDateTime).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—'}
                             </div>
                             {apt.purpose && <div className="text-[10px] text-success-500 mt-0.5 truncate">{apt.purpose}</div>}
                           </div>
@@ -1272,7 +1286,7 @@ export default function CalendarPage() {
                   <div>
                     <label className="text-xs font-medium text-default-500 mb-1.5 block">{t('pages.eventTitle')}</label>
                     <Input
-                      placeholder="e.g., Staff Meeting, Annual Day..."
+                      placeholder={t('calendar.addEvent.eventTitlePlaceholder')}
                       variant="bordered"
                       size="lg"
                       value={newEvent.title}
@@ -1441,6 +1455,18 @@ export default function CalendarPage() {
         .bg-warning-50/50 { background-color: rgb(var(--heroui-warning-5)); }
         .bg-default-50/40 { background-color: rgba(var(--heroui-default-50), 0.3); }
       `}</style>
+
+      {/* Delete Event Confirmation */}
+      <ConfirmDialog
+        isOpen={deleteConfirmOpen}
+        onClose={() => { setDeleteConfirmOpen(false); setEventToDelete(null); }}
+        onConfirm={confirmDeleteEvent}
+        title="Delete Event"
+        message="Are you sure you want to delete this event? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 }

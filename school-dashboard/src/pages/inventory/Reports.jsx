@@ -141,11 +141,11 @@ export default function Reports() {
               <div className="h-3 rounded-full bg-gray-100 dark:bg-zinc-700 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-green-500"
-                  style={{ width: `${Math.min(((totals.totalCurrentValue || 0) / totals.totalPurchaseValue) * 100, 100)}%` }}
+                  style={{ width: `${totals.totalPurchaseValue > 0 ? Math.min(((totals.totalCurrentValue || 0) / totals.totalPurchaseValue) * 100, 100) : 0}%` }}
                 />
               </div>
               <p className="text-xs text-gray-500 dark:text-zinc-400 text-center">
-                {Math.round(((totals.totalCurrentValue || 0) / totals.totalPurchaseValue) * 100)}% of original value retained
+                {totals.totalPurchaseValue > 0 ? Math.round(((totals.totalCurrentValue || 0) / totals.totalPurchaseValue) * 100) : 0}% of original value retained
               </p>
             </div>
           ) : (

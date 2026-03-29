@@ -13,6 +13,8 @@ import { request } from '../../services/api';
 import { PageLayout } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import { formatDateTime } from '../../utils/dateFormatter';
+import { useTranslation } from 'react-i18next';
 
 function currentAcademicYear() {
   const now = new Date();
@@ -22,6 +24,7 @@ function currentAcademicYear() {
 
 export default function StudentPromotionPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('promote');
 
   // ── Promote tab ─────────────────────────────────────────────────────────────
@@ -31,7 +34,7 @@ export default function StudentPromotionPage() {
   const [loading, setLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [targetClassId, setTargetClassId] = useState('');
-  const [fromAcadYear, setFromAcadYear] = useState(currentAcademicYear);
+  const [fromAcadYear, setFromAcadYear] = useState(currentAcademicYear());
   const [toAcadYear, setToAcadYear] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [promoting, setPromoting] = useState(false);
@@ -214,7 +217,7 @@ export default function StudentPromotionPage() {
                   <div className="flex flex-col sm:flex-row gap-3">
                     <Select
                       label="Source Class"
-                      placeholder="Select class to promote from"
+                      placeholder={t('students.form.selectSourceClassPlaceholder')}
                       selectedKeys={classId ? [classId] : []}
                       onSelectionChange={keys => { setClassId([...keys][0] || ''); setPreview(null); }}
                       variant="bordered"
@@ -386,7 +389,7 @@ export default function StudentPromotionPage() {
                             </Chip>
                           </div>
                           <p className="text-xs text-gray-500 dark:text-zinc-400">
-                            {new Date(rec.createdAt).toLocaleString()} ·{' '}
+                            {formatDateTime(rec.createdAt)} ·{' '}
                             {rec.summary?.promoted ?? 0} promoted · {rec.summary?.detained ?? 0} detained · {rec.summary?.errors ?? 0} failed
                           </p>
                           {rec.status === 'rolledback' && rec.rollbackReason && (
@@ -438,7 +441,7 @@ export default function StudentPromotionPage() {
             </p>
             <Select
               label="Promote To (Target Class) *"
-              placeholder="Select target class"
+              placeholder={t('students.form.selectTargetClassPlaceholder')}
               selectedKeys={targetClassId ? [targetClassId] : []}
               onSelectionChange={keys => setTargetClassId([...keys][0] || '')}
               variant="bordered"
@@ -453,7 +456,7 @@ export default function StudentPromotionPage() {
             <div className="grid grid-cols-2 gap-3">
               <Input
                 label="From Academic Year *"
-                placeholder="e.g. 2024-25"
+                placeholder={t('students.form.academicYearPlaceholder')}
                 value={fromAcadYear}
                 onValueChange={setFromAcadYear}
                 variant="bordered"
@@ -461,7 +464,7 @@ export default function StudentPromotionPage() {
               />
               <Input
                 label="To Academic Year *"
-                placeholder="e.g. 2025-26"
+                placeholder={t('students.form.academicYearPlaceholder')}
                 value={toAcadYear}
                 onValueChange={setToAcadYear}
                 variant="bordered"
@@ -511,7 +514,7 @@ export default function StudentPromotionPage() {
             )}
             <Input
               label="Reason (optional)"
-              placeholder="Why are you rolling this back?"
+              placeholder={t('students.form.rollbackReasonPlaceholder')}
               value={rollbackReason}
               onValueChange={setRollbackReason}
               variant="bordered"

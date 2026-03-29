@@ -26,6 +26,7 @@ import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
 import { feesApi, studentFeesApi, studentsApi, uploadApi, attendanceApi } from "../../services/api";
 import { CHART_COLORS } from "../../utils/chartTheme";
+import { escapeHtml } from "../../utils/sanitize";
 const AddStudent = lazyWithRetry(() => import("./AddStudent"));
 import TCGeneratorModal from "./TCGeneratorModal";
 import PhotoEditorModal from "../../components/PhotoEditorModal";
@@ -35,20 +36,23 @@ import StudentDocuments from "./components/StudentDocuments";
 import StudentRemarks from "./components/StudentRemarks";
 import StudentRatingSystem from "./components/StudentRatingSystem";
 import InvoicePrintModal from "./components/InvoicePrintModal";
+import MoveClassModal from "./components/modals/MoveClassModal";
 import { useStudentAttendance, useStudentData, useStudentFees, useStudentRemarks, useStudentResults } from "./hooks";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
 import { DetailPageSkeleton } from '../../components/skeletons/PageSkeletons';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { getGradeFromPercentage } from '../../utils/grading';
 
+
+import { formatShortDate } from '../../utils/dateFormatter';
 
 // ============================================================================
 // STUDENT DASHBOARD - COMPLETE REFACTOR
 // Dashboard style, full page, rounded corners, all features
 // ============================================================================
 
-function confirmPermanentDeletion(studentName, t) {
-  return confirm(t('confirm.permanentDeleteStudent', { name: studentName }));
-}
+// confirmPermanentDeletion moved to ConfirmDialog in render
 
 // Helper to get next class for promotion
 const getNextClass = (currentClass, availableClasses) => {
@@ -92,7 +96,7 @@ export default function StudentDashboard() {
   const navigate = useNavigate();
   const { getStudentById, classesWithTeachers, staff, updateStudent, deleteStudent, loading, currentAcademicYear } = useApp();
   const queryClient = useQueryClient();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "overview");
 
   // Modals
@@ -101,22 +105,46 @@ export default function StudentDashboard() {
   const { isOpen: isPromoteOpen, onOpen: onPromoteOpen, onClose: onPromoteClose } = useDisclosure();
   const { isOpen: isProgressOpen, onOpen: onProgressOpen, onClose: onProgressClose } = useDisclosure();
   const { isOpen: isPaymentOpen, onOpen: onPaymentOpen, onClose: onPaymentClose } = useDisclosure();
+  const [isMoveClassOpen, setIsMoveClassOpen] = useState(false);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+
+  // Delete confirmation
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // States
   const [documents, setDocuments] = useState([]);
   const [activeUploads, setActiveUploads] = useState([]);
   const [remarksCategoryFilter, setRemarksCategoryFilter] = useState('all');
   const [remarksOverride, setRemarksOverride] = useState(null);
+  const [todayAttendanceStatus, setTodayAttendanceStatus] = useState(null);
 
   // Photo states
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const fileInputRef = useRef(null);
   const printRef = useRef(null);
+  const editStudentRef = useRef(null);
+
+  // Handle backdrop click for unsaved changes check
+  useEffect(() => {
+    if (!isEditOpen) return;
+    const handleBackdropClick = (e) => {
+      const backdrop = e.target.closest?.('[data-slot="backdrop"]') || (e.target.getAttribute?.('data-slot') === 'backdrop' ? e.target : null);
+      if (backdrop) {
+        if (editStudentRef.current) editStudentRef.current.attemptClose();
+        else onEditClose();
+      }
+    };
+    document.addEventListener('click', handleBackdropClick, true);
+    return () => document.removeEventListener('click', handleBackdropClick, true);
+  }, [isEditOpen]);
+
   const [selectedImageForEdit, setSelectedImageForEdit] = useState(null);
   const [isPhotoEditorOpen, setIsPhotoEditorOpen] = useState(false);
   const [isCameraCaptureOpen, setIsCameraCaptureOpen] = useState(false);
 
   // Form states
+  const [isRecordingPayment, setIsRecordingPayment] = useState(false);
   const [paymentForm, setPaymentForm] = useState({ amount: "", paymentMode: "cash", date: new Date().toISOString().split('T')[0] });
   const [reminderMessage, setReminderMessage] = useState("");
   const [isReminderOpen, setIsReminderOpen] = useState(false);
@@ -125,14 +153,24 @@ export default function StudentDashboard() {
   const attendanceEndDate = `${currentYear}-12-31`;
 
   const contextStudent = getStudentById(id);
-  const { student: hydratedStudent, loading: studentDataLoading, refetch: refetchStudent } = useStudentData(id);
+  const { student: hydratedStudent, loading: studentDataLoading, error: studentError, refetch: refetchStudent } = useStudentData(id);
   const student = hydratedStudent || contextStudent;
-  const { attendanceData, attendanceStats, loading: attendanceLoading } = useStudentAttendance(id, {
+  const { attendanceData, attendanceStats, loading: attendanceLoading, error: attendanceError, refetch: refetchAttendance } = useStudentAttendance(id, {
     startDate: attendanceStartDate,
     endDate: attendanceEndDate,
   });
-  const { results, loading: resultsLoading } = useStudentResults(id);
-  const { remarks, loading: remarksLoading } = useStudentRemarks(id, { category: remarksCategoryFilter });
+
+  // Derive today's attendance status from fetched data
+  useEffect(() => {
+    if (attendanceData?.length > 0) {
+      const todayDate = new Date().toISOString().split('T')[0];
+      const todayRecord = attendanceData.find(r => r.date === todayDate);
+      if (todayRecord?.status) setTodayAttendanceStatus(todayRecord.status);
+    }
+  }, [attendanceData]);
+
+  const { results, loading: resultsLoading, error: resultsError, refetch: refetchResults } = useStudentResults(id);
+  const { remarks, loading: remarksLoading, error: remarksError, refetch: refetchRemarks } = useStudentRemarks(id, { category: remarksCategoryFilter });
   const {
     feeStructure: studentFeeStructure,
     loading: loadingFeeStructure,
@@ -198,9 +236,16 @@ export default function StudentDashboard() {
   }, [remarks]);
 
   // Photo handlers
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > MAX_IMAGE_SIZE) {
+        toast.error(t('toast.error.fileTooLarge', 'File size must be less than 5MB'));
+        e.target.value = null;
+        return;
+      }
       const reader = new FileReader();
       reader.onload = () => {
         setSelectedImageForEdit(reader.result);
@@ -211,13 +256,17 @@ export default function StudentDashboard() {
   };
 
   const handlePhotoSave = async (editedImage) => {
+    setIsUploadingPhoto(true);
     try {
-      const blob = await fetch(editedImage).then(r => r.blob());
+      const imgResponse = await fetch(editedImage);
+      if (!imgResponse.ok) throw new Error('Failed to process edited image');
+      const blob = await imgResponse.blob();
       const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
       const response = await uploadApi.uploadFile(file);
       await updateStudent(student.id, { photo: response.url });
       toast.success(t('toast.success.photoUpdated'));
     } catch (error) { toast.error(t('toast.error.failedToUpdatePhoto')); }
+    finally { setIsUploadingPhoto(false); }
     setIsPhotoEditorOpen(false);
   };
 
@@ -241,12 +290,19 @@ export default function StudentDashboard() {
       return;
     }
 
-    const paymentAmount = parseInt(paymentForm.amount);
-    if (paymentAmount <= 0) {
+    const paymentAmount = parseInt(paymentForm.amount, 10);
+    if (!paymentAmount || paymentAmount <= 0) {
       toast.error(t('toast.error.pleaseEnterAValidAmount'));
       return;
     }
 
+    const totalBalance = studentFeeStructure?.totalBalance || 0;
+    if (paymentAmount > totalBalance) {
+      toast.error(`Amount cannot exceed outstanding balance of ₹${totalBalance.toLocaleString('en-IN')}`);
+      return;
+    }
+
+    setIsRecordingPayment(true);
     const loadingToast = toast.loading(t('toast.loading.recordingPayment'));
     try {
       // Calculate fee head payments for distribution
@@ -274,28 +330,13 @@ export default function StudentDashboard() {
         }
       }
 
-      // 1. Update fee structure (primary operation - this is what matters)
+      // Update fee structure and create payment record (single endpoint handles both)
       await studentFeesApi.recordPayment(id, {
         amount: paymentAmount,
         feeHeadPayments,
-        academicYear: student?.academicYear || currentAcademicYear
+        paymentMode: paymentForm.paymentMode,
+        academicYear: currentAcademicYear
       });
-
-      // 2. Try to create payment record (secondary, non-blocking)
-      try {
-        await feesApi.createPayment({
-          studentId: id,
-          studentName: student?.name || '',
-          classId: student.classId,
-          academicYear: student?.academicYear || currentAcademicYear,
-          receiptNumber: `RCP-${Date.now()}`,
-          paymentDate: paymentForm.date,
-          amount: paymentAmount,
-          paymentMode: paymentForm.paymentMode
-        });
-      } catch (paymentRecordError) {
-        console.warn('Payment record creation failed (non-critical):', paymentRecordError);
-      }
 
       toast.success("Payment recorded successfully", { id: loadingToast });
       onPaymentClose();
@@ -309,7 +350,9 @@ export default function StudentDashboard() {
       void queryClient.invalidateQueries({ queryKey: ["app-context-data"] });
     } catch (error) {
       console.error('Payment error:', error);
-      toast.error("Failed to record payment: " + (error.message || "Unknown error"), { id: loadingToast });
+      toast.error(t('toast.error.failedToRecordPayment', 'Failed to record payment') + ": " + (error.message || t('common.unknownError', 'Unknown error')), { id: loadingToast });
+    } finally {
+      setIsRecordingPayment(false);
     }
   };
 
@@ -321,9 +364,9 @@ export default function StudentDashboard() {
       return;
     }
     try {
-      const loadingToast = toast.loading(`Promoting ${student.name} to ${nextClass}...`);
+      const loadingToast = toast.loading(t('toast.loading.promotingStudent', { name: student.name, class: nextClass, defaultValue: `Promoting ${student.name} to ${nextClass}...` }));
       await updateStudent(student.id, { class: nextClass === "Passed Out / Alumni" ? "Passed Out" : nextClass });
-      toast.success(`${student.name} promoted to ${nextClass}`, { id: loadingToast });
+      toast.success(t('toast.success.studentPromoted', { name: student.name, class: nextClass, defaultValue: `${student.name} promoted to ${nextClass}` }), { id: loadingToast });
       onPromoteClose();
     } catch (e) {
       toast.error("Failed to promote student: " + (e.message || "Unknown error"));
@@ -368,12 +411,15 @@ export default function StudentDashboard() {
     try {
       await attendanceApi.mark({
         studentId: student.id,
-        classId: student.classId,
+        classId: student.classId?._id || student.classId,
         date: todayDate,
         status,
         clientTimestamp: new Date().toISOString()
       });
+      setTodayAttendanceStatus(status);
       toast.success(`Marked as ${status.charAt(0).toUpperCase() + status.slice(1)}`, { id: loadingToast });
+      // Refresh attendance stats
+      refetchAttendance();
     } catch (error) {
       toast.error(`Failed to mark attendance: ${error.message || 'Unknown error'}`, { id: loadingToast });
     }
@@ -422,15 +468,15 @@ export default function StudentDashboard() {
     const photo = student?.photo || student?.picture || '';
     const resultRows = studentResults.map(r => `
       <tr>
-        <td>${r.examName || r.exam?.name || '—'}</td>
-        <td>${r.subject || '—'}</td>
-        <td style="text-align:center">${r.marksObtained ?? r.marks ?? '—'}</td>
-        <td style="text-align:center">${r.totalMarks ?? '—'}</td>
-        <td style="text-align:center">${r.percentage != null ? r.percentage + '%' : '—'}</td>
-        <td style="text-align:center">${r.grade || '—'}</td>
+        <td>${escapeHtml(r.examName || r.exam?.name || '—')}</td>
+        <td>${escapeHtml(r.subject || '—')}</td>
+        <td style="text-align:center">${escapeHtml(r.marksObtained ?? r.marks ?? '—')}</td>
+        <td style="text-align:center">${escapeHtml(r.totalMarks ?? '—')}</td>
+        <td style="text-align:center">${r.percentage != null ? escapeHtml(r.percentage) + '%' : '—'}</td>
+        <td style="text-align:center">${escapeHtml(r.grade || '—')}</td>
       </tr>`).join('');
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
-<title>Progress Card – ${student?.name || ''}</title>
+<title>Progress Card – ${escapeHtml(student?.name || '')}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:36px;max-width:800px;margin:auto}
@@ -458,18 +504,18 @@ tr:hover td{background:#f9fafb}
     <div class="title">Academic Performance Report</div>
   </div>
   <div style="text-align:right">
-    ${photo ? `<img class="photo" src="${photo}" alt="photo"/>` : `<div class="photo-placeholder">${(student?.name || 'S')[0]}</div>`}
-    <div style="margin-top:8px;font-size:12px;color:#6b7280">${student?.rollNo ? 'Roll: ' + student.rollNo : ''}</div>
+    ${photo ? `<img class="photo" src="${escapeHtml(photo)}" alt="photo"/>` : `<div class="photo-placeholder">${escapeHtml((student?.name || 'S')[0])}</div>`}
+    <div style="margin-top:8px;font-size:12px;color:#6b7280">${student?.rollNo ? 'Roll: ' + escapeHtml(student.rollNo) : ''}</div>
   </div>
 </div>
 <div style="margin-bottom:20px">
-  <div class="student-name">${student?.name || ''}</div>
-  <div class="meta">Class ${student?.class || '—'} &nbsp;•&nbsp; Admission No: ${student?.admissionNo || '—'}</div>
+  <div class="student-name">${escapeHtml(student?.name || '')}</div>
+  <div class="meta">Class ${escapeHtml(student?.class || '—')} &nbsp;•&nbsp; Admission No: ${escapeHtml(student?.admissionNo || '—')}</div>
 </div>
 <div class="stats">
-  <div class="stat"><div class="stat-val">${avgPercentage != null ? avgPercentage + '%' : '—'}</div><div class="stat-lbl">Average</div></div>
-  <div class="stat"><div class="stat-val">${studentResults.length}</div><div class="stat-lbl">Exams</div></div>
-  <div class="stat"><div class="stat-val">${attendancePercentage != null ? attendancePercentage + '%' : '—'}</div><div class="stat-lbl">Attendance</div></div>
+  <div class="stat"><div class="stat-val">${avgPercentage != null ? escapeHtml(avgPercentage) + '%' : '—'}</div><div class="stat-lbl">Average</div></div>
+  <div class="stat"><div class="stat-val">${escapeHtml(studentResults.length)}</div><div class="stat-lbl">Exams</div></div>
+  <div class="stat"><div class="stat-val">${attendancePercentage != null ? escapeHtml(attendancePercentage) + '%' : '—'}</div><div class="stat-lbl">Attendance</div></div>
 </div>
 ${studentResults.length > 0 ? `
 <table>
@@ -497,43 +543,59 @@ ${studentResults.length > 0 ? `
 
   if (!student) return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.studentNotFound')}</div>
+      <div className="text-center space-y-3">
+        <div className="text-gray-400 dark:text-zinc-500 text-sm">
+          {studentError ? t('toast.error.failedToLoadStudent', 'Failed to load student data') : t('pages.studentNotFound')}
+        </div>
+        {studentError && (
+          <Button size="sm" variant="bordered" onPress={() => refetchStudent()}>
+            {t('common.tryAgain', 'Try Again')}
+          </Button>
+        )}
+        <div>
+          <Button size="sm" variant="light" onPress={() => navigate('/students')}>
+            {t('pages.backToStudents', 'Back to Students')}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 
-  // Stats - Actionable KPIs with tab navigation
+  // Stats - Actionable KPIs with tab navigation and color coding
+  const attendancePct = attendanceStats.percentage;
+  const feeBalance = studentFeeStructure?.totalBalance || 0;
   const stats = [
-    { 
-      label: "Academic Average", 
-      value: avgPercentage ? `${avgPercentage}%` : "N/A", 
-      subtext: results?.length ? `${results.length} exams` : "No data", 
+    {
+      label: "Academic Average",
+      value: avgPercentage ? `${avgPercentage}%` : "N/A",
+      subtext: results?.length ? `${results.length} exams` : "No data",
       icon: Award,
       tab: "academics",
-      actionLabel: "View Results"
+      actionLabel: "View Results",
     },
-    { 
-      label: "Attendance", 
-      value: `${attendanceStats.percentage}%`, 
-      subtext: `${attendanceStats.present} present`, 
+    {
+      label: "Attendance",
+      value: `${attendancePct}%`,
+      subtext: `${attendanceStats.present} present`,
       icon: Clock,
       tab: "attendance",
-      actionLabel: "View Details"
+      actionLabel: "View Details",
     },
-    { 
-      label: "Fee Balance", 
-      value: `₹${(studentFeeStructure?.totalBalance || 0).toLocaleString()}`, 
-      subtext: studentFeeStructure?.totalBalance > 0 ? "Outstanding" : "All clear", 
+    {
+      label: "Fee Balance",
+      value: `₹${feeBalance.toLocaleString()}`,
+      subtext: feeBalance > 0 ? "Outstanding" : "All clear",
       icon: IndianRupee,
       tab: "fees",
-      actionLabel: studentFeeStructure?.totalBalance > 0 ? "Pay Now" : "View History"
+      actionLabel: feeBalance > 0 ? "Pay Now" : "View History",
     },
-    { 
-      label: "Class & Roll", 
-      value: student.class || "N/A", 
-      subtext: `Roll ${student.rollNo || "N/A"}`, 
+    {
+      label: "Class & Roll",
+      value: student.class || "N/A",
+      subtext: `Roll ${student.rollNo || "N/A"}`,
       icon: GraduationCap,
-      navigateTo: student?.classId ? `/classes/${student.classId}` : null,
-      actionLabel: "View Class"
+      navigateTo: student?.classId ? `/classes/${student.classId?._id || student.classId}` : null,
+      actionLabel: "View Class",
     },
   ];
 
@@ -578,21 +640,28 @@ ${studentResults.length > 0 ? `
           HEADER SECTION
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="mb-6">
-        <button onClick={() => navigate('/students')} className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors mb-2">
-          <ArrowLeft size={16} /><span>{t('pages.backToStudents')}</span>
+        <button onClick={() => navigate('/students')} className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors mb-2">
+          <ArrowLeft size={16} />
+          <span>{t('common.students', 'Students')}</span>
+          {student && <><span className="text-gray-300 dark:text-zinc-600">/</span><span className="text-gray-700 dark:text-zinc-300 font-medium truncate max-w-[200px]">{student.name}</span></>}
         </button>
 
         <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-100 dark:border-zinc-700 p-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4">
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-4">
               {/* Avatar */}
               <div className="relative">
                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect} />
-                <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-zinc-800 overflow-hidden flex items-center justify-center">
+                <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-zinc-800 overflow-hidden flex items-center justify-center relative">
                   {student.photo ? (
                     <img src={student.photo} alt={student.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   ) : (
-                    <span className="text-xl font-medium text-gray-400 dark:text-zinc-500">{student.name?.charAt(0)?.toUpperCase()}</span>
+                    <span className="text-xl font-bold text-gray-400 dark:text-zinc-500">{student.name?.charAt(0)?.toUpperCase()}</span>
+                  )}
+                  {isUploadingPhoto && (
+                    <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    </div>
                   )}
                 </div>
                 <Dropdown>
@@ -611,18 +680,11 @@ ${studentResults.length > 0 ? `
 
               {/* Info */}
               <div>
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{student.name}</h1>
-                <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-zinc-400">
-                  <span>@{student.admissionId}</span>
-                  <span className="text-gray-300 dark:text-zinc-600">|</span>
-                  <span>{student.class}</span>
-                  <span className="text-gray-300 dark:text-zinc-600">|</span>
-                  <span>Roll {student.rollNo}</span>
-                </div>
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{student.name}</h1>
+                <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">{student.admissionId} · {student.class} · Roll {student.rollNo}</p>
                 {student.parentPhone && (
-                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-400 dark:text-zinc-500">
-                    <Phone size={12} /><span>{student.parentPhone}</span>
-                    <span className="text-gray-300 dark:text-zinc-600">|</span>
+                  <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400 dark:text-zinc-500">
+                    <span className="flex items-center gap-1"><Phone size={11} />{student.parentPhone}</span>
                     <span>{student.parentName || "Parent"}</span>
                   </div>
                 )}
@@ -632,16 +694,16 @@ ${studentResults.length > 0 ? `
             {/* Actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
               <Button variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Phone size={16} />}
-                onPress={() => { if (student.parentPhone) { window.location.href = `tel:${student.parentPhone}`; toast.success(`Calling...`); } else { toast.error(t('toast.error.noPhoneNumber')); }}}
-                isDisabled={!student.parentPhone}>{t('pages.call')}</Button>
-              <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200" startContent={<Edit size={16} />} onPress={onEditOpen}>{t('pages.edit1')}</Button>
+                onPress={() => { if (student.parentPhone) { window.location.href = `tel:${student.parentPhone.replace(/[^\d+]/g, '')}`; toast.success(`Calling...`); } else { toast.error(t('toast.error.noPhoneNumber')); }}}
+                isDisabled={!student.parentPhone}><span className="hidden sm:inline">{t('pages.call')}</span></Button>
+              <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200" startContent={<Edit size={16} />} onPress={onEditOpen}><span className="hidden sm:inline">{t('pages.edit1')}</span></Button>
               <Dropdown>
                 <DropdownTrigger>
                   <Button isIconOnly variant="light" className="text-gray-400 dark:text-zinc-500"><MoreVertical size={20} /></Button>
                 </DropdownTrigger>
                 <DropdownMenu className="min-w-[180px]">
                   <DropdownItem key="promote" startContent={<TrendingUp size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={onPromoteOpen}>{t('pages.promoteStudent')}</DropdownItem>
-                  <DropdownItem key="move" startContent={<Move size={14} className="text-gray-400 dark:text-zinc-500" />}>{t('pages.moveToClass')}</DropdownItem>
+                  <DropdownItem key="move" startContent={<Move size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={() => setIsMoveClassOpen(true)}>{t('pages.moveToClass')}</DropdownItem>
                   <DropdownItem key="tc" startContent={<FileCheck size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={onTcOpen}>{t('pages.generateTc')}</DropdownItem>
                   <DropdownItem key="progress" startContent={<BarChart3 size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={onProgressOpen}>{t('pages.progressCard')}</DropdownItem>
                   <DropdownItem key="reminder" startContent={<Bell size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={handleSendReminder}>{t('pages.sendReminder1')}</DropdownItem>
@@ -651,21 +713,9 @@ ${studentResults.length > 0 ? `
                     key="delete"
                     className="text-red-600"
                     startContent={<Trash2 size={14} />}
-                    onPress={async () => {
-                      if (!confirmPermanentDeletion(student.name, t)) {
-                        return;
-                      }
-
-                      try {
-                        const result = await deleteStudent(student.id);
-                        toast.success(result.message || `${student.name} permanently deleted`);
-                        navigate('/students');
-                      } catch (error) {
-                        toast.error(error.message || 'Failed to delete student');
-                      }
-                    }}
+                    onPress={() => setIsDeleteConfirmOpen(true)}
                   >
-                    Delete
+                    {t('common.delete', 'Delete')}
                   </DropdownItem>
                 </DropdownMenu>
               </Dropdown>
@@ -674,15 +724,34 @@ ${studentResults.length > 0 ? `
         </div>
       </div>
 
+      {/* Error Banner for sub-query failures */}
+      {(attendanceError || resultsError || remarksError) && (
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
+            <AlertCircle size={16} />
+            <span>{t('common.someDataFailedToLoad', 'Some data failed to load.')}</span>
+          </div>
+          <Button size="sm" variant="light" className="text-red-700 dark:text-red-400" onPress={() => {
+            if (attendanceError) refetchAttendance();
+            if (resultsError) refetchResults();
+            if (remarksError) refetchRemarks();
+          }}>
+            {t('common.retry', 'Retry')}
+          </Button>
+        </div>
+      )}
+
       {/* ═══════════════════════════════════════════════════════════════════
           TABS
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="mb-5">
         <div className="flex items-center gap-1 border-b border-gray-200 dark:border-zinc-700 overflow-x-auto">
           {tabs.map(tab => (
-            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-3 text-sm font-medium transition-colors relative whitespace-nowrap ${
-                activeTab === tab.key ? 'text-gray-900 dark:text-zinc-100' : 'text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300'
+            <button key={tab.key} onClick={() => { setActiveTab(tab.key); setSearchParams({ tab: tab.key }, { replace: true }); }}
+              className={`relative px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                activeTab === tab.key
+                  ? 'text-gray-900 dark:text-zinc-100'
+                  : 'text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300'
               }`}>
               {tab.label}
               {activeTab === tab.key && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 dark:bg-zinc-100" />}
@@ -702,37 +771,30 @@ ${studentResults.length > 0 ? `
           {/* ─── OVERVIEW TAB ─── */}
           {activeTab === "overview" && (
             <>
-              {/* Actionable KPI Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {stats.map((stat, i) => (
+              {/* Actionable KPI Cards - Color coded */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {stats.map((stat) => (
                   <div
                     key={`stat-${stat.label}`}
                     onClick={() => {
-                      if (stat.tab) setActiveTab(stat.tab);
+                      if (stat.tab) { setActiveTab(stat.tab); setSearchParams({ tab: stat.tab }, { replace: true }); }
                       else if (stat.navigateTo) navigate(stat.navigateTo);
                     }}
-                    className={`bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-700 transition-all cursor-pointer group ${
-                      (stat.tab || stat.navigateTo)
-                        ? 'hover:border-gray-300 dark:hover:border-zinc-600 hover:shadow-md dark:hover:shadow-zinc-900/50 active:scale-[0.98]'
-                        : ''
-                    }`}
+                    className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 cursor-pointer hover:border-gray-200 dark:hover:border-zinc-700 transition-all group"
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors">
-                        <stat.icon size={16} className="text-gray-600 dark:text-zinc-400" />
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                        <stat.icon size={16} className="text-gray-500 dark:text-zinc-400" />
                       </div>
-                      {(stat.tab || stat.navigateTo) && (
-                        <ChevronRight size={16} className="text-gray-300 dark:text-zinc-600 group-hover:text-gray-500 dark:group-hover:text-zinc-400 transition-colors" />
-                      )}
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{stat.value}</h3>
-                    <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{stat.label}</p>
-                    {stat.subtext && <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2">{stat.subtext}</p>}
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-zinc-100">{stat.value}</h3>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{stat.label}</p>
+                    {stat.subtext && <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-0.5">{stat.subtext}</p>}
                     {(stat.tab || stat.navigateTo) && stat.actionLabel && (
-                      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-zinc-700">
-                        <span className="text-xs font-medium text-gray-600 dark:text-zinc-400 group-hover:text-gray-900 dark:group-hover:text-zinc-100 transition-colors flex items-center gap-1">
+                      <div className="mt-2 pt-2 border-t border-gray-100 dark:border-zinc-800">
+                        <span className="text-xs text-gray-400 dark:text-zinc-500 group-hover:text-gray-600 dark:group-hover:text-zinc-300 transition-colors flex items-center gap-1">
                           {stat.actionLabel}
-                          <ChevronRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <ChevronRight size={11} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                         </span>
                       </div>
                     )}
@@ -958,12 +1020,12 @@ ${studentResults.length > 0 ? `
                 ) : results && results.length > 0 ? (
                   <div className="divide-y divide-gray-50 dark:divide-zinc-800">
                     {Object.values(results.reduce((acc, r) => {
-                      const subject = r.subjectName || 'Unknown';
+                      const subject = r.subjectName || r.examId?.subjectName || r.examId?.subject || r.examId?.name || 'Unknown';
                       if (!acc[subject] && r.percentage !== null && r.percentage !== undefined) {
                         acc[subject] = {
                           name: subject,
                           score: Math.round(r.percentage),
-                          grade: r.grade || (r.percentage >= 90 ? 'A+' : r.percentage >= 80 ? 'A' : r.percentage >= 70 ? 'B+' : r.percentage >= 60 ? 'B' : 'C')
+                          grade: r.grade || getGradeFromPercentage(r.percentage)
                         };
                       }
                       return acc;
@@ -1111,22 +1173,28 @@ ${studentResults.length > 0 ? `
                     Note: Attendance is typically marked by teachers through the Staff Mobile App.
                   </p>
                   <div className="grid grid-cols-4 gap-2">
-                    <button onClick={() => handleQuickMarkAttendance('present')} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all">
-                      <CheckCircle2 size={20} className="text-gray-600 dark:text-zinc-400" />
-                      <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">{t('pages.present2')}</span>
-                    </button>
-                    <button onClick={() => handleQuickMarkAttendance('absent')} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all">
-                      <XCircle size={20} className="text-gray-600 dark:text-zinc-400" />
-                      <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">{t('pages.absent2')}</span>
-                    </button>
-                    <button onClick={() => handleQuickMarkAttendance('half-day')} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all">
-                      <Clock size={20} className="text-gray-600 dark:text-zinc-400" />
-                      <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">{t('pages.halfDay')}</span>
-                    </button>
-                    <button onClick={() => handleQuickMarkAttendance('leave')} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all">
-                      <Calendar size={20} className="text-gray-600 dark:text-zinc-400" />
-                      <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">{t('pages.leave')}</span>
-                    </button>
+                    {[
+                      { key: 'present', label: t('pages.present2'), Icon: CheckCircle2, activeColor: 'border-green-500 bg-green-50 dark:bg-green-950/30', iconColor: 'text-green-600' },
+                      { key: 'absent', label: t('pages.absent2'), Icon: XCircle, activeColor: 'border-red-500 bg-red-50 dark:bg-red-950/30', iconColor: 'text-red-600' },
+                      { key: 'halfday', label: t('pages.halfDay'), Icon: Clock, activeColor: 'border-blue-500 bg-blue-50 dark:bg-blue-950/30', iconColor: 'text-blue-600' },
+                      { key: 'leave', label: t('pages.leave'), Icon: Calendar, activeColor: 'border-purple-500 bg-purple-50 dark:bg-purple-950/30', iconColor: 'text-purple-600' },
+                    ].map(({ key, label, Icon, activeColor, iconColor }) => {
+                      const isActive = todayAttendanceStatus === key;
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => handleQuickMarkAttendance(key)}
+                          className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition-all ${
+                            isActive
+                              ? `${activeColor} ring-1 ring-offset-1`
+                              : 'border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-50 dark:hover:bg-zinc-800/50'
+                          }`}
+                        >
+                          <Icon size={20} className={isActive ? iconColor : 'text-gray-600 dark:text-zinc-400'} />
+                          <span className={`text-xs font-medium ${isActive ? iconColor : 'text-gray-700 dark:text-zinc-300'}`}>{label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -1228,7 +1296,7 @@ ${studentResults.length > 0 ? `
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{payment.paymentPeriod || 'Fee Payment'}</p>
-                            <p className="text-xs text-gray-500 dark:text-zinc-400">{payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : payment.date} • {payment.paymentMode || payment.mode}</p>
+                            <p className="text-xs text-gray-500 dark:text-zinc-400">{payment.paymentDate ? formatShortDate(payment.paymentDate) : payment.date} • {payment.paymentMode || payment.mode}</p>
                           </div>
                         </div>
                         <div className="text-right">
@@ -1349,7 +1417,7 @@ ${studentResults.length > 0 ? `
             <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">{t('pages.quickActions1')}</h3>
             <div className="grid grid-cols-2 gap-2">
               <button onClick={onEditOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><Edit size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.edit1')}</span></button>
-              <button onClick={() => student.parentPhone && (window.location.href = `tel:${student.parentPhone}`)} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><Phone size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.call')}</span></button>
+              <button onClick={() => student.parentPhone && (window.location.href = `tel:${student.parentPhone.replace(/[^\d+]/g, '')}`)} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><Phone size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.call')}</span></button>
               <button onClick={onTcOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><FileCheck size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">TC</span></button>
               <button onClick={onProgressOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><BarChart3 size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.progress')}</span></button>
             </div>
@@ -1431,7 +1499,12 @@ ${studentResults.length > 0 ? `
 
       {/* Edit Drawer - only mount when open */}
       {isEditOpen && (
-      <Drawer isOpen={isEditOpen} onOpenChange={(open) => open ? onEditOpen() : onEditClose()} placement="right" size="5xl" hideCloseButton classNames={{ wrapper: "!z-50", base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]" }}>
+      <Drawer isOpen={isEditOpen} onOpenChange={(open) => {
+        if (!open) {
+          if (editStudentRef.current) editStudentRef.current.attemptClose();
+          else onEditClose();
+        }
+      }} placement="right" size="5xl" hideCloseButton classNames={{ wrapper: "!z-50", base: "m-2 rounded-xl shadow-xl h-[calc(100%-1rem)]" }}>
         <DrawerContent>
           {(onClose) => (
             <>
@@ -1441,7 +1514,7 @@ ${studentResults.length > 0 ? `
               </DrawerHeader>
               <DrawerBody className="p-0 overflow-auto">
                 <Suspense fallback={<div className="flex items-center justify-center h-40"><span className="text-sm text-gray-400 dark:text-zinc-500">{t('pages.loading')}</span></div>}>
-                  <AddStudent onClose={onClose} onSave={(data) => { updateStudent(id, data); onClose(); }} classesWithTeachers={classesWithTeachers || []} classOptions={availableClasses} initialData={student} />
+                  <AddStudent ref={editStudentRef} onClose={onClose} onSave={(data) => { updateStudent(id, data); onClose(); }} classesWithTeachers={classesWithTeachers || []} classOptions={availableClasses} initialData={student} />
                 </Suspense>
               </DrawerBody>
             </>
@@ -1456,7 +1529,20 @@ ${studentResults.length > 0 ? `
           <ModalHeader>{t('pages.recordFeePayment1')}</ModalHeader>
           <ModalBody>
             <div className="space-y-4">
-              <Input label={t('pages.amount1')} type="number" value={paymentForm.amount} onValueChange={(v) => setPaymentForm({ ...paymentForm, amount: v })} startContent="₹" variant="bordered" description={`Outstanding: ₹${studentFeeStructure?.totalBalance?.toLocaleString() || 0}`} isRequired />
+              <Input
+                label={t('pages.amount1')}
+                type="number"
+                value={paymentForm.amount}
+                onValueChange={(v) => setPaymentForm({ ...paymentForm, amount: v })}
+                startContent="₹"
+                variant="bordered"
+                min={1}
+                max={studentFeeStructure?.totalBalance || 0}
+                description={`Outstanding: ₹${(studentFeeStructure?.totalBalance || 0).toLocaleString('en-IN')}`}
+                isInvalid={!!paymentForm.amount && parseInt(paymentForm.amount, 10) > (studentFeeStructure?.totalBalance || 0)}
+                errorMessage={`Max payable: ₹${(studentFeeStructure?.totalBalance || 0).toLocaleString('en-IN')}`}
+                isRequired
+              />
               <Select label={t('pages.paymentMethod1')} placeholder={t('pages.selectMethod')} selectedKeys={[paymentForm.paymentMode]} onSelectionChange={(keys) => setPaymentForm({ ...paymentForm, paymentMode: Array.from(keys)[0] })} variant="bordered" isRequired>
                 <SelectItem key="cash">{t('pages.cash1')}</SelectItem>
                 <SelectItem key="online">Online/UPI</SelectItem>
@@ -1468,13 +1554,39 @@ ${studentResults.length > 0 ? `
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={onPaymentClose}>{t('pages.cancel2')}</Button>
-            <Button className="bg-gray-900 text-white" onPress={handleRecordPayment} isDisabled={!paymentForm.amount || !paymentForm.paymentMode}>{t('pages.recordPayment1')}</Button>
+            <Button
+              className="bg-gray-900 text-white"
+              onPress={handleRecordPayment}
+              isDisabled={
+                !paymentForm.amount ||
+                !paymentForm.paymentMode ||
+                parseInt(paymentForm.amount, 10) <= 0 ||
+                parseInt(paymentForm.amount, 10) > (studentFeeStructure?.totalBalance || 0)
+              }
+              isLoading={isRecordingPayment}
+            >{t('pages.recordPayment1')}</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
 
       {/* TC Modal */}
       <TCGeneratorModal isOpen={isTcOpen} onClose={onTcClose} students={[student]} />
+
+      {/* Move Class Modal */}
+      <MoveClassModal
+        isOpen={isMoveClassOpen}
+        onClose={() => setIsMoveClassOpen(false)}
+        student={student}
+        availableClasses={availableClasses}
+        onMove={async (newClass) => {
+          const targetClass = classesWithTeachers?.find(c => `${c.name}-${c.section}` === newClass);
+          if (targetClass) {
+            await updateStudent(student.id, { classId: targetClass._id || targetClass.id });
+            refetchStudent();
+          }
+          setIsMoveClassOpen(false);
+        }}
+      />
 
       {/* Invoice Modal */}
       <InvoicePrintModal
@@ -1547,6 +1659,31 @@ ${studentResults.length > 0 ? `
 
       {/* Camera Capture */}
       <CameraCaptureModal isOpen={isCameraCaptureOpen} onClose={() => setIsCameraCaptureOpen(false)} onPhotoCaptured={(image) => { setSelectedImageForEdit(image); setIsCameraCaptureOpen(false); setIsPhotoEditorOpen(true); }} />
+
+      {/* Delete Student Confirmation */}
+      <ConfirmDialog
+        isOpen={isDeleteConfirmOpen}
+        onClose={() => setIsDeleteConfirmOpen(false)}
+        onConfirm={async () => {
+          setIsDeleting(true);
+          try {
+            const result = await deleteStudent(student.id);
+            toast.success(result.message || t('toast.success.studentDeleted', { name: student.name, defaultValue: `${student.name} permanently deleted` }));
+            navigate('/students');
+          } catch (error) {
+            toast.error(error.message || t('toast.error.failedToDeleteStudent', 'Failed to delete student'));
+          } finally {
+            setIsDeleting(false);
+            setIsDeleteConfirmOpen(false);
+          }
+        }}
+        title={t('confirm.deleteStudentTitle', 'Delete Student')}
+        message={t('confirm.permanentDeleteStudent', { name: student?.name, defaultValue: `Are you sure you want to permanently delete ${student?.name}? This action cannot be undone.` })}
+        confirmText={t('common.delete', 'Delete')}
+        cancelText={t('common.cancel', 'Cancel')}
+        variant="danger"
+        isLoading={isDeleting}
+      />
     </div>
     </>
   );

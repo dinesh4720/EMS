@@ -10,9 +10,11 @@ import { PageLayout, MinimalButton } from '../../components/ui';
 import TCGeneratorModal from './TCGeneratorModal';
 import toast from 'react-hot-toast';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import { useTranslation } from 'react-i18next';
 
 export default function TransferCertificatePage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -67,7 +69,7 @@ export default function TransferCertificatePage() {
               <div className="flex gap-3">
                 <Input
                   label="Search Student"
-                  placeholder="Name, admission number, or roll number"
+                  placeholder={t('students.form.searchStudentPlaceholder')}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSearch()}

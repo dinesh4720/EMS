@@ -1,4 +1,5 @@
 import toast from 'react-hot-toast';
+import logger from './logger';
 
 /**
  * Error types for timetable management
@@ -154,7 +155,7 @@ export function showErrorToast(error, customMessage = null) {
   toast.error(message, toastOptions);
   
   // Log detailed error for debugging
-  console.error('Error:', parsedError);
+  logger.error('Error:', parsedError);
   
   return parsedError;
 }

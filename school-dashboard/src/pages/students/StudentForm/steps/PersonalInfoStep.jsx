@@ -219,7 +219,7 @@ function DateOfBirthInput({ value, onChange, error, ref }) {
       </label>
       <Input
         labelPlacement="outside"
-        placeholder="DD/MM/YYYY"
+        placeholder={t('students.form.dobPlaceholder')}
         value={value || ""}
         onValueChange={onChange}
         isInvalid={!!error}
@@ -307,7 +307,7 @@ function ContactSection({ formData, updateField }) {
         <Input
           label={t('pages.emailAddress')}
           labelPlacement="outside"
-          placeholder="student@email.com"
+          placeholder={t('students.form.studentEmailPlaceholder')}
           value={formData.email}
           onValueChange={(v) => updateField("email", v)}
           variant="bordered"
@@ -386,7 +386,7 @@ function OptionalSection({ formData, updateField }) {
         <Input
           label={t('pages.aadhaarNumber')}
           labelPlacement="outside"
-          placeholder="12 digit Aadhaar"
+          placeholder={t('students.form.aadhaarPlaceholder')}
           value={formData.aadhaarNumber}
           onValueChange={(v) => updateField("aadhaarNumber", v.replace(/\D/g, "").slice(0, 12))}
           variant="bordered"

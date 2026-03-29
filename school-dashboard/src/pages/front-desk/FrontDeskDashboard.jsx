@@ -14,6 +14,19 @@ import FeedbacksList from './FeedbacksList';
 import CallLogsList from './CallLogsList';
 import { useTranslation } from 'react-i18next';
 
+// Hardcoded UI strings — centralised here for future i18n migration
+const STRINGS = {
+  overview: 'Overview',
+  newVisitor: 'New Visitor',
+  issueGatePass: 'Issue Gate Pass',
+  newAppointment: 'New Appointment',
+  newFeedback: 'New Feedback',
+  logCall: 'Log Call',
+  new: 'New',
+  export: 'Export',
+  noRecentActivity: 'No recent activity',
+};
+
 export default function FrontDeskDashboard() {
   const { t } = useTranslation();
   // Create refs for each component
@@ -80,7 +93,7 @@ export default function FrontDeskDashboard() {
   };
 
   const tabs = [
-    { key: 'overview', label: 'Overview' },
+    { key: 'overview', label: STRINGS.overview },
     { key: 'visitors', label: `Visitors${stats.todayVisitors > 0 ? ` (${stats.todayVisitors})` : ''}` },
     { key: 'gate-passes', label: `Gate Pass${stats.todayGatePasses > 0 ? ` (${stats.todayGatePasses})` : ''}` },
     { key: 'appointments', label: `Appointments${stats.upcomingAppointments > 0 ? ` (${stats.upcomingAppointments})` : ''}` },
@@ -89,11 +102,11 @@ export default function FrontDeskDashboard() {
   ];
 
   const newActions = [
-    { key: 'visitor', label: 'New Visitor', icon: Users },
-    { key: 'gate-pass', label: 'Issue Gate Pass', icon: DoorOpen },
-    { key: 'appointment', label: 'New Appointment', icon: Calendar },
-    { key: 'feedback', label: 'New Feedback', icon: MessageSquare },
-    { key: 'call-log', label: 'Log Call', icon: Phone },
+    { key: 'visitor', label: STRINGS.newVisitor, icon: Users },
+    { key: 'gate-pass', label: STRINGS.issueGatePass, icon: DoorOpen },
+    { key: 'appointment', label: STRINGS.newAppointment, icon: Calendar },
+    { key: 'feedback', label: STRINGS.newFeedback, icon: MessageSquare },
+    { key: 'call-log', label: STRINGS.logCall, icon: Phone },
   ];
 
   const handleTabChange = (tabKey) => {
@@ -147,7 +160,7 @@ export default function FrontDeskDashboard() {
           <Dropdown>
             <DropdownTrigger>
               <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200" startContent={<Plus size={16} />}>
-                New
+                {STRINGS.new}
                 <ChevronDown size={14} className="ml-1" />
               </Button>
             </DropdownTrigger>
@@ -160,7 +173,7 @@ export default function FrontDeskDashboard() {
             </DropdownMenu>
           </Dropdown>
           <Button variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Download size={16} />}>
-            Export
+            {STRINGS.export}
           </Button>
         </div>
       </div>
@@ -189,7 +202,7 @@ export default function FrontDeskDashboard() {
             </div>
             <div className="divide-y divide-gray-50 dark:divide-zinc-800">
               {recentActivity.length === 0 ? (
-                <p className="px-4 py-6 text-sm text-gray-400 dark:text-zinc-500 text-center">No recent activity</p>
+                <p className="px-4 py-6 text-sm text-gray-400 dark:text-zinc-500 text-center">{STRINGS.noRecentActivity}</p>
               ) : (
                 recentActivity.slice(0, 6).map((activity, idx) => (
                   <div key={activity._id || idx} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-900/50 transition-colors">

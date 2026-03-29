@@ -166,6 +166,9 @@ export default function Subjects() {
     );
   }
 
+  const onTrackCount = subjects.filter(s => (s.overallProgress || 0) >= 50).length;
+  const behindCount = subjects.filter(s => (s.overallProgress || 0) < 50).length;
+
   return (
     <div className="w-full flex flex-col">
       {/* Toolbar */}
@@ -188,6 +191,26 @@ export default function Subjects() {
           </Button>
         </div>
       </div>
+
+      {/* Curriculum Health Summary */}
+      {subjects.length > 0 && (
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-default-200">
+            <p className="text-xs text-default-500">Total Subjects</p>
+            <p className="text-2xl font-semibold text-default-900">{subjects.length}</p>
+          </div>
+          <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-default-200">
+            <p className="text-xs text-green-600">On Track</p>
+            <p className="text-2xl font-semibold text-green-700">{onTrackCount}</p>
+            <p className="text-[11px] text-default-400">50%+ progress</p>
+          </div>
+          <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-default-200">
+            <p className="text-xs text-amber-600">Behind Schedule</p>
+            <p className="text-2xl font-semibold text-amber-700">{behindCount}</p>
+            <p className="text-[11px] text-default-400">Below 50%</p>
+          </div>
+        </div>
+      )}
 
       {/* Subjects Table */}
       {subjects.length === 0 ? (
@@ -305,7 +328,7 @@ export default function Subjects() {
           <ModalBody className="space-y-4">
             <Input
               label={t('pages.subjectName1')}
-              placeholder="e.g., Mathematics"
+              placeholder={t('classes.subjectNamePlaceholder')}
               value={newSubject.subjectName}
               onValueChange={(val) => setNewSubject(prev => ({ ...prev, subjectName: val }))}
               isRequired

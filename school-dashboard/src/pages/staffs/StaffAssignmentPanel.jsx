@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { Button, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem } from "@heroui/react";
-import { BookOpen, Plus, Trash2, Users, AlertCircle, GraduationCap, ArrowLeft } from "lucide-react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem } from "@heroui/react";
+import { BookOpen, Plus, Trash2, Users, AlertCircle, GraduationCap } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import { usePermissions } from "../../context/PermissionContext";
@@ -11,7 +11,7 @@ import {
   executeWithFeedback
 } from "../../utils/errorHandling";
 
-export default function StaffAssignmentPanel({ staffId }) {
+export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) {
   const { t } = useTranslation();
   const { teacherAssignmentsApi, classesApi, schoolSettings, classesWithTeachers, getStaffById } = useApp();
   const { hasPermission } = usePermissions();
@@ -238,7 +238,7 @@ export default function StaffAssignmentPanel({ staffId }) {
 
         {/* Class Teacher Assignments Section */}
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="p-5 border-b border-gray-200">
+          <div className="p-5 border-b border-gray-200 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
                 <GraduationCap size={16} className="text-gray-600" />
@@ -250,6 +250,14 @@ export default function StaffAssignmentPanel({ staffId }) {
                 </p>
               </div>
             </div>
+            {onAssignClassTeacher && canEdit && (
+              <button
+                onClick={onAssignClassTeacher}
+                className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                {classTeacherAssignments.length > 0 ? 'Change Class' : 'Assign Class'}
+              </button>
+            )}
           </div>
           <div className="p-5">
             {classTeacherAssignments.length > 0 ? (
@@ -282,12 +290,22 @@ export default function StaffAssignmentPanel({ staffId }) {
                 </div>
                 <p className="text-sm text-gray-500 mb-1">{t('pages.noClassHasBeenAssignedYet')}</p>
                 <p className="text-xs text-gray-400 mb-4">{t('pages.thisStaffMemberIsNotAClassTeacherForAnyClass')}</p>
-                <Link
-                  to="/classes"
-                  className="text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors no-underline"
-                >
-                  Assign a Class
-                </Link>
+                {onAssignClassTeacher ? (
+                  <button
+                    onClick={onAssignClassTeacher}
+                    disabled={!canEdit}
+                    className="text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    Assign as Class Teacher
+                  </button>
+                ) : (
+                  <Link
+                    to="/classes"
+                    className="text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors no-underline"
+                  >
+                    Assign a Class
+                  </Link>
+                )}
               </div>
             )}
           </div>
@@ -300,9 +318,7 @@ export default function StaffAssignmentPanel({ staffId }) {
               <AlertCircle size={16} className="text-gray-600" />
             </div>
             <p className="text-sm text-gray-600">
-              <strong>{t('pages.note1')}</strong> The section below manages <strong>subject assignments</strong> (which subjects and classes this teacher can teach in the timetable).
-              {classTeacherAssignments.length > 0 ? ' The class teacher assignments shown above are managed from the ' : ' To assign a class teacher, go to the '}
-              <Link to="/classes" className="text-gray-900 hover:underline">{t('pages.classesSection')}</Link>.
+              <strong>{t('pages.note1')}</strong> Subject assignments below control which subjects and classes this teacher can teach in the timetable. Class teacher assignment (above) is a separate homeroom role.
             </p>
           </div>
         </div>

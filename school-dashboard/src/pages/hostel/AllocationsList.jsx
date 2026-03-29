@@ -254,7 +254,7 @@ export default function AllocationsList() {
             {/* Server-side student search — replaces bulk limit:500 fetch (MF-24) */}
             <Input
               label={t('pages.searchStudent')}
-              placeholder="Type at least 2 characters..."
+              placeholder={t('hostel.searchStudentPlaceholder')}
               value={studentSearch}
               onValueChange={setStudentSearch}
               startContent={<Search size={14} className="text-gray-400" />}
@@ -302,7 +302,7 @@ export default function AllocationsList() {
                 label={t('pages.bedNumber')}
                 value={formData.bedNumber}
                 onValueChange={(v) => setFormData(p => ({ ...p, bedNumber: v }))}
-                placeholder="e.g. B1"
+                placeholder={t('hostel.bedNumberPlaceholder')}
               />
               <Input
                 label={t('pages.startDate1')} isRequired type="date"

@@ -16,8 +16,8 @@ export const useDashboardStats = () => {
       setLoading(true)
       try {
         const response = await analyticsApi.getDashboardStats()
-        // Handle { success: true, stats: {...} } format
-        const data = response.stats || response
+        // Handle both { stats: {...} } and flat response formats
+        const data = (response as any).stats || response
         setStats(data)
         setError(null)
       } catch (err) {

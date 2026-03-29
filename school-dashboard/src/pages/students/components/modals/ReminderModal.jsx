@@ -37,13 +37,11 @@ export default function ReminderModal({ isOpen, onClose, student, studentFeeStru
     const loadingToast = toast.loading(t('toast.loading.sendingReminder'));
 
     try {
-      await request('/messaging/send-reminder', {
+      await request(`/students/${student.id || student._id}/send-reminder`, {
         method: 'POST',
         body: JSON.stringify({
+          type: 'fee',
           message: reminderMessage,
-          parentPhone: student.parentPhone,
-          parentEmail: student.parentEmail,
-          studentName: student.name
         })
       });
 

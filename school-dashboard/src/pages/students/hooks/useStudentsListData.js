@@ -16,6 +16,7 @@ import { safeGetItem, safeSetItem } from "../../../utils/safeStorage";
 import { ALL_COLUMNS } from "../utils/studentImportUtils";
 import { getNextClass } from "../utils/studentHelpers";
 import { request } from "../../../services/api.js";
+import { getSocketService } from "../../../services/socketServiceEnhanced.js";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 
@@ -33,14 +34,14 @@ export function useStudentsListData() {
     currentAcademicYear,
   } = useApp();
 
-  // ── Filter state ─────────────────────────────────────────────────────────
+  // ── Filter state (restored from sessionStorage) ──────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
-  const [classFilter, setClassFilter] = useState("all");
-  const [feeStatusFilter, setFeeStatusFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("active");
-  const [academicYearFilter, setAcademicYearFilter] = useState("all");
-  const [academicPerformanceFilter, setAcademicPerformanceFilter] = useState("all");
-  const [attendanceFilter, setAttendanceFilter] = useState("all");
+  const [classFilter, setClassFilter] = useState(() => sessionStorage.getItem("students-filter-class") || "all");
+  const [feeStatusFilter, setFeeStatusFilter] = useState(() => sessionStorage.getItem("students-filter-feeStatus") || "all");
+  const [statusFilter, setStatusFilter] = useState(() => sessionStorage.getItem("students-filter-status") || "active");
+  const [academicYearFilter, setAcademicYearFilter] = useState(() => sessionStorage.getItem("students-filter-academicYear") || "all");
+  const [academicPerformanceFilter, setAcademicPerformanceFilter] = useState(() => sessionStorage.getItem("students-filter-academicPerformance") || "all");
+  const [attendanceFilter, setAttendanceFilter] = useState(() => sessionStorage.getItem("students-filter-attendance") || "all");
   const [localStudents, setLocalStudents] = useState(null);
   const deferredSearchQuery = useDeferredValue(searchQuery.trim());
 
@@ -118,7 +119,7 @@ export function useStudentsListData() {
 
   // ── Bulk action state ─────────────────────────────────────────────────────
   const [bulkAction, setBulkAction] = useState("");
-  const [promoteToClass, setPromoteToClass] = useState("");
+  // promoteToClass state removed - was unused
   const [promotionPreview, setPromotionPreview] = useState([]);
   const [tcStudents, setTcStudents] = useState([]);
   const [studentToDelete, setStudentToDelete] = useState(null);
@@ -307,8 +308,8 @@ export function useStudentsListData() {
 
   // ── Socket.IO real-time updates ───────────────────────────────────────────
   useEffect(() => {
-    const socketService = window.socketService;
-    if (!socketService) return;
+    const socketService = getSocketService();
+    if (!socketService?.isConnected()) return;
     const handleStudentUpdate = (data) => {
       toast.success(`${data.name}'s profile was updated`, { duration: 3000, icon: '🔄' });
     };
@@ -463,7 +464,7 @@ export function useStudentsListData() {
     onReminderClose();
     toast.promise(new Promise((resolve) => setTimeout(resolve, 1500)), {
       loading: `Scheduling messages for ${reminderTargetCount} parents...`,
-      success: `Messages scheduled for ${new Date(reminderTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
+      success: `Messages scheduled for ${reminderTime ? new Date(reminderTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : 'now'}`,
       error: "Failed to schedule messages",
     });
   };
@@ -489,6 +490,8 @@ export function useStudentsListData() {
   const clearAllFilters = () => {
     setClassFilter("all"); setFeeStatusFilter("all");
     setAcademicYearFilter("all"); setAcademicPerformanceFilter("all"); setAttendanceFilter("all");
+    // Clear persisted filters
+    ["class", "feeStatus", "academicYear", "academicPerformance", "attendance", "status"].forEach(k => sessionStorage.removeItem(`students-filter-${k}`));
     toast.success(t("toast.success.allFiltersCleared"));
   };
 
@@ -496,6 +499,9 @@ export function useStudentsListData() {
     (classFilter !== "all" ? 1 : 0) + (feeStatusFilter !== "all" ? 1 : 0) +
     (academicYearFilter !== "all" ? 1 : 0) + (academicPerformanceFilter !== "all" ? 1 : 0) +
     (attendanceFilter !== "all" ? 1 : 0);
+
+  // Search debounce indicator
+  const isSearching = searchQuery.trim() !== deferredSearchQuery;
 
   const filterCounts = useMemo(() => {
     const classCounts = {}, feeStatusCounts = {}, academicYearCounts = {}, academicPerformanceCounts = {}, attendanceCounts = {};
@@ -528,6 +534,8 @@ export function useStudentsListData() {
       case "academicPerformance": setAcademicPerformanceFilter(value); break;
       case "attendance":          setAttendanceFilter(value); break;
     }
+    // Persist to sessionStorage
+    sessionStorage.setItem(`students-filter-${filterKey}`, value);
   }, []);
 
   const filterPresets = [
@@ -560,10 +568,10 @@ export function useStudentsListData() {
     currentAcademicYear, classes,
     // filter state
     searchQuery, setSearchQuery,
-    statusFilter, setStatusFilter,
+    statusFilter, setStatusFilter: (val) => { setStatusFilter(val); sessionStorage.setItem("students-filter-status", val); },
     classFilter, feeStatusFilter, academicYearFilter, academicPerformanceFilter, attendanceFilter,
     // filter helpers
-    filtersConfig, filterPresets, activeFiltersCount,
+    filtersConfig, filterPresets, activeFiltersCount, isSearching,
     handleFilterChange, handlePresetClick, clearAllFilters,
     // dropdown state
     statusDropdownOpen, setStatusDropdownOpen,

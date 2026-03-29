@@ -356,7 +356,7 @@ export default function Refunds() {
                 <Input
                   type="number"
                   label="Amount (₹)"
-                  placeholder="0"
+                  placeholder={t('fees.amountPlaceholder')}
                   value={newRefundForm.amount}
                   onValueChange={(v) => setNewRefundForm({ ...newRefundForm, amount: v })}
                   variant="bordered"

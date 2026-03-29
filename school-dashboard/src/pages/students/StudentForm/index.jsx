@@ -223,10 +223,14 @@ export default function StudentForm({
           {step > 1 && (
             <Button variant="light" onPress={handlePrev} className="font-medium">
               <ArrowLeft size={16} />
-              Back
+              {t('common.back', 'Back')}
             </Button>
           )}
-          <div className="flex-1" />
+          <div className="flex-1 flex items-center justify-center">
+            {hasUnsavedChanges && (
+              <span className="text-xs text-gray-400 dark:text-zinc-500">{t('common.unsavedChanges', 'Unsaved changes')}</span>
+            )}
+          </div>
           <Button
             color="primary"
             onPress={step === 3 ? handleSubmit : handleNext}

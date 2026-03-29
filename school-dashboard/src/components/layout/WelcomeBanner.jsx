@@ -68,7 +68,7 @@ export default function WelcomeBanner({ className }) {
             </div>
             
             <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
-              Welcome back to {schoolSettings?.schoolName || 'EduMaster'}
+              Welcome back to {schoolSettings?.schoolName || 'Your School'}
             </h1>
             <p className="text-white/70 mt-2 text-sm md:text-base max-w-xl">
               Here's what's happening at your school today. You have <span className="text-white font-semibold">3 pending tasks</span> and <span className="text-white font-semibold">5 new notifications</span>.

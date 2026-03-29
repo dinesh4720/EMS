@@ -58,7 +58,7 @@ export default function StudentAcademics({
     try {
       const [perfResult, resultsResult, trendsResult] = await Promise.allSettled([
         request(`/academic-performance/student/${studentId}?academicYear=${selectedYear}${selectedTerm !== 'all' ? `&term=${selectedTerm}` : ''}`, { signal }),
-        request(`/results/student/${studentId}`, { signal }),
+        request(`/students/${studentId}/results`, { signal }),
         request(`/academic-performance/trends/${studentId}`, { signal })
       ]);
 
@@ -549,11 +549,11 @@ export default function StudentAcademics({
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-default-900">
-                      {new Date(exam.date).toLocaleDateString(getDateLocale(), {
+                      {exam.date ? new Date(exam.date).toLocaleDateString(getDateLocale(), {
                         weekday: 'short',
                         month: 'short',
                         day: 'numeric'
-                      })}
+                      }) : '—'}
                     </p>
                     <p className="text-sm text-default-500">Max: {exam.maxMarks} marks</p>
                   </div>

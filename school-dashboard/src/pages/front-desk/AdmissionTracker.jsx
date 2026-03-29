@@ -3,6 +3,7 @@ import { CheckCircle, Circle, Clock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { frontDeskApi } from '../../services/api';
 import { useTranslation } from 'react-i18next';
+import { formatShortDate, formatTime } from '../../utils/dateFormatter';
 
 export default function AdmissionTracker({ admission, isOpen, onClose }) {
   const { t } = useTranslation();
@@ -97,7 +98,7 @@ export default function AdmissionTracker({ admission, isOpen, onClose }) {
                         </p>
                         {item.date && (
                           <p className="text-sm text-default-500 mt-1">
-                            {new Date(item.date).toLocaleDateString()} {new Date(item.date).toLocaleTimeString()}
+                            {formatShortDate(item.date)} {formatTime(item.date)}
                           </p>
                         )}
                         {item.notes && (

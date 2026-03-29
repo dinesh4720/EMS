@@ -1,4 +1,5 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import logger from "../../utils/logger";
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, Chip, useDisclosure, Select, SelectItem, Checkbox, Button
@@ -9,6 +10,7 @@ import FormInput from '../../components/FormInput';
 import { validatePhone, validateFutureDate, validateDateRange } from '../../utils/validations';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { formatDateTime } from '../../utils/dateFormatter';
 
 const AppointmentsList = forwardRef((props, ref) => {
   const { t } = useTranslation();
@@ -18,6 +20,7 @@ const AppointmentsList = forwardRef((props, ref) => {
   const [errors, setErrors] = useState({});
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingId, setEditingId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     visitorName: '',
     phoneNumber: '',
@@ -52,7 +55,7 @@ const AppointmentsList = forwardRef((props, ref) => {
       const response = await frontDeskApi.getAppointments();
       setAppointments(response);
     } catch (error) {
-      console.error('Failed to load appointments:', error);
+      logger.error('Failed to load appointments:', error);
       toast.error(t('toast.error.failedToLoadAppointments'));
     } finally {
       setLoading(false);
@@ -64,7 +67,7 @@ const AppointmentsList = forwardRef((props, ref) => {
       const response = await staffApi.getAll();
       setStaff(response);
     } catch (error) {
-      console.error('Failed to load staff:', error);
+      logger.error('Failed to load staff:', error);
     }
   };
 
@@ -136,10 +139,12 @@ const AppointmentsList = forwardRef((props, ref) => {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     if (!validateForm()) {
       toast.error(t('toast.error.pleaseFixTheErrorsBeforeSubmitting'));
       return;
     }
+    setIsSubmitting(true);
     try {
       if (editingId) {
         await frontDeskApi.updateAppointment(editingId, formData);
@@ -156,14 +161,14 @@ const AppointmentsList = forwardRef((props, ref) => {
           if (assignedStaff) {
             await announcementsApi.create({
               title: formData.taskTitle,
-              content: `Appointment task assigned to you.\n\nVisitor: ${formData.visitorName}\nPurpose: ${formData.purpose || 'N/A'}\nFrom: ${formData.fromDateTime ? new Date(formData.fromDateTime).toLocaleString() : 'N/A'}\nTo: ${formData.toDateTime ? new Date(formData.toDateTime).toLocaleString() : 'N/A'}\nPriority: ${formData.taskPriority}`.trim(),
+              content: `Appointment task assigned to you.\n\nVisitor: ${formData.visitorName}\nPurpose: ${formData.purpose || 'N/A'}\nFrom: ${formData.fromDateTime ? formatDateTime(formData.fromDateTime) : 'N/A'}\nTo: ${formData.toDateTime ? formatDateTime(formData.toDateTime) : 'N/A'}\nPriority: ${formData.taskPriority}`.trim(),
               recipients: [{ type: 'custom', userIds: [assignedStaff] }],
               channels: ['in_app'],
             });
             toast.success('Task notification sent to assigned staff');
           }
         } catch (taskErr) {
-          console.error('Appointment task error:', taskErr);
+          logger.error('Appointment task error:', taskErr);
           toast.error('Appointment saved but failed to send task notification');
         }
       }
@@ -172,13 +177,13 @@ const AppointmentsList = forwardRef((props, ref) => {
         try {
           await announcementsApi.create({
             title: `Appointment: ${formData.visitorName}`,
-            content: `An appointment has been shared with you.\n\nVisitor: ${formData.visitorName}\nPhone: ${formData.phoneNumber || 'N/A'}\nPurpose: ${formData.purpose || 'N/A'}\nFrom: ${formData.fromDateTime ? new Date(formData.fromDateTime).toLocaleString() : 'N/A'}\nTo: ${formData.toDateTime ? new Date(formData.toDateTime).toLocaleString() : 'N/A'}\nMeeting With: ${formData.meetingWith || 'N/A'}`.trim(),
+            content: `An appointment has been shared with you.\n\nVisitor: ${formData.visitorName}\nPhone: ${formData.phoneNumber || 'N/A'}\nPurpose: ${formData.purpose || 'N/A'}\nFrom: ${formData.fromDateTime ? formatDateTime(formData.fromDateTime) : 'N/A'}\nTo: ${formData.toDateTime ? formatDateTime(formData.toDateTime) : 'N/A'}\nMeeting With: ${formData.meetingWith || 'N/A'}`.trim(),
             recipients: [{ type: 'custom', userIds: formData.shareWithStaff }],
             channels: ['in_app'],
           });
           toast.success(`Appointment shared with ${formData.shareWithStaff.length} staff member(s)`);
         } catch (shareErr) {
-          console.error('Appointment share error:', shareErr);
+          logger.error('Appointment share error:', shareErr);
           toast.error('Appointment saved but failed to share with staff');
         }
       }
@@ -188,6 +193,8 @@ const AppointmentsList = forwardRef((props, ref) => {
       loadAppointments();
     } catch (error) {
       toast.error(t('toast.error.failedToSaveAppointment'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -274,8 +281,8 @@ const AppointmentsList = forwardRef((props, ref) => {
               <TableCell>{appointment.visitorName}</TableCell>
               <TableCell>{appointment.phoneNumber || '-'}</TableCell>
               <TableCell>{appointment.purpose || '-'}</TableCell>
-              <TableCell>{new Date(appointment.fromDateTime).toLocaleString()}</TableCell>
-              <TableCell>{new Date(appointment.toDateTime).toLocaleString()}</TableCell>
+              <TableCell>{formatDateTime(appointment.fromDateTime)}</TableCell>
+              <TableCell>{formatDateTime(appointment.toDateTime)}</TableCell>
               <TableCell>{appointment.meetingWith || '-'}</TableCell>
               <TableCell>
                 <Chip
@@ -445,7 +452,7 @@ const AppointmentsList = forwardRef((props, ref) => {
                     <p className="text-sm font-medium text-default-700 mb-2">📤 Share via Internal Messaging</p>
                     <Select
                       label="Share with staff members"
-                      placeholder="Select staff to notify"
+                      placeholder={t('pages.selectStaffToNotify')}
                       selectionMode="multiple"
                       selectedKeys={new Set(formData.shareWithStaff || [])}
                       onSelectionChange={(keys) => setFormData({ ...formData, shareWithStaff: Array.from(keys) })}
@@ -466,7 +473,7 @@ const AppointmentsList = forwardRef((props, ref) => {
             <Button variant="light" onPress={onClose}>
               Cancel
             </Button>
-            <Button color="primary" onPress={handleSubmit}>
+            <Button color="primary" onPress={handleSubmit} isLoading={isSubmitting}>
               {editingId ? 'Update' : 'Create'}
             </Button>
           </ModalFooter>

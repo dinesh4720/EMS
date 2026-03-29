@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { BookOpen, Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
 import { changelogAdminApi } from '../../services/api';
 import { useTranslation } from 'react-i18next';
+import { formatShortDate } from '../../utils/dateFormatter';
 
 const CATEGORY_COLORS = {
   new_feature: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
@@ -83,6 +84,7 @@ export default function ChangelogPanel() {
   };
 
   const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this changelog entry? This action cannot be undone.')) return;
     try {
       await changelogAdminApi.delete(id);
       await load();
@@ -145,7 +147,7 @@ export default function ChangelogPanel() {
           <textarea
             value={form.body}
             onChange={(e) => setForm({ ...form, body: e.target.value })}
-            placeholder="Description / body"
+            placeholder={t('pages.changelogBodyPlaceholder')}
             required
             rows={3}
             className="mt-3 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
@@ -219,7 +221,7 @@ export default function ChangelogPanel() {
                   <p className="mt-1.5 text-sm text-gray-600 dark:text-zinc-400 line-clamp-2">{entry.body}</p>
                   {entry.publishedAt && (
                     <div className="mt-2 text-xs text-gray-400 dark:text-zinc-500">
-                      {new Date(entry.publishedAt).toLocaleDateString()}
+                      {formatShortDate(entry.publishedAt)}
                     </div>
                   )}
                 </div>

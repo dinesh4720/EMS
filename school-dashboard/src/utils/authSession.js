@@ -1,4 +1,10 @@
 export const AUTH_STORAGE_KEY = 'app_user';
+
+// SECURITY: Only these fields are persisted to sessionStorage. Crucially,
+// `_roleVerified` is intentionally excluded — it is an in-memory-only flag
+// set by AuthContext to indicate the role was confirmed by the server. This
+// prevents an attacker from injecting `_roleVerified: true` into
+// sessionStorage to bypass the permission verification check.
 const STORED_USER_FIELDS = [
   'id',
   'name',

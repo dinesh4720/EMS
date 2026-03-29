@@ -94,7 +94,7 @@ const AttendanceHistoryScreen = () => {
         grouped[date] = {
           date,
           records: [],
-          summary: { present: 0, absent: 0, late: 0, excused: 0, total: 0 },
+          summary: { present: 0, absent: 0, late: 0, leave: 0, halfday: 0, total: 0 },
         };
       }
 
@@ -104,7 +104,8 @@ const AttendanceHistoryScreen = () => {
       if (record.status === 'present') grouped[date].summary.present++;
       else if (record.status === 'absent') grouped[date].summary.absent++;
       else if (record.status === 'late') grouped[date].summary.late++;
-      else if (record.status === 'excused') grouped[date].summary.excused++;
+      else if (record.status === 'leave') grouped[date].summary.leave++;
+      else if (record.status === 'halfday') grouped[date].summary.halfday++;
     });
 
     return Object.values(grouped).sort((a, b) => new Date(b.date) - new Date(a.date));

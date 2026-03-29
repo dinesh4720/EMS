@@ -1,7 +1,7 @@
 import { Input, Select, SelectItem, Checkbox, Textarea, Avatar, RadioGroup, Radio, DatePicker } from "@heroui/react";
 import { User, Phone, MapPin, ShieldAlert, Camera, Trash2, X, Plus } from "lucide-react";
 import { parseDate } from "@internationalized/date";
-import PhotoEditorModal from "../../../components/modals/PhotoEditorModal";
+import PhotoEditorModal from "../../../components/PhotoEditorModal";
 import { useTranslation } from "react-i18next";
 import SectionHeader from "./SectionHeader";
 

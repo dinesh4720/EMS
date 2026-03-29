@@ -63,7 +63,7 @@ export default function PaymentModal({
         amount: paymentAmount,
         paymentMode: paymentForm.paymentMode,
         feeHeads: [{
-          period: new Date(paymentForm.date).toLocaleDateString(getDateLocale(), { month: 'long', year: 'numeric' }),
+          period: paymentForm.date ? new Date(paymentForm.date).toLocaleDateString(getDateLocale(), { month: 'long', year: 'numeric' }) : '—',
           amount: paymentAmount
         }],
         remarks: `Fee payment via ${paymentForm.paymentMode}`,

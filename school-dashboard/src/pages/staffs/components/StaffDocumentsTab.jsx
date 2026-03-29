@@ -6,6 +6,7 @@ import { Button, Progress } from "@heroui/react";
 import toast from "react-hot-toast";
 import { announcementsApi } from "../../../services/api";
 import { useTranslation } from 'react-i18next';
+import { formatShortDate } from '../../../utils/dateFormatter';
 
 export default function StaffDocumentsTab({
   documents,
@@ -136,7 +137,7 @@ export default function StaffDocumentsTab({
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400">{docType}</span>
                         <span className="text-xs text-gray-400 dark:text-zinc-500">
-                          {doc.uploadDate ? new Date(doc.uploadDate).toLocaleDateString() : 'Just now'}
+                          {doc.uploadDate ? formatShortDate(doc.uploadDate) : 'Just now'}
                           {doc.size && ` • ${doc.size}`}
                         </span>
                       </div>

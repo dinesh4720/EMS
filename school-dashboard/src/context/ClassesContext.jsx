@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useMemo, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { classesApi } from "../services/api";
+import toast from "react-hot-toast";
+import logger from "../utils/logger";
 
 export const ClassesContext = createContext();
 
@@ -19,20 +21,34 @@ export function ClassesProvider({ children, staff, students }) {
   }, []);
 
   const addClass = async (newClass) => {
-    const created = await classesApi.create(newClass);
-    setClasses((prev) => [
-      ...prev,
-      { ...created, name: created.name.replace("Class ", ""), strength: 0, attendance: 0 },
-    ]);
-    void invalidateAppData();
-    return created;
+    try {
+      const created = await classesApi.create(newClass);
+      setClasses((prev) => [
+        ...prev,
+        { ...created, name: created.name.replace("Class ", ""), strength: 0, attendance: 0 },
+      ]);
+      void invalidateAppData();
+      return created;
+    } catch (err) {
+      logger.error("Failed to add class:", err);
+      toast.error("Failed to add class");
+      throw err;
+    }
   };
 
   const updateClass = async (id, updates) => {
-    const updated = await classesApi.update(id, updates);
-    setClasses((prev) => prev.map((c) => (c.id === id ? { ...c, ...updated } : c)));
-    void invalidateAppData();
-    return updated;
+    const prev = classes;
+    try {
+      const updated = await classesApi.update(id, updates);
+      setClasses((curr) => curr.map((c) => (String(c.id) === String(id) ? { ...c, ...updated } : c)));
+      void invalidateAppData();
+      return updated;
+    } catch (err) {
+      logger.error("Failed to update class:", err);
+      toast.error("Failed to update class");
+      setClasses(prev);
+      throw err;
+    }
   };
 
   // Update class in state without API call (for real-time socket updates)
@@ -43,9 +59,17 @@ export function ClassesProvider({ children, staff, students }) {
   };
 
   const deleteClass = async (id) => {
-    await classesApi.delete(id);
-    setClasses((prev) => prev.filter((c) => c.id !== id));
-    void invalidateAppData();
+    const prev = classes;
+    try {
+      await classesApi.delete(id);
+      setClasses((curr) => curr.filter((c) => String(c.id) !== String(id)));
+      void invalidateAppData();
+    } catch (err) {
+      logger.error("Failed to delete class:", err);
+      toast.error("Failed to delete class");
+      setClasses(prev);
+      throw err;
+    }
   };
 
   const getClassById = (id) =>

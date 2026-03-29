@@ -6,6 +6,7 @@ import { Button } from "@heroui/react";
 import toast from "react-hot-toast";
 import { getDateLocale } from '../../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import { escapeHtml } from "../../../utils/sanitize";
 
 
 export default function StaffPayrollTab({
@@ -18,10 +19,10 @@ export default function StaffPayrollTab({
   const { totalEarnings, totalDeductions, netSalary } = calculateTotals(staffSalary);
 
   const generatePayslipPDF = (record) => {
-    const month = record?.month || new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    const month = escapeHtml(record?.month || new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' }));
     const net = record?.netSalary ?? netSalary;
-    const staffName = staff?.name || 'Staff Member';
-    const staffCode = staff?.code || '';
+    const staffName = escapeHtml(staff?.name || 'Staff Member');
+    const staffCode = escapeHtml(staff?.code || '');
 
     const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"/><title>Payslip – ${month}</title>
@@ -49,13 +50,13 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
 <body>
 <div class="header">
   <div><h1>Salary Payslip</h1><p>${month}</p></div>
-  <span class="badge">✓ ${record?.status || record?.paymentStatus || 'Paid'}</span>
+  <span class="badge">${escapeHtml(record?.status || record?.paymentStatus || 'Paid')}</span>
 </div>
 <div class="employee-row">
   <div class="info">
     <div class="name">${staffName}</div>
     ${staffCode ? `<p>Employee Code: <strong>${staffCode}</strong></p>` : ''}
-    ${staff?.department ? `<p>Department: ${staff.department}</p>` : ''}
+    ${staff?.department ? `<p>Department: ${escapeHtml(staff.department)}</p>` : ''}
   </div>
   <div class="info" style="text-align:right">
     <p>Pay Period</p>
@@ -66,27 +67,27 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
   <div class="box">
     <div class="box-title">Earnings</div>
     <div class="box-body">
-      <div class="row"><span class="lbl">Basic Salary</span><span>₹${(staffSalary.basic||0).toLocaleString()}</span></div>
-      <div class="row"><span class="lbl">HRA</span><span>₹${(staffSalary.hra||0).toLocaleString()}</span></div>
-      <div class="row"><span class="lbl">DA</span><span>₹${(staffSalary.da||0).toLocaleString()}</span></div>
-      <div class="row"><span class="lbl">Special Allowance</span><span>₹${(staffSalary.specialAllowance||0).toLocaleString()}</span></div>
-      <div class="row"><span class="lbl">Total Earnings</span><span>₹${totalEarnings.toLocaleString()}</span></div>
+      <div class="row"><span class="lbl">Basic Salary</span><span>${escapeHtml((staffSalary.basic||0).toLocaleString())}</span></div>
+      <div class="row"><span class="lbl">HRA</span><span>${escapeHtml((staffSalary.hra||0).toLocaleString())}</span></div>
+      <div class="row"><span class="lbl">DA</span><span>${escapeHtml((staffSalary.da||0).toLocaleString())}</span></div>
+      <div class="row"><span class="lbl">Special Allowance</span><span>${escapeHtml((staffSalary.specialAllowance||0).toLocaleString())}</span></div>
+      <div class="row"><span class="lbl">Total Earnings</span><span>${escapeHtml(totalEarnings.toLocaleString())}</span></div>
     </div>
   </div>
   <div class="box">
     <div class="box-title">Deductions</div>
     <div class="box-body">
-      <div class="row"><span class="lbl">PF</span><span>₹${(staffSalary.pf||0).toLocaleString()}</span></div>
-      <div class="row"><span class="lbl">ESI</span><span>₹${(staffSalary.esi||0).toLocaleString()}</span></div>
-      <div class="row"><span class="lbl">Professional Tax</span><span>₹${(staffSalary.professionalTax||0).toLocaleString()}</span></div>
-      <div class="row"><span class="lbl">TDS</span><span>₹${(staffSalary.tds||0).toLocaleString()}</span></div>
-      <div class="row"><span class="lbl">Total Deductions</span><span>₹${totalDeductions.toLocaleString()}</span></div>
+      <div class="row"><span class="lbl">PF</span><span>${escapeHtml((staffSalary.pf||0).toLocaleString())}</span></div>
+      <div class="row"><span class="lbl">ESI</span><span>${escapeHtml((staffSalary.esi||0).toLocaleString())}</span></div>
+      <div class="row"><span class="lbl">Professional Tax</span><span>${escapeHtml((staffSalary.professionalTax||0).toLocaleString())}</span></div>
+      <div class="row"><span class="lbl">TDS</span><span>${escapeHtml((staffSalary.tds||0).toLocaleString())}</span></div>
+      <div class="row"><span class="lbl">Total Deductions</span><span>${escapeHtml(totalDeductions.toLocaleString())}</span></div>
     </div>
   </div>
 </div>
 <div class="net-block">
   <span class="lbl">Net Salary</span>
-  <span class="val">₹${net.toLocaleString()}</span>
+  <span class="val">${escapeHtml(net.toLocaleString())}</span>
 </div>
 <div class="footer">This is a system-generated payslip.</div>
 </body></html>`;

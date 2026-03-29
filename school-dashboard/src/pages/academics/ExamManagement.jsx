@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
   CardBody,
@@ -26,6 +27,7 @@ import { useTranslation } from 'react-i18next';
 const STATUS_OPTIONS = ['all', 'scheduled', 'ongoing', 'completed', 'results_published'];
 
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import { formatShortDate } from '../../utils/dateFormatter';
 
 // Simple cache
 const examsCache = {
@@ -34,7 +36,9 @@ const examsCache = {
   duration: 30000 // 30 seconds
 };
 
-const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
+const ExamManagement = ({ onCreateExam }) => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const [exams, setExams] = useState([]);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -357,7 +361,7 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
                       <TableCell>
                         <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-zinc-400">
                           <Calendar size={14} />
-                          {exam.startDate ? new Date(exam.startDate).toLocaleDateString() : 'Not scheduled'}
+                          {exam.startDate ? formatShortDate(exam.startDate) : 'Not scheduled'}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -374,14 +378,14 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
                         <div className="flex items-center gap-1">
                           <button
                             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
-                            onClick={() => onViewExam?.(exam.id || exam._id)}
+                            onClick={() => navigate(`/academics/exams/${exam.id || exam._id}`)}
                             title={t('pages.viewDetails1')}
                           >
                             <Eye size={16} className="text-gray-500 dark:text-zinc-400" />
                           </button>
                           <button
                             className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
-                            onClick={() => onEnterResults?.(exam.id || exam._id)}
+                            onClick={() => navigate(`/academics/exams/${exam.id || exam._id}/results`)}
                             title={t('pages.enterResults')}
                           >
                             <Pencil size={16} className="text-blue-500" />
@@ -418,14 +422,14 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
                     <div
                       key={exam.id || exam._id}
                       className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-100 dark:border-blue-800 hover:shadow-sm cursor-pointer transition-shadow"
-                      onClick={() => onViewExam?.(exam.id || exam._id)}
+                      onClick={() => navigate(`/academics/exams/${exam.id || exam._id}`)}
                     >
                       <div className="flex justify-between items-start mb-2">
                         <span className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{exam.name}</span>
                         <Chip size="sm" color="primary" variant="flat">{t('pages.scheduled')}</Chip>
                       </div>
                       <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.className || exam.classId} - {exam.subjectName}</p>
-                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{exam.startDate ? new Date(exam.startDate).toLocaleDateString() : ''}</p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{exam.startDate ? formatShortDate(exam.startDate) : ''}</p>
                     </div>
                   ))}
                 </div>
@@ -446,7 +450,7 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
                     <div
                       key={exam.id || exam._id}
                       className="p-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-100 dark:border-amber-800 hover:shadow-sm cursor-pointer transition-shadow"
-                      onClick={() => onViewExam?.(exam.id || exam._id)}
+                      onClick={() => navigate(`/academics/exams/${exam.id || exam._id}`)}
                     >
                       <div className="flex justify-between items-start mb-2">
                         <span className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{exam.name}</span>
@@ -473,7 +477,7 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
                     <div
                       key={exam.id || exam._id}
                       className="p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-100 dark:border-green-800 hover:shadow-sm cursor-pointer transition-shadow"
-                      onClick={() => onViewExam?.(exam.id || exam._id)}
+                      onClick={() => navigate(`/academics/exams/${exam.id || exam._id}`)}
                     >
                       <div className="flex justify-between items-start mb-2">
                         <span className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{exam.name}</span>
@@ -487,7 +491,7 @@ const ExamManagement = ({ onCreateExam, onViewExam, onEnterResults }) => {
                           className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onEnterResults?.(exam.id || exam._id);
+                            navigate(`/academics/exams/${exam.id || exam._id}/results`);
                           }}
                         >
                           Enter Results

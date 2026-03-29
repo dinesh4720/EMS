@@ -276,12 +276,12 @@ export default function FormAssignments() {
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">
-                      {format(new Date(assignment.assignedAt), "MMM dd, yyyy")}
+                      {assignment.assignedAt ? format(new Date(assignment.assignedAt), "MMM dd, yyyy") : '—'}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">
-                      {format(new Date(assignment.expiresAt), "MMM dd, yyyy")}
+                      {assignment.expiresAt ? format(new Date(assignment.expiresAt), "MMM dd, yyyy") : '—'}
                     </div>
                   </TableCell>
                   <TableCell>

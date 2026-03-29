@@ -4,19 +4,7 @@ import { Award, TrendingUp, Users, User, BookOpen, FileText } from "lucide-react
 import { getDateLocale } from '../../../i18n/index';
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../../components/skeletons/PageSkeletons';
-
-
-// Helper function to determine grade from percentage
-const getGradeFromPercentage = (percentage) => {
-  if (percentage >= 90) return 'A+';
-  if (percentage >= 80) return 'A';
-  if (percentage >= 70) return 'B+';
-  if (percentage >= 60) return 'B';
-  if (percentage >= 50) return 'C+';
-  if (percentage >= 40) return 'C';
-  if (percentage >= 35) return 'D';
-  return 'F';
-};
+import { getGradeFromPercentage, getPercentageColor } from '../../../utils/grading';
 
 // Helper to get subject icon
 const getSubjectIcon = (name) => {

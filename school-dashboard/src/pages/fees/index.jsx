@@ -9,6 +9,7 @@ import FeeTemplatesManagement from "./FeeTemplatesManagement";
 import toast from "react-hot-toast";
 import { feesApi } from "../../services/api";
 import { useTranslation } from 'react-i18next';
+import { formatShortDate } from '../../utils/dateFormatter';
 
 export default function FeesPage() {
   const { t } = useTranslation();
@@ -62,7 +63,7 @@ export default function FeesPage() {
         s.name,
         s.class,
         s.totalPaid,
-        s.lastPayment ? new Date(s.lastPayment).toLocaleDateString() : 'N/A',
+        s.lastPayment ? formatShortDate(s.lastPayment) : 'N/A',
         s.modes.join(' / ') || 'N/A',
         txCounts[sid] || 0,
       ]);

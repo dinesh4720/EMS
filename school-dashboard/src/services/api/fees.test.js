@@ -143,20 +143,20 @@ describe('feesApi — defaulters, summary, refunds, structure', () => {
     expect(request).toHaveBeenCalledWith('/fees/refunds/ref1', { method: 'DELETE' });
   });
 
-  it('getFeeStructure — calls /fees/structure/:classId with academicYear', () => {
+  it('getFeeStructure — calls /fee-structure/class/:classId with academicYear', () => {
     feesApi.getFeeStructure('cls1', '2025-26');
-    expect(request).toHaveBeenCalledWith('/fees/structure/cls1?academicYear=2025-26');
+    expect(request).toHaveBeenCalledWith('/fee-structure/class/cls1?academicYear=2025-26');
   });
 
-  it('getFeeStructure — calls /fees/structure/:classId without query when academicYear omitted', () => {
+  it('getFeeStructure — calls /fee-structure/class/:classId without query when academicYear omitted', () => {
     feesApi.getFeeStructure('cls1');
-    expect(request).toHaveBeenCalledWith('/fees/structure/cls1');
+    expect(request).toHaveBeenCalledWith('/fee-structure/class/cls1');
   });
 
-  it('saveFeeStructure — POSTs to /fees/structure with serialised body', () => {
+  it('saveFeeStructure — POSTs to /fee-structure with serialised body', () => {
     const data = { classId: 'cls1', heads: [] };
     feesApi.saveFeeStructure(data);
-    expect(request).toHaveBeenCalledWith('/fees/structure', {
+    expect(request).toHaveBeenCalledWith('/fee-structure', {
       method: 'POST',
       body: JSON.stringify(data),
     });

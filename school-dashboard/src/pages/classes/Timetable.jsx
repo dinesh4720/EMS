@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Card, CardBody, Button, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Spinner } from "@heroui/react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { Button, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Spinner } from "@heroui/react";
 import { motion } from "framer-motion";
 import { Settings, Plus, Trash2, Save, X, Clock, AlertTriangle, CheckCircle2, Wand2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
@@ -7,7 +8,7 @@ import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { timetableApi, teacherAssignmentsApi, classesEnhancedApi } from "../../services/api";
 import ConflictIndicator from "../../components/ConflictIndicator";
 import ConfirmDialog from "../../components/ConfirmDialog";
-import TimetableWizardModal from "./components/TimetableWizardModal";
+import SlotInfoModal from "../../components/timetable/SlotInfoModal";
 import {
   showErrorToast,
   showSuccessToast,
@@ -39,24 +40,26 @@ const getSubjectColor = (subject) => {
   return colors[subject] || "default";
 };
 
-// Get inline styles for subject card colors
-const getSubjectStyles = (subject) => {
+// Get Tailwind classes for subject cards — supports dark mode
+const getSubjectClasses = (subject) => {
   const color = getSubjectColor(subject);
   const colorMap = {
-    primary: { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8' },
-    success: { bg: '#f0fdf4', border: '#bbf7d0', text: '#15803d' },
-    warning: { bg: '#fefce8', border: '#fef08a', text: '#a16207' },
-    danger: { bg: '#fef2f2', border: '#fecaca', text: '#b91c1c' },
-    secondary: { bg: '#faf5ff', border: '#e9d5ff', text: '#7e22ce' },
-    default: { bg: '#f9fafb', border: '#e5e7eb', text: '#374151' }
+    primary:   { card: 'bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800',     text: 'text-blue-700 dark:text-blue-300',   pill: 'bg-blue-100/60 dark:bg-blue-900/60' },
+    success:   { card: 'bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800', text: 'text-green-700 dark:text-green-300', pill: 'bg-green-100/60 dark:bg-green-900/60' },
+    warning:   { card: 'bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800', text: 'text-yellow-700 dark:text-yellow-300', pill: 'bg-yellow-100/60 dark:bg-yellow-900/60' },
+    danger:    { card: 'bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800',         text: 'text-red-700 dark:text-red-300',     pill: 'bg-red-100/60 dark:bg-red-900/60' },
+    secondary: { card: 'bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800', text: 'text-purple-700 dark:text-purple-300', pill: 'bg-purple-100/60 dark:bg-purple-900/60' },
+    default:   { card: 'bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700',    text: 'text-gray-700 dark:text-zinc-300',   pill: 'bg-gray-100/60 dark:bg-zinc-700/60' },
   };
   return colorMap[color] || colorMap.default;
 };
 
 export default function Timetable({ classId }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { classesWithTeachers, staff, schoolSettings, currentAcademicYear } = useApp();
-  const [selectedClass, setSelectedClass] = useState(classId || "");
+  const [searchParams] = useSearchParams();
+  const [selectedClass, setSelectedClass] = useState(classId || searchParams.get('classId') || "");
   const [timetable, setTimetable] = useState(null);
   const [periods, setPeriods] = useState(defaultPeriods);
   const [schedule, setSchedule] = useState({});
@@ -74,13 +77,10 @@ export default function Timetable({ classId }) {
   const { isOpen: isSlotOpen, onOpen: onSlotOpen, onClose: onSlotClose } = useDisclosure();
   const { isOpen: isConfirmClearOpen, onOpen: onConfirmClearOpen, onClose: onConfirmClearClose } = useDisclosure();
   const { isOpen: isConfirmSaveOpen, onOpen: onConfirmSaveOpen, onClose: onConfirmSaveClose } = useDisclosure();
-  const { isOpen: isWizardOpen, onOpen: onWizardOpen, onClose: onWizardClose } = useDisclosure();
+  const { isOpen: isInfoOpen, onOpen: onInfoOpen, onClose: onInfoClose } = useDisclosure();
   const [editingSlot, setEditingSlot] = useState(null);
+  const [infoSlot, setInfoSlot] = useState(null); // { day, periodIndex, slot, period }
   const [slotForm, setSlotForm] = useState({ subject: "", teacherId: "", room: "" });
-  const [showMissingSubjectsWarning, setShowMissingSubjectsWarning] = useState(false);
-  const [missingSubjectsClasses, setMissingSubjectsClasses] = useState([]);
-  const [classSubjectSelections, setClassSubjectSelections] = useState({});
-  const [assigningSubjects, setAssigningSubjects] = useState(false);
 
   // Set first class as default
   useEffect(() => {
@@ -137,9 +137,27 @@ export default function Timetable({ classId }) {
     if (period.isBreak) return;
 
     const slot = schedule[day]?.[periodIndex] || { subject: "", teacherId: null, room: "" };
+
+    if (slot.subject) {
+      // Filled slot → show info modal
+      setInfoSlot({ day, periodIndex, slot, period });
+      onInfoOpen();
+    } else {
+      // Empty slot → open edit modal directly
+      setEditingSlot({ day, periodIndex });
+      setSlotForm({ ...slot, teacherId: slot.teacherId || "" });
+      setConflicts([]);
+      onSlotOpen();
+    }
+  };
+
+  // Called from info modal "Edit Slot" button
+  const handleEditFromInfo = () => {
+    if (!infoSlot) return;
+    const { day, periodIndex, slot } = infoSlot;
     setEditingSlot({ day, periodIndex });
     setSlotForm({ ...slot, teacherId: slot.teacherId || "" });
-    setConflicts([]); // Clear previous conflicts
+    setConflicts([]);
     onSlotOpen();
   };
 
@@ -429,7 +447,7 @@ export default function Timetable({ classId }) {
   };
 
   const handleWizardClick = () => {
-    onWizardOpen();
+    navigate('/timetable-wizard');
   };
 
   const selectedClassData = classesWithTeachers.find(c => String(c.id) === String(selectedClass));
@@ -603,9 +621,9 @@ export default function Timetable({ classId }) {
 
                     if (period.isBreak) {
                       return (
-                        <TableCell key={`${day}-${i}`} className="text-center bg-amber-50 p-0">
+                        <TableCell key={`${day}-${i}`} className="text-center bg-amber-50 dark:bg-amber-950 p-0">
                           <div className="h-24 flex items-center justify-center">
-                            <span className="text-[9px] font-semibold uppercase tracking-wider text-amber-600 opacity-60 [writing-mode:vertical-rl] rotate-180">
+                            <span className="text-[9px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 opacity-70 [writing-mode:vertical-rl] rotate-180">
                               {period.name}
                             </span>
                           </div>
@@ -613,39 +631,31 @@ export default function Timetable({ classId }) {
                       );
                     }
 
-                    const subjectStyles = slot.subject ? getSubjectStyles(slot.subject) : null;
+                    const subjectClasses = slot.subject ? getSubjectClasses(slot.subject) : null;
                     return (
                       <TableCell key={`${day}-${i}`} className="p-1">
                         {slot.subject ? (
                           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                            <Card
-                              isPressable
-                              shadow="sm"
-                              onPress={() => handleSlotClick(day, i)}
-                              style={{
-                                backgroundColor: subjectStyles.bg,
-                                borderColor: subjectStyles.border,
-                                height: '6rem',
-                              }}
+                            <div
+                              className={`${subjectClasses.card} rounded-lg h-24 flex flex-col justify-center items-center gap-1 p-1.5 cursor-pointer transition-opacity hover:opacity-90`}
+                              onClick={() => handleSlotClick(day, i)}
                             >
-                              <CardBody className="p-1.5 flex flex-col justify-center items-center gap-1">
-                                <span className="text-xs font-bold text-center line-clamp-2" style={{ color: subjectStyles.text }}>
-                                  {slot.subject}
+                              <span className={`text-xs font-bold text-center line-clamp-2 ${subjectClasses.text}`}>
+                                {slot.subject}
+                              </span>
+                              {slot.teacherId && (
+                                <div className={`flex items-center gap-1 ${subjectClasses.pill} px-1.5 py-0.5 rounded-full max-w-full`}>
+                                  <span className="text-[10px] text-gray-600 dark:text-zinc-300 text-center truncate">
+                                    {getTeacherName(slot.teacherId)}
+                                  </span>
+                                </div>
+                              )}
+                              {slot.room && (
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${subjectClasses.pill} text-gray-500 dark:text-zinc-400`}>
+                                  {slot.room}
                                 </span>
-                                {slot.teacherId && (
-                                  <div className="flex items-center gap-1 bg-white/60 px-1.5 py-0.5 rounded-full max-w-full">
-                                    <span className="text-[10px] text-gray-600 dark:text-zinc-400 text-center truncate">
-                                      {getTeacherName(slot.teacherId)}
-                                    </span>
-                                  </div>
-                                )}
-                                {slot.room && (
-                                  <Chip size="sm" variant="flat" className="text-[9px] h-4 px-1 min-w-0 bg-white/50">
-                                    {slot.room}
-                                  </Chip>
-                                )}
-                              </CardBody>
-                            </Card>
+                              )}
+                            </div>
                           </motion.div>
                         ) : (
                           <div
@@ -868,7 +878,7 @@ export default function Timetable({ classId }) {
 
               <Input
                 label={t('pages.room')}
-                placeholder="e.g., Room 101 (optional)"
+                placeholder={t('classes.roomOptionalPlaceholder')}
                 value={slotForm.room}
                 onValueChange={(v) => setSlotForm({ ...slotForm, room: v })}
                 variant="bordered"
@@ -928,12 +938,19 @@ export default function Timetable({ classId }) {
         isLoading={loading}
       />
 
-      {/* Timetable Wizard Modal */}
-      <TimetableWizardModal
-        isOpen={isWizardOpen}
-        onClose={onWizardClose}
+      {/* Slot Info Modal — rich details view for filled slots */}
+      <SlotInfoModal
+        isOpen={isInfoOpen}
+        onClose={onInfoClose}
+        slot={infoSlot?.slot}
+        day={infoSlot?.day}
+        periodIndex={infoSlot?.periodIndex}
+        period={infoSlot?.period}
         classId={selectedClass}
-        onSaved={loadTimetable}
+        schedule={schedule}
+        periods={periods}
+        staff={staff}
+        onEdit={handleEditFromInfo}
       />
 
     </div>

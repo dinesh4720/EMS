@@ -38,9 +38,11 @@ import toast from "react-hot-toast";
 import { intakeFormsApi } from "../../services/api";
 import { format } from "date-fns";
 import { useTranslation } from 'react-i18next';
+import { useAuth } from "../../context/AuthContext";
 
 export default function StudentFormSubmissions() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const {
     isOpen: isReviewOpen,
@@ -108,7 +110,7 @@ export default function StudentFormSubmissions() {
       await intakeFormsApi.reviewSubmission(selectedSubmission.id, {
         reviewStatus: status,
         reviewNotes: reviewNotes,
-        reviewedBy: "admin", // TODO: Get from auth context
+        reviewedBy: user?.name || user?.id,
       });
 
       toast.success(
@@ -141,7 +143,7 @@ export default function StudentFormSubmissions() {
       // Request edit using dedicated endpoint
       await intakeFormsApi.requestEdit(selectedSubmission.id, {
         notes: editRequestNotes,
-        requestedBy: "admin",
+        requestedBy: user?.name || user?.id,
       });
 
       toast.success(t('toast.success.editRequestSentToParentTheyCanUpdateAndResubmit'));
@@ -304,10 +306,9 @@ export default function StudentFormSubmissions() {
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">
-                      {format(
-                        new Date(submission.submittedAt),
-                        "MMM dd, yyyy HH:mm"
-                      )}
+                      {submission.submittedAt
+                        ? format(new Date(submission.submittedAt), "MMM dd, yyyy HH:mm")
+                        : '—'}
                     </div>
                   </TableCell>
                   <TableCell>
