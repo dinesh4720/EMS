@@ -360,6 +360,14 @@ export const promotionApi = {
   getRecord: (recordId) => request(`/promotions/records/${recordId}`),
   getRules: () => request('/promotions/rules'),
   updateRules: (data) => request('/promotions/rules', { method: 'PUT', body: JSON.stringify(data) }),
+  // Multi-class wizard endpoints
+  checkYear: (academicYear) => request(`/promotions/check-year?academicYear=${encodeURIComponent(academicYear)}`),
+  previewAll: (academicYear, toAcademicYear) => {
+    const params = new URLSearchParams({ academicYear, ...(toAcademicYear && { toAcademicYear }) }).toString();
+    return request(`/promotions/preview-all?${params}`);
+  },
+  executeAll: (data) => request('/promotions/execute-all', { method: 'POST', body: JSON.stringify(data) }),
+  newAcademicYear: (data) => request('/promotions/new-academic-year', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // NPS API
