@@ -1,10 +1,54 @@
 import { API_URL } from '../config/api.js';
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, Suspense } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Lock, Mail, User, Building2, Check, ShieldCheck } from "lucide-react";
 import ErrorBoundary from "../components/ErrorBoundary";
-import SchoolBuilding3D from "../components/SchoolBuilding3D";
+import lazyWithRetry from "../utils/lazyWithRetry";
 import { useTranslation, Trans } from "react-i18next";
+
+// Mirror the WebGL safety checks from Login.jsx — direct import of SchoolBuilding3D
+// can crash in headless/automated browsers due to shader compilation failures.
+const hasWebGL = (() => {
+  try {
+    if (
+      navigator.webdriver ||
+      /HeadlessChrome|Headless|Puppeteer|Playwright|PhantomJS|Chrome-Lighthouse/i.test(navigator.userAgent) ||
+      (!navigator.gpu && !window.chrome?.runtime)
+    ) return false;
+    if (window.self !== window.top) return false;
+    const c = document.createElement("canvas");
+    const gl = c.getContext("webgl2") || c.getContext("webgl");
+    if (!gl) return false;
+    const vs = gl.createShader(gl.VERTEX_SHADER);
+    if (!vs) return false;
+    gl.shaderSource(vs, "void main(){ gl_Position = vec4(0.0); }");
+    gl.compileShader(vs);
+    const ok = gl.getShaderParameter(vs, gl.COMPILE_STATUS);
+    gl.deleteShader(vs);
+    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+    if (debugInfo) {
+      const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || '';
+      if (/SwiftShader|llvmpipe|Software|ANGLE.*Direct3D9/i.test(renderer)) return false;
+    }
+    const fs = gl.createShader(gl.FRAGMENT_SHADER);
+    if (!fs) return false;
+    gl.shaderSource(fs, "precision mediump float; void main(){ gl_FragColor = vec4(1.0); }");
+    gl.compileShader(fs);
+    const fsOk = gl.getShaderParameter(fs, gl.COMPILE_STATUS);
+    gl.deleteShader(fs);
+    return ok && fsOk;
+  } catch { return false; }
+})();
+
+const SchoolBuilding3D = hasWebGL
+  ? lazyWithRetry(() => import("../components/SchoolBuilding3D"))
+  : null;
+
+function SignupVisualFallback() {
+  return (
+    <div className="w-full h-full bg-gradient-to-br from-teal-50 via-white to-slate-100 dark:from-zinc-900 dark:via-zinc-950 dark:to-zinc-900" />
+  );
+}
 
 
 export default function Signup() {
@@ -191,9 +235,15 @@ export default function Signup() {
   return (
     <div className="h-screen w-screen flex flex-col lg:flex-row overflow-hidden">
       <div className="hidden lg:flex flex-1 relative overflow-hidden h-full">
-        <ErrorBoundary fallback={<div className="w-full h-full bg-gradient-to-br from-teal-50 via-white to-slate-100 dark:from-zinc-900 dark:via-zinc-950 dark:to-zinc-900" />}>
-          <SchoolBuilding3D />
-        </ErrorBoundary>
+        {SchoolBuilding3D ? (
+          <ErrorBoundary fallback={<SignupVisualFallback />}>
+            <Suspense fallback={<SignupVisualFallback />}>
+              <SchoolBuilding3D />
+            </Suspense>
+          </ErrorBoundary>
+        ) : (
+          <SignupVisualFallback />
+        )}
       </div>
 
       <div className="w-full lg:w-[45%] flex flex-col items-center justify-center bg-white dark:bg-zinc-900 px-4 py-6 lg:py-0 h-full">
