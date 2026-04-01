@@ -116,7 +116,7 @@ export default function StudentPromotionPage() {
         <Breadcrumbs size="sm">
           <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate('/')}>Home</BreadcrumbItem>
           <BreadcrumbItem onPress={() => navigate('/students')}>Students</BreadcrumbItem>
-          <BreadcrumbItem>Bulk Promotion</BreadcrumbItem>
+          <BreadcrumbItem>Year-End Promotion</BreadcrumbItem>
         </Breadcrumbs>
       </div>
 

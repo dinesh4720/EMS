@@ -219,7 +219,7 @@ function DateOfBirthInput({ value, onChange, error, ref }) {
       </label>
       <Input
         labelPlacement="outside"
-        placeholder={t('students.form.dobPlaceholder')}
+        placeholder="DD/MM/YYYY"
         value={value || ""}
         onValueChange={onChange}
         isInvalid={!!error}
@@ -411,7 +411,7 @@ function OptionalSection({ formData, updateField }) {
         <Select
           label={t('pages.religion1')}
           labelPlacement="outside"
-          placeholder={t('pages.select1')}
+          placeholder={t('pages.selectReligion', 'Select Religion')}
           selectedKeys={formData.religion ? [formData.religion] : []}
           onSelectionChange={(keys) => updateField("religion", Array.from(keys)[0])}
           variant="bordered"

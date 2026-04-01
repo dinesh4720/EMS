@@ -1,6 +1,6 @@
 import { request } from '../../../../services/api.js';
 import { useState } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Textarea } from "@heroui/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Textarea, RadioGroup, Radio } from "@heroui/react";
 import { MessageSquare, User, Phone, Mail, Send } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
@@ -20,6 +20,7 @@ export default function ReminderModal({ isOpen, onClose, student, studentFeeStru
   const [reminderMessage, setReminderMessage] = useState("");
   const [reminderSending, setReminderSending] = useState(false);
   const [messageError, setMessageError] = useState("");
+  const [channel, setChannel] = useState("both");
 
   const handleClose = () => {
     setReminderMessage("");
@@ -42,6 +43,7 @@ export default function ReminderModal({ isOpen, onClose, student, studentFeeStru
         body: JSON.stringify({
           type: 'fee',
           message: reminderMessage,
+          channel,
         })
       });
 
@@ -108,6 +110,22 @@ export default function ReminderModal({ isOpen, onClose, student, studentFeeStru
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Channel Selection */}
+            <div>
+              <RadioGroup
+                label={t('pages.sendVia', 'Send via')}
+                orientation="horizontal"
+                value={channel}
+                onValueChange={setChannel}
+                size="sm"
+                classNames={{ label: "text-sm font-medium text-default-700" }}
+              >
+                <Radio value="sms" isDisabled={!student?.parentPhone}>SMS</Radio>
+                <Radio value="email" isDisabled={!student?.parentEmail}>Email</Radio>
+                <Radio value="both" isDisabled={!student?.parentPhone && !student?.parentEmail}>{t('pages.both', 'Both')}</Radio>
+              </RadioGroup>
             </div>
 
             {/* Fee Status - Gray container with conditional coloring */}

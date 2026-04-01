@@ -227,8 +227,12 @@ export function useStudentsListData() {
     return { all: students.length, active, inactive, alumni };
   }, [students]);
 
-  // ── Attendance placeholder ────────────────────────────────────────────────
-  const getAttendancePercentage = (studentId) => 75 + ((studentId * 7) % 25);
+  // ── Attendance helper ─────────────────────────────────────────────────────
+  // Use real attendancePercentage from backend; return null when no data exists
+  const getAttendancePercentage = (student) => {
+    if (student.attendancePercentage != null) return student.attendancePercentage;
+    return null; // No attendance records
+  };
 
   // ── Client-side filters ───────────────────────────────────────────────────
   const filteredItems = useMemo(() => {
@@ -249,7 +253,8 @@ export function useStudentsListData() {
     }
     if (attendanceFilter !== "all") {
       filtered = filtered.filter((s) => {
-        const att = getAttendancePercentage(s.id);
+        const att = getAttendancePercentage(s);
+        if (att == null) return false; // Exclude students with no attendance data from filtered results
         switch (attendanceFilter) {
           case "excellent": return att >= 90;
           case "good":      return att >= 75 && att < 90;
@@ -262,7 +267,16 @@ export function useStudentsListData() {
     return filtered;
   }, [students, academicPerformanceFilter, attendanceFilter]);
 
-  const visibleItems = filteredItems;
+  const visibleItems = useMemo(() => {
+    const pinned = filteredItems.filter((s) => s.isPinned);
+    const unpinned = filteredItems.filter((s) => !s.isPinned);
+    // Sort pinned students by pinnedAt (most recently pinned first)
+    pinned.sort((a, b) => {
+      if (a.pinnedAt && b.pinnedAt) return new Date(b.pinnedAt) - new Date(a.pinnedAt);
+      return 0;
+    });
+    return [...pinned, ...unpinned];
+  }, [filteredItems]);
   const selectedCount = selectedKeys === "all" ? filteredItems.length : selectedKeys.size;
 
   // ── Row virtualizer ───────────────────────────────────────────────────────
@@ -354,16 +368,16 @@ export function useStudentsListData() {
     try {
       await studentsApi.pin(studentId);
       setLocalStudents(students.map((s) => String(s.id) === String(studentId) ? { ...s, isPinned: true, pinnedAt: new Date().toISOString() } : s));
-      toast.success(t("toast.success.studentPinned"));
-    } catch { toast.error(t("toast.error.failedToPinStudent")); }
+      toast.success(t("toast.success.studentPinned", "Student pinned"));
+    } catch { toast.error(t("toast.error.failedToPinStudent", "Failed to pin student")); }
   };
 
   const handleUnpinStudent = async (studentId) => {
     try {
       await studentsApi.unpin(studentId);
       setLocalStudents(students.map((s) => String(s.id) === String(studentId) ? { ...s, isPinned: false, pinnedAt: null } : s));
-      toast.success(t("toast.success.studentUnpinned"));
-    } catch { toast.error(t("toast.error.failedToUnpinStudent")); }
+      toast.success(t("toast.success.studentUnpinned", "Student unpinned"));
+    } catch { toast.error(t("toast.error.failedToUnpinStudent", "Failed to unpin student")); }
   };
 
   // ── Bulk action dispatcher ────────────────────────────────────────────────
@@ -507,13 +521,22 @@ export function useStudentsListData() {
     const classCounts = {}, feeStatusCounts = {}, academicYearCounts = {}, academicPerformanceCounts = {}, attendanceCounts = {};
     for (const s of students) {
       if (s.class) classCounts[s.class] = (classCounts[s.class] || 0) + 1;
-      const fs = s.feeStatus || "pending"; feeStatusCounts[fs] = (feeStatusCounts[fs] || 0) + 1;
+      // Bug #2: Only count feeStatus if the backend actually provides it.
+      // NOTE: Backend does not currently compute/return feeStatus on student records.
+      // "overdue" count will remain 0 until the backend returns feeStatus per student.
+      if (s.feeStatus) { feeStatusCounts[s.feeStatus] = (feeStatusCounts[s.feeStatus] || 0) + 1; }
+      // Bug #1: academicYear counts depend on the backend returning academicYear per student.
+      // If students lack this field, all default to currentAcademicYear and prior years show 0.
       const yr = s.academicYear || currentAcademicYear; academicYearCounts[yr] = (academicYearCounts[yr] || 0) + 1;
-      const perf = s.academicPerformance || "average"; academicPerformanceCounts[perf] = (academicPerformanceCounts[perf] || 0) + 1;
-      const att = getAttendancePercentage(s.id);
-      let cat = "below";
-      if (att >= 90) cat = "excellent"; else if (att >= 75) cat = "good"; else if (att >= 50) cat = "average";
-      attendanceCounts[cat] = (attendanceCounts[cat] || 0) + 1;
+      // Bug #3: Don't default students with no performance data to "average".
+      // Only count students that actually have academic performance data.
+      if (s.academicPerformance) { academicPerformanceCounts[s.academicPerformance] = (academicPerformanceCounts[s.academicPerformance] || 0) + 1; }
+      const att = getAttendancePercentage(s);
+      if (att != null) {
+        let cat = "below";
+        if (att >= 90) cat = "excellent"; else if (att >= 75) cat = "good"; else if (att >= 50) cat = "average";
+        attendanceCounts[cat] = (attendanceCounts[cat] || 0) + 1;
+      }
     }
     return { class: classCounts, feeStatus: feeStatusCounts, academicYear: academicYearCounts, academicPerformance: academicPerformanceCounts, attendance: attendanceCounts };
   }, [students, currentAcademicYear]);
@@ -567,7 +590,7 @@ export function useStudentsListData() {
     students, filteredItems, visibleItems, selectedCount,
     currentAcademicYear, classes,
     // filter state
-    searchQuery, setSearchQuery,
+    searchQuery, setSearchQuery, deferredSearchQuery,
     statusFilter, setStatusFilter: (val) => { setStatusFilter(val); sessionStorage.setItem("students-filter-status", val); },
     classFilter, feeStatusFilter, academicYearFilter, academicPerformanceFilter, attendanceFilter,
     // filter helpers

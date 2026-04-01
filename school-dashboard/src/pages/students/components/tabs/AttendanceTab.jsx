@@ -234,8 +234,8 @@ export default function AttendanceTab({
         type: 'attendance',
         message,
         channel,
-        parentPhone: student.parentPhone,
-        parentEmail: student.parentEmail,
+        parentPhone: resolvedParentPhone,
+        parentEmail: resolvedParentEmail,
         studentName: student.name,
       });
       toast.success(`Report sent via ${channel === 'email' ? 'Email' : 'SMS'}`, { id: loadingToast });
@@ -243,6 +243,10 @@ export default function AttendanceTab({
       toast.error(`Failed to send: ${error.message || 'Unknown error'}`, { id: loadingToast });
     }
   };
+
+  // Resolve parent contact info — check top-level fields first, then fall back to parents array
+  const resolvedParentEmail = student?.parentEmail || student?.parents?.find(p => p.isParent !== false)?.email || student?.parents?.[0]?.email || '';
+  const resolvedParentPhone = student?.parentPhone || student?.parents?.find(p => p.isParent !== false)?.phone || student?.parents?.[0]?.phone || '';
 
   // Note: Subject-wise attendance is not currently supported by the backend
   // This feature would require tracking attendance per subject
@@ -368,7 +372,7 @@ export default function AttendanceTab({
             </Button>
           </div>
           <p className="text-xs text-gray-400 dark:text-zinc-500 mt-3">
-            Note: Attendance is typically marked by teachers through the Staff Mobile App.
+            Note: Attendance can also be marked by teachers via the Staff Mobile App.
           </p>
         </div>
       </div>
@@ -629,7 +633,7 @@ export default function AttendanceTab({
               className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300"
               startContent={<Mail size={14} />}
               onPress={() => handleSendToParent('email')}
-              isDisabled={!student?.parentEmail}
+              isDisabled={!resolvedParentEmail}
             >
               Email to Parent
             </Button>
@@ -639,7 +643,7 @@ export default function AttendanceTab({
               className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300"
               startContent={<Phone size={14} />}
               onPress={() => handleSendToParent('sms')}
-              isDisabled={!student?.parentPhone}
+              isDisabled={!resolvedParentPhone}
             >
               SMS to Parent
             </Button>

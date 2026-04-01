@@ -43,7 +43,7 @@ function SalaryStructureStep({
     <div className="space-y-5 animate-fade-in text-left">
       <div className="space-y-3">
         <SectionHeader icon={Building2} title={t('staff.form.bankAccountDetails')} />
-        <p className="text-xs text-gray-500 -mt-1">{t('staff.form.bankAccountHint')}</p>
+        <p className="text-xs text-gray-500 dark:text-zinc-400 -mt-1">{t('staff.form.bankAccountHint')}</p>
         <div className="grid grid-cols-2 gap-4">
           <Input label={t('staff.form.accountNumberLabel')} labelPlacement="outside" placeholder={t('pages.enterAccountNumber')} value={formData.accountNumber} onValueChange={v => updateField("accountNumber", v)} variant="bordered" radius="sm" classNames={inputStyles} />
           <Input label={t('staff.form.ifscCodeLabel')} labelPlacement="outside" placeholder={t('staff.form.ifscPlaceholder')} value={formData.ifscCode} onValueChange={v => updateField("ifscCode", v)} variant="bordered" radius="sm" isInvalid={!!errors.ifscCode} errorMessage={errors.ifscCode} classNames={inputStyles} />
@@ -52,7 +52,7 @@ function SalaryStructureStep({
         </div>
       </div>
 
-      <div className="space-y-3 pt-5 border-t border-gray-100">
+      <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-800">
         <div className="flex items-center justify-between">
           <SectionHeader icon={Banknote} title={t('staff.form.salaryStructure')} />
           <Select size="sm" placeholder={t('staff.form.loadTemplatePlaceholder')} className="w-32" selectedKeys={formData.salaryTemplate ? [formData.salaryTemplate] : []} onSelectionChange={keys => handleTemplateChange(Array.from(keys)[0])} variant="bordered" radius="sm" classNames={{ trigger: "h-8 min-h-0 text-xs" }}>
@@ -60,22 +60,22 @@ function SalaryStructureStep({
           </Select>
         </div>
 
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="border border-gray-200 dark:border-zinc-700 rounded-lg overflow-hidden">
           {formData.salaryBreakdown.map((item, i) => (
-            <div key={`salary-${i}`} className="flex items-center gap-2 p-2 border-b border-gray-100 last:border-0 hover:bg-gray-50">
+            <div key={`salary-${i}`} className="flex items-center gap-2 p-2 border-b border-gray-100 dark:border-zinc-800 last:border-0 hover:bg-gray-50 dark:hover:bg-zinc-900">
               <Input size="sm" value={item.component} onValueChange={v => updateBreakdownItem(i, "component", v)} variant="flat" placeholder={t('staff.form.componentNamePlaceholder')} classNames={{ inputWrapper: "bg-transparent shadow-none" }} />
               <Input size="sm" type="number" value={item.amount} onValueChange={v => updateBreakdownItem(i, "amount", v)} variant="flat" placeholder={t('staff.form.amountPlaceholder')} startContent="₹" classNames={{ inputWrapper: "bg-transparent shadow-none w-24" }} />
               <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => updateField("salaryBreakdown", formData.salaryBreakdown.filter((_, idx) => idx !== i))}><X size={14} /></Button>
             </div>
           ))}
-          <button className="w-full py-2.5 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5" onClick={() => updateField("salaryBreakdown", [...formData.salaryBreakdown, { component: "", amount: 0 }])}>
+          <button className="w-full py-2.5 text-xs font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors flex items-center justify-center gap-1.5" onClick={() => updateField("salaryBreakdown", [...formData.salaryBreakdown, { component: "", amount: 0 }])}>
             <Plus size={13} /> {t('staff.form.addComponent')}
           </button>
         </div>
 
         <div className="flex justify-between items-center px-2 pt-2">
-          <span className="text-sm font-medium text-gray-600">{t('staff.form.totalMonthlySalary')}</span>
-          <span className="text-lg font-bold text-gray-900">{formatCurrency(totalSalary)}</span>
+          <span className="text-sm font-medium text-gray-600 dark:text-zinc-400">{t('staff.form.totalMonthlySalary')}</span>
+          <span className="text-lg font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(totalSalary)}</span>
         </div>
       </div>
     </div>

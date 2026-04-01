@@ -22,7 +22,6 @@ import { useStudentPhotoActions } from "../hooks/useStudentPhotoActions";
 import { useTranslation } from 'react-i18next';
 
 export default function StudentProfileHeader({
-  const { t } = useTranslation();
   student,
   onEdit,
   onDelete,
@@ -36,6 +35,7 @@ export default function StudentProfileHeader({
   studentFeeStructure = null,
   staff = []
 }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const printRef = useRef(null);
 

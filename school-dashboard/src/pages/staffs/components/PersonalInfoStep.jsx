@@ -1,6 +1,6 @@
 import { Input, Select, SelectItem, Checkbox, Textarea, Avatar, RadioGroup, Radio, DatePicker } from "@heroui/react";
 import { User, Phone, MapPin, ShieldAlert, Camera, Trash2, X, Plus } from "lucide-react";
-import { parseDate } from "@internationalized/date";
+import { parseDate, CalendarDate } from "@internationalized/date";
 import PhotoEditorModal from "../../../components/PhotoEditorModal";
 import { useTranslation } from "react-i18next";
 import SectionHeader from "./SectionHeader";
@@ -40,7 +40,7 @@ function PersonalInfoStep({
   return (
     <div className="space-y-5 animate-fade-in text-left">
       {/* Profile Photo */}
-      <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100/50 border border-gray-200/60">
+      <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-zinc-900 dark:to-zinc-800/50 border border-gray-200/60 dark:border-zinc-700/60">
         {formData.picture ? (
           <Avatar
             src={formData.picture instanceof File ? picturePreviewUrl : formData.picture}
@@ -51,14 +51,14 @@ function PersonalInfoStep({
           />
         ) : (
           <div
-            className="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center shrink-0 cursor-pointer hover:border-gray-400 transition-colors"
+            className="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 dark:border-zinc-600 bg-gray-50 dark:bg-zinc-800 flex items-center justify-center shrink-0 cursor-pointer hover:border-gray-400 transition-colors"
             onClick={onOpenCameraCapture}
           >
-            <User size={24} className="text-gray-300" />
+            <User size={24} className="text-gray-300 dark:text-zinc-500" />
           </div>
         )}
         <div className="flex flex-col gap-1.5">
-          <p className="text-sm font-medium text-gray-800">{t('staff.form.staffPhoto')}</p>
+          <p className="text-sm font-medium text-gray-800 dark:text-zinc-200">{t('staff.form.staffPhoto')}</p>
           <div className="flex items-center gap-2">
             <button
               className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-600 transition-colors px-2.5 py-1 rounded-md hover:bg-primary/5 cursor-pointer"
@@ -82,7 +82,7 @@ function PersonalInfoStep({
 
       {/* Employment Type */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-gray-600">{t('staff.form.employmentType')}</label>
+        <label className="text-xs font-medium text-gray-600 dark:text-zinc-400">{t('staff.form.employmentType')}</label>
         <RadioGroup
           orientation="horizontal"
           value={formData.employmentType}
@@ -96,7 +96,7 @@ function PersonalInfoStep({
       </div>
 
       {/* Personal Information */}
-      <div className="space-y-3 pt-5 border-t border-gray-100">
+      <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-800">
         <SectionHeader icon={User} title={t('staff.about.personalInformation')} />
         <div className="grid grid-cols-2 gap-4">
           <Input
@@ -112,41 +112,44 @@ function PersonalInfoStep({
             isRequired
             classNames={inputStyles}
           />
-          <DatePicker
-            aria-label={t('staff.form.dobLabel')}
-            label={t('staff.form.dobLabel')}
-            labelPlacement="outside"
-            value={(() => {
-              if (!formData.dob) return null;
-              try {
-                const dateStr = formData.dob.split('T')[0];
-                if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return parseDate(dateStr);
-                return null;
-              } catch (e) { return null; }
-            })()}
-            onChange={(date) => {
-              if (!date) { updateField("dob", ""); return; }
-              try { updateField("dob", date.toString()); } catch (e) { updateField("dob", ""); }
-            }}
-            variant="bordered"
-            radius="sm"
-            showMonthAndYearPickers
-            isRequired
-            isInvalid={!!errors.dob}
-            errorMessage={errors.dob}
-            portalContainer={document.body}
-            className="w-full pointer-events-auto"
-            classNames={{
-              input: "cursor-pointer",
-              inputWrapper: "cursor-pointer hover:border-default-300 transition-colors data-[hover=true]:border-default-300",
-              group: "cursor-pointer"
-            }}
-          />
+          <div onClick={(e) => e.stopPropagation()} onFocus={(e) => e.stopPropagation()}>
+            <DatePicker
+              aria-label={t('staff.form.dobLabel')}
+              label={t('staff.form.dobLabel')}
+              labelPlacement="outside"
+              value={(() => {
+                if (!formData.dob) return null;
+                try {
+                  const dateStr = formData.dob.split('T')[0];
+                  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return parseDate(dateStr);
+                  return null;
+                } catch (e) { return null; }
+              })()}
+              onChange={(date) => {
+                if (!date) { updateField("dob", ""); return; }
+                try { updateField("dob", date.toString()); } catch (e) { updateField("dob", ""); }
+              }}
+              variant="bordered"
+              radius="sm"
+              showMonthAndYearPickers
+              minValue={new CalendarDate(1950, 1, 1)}
+              maxValue={new CalendarDate(new Date().getFullYear(), 12, 31)}
+              isRequired
+              isInvalid={!!errors.dob}
+              errorMessage={errors.dob}
+              granularity="day"
+              className="w-full"
+              classNames={{
+                base: "w-full",
+                inputWrapper: "hover:border-default-300 transition-colors data-[hover=true]:border-default-300",
+              }}
+            />
+          </div>
         </div>
 
         {/* Gender */}
         <div className="space-y-2">
-          <label className="text-xs font-medium text-gray-600">{t('staff.about.gender')} <span className="text-red-500">*</span></label>
+          <label className="text-xs font-medium text-gray-600 dark:text-zinc-400">{t('staff.about.gender')} <span className="text-red-500">*</span></label>
           <RadioGroup
             orientation="horizontal"
             value={formData.gender}
@@ -205,7 +208,7 @@ function PersonalInfoStep({
       </div>
 
       {/* Contact Details */}
-      <div className="space-y-3 pt-5 border-t border-gray-100">
+      <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-800">
         <SectionHeader icon={Phone} title={t('staff.about.contactDetails')} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -283,7 +286,7 @@ function PersonalInfoStep({
       </div>
 
       {/* Address */}
-      <div className="space-y-3 pt-5 border-t border-gray-100">
+      <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-800">
         <SectionHeader icon={MapPin} title={t('staff.about.address')} />
         <Textarea
           placeholder={t('staff.form.addressPlaceholder')}
@@ -299,11 +302,11 @@ function PersonalInfoStep({
       </div>
 
       {/* Emergency Contacts */}
-      <div className="space-y-3 pt-5 border-t border-gray-100">
+      <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-800">
         <SectionHeader icon={ShieldAlert} title={t('staff.form.emergencyContacts')} />
-        <p className="text-xs text-gray-500 -mt-1">{t('staff.form.emergencyContactsHint')}</p>
+        <p className="text-xs text-gray-500 dark:text-zinc-400 -mt-1">{t('staff.form.emergencyContactsHint')}</p>
         {formData.emergencyContacts.map((contact, index) => (
-          <div key={contact.phone || index} className="p-3 border border-gray-200 rounded-lg space-y-3 relative group hover:border-gray-300 transition-colors">
+          <div key={contact.phone || index} className="p-3 border border-gray-200 dark:border-zinc-700 rounded-lg space-y-3 relative group hover:border-gray-300 dark:hover:border-zinc-600 transition-colors">
             {formData.emergencyContacts.length > 1 && (
               <button
                 className="absolute top-2 right-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"

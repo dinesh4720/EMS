@@ -150,7 +150,11 @@ export default function BasicDetailsTab({
           } />
           <InfoItem label={t('pages.primaryPhone')} value={student?.parentPhone} />
           <InfoItem label={t('pages.alternatePhone')} value={student?.alternatePhone} />
-          <InfoItem label={t('pages.primaryEmail')} value={student?.parentEmail} />
+          <InfoItem label={t('pages.primaryEmail')} value={
+            student?.parentEmail ||
+            (student?.parents && student.parents.find(p => p.isParent !== false)?.email) ||
+            (student?.parents && student.parents[0]?.email)
+          } />
         </div>
       </div>
 

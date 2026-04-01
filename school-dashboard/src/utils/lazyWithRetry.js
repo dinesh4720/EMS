@@ -12,7 +12,8 @@ export default function lazyWithRetry(importFn, maxRetries = 2) {
 
 function retryImport(importFn, retriesLeft) {
   return importFn().catch((error) => {
-    if (retriesLeft > 0) {
+    // Only retry for network/chunk load errors — not for runtime errors like WebGL crashes
+    if (retriesLeft > 0 && isChunkError(error)) {
       return new Promise((resolve) => setTimeout(resolve, 1000)).then(() =>
         retryImport(importFn, retriesLeft - 1)
       );

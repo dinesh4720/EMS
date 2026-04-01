@@ -61,7 +61,8 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
       const res = await promotionApi.getRules();
       setRules(res);
     } catch {
-      /* non-critical */
+      // Fallback to sensible defaults if API fails
+      setRules({ minAttendancePercent: 75, feeRequirement: 'none' });
     }
   };
 

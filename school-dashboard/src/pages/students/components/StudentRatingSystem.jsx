@@ -167,10 +167,14 @@ export default function StudentRatingSystem({
 
         {/* Overall Score */}
         <div className="text-right">
-          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">
-            {overallRating > 0 ? overallRating : "—"}
-            <span className="text-sm font-normal text-gray-400 dark:text-zinc-500 ml-1">/ 5</span>
-          </p>
+          {overallRating > 0 ? (
+            <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">
+              {overallRating}
+              <span className="text-sm font-normal text-gray-400 dark:text-zinc-500 ml-1">/ 5</span>
+            </p>
+          ) : (
+            <p className="text-sm font-medium text-gray-400 dark:text-zinc-500">Not Rated</p>
+          )}
           {lastUpdated && (
             <p className="text-xs text-gray-400 dark:text-zinc-500 flex items-center justify-end gap-1 mt-0.5">
               <Clock size={12} />

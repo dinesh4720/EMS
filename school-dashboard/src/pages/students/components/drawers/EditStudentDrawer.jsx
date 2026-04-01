@@ -37,8 +37,8 @@ export default function EditStudentDrawer({
                   <Edit size={20} className="text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold">{t('students.profile.overview.editStudent', 'Edit Student')}</h3>
-                  <p className="text-xs text-default-500">{t('students.profile.overview.updateStudentInformation', 'Update student information')}</p>
+                  <h3 className="text-lg font-semibold">{student?.name ? `Editing ${student.name}` : t('students.profile.overview.editStudent', 'Edit Student')}</h3>
+                  <p className="text-xs text-default-500">{student?.admissionNo ? `${student.admissionNo} • ` : ''}{t('students.profile.overview.updateStudentInformation', 'Update student information')}</p>
                 </div>
               </div>
             </DrawerHeader>

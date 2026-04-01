@@ -29,7 +29,8 @@ export default function TransferCertificatePage() {
     setSelected(new Set());
     try {
       const res = await request(`/students?search=${encodeURIComponent(search.trim())}&limit=20&status=active`);
-      setStudents(res?.students || res || []);
+      const list = res?.students ?? res;
+      setStudents(Array.isArray(list) ? list : []);
     } catch {
       toast.error('Failed to search students');
     } finally {

@@ -40,6 +40,7 @@ export default function StudentForm({
     resetForm,
   } = useStudentForm(initialData);
 
+  const { t } = useTranslation();
   const [step, setStep] = useState(1);
   const scrollContainerRef = useRef(null);
 
@@ -235,10 +236,10 @@ export default function StudentForm({
             color="primary"
             onPress={step === 3 ? handleSubmit : handleNext}
             isLoading={isSubmitting}
-            className="font-medium"
+            className="font-medium min-w-fit whitespace-nowrap"
           >
             {step === 3 ? (
-              "Add Student"
+              initialData ? "Update Student" : "Add Student"
             ) : (
               <>
                 Next Step <ArrowRight size={16} />

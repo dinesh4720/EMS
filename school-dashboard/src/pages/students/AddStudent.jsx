@@ -251,6 +251,14 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
         }
       }
 
+      // Bug #15 fix: Normalize religion value to match RELIGIONS constant
+      // Backend may store "Hindu" but constants use "Hinduism"
+      let normalizedReligion = initialData.religion || "";
+      if (normalizedReligion && !RELIGIONS.includes(normalizedReligion)) {
+        const match = RELIGIONS.find(r => r.toLowerCase().startsWith(normalizedReligion.toLowerCase()));
+        if (match) normalizedReligion = match;
+      }
+
       // Map initialData (student object) to form structure
       return {
         ...emptyForm,
@@ -259,8 +267,16 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
         mobile: initialData.phone || "",
         picture: initialData.photo || null, // Map photo URL to picture field
         rollNumber: initialData.rollNo?.toString() || "", // Map rollNo to rollNumber
+        religion: normalizedReligion,
         // Ensure parents array is populated
-        parents: initialData.parents?.length > 0 ? initialData.parents : [{
+        parents: initialData.parents?.length > 0
+          ? initialData.parents.map(p => ({
+              ...p,
+              // Bug #8/#9 fix: Ensure isParent is explicitly set based on relationship
+              // Backend may not store isParent, so derive it from relationship
+              isParent: p.isParent != null ? p.isParent : ["Father", "Mother"].includes(p.relationship),
+            }))
+          : [{
           name: initialData.parentName || "",
           relationship: initialData.parentRelationship || "Father",
           phone: initialData.parentPhone || "",
@@ -2409,7 +2425,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
                   Saving...
                 </>
               ) : step === 3 ? (
-                "Add Student"
+                initialData ? "Update Student" : "Add Student"
               ) : (
                 <>
                   Continue
@@ -2447,6 +2463,12 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
         size="sm"
         isDismissable={false}
         hideCloseButton
+        portalContainer={document.body}
+        classNames={{
+          base: "z-[999999]",
+          wrapper: "z-[999999]",
+          backdrop: "z-[999999]",
+        }}
       >
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">

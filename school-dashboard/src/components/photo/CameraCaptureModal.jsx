@@ -97,9 +97,12 @@ const CameraCaptureModal = ({ isOpen, onClose, onPhotoCaptured, title, descripti
         isOpen={isOpen && !mode}
         onClose={handleClose}
         size="md"
+        portalContainer={document.body}
         classNames={{
           body: "p-0",
-          base: "bg-background border border-default-200",
+          base: "bg-background border border-default-200 z-[999999]",
+          wrapper: "z-[999999]",
+          backdrop: "z-[999999]",
         }}
       >
         <ModalContent>
@@ -165,9 +168,12 @@ const CameraCaptureModal = ({ isOpen, onClose, onPhotoCaptured, title, descripti
         isOpen={mode === 'camera'}
         onClose={handleBack}
         size="2xl"
+        portalContainer={document.body}
         classNames={{
-          base: "bg-black",
+          base: "bg-black z-[999999]",
           body: "p-0",
+          wrapper: "z-[999999]",
+          backdrop: "z-[999999]",
         }}
       >
         <ModalContent className="bg-black">

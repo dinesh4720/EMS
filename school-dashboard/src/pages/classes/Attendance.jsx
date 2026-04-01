@@ -82,8 +82,12 @@ export default function Attendance({
         s.isDeleted !== true
       );
     }
-    // When in standalone mode, filter by class name-section string
-    return students.filter(s => s.class === selectedClass);
+    // When in standalone mode, filter by class ID (selectedClass is now an ID)
+    return students.filter(s =>
+      String(s.classId) === String(selectedClass) &&
+      (s.status || 'active') === 'active' &&
+      s.isDeleted !== true
+    );
   }, [students, selectedClass, classId]);
 
   // Keep a ref to classStudents so fetchAttendance doesn't re-trigger
