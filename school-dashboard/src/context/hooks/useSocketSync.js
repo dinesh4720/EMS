@@ -142,8 +142,17 @@ export function useSocketSync({
         logger.error("Failed to import socket service:", err);
       });
 
+    // [AUDIT-157] Clean up ALL socket event listeners to prevent memory leaks.
+    // Previously only student_created was cleaned up; the other 7 listeners leaked.
     return () => {
       if (capturedService) {
+        capturedService.off("connect_error");
+        capturedService.off("error");
+        capturedService.off("staff_updated");
+        capturedService.off("student_updated");
+        capturedService.off("class_updated");
+        capturedService.off("attendance_updated");
+        capturedService.off("fee_payment_created");
         capturedService.off("student_created");
         capturedService.disconnect();
       }

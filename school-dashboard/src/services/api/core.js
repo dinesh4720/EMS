@@ -1,5 +1,5 @@
 import { queryClient } from '../../lib/queryClient.js';
-import { requestQueue, retryRequest } from '../../utils/requestQueue.js';
+import { requestQueue } from '../../utils/requestQueue.js';
 import { clearStoredUser, getAuthHeaders } from '../../utils/authSession';
 import { API_URL } from '../../config/api.js';
 import logger from '../../utils/logger';
@@ -100,18 +100,35 @@ export async function request(endpoint, options = {}) {
         if (response.status === 401) {
           const refreshed = await attemptTokenRefresh();
           if (refreshed) {
-            // Retry the original request once with the new access token
-            const retryResponse = await fetch(url, {
-              ...fetchOptions,
-              headers,
-              credentials: fetchOptions.credentials ?? 'include',
-              signal: controller.signal,
-              cache: 'no-store',
-            });
-            if (retryResponse.ok) {
-              clearTimeout(timeoutId);
-              if (retryResponse.status === 204) return null;
-              return await retryResponse.json();
+            // [AUDIT-155] Create a NEW AbortController for the retry — the original may
+            // already be aborted (its signal stays aborted forever).
+            const retryController = new AbortController();
+            const retryTimeoutId = setTimeout(() => retryController.abort(), 15000);
+
+            try {
+              // Re-fetch auth headers since the token was just refreshed
+              const retryHeaders = getAuthHeaders({
+                'Content-Type': 'application/json',
+                ...options.headers
+              });
+
+              const retryResponse = await fetch(url, {
+                ...fetchOptions,
+                headers: retryHeaders,
+                credentials: fetchOptions.credentials ?? 'include',
+                signal: retryController.signal,
+                cache: 'no-store',
+              });
+
+              clearTimeout(retryTimeoutId);
+
+              if (retryResponse.ok) {
+                if (retryResponse.status === 204) return null;
+                return await retryResponse.json();
+              }
+            } catch {
+              clearTimeout(retryTimeoutId);
+              // Retry failed — fall through to logout
             }
           }
           // Refresh failed or retried request still 401 — log out
@@ -173,9 +190,12 @@ export async function request(endpoint, options = {}) {
     }
   };
 
-  // Use request queue for all requests
+  // [AUDIT-160] Use request queue for all requests.
+  // Retries are handled by React Query's queryClient (see queryClient.js).
+  // Do NOT add retryRequest() here — that creates a double retry layer
+  // (up to 3 * 3 = 9 attempts per failed request).
   try {
-    return await requestQueue.add(() => retryRequest(makeRequest, 2, 1000));
+    return await requestQueue.add(makeRequest);
   } catch (error) {
     // Only log errors that aren't rate limiting, 404s, or aborts (reduce console spam)
     if (
@@ -191,4 +211,79 @@ export async function request(endpoint, options = {}) {
   }
 }
 
+/**
+ * [AUDIT-159] Upload FormData (file uploads) through the centralized auth/retry pipeline.
+ * Unlike request(), this does NOT set Content-Type (browser sets multipart boundary)
+ * and returns parsed JSON.
+ */
+export async function requestUpload(endpoint, formData) {
+  const url = `${API_URL}${endpoint}`;
 
+  const doUpload = async (isRetry = false) => {
+    const headers = getAuthHeaders();
+    // Do NOT set Content-Type — let the browser set the multipart boundary
+    delete headers['Content-Type'];
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+
+      if (response.status === 401 && !isRetry) {
+        const refreshed = await attemptTokenRefresh();
+        if (refreshed) {
+          return doUpload(true);
+        }
+        clearStoredUser();
+        queryClient.clear();
+      }
+
+      const err = new Error(errorData.error || `Upload failed with status ${response.status}`);
+      err.status = response.status;
+      throw err;
+    }
+
+    return response.json();
+  };
+
+  return doUpload();
+}
+
+/**
+ * [AUDIT-159] Fetch a binary blob (e.g., file export/download) through the centralized auth pipeline.
+ * Returns the raw Response so callers can call .blob(), .arrayBuffer(), etc.
+ */
+export async function requestBlob(endpoint) {
+  const url = `${API_URL}${endpoint}`;
+
+  const doFetch = async (isRetry = false) => {
+    const response = await fetch(url, {
+      credentials: 'include',
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      if (response.status === 401 && !isRetry) {
+        const refreshed = await attemptTokenRefresh();
+        if (refreshed) {
+          return doFetch(true);
+        }
+        clearStoredUser();
+        queryClient.clear();
+      }
+
+      const err = new Error(`Export failed with status ${response.status}`);
+      err.status = response.status;
+      throw err;
+    }
+
+    return response;
+  };
+
+  return doFetch();
+}
