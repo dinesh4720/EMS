@@ -100,17 +100,28 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   return (
-    <aside
-      aria-label="Main navigation"
-      className={`
-        fixed left-0 top-0 h-screen
-        bg-white dark:bg-zinc-950
-        border-r border-gray-200 dark:border-zinc-800
-        flex flex-col z-50
-        transition-all duration-300
-        ${isSidebarOpen ? 'w-[240px]' : 'w-[64px]'}
-      `}
-    >
+    <>
+      {/* Mobile backdrop overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      <aside
+        data-tour="sidebar"
+        role="navigation"
+        aria-label="Main navigation"
+        className={`
+          fixed left-0 top-0 h-screen
+          bg-white dark:bg-zinc-950
+          border-r border-gray-200 dark:border-zinc-800
+          flex flex-col z-50
+          transition-all duration-300
+          ${isSidebarOpen ? 'w-[240px]' : 'w-[64px] max-lg:-translate-x-full'}
+        `}
+      >
       {/* Brand */}
       <div className={`flex items-center h-14 border-b border-gray-100 dark:border-zinc-800 ${isSidebarOpen ? 'px-4 justify-between' : 'justify-center'}`}>
         <div className="flex items-center gap-2">
@@ -214,13 +225,14 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                 >
                   <button
                     onClick={handleModuleClick}
+                    aria-expanded={isSidebarOpen && isActive && groups.length > 0}
                     className={`
                       w-full flex items-center cursor-pointer transition-colors
                       ${isSidebarOpen ? 'py-2 px-3 gap-3 justify-between' : 'h-10 justify-center w-10 mx-auto py-0'}
                       rounded-lg
                       ${isActive
-                        ? "bg-gray-100 text-gray-900"
-                        : "text-gray-600 hover:bg-gray-50"}
+                        ? "bg-gray-100 text-gray-900 dark:bg-zinc-800 dark:text-zinc-100"
+                        : "text-gray-600 hover:bg-gray-50 dark:text-zinc-400 dark:hover:bg-zinc-800"}
                     `}
                   >
                     <div className="flex items-center gap-3">
@@ -302,7 +314,9 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
         </NavLink>
 
         {/* Theme Toggle */}
-        <div
+        <button
+          type="button"
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           className={`
             flex items-center cursor-pointer
@@ -312,7 +326,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
         >
           {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
           {isSidebarOpen && <span className="text-sm font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
-        </div>
+        </button>
 
         {/* User Profile */}
         <Popover
@@ -339,10 +353,10 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
               {isSidebarOpen && (
                 <div className="flex-1 flex flex-col items-start overflow-hidden">
                   <span className="text-sm font-medium text-gray-800 dark:text-zinc-200 truncate">
-                    {user?.name || "Julia"}
+                    {user?.name || "User"}
                   </span>
                   <span className="text-xs text-gray-500 dark:text-zinc-400 truncate">
-                    Admin
+                    {user?.role || "Staff"}
                   </span>
                 </div>
               )}
@@ -385,14 +399,17 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
 
       {/* Expand Button (when collapsed) */}
       {!isSidebarOpen && (
-        <div
+        <button
+          type="button"
+          aria-label="Expand sidebar"
           onClick={() => setIsSidebarOpen(true)}
           className="absolute -right-3 top-20 w-6 h-6 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-700 rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform z-50 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300"
         >
           <ChevronsLeft size={12} className="rotate-180" />
-        </div>
+        </button>
       )}
     </aside>
+    </>
   );
 }
 
