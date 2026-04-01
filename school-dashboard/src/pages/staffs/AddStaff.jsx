@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useMemo } from "react";
 import { parseDate } from "@internationalized/date";
 import { Button, Input, Select, SelectItem, Checkbox, Switch, Textarea, Chip, Divider, Avatar, RadioGroup, Radio, cn, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, DatePicker, Autocomplete, AutocompleteItem, Spinner } from "@heroui/react";
-import { ArrowLeft, ArrowRight, Upload, X, Plus, User, FileText, Briefcase, DollarSign, Trash2, Check, Banknote, GraduationCap, MapPin, Phone, Mail, BadgeCheck, FileBadge, Calendar as CalendarIcon, Clock, HeartPulse, MoreHorizontal, AlertTriangle, PenLine, FileScan, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Upload, X, Plus, User, FileText, Briefcase, DollarSign, Trash2, Check, Banknote, GraduationCap, MapPin, Phone, Mail, BadgeCheck, FileBadge, Calendar as CalendarIcon, Clock, HeartPulse, MoreHorizontal, AlertTriangle, PenLine, FileScan, CheckCircle2, Lock } from "lucide-react";
 import PhotoEditorModal from "../../components/PhotoEditorModal";
 import CameraCaptureModal from "../../components/CameraCaptureModal";
 import TimetableWizardModal from "../classes/components/TimetableWizardModal";
@@ -39,7 +39,8 @@ const degreeOptions = [
   { label: "B.Tech", value: "B.Tech" }, { label: "M.Tech", value: "M.Tech" },
   { label: "Other", value: "Other" }
 ];
-const departments = ["Science", "Mathematics", "Languages", "Social Studies", "Arts", "Sports", "Admin", "Others"];
+const departments = ["Academic", "Science", "Mathematics", "Languages", "Social Studies", "Arts", "Sports", "Administration", "Accounts", "IT", "Library", "Transport", "Maintenance", "Others"];
+const shiftOptions = ["Morning", "Afternoon", "Evening", "Full Day"];
 
 // Fallback class options - will be replaced by actual API data
 const fallbackClassOptions = Array.from({ length: 12 }, (_, i) => i + 1).flatMap(num => ["A", "B", "C", "D"].map(sec => `${num}-${sec}`));
@@ -47,13 +48,13 @@ const fallbackClassOptions = Array.from({ length: 12 }, (_, i) => i + 1).flatMap
 const emptyForm = {
   // Personal Details
   name: "", dob: "", picture: null, phone: "", isWhatsapp: false,
-  whatsappNumber: "", email: "", fatherName: "", bloodGroup: "", gender: "Male", maritalStatus: "",
+  whatsappNumber: "", email: "", fatherName: "", bloodGroup: "", gender: "", maritalStatus: "",
   employmentType: "Full-time", idDocuments: [], customDocuments: [],
   emergencyContacts: [{ name: "", relationship: "", phone: "" }], address: "",
   // Qualifications
   professionalQualifications: [], totalExperience: "", experience: 0, previousOrganization: "", roleInOrganization: "", qualificationDocs: [],
   // Staff Info
-  staffNumber: "", staffType: [], department: "", assignedClasses: [], isClassTeacher: false, classTeacherOf: "",
+  staffNumber: "", staffType: [], department: "", shift: "Morning", joinDate: "", assignedClasses: [], isClassTeacher: false, classTeacherOf: "",
   // Salary Details
   accountNumber: "", ifscCode: "", bankName: "", branchName: "", salaryTemplate: "", salaryBreakdown: []
 };
@@ -103,10 +104,16 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
   useEffect(() => {
     if (editingStaff) {
       // EDIT MODE: Populate form with existing staff data
+      // Normalize DOB — backend may return as dob, dateOfBirth, or ISO string
+      const rawDob = editingStaff.dob || editingStaff.dateOfBirth || "";
+      const normalizedDob = rawDob ? rawDob.split('T')[0] : "";
+      // Normalize employment type — match exact case expected by Select options
+      const rawEmployment = editingStaff.employmentType || "";
+      const matchedEmployment = employmentTypes.find(t => t.value.toLowerCase() === rawEmployment.toLowerCase())?.value || "Full-time";
       setFormData({
         // Personal Details
         name: editingStaff.name || "",
-        dob: editingStaff.dob || "",
+        dob: normalizedDob,
         picture: editingStaff.picture || null,
         phone: editingStaff.phone || "",
         isWhatsapp: editingStaff.whatsappNumber === editingStaff.phone,
@@ -114,9 +121,9 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         email: editingStaff.email || "",
         fatherName: editingStaff.fatherName || "",
         bloodGroup: editingStaff.bloodGroup || "",
-        gender: editingStaff.gender || "Male",
+        gender: editingStaff.gender || "",
         maritalStatus: editingStaff.maritalStatus || "",
-        employmentType: editingStaff.employmentType || "Full-time",
+        employmentType: matchedEmployment,
         idDocuments: editingStaff.idDocuments || [],
         customDocuments: editingStaff.customDocuments || [],
         emergencyContacts: editingStaff.emergencyContacts ? editingStaff.emergencyContacts : [{ name: "", relationship: "", phone: "" }],
@@ -137,9 +144,12 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
           return Array.isArray(source) ? source : [source];
         })(),
         department: editingStaff.department || "",
+        shift: editingStaff.shift || "Morning",
+        joinDate: editingStaff.joinDate ? editingStaff.joinDate.split('T')[0] : "",
         assignedClasses: editingStaff.assignedClasses || [],
-        isClassTeacher: editingStaff.isClassTeacher || false,
-        classTeacherOf: editingStaff.classTeacherOf || "",
+        // Derive isClassTeacher from multiple sources — the flag may be stale
+        isClassTeacher: editingStaff.isClassTeacher || !!editingStaff.classTeacherOf || !!editingStaff.assignedClassId || false,
+        classTeacherOf: editingStaff.classTeacherOf || editingStaff.assignedClassId || "",
         // Salary Details
         accountNumber: editingStaff.accountNumber || "",
         ifscCode: editingStaff.ifscCode || "",
@@ -237,10 +247,11 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         if (!value) {
           newError = "Required";
         } else {
-          const dobYear = new Date(value).getFullYear();
-          const currentYear = new Date().getFullYear();
-          if (dobYear === currentYear) {
-            newError = "Year cannot be current year";
+          const dobDate = new Date(value);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          if (dobDate > today) {
+            newError = "Date of birth cannot be in the future";
           }
         }
         break;
@@ -325,14 +336,16 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       if (!formData.dob) {
         newErrors.dob = "Required";
       } else {
-        const dobYear = new Date(formData.dob).getFullYear();
-        const currentYear = new Date().getFullYear();
-        if (dobYear === currentYear) {
-          newErrors.dob = "Year cannot be current year";
+        const dobDate = new Date(formData.dob);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (dobDate > today) {
+          newErrors.dob = "Date of birth cannot be in the future";
         }
       }
       if (!formData.gender) newErrors.gender = "Required";
-      if (!formData.fatherName.trim()) newErrors.fatherName = "Required";
+      // fatherName is required for new staff, optional when editing existing records
+      if (!editingStaff && !formData.fatherName.trim()) newErrors.fatherName = "Required";
       if (!formData.phone.trim()) newErrors.phone = "Required";
       else if (!/^\d{10}$/.test(formData.phone)) newErrors.phone = "Invalid";
       if (formData.email.trim()) {
@@ -369,6 +382,9 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         newErrors.qualifications = "At least one degree is required";
       }
       formData.professionalQualifications.forEach((q, i) => {
+        // Skip validation for completely empty entries (no name, no year, no institution)
+        const isEmpty = !q.name && !q.year && !q.institution;
+        if (isEmpty) return;
         if (!q.name) newErrors[`qualName_${i}`] = "Required";
         if (q.year && !/^\d{4}$/.test(q.year)) newErrors[`qualYear_${i}`] = "Invalid Year";
         if (q.year && (parseInt(q.year) < 1950 || parseInt(q.year) > new Date().getFullYear())) {
@@ -730,56 +746,60 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <DatePicker
-            aria-label={t('aria.inputs.dateOfBirth')}
-            label={t('pages.dateOfBirth2')}
-            labelPlacement="outside"
-            value={(() => {
-              if (!formData.dob) return null;
-              try {
-                const dateStr = formData.dob.split('T')[0];
-                // Validate the date string format (YYYY-MM-DD)
-                if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-                  return parseDate(dateStr);
+          {/* Wrapper div prevents keyboard events from propagating to parent form elements */}
+          <div onKeyDown={(e) => e.stopPropagation()}>
+            <DatePicker
+              aria-label={t('aria.inputs.dateOfBirth')}
+              label={t('pages.dateOfBirth2')}
+              labelPlacement="outside"
+              placeholderValue={parseDate("2000-01-01")}
+              value={(() => {
+                if (!formData.dob) return null;
+                try {
+                  const dateStr = formData.dob.split('T')[0];
+                  // Validate the date string format (YYYY-MM-DD)
+                  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                    return parseDate(dateStr);
+                  }
+                  return null;
+                } catch (e) {
+                  console.warn('Invalid DOB value:', formData.dob, e);
+                  return null;
                 }
-                return null;
-              } catch (e) {
-                console.warn('Invalid DOB value:', formData.dob, e);
-                return null;
-              }
-            })()}
-            onChange={(date) => {
-              if (!date) {
-                updateField("dob", "");
-                return;
-              }
-              try {
-                // CalendarDate has .toString() which returns YYYY-MM-DD format
-                const dateStr = date.toString();
-                updateField("dob", dateStr);
-              } catch (e) {
-                console.warn('Error converting date:', e);
-                updateField("dob", "");
-              }
-            }}
-            variant="bordered"
-            radius="sm"
-            showMonthAndYearPickers
-            isRequired
-            isInvalid={!!errors.dob}
-            errorMessage={errors.dob}
-            portalContainer={document.body}
-            className="w-full"
-            classNames={{
-              label: "text-xs font-medium text-default-600 mb-1",
-              input: "cursor-pointer",
-              inputWrapper: "cursor-pointer hover:border-primary-400 transition-colors data-[hover=true]:border-primary-400",
-              group: "cursor-pointer"
-            }}
-            style={{
-              pointerEvents: "auto"
-            }}
-          />
+              })()}
+              onChange={(date) => {
+                if (!date) {
+                  updateField("dob", "");
+                  return;
+                }
+                try {
+                  // CalendarDate has .toString() which returns YYYY-MM-DD format
+                  const dateStr = date.toString();
+                  updateField("dob", dateStr);
+                } catch (e) {
+                  console.warn('Error converting date:', e);
+                  updateField("dob", "");
+                }
+              }}
+              variant="bordered"
+              radius="sm"
+              showMonthAndYearPickers
+              isRequired
+              isInvalid={!!errors.dob}
+              errorMessage={errors.dob}
+              portalContainer={document.body}
+              className="w-full"
+              classNames={{
+                label: "text-xs font-medium text-default-600 mb-1",
+                input: "cursor-pointer",
+                inputWrapper: "cursor-pointer hover:border-primary-400 transition-colors data-[hover=true]:border-primary-400",
+                group: "cursor-pointer"
+              }}
+              style={{
+                pointerEvents: "auto"
+              }}
+            />
+          </div>
 
           <Select
             aria-label={t('aria.inputs.gender')}
@@ -1046,7 +1066,8 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             isReadOnly
             variant="bordered"
             radius="sm"
-            classNames={{ inputWrapper: "bg-default-100 dark:bg-default-100/50 border-1 border-default-200 h-10" }}
+            startContent={<Lock size={14} className="text-default-400" />}
+            classNames={{ inputWrapper: "bg-default-100 dark:bg-default-100/50 border-1 border-default-200 h-10 cursor-not-allowed opacity-70" }}
             description={formData.staffNumber ? "Staff ID" : "Will be auto-generated by the server"}
           />
 
@@ -1067,6 +1088,46 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
               <SelectItem key={dept}>{dept}</SelectItem>
             ))}
           </Select>
+
+          <div className="grid grid-cols-2 gap-4">
+            <DatePicker
+              aria-label="Join Date"
+              label="Join Date"
+              labelPlacement="outside"
+              value={(() => {
+                if (!formData.joinDate) return null;
+                try {
+                  const dateStr = formData.joinDate.split('T')[0];
+                  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return parseDate(dateStr);
+                  return null;
+                } catch { return null; }
+              })()}
+              onChange={(date) => {
+                if (!date) { updateField("joinDate", ""); return; }
+                try { updateField("joinDate", date.toString()); } catch { updateField("joinDate", ""); }
+              }}
+              variant="bordered"
+              radius="sm"
+              showMonthAndYearPickers
+              portalContainer={document.body}
+              className="w-full"
+              classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+            />
+            <Select
+              label="Shift"
+              labelPlacement="outside"
+              placeholder="Select shift"
+              selectedKeys={formData.shift ? [formData.shift] : []}
+              onSelectionChange={(keys) => updateField("shift", Array.from(keys)[0])}
+              variant="bordered"
+              radius="sm"
+              classNames={{ trigger: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+            >
+              {shiftOptions.map((s) => (
+                <SelectItem key={s}>{s}</SelectItem>
+              ))}
+            </Select>
+          </div>
         </div>
 
         {(Array.isArray(formData.staffType) ? formData.staffType.includes("Teacher") : formData.staffType === "Teaching") && (
@@ -1136,7 +1197,8 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       <div className="flex justify-between items-end mb-2 border-b border-default-100 pb-2">
         <div>
           <h3 className="text-sm font-semibold text-default-900">{t('pages.educationDetails')}</h3>
-          <p className="text-xs text-danger-500 mt-0.5">* At least one degree is required</p>
+          {!editingStaff && <p className="text-xs text-danger-500 mt-0.5">* At least one degree is required</p>}
+          {editingStaff && <p className="text-xs text-default-400 mt-0.5">Optional — add or update qualifications</p>}
         </div>
         {formData.professionalQualifications.length > 0 && (
           <button
@@ -1188,7 +1250,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
                 <Input
                   label={t('pages.year1')}
                   labelPlacement="outside"
-                  placeholder={t('pages.year1')}
+                  placeholder="e.g. 2020"
                   value={qual.year}
                   onValueChange={v => {
                     if (v.length <= 4 && /^\d*$/.test(v)) updateQualification(i, "year", v);
@@ -1196,6 +1258,10 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
                   variant="bordered"
                   radius="sm"
                   size="sm"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min={1950}
+                  max={new Date().getFullYear()}
                   isInvalid={!!errors[`qualYear_${i}`]}
                   errorMessage={errors[`qualYear_${i}`]}
                   classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-9" }}
@@ -1278,7 +1344,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       </div>
 
       <div className="space-y-4 pt-6 border-t border-dashed border-default-200">
-        <label className="text-sm font-semibold text-default-900 block">{t('pages.experience')}</label>
+        <h4 className="text-sm font-semibold text-default-900">Work Experience</h4>
 
         <div className="space-y-3">
           {/* Row 1: Org Name (Flex) and Years (Fixed small width) */}
@@ -1321,7 +1387,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             onValueChange={v => updateField("roleInOrganization", v)}
             variant="bordered"
             radius="sm"
-            classNames={{ label: "text-xs font-medium text-default-600 mb-1", inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+            classNames={{ label: "text-xs font-medium text-default-700 dark:text-default-400 mb-1", inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
           />
         </div>
       </div>

@@ -14,9 +14,11 @@ const hasWebGL = (() => {
     // Headless/automated browsers lack full GPU — skip 3D to avoid noisy console errors
     if (
       navigator.webdriver ||
-      /HeadlessChrome|Headless|Puppeteer|Playwright|PhantomJS/i.test(navigator.userAgent) ||
-      !navigator.gpu && !window.chrome?.runtime // Likely not a real desktop Chrome
+      /HeadlessChrome|Headless|Puppeteer|Playwright|PhantomJS|Chrome-Lighthouse/i.test(navigator.userAgent) ||
+      (!navigator.gpu && !window.chrome?.runtime) // Likely not a real desktop Chrome
     ) return false;
+    // Skip if running inside an iframe or MCP preview tool
+    if (window.self !== window.top) return false;
     const c = document.createElement("canvas");
     const gl = c.getContext("webgl2") || c.getContext("webgl");
     if (!gl) return false;
@@ -31,9 +33,16 @@ const hasWebGL = (() => {
     const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
     if (debugInfo) {
       const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || '';
-      if (/SwiftShader|llvmpipe|Software/i.test(renderer)) return false;
+      if (/SwiftShader|llvmpipe|Software|ANGLE.*Direct3D9/i.test(renderer)) return false;
     }
-    return ok;
+    // Test a fragment shader too — some environments pass vertex but fail fragment
+    const fs = gl.createShader(gl.FRAGMENT_SHADER);
+    if (!fs) return false;
+    gl.shaderSource(fs, "precision mediump float; void main(){ gl_FragColor = vec4(1.0); }");
+    gl.compileShader(fs);
+    const fsOk = gl.getShaderParameter(fs, gl.COMPILE_STATUS);
+    gl.deleteShader(fs);
+    return ok && fsOk;
   } catch { return false; }
 })();
 

@@ -603,8 +603,12 @@ export default function SchoolBuilding3D() {
 
   useEffect(() => {
     try {
-      // Skip in headless/automated browsers
-      if (navigator.webdriver || /HeadlessChrome|Headless|Puppeteer|Playwright/i.test(navigator.userAgent)) {
+      // Skip in headless/automated browsers or iframes (preview tools)
+      if (
+        navigator.webdriver ||
+        /HeadlessChrome|Headless|Puppeteer|Playwright|PhantomJS/i.test(navigator.userAgent) ||
+        window.self !== window.top
+      ) {
         setHasWebGLSupport(false);
         return;
       }
@@ -620,22 +624,50 @@ export default function SchoolBuilding3D() {
         return;
       }
 
-      // Verify the context actually works (some headless environments report support but fail)
-      const testShader = context.createShader(context.VERTEX_SHADER);
-      if (!testShader) {
-        setHasWebGLSupport(false);
-        return;
-      }
-      context.deleteShader(testShader);
-
       // Reject software renderers — they pass WebGL checks but crash Three.js
       const debugInfo = context.getExtension('WEBGL_debug_renderer_info');
       if (debugInfo) {
         const renderer = context.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || '';
-        if (/SwiftShader|llvmpipe|Software|Mesa/i.test(renderer)) {
+        if (/SwiftShader|llvmpipe|Software|Mesa|ANGLE.*Direct3D9/i.test(renderer)) {
           setHasWebGLSupport(false);
           return;
         }
+      }
+
+      // Full shader pipeline test — compile vertex + fragment + link program
+      const vs = context.createShader(context.VERTEX_SHADER);
+      const fs = context.createShader(context.FRAGMENT_SHADER);
+      if (!vs || !fs) { setHasWebGLSupport(false); return; }
+      context.shaderSource(vs, "void main(){ gl_Position = vec4(0.0); }");
+      context.shaderSource(fs, "precision mediump float; void main(){ gl_FragColor = vec4(1.0); }");
+      context.compileShader(vs);
+      context.compileShader(fs);
+      if (!context.getShaderParameter(vs, context.COMPILE_STATUS) ||
+          !context.getShaderParameter(fs, context.COMPILE_STATUS)) {
+        context.deleteShader(vs); context.deleteShader(fs);
+        setHasWebGLSupport(false);
+        return;
+      }
+      const prog = context.createProgram();
+      context.attachShader(prog, vs);
+      context.attachShader(prog, fs);
+      context.linkProgram(prog);
+      const linked = context.getProgramParameter(prog, context.LINK_STATUS);
+      context.deleteProgram(prog);
+      context.deleteShader(vs);
+      context.deleteShader(fs);
+      if (!linked) { setHasWebGLSupport(false); return; }
+
+      // Try creating a Three.js WebGLRenderer as final gate
+      try {
+        const testCanvas = document.createElement("canvas");
+        testCanvas.width = 1;
+        testCanvas.height = 1;
+        const testRenderer = new THREE.WebGLRenderer({ canvas: testCanvas, failIfMajorPerformanceCaveat: true });
+        testRenderer.dispose();
+      } catch {
+        setHasWebGLSupport(false);
+        return;
       }
 
       setHasWebGLSupport(true);

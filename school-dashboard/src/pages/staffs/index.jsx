@@ -104,8 +104,9 @@ export default function StaffsPage() {
       email: staffData.email,
       status: "active",
       address: staffData.address,
-      // Only set joinDate for new staff; preserve original on edit
-      ...(editingStaffId ? {} : { joinDate: new Date().toISOString().split('T')[0] }),
+      // Use form joinDate if provided, otherwise auto-set for new staff
+      joinDate: staffData.joinDate || (editingStaffId ? undefined : new Date().toISOString().split('T')[0]),
+      shift: staffData.shift || undefined,
       dob: staffData.dob,
       gender: staffData.gender,
       fatherName: staffData.fatherName,
