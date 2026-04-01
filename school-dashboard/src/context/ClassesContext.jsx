@@ -25,7 +25,7 @@ export function ClassesProvider({ children, staff, students }) {
       const created = await classesApi.create(newClass);
       setClasses((prev) => [
         ...prev,
-        { ...created, name: created.name.replace("Class ", ""), strength: 0, attendance: 0 },
+        { ...created, strength: 0, attendance: 0 },
       ]);
       void invalidateAppData();
       return created;

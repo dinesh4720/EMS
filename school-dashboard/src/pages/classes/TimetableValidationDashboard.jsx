@@ -252,9 +252,9 @@ const TimetableValidationDashboard = () => {
               <div className="text-red-600 text-5xl mb-4">⚠</div>
               <div className="text-red-600 font-medium text-xl mb-2">{t('pages.error1')}</div>
               <div className="text-gray-600 dark:text-zinc-400 mb-4">{error}</div>
-              <Button 
-                color="primary" 
-                onClick={fetchReports}
+              <Button
+                color="primary"
+                onPress={fetchReports}
               >
                 Retry
               </Button>
@@ -280,10 +280,10 @@ const TimetableValidationDashboard = () => {
           <Tab key="teachers" title={t('pages.teachers')} />
         </Tabs>
 
-        <Button 
-          color="primary" 
-          variant="flat" 
-          onClick={fetchReports}
+        <Button
+          color="primary"
+          variant="flat"
+          onPress={fetchReports}
         >
           Refresh Data
         </Button>
