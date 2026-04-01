@@ -6,6 +6,54 @@
 
 // ─── CSV Parsing ─────────────────────────────────────────────────────────────
 
+/**
+ * Parse a single CSV line respecting quoted fields (RFC 4180).
+ * Handles commas inside double-quoted values and escaped double-quotes ("").
+ */
+const parseCSVLine = (line) => {
+    const fields = [];
+    let current = '';
+    let inQuotes = false;
+    let i = 0;
+
+    while (i < line.length) {
+        const char = line[i];
+
+        if (inQuotes) {
+            if (char === '"') {
+                // Check for escaped double-quote ("")
+                if (i + 1 < line.length && line[i + 1] === '"') {
+                    current += '"';
+                    i += 2;
+                } else {
+                    // End of quoted field
+                    inQuotes = false;
+                    i++;
+                }
+            } else {
+                current += char;
+                i++;
+            }
+        } else {
+            if (char === '"') {
+                inQuotes = true;
+                i++;
+            } else if (char === ',') {
+                fields.push(current.trim());
+                current = '';
+                i++;
+            } else {
+                current += char;
+                i++;
+            }
+        }
+    }
+
+    // Push the last field
+    fields.push(current.trim());
+    return fields;
+};
+
 export const parseCSV = (csvText) => {
     const lines = csvText.split(/\r?\n/).filter(line => line.trim());
 
@@ -13,11 +61,11 @@ export const parseCSV = (csvText) => {
         throw new Error('CSV file is empty or has no data rows');
     }
 
-    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+    const headers = parseCSVLine(lines[0]);
 
     const data = [];
     for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+        const values = parseCSVLine(lines[i]);
 
         if (values.every(v => !v)) continue;
 

@@ -8,7 +8,6 @@ import { useTranslation } from 'react-i18next';
  * Extracted from AddStudent.jsx
  */
 export default function DocumentsStep({
-  const { t } = useTranslation();
   formData,
   handleFileUpload,
   handleMultiFileUpload,
@@ -19,6 +18,7 @@ export default function DocumentsStep({
   aadhaarBackRef,
   otherDocsRef,
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-5 animate-fade-in text-left">
       <div className="space-y-2">

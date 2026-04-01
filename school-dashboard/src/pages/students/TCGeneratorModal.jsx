@@ -71,10 +71,10 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
             admissionClass: student.admissionClass || "I",
             standardLeaving: student.class || "",
             dateOfAdmission: student.admissionDate || "",
-            nationality: "Indian",
-            religion: "Hindu",
-            community: "General",
-            motherTongue: "Tamil",
+            nationality: student.nationality || "",
+            religion: student.religion || "",
+            community: student.category || student.community || "",
+            motherTongue: student.motherTongue || "",
             isScSt: "No",
             examResult: "Passed",
             whetherFailed: "No",
@@ -134,39 +134,11 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
         }
     };
 
-    const startGeneration = async () => {
+    const startGeneration = () => {
+        // Only set the flag; the useEffect below triggers generateAllTCs
+        // which handles both saving to backend and printing in a single loop
         setIsGenerating(true);
         setGenerationProgress(0);
-
-        let savedCount = 0;
-        for (let i = 0; i < students.length; i++) {
-            const student = students[i];
-            const formData = allFormData[student.admissionId] || {};
-            try {
-                await request(`/students/${student._id}/transfer-certificate`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        tcNumber: formData.tcNumber || buildTcNumber(baseNumber, i),
-                        issueDate: formData.issueDate || new Date().toISOString().split('T')[0],
-                        reasonForLeaving: formData.reasonForLeaving || '',
-                        lastClassAttended: formData.standardLeaving || '',
-                        daysPresent: parseInt(formData.presentDays, 10) || undefined,
-                        workingDays: parseInt(formData.workingDays, 10) || undefined,
-                        generalConduct: formData.generalConduct || 'Good',
-                        remarks: formData.remarks || '',
-                    }),
-                });
-                savedCount++;
-            } catch (err) {
-                console.warn(`[TC] Failed to record TC for ${student.name}:`, err?.message);
-                // Non-blocking — print continues even if backend fails
-            }
-            setGenerationProgress(i + 1);
-        }
-
-        if (savedCount > 0) {
-            toast.success(`${savedCount} TC record${savedCount > 1 ? 's' : ''} saved`);
-        }
     };
 
     const escapeHtmlTitle = (str) => String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -320,6 +292,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
 
     const generateAllTCs = async () => {
         const errors = [];
+        let savedCount = 0;
 
         for (let i = 0; i < students.length; i++) {
             const student = students[i];
@@ -329,8 +302,29 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
             setCurrentIndex(i);
 
             if (formData) {
+                // Save TC record to backend (non-blocking)
                 try {
-                    await handlePrint({ ...formData, serialNo: i + 101, emisNo: "330201015" });
+                    await request(`/students/${student._id}/transfer-certificate`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            tcNumber: formData.tcNumber || buildTcNumber(baseNumber, i),
+                            issueDate: formData.issueDate || new Date().toISOString().split('T')[0],
+                            reasonForLeaving: formData.reasonForLeaving || '',
+                            lastClassAttended: formData.standardLeaving || '',
+                            daysPresent: parseInt(formData.presentDays, 10) || undefined,
+                            workingDays: parseInt(formData.workingDays, 10) || undefined,
+                            generalConduct: formData.generalConduct || 'Good',
+                            remarks: formData.remarks || '',
+                        }),
+                    });
+                    savedCount++;
+                } catch (err) {
+                    console.warn(`[TC] Failed to record TC for ${student.name}:`, err?.message);
+                }
+
+                // Print TC
+                try {
+                    await handlePrint({ ...formData, serialNo: formData.tcNumber || '', emisNo: student.emisNo || '' });
                 } catch (err) {
                     console.error(`Failed to print TC for ${student.name}:`, err);
                     errors.push(student.name);
@@ -344,6 +338,10 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
             toast.error(`Failed to generate TC for: ${errors.join(", ")}`);
         } else {
             toast.success(t('toast.success.allTcsGeneratedSuccessfully'));
+        }
+
+        if (savedCount > 0) {
+            toast.success(`${savedCount} TC record${savedCount > 1 ? 's' : ''} saved`);
         }
 
         setTimeout(() => {
@@ -557,7 +555,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                     <div className="hidden">
                         <TransferCertificateTemplate
                             ref={printRef}
-                            data={{ ...formData, serialNo: currentIndex + 101, emisNo: "330201015" }}
+                            data={{ ...formData, serialNo: formData.tcNumber || '', emisNo: currentStudent?.emisNo || '' }}
                         />
                     </div>
                 </ModalBody>

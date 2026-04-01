@@ -22,13 +22,10 @@ export function useStudentForm(initialData = null) {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const initialFormDataRef = useRef(null);
 
-  // Store initial data for dirty checking
+  // Store initial data for dirty checking — set immediately to avoid race condition
   useEffect(() => {
-    const timer = setTimeout(() => {
-      initialFormDataRef.current = JSON.stringify(formData);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
+    initialFormDataRef.current = JSON.stringify(formData);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Detect form changes
   useEffect(() => {

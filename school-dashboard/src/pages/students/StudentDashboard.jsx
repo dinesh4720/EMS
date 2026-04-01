@@ -67,7 +67,7 @@ const getNextClass = (currentClass, availableClasses) => {
   const match = currentClass.match(/^(\d+)(?:-([A-Z]))?$/i);
   if (!match) return null;
   const currentGrade = parseInt(match[1]);
-  if (currentGrade >= 10) return "Passed Out / Alumni";
+  if (currentGrade >= 12) return "Passed Out / Alumni";
   return `${currentGrade + 1}${match[2] ? `-${match[2]}` : ""}`;
 };
 
@@ -522,7 +522,7 @@ tr:hover td{background:#f9fafb}
 <div class="stats">
   <div class="stat"><div class="stat-val">${avgPercentage != null ? escapeHtml(avgPercentage) + '%' : '—'}</div><div class="stat-lbl">Average</div></div>
   <div class="stat"><div class="stat-val">${escapeHtml(studentResults.length)}</div><div class="stat-lbl">Exams</div></div>
-  <div class="stat"><div class="stat-val">${attendancePercentage != null ? escapeHtml(attendancePercentage) + '%' : '—'}</div><div class="stat-lbl">Attendance</div></div>
+  <div class="stat"><div class="stat-val">${attendanceStats.percentage != null ? escapeHtml(attendanceStats.percentage) + '%' : '—'}</div><div class="stat-lbl">Attendance</div></div>
 </div>
 ${studentResults.length > 0 ? `
 <table>
@@ -1109,22 +1109,9 @@ ${studentResults.length > 0 ? `
                 <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-700">
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.achievements1')}</h3>
                 </div>
-                <div className="p-5">
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { title: "Best Student Award", date: "Dec 2024" },
-                      { title: "Science Fair Winner", date: "Nov 2024" },
-                      { title: "Perfect Attendance", date: "Oct 2024" },
-                    ].map((a, i) => (
-                      <div key={`achievement-${a.title}`} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-zinc-800">
-                        <Award size={18} className="text-gray-400 dark:text-zinc-500" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{a.title}</p>
-                          <p className="text-xs text-gray-500 dark:text-zinc-400">{a.date}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                <div className="px-5 py-12 text-center">
+                  <Award size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
+                  <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noAchievementsRecordedYet', 'No achievements recorded yet')}</p>
                 </div>
               </div>
             </div>
@@ -1622,12 +1609,9 @@ ${studentResults.length > 0 ? `
         onClose={() => setIsMoveClassOpen(false)}
         student={student}
         availableClasses={availableClasses}
-        onMove={async (newClass) => {
-          const targetClass = classesWithTeachers?.find(c => `${c.name}-${c.section}` === newClass);
-          if (targetClass) {
-            await updateStudent(student.id, { classId: targetClass._id || targetClass.id });
-            refetchStudent();
-          }
+        classObjects={classesWithTeachers || []}
+        onMove={async () => {
+          refetchStudent();
           setIsMoveClassOpen(false);
         }}
       />
