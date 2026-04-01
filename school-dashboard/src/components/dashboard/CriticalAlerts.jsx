@@ -1,3 +1,9 @@
+/**
+ * @deprecated This component is no longer imported by any page. The dashboard
+ * now uses AlertsPanel (components/dashboard/AlertsPanel.jsx) for alerts.
+ * Kept for backward compatibility with barrel re-exports.
+ * Safe to remove once all references are cleaned up.
+ */
 import { Card, CardBody, CardHeader, Chip, Divider, Button, Avatar, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/react";
 import { AlertTriangle, Users, ClipboardCheck, ArrowRight, Shield, Check, X } from "lucide-react";
 import { usePermissions } from "../../context/PermissionContext";
@@ -43,13 +49,17 @@ export default function CriticalAlerts({ data }) {
     });
   }
 
-  const handleResolve = async (status) => {
-    if (!selectedRequest) return;
+  const handleResolve = async (request, status) => {
+    if (!request) return;
+    setSelectedRequest(request);
     setProcessing(true);
-    await resolveRequest(selectedRequest.id, status);
-    setProcessing(false);
-    setSelectedRequest(null);
-    if (pendingRequests.length <= 1) onClose(); // Close if no more requests (heuristic)
+    try {
+      await resolveRequest(request.id, status);
+    } finally {
+      setProcessing(false);
+      setSelectedRequest(null);
+      if (pendingRequests.length <= 1) onClose();
+    }
   };
 
   return (
@@ -136,7 +146,7 @@ export default function CriticalAlerts({ data }) {
                         variant="flat"
                         startContent={<Check size={14} />}
                         isLoading={processing && selectedRequest?.id === req.id}
-                        onPress={() => { setSelectedRequest(req); handleResolve('approved'); }}
+                        onPress={() => handleResolve(req, 'approved')}
                       >
                         {t('criticalAlerts.approve')}
                       </Button>
@@ -146,7 +156,7 @@ export default function CriticalAlerts({ data }) {
                         variant="flat"
                         startContent={<X size={14} />}
                         isLoading={processing && selectedRequest?.id === req.id}
-                        onPress={() => { setSelectedRequest(req); handleResolve('rejected'); }}
+                        onPress={() => handleResolve(req, 'rejected')}
                       >
                         {t('criticalAlerts.reject')}
                       </Button>

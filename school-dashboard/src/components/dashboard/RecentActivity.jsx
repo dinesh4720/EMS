@@ -1,3 +1,9 @@
+/**
+ * @deprecated This component is no longer used. The dashboard now uses
+ * components/dashboard/ActivityFeed.jsx instead. Kept for backward
+ * compatibility with barrel re-exports. Safe to remove once all
+ * references are cleaned up.
+ */
 import { Card, CardBody, CardHeader, Chip, Divider, Tabs, Tab } from "@heroui/react";
 import { Activity, IndianRupee, Megaphone, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
