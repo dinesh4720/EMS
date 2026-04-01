@@ -77,7 +77,7 @@ export const PermissionProvider = ({ children }) => {
         { module: 'academics', actions: ['view'] },
         { module: 'attendance', actions: ['view'] },
         { module: 'timetable', actions: ['view'] },
-        { module: 'communication', actions: ['view'] },
+        { module: 'messaging', actions: ['view'] },
       ]);
       return;
     }
@@ -103,7 +103,7 @@ export const PermissionProvider = ({ children }) => {
         { module: 'timetable', actions: ['view', 'create', 'edit'] },
         { module: 'fees', actions: ['view'] },
         { module: 'payroll', actions: ['view'] },
-        { module: 'communication', actions: ['view', 'create', 'edit'] },
+        { module: 'messaging', actions: ['view', 'create', 'edit'] },
         { module: 'reports', actions: ['view', 'create'] },
       ]);
     } else if (normalizedRole === 'teacher') {
@@ -117,7 +117,7 @@ export const PermissionProvider = ({ children }) => {
         { module: 'attendance', actions: ['view', 'create', 'edit'] },
         { module: 'timetable', actions: ['view'] },
         { module: 'fees', actions: ['view'] },
-        { module: 'communication', actions: ['view', 'create'] },
+        { module: 'messaging', actions: ['view', 'create'] },
         { module: 'reports', actions: ['view'] },
       ]);
     } else if (normalizedRole === 'accountant') {
@@ -141,7 +141,7 @@ export const PermissionProvider = ({ children }) => {
         { module: 'academics', actions: ['view'] },
         { module: 'attendance', actions: ['view'] },
         { module: 'timetable', actions: ['view'] },
-        { module: 'communication', actions: ['view', 'create'] },
+        { module: 'messaging', actions: ['view', 'create'] },
       ]);
     }
   };
@@ -163,19 +163,10 @@ export const PermissionProvider = ({ children }) => {
       return true;
     }
 
-    // Check if user has wildcard permission
-    const wildcardPermission = permissions.find(p => p.module === '*');
-    if (wildcardPermission) {
-      // Check if it has actions array (old format) or boolean fields (new format)
-      if (wildcardPermission.actions?.includes(action)) {
-        return true;
-      }
-      if (wildcardPermission[action] === true) {
-        return true;
-      }
-    }
-
-    // Check specific module permission
+    // Check specific module permission FIRST — explicit module rules take
+    // priority over wildcard. This ensures that, e.g., a principal's restricted
+    // settings entry (no 'delete') is respected even when a wildcard (*) entry
+    // would otherwise grant it.
     const modulePermission = permissions.find(p => p.module === module);
     if (modulePermission) {
       // Check if it has actions array (old format) or boolean fields (new format)
@@ -183,6 +174,21 @@ export const PermissionProvider = ({ children }) => {
         return true;
       }
       if (modulePermission[action] === true) {
+        return true;
+      }
+      // Module-specific entry exists but does NOT include the requested action
+      // — do NOT fall through to wildcard. The specific entry is authoritative.
+      return false;
+    }
+
+    // No specific entry for this module — check wildcard permission
+    const wildcardPermission = permissions.find(p => p.module === '*');
+    if (wildcardPermission) {
+      // Check if it has actions array (old format) or boolean fields (new format)
+      if (wildcardPermission.actions?.includes(action)) {
+        return true;
+      }
+      if (wildcardPermission[action] === true) {
         return true;
       }
     }
@@ -226,7 +232,13 @@ export const PermissionProvider = ({ children }) => {
         refreshPermissions,
       }}
     >
-      {children}
+      {loading ? (
+        <div className="h-screen w-screen flex items-center justify-center bg-background">
+          <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+        </div>
+      ) : (
+        children
+      )}
     </PermissionContext.Provider>
   );
 };

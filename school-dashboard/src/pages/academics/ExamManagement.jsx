@@ -17,7 +17,7 @@ import {
   ModalFooter,
   Button,
 } from '@heroui/react';
-import { FileText, Calendar, Eye, Pencil, Trash2, AlertTriangle, Plus, Clock, Users, BookOpen } from 'lucide-react';
+import { FileText, Calendar, Eye, Pencil, Trash2, AlertTriangle, Plus, Clock, Users, BookOpen, Send } from 'lucide-react';
 import { examsApi, classesApi } from '../../services/api';
 import FiltersDropdown from '../../components/FiltersDropdown';
 import { MinimalButton } from '../../components/ui';
@@ -34,6 +34,12 @@ const examsCache = {
   data: null,
   timestamp: 0,
   duration: 30000 // 30 seconds
+};
+
+/** Bust the exams cache so the next fetch returns fresh data */
+export const invalidateExamsCache = () => {
+  examsCache.data = null;
+  examsCache.timestamp = 0;
 };
 
 const ExamManagement = ({ onCreateExam }) => {
@@ -189,6 +195,17 @@ const ExamManagement = ({ onCreateExam }) => {
       toast.error(t('toast.error.failedToDeleteExam'));
     } finally {
       setDeleteModal({ isOpen: false, examId: null, examName: '' });
+    }
+  };
+
+  const handlePublish = async (examId, examName) => {
+    try {
+      await examsApi.publish(examId);
+      toast.success(`Results published for ${examName}`);
+      refreshExams();
+    } catch (error) {
+      console.error('Error publishing results:', error);
+      toast.error(t('toast.error.failedToPublishResults'));
     }
   };
 
@@ -390,6 +407,15 @@ const ExamManagement = ({ onCreateExam }) => {
                           >
                             <Pencil size={16} className="text-blue-500" />
                           </button>
+                          {exam.status === 'completed' && !exam.isPublished && (
+                            <button
+                              className="p-2 rounded-lg hover:bg-green-50 dark:hover:bg-green-950 transition-colors"
+                              onClick={() => handlePublish(exam.id || exam._id, exam.name)}
+                              title="Publish Results"
+                            >
+                              <Send size={16} className="text-green-500" />
+                            </button>
+                          )}
                           <button
                             className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
                             onClick={() => handleDeleteClick(exam.id || exam._id, exam.name)}
