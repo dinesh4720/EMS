@@ -38,7 +38,20 @@ export default function ClassDashboard() {
 
   const searchParams = new URLSearchParams(location.search);
   const tabFromUrl = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
+  const [activeTab, setActiveTabState] = useState(tabFromUrl || "overview");
+
+  // Sync tab state to URL so back/forward navigation restores correct tab
+  const setActiveTab = (tab) => {
+    setActiveTabState(tab);
+    const newParams = new URLSearchParams(location.search);
+    if (tab === 'overview') {
+      newParams.delete('tab');
+    } else {
+      newParams.set('tab', tab);
+    }
+    const newSearch = newParams.toString();
+    navigate(`${location.pathname}${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+  };
 
   const [classSettings, setClassSettings] = useState(null);
   const [settingsLoading, setSettingsLoading] = useState(true);

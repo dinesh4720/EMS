@@ -4,10 +4,10 @@ import logger from "../../utils/logger";
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Chip, Button, Progress, Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Checkbox, Select, SelectItem
+  Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Checkbox, Select, SelectItem, Input
 } from "@heroui/react";
 import { useNavigate } from "react-router-dom";
-import { Eye, MessageSquare, Search, Filter, ArrowUpDown, X, MoreVertical, Settings, UserPlus, ChevronRight, ChevronDown, ChevronUp, RefreshCw, CheckCircle2, Clock, BookOpen, AlertCircle } from "lucide-react";
+import { Eye, MessageSquare, Search, Filter, ArrowUpDown, X, MoreVertical, Settings, UserPlus, ChevronRight, ChevronDown, ChevronUp, RefreshCw, CheckCircle2, Clock, BookOpen, AlertCircle, Pencil, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -44,7 +44,7 @@ export default function ClassesList() {
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
   const [isLoading, setIsLoading] = useState(false);
   const loaderRef = useRef(null);
-  const [sortDescriptor] = useState({ column: "name", direction: "ascending" });
+  const [sortDescriptor, setSortDescriptor] = useState({ column: "name", direction: "ascending" });
   const [selectedKeys, setSelectedKeys] = useState(new Set([]));
 
   // Expanded classes state
@@ -134,12 +134,38 @@ export default function ClassesList() {
         group.averageAcademic = sectionCount > 0 ? Math.round((group.averageAcademic || 0) / sectionCount) : 0;
       });
 
-      return Object.values(groups).sort((a, b) => a.classNum - b.classNum);
+      const sorted = Object.values(groups);
+      // Apply sorting based on sortDescriptor
+      sorted.sort((a, b) => {
+        let cmp = 0;
+        switch (sortDescriptor.column) {
+          case 'class':
+          case 'name':
+            cmp = a.classNum - b.classNum;
+            break;
+          case 'strength':
+            cmp = (a.totalStudents || 0) - (b.totalStudents || 0);
+            break;
+          case 'academic':
+            cmp = (a.averageAcademic || 0) - (b.averageAcademic || 0);
+            break;
+          case 'attendance':
+            cmp = (a.averageAttendance || 0) - (b.averageAttendance || 0);
+            break;
+          case 'status':
+            cmp = (a.totalPendingFees || 0) - (b.totalPendingFees || 0);
+            break;
+          default:
+            cmp = a.classNum - b.classNum;
+        }
+        return sortDescriptor.direction === 'descending' ? -cmp : cmp;
+      });
+      return sorted;
     } catch (error) {
       logger.error('Error grouping classes:', error);
       return [];
     }
-  }, [classesData, feeDefaulters]);
+  }, [classesData, feeDefaulters, sortDescriptor]);
 
   // Filter grouped classes
   const filteredGroupedClasses = useMemo(() => {
@@ -479,6 +505,74 @@ export default function ClassesList() {
     }
   };
 
+  // ---- Edit / Delete class state ----
+  const [editClassModal, setEditClassModal] = useState(false);
+  const [deleteClassModal, setDeleteClassModal] = useState(false);
+  const [selectedClassForEdit, setSelectedClassForEdit] = useState(null);
+  const [selectedClassForDelete, setSelectedClassForDelete] = useState(null);
+  const [editFormData, setEditFormData] = useState({ section: '', strengthLimit: '', room: '', block: '' });
+  const [editErrors, setEditErrors] = useState({});
+  const [isEditing, setIsEditing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { updateClass, deleteClass } = useApp();
+
+  const handleEditClass = (cls) => {
+    setSelectedClassForEdit(cls);
+    setEditFormData({
+      section: cls?.section || '',
+      strengthLimit: String(cls?.strengthLimit?.current || cls?.strengthLimit?.default || ''),
+      room: cls?.room || '',
+      block: cls?.block || '',
+    });
+    setEditErrors({});
+    setEditClassModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    const newErrors = {};
+    if (!editFormData.strengthLimit) newErrors.strengthLimit = 'Capacity is required';
+    else if (isNaN(editFormData.strengthLimit) || parseInt(editFormData.strengthLimit) <= 0) newErrors.strengthLimit = 'Capacity must be a positive number';
+    if (Object.keys(newErrors).length > 0) { setEditErrors(newErrors); return; }
+
+    setIsEditing(true);
+    try {
+      const capacity = parseInt(editFormData.strengthLimit);
+      await updateClass(selectedClassForEdit.id, {
+        strengthLimit: { current: capacity, default: capacity },
+        ...(editFormData.room !== undefined && { room: editFormData.room }),
+        ...(editFormData.block !== undefined && { block: editFormData.block }),
+      });
+      toast.success(`Class ${selectedClassForEdit.name}-${selectedClassForEdit.section} updated`);
+      setEditClassModal(false);
+      if (refetch) await refetch(true);
+    } catch (error) {
+      toast.error(error.message || 'Failed to update class');
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const handleDeleteClass = (cls) => {
+    setSelectedClassForDelete(cls);
+    setDeleteClassModal(true);
+  };
+
+  const confirmDeleteClass = async () => {
+    if (!selectedClassForDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteClass(selectedClassForDelete.id);
+      toast.success(`Class ${selectedClassForDelete.name}-${selectedClassForDelete.section} deleted`);
+      setDeleteClassModal(false);
+      setSelectedClassForDelete(null);
+      if (refetch) await refetch(true);
+    } catch (error) {
+      toast.error(error.message || 'Failed to delete class');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="w-full flex flex-col">
       {/* Toolbar */}
@@ -524,6 +618,8 @@ export default function ClassesList() {
         selectionMode="multiple"
         selectedKeys={selectedKeys}
         onSelectionChange={setSelectedKeys}
+        sortDescriptor={sortDescriptor}
+        onSortChange={setSortDescriptor}
         removeWrapper
         radius="none"
         classNames={{
@@ -972,18 +1068,18 @@ export default function ClassesList() {
                         <Eye size={14} className="text-default-400" />
                       </button>
                       <button
-                        onClick={() => cls?.id && navigate(`/classes/${cls.id}?tab=attendance`)}
+                        onClick={() => cls && handleEditClass(cls)}
                         className="p-1.5 hover:bg-default-100 rounded-lg transition-colors"
-                        title="Mark attendance"
+                        title="Edit class"
                       >
-                        <CheckCircle2 size={14} className="text-default-400" />
+                        <Pencil size={14} className="text-default-400" />
                       </button>
                       <button
-                        onClick={() => cls?.id && navigate(`/classes/${cls.id}?tab=timetable`)}
-                        className="p-1.5 hover:bg-default-100 rounded-lg transition-colors"
-                        title="View timetable"
+                        onClick={() => cls && handleDeleteClass(cls)}
+                        className="p-1.5 hover:bg-danger-100 rounded-lg transition-colors"
+                        title="Delete class"
                       >
-                        <Clock size={14} className="text-default-400" />
+                        <Trash2 size={14} className="text-danger-400" />
                       </button>
                     </div>
                   </TableCell>
@@ -1037,6 +1133,83 @@ export default function ClassesList() {
         section={selectedClassForTeacher?.section}
         currentTeacherId={selectedClassForTeacher?.classTeacherId}
       />
+
+      {/* Edit Class Modal */}
+      <Modal isOpen={editClassModal} onClose={() => setEditClassModal(false)} size="md">
+        <ModalContent>
+          <ModalHeader>
+            Edit {selectedClassForEdit?.name} - {selectedClassForEdit?.section}
+          </ModalHeader>
+          <ModalBody className="space-y-4">
+            <Input
+              label="Section"
+              value={editFormData.section}
+              isReadOnly
+              variant="bordered"
+              size="sm"
+              description="Section cannot be changed after creation"
+            />
+            <Input
+              label="Class Capacity"
+              type="number"
+              value={editFormData.strengthLimit}
+              onValueChange={(val) => setEditFormData(prev => ({ ...prev, strengthLimit: val }))}
+              isInvalid={!!editErrors.strengthLimit}
+              errorMessage={editErrors.strengthLimit}
+              isRequired
+              variant="bordered"
+              size="sm"
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Room"
+                value={editFormData.room}
+                onValueChange={(val) => setEditFormData(prev => ({ ...prev, room: val }))}
+                variant="bordered"
+                size="sm"
+              />
+              <Input
+                label="Block"
+                value={editFormData.block}
+                onValueChange={(val) => setEditFormData(prev => ({ ...prev, block: val }))}
+                variant="bordered"
+                size="sm"
+              />
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={() => setEditClassModal(false)} isDisabled={isEditing}>
+              Cancel
+            </Button>
+            <Button color="primary" onPress={handleSaveEdit} isLoading={isEditing}>
+              Save Changes
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Delete Class Confirmation Modal */}
+      <Modal isOpen={deleteClassModal} onClose={() => setDeleteClassModal(false)} size="sm">
+        <ModalContent>
+          <ModalHeader className="text-danger">Delete Class</ModalHeader>
+          <ModalBody>
+            <p className="text-default-600">
+              Are you sure you want to delete <strong>{selectedClassForDelete?.name}-{selectedClassForDelete?.section}</strong>?
+            </p>
+            <p className="text-sm text-danger-500 mt-2">
+              This will remove the class and may affect students, attendance records, timetables, and fee structures linked to this class. This action cannot be undone.
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={() => setDeleteClassModal(false)} isDisabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button color="danger" onPress={confirmDeleteClass} isLoading={isDeleting}>
+              Delete Class
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

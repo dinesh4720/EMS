@@ -239,11 +239,11 @@ const TimetableValidationPanel = ({ type = 'class', id, academicYear }) => {
             <div className="text-red-600 text-4xl mb-2">⚠</div>
             <div className="text-red-600 font-medium mb-2">{t('components.error')}</div>
             <div className="text-gray-600">{error}</div>
-            <Button 
-              color="primary" 
-              variant="flat" 
+            <Button
+              color="primary"
+              variant="flat"
               className="mt-4"
-              onClick={fetchValidationReport}
+              onPress={fetchValidationReport}
             >
               Retry
             </Button>
@@ -263,10 +263,10 @@ const TimetableValidationPanel = ({ type = 'class', id, academicYear }) => {
         <h3 className="text-lg font-semibold">
           {type === 'class' ? 'Class Timetable Validation' : 'Teacher Schedule Validation'}
         </h3>
-        <Button 
-          size="sm" 
-          variant="flat" 
-          onClick={fetchValidationReport}
+        <Button
+          size="sm"
+          variant="flat"
+          onPress={fetchValidationReport}
         >
           Refresh
         </Button>
