@@ -28,16 +28,25 @@ export function ChatNotificationProvider({ children }) {
   const [sendingReply, setSendingReply] = useState(false);
   const locationRef = useRef(location.pathname);
   const dismissTimersRef = useRef(new Map());
+  // [AUDIT-162] Track AudioContext instances so we can close them on unmount
+  const audioContextsRef = useRef(new Set());
 
   // Update location ref when location changes
   useEffect(() => {
     locationRef.current = location.pathname;
   }, [location.pathname]);
 
-  // Cleanup all dismiss timers on unmount
+  // [AUDIT-162] Cleanup all dismiss timers and AudioContext instances on unmount
   useEffect(() => {
     const timers = dismissTimersRef.current;
-    return () => { timers.forEach(clearTimeout); timers.clear(); };
+    const audioContexts = audioContextsRef.current;
+    return () => {
+      timers.forEach(clearTimeout);
+      timers.clear();
+      // Close all AudioContext instances to prevent memory/resource leaks
+      audioContexts.forEach((ctx) => ctx.close().catch(() => {}));
+      audioContexts.clear();
+    };
   }, []);
 
   // Check if user is on chat page
@@ -151,6 +160,8 @@ export function ChatNotificationProvider({ children }) {
     // Create a pleasant notification sound using Web Audio API
     try {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      // [AUDIT-162] Track for cleanup on unmount
+      audioContextsRef.current.add(audioContext);
 
       // Create a two-tone notification sound (like WhatsApp/Messenger)
       const playTone = (frequency, startTime, duration, volume) => {
@@ -181,9 +192,13 @@ export function ChatNotificationProvider({ children }) {
       playTone(600, now + 0.1, 0.2, 0.3);
 
       // Close AudioContext after tones finish to prevent resource leak
-      // Safe fire-and-forget — close() is idempotent and doesn't call setState
-      const closeTimer = setTimeout(() => audioContext.close().catch(() => {}), 500);
-      dismissTimersRef.current.set('audio-' + Date.now(), closeTimer);
+      const timerKey = 'audio-' + Date.now();
+      const closeTimer = setTimeout(() => {
+        audioContext.close().catch(() => {});
+        audioContextsRef.current.delete(audioContext);
+        dismissTimersRef.current.delete(timerKey);
+      }, 500);
+      dismissTimersRef.current.set(timerKey, closeTimer);
 
     } catch (error) {
       console.warn('Could not play notification sound:', error);

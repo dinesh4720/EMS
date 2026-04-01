@@ -78,9 +78,18 @@ export function SettingsProvider({ children }) {
     [setLeaveTypes, setFeeHeads]
   );
 
+  // [AUDIT-162] Guard against empty/invalid schoolStartTime which causes NaN dates
   const isBeforeSchoolHours = useMemo(() => {
+    if (!schoolSettings.schoolStartTime || !schoolSettings.schoolStartTime.includes(':')) {
+      return false; // No valid start time configured — assume school hours
+    }
     const now = new Date();
-    const [startHour, startMin] = schoolSettings.schoolStartTime.split(":").map(Number);
+    const parts = schoolSettings.schoolStartTime.split(":").map(Number);
+    const startHour = parts[0];
+    const startMin = parts[1] ?? 0;
+    if (!Number.isFinite(startHour) || !Number.isFinite(startMin)) {
+      return false; // Invalid time format — assume school hours
+    }
     const schoolStart = new Date();
     schoolStart.setHours(startHour, startMin, 0, 0);
     return now < schoolStart;
