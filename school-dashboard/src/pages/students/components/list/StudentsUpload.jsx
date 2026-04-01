@@ -101,48 +101,11 @@ export function useStudentsUpload({
             return;
         }
 
-        setCsvProcessing(true);
-        try {
-            const text = await file.text();
-            const lines = text.split("\n").filter((line) => line.trim());
-
-            if (lines.length <= 1) {
-                toast.error(t("toast.error.cSVFileAppearsToBeEmptyOrHasNoDataRows"));
-                return;
-            }
-
-            toast.loading("Processing CSV file...", { id: "csv-upload" });
-
-            await new Promise((resolve) => setTimeout(resolve, 1500));
-
-            const dataRows = lines.length - 1;
-            const successCount = Math.floor(dataRows * 0.9);
-            const errorCount = dataRows - successCount;
-
-            toast.dismiss("csv-upload");
-
-            if (errorCount > 0) {
-                toast.success(
-                    `CSV Upload Complete: ${successCount} students imported successfully, ${errorCount} had errors`,
-                    { duration: 5000, icon: "✅" }
-                );
-            } else {
-                toast.success(
-                    `CSV Upload Complete: ${successCount} students imported successfully!`,
-                    { duration: 4000, icon: "🎉" }
-                );
-            }
-        } catch (error) {
-            toast.dismiss("csv-upload");
-            toast.error(`Failed to process CSV: ${error.message || "Unknown error"}`, {
-                duration: 4000,
-                icon: "❌",
-            });
-            console.error("❌ CSV Upload Error:", error);
-        } finally {
-            setCsvProcessing(false);
-            e.target.value = "";
-        }
+        // Use the validated import path instead of simulating success
+        handleCsvFileSelect(file);
+        e.target.value = "";
+        toast("CSV file selected. Use the import button to validate and process.", { icon: "📄" });
+        return;
     };
 
     // ── File select helper (used by drag-and-drop and file picker) ─────────

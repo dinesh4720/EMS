@@ -58,14 +58,14 @@ export const getNextClass = (currentClass, availableClasses = []) => {
     const numMatch = currentClass.match(/^(\d+)$/);
     if (!numMatch) return null;
     const currentGrade = parseInt(numMatch[1]);
-    if (currentGrade >= 10) return "Passed Out / Alumni";
+    if (currentGrade >= 12) return "Passed Out / Alumni";
     return `${currentGrade + 1}`;
   }
 
   const currentGrade = parseInt(match[1]);
   const section = match[2];
 
-  if (currentGrade >= 10) return "Passed Out / Alumni";
+  if (currentGrade >= 12) return "Passed Out / Alumni";
 
   const nextClass = `${currentGrade + 1}-${section}`;
 

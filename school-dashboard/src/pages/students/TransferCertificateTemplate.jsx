@@ -92,7 +92,7 @@ export const TransferCertificateTemplate = React.forwardRef(({ data, schoolData:
                             { label: "Reasons for leaving the school", value: data.reasonForLeaving },
                             { label: "Any other remarks", value: data.remarks },
                         ].map((item, index) => (
-                            <div key={item.label} className="grid grid-cols-[24px_1fr_10px_1fr] gap-1.5 items-end">
+                            <div key={`tc-field-${index}`} className="grid grid-cols-[24px_1fr_10px_1fr] gap-1.5 items-end">
                                 <span className="font-bold text-center">{index + 1}.</span>
                                 <span className="font-bold">{item.label}</span>
                                 <span>:</span>
