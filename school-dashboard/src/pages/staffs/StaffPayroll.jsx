@@ -75,6 +75,8 @@ export default function StaffPayroll() {
   const [reverseRecord, setReverseRecord] = useState(null);
   const [reverseReason, setReverseReason] = useState('');
   const [reversing, setReversing] = useState(false);
+  const [fixSalariesConfirmOpen, setFixSalariesConfirmOpen] = useState(false);
+  const [fixingSalaries, setFixingSalaries] = useState(false);
 
   const months = [
     "January", "February", "March", "April", "May", "June",
@@ -99,14 +101,15 @@ export default function StaffPayroll() {
     return true;
   });
 
-  // Fetch dashboard data
+  // Fetch dashboard data - use staff length as stable dependency
+  const staffLength = staff?.length || 0;
   useEffect(() => {
     // Only fetch if staff data is loaded
-    if (!appLoading && staff && staff.length > 0) {
+    if (!appLoading && staffLength > 0) {
       fetchDashboard();
       fetchPayrollRecords();
     }
-  }, [selectedMonth, selectedYear, appLoading, staff]);
+  }, [selectedMonth, selectedYear, appLoading, staffLength]);
 
   // Auto-adjust month if it becomes invalid when year changes
   useEffect(() => {
@@ -324,6 +327,27 @@ export default function StaffPayroll() {
       toast.dismiss();
       logger.error('Error exporting payroll:', error);
       toast.error(error.message || 'Failed to export payroll');
+    }
+  };
+
+  // Fix salaries handler (replaces browser confirm())
+  const handleFixSalaries = async () => {
+    try {
+      setFixingSalaries(true);
+      const res = await payrollApi.fixSalaries();
+      if (res.success) {
+        toast.success(res.message);
+        fetchDashboard();
+        fetchPayrollRecords();
+      } else {
+        toast.error(t('toast.error.failedToFixSalaries'));
+      }
+    } catch (e) {
+      logger.error(e);
+      toast.error(t('toast.error.errorFixingSalaries'));
+    } finally {
+      setFixingSalaries(false);
+      setFixSalariesConfirmOpen(false);
     }
   };
 
@@ -877,22 +901,7 @@ export default function StaffPayroll() {
             </button>
             <button
               className="flex items-center gap-2 px-3 py-2 bg-warning-500 text-white rounded-lg border border-warning-600 hover:bg-warning-600 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap"
-              onClick={async () => {
-                if (confirm(t('confirm.setDefaultSalary'))) {
-                  try {
-                    const res = await payrollApi.fixSalaries();
-                    if (res.success) {
-                      toast.success(res.message);
-                      fetchDashboard();
-                    } else {
-                        toast.error(t('toast.error.failedToFixSalaries'));
-                    }
-                  } catch (e) {
-                    logger.error(e);
-                    toast.error(t('toast.error.errorFixingSalaries'));
-                  }
-                }
-              }}
+              onClick={() => setFixSalariesConfirmOpen(true)}
             >
               <Wallet size={16} />
               <span>{t('pages.fixSalaries1')}</span>
@@ -1301,6 +1310,34 @@ export default function StaffPayroll() {
             </Button>
             <Button color="warning" onPress={confirmReversePayment} isDisabled={reversing || !reverseReason.trim()}>
               {reversing ? <Spinner size="sm" color="white" /> : 'Confirm Reversal'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Fix Salaries Confirmation Modal */}
+      <Modal isOpen={fixSalariesConfirmOpen} onOpenChange={setFixSalariesConfirmOpen} size="md">
+        <ModalContent>
+          <ModalHeader className="flex gap-3">
+            <div className="p-2 bg-warning-100 rounded-lg">
+              <AlertTriangle className="text-warning-600" size={24} />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold">{t('pages.fixSalaries1')}</h3>
+              <p className="text-sm text-default-500">{t('confirm.setDefaultSalary')}</p>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <div className="bg-warning-50 rounded-lg p-4 border border-warning-200">
+              <p className="text-sm text-warning-800">
+                This will set default salary values for staff members who do not have salary information configured.
+              </p>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={() => setFixSalariesConfirmOpen(false)}>Cancel</Button>
+            <Button color="warning" onPress={handleFixSalaries} isDisabled={fixingSalaries}>
+              {fixingSalaries ? <Spinner size="sm" color="white" /> : 'Confirm Fix Salaries'}
             </Button>
           </ModalFooter>
         </ModalContent>

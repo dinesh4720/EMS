@@ -32,6 +32,8 @@ export default function StaffAttendanceTab({ staffId }) {
   const [selectedDateForReg, setSelectedDateForReg] = useState(null);
   const [regularizationReason, setRegularizationReason] = useState("");
   const [targetStatus, setTargetStatus] = useState(new Set(["present"]));
+  const [isMarking, setIsMarking] = useState(false);
+  const [isSubmittingReg, setIsSubmittingReg] = useState(false);
 
   const {
     isOpen: isRegOpen,
@@ -62,6 +64,8 @@ export default function StaffAttendanceTab({ staffId }) {
   const handleNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
 
   const handleQuickMark = async (status) => {
+    if (isMarking) return;
+    setIsMarking(true);
     try {
       const todayStr = new Date().toISOString().split('T')[0];
       await markStaffAttendance(
@@ -74,6 +78,8 @@ export default function StaffAttendanceTab({ staffId }) {
       );
     } catch (error) {
       // Error handled in context
+    } finally {
+      setIsMarking(false);
     }
   };
 
@@ -93,8 +99,12 @@ export default function StaffAttendanceTab({ staffId }) {
   };
 
   const submitRegularization = async () => {
-    if (!selectedDateForReg) return;
-
+    if (!selectedDateForReg || isSubmittingReg) return;
+    if (!regularizationReason.trim()) {
+      toast.error(t('toast.error.pleaseProvideAReason') || 'Please provide a reason for regularization');
+      return;
+    }
+    setIsSubmittingReg(true);
     try {
       const dateStr = selectedDateForReg.toISOString().split('T')[0];
       const statusValue = Array.from(targetStatus)[0];
@@ -102,6 +112,8 @@ export default function StaffAttendanceTab({ staffId }) {
       onRegClose();
     } catch (error) {
       // Error handled in context
+    } finally {
+      setIsSubmittingReg(false);
     }
   };
 
@@ -444,8 +456,8 @@ export default function StaffAttendanceTab({ staffId }) {
               </ModalBody>
               <ModalFooter>
                 <Button variant="light" onPress={onClose}>{t('pages.cancel2')}</Button>
-                <Button className="bg-gray-900 text-white" onPress={submitRegularization}>
-                  Submit Request
+                <Button className="bg-gray-900 text-white" onPress={submitRegularization} isDisabled={isSubmittingReg || !regularizationReason.trim()}>
+                  {isSubmittingReg ? 'Submitting...' : 'Submit Request'}
                 </Button>
               </ModalFooter>
             </>

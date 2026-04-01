@@ -87,17 +87,6 @@ export default function StaffProfileHeader({
           </div>
 
           {/* Avatar */}
-          <input
-            type="file"
-            className="hidden"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files[0];
-              if (file && onPhotoClick) {
-                onPhotoClick(file);
-              }
-            }}
-          />
           <div className="relative group">
             <PhotoAvatar
               src={picturePreview || staff.picture}
@@ -248,7 +237,14 @@ export default function StaffProfileHeader({
               <DropdownItem
                 key="shareProfile"
                 startContent={<Share2 size={16} />}
-                onPress={() => toast.success(t('toast.success.profileLinkCopied'))}
+                onPress={() => {
+                  const url = window.location.href;
+                  navigator.clipboard.writeText(url).then(() => {
+                    toast.success(t('toast.success.profileLinkCopied'));
+                  }).catch(() => {
+                    toast.error('Failed to copy link');
+                  });
+                }}
               >
                 Share Profile
               </DropdownItem>

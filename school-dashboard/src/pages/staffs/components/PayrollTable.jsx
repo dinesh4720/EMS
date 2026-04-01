@@ -24,6 +24,9 @@ export default function PayrollTable({
 }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  // Guard against undefined props
+  const safeRecords = filteredRecords || [];
+  const safeStaff = staff || [];
 
   if (loading) {
     return <TablePageSkeleton title={false} columns={6} rows={8} hasAvatar kpiCards={0} />;

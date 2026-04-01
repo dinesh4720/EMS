@@ -80,7 +80,7 @@ export default function AssignClassToStaffModal({
         variant: "default"
       });
     }
-  }, [staffName]);
+  }, [staffName, staffId]);
 
   // Perform the actual assignment
   const performAssignment = async (cls) => {

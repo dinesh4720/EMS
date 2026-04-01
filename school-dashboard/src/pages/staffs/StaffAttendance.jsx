@@ -62,7 +62,7 @@ export default function StaffAttendance() {
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth().toString());
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
 
-    // Generate consistent random attendance for each staff member (seeded by staffId)
+    // Calculate overall attendance percentage from real data only
     const getOverallAttendance = useCallback((staffId) => {
         const staffAtt = attendance[staffId];
         if (staffAtt) {
@@ -73,9 +73,8 @@ export default function StaffAttendance() {
                 return Math.round(((presentDays - (halfDays * 0.5)) / dates.length) * 100);
             }
         }
-        // Generate random percentage based on staffId for consistency
-        const seed = staffId * 13 % 100;
-        return Math.min(98, Math.max(65, seed + 30));
+        // No data available - return 0 instead of fake random data
+        return 0;
     }, [attendance]);
 
     const dailyAttendance = useMemo(() => {
@@ -114,11 +113,14 @@ export default function StaffAttendance() {
 
         if (searchQuery) {
             const lowerQuery = searchQuery.toLowerCase();
-            result = result.filter(s =>
-                s.name.toLowerCase().includes(lowerQuery) ||
-                s.role.toLowerCase().includes(lowerQuery) ||
-                s.department.toLowerCase().includes(lowerQuery)
-            );
+            result = result.filter(s => {
+                const nameMatch = s.name?.toLowerCase().includes(lowerQuery);
+                const roleMatch = Array.isArray(s.role)
+                    ? s.role.some(r => r?.toLowerCase().includes(lowerQuery))
+                    : s.role?.toLowerCase().includes(lowerQuery);
+                const deptMatch = s.department?.toLowerCase().includes(lowerQuery);
+                return nameMatch || roleMatch || deptMatch;
+            });
         }
 
         return result.sort((a, b) => {

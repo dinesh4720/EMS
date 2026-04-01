@@ -17,7 +17,7 @@ export default function BulkPayModal({
   const { t } = useTranslation();
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={onClose} size="md">
+    <Modal isOpen={isOpen} onOpenChange={onClose} size="md" isDismissable={!pendingBulkPay?.processing}>
       <ModalContent>
         {(onCloseInner) => (
           <>

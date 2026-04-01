@@ -410,7 +410,14 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
   const handlePrev = () => setStep(prev => Math.max(prev - 1, 1));
 
   const handleSubmit = async () => {
-    if (!validateStep(step)) return;
+    // Validate ALL steps before final submit, not just the current step
+    for (let s = 1; s <= 5; s++) {
+      if (!validateStep(s)) {
+        setStep(s);
+        toast.error(`Please fix errors in step ${s} before submitting`);
+        return;
+      }
+    }
 
     setIsSubmitting(true);
     try {
