@@ -97,10 +97,11 @@ export default function BulkSubjectAssignment() {
     });
   }, [staff, searchQuery, departmentFilter]);
 
-  // Load teacher assignments on mount
+  // Load teacher assignments on mount - use staff length as stable dep
+  const staffCount = staff?.length || 0;
   useEffect(() => {
-    loadAssignments();
-  }, [staff]);
+    if (staffCount > 0) loadAssignments();
+  }, [staffCount]);
 
   const loadAssignments = async () => {
     try {

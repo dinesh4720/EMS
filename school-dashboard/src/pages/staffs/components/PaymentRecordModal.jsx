@@ -15,7 +15,7 @@ export default function PaymentRecordModal({
   const { t } = useTranslation();
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={onClose} size="md">
+    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} size="md">
       <ModalContent>
         {(onCloseInner) => (
           <>

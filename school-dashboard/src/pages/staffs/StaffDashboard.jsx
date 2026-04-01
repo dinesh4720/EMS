@@ -91,8 +91,17 @@ export default function StaffDashboard() {
     setTimeout(() => setShouldRenderAddStaff(false), 300);
   };
 
-  const handleSaveAddStaff = (staffData) => {
-    handleCloseAddStaff();
+  const handleSaveAddStaff = async (staffData) => {
+    try {
+      const savedStaff = await updateStaff(id, staffData);
+      toast.success(t('toast.success.staffMemberUpdatedSuccessfully'));
+      handleCloseAddStaff();
+      return savedStaff;
+    } catch (err) {
+      logger.error('Failed to save staff from dashboard:', err);
+      toast.error('Failed to update staff member');
+      throw err;
+    }
   };
 
   const handleOpenAssignClassModal = useCallback(() => {
@@ -433,9 +442,14 @@ export default function StaffDashboard() {
   };
 
   const handleSendMessage = () => {
+    if (!message.trim()) {
+      toast.error('Please enter a message');
+      return;
+    }
+    // TODO: Integrate with real messaging API when available
+    toast.error('Messaging feature is not yet connected to the backend');
     setMessage("");
     onClose();
-    toast.success(t('toast.success.messageSent'));
   };
 
   const handleEditClick = () => {
@@ -621,7 +635,7 @@ export default function StaffDashboard() {
                 </DropdownTrigger>
                 <DropdownMenu className="min-w-[180px]">
                   <DropdownItem key="message" onPress={onOpen}>{t('pages.sendMessage')}</DropdownItem>
-                  <DropdownItem key="download">{t('pages.downloadProfile')}</DropdownItem>
+                  <DropdownItem key="download" onPress={() => window.print()}>{t('pages.downloadProfile')}</DropdownItem>
                   <DropdownItem key="print" onPress={() => window.print()}>{t('pages.print')}</DropdownItem>
                 </DropdownMenu>
               </Dropdown>

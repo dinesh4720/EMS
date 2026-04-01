@@ -458,8 +458,10 @@ tr:nth-child(even) td{background:#f9fafb}
         if (selectedCount === 0) return;
 
         const ids = getSelectedIds();
+        // role field is [String] in Mongoose schema, ensure we send an array
+        const roleArray = Array.isArray(newRole) ? newRole : [newRole];
         const results = await Promise.allSettled(
-            ids.map(staffId => updateStaff(staffId, { role: newRole }))
+            ids.map(staffId => updateStaff(staffId, { role: roleArray }))
         );
         const failed = results.filter(r => r.status === 'rejected').length;
         if (failed === 0) {

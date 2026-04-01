@@ -36,6 +36,7 @@ export default function PayrollFilters({
   handleExportPayroll,
   fetchDashboard,
   payrollAlreadyRun,
+  onFixSalaries,
 }) {
   const { t } = useTranslation();
 
@@ -56,10 +57,11 @@ export default function PayrollFilters({
               trigger: "min-h-unit-8"
             }}
           >
-            {availableMonths.map((month, idx) => {
-              const actualMonthIndex = months.indexOf(month) + 1;
+            {availableMonths.map((month) => {
+              const monthIndex = months.indexOf(month);
+              const actualMonthNumber = monthIndex >= 0 ? monthIndex + 1 : 1;
               return (
-                <SelectItem key={actualMonthIndex.toString()} textValue={month} className="text-sm">{month}</SelectItem>
+                <SelectItem key={actualMonthNumber.toString()} textValue={month} className="text-sm">{month}</SelectItem>
               );
             })}
           </Select>
@@ -241,22 +243,7 @@ export default function PayrollFilters({
         </button>
         <button
           className="flex items-center gap-2 px-3 py-2 bg-warning-500 text-white rounded-lg border border-warning-600 hover:bg-warning-600 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap"
-          onClick={async () => {
-            if (confirm(t('staff.payroll.fixSalariesConfirm'))) {
-              try {
-                const res = await payrollApi.fixSalaries();
-                if (res.success) {
-                  toast.success(res.message);
-                  fetchDashboard();
-                } else {
-                    toast.error(t('staff.payroll.fixSalariesError'));
-                }
-              } catch (e) {
-                console.error(e);
-                toast.error(t('staff.payroll.fixSalariesErrorGeneric'));
-              }
-            }
-          }}
+          onClick={() => onFixSalaries?.()}
         >
           <Wallet size={16} />
           <span>{t('staff.payroll.fixSalaries')}</span>

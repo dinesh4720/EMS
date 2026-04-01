@@ -32,8 +32,10 @@ function SalaryStructureStep({
   };
 
   const updateBreakdownItem = (index, field, value) => {
-    const updated = [...formData.salaryBreakdown];
-    updated[index][field] = field === "amount" ? Number(value) : value;
+    // Use immutable update to avoid direct state mutation
+    const updated = formData.salaryBreakdown.map((item, i) =>
+      i === index ? { ...item, [field]: field === "amount" ? Number(value) : value } : item
+    );
     updateField("salaryBreakdown", updated);
   };
 

@@ -102,7 +102,7 @@ export default function StaffsPage() {
       department: staffData.department || "General",
       phone: staffData.phone,
       email: staffData.email,
-      status: "active",
+      status: editingStaffId ? (staffData.status || undefined) : "active",
       address: staffData.address,
       // Use form joinDate if provided, otherwise auto-set for new staff
       joinDate: staffData.joinDate || (editingStaffId ? undefined : new Date().toISOString().split('T')[0]),
@@ -246,17 +246,17 @@ export default function StaffsPage() {
   };
 
   const tabHeaderInfo = {
-    list: { title: "All Staff", description: "Manage staff members and roles" },
-    overview: { title: "Staff Attendance", description: "Track attendance and statistics" },
-    payroll: { title: "Staff Salary & Payroll", description: "Manage salaries and payments" },
-    subjects: { title: "Subject Assignments", description: "Assign subjects and classes to teachers" }
+    list: { title: t('staff.tabs.allStaff', 'All Staff'), description: t('staff.tabs.allStaffDesc', 'Manage staff members and roles') },
+    overview: { title: t('staff.tabs.attendance', 'Staff Attendance'), description: t('staff.tabs.attendanceDesc', 'Track attendance and statistics') },
+    payroll: { title: t('staff.tabs.payroll', 'Staff Salary & Payroll'), description: t('staff.tabs.payrollDesc', 'Manage salaries and payments') },
+    subjects: { title: t('staff.tabs.subjects', 'Subject Assignments'), description: t('staff.tabs.subjectsDesc', 'Assign subjects and classes to teachers') }
   };
 
   const tabs = [
-    { key: "list", title: "All Staff" },
-    { key: "subjects", title: "Subjects" },
-    { key: "overview", title: "Attendance" },
-    { key: "payroll", title: "Payroll" }
+    { key: "list", title: t('staff.tabs.allStaff', 'All Staff') },
+    { key: "subjects", title: t('staff.tabs.subjectsShort', 'Subjects') },
+    { key: "overview", title: t('staff.tabs.attendanceShort', 'Attendance') },
+    { key: "payroll", title: t('staff.tabs.payrollShort', 'Payroll') }
   ];
 
   const handleTabChange = (key) => {
@@ -298,9 +298,7 @@ export default function StaffsPage() {
             <Route path="list" element={<StaffList onStaffClick={handleOpenStaffProfile} onStaffEdit={handleEditStaff} />} />
             <Route path="bulk-subjects" element={<BulkSubjectAssignment />} />
             <Route path="attendance" element={<StaffAttendance onStaffClick={handleOpenStaffProfile} />} />
-            <Route path="attendance/regularize" element={<StaffAttendanceRegularize />} />
             <Route path="payroll" element={<StaffPayroll onStaffClick={handleOpenStaffProfile} />} />
-            <Route path=":id" element={<StaffDashboard />} />
           </Routes>
         </div>
       </PageLayout>
@@ -330,7 +328,6 @@ export default function StaffsPage() {
                   </div>
                   <Button isIconOnly size="sm" variant="light" onPress={() => {
                     if (addStaffRef.current) addStaffRef.current.attemptClose();
-                    else if (window.staffDrawerCloseHandler) window.staffDrawerCloseHandler();
                     else handleCloseAddStaff();
                   }}>
                     <X size={20} className="text-gray-400 dark:text-zinc-500" />

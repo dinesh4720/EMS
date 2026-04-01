@@ -195,7 +195,7 @@ function PersonalInfoStep({
             aria-label={t('staff.form.bloodGroupLabel')}
             label={t('staff.form.bloodGroupLabel')}
             labelPlacement="outside"
-            placeholder={t('staff.form.maritalStatusPlaceholder')}
+            placeholder={t('staff.form.bloodGroupPlaceholder', 'Select blood group')}
             selectedKeys={formData.bloodGroup ? [formData.bloodGroup] : []}
             onSelectionChange={keys => updateField("bloodGroup", Array.from(keys)[0])}
             variant="bordered"
@@ -290,13 +290,13 @@ function PersonalInfoStep({
         <SectionHeader icon={MapPin} title={t('staff.about.address')} />
         <Textarea
           placeholder={t('staff.form.addressPlaceholder')}
-          value={formData.address}
+          value={formData.address || ''}
           onValueChange={v => updateField("address", v)}
           maxLength={200}
           variant="bordered"
           radius="sm"
           minRows={2}
-          description={`${formData.address.length}/200`}
+          description={`${(formData.address || '').length}/200`}
           classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300" }}
         />
       </div>
@@ -305,9 +305,9 @@ function PersonalInfoStep({
       <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-800">
         <SectionHeader icon={ShieldAlert} title={t('staff.form.emergencyContacts')} />
         <p className="text-xs text-gray-500 dark:text-zinc-400 -mt-1">{t('staff.form.emergencyContactsHint')}</p>
-        {formData.emergencyContacts.map((contact, index) => (
+        {(formData.emergencyContacts || []).map((contact, index) => (
           <div key={contact.phone || index} className="p-3 border border-gray-200 dark:border-zinc-700 rounded-lg space-y-3 relative group hover:border-gray-300 dark:hover:border-zinc-600 transition-colors">
-            {formData.emergencyContacts.length > 1 && (
+            {(formData.emergencyContacts || []).length > 1 && (
               <button
                 className="absolute top-2 right-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={() => removeEmergencyContact(index)}

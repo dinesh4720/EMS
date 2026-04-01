@@ -82,7 +82,12 @@ export default function StaffAttendanceRegularize() {
     return days;
   }, [selectedStaffId, currentMonth, currentYear, staffAttendance]);
 
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const monthNames = [
+    t('months.january', 'January'), t('months.february', 'February'), t('months.march', 'March'),
+    t('months.april', 'April'), t('months.may', 'May'), t('months.june', 'June'),
+    t('months.july', 'July'), t('months.august', 'August'), t('months.september', 'September'),
+    t('months.october', 'October'), t('months.november', 'November'), t('months.december', 'December')
+  ];
 
   const handlePreviousMonth = () => {
     if (currentMonth === 0) {

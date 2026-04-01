@@ -17,6 +17,8 @@ export default function StaffDocumentsTab({
   staffName,
 }) {
   const { t } = useTranslation();
+  // Guard against undefined documents prop
+  if (!documents) documents = [];
   const getDocumentType = (doc) => {
     if (doc.type?.includes('ID') || doc.type === 'ID Proof') return 'ID Proof';
     if (doc.type?.includes('Qualification') || doc.type === 'Qualification') return 'Qualification';

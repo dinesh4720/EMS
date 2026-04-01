@@ -50,15 +50,17 @@ export default function StaffOverviewTab({
   const chart = useChartTheme();
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
-  const isTeacher = Array.isArray(staff.role) ? staff.role.includes('Teacher') : staff.role === 'Teacher';
+  const isTeacher = Array.isArray(staff?.role) ? staff.role.includes('Teacher') : staff?.role === 'Teacher';
 
   const todayAttendance = attendance?.[todayStr];
-  const isPresentToday = todayAttendance?.status === 'present' || monthlyStats.present > 0;
+  const safeMonthlyStats = monthlyStats || { present: 0, absent: 0, leave: 0, halfday: 0, total: 0 };
+  const isPresentToday = todayAttendance?.status === 'present' || safeMonthlyStats.present > 0;
 
-  const totalStudents = classTeacherAssignments.reduce((sum, cls) => sum + (cls.studentCount || cls.strength || 0), 0);
+  const safeClassTeacherAssignments = classTeacherAssignments || [];
+  const totalStudents = safeClassTeacherAssignments.reduce((sum, cls) => sum + (cls.studentCount || cls.strength || 0), 0);
 
-  const avgClassAttendance = classTeacherAssignments.length > 0
-    ? Math.round(classTeacherAssignments.reduce((sum, cls) => sum + (cls.averageAttendance || cls.attendance || 0), 0) / classTeacherAssignments.length)
+  const avgClassAttendance = safeClassTeacherAssignments.length > 0
+    ? Math.round(safeClassTeacherAssignments.reduce((sum, cls) => sum + (cls.averageAttendance || cls.attendance || 0), 0) / safeClassTeacherAssignments.length)
     : 0;
 
   // Compute real attendance trend from actual attendance records
