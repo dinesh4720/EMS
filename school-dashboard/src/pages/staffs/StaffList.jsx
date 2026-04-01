@@ -3,7 +3,8 @@ import { createPortal } from "react-dom";
 import {
     Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
     Button, Chip, Spinner, Avatar,
-    Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection
+    Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection,
+    Modal, ModalContent, ModalHeader, ModalBody, ModalFooter
 } from "@heroui/react";
 import { Search, Filter, ArrowUpDown, Edit, Trash2, X, ChevronDown, Check, Download, Users, ChevronRight, SlidersHorizontal } from "lucide-react";
 import { useApp } from "../../context/AppContext";
@@ -29,6 +30,7 @@ export default function StaffList({
     const [searchQuery, setSearchQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("active");
+    const [departmentFilter, setDepartmentFilter] = useState("all");
     const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
     const [isLoading, setIsLoading] = useState(false);
     const loaderRef = useRef(null);
@@ -44,6 +46,8 @@ export default function StaffList({
         role: false,
         sort: false
     });
+    // Delete confirmation modal state
+    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, staffIds: [], staffNames: [], isDeleting: false });
 
     const [columnWidths] = useState({
         name: 260,
@@ -56,6 +60,7 @@ export default function StaffList({
 
     const roles = STAFF_ROLES; // Use centralized roles
     const statusOptions = ["active", "inactive", "on-leave", "suspended", "terminated"];
+    const departmentOptions = ["Academic", "Science", "Mathematics", "Languages", "Social Studies", "Arts", "Sports", "Administration", "Accounts", "IT", "Library", "Transport", "Maintenance", "Others"];
 
     // Calculate counts for filters
     const getRoleCounts = () => {
@@ -75,6 +80,9 @@ export default function StaffList({
             all: staff.length,
             active: staff.filter(s => s.status === "active").length,
             inactive: staff.filter(s => s.status === "inactive").length,
+            "on-leave": staff.filter(s => s.status === "on-leave").length,
+            suspended: staff.filter(s => s.status === "suspended").length,
+            terminated: staff.filter(s => s.status === "terminated").length,
         };
     }, [staff]);
 
@@ -82,9 +90,10 @@ export default function StaffList({
         let count = 0;
         if (roleFilter !== "all") count++;
         if (statusFilter !== "active") count++;
+        if (departmentFilter !== "all") count++;
         if (searchQuery) count++;
         return count;
-    }, [roleFilter, statusFilter, searchQuery]);
+    }, [roleFilter, statusFilter, departmentFilter, searchQuery]);
 
     // Filters configuration for FiltersPanel
     const filtersConfig = useMemo(() => ({
@@ -112,10 +121,29 @@ export default function StaffList({
             displayLabels: {
                 all: "All Status",
                 active: "Active",
-                inactive: "Inactive"
+                inactive: "Inactive",
+                "on-leave": "On Leave",
+                suspended: "Suspended",
+                terminated: "Terminated"
             }
+        },
+        department: {
+            label: "Department",
+            value: departmentFilter,
+            options: ["all", ...departmentOptions],
+            counts: (() => {
+                const counts = { all: staff.length };
+                departmentOptions.forEach(dept => {
+                    counts[dept] = staff.filter(s => s.department === dept).length;
+                });
+                return counts;
+            })(),
+            displayLabels: departmentOptions.reduce((acc, dept) => {
+                acc[dept] = dept;
+                return acc;
+            }, { all: "All Departments" })
         }
-    }), [roleFilter, statusFilter, staff, roles, statusOptions, statusCounts]);
+    }), [roleFilter, statusFilter, departmentFilter, staff, roles, statusOptions, statusCounts]);
 
     // Quick presets for common filter combinations
     const filterPresets = [
@@ -177,13 +205,17 @@ export default function StaffList({
             filtered = filtered.filter((s) => s.status === statusFilter);
         }
 
+        if (departmentFilter !== "all") {
+            filtered = filtered.filter((s) => s.department === departmentFilter);
+        }
+
         return filtered.sort((a, b) => {
             const first = a[sortDescriptor.column];
             const second = b[sortDescriptor.column];
             const cmp = first < second ? -1 : first > second ? 1 : 0;
             return sortDescriptor.direction === "descending" ? -cmp : cmp;
         });
-    }, [staff, searchQuery, roleFilter, statusFilter, sortDescriptor]);
+    }, [staff, searchQuery, roleFilter, statusFilter, departmentFilter, sortDescriptor]);
 
     const visibleItems = useMemo(() => {
         return filteredItems.slice(0, visibleCount);
@@ -196,7 +228,7 @@ export default function StaffList({
     // Reset visible count when filters change
     useEffect(() => {
         setVisibleCount(ITEMS_PER_LOAD);
-    }, [searchQuery, roleFilter, statusFilter, sortDescriptor]);
+    }, [searchQuery, roleFilter, statusFilter, departmentFilter, sortDescriptor]);
 
     // Intersection Observer for lazy loading
     useEffect(() => {
@@ -255,6 +287,9 @@ export default function StaffList({
         switch (status) {
             case "active": return "bg-success-50 border-success-200 text-success-700";
             case "inactive": return "bg-danger-50 border-danger-200 text-danger-700";
+            case "on-leave": return "bg-warning-50 border-warning-200 text-warning-700";
+            case "suspended": return "bg-orange-50 border-orange-200 text-orange-700";
+            case "terminated": return "bg-gray-50 border-gray-200 text-gray-700";
             default: return "bg-default-100 border-default-200 text-default-600";
         }
     };
@@ -263,6 +298,9 @@ export default function StaffList({
         switch (status) {
             case "active": return "bg-success-500";
             case "inactive": return "bg-danger-500";
+            case "on-leave": return "bg-warning-500";
+            case "suspended": return "bg-orange-500";
+            case "terminated": return "bg-gray-500";
             default: return "bg-default-400";
         }
     };
@@ -281,6 +319,7 @@ export default function StaffList({
     const clearAllFilters = () => {
         setRoleFilter("all");
         setStatusFilter("all");
+        setDepartmentFilter("all");
         setSearchQuery("");
         toast.success(t('toast.success.allFiltersCleared'));
     };
@@ -294,6 +333,9 @@ export default function StaffList({
             case "status":
                 setStatusFilter(value);
                 break;
+            case "department":
+                setDepartmentFilter(value);
+                break;
             default:
                 break;
         }
@@ -304,6 +346,7 @@ export default function StaffList({
         const { filters } = preset;
         setRoleFilter(filters.role);
         setStatusFilter(filters.status);
+        if (filters.department) setDepartmentFilter(filters.department);
         toast.success(`Applied preset: ${preset.label}`);
     };
 
@@ -427,24 +470,37 @@ tr:nth-child(even) td{background:#f9fafb}
         setSelectedStaff(new Set());
     };
 
-    const handleBulkDelete = async () => {
+    const handleBulkDelete = () => {
         if (selectedCount === 0) return;
-
-        if (!confirm(t('confirm.deleteBulkStaff', { count: selectedCount }))) {
-            return;
-        }
-
         const ids = getSelectedIds();
+        const names = ids.map(staffId => {
+            const s = staff.find(st => st.id === staffId);
+            return s?.name || staffId;
+        });
+        setDeleteConfirm({ isOpen: true, staffIds: ids, staffNames: names, isDeleting: false });
+    };
+
+    const handleSingleDelete = (staffMember) => {
+        setDeleteConfirm({ isOpen: true, staffIds: [staffMember.id], staffNames: [staffMember.name], isDeleting: false });
+    };
+
+    const confirmDelete = async () => {
+        setDeleteConfirm(prev => ({ ...prev, isDeleting: true }));
+        const { staffIds } = deleteConfirm;
         const results = await Promise.allSettled(
-            ids.map(staffId => deleteStaff(staffId))
+            staffIds.map(staffId => deleteStaff(staffId))
         );
         const failed = results.filter(r => r.status === 'rejected').length;
         if (failed === 0) {
-            toast.success(`${selectedCount} staff members deleted successfully`);
+            toast.success(staffIds.length === 1
+                ? `${deleteConfirm.staffNames[0]} deleted successfully`
+                : `${staffIds.length} staff members deleted successfully`
+            );
         } else {
-            toast.error(`${failed} of ${ids.length} deletions failed`);
+            toast.error(`${failed} of ${staffIds.length} deletions failed`);
         }
         setSelectedStaff(new Set());
+        setDeleteConfirm({ isOpen: false, staffIds: [], staffNames: [], isDeleting: false });
     };
 
     return (
@@ -546,12 +602,13 @@ tr:nth-child(even) td{background:#f9fafb}
                     <div className="flex items-center gap-2 w-full sm:max-w-[280px] px-3 py-2.5 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-teal-500 hover:bg-gray-50 dark:hover:bg-zinc-900 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all duration-200">
                         <Search size={16} className="text-gray-400 dark:text-zinc-500" />
                         <input
-                            type="search"
+                            type="text"
                             name="staff-search-query"
                             placeholder={t('pages.searchByNameEmailOrId')}
                             className="flex-1 bg-transparent outline-none text-sm text-gray-800 dark:text-zinc-200 placeholder:text-gray-500 dark:placeholder:text-zinc-500"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                             autoComplete="off"
                             data-form-type="other"
                         />
@@ -611,6 +668,27 @@ tr:nth-child(even) td{background:#f9fafb}
                                         >
                                             Set as Inactive
                                         </DropdownItem>
+                                        <DropdownItem
+                                            key="status-on-leave"
+                                            onPress={() => handleBulkStatusChange("on-leave")}
+                                            startContent={<span className="w-2 h-2 rounded-full bg-warning-500"></span>}
+                                        >
+                                            Set as On Leave
+                                        </DropdownItem>
+                                        <DropdownItem
+                                            key="status-suspended"
+                                            onPress={() => handleBulkStatusChange("suspended")}
+                                            startContent={<span className="w-2 h-2 rounded-full bg-orange-500"></span>}
+                                        >
+                                            Set as Suspended
+                                        </DropdownItem>
+                                        <DropdownItem
+                                            key="status-terminated"
+                                            onPress={() => handleBulkStatusChange("terminated")}
+                                            startContent={<span className="w-2 h-2 rounded-full bg-gray-500"></span>}
+                                        >
+                                            Set as Terminated
+                                        </DropdownItem>
                                     </DropdownSection>
                                     <DropdownSection title={t('pages.changeRole')} showDivider>
                                         {roles.map((role) => (
@@ -663,7 +741,7 @@ tr:nth-child(even) td{background:#f9fafb}
                     </Dropdown>
 
                     {/* Clear Filters Button */}
-                    {(roleFilter !== "all" || statusFilter !== "active" || searchQuery) && (
+                    {(roleFilter !== "all" || statusFilter !== "active" || departmentFilter !== "all" || searchQuery) && (
                         <button
                             onClick={clearAllFilters}
                             className="p-2 bg-transparent rounded-lg border border-default-300 hover:border-danger hover:bg-danger-50 transition-all duration-200 cursor-pointer group"
@@ -711,7 +789,8 @@ tr:nth-child(even) td{background:#f9fafb}
                 onSelectionChange={setSelectedStaff}
                 sortDescriptor={sortDescriptor}
                 onSortChange={setSortDescriptor}
-                onRowAction={(key) => onStaffClick(key)} // Don't convert to number - MongoDB IDs are strings
+                // onRowAction removed — row navigation is handled by TableRow onClick
+                // which properly guards against clicks on buttons, links, and selections
                 removeWrapper
                 radius="none"
                 onClick={() => {
@@ -836,6 +915,24 @@ tr:nth-child(even) td{background:#f9fafb}
                                                     Inactive
                                                 </span>
                                             </DropdownItem>
+                                            <DropdownItem key="on-leave">
+                                                <span className="flex items-center gap-2">
+                                                    <span className="w-2 h-2 rounded-full bg-warning-500"></span>
+                                                    On Leave
+                                                </span>
+                                            </DropdownItem>
+                                            <DropdownItem key="suspended">
+                                                <span className="flex items-center gap-2">
+                                                    <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                                                    Suspended
+                                                </span>
+                                            </DropdownItem>
+                                            <DropdownItem key="terminated">
+                                                <span className="flex items-center gap-2">
+                                                    <span className="w-2 h-2 rounded-full bg-gray-500"></span>
+                                                    Terminated
+                                                </span>
+                                            </DropdownItem>
                                         </DropdownMenu>
                                     </Dropdown>
                                 </div>
@@ -856,15 +953,7 @@ tr:nth-child(even) td{background:#f9fafb}
                                         size="sm"
                                         variant="light"
                                         className="text-gray-400 dark:text-zinc-500 hover:text-red-600"
-                                        onPress={async () => {
-                                            try {
-                                                await deleteStaff(s.id);
-                                                toast.success(`${s.name} deleted successfully`);
-                                            } catch (err) {
-                                                console.error('Failed to delete staff:', err);
-                                                toast.error(t('toast.error.failedToDeleteStaffMember'));
-                                            }
-                                        }}
+                                        onPress={() => handleSingleDelete(s)}
                                     >
                                         <Trash2 size={16} />
                                     </Button>
@@ -883,6 +972,50 @@ tr:nth-child(even) td{background:#f9fafb}
                 )}
             </div>
             <ScrollToTopButton />
+
+            {/* Delete Confirmation Modal */}
+            <Modal isOpen={deleteConfirm.isOpen} onClose={() => !deleteConfirm.isDeleting && setDeleteConfirm({ isOpen: false, staffIds: [], staffNames: [], isDeleting: false })} size="sm">
+                <ModalContent>
+                    <ModalHeader className="flex flex-col gap-1">
+                        <span className="text-red-600">{t('pages.confirmDeletion', 'Confirm Deletion')}</span>
+                    </ModalHeader>
+                    <ModalBody>
+                        {deleteConfirm.staffIds.length === 1 ? (
+                            <p className="text-sm text-gray-600 dark:text-zinc-400">
+                                Are you sure you want to delete <strong>{deleteConfirm.staffNames[0]}</strong>? This action cannot be easily undone.
+                            </p>
+                        ) : (
+                            <div className="text-sm text-gray-600 dark:text-zinc-400">
+                                <p className="mb-2">Are you sure you want to delete <strong>{deleteConfirm.staffIds.length}</strong> staff members?</p>
+                                <ul className="list-disc pl-5 max-h-32 overflow-y-auto space-y-1">
+                                    {deleteConfirm.staffNames.slice(0, 10).map((name, idx) => (
+                                        <li key={idx}>{name}</li>
+                                    ))}
+                                    {deleteConfirm.staffNames.length > 10 && (
+                                        <li className="text-gray-400">...and {deleteConfirm.staffNames.length - 10} more</li>
+                                    )}
+                                </ul>
+                            </div>
+                        )}
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button
+                            variant="light"
+                            onPress={() => setDeleteConfirm({ isOpen: false, staffIds: [], staffNames: [], isDeleting: false })}
+                            isDisabled={deleteConfirm.isDeleting}
+                        >
+                            {t('pages.cancel', 'Cancel')}
+                        </Button>
+                        <Button
+                            color="danger"
+                            onPress={confirmDelete}
+                            isLoading={deleteConfirm.isDeleting}
+                        >
+                            {deleteConfirm.staffIds.length === 1 ? t('pages.delete', 'Delete') : `Delete ${deleteConfirm.staffIds.length} Staff`}
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </div>
     );
 }

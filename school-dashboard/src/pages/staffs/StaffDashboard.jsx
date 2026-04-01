@@ -53,7 +53,7 @@ export default function StaffDashboard() {
   const {
     getStaffById, getMonthlyAttendance, staffAttendance: attendance,
     staffSalaries, salarySettings, classesWithTeachers, updateStaff, updateStaffLocal,
-    payrollHistory, staff: allStaffList, classes, loading, teacherAssignmentsApi,
+    payrollHistory, staff: allStaffList, classes, loading, error: appError, teacherAssignmentsApi,
     fetchStaffAttendanceByStaff
   } = useApp();
 
@@ -163,7 +163,7 @@ export default function StaffDashboard() {
   }, [id, fetchStaffAttendanceByStaff]);
 
   // Navigation Logic
-  const currentStaffIndex = allStaffList?.findIndex(s => s.id === id) || 0;
+  const currentStaffIndex = Math.max(0, allStaffList?.findIndex(s => String(s.id) === String(id)) ?? -1);
   const prevStaffId = allStaffList?.[currentStaffIndex - 1]?.id;
   const nextStaffId = allStaffList?.[currentStaffIndex + 1]?.id;
 
@@ -469,11 +469,23 @@ export default function StaffDashboard() {
   if (!isValid) return null;
 
   if (!staff) {
-    // Show loading state while data is being fetched
-    if (loading) {
+    // Show skeleton while data is being fetched OR staff array hasn't been synced yet
+    // The staff array may be empty briefly after loading=false due to async context sync
+    if (loading || (!appError && (!Array.isArray(allStaffList) || allStaffList.length === 0))) {
       return <DetailPageSkeleton avatar fields={8} />;
     }
-    return <div className="min-h-screen flex items-center justify-center"><div className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.staffMemberNotFound1')}</div></div>;
+    // Staff data loaded but this ID wasn't found — show not-found with back navigation
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <div className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.staffMemberNotFound1')}</div>
+        <button
+          onClick={() => navigate('/staffs')}
+          className="text-sm text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 underline"
+        >
+          {t('pages.backToStaff')}
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -973,6 +985,7 @@ export default function StaffDashboard() {
               else handleCloseAddStaff();
             }
           }}
+          isDismissable={false}
           placement="right"
           hideCloseButton
           classNames={{ wrapper: "justify-end", base: "w-[720px] max-w-[95vw]", backdrop: "bg-black/30" }}

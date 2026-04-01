@@ -515,7 +515,7 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
                 <p className="text-2xl font-bold text-gray-900">
                   {assignments.length}
                 </p>
-                <p className="text-xs text-gray-500">subjects</p>
+                <p className="text-xs text-gray-500">{assignments.length === 1 ? 'subject' : 'subjects'}</p>
               </div>
               <div className="text-center">
                 <p className="text-xs font-medium text-gray-500 mb-1">{t('pages.totalClasses1')}</p>

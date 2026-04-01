@@ -102,8 +102,8 @@ export function StaffProvider({ children }) {
   };
 
   const getStaffById = (id) =>
-    Array.isArray(staff)
-      ? staff.find((s) => s.id === id || s.id === String(id))
+    Array.isArray(staff) && id
+      ? staff.find((s) => String(s.id) === String(id) || (s._id && String(s._id) === String(id)))
       : undefined;
 
   const teachers = useMemo(
