@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from 'react-i18next';
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Button, Textarea
+  Button, Textarea, RadioGroup, Radio
 } from "@heroui/react";
 import { MessageSquare, User, Phone, Mail, Send } from "lucide-react";
 import { request } from "../../../../services/api";
@@ -14,6 +14,7 @@ export default function FeeReminderModal({ isOpen, onClose, student, studentFeeS
   const { schoolSettings } = useApp();
   const [reminderMessage, setReminderMessage] = useState("");
   const [reminderSending, setReminderSending] = useState(false);
+  const [channel, setChannel] = useState("both");
 
   // Generate default message when modal opens
   const handleOpenChange = (open) => {
@@ -47,6 +48,7 @@ export default function FeeReminderModal({ isOpen, onClose, student, studentFeeS
         method: 'POST',
         body: JSON.stringify({
           message: reminderMessage,
+          channel,
           parentPhone: student?.parentPhone,
           parentEmail: student?.parentEmail,
           studentName: student?.name
@@ -110,6 +112,22 @@ export default function FeeReminderModal({ isOpen, onClose, student, studentFeeS
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Channel Selection */}
+            <div>
+              <RadioGroup
+                label={t('students.profile.overview.sendVia', 'Send via')}
+                orientation="horizontal"
+                value={channel}
+                onValueChange={setChannel}
+                size="sm"
+                classNames={{ label: "text-sm font-medium text-default-700" }}
+              >
+                <Radio value="sms" isDisabled={!student?.parentPhone}>SMS</Radio>
+                <Radio value="email" isDisabled={!student?.parentEmail}>Email</Radio>
+                <Radio value="both" isDisabled={!student?.parentPhone && !student?.parentEmail}>{t('students.profile.overview.both', 'Both')}</Radio>
+              </RadioGroup>
             </div>
 
             {/* Fee Status */}

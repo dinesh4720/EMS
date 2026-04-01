@@ -123,7 +123,7 @@ const StudentAcademicsContent = memo(function StudentAcademicsContent({
         {results?.length > 0 ? (
           <div className="divide-y divide-gray-50 dark:divide-zinc-700">
             {results.map((result, i) => (
-              <div key={result._id || `result-${i}`} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer">
+              <div key={result._id || `result-${i}`} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
                     <FileText size={14} className="text-gray-500 dark:text-zinc-400" />
@@ -174,11 +174,14 @@ const StudentAcademicsContent = memo(function StudentAcademicsContent({
           <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t("students.academics.achievements", "Achievements")}</h3>
         </div>
         <div className="p-5">
+          {/* TODO: Achievements are currently hardcoded placeholder data. Replace with
+              real achievements fetched from backend. The "Perfect Attendance" entry can
+              appear contradictory when the student actually has low attendance -- this
+              will be resolved once achievements are driven by real data. */}
           <div className="grid grid-cols-2 gap-3">
             {[
               { title: "Best Student Award", date: "Dec 2024" },
               { title: "Science Fair Winner", date: "Nov 2024" },
-              { title: "Perfect Attendance", date: "Oct 2024" },
             ].map((a, i) => (
               <div key={a.title} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-zinc-800">
                 <Award size={18} className="text-gray-400 dark:text-zinc-500" />

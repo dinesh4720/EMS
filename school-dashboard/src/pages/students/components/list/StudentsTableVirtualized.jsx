@@ -99,6 +99,9 @@ export default function StudentsTableVirtualized({
     // ── Dropdown close helper ────────────────────────────────────────────
     closeAllDropdowns,
 
+    // ── Search query for parent-match indicator ───────────────────────
+    searchQuery = "",
+
     // ── Empty state context ────────────────────────────────────────────
     hasActiveFilters = false,
     onClearFilters,
@@ -357,6 +360,15 @@ export default function StudentsTableVirtualized({
                                                         {student.admissionId ||
                                                             `ADM${String(student.id).padStart(4, "0")}`}
                                                     </span>
+                                                    {/* Show parent match indicator when search matches parent but not student name */}
+                                                    {searchQuery &&
+                                                        student.parentName &&
+                                                        !student.name?.toLowerCase().includes(searchQuery.toLowerCase()) &&
+                                                        student.parentName.toLowerCase().includes(searchQuery.toLowerCase()) && (
+                                                            <span className="text-xs text-primary-500 truncate">
+                                                                Parent: {student.parentName}
+                                                            </span>
+                                                        )}
                                                 </div>
                                             </div>
                                         </td>
@@ -491,10 +503,10 @@ export default function StudentsTableVirtualized({
                                                                     }`}
                                                                 >
                                                                     {isInvalid
-                                                                        ? "N/A"
+                                                                        ? "No data"
                                                                         : `${attendance}%`}
                                                                 </span>
-                                                                {!isInvalid ? (
+                                                                {!isInvalid && (
                                                                     <Progress
                                                                         aria-label={t(
                                                                             "aria.misc.studentAttendanceProgress"
@@ -506,8 +518,6 @@ export default function StudentsTableVirtualized({
                                                                         )}
                                                                         className="max-w-[60px]"
                                                                     />
-                                                                ) : (
-                                                                    <div className="h-1 w-[60px] bg-default-100 rounded-full"></div>
                                                                 )}
                                                             </div>
                                                         </td>
@@ -516,19 +526,24 @@ export default function StudentsTableVirtualized({
 
                                                 if (column.key === "academicPerformance") {
                                                     const grade = getAcademicGrade(student.latestResultPercentage);
+                                                    const gradeTooltip = grade
+                                                        ? `Performance: ${grade}${student.latestResultPercentage != null ? ` (${student.latestResultPercentage}%)` : ''}`
+                                                        : null;
                                                     return (
                                                         <td key="academicPerformance" className={baseTd}>
                                                             {grade ? (
-                                                                <Chip
-                                                                    size="sm"
-                                                                    variant="flat"
-                                                                    color={getGradeColor(grade)}
-                                                                    className="font-semibold"
-                                                                >
-                                                                    {grade}
-                                                                </Chip>
+                                                                <Tooltip content={gradeTooltip}>
+                                                                    <Chip
+                                                                        size="sm"
+                                                                        variant="flat"
+                                                                        color={getGradeColor(grade)}
+                                                                        className="font-semibold"
+                                                                    >
+                                                                        {grade}
+                                                                    </Chip>
+                                                                </Tooltip>
                                                             ) : (
-                                                                <span className="text-xs text-default-400">N/A</span>
+                                                                <span className="text-xs text-default-400">No data</span>
                                                             )}
                                                         </td>
                                                     );

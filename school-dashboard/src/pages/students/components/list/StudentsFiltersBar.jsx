@@ -144,6 +144,7 @@ export default function StudentsFiltersBar({
                             </DropdownItem>
                             <DropdownItem
                                 key="inactive"
+                                className={statusCounts.inactive === 0 ? "opacity-50" : ""}
                                 startContent={
                                     statusFilter === "inactive" ? (
                                         <Check size={14} className="text-teal-600" />
@@ -161,6 +162,7 @@ export default function StudentsFiltersBar({
                             </DropdownItem>
                             <DropdownItem
                                 key="alumni"
+                                className={statusCounts.alumni === 0 ? "opacity-50" : ""}
                                 startContent={
                                     statusFilter === "alumni" ? (
                                         <Check size={14} className="text-teal-600" />

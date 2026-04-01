@@ -177,7 +177,7 @@ export default function AddRemarkDrawer({
                     <span className="font-medium text-default-900">{t('students.profile.remarks.sendToParent', 'Send to Parent')}</span>
                     <span className="text-xs text-default-500">
                       {remarkForm.sendToParent
-                        ? t('students.profile.remarks.willBeSentTo', 'Will be sent to {{contact}}', { contact: student?.parentEmail || student?.parentPhone || 'parent' })
+                        ? t('students.profile.remarks.visibleToParents', 'Remark will be visible to parents')
                         : t('students.profile.remarks.visibleToStaffOnly', 'Remark will only be visible to staff')
                       }
                     </span>

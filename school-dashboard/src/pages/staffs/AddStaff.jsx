@@ -1590,7 +1590,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       </div>
 
       {/* Confirmation Modal */}
-      <Modal isOpen={showConfirmClose} onClose={cancelClose} size="sm" isDismissable={false} hideCloseButton>
+      <Modal isOpen={showConfirmClose} onClose={cancelClose} size="sm" isDismissable={false} hideCloseButton portalContainer={document.body} classNames={{ base: "z-[999999]", wrapper: "z-[999999]", backdrop: "z-[999999]" }}>
         <ModalContent>
           <ModalHeader className="flex gap-2 items-center">
             <AlertTriangle size={20} className="text-warning" />

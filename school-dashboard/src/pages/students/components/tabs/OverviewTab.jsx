@@ -112,8 +112,11 @@ function OverviewTab({
         }))
       : [];
 
-  // Use real attendance data if provided, otherwise show placeholder
-  // The parent component should pass monthlyAttendanceData derived from real API data
+  // Use real attendance data if provided, otherwise show placeholder zeros.
+  // NOTE: If attendanceStats.monthlyTrend is populated from backend but only one month
+  // has records (e.g. seed data), the chart will show a spike for that month and 0
+  // elsewhere. This is a data issue, not a chart bug -- it resolves as more months
+  // get attendance marked.
   const attendanceTrendData = attendanceStats.monthlyTrend || [
     { name: "Jan", attendance: 0 },
     { name: "Feb", attendance: 0 },

@@ -203,19 +203,22 @@ export default function StudentDashboard() {
   }, [classInfo, staff]);
 
   // Calculate monthly attendance for chart
+  // NOTE: If only one month has attendance records (e.g. seed data only covers March),
+  // the chart will show a spike for that month and 0% for all others. This is expected
+  // behavior -- the chart fills in naturally as teachers mark attendance each month.
   const monthlyAttendanceData = useMemo(() => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const currentYear = new Date().getFullYear();
-    
+
     return months.map((month, index) => {
       const monthData = attendanceData.filter(a => {
         const d = new Date(a.date);
         return d.getMonth() === index && d.getFullYear() === currentYear;
       });
-      
+
       const present = monthData.filter(a => a.status === 'present').length;
       const percentage = monthData.length > 0 ? Math.round((present / monthData.length) * 100) : 0;
-      
+
       return { month, value: percentage };
     });
   }, [attendanceData]);
@@ -388,11 +391,13 @@ export default function StudentDashboard() {
       return;
     }
     try {
+      const resolvedEmail = student.parentEmail || student.parents?.find(p => p.isParent !== false)?.email || student.parents?.[0]?.email || '';
+      const resolvedPhone = student.parentPhone || student.parents?.find(p => p.isParent !== false)?.phone || student.parents?.[0]?.phone || '';
       await studentsApi.sendReminder(id, {
         type: 'fee',
         message: reminderMessage,
-        parentPhone: student.parentPhone,
-        parentEmail: student.parentEmail,
+        parentPhone: resolvedPhone,
+        parentEmail: resolvedEmail,
         studentName: student.name
       });
 
@@ -431,12 +436,14 @@ export default function StudentDashboard() {
     const loadingToast = toast.loading(`Sending report via ${channel === 'email' ? 'Email' : 'SMS'}...`);
     try {
       const message = `Attendance Report for ${student.name}: ${attendanceStats.percentage}% attendance (${attendanceStats.present} present, ${attendanceStats.absent} absent out of ${attendanceStats.total} days).`;
+      const resolvedEmail = student.parentEmail || student.parents?.find(p => p.isParent !== false)?.email || student.parents?.[0]?.email || '';
+      const resolvedPhone = student.parentPhone || student.parents?.find(p => p.isParent !== false)?.phone || student.parents?.[0]?.phone || '';
       await studentsApi.sendReminder(id, {
         type: 'attendance',
         message,
         channel,
-        parentPhone: student.parentPhone,
-        parentEmail: student.parentEmail,
+        parentPhone: resolvedPhone,
+        parentEmail: resolvedEmail,
         studentName: student.name,
       });
       toast.success(`Report sent via ${channel === 'email' ? 'Email' : 'SMS'}`, { id: loadingToast });
@@ -652,7 +659,7 @@ ${studentResults.length > 0 ? `
               {/* Avatar */}
               <div className="relative">
                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect} />
-                <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-zinc-800 overflow-hidden flex items-center justify-center relative">
+                <div className="w-20 h-20 rounded-lg bg-gray-100 dark:bg-zinc-800 overflow-hidden flex items-center justify-center relative">
                   {student.photo ? (
                     <img src={student.photo} alt={student.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   ) : (
@@ -666,8 +673,8 @@ ${studentResults.length > 0 ? `
                 </div>
                 <Dropdown>
                   <DropdownTrigger>
-                    <button className="absolute -bottom-1 -right-1 w-6 h-6 rounded-md bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-zinc-800/50">
-                      <Camera size={12} className="text-gray-500 dark:text-zinc-400" />
+                    <button className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-md bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-zinc-800/50">
+                      <Camera size={13} className="text-gray-500 dark:text-zinc-400" />
                     </button>
                   </DropdownTrigger>
                   <DropdownMenu className="min-w-[140px]">
@@ -684,7 +691,7 @@ ${studentResults.length > 0 ? `
                 <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">{student.admissionId} · {student.class} · Roll {student.rollNo}</p>
                 {student.parentPhone && (
                   <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400 dark:text-zinc-500">
-                    <span className="flex items-center gap-1"><Phone size={11} />{student.parentPhone}</span>
+                    <span className="flex items-center gap-1"><Phone size={11} />Parent: {student.parentPhone}</span>
                     <span>{student.parentName || "Parent"}</span>
                   </div>
                 )}
@@ -935,7 +942,7 @@ ${studentResults.length > 0 ? `
                 <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
                   <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.parentName2')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentName || "—"}</p></div>
                   <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.parentPhone1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentPhone || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.parentEmail1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentEmail || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.parentEmail1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentEmail || student.parents?.find(p => p.isParent !== false)?.email || student.parents?.[0]?.email || "—"}</p></div>
                 </div>
               </div>
 
@@ -1232,6 +1239,36 @@ ${studentResults.length > 0 ? `
 
           {/* ─── FEES TAB ─── */}
           {activeTab === "fees" && (
+            loadingFeeStructure ? (
+              <div className="space-y-5">
+                <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                  <div className="p-6 border-b border-gray-100 dark:border-zinc-700">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="space-y-2">
+                        <div className="h-3 w-28 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                        <div className="h-10 w-40 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                        <div className="h-3 w-24 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="h-8 w-28 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
+                        <div className="h-8 w-28 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 dark:divide-zinc-700">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="p-4 text-center space-y-2">
+                        <div className="h-3 w-16 mx-auto bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                        <div className="h-5 w-20 mx-auto bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden p-8 text-center">
+                  <div className="h-4 w-32 mx-auto bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                </div>
+              </div>
+            ) : (
             <div className="space-y-5">
               {/* Fee Summary Hero */}
               <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
@@ -1284,7 +1321,7 @@ ${studentResults.length > 0 ? `
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.paymentHistory')}</h3>
                     <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{feeHistory?.length || 0} transactions</p>
                   </div>
-                  <Button size="sm" variant="light" className="text-gray-500 dark:text-zinc-400" onPress={() => navigate('/fees')}>{t('pages.viewAll1')}</Button>
+                  <Button size="sm" variant="light" className="text-gray-500 dark:text-zinc-400" onPress={() => navigate(`/fees?studentId=${id}`)}>{t('pages.viewAll1')}</Button>
                 </div>
                 {feeHistory?.length > 0 ? (
                   <div className="divide-y divide-gray-50 dark:divide-zinc-800 max-h-64 overflow-y-auto">
@@ -1372,6 +1409,7 @@ ${studentResults.length > 0 ? `
                 )}
               </div>
             </div>
+            )
           )}
 
           {/* ─── DOCUMENTS TAB ─── */}
@@ -1470,16 +1508,22 @@ ${studentResults.length > 0 ? `
           <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-100 dark:border-zinc-700 p-5">
             <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">{t('pages.contactInformation1')}</h3>
             <div className="space-y-4">
+              {(student.parentName || student.parents?.find(p => p.isParent !== false)?.name || student.parents?.[0]?.name) && (
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><User size={14} className="text-gray-600 dark:text-zinc-400" /></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.parentName2', 'Parent Name')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentName || student.parents?.find(p => p.isParent !== false)?.name || student.parents?.[0]?.name}</p></div>
+                </div>
+              )}
               {student.parentPhone && (
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Phone size={14} className="text-gray-600 dark:text-zinc-400" /></div>
                   <div><p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.parentPhone1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentPhone}</p></div>
                 </div>
               )}
-              {student.parentEmail && (
+              {(student.parentEmail || student.parents?.find(p => p.isParent !== false)?.email || student.parents?.[0]?.email) && (
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Mail size={14} className="text-gray-600 dark:text-zinc-400" /></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.parentEmail1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100 truncate">{student.parentEmail}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.parentEmail1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100 truncate">{student.parentEmail || student.parents?.find(p => p.isParent !== false)?.email || student.parents?.[0]?.email}</p></div>
                 </div>
               )}
               {student.address && (

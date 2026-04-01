@@ -85,8 +85,11 @@ export function useStudentsUpload({
         return { class: classValue, section: sectionValue };
     };
 
-    // Helper — shared attendance percentage (mirrors the one in the main file)
-    const getAttendancePercentage = (studentId) => 75 + ((studentId * 7) % 25);
+    // Helper — use real attendance percentage from backend data
+    const getAttendancePercentage = (student) => {
+        if (student.attendancePercentage != null) return student.attendancePercentage;
+        return null;
+    };
 
     // ── File input change handler (legacy simple upload path) ──────────────
     const handleCSVUpload = async (e) => {
@@ -376,7 +379,7 @@ export function useStudentsUpload({
             s.medicalConditions || "",
             s.status || "",
             s.feeStatus || "",
-            getAttendancePercentage(s.id) + "%",
+            (getAttendancePercentage(s) != null ? getAttendancePercentage(s) + "%" : "N/A"),
         ].map(
             (field) => `"${(field || "").toString().replace(/"/g, '""')}"`
         );

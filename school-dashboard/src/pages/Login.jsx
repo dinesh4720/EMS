@@ -7,12 +7,16 @@ import { Eye, EyeOff, Lock, Mail, CheckCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { APP_CONFIG } from "../utils/constants";
 
-// Only import the 3D component if WebGL is actually available AND we're not in a headless browser
+// Only import the 3D component if WebGL is actually available AND we're not in a headless/automated browser
 // Three.js shader compilation can crash in headless/automated environments even if WebGL context exists
 const hasWebGL = (() => {
   try {
-    // Headless browsers (Puppeteer, Playwright, preview tools) lack full GPU — skip 3D
-    if (navigator.webdriver || /HeadlessChrome/i.test(navigator.userAgent)) return false;
+    // Headless/automated browsers lack full GPU — skip 3D to avoid noisy console errors
+    if (
+      navigator.webdriver ||
+      /HeadlessChrome|Headless|Puppeteer|Playwright|PhantomJS/i.test(navigator.userAgent) ||
+      !navigator.gpu && !window.chrome?.runtime // Likely not a real desktop Chrome
+    ) return false;
     const c = document.createElement("canvas");
     const gl = c.getContext("webgl2") || c.getContext("webgl");
     if (!gl) return false;
@@ -23,6 +27,12 @@ const hasWebGL = (() => {
     gl.compileShader(vs);
     const ok = gl.getShaderParameter(vs, gl.COMPILE_STATUS);
     gl.deleteShader(vs);
+    // Also check renderer — SwiftShader / software renderers often crash Three.js
+    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+    if (debugInfo) {
+      const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || '';
+      if (/SwiftShader|llvmpipe|Software/i.test(renderer)) return false;
+    }
     return ok;
   } catch { return false; }
 })();

@@ -73,8 +73,8 @@ describe('DEFAULT_STUDENT_FORM', () => {
     expect(DEFAULT_STUDENT_FORM).toHaveProperty('address');
   });
 
-  it('defaults gender to Male', () => {
-    expect(DEFAULT_STUDENT_FORM.gender).toBe('Male');
+  it('defaults gender to empty string (no pre-selection)', () => {
+    expect(DEFAULT_STUDENT_FORM.gender).toBe('');
   });
 
   it('defaults isWhatsapp to true', () => {

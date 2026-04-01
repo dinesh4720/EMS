@@ -339,7 +339,8 @@ export default function StudentsPage() {
         isOpen={isMethodModalOpen}
         onClose={() => setIsMethodModalOpen(false)}
         size="2xl"
-        classNames={{ backdrop: "bg-black/30", base: "bg-white dark:bg-zinc-900" }}
+        backdrop="opaque"
+        classNames={{ backdrop: "bg-black/50", base: "bg-white dark:bg-zinc-900" }}
       >
         <ModalContent>
           <ModalHeader className="border-b border-gray-100 dark:border-zinc-700 py-4">
@@ -396,7 +397,8 @@ export default function StudentsPage() {
           setFormModalKey(prev => prev + 1);
         }}
         size="2xl"
-        classNames={{ backdrop: "bg-black/30", base: "bg-white dark:bg-zinc-900" }}
+        backdrop="opaque"
+        classNames={{ backdrop: "bg-black/50", base: "bg-white dark:bg-zinc-900" }}
       >
         <ModalContent>
           <ModalHeader className="border-b border-gray-100 dark:border-zinc-700 py-4">
@@ -509,7 +511,7 @@ export default function StudentsPage() {
       </Modal>
 
       {/* Success Modal */}
-      <Modal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} size="md" classNames={{ backdrop: "bg-black/30", base: "bg-white dark:bg-zinc-900" }}>
+      <Modal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} size="md" backdrop="opaque" classNames={{ backdrop: "bg-black/50", base: "bg-white dark:bg-zinc-900" }}>
         <ModalContent>
           <ModalHeader className="border-b border-gray-100 dark:border-zinc-700 py-4">
             <div className="flex flex-col items-center text-center gap-3">

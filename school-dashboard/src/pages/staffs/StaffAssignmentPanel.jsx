@@ -27,7 +27,9 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
   });
   const [errors, setErrors] = useState({});
   const [assignmentToDelete, setAssignmentToDelete] = useState(null);
+  const [classToRemove, setClassToRemove] = useState(null); // { assignmentId, classId, subject, className }
   const { isOpen: isConfirmDeleteOpen, onOpen: onConfirmDeleteOpen, onClose: onConfirmDeleteClose } = useDisclosure();
+  const { isOpen: isConfirmRemoveClassOpen, onOpen: onConfirmRemoveClassOpen, onClose: onConfirmRemoveClassClose } = useDisclosure();
 
   // Get the staff member to match class teacher assignments
   const staff = getStaffById(staffId);
@@ -147,6 +149,62 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
         },
         onError: () => {
           setSaving(false);
+        }
+      }
+    );
+  };
+
+  const handleRemoveClass = (assignment, classObj) => {
+    const classId = typeof classObj === 'string' ? classObj : classObj._id;
+    const className = getClassDisplay(classObj);
+    setClassToRemove({
+      assignmentId: assignment._id,
+      classId,
+      subject: assignment.subject,
+      className,
+      isLastClass: assignment.classes.length === 1
+    });
+    onConfirmRemoveClassOpen();
+  };
+
+  const confirmRemoveClass = async () => {
+    if (!classToRemove) return;
+
+    const { assignmentId, classId, isLastClass } = classToRemove;
+
+    await executeWithFeedback(
+      async () => {
+        setSaving(true);
+        if (isLastClass) {
+          // Last class in assignment — delete the whole assignment
+          await teacherAssignmentsApi.delete(assignmentId, staffId);
+        } else {
+          // Remove just this class from the assignment
+          const assignment = assignments.find(a => a._id === assignmentId);
+          const remainingClassIds = assignment.classes
+            .map(c => typeof c === 'string' ? c : c._id)
+            .filter(id => id !== classId);
+          await teacherAssignmentsApi.update(assignmentId, {
+            teacherId: staffId,
+            subject: assignment.subject,
+            classIds: remainingClassIds
+          });
+        }
+        await loadData();
+      },
+      {
+        loadingMessage: 'Removing class assignment...',
+        successMessage: 'Class removed from assignment!',
+        errorMessage: null,
+        onSuccess: () => {
+          setSaving(false);
+          setClassToRemove(null);
+          onConfirmRemoveClassClose();
+        },
+        onError: () => {
+          setSaving(false);
+          setClassToRemove(null);
+          onConfirmRemoveClassClose();
         }
       }
     );
@@ -396,9 +454,25 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
                               assignment.classes.map((classObj) => (
                                 <span
                                   key={typeof classObj === 'string' ? classObj : classObj._id}
-                                  className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-md"
+                                  className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-md group/chip"
                                 >
                                   {getClassDisplay(classObj)}
+                                  {canEdit && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRemoveClass(assignment, classObj);
+                                      }}
+                                      disabled={saving}
+                                      className="opacity-0 group-hover/chip:opacity-100 hover:bg-gray-200 rounded-full p-0.5 transition-all disabled:opacity-50"
+                                      title={`Remove ${getClassDisplay(classObj)}`}
+                                    >
+                                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                      </svg>
+                                    </button>
+                                  )}
                                 </span>
                               ))
                             ) : (
@@ -613,14 +687,32 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
         </ModalContent>
       </Modal>
 
-      {/* Confirmation Dialog */}
+      {/* Confirmation Dialog - Remove entire assignment */}
       <ConfirmDialog
         isOpen={isConfirmDeleteOpen}
         onClose={onConfirmDeleteClose}
         onConfirm={confirmRemoveAssignment}
         title={t('pages.removeAssignment')}
-        message="Are you sure you want to remove this assignment? This will prevent the teacher from being assigned to these classes for this subject in the timetable."
-        confirmText="Remove Assignment"
+        message="Are you sure you want to remove this entire assignment? This will remove all class assignments for this subject."
+        confirmText="Remove All"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={saving}
+      />
+
+      {/* Confirmation Dialog - Remove single class from assignment */}
+      <ConfirmDialog
+        isOpen={isConfirmRemoveClassOpen}
+        onClose={onConfirmRemoveClassClose}
+        onConfirm={confirmRemoveClass}
+        title="Remove Class"
+        message={classToRemove
+          ? classToRemove.isLastClass
+            ? `This is the only class for ${classToRemove.subject}. Removing it will delete the entire subject assignment.`
+            : `Remove ${classToRemove.className} from ${classToRemove.subject}?`
+          : ''
+        }
+        confirmText="Remove"
         cancelText="Cancel"
         variant="danger"
         isLoading={saving}

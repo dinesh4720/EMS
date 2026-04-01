@@ -603,6 +603,12 @@ export default function SchoolBuilding3D() {
 
   useEffect(() => {
     try {
+      // Skip in headless/automated browsers
+      if (navigator.webdriver || /HeadlessChrome|Headless|Puppeteer|Playwright/i.test(navigator.userAgent)) {
+        setHasWebGLSupport(false);
+        return;
+      }
+
       const canvas = document.createElement("canvas");
       const context =
         canvas.getContext("webgl2") ||
@@ -621,6 +627,16 @@ export default function SchoolBuilding3D() {
         return;
       }
       context.deleteShader(testShader);
+
+      // Reject software renderers — they pass WebGL checks but crash Three.js
+      const debugInfo = context.getExtension('WEBGL_debug_renderer_info');
+      if (debugInfo) {
+        const renderer = context.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || '';
+        if (/SwiftShader|llvmpipe|Software|Mesa/i.test(renderer)) {
+          setHasWebGLSupport(false);
+          return;
+        }
+      }
 
       setHasWebGLSupport(true);
     } catch {

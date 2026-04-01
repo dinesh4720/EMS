@@ -35,7 +35,7 @@ export const DEFAULT_STUDENT_FORM = {
   // Personal Information
   fullName: "",
   dateOfBirth: "",
-  gender: "Male",
+  gender: "",
   picture: null,
   aadhaarNumber: "",
   bloodGroup: "",

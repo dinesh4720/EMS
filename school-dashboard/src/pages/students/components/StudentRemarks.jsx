@@ -349,7 +349,7 @@ export default function StudentRemarks({
                       <span className="font-medium text-gray-900 dark:text-zinc-100">{t('pages.sendToParent1')}</span>
                       <span className="text-xs text-gray-500 dark:text-zinc-400">
                         {remarkForm.sendToParent
-                          ? `Will be sent to ${student.parentEmail || student.parentPhone || 'parent'}`
+                          ? 'Remark will be visible to parents'
                           : 'Remark will only be visible to staff'
                         }
                       </span>

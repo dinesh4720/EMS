@@ -14,7 +14,7 @@ export default function StudentsList() {
     // students data
     students, filteredItems, visibleItems, selectedCount, currentAcademicYear, classes,
     // filter state
-    searchQuery, setSearchQuery, statusFilter, setStatusFilter,
+    searchQuery, setSearchQuery, deferredSearchQuery, statusFilter, setStatusFilter,
     // filter helpers
     filtersConfig, filterPresets, activeFiltersCount, isSearching,
     handleFilterChange, handlePresetClick, clearAllFilters,
@@ -210,6 +210,7 @@ export default function StudentsList() {
         handleBulkAction={handleBulkAction}
         onPromoteOpen={() => {}}
         closeAllDropdowns={closeAllDropdowns}
+        searchQuery={deferredSearchQuery}
         hasActiveFilters={activeFiltersCount > 0}
         onClearFilters={clearAllFilters}
       />
@@ -217,7 +218,9 @@ export default function StudentsList() {
       {/* ── Footer: row count ──────────────────────────────────────────────── */}
       <div className="border-t border-gray-200 dark:border-zinc-700 px-6 py-3 shrink-0">
         <span className="text-default-500 text-sm">
-          {filteredItems.length} student{filteredItems.length !== 1 ? "s" : ""}
+          {filteredItems.length === students.length
+            ? `Showing ${students.length} student${students.length !== 1 ? "s" : ""}`
+            : `Showing ${filteredItems.length} of ${students.length} student${students.length !== 1 ? "s" : ""}`}
         </span>
       </div>
 

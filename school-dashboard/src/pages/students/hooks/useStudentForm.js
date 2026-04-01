@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { DEFAULT_STUDENT_FORM } from "../../../constants/studentConstants";
+import { DEFAULT_STUDENT_FORM, RELIGIONS } from "../../../constants/studentConstants";
 
 /**
  * Custom hook for managing student form state
@@ -264,6 +264,13 @@ function normalizeInitialData(initialData) {
     }
   }
 
+  // Normalize religion value to match RELIGIONS constant
+  let normalizedReligion = initialData.religion || "";
+  if (normalizedReligion && !RELIGIONS.includes(normalizedReligion)) {
+    const match = RELIGIONS.find(r => r.toLowerCase().startsWith(normalizedReligion.toLowerCase()));
+    if (match) normalizedReligion = match;
+  }
+
   return {
     ...DEFAULT_STUDENT_FORM,
     ...initialData,
@@ -271,8 +278,12 @@ function normalizeInitialData(initialData) {
     mobile: initialData.phone || "",
     picture: initialData.photo || null,
     rollNumber: initialData.rollNo?.toString() || "",
+    religion: normalizedReligion,
     parents: initialData.parents?.length > 0
-      ? initialData.parents
+      ? initialData.parents.map(p => ({
+          ...p,
+          isParent: p.isParent != null ? p.isParent : ["Father", "Mother"].includes(p.relationship),
+        }))
       : [{
           name: initialData.parentName || "",
           relationship: initialData.parentRelationship || "Father",

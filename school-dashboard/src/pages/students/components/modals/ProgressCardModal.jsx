@@ -62,6 +62,9 @@ export default function ProgressCardModal({ isOpen, onClose, student, onNavigate
             <p className="text-sm text-default-500 max-w-xs">
               {t('students.profile.overview.generateProgressCardDesc', 'Generate and download the detailed academic performance report card for the current academic year.')}
             </p>
+            <p className="text-xs text-default-400 max-w-xs bg-default-100 rounded-lg px-3 py-2">
+              Preview will be available in the downloaded PDF. The report includes marks, grades, and attendance summary.
+            </p>
             {onNavigateToAcademics && (
               <p className="text-xs text-default-400 max-w-xs">
                 This will open the Academics tab where you can download the full report card with marks and grades.

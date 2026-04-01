@@ -166,13 +166,15 @@ export default function Payments() {
         if (!p?._id) return false;
         return p.studentId?._id === studentId || p.studentId === studentId;
       });
-      const totalPaid = studentPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
-      // Use StudentFeeStructure as source of truth; fall back to student.feeDetails; never use hardcoded values
+      // Use StudentFeeStructure as the authoritative source of truth for fee totals.
+      // Previously, totalPaid was recomputed from the local (potentially filtered/paginated)
+      // payments array, causing "Pending 0" when the payments list was incomplete.
       const sfs = feeStructures[studentId];
       const totalAnnualFee = sfs?.totalFee ?? s.feeDetails?.totalFee ?? 0;
+      const totalPaid = sfs?.totalPaid ?? s.feeDetails?.paidAmount ?? 0;
+      const pending = sfs?.totalBalance ?? s.feeDetails?.balanceAmount ?? Math.max(totalAnnualFee - totalPaid, 0);
       const feeAssigned = totalAnnualFee > 0;
-      const pending = totalAnnualFee - totalPaid;
 
       return {
         id: studentId,
@@ -186,7 +188,7 @@ export default function Payments() {
         feeAssigned,
         totalAnnualFee,
         feeStructure: sfs || null,
-        lastPayment: studentPayments.length > 0 ? studentPayments[0].paymentDate : null,
+        lastPayment: sfs?.lastPaymentDate || (studentPayments.length > 0 ? studentPayments[0].paymentDate : null),
       };
     });
   }, [students, payments, feeStructures]);
@@ -424,7 +426,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;paddi
 
   const totalPending = filteredPayments.filter(p => p.status === "pending").reduce((sum, p) => sum + p.pending, 0);
   const totalCollected = filteredPayments.reduce((sum, p) => sum + p.paid, 0);
-  const pendingCount = filteredPayments.filter(p => p.status === "pending").length;
+  // Use unfiltered feePayments for overdue count to match dashboard's feeDefaultersCount
+  const pendingCount = feePayments.filter(p => p.status === "pending").length;
 
   if (!initialLoadDone && (loading || studentsLoading)) {
     return <TablePageSkeleton />;
@@ -605,7 +608,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;paddi
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span className="text-xs text-gray-500 dark:text-zinc-400">{payment.lastPayment || '—'}</span>
+                  <span className="text-xs text-gray-500 dark:text-zinc-400">{payment.lastPayment ? new Date(payment.lastPayment).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</span>
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-2">

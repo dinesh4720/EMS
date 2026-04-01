@@ -18,7 +18,9 @@ import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 const StudentAttendance = memo(function StudentAttendance() {
   const { t } = useTranslation();
-    const { students } = useApp();
+    const { students: allStudents } = useApp();
+    // Only show active students for attendance marking (Bug #38)
+    const students = useMemo(() => allStudents.filter(s => (s.status || 'active') === 'active'), [allStudents]);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [searchQuery, setSearchQuery] = useState("");
     const [classFilter, setClassFilter] = useState("all");
@@ -27,6 +29,17 @@ const StudentAttendance = memo(function StudentAttendance() {
     const [attendance, setAttendance] = useState({});
     const [attendanceLoading, setAttendanceLoading] = useState(true);
     const initializedRef = useRef(false);
+
+    // Controlled open state for toolbar dropdowns — mutual exclusion
+    const [classDropdownOpen, setClassDropdownOpen] = useState(false);
+    const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+    const [bulkDropdownOpen, setBulkDropdownOpen] = useState(false);
+
+    const closeAllDropdowns = () => {
+        setClassDropdownOpen(false);
+        setStatusDropdownOpen(false);
+        setBulkDropdownOpen(false);
+    };
 
     // Fetch existing attendance from backend, fall back to "unmarked"
     useEffect(() => {
@@ -308,7 +321,7 @@ const StudentAttendance = memo(function StudentAttendance() {
                         />
                     </div>
 
-                    <Dropdown>
+                    <Dropdown isOpen={classDropdownOpen} onOpenChange={(open) => { if (open) closeAllDropdowns(); setClassDropdownOpen(open); }}>
                         <DropdownTrigger>
                             <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
                                 <Filter size={16} className="text-default-400" />
@@ -330,7 +343,7 @@ const StudentAttendance = memo(function StudentAttendance() {
                         </DropdownMenu>
                     </Dropdown>
 
-                    <Dropdown>
+                    <Dropdown isOpen={statusDropdownOpen} onOpenChange={(open) => { if (open) closeAllDropdowns(); setStatusDropdownOpen(open); }}>
                         <DropdownTrigger>
                             <button className="p-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 cursor-pointer">
                                 <Filter size={16} className="text-default-400" />
@@ -352,9 +365,9 @@ const StudentAttendance = memo(function StudentAttendance() {
                     </Dropdown>
 
                     {/* Bulk Actions */}
-                    <Dropdown>
+                    <Dropdown isOpen={bulkDropdownOpen} onOpenChange={(open) => { if (open) closeAllDropdowns(); setBulkDropdownOpen(open); }}>
                         <DropdownTrigger>
-                            <button 
+                            <button
                                 className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm cursor-pointer whitespace-nowrap ${
                                     selectedKeys === "all" || selectedKeys.size > 0
                                         ? "bg-primary text-white border-primary"
@@ -404,6 +417,13 @@ const StudentAttendance = memo(function StudentAttendance() {
                     </Button>
                 </div>
             </div>
+
+            {/* Class selection hint */}
+            {classFilter !== "all" && (
+                <p className="text-xs text-default-400 px-6 -mx-6 pt-2">
+                    Showing attendance for class <span className="font-medium text-default-600">{classFilter}</span>. Use the Class filter above to switch.
+                </p>
+            )}
 
             {/* Table */}
             {attendanceLoading ? (

@@ -57,13 +57,14 @@ const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework }) => {
       ]);
 
       const uniqueClasses = new Map();
+      const seenNames = new Set();
       (classesData || []).forEach(cls => {
         const id = cls.id || cls._id;
-        if (id && !uniqueClasses.has(id)) {
-          uniqueClasses.set(id, {
-            id,
-            name: cls.displayName || (cls.section ? `${cls.name}-${cls.section}` : cls.name),
-          });
+        const displayName = cls.displayName || (cls.section ? `${cls.name}-${cls.section}` : cls.name);
+        // Deduplicate by both ID and display name to prevent duplicate entries
+        if (id && !uniqueClasses.has(id) && !seenNames.has(displayName)) {
+          seenNames.add(displayName);
+          uniqueClasses.set(id, { id, name: displayName });
         }
       });
       setClasses(Array.from(uniqueClasses.values()));
@@ -84,7 +85,9 @@ const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework }) => {
   };
 
   const handleSelectionChange = (field) => (value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    // HeroUI Select can pass "all" string or a Set — always normalize to Set
+    const normalizedValue = value === "all" ? new Set() : (value instanceof Set ? value : new Set(value ? [value] : []));
+    setFormData(prev => ({ ...prev, [field]: normalizedValue }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
