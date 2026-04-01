@@ -29,7 +29,17 @@ export default function Attendance({
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedClass, setSelectedClass] = useState(classId || "");
   const [attendance, setAttendance] = useState({});
-  const [isLocked] = useState(false);
+  // AUDIT-64: isLocked was hardcoded to false. Now derived from whether the selected date
+  // is older than 7 days (a reasonable default until a backend attendance-locking API exists).
+  // TODO: Wire up to AttendanceContext or a school settings endpoint for configurable lock policy.
+  const isLocked = useMemo(() => {
+    if (!date) return false;
+    const selected = new Date(date + 'T00:00:00');
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 7);
+    cutoff.setHours(0, 0, 0, 0);
+    return selected < cutoff;
+  }, [date]);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
   const [saveMessage, setSaveMessage] = useState(null);
@@ -205,26 +215,37 @@ export default function Attendance({
   };
 
   const handleNotifyParents = async () => {
-    if (!selectedClass || !date || isNotifying) return;
+    if (!resolvedClassId || !date || isNotifying) return;
     setIsNotifying(true);
     try {
-      const res = await classesApi.notifyParents({ classId: selectedClass, date });
+      const res = await classesApi.notifyParents({ classId: resolvedClassId, date });
       setSaveMessage({
         type: 'success',
         text: res?.message || `Notified parents of ${absentCount} absent student(s)`,
       });
     } catch (error) {
+      // Graceful fallback: if the endpoint doesn't exist or fails, show a toast-style message
+      console.warn('Notify parents failed:', error?.message);
       setSaveMessage({
         type: 'error',
-        text: error?.message || 'Failed to notify parents',
+        text: error?.message || 'Failed to notify parents. The notification service may be unavailable.',
       });
     } finally {
       setIsNotifying(false);
+      setTimeout(() => setSaveMessage(null), 4000);
     }
   };
 
   const handleSaveAttendance = async () => {
     if (isLocked || isSaving) return;
+
+    // AUDIT-45: Prevent saving attendance for future dates
+    const today = new Date().toISOString().split('T')[0];
+    if (date > today) {
+      setSaveMessage({ type: 'error', text: 'Cannot save attendance for a future date.' });
+      setTimeout(() => setSaveMessage(null), 3000);
+      return;
+    }
 
     // Only send students who have been explicitly marked with a valid status
     const validStatuses = ATTENDANCE_STATUSES.map(s => s.key);
@@ -295,7 +316,9 @@ export default function Attendance({
   const halfdayCount = classStudents.filter(s => attendance[sid(s)] === "halfday").length;
   const unmarkedCount = classStudents.filter(s => !attendance[sid(s)] || attendance[sid(s)] === "unmarked").length;
   const markedCount = presentCount + absentCount + lateCount + leaveCount + halfdayCount;
-  const attendancePercent = markedCount > 0 ? Math.round((presentCount / markedCount) * 100) : 0;
+  // AUDIT-46: Count halfday as 0.5 present in percentage; late counts as fully present
+  const effectivePresent = presentCount + lateCount + halfdayCount * 0.5;
+  const attendancePercent = markedCount > 0 ? Math.round((effectivePresent / markedCount) * 100) : 0;
   const defaulters = classStudents.filter(s => attendance[sid(s)] === "absent");
 
   return (
@@ -323,7 +346,17 @@ export default function Attendance({
             type="date"
             size="sm"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            max={new Date().toISOString().split('T')[0]}
+            onChange={(e) => {
+              const selected = e.target.value;
+              const today = new Date().toISOString().split('T')[0];
+              if (selected > today) {
+                setSaveMessage({ type: 'error', text: 'Cannot mark attendance for a future date.' });
+                setTimeout(() => setSaveMessage(null), 3000);
+                return;
+              }
+              setDate(selected);
+            }}
             className="w-[150px]"
             variant="flat"
             classNames={{
