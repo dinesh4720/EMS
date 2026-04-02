@@ -4,7 +4,7 @@ import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, Chip, useDisclosure, Select, SelectItem, Checkbox, Button
 } from '@heroui/react';
-import { Edit, Trash2, Plus } from 'lucide-react';
+import { Edit, Trash2, Plus, Search } from 'lucide-react';
 import { frontDeskApi, staffApi, announcementsApi } from '../../services/api';
 import FormInput from '../../components/FormInput';
 import { validatePhone, validateFutureDate, validateDateRange } from '../../utils/validations';
@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { formatDateTime } from '../../utils/dateFormatter';
 
-const AppointmentsList = forwardRef((props, ref) => {
+const AppointmentsList = forwardRef(({ onSave, ...props }, ref) => {
   const { t } = useTranslation();
   const [appointments, setAppointments] = useState([]);
   const [staff, setStaff] = useState([]);
@@ -21,6 +21,7 @@ const AppointmentsList = forwardRef((props, ref) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingId, setEditingId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     visitorName: '',
     phoneNumber: '',
@@ -156,7 +157,7 @@ const AppointmentsList = forwardRef((props, ref) => {
 
       if (formData.assignAsTask && formData.taskTitle?.trim()) {
         try {
-          const meetingStaff = staff.find(s => s.name === formData.meetingWith);
+          const meetingStaff = staff.find(s => s._id === formData.meetingWith);
           const assignedStaff = formData.assignedTo || meetingStaff?._id;
           if (assignedStaff) {
             await announcementsApi.create({
@@ -177,7 +178,7 @@ const AppointmentsList = forwardRef((props, ref) => {
         try {
           await announcementsApi.create({
             title: `Appointment: ${formData.visitorName}`,
-            content: `An appointment has been shared with you.\n\nVisitor: ${formData.visitorName}\nPhone: ${formData.phoneNumber || 'N/A'}\nPurpose: ${formData.purpose || 'N/A'}\nFrom: ${formData.fromDateTime ? formatDateTime(formData.fromDateTime) : 'N/A'}\nTo: ${formData.toDateTime ? formatDateTime(formData.toDateTime) : 'N/A'}\nMeeting With: ${formData.meetingWith || 'N/A'}`.trim(),
+            content: `An appointment has been shared with you.\n\nVisitor: ${formData.visitorName}\nPhone: ${formData.phoneNumber || 'N/A'}\nPurpose: ${formData.purpose || 'N/A'}\nFrom: ${formData.fromDateTime ? formatDateTime(formData.fromDateTime) : 'N/A'}\nTo: ${formData.toDateTime ? formatDateTime(formData.toDateTime) : 'N/A'}\nMeeting With: ${getStaffName(formData.meetingWith)}`.trim(),
             recipients: [{ type: 'custom', userIds: formData.shareWithStaff }],
             channels: ['in_app'],
           });
@@ -191,6 +192,7 @@ const AppointmentsList = forwardRef((props, ref) => {
       onClose();
       resetForm();
       loadAppointments();
+      onSave?.();
     } catch (error) {
       toast.error(t('toast.error.failedToSaveAppointment'));
     } finally {
@@ -219,6 +221,7 @@ const AppointmentsList = forwardRef((props, ref) => {
       await frontDeskApi.deleteAppointment(id);
       toast.success(t('toast.success.appointmentDeleted'));
       loadAppointments();
+      onSave?.();
     } catch (error) {
       toast.error(t('toast.error.failedToDeleteAppointment'));
     }
@@ -244,6 +247,15 @@ const AppointmentsList = forwardRef((props, ref) => {
     });
   };
 
+  const getStaffName = (meetingWith) => {
+    if (!meetingWith) return '-';
+    // Look up by ID first (new format)
+    const byId = staff.find(s => s._id === meetingWith);
+    if (byId) return byId.name;
+    // Fallback: might be a legacy name string
+    return meetingWith;
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'scheduled': return 'primary';
@@ -253,9 +265,29 @@ const AppointmentsList = forwardRef((props, ref) => {
     }
   };
 
+  const filteredAppointments = appointments.filter(a => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      a.visitorName?.toLowerCase().includes(term) ||
+      a.phoneNumber?.includes(searchTerm) ||
+      a.purpose?.toLowerCase().includes(term) ||
+      a.meetingWith?.toLowerCase().includes(term)
+    );
+  });
+
   return (
     <>
-      <div className="flex justify-end mb-4">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
+        <Input
+          placeholder="Search appointments..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          startContent={<Search size={16} />}
+          className="max-w-xs"
+          isClearable
+          onClear={() => setSearchTerm('')}
+        />
         <Button color="primary" startContent={<Plus size={16} />} onPress={onOpen}>
           New Appointment
         </Button>
@@ -272,7 +304,7 @@ const AppointmentsList = forwardRef((props, ref) => {
           <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
         </TableHeader>
         <TableBody
-          items={appointments}
+          items={filteredAppointments}
           isLoading={loading}
           emptyContent="No appointments"
         >
@@ -283,7 +315,7 @@ const AppointmentsList = forwardRef((props, ref) => {
               <TableCell>{appointment.purpose || '-'}</TableCell>
               <TableCell>{formatDateTime(appointment.fromDateTime)}</TableCell>
               <TableCell>{formatDateTime(appointment.toDateTime)}</TableCell>
-              <TableCell>{appointment.meetingWith || '-'}</TableCell>
+              <TableCell>{getStaffName(appointment.meetingWith)}</TableCell>
               <TableCell>
                 <Chip
                   size="sm"
@@ -394,7 +426,7 @@ const AppointmentsList = forwardRef((props, ref) => {
                 errorMessage={errors.meetingWith}
               >
                 {staff.map((member) => (
-                  <SelectItem key={member.name} value={member.name}>
+                  <SelectItem key={member._id} value={member._id}>
                     {member.name} {member.role ? `(${member.role})` : ''}
                   </SelectItem>
                 ))}

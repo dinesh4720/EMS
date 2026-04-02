@@ -5,7 +5,7 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, Chip, useDisclosure,
   Select, SelectItem, Checkbox, Button, Tabs, Tab
 } from '@heroui/react';
-import { Edit, Trash2, Plus, MessageSquare } from 'lucide-react';
+import { Edit, Trash2, Plus, MessageSquare, Search } from 'lucide-react';
 import { frontDeskApi, staffApi, announcementsApi } from '../../services/api';
 import { validatePhone } from '../../utils/validations';
 import toast from 'react-hot-toast';
@@ -25,7 +25,7 @@ const SUBCATEGORY_I18N_KEYS = {
 
 const SOURCE_OPTIONS = ['PARENT_APP', 'STUDENT_APP', 'TEACHER_APP', 'WALK_IN', 'PHONE', 'EMAIL'];
 
-const FeedbacksList = forwardRef((props, ref) => {
+const FeedbacksList = forwardRef(({ onSave, ...props }, ref) => {
   const { t } = useTranslation();
   const FEEDBACK_CATEGORIES = useMemo(() => ({
     STAFF: { ...FEEDBACK_CATEGORY_KEYS.STAFF, label: t(`constants.feedback.categories.${FEEDBACK_CATEGORY_KEYS.STAFF.i18nKey}`) },
@@ -39,6 +39,7 @@ const FeedbacksList = forwardRef((props, ref) => {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [errors, setErrors] = useState({});
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingId, setEditingId] = useState(null);
@@ -187,6 +188,7 @@ const FeedbacksList = forwardRef((props, ref) => {
       onClose();
       resetForm();
       loadFeedbacks();
+      onSave?.();
     } catch (error) {
       toast.error(t('toast.error.failedToSaveFeedback'));
     } finally {
@@ -231,6 +233,7 @@ const FeedbacksList = forwardRef((props, ref) => {
       await frontDeskApi.deleteFeedback(id);
       toast.success(t('toast.success.feedbackDeleted'));
       loadFeedbacks();
+      onSave?.();
     } catch (error) {
       toast.error(t('toast.error.failedToDeleteFeedback'));
     }
@@ -271,16 +274,36 @@ const FeedbacksList = forwardRef((props, ref) => {
     return SOURCE_OPTIONS.find(s => s === source)?.replace(/_/g, ' ') || source || '-';
   };
 
+  const filteredFeedbacks = feedbacks.filter(f => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      f.name?.toLowerCase().includes(term) ||
+      f.phoneNumber?.includes(searchTerm) ||
+      getCategoryLabel(f.category)?.toLowerCase().includes(term) ||
+      f.assignedStaff?.name?.toLowerCase().includes(term)
+    );
+  });
+
   return (
     <>
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex gap-2 items-center">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
+        <div className="flex gap-2 items-center flex-wrap">
+          <Input
+            placeholder="Search feedbacks..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            startContent={<Search size={16} />}
+            className="max-w-xs"
+            isClearable
+            onClear={() => setSearchTerm('')}
+          />
           <Chip size="sm" variant="flat" color="primary">{t('pages.parentApp1')}</Chip>
           <Chip size="sm" variant="flat" color="secondary">{t('pages.studentApp')}</Chip>
           <Chip size="sm" variant="flat" color="success">{t('pages.teacherApp')}</Chip>
-          <span className="text-xs text-default-400 ml-2">{t('pages.feedbacksFromAppsSyncAutomatically')}</span>
+          <span className="text-xs text-default-400">{t('pages.feedbacksFromAppsSyncAutomatically')}</span>
         </div>
-        <Button color="primary" startContent={<Plus size={16} />} onPress={onOpen}>
+        <Button color="primary" startContent={<Plus size={16} />} onPress={onOpen} className="flex-shrink-0">
           New Feedback
         </Button>
       </div>
@@ -296,7 +319,7 @@ const FeedbacksList = forwardRef((props, ref) => {
           <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
         </TableHeader>
         <TableBody
-          items={feedbacks}
+          items={filteredFeedbacks}
           isLoading={loading}
           emptyContent="No feedbacks"
         >
@@ -315,10 +338,20 @@ const FeedbacksList = forwardRef((props, ref) => {
               <TableCell>
                 <Chip
                   size="sm"
-                  color={feedback.status === 'open' ? 'warning' : 'success'}
+                  color={
+                    feedback.status === 'open' ? 'warning' :
+                    feedback.status === 'in_progress' ? 'primary' :
+                    feedback.status === 'resolved' ? 'success' :
+                    feedback.status === 'closed' ? 'default' :
+                    'default'
+                  }
                   variant="flat"
                 >
-                  {feedback.status}
+                  {feedback.status === 'in_progress' ? 'In Progress' :
+                   feedback.status === 'open' ? 'Open' :
+                   feedback.status === 'resolved' ? 'Resolved' :
+                   feedback.status === 'closed' ? 'Closed' :
+                   feedback.status || '-'}
                 </Chip>
               </TableCell>
               <TableCell>

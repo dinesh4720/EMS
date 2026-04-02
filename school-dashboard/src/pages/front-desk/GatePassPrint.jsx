@@ -41,7 +41,7 @@ export default function GatePassPrint({ gatePass, isOpen, onClose, schoolName })
   const printRef = useRef();
 
   const handlePrint = useReactToPrint({
-    content: () => printRef.current,
+    contentRef: printRef,
     onAfterPrint: () => {
       // Optional: Close modal after print
       // onClose();
