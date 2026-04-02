@@ -27,6 +27,7 @@ export interface StaffMember {
   role: string; designation: string; department: string; status: string;
   joiningDate: string; schoolId: string; subjects?: string[];
   classTeacherOf?: string; employeeId?: string; salary?: number;
+  code?: string;
 }
 
 export interface ClassRecord {
@@ -242,6 +243,13 @@ export interface MockState {
   holidays: Array<Record<string, unknown>>;
   subjects: Array<Record<string, unknown>>;
   schoolSettings: Record<string, unknown>;
+  intakeForms: Array<Record<string, unknown>>;
+  intakeFormAssignments: Array<Record<string, unknown>>;
+  intakeFormSubmissions: Array<Record<string, unknown>>;
+  enrollmentFunnel?: Record<string, unknown>;
+  trashItems: Array<Record<string, unknown>>;
+  permissionRequests: Array<Record<string, unknown>>;
+  activeSessions: Array<Record<string, unknown>>;
   requestLog: Set<string>;
   /* counters */
   studentCounter: number;
@@ -360,25 +368,25 @@ export function createMockState(userOverride?: User): MockState {
     {
       _id: TEACHER_A_ID, id: TEACHER_A_ID, name: 'Ananya Sharma',
       email: 'ananya@schoolsync.test', phone: '9876543210',
-      role: 'teacher', designation: 'Senior Teacher', department: 'Science',
+      role: 'Teacher', designation: 'Senior Teacher', department: 'Science',
       status: 'active', joiningDate: '2023-06-15', schoolId: SCHOOL_ID,
       subjects: ['Mathematics', 'Science'], classTeacherOf: CLASS_10A_ID,
-      employeeId: 'EMP-001', salary: 45000,
+      employeeId: 'EMP-001', salary: 45000, code: 'EMP-001',
     },
     {
       _id: TEACHER_B_ID, id: TEACHER_B_ID, name: 'Ravi Menon',
       email: 'ravi@schoolsync.test', phone: '9876543211',
-      role: 'teacher', designation: 'Teacher', department: 'Arts',
+      role: 'Teacher', designation: 'Teacher', department: 'Arts',
       status: 'active', joiningDate: '2024-01-10', schoolId: SCHOOL_ID,
       subjects: ['English', 'Social Studies'], classTeacherOf: CLASS_11A_ID,
-      employeeId: 'EMP-002', salary: 40000,
+      employeeId: 'EMP-002', salary: 40000, code: 'EMP-002',
     },
     {
       _id: ACCOUNTANT_ID, id: ACCOUNTANT_ID, name: 'Priya Menon',
       email: 'priya@schoolsync.test', phone: '9876543212',
-      role: 'accountant', designation: 'Accountant', department: 'Finance',
+      role: 'Accountant', designation: 'Accountant', department: 'Finance',
       status: 'active', joiningDate: '2024-03-01', schoolId: SCHOOL_ID,
-      employeeId: 'EMP-003', salary: 35000,
+      employeeId: 'EMP-003', salary: 35000, code: 'EMP-003',
     },
   ];
 
@@ -461,7 +469,102 @@ export function createMockState(userOverride?: User): MockState {
       attendanceType: 'daily',
       gradingSystem: 'percentage',
     },
+    intakeForms: [
+      {
+        _id: 'if-1', id: 'if-1', formName: 'Student Admission Form', formType: 'admission',
+        status: 'active', fields: [
+          { id: 'f1', label: 'Full Name', type: 'text', mapTo: 'Full Name', required: true },
+          { id: 'f2', label: 'Date of Birth', type: 'date', mapTo: 'Date of Birth', required: true },
+          { id: 'f3', label: 'Gender', type: 'select', mapTo: 'Gender', required: true },
+        ],
+        schoolId: SCHOOL_ID,
+      },
+    ],
+    intakeFormAssignments: [
+      {
+        _id: 'ifa-1', id: 'ifa-1',
+        formId: { _id: 'if-1', formName: 'Student Admission Form', formType: 'admission' },
+        assignedToEmail: 'parent1@example.com', assignedToPhone: null,
+        assignedBy: { name: 'Dinesh Admin' },
+        status: 'pending', accessToken: 'tok-abc-1',
+        assignedAt: '2026-03-15T10:00:00Z', expiresAt: '2026-04-15T10:00:00Z',
+        schoolId: SCHOOL_ID,
+      },
+      {
+        _id: 'ifa-2', id: 'ifa-2',
+        formId: { _id: 'if-1', formName: 'Student Admission Form', formType: 'admission' },
+        assignedToEmail: 'parent2@example.com', assignedToPhone: null,
+        assignedBy: { name: 'Dinesh Admin' },
+        status: 'submitted', accessToken: 'tok-abc-2',
+        assignedAt: '2026-03-10T10:00:00Z', expiresAt: '2026-04-10T10:00:00Z',
+        schoolId: SCHOOL_ID,
+      },
+      {
+        _id: 'ifa-3', id: 'ifa-3',
+        formId: { _id: 'if-1', formName: 'Student Admission Form', formType: 'admission' },
+        assignedToEmail: 'parent3@example.com', assignedToPhone: null,
+        assignedBy: { name: 'Dinesh Admin' },
+        status: 'approved', accessToken: 'tok-abc-3',
+        assignedAt: '2026-03-05T10:00:00Z', expiresAt: '2026-04-05T10:00:00Z',
+        schoolId: SCHOOL_ID,
+      },
+    ],
+    intakeFormSubmissions: [
+      {
+        _id: 'ifs-1', id: 'ifs-1',
+        formId: {
+          _id: 'if-1', formName: 'Student Admission Form', formType: 'admission',
+          fields: [
+            { id: 'f1', label: 'Full Name', type: 'text', mapTo: 'Full Name', required: true },
+            { id: 'f2', label: 'Date of Birth', type: 'date', mapTo: 'Date of Birth', required: true },
+            { id: 'f3', label: 'Gender', type: 'select', mapTo: 'Gender', required: true },
+          ],
+        },
+        submittedByEmail: 'parent2@example.com', submittedByPhone: null,
+        submittedAt: '2026-03-16T10:00:00Z',
+        reviewStatus: 'pending', reviewNotes: '',
+        submissionData: { 'Full Name': 'Riya Sharma', 'Date of Birth': '2015-06-12', 'Gender': 'Female' },
+        schoolId: SCHOOL_ID,
+      },
+      {
+        _id: 'ifs-2', id: 'ifs-2',
+        formId: {
+          _id: 'if-1', formName: 'Student Admission Form', formType: 'admission',
+          fields: [
+            { id: 'f1', label: 'Full Name', type: 'text', mapTo: 'Full Name', required: true },
+            { id: 'f2', label: 'Date of Birth', type: 'date', mapTo: 'Date of Birth', required: true },
+            { id: 'f3', label: 'Gender', type: 'select', mapTo: 'Gender', required: true },
+          ],
+        },
+        submittedByEmail: 'parent3@example.com', submittedByPhone: null,
+        submittedAt: '2026-03-12T10:00:00Z',
+        reviewStatus: 'approved', reviewNotes: 'Looks good',
+        reviewedBy: 'Dinesh Admin', reviewedAt: '2026-03-13T10:00:00Z',
+        submissionData: { 'Full Name': 'Arjun Patel', 'Date of Birth': '2015-01-20', 'Gender': 'Male' },
+        schoolId: SCHOOL_ID,
+      },
+      {
+        _id: 'ifs-3', id: 'ifs-3',
+        formId: {
+          _id: 'if-1', formName: 'Student Admission Form', formType: 'admission',
+          fields: [
+            { id: 'f1', label: 'Full Name', type: 'text', mapTo: 'Full Name', required: true },
+            { id: 'f2', label: 'Date of Birth', type: 'date', mapTo: 'Date of Birth', required: true },
+            { id: 'f3', label: 'Gender', type: 'select', mapTo: 'Gender', required: true },
+          ],
+        },
+        submittedByEmail: 'parent4@example.com', submittedByPhone: null,
+        submittedAt: '2026-03-14T10:00:00Z',
+        reviewStatus: 'rejected', reviewNotes: 'Incomplete documents',
+        reviewedBy: 'Dinesh Admin', reviewedAt: '2026-03-15T10:00:00Z',
+        submissionData: { 'Full Name': 'Priya Reddy', 'Date of Birth': '2014-11-08', 'Gender': 'Female' },
+        schoolId: SCHOOL_ID,
+      },
+    ],
     notifications: [],
+    trashItems: [],
+    permissionRequests: [],
+    activeSessions: [],
     requestLog: new Set(),
     studentCounter: 0, examCounter: 0, resultCounter: 0, bookCounter: 0,
     issuedBookCounter: 0, announcementCounter: 0, appointmentCounter: 0,
@@ -975,7 +1078,16 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
   // Intercept all API calls
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url());
-    const path = url.pathname.replace(/^\/api/, '');
+
+    // Let Vite module/asset requests pass through (e.g. /src/services/api/index.js)
+    if (/\.(js|ts|jsx|tsx|css|map|html|svg|png|jpg|woff2?)(\?|$)/i.test(url.pathname)) {
+      return route.continue();
+    }
+    if (!url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api?')) {
+      return route.continue();
+    }
+
+    const path = url.pathname.replace(/^\/api/, '').replace(/^\/v1/, '');
     const method = route.request().method();
 
     // Log the request
@@ -995,6 +1107,12 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     if (path === '/auth/login')      return json({ ...state.user, token: state.user.token });
     if (path === '/auth/logout')     return json({ message: 'Logged out' });
     if (path === '/auth/2fa/verify') return json({ ...state.user, token: state.user.token });
+    if (path === '/auth/sessions') return json(state.activeSessions || []);
+    if (path.match(/^\/auth\/sessions\/[^/]+$/) && method === 'DELETE') {
+      const id = path.split('/')[3];
+      state.activeSessions = state.activeSessions.filter((s) => (s as any).sessionId !== id);
+      return json({ success: true });
+    }
 
     /* ── Students ── */
     if (path === '/students' && method === 'GET') return jsonList(state.students);
@@ -1031,7 +1149,8 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     }
 
     /* ── Classes ── */
-    if (path === '/classes' && method === 'GET') return jsonList(state.classes);
+    if (path === '/classes/public' && method === 'GET') return json(state.classes);
+    if (path === '/classes' && method === 'GET') return json(state.classes);
     if (path.match(/^\/classes\/([^/]+)$/) && method === 'GET') {
       const id = path.split('/')[2];
       const cls = state.classes.find((c) => c.id === id);
@@ -1052,7 +1171,7 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     }
 
     /* ── Staff ── */
-    if (path === '/staff' && method === 'GET')  return jsonList(state.staff);
+    if (path === '/staff' && method === 'GET')  return json(state.staff);
     if (path.match(/^\/staff\/([^/]+)$/) && method === 'GET') {
       const id = path.split('/')[2];
       const s = state.staff.find((st) => st.id === id);
@@ -1061,15 +1180,48 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     if (path.match(/^\/staff\/([^/]+)\/attendance/)) return json(state.staffAttendance.filter((a) => a.staffId === path.split('/')[2]));
     if (path.match(/^\/staff\/([^/]+)\/timetable/))  return json({ timetable: [] });
     if (path.match(/^\/staff\/([^/]+)\/assignments/)) return json({ assignments: [] });
+    if (path.match(/^\/staff\/[^/]+\/credentials/)) return json({ success: true, password: 'TempPass@123' });
+
+    /* ── Staff Attendance (per-staff) ── */
+    if (path.match(/^\/staff-attendance\/staff\/([^/]+)/)) {
+      const staffId = path.split('/')[3];
+      return json(state.staffAttendance.filter((a) => a.staffId === staffId));
+    }
+
+    /* ── Teacher Assignments ── */
+    if (path.match(/^\/teacher-assignments\/available-teachers/)) return json([]);
+    if (path.match(/^\/teacher-assignments\/([^/]+)$/) && method === 'GET') {
+      const teacherId = path.split('/')[2];
+      // Return assignments for a specific teacher
+      return json({ assignments: [] });
+    }
+    if (path === '/teacher-assignments' && method === 'POST') return json({ success: true }, 201);
+
+    /* ── Permissions ── */
+    if (path.match(/^\/permissions\/user\/([^/]+)/)) return json({ permissions: [] });
 
     /* ── Attendance ── */
     if (path === '/attendance' && method === 'GET')  return json(state.attendance);
     if (path === '/attendance' && method === 'POST') return json({ message: 'Saved' }, 201);
+    if (path === '/attendance/today-snapshot') {
+      const classes: Record<string, { present: number; absent: number; total: number }> = {};
+      for (const a of state.attendance) {
+        if (!classes[a.classId]) classes[a.classId] = { present: 0, absent: 0, total: 0 };
+        classes[a.classId].total += 1;
+        if (a.status === 'present') classes[a.classId].present += 1;
+        else classes[a.classId].absent += 1;
+      }
+      return json({ classes });
+    }
+    if (path.match(/^\/attendance\/student\/([^/]+)/)) {
+      const studentId = path.split('/')[3];
+      return json(state.attendance.filter((a) => a.studentId === studentId));
+    }
     if (path.match(/^\/attendance\/class\//))        return json(state.attendance.filter((a) => a.classId === path.split('/')[3]));
     if (path === '/staff-attendance')                return json(state.staffAttendance);
 
     /* ── Exams / Results ── */
-    if (path === '/exams' && method === 'GET')  return jsonList(state.exams);
+    if (path === '/exams' && method === 'GET')  return json(state.exams);
     if (path.match(/^\/exams\/([^/]+)$/) && method === 'GET') {
       const id = path.split('/')[2];
       const e = state.exams.find((ex) => ex.id === id);
@@ -1081,6 +1233,101 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     }
     if (path === '/results' && method === 'GET')  return json(state.results);
     if (path.match(/^\/results\/exam\//))         return json(state.results.filter((r) => r.examId === path.split('/')[3]));
+    if (path.match(/^\/results\/class\/([^/]+)\/exam\/([^/]+)$/)) {
+      const classId = path.split('/')[3];
+      const examId = path.split('/')[5];
+      const classStudents = state.students.filter((s) => s.classId === classId);
+      const studentIds = new Set(classStudents.map((s) => s.id));
+      return json(state.results.filter((r) => r.examId === examId && studentIds.has(r.studentId)));
+    }
+
+    /* ── Academic Performance ── */
+    if (path === '/academic-performance/dashboard') {
+      const completedExams = state.exams.filter((e) => e.status === 'completed' || e.status === 'results_published');
+      const allMarks = state.results.map((r) => r.marks);
+      const avgScore = allMarks.length > 0 ? Math.round(allMarks.reduce((a, b) => a + b, 0) / allMarks.length) : 0;
+      const passingRate = allMarks.length > 0 ? Math.round((allMarks.filter((m) => m >= 35).length / allMarks.length) * 100) : 0;
+      return json({
+        totalExams: state.exams.length,
+        completedExams: completedExams.length,
+        averageScore: avgScore,
+        passingRate,
+        classPerformance: [],
+        subjectAverages: [],
+        gradeDistribution: [],
+        topPerformers: [],
+      });
+    }
+    if (path.match(/^\/academic-performance\/student\/([^/]+)$/)) {
+      const studentId = path.split('/')[3];
+      const studentResults = state.results.filter((r) => r.studentId === studentId);
+      const examIds = [...new Set(studentResults.map((r) => r.examId))];
+      const exams = examIds.map((eid) => {
+        const results = studentResults.filter((r) => r.examId === eid);
+        const total = results.reduce((a, r) => a + r.marks, 0);
+        const max = results.reduce((a, r) => a + r.maxMarks, 0);
+        return { examId: eid, percentage: max > 0 ? Math.round((total / max) * 100) : 0, subjects: results };
+      });
+      return json({ exams });
+    }
+
+    /* ── Report Cards ── */
+    if (path.match(/^\/report-cards\/generate$/) && method === 'POST') {
+      return json({ success: true, generated: true, template: (body as Record<string, unknown>)?.template || 'standard' }, 201);
+    }
+    if (path.match(/^\/report-cards\/download\//)) {
+      return route.fulfill({ status: 200, contentType: 'application/pdf', body: '%PDF-1.4 mock' });
+    }
+    if (path.match(/^\/report-cards\/([^/]+)\/([^/]+)$/)) {
+      const examId = path.split('/')[2];
+      const classId = path.split('/')[3];
+      const classStudents = state.students.filter((s) => s.classId === classId);
+      const cards = classStudents.map((student) => {
+        const studentResults = state.results.filter((r) => r.studentId === student.id && r.examId === examId);
+        const totalMarks = studentResults.reduce((a, r) => a + r.marks, 0);
+        const totalMax = studentResults.reduce((a, r) => a + r.maxMarks, 0);
+        const percentage = totalMax > 0 ? Math.round((totalMarks / totalMax) * 100) : 0;
+        const grade = percentage >= 90 ? 'A+' : percentage >= 80 ? 'A' : percentage >= 70 ? 'B+' : percentage >= 60 ? 'B' : percentage >= 50 ? 'C' : 'F';
+        return {
+          studentId: student.id,
+          studentName: student.name,
+          percentage,
+          grade,
+          totalMarks,
+          totalMaxMarks: totalMax,
+          subjects: studentResults.map((r) => ({ subject: r.subject, marksObtained: r.marks, maxMarks: r.maxMarks, grade: r.grade })),
+          attendance: { totalDays: 180, present: 165, percentage: 91.7 },
+          rank: 0,
+        };
+      });
+      // Assign ranks by percentage (descending), sequential
+      cards.sort((a, b) => b.percentage - a.percentage);
+      cards.forEach((c, i) => { c.rank = i + 1; });
+      return json(cards);
+    }
+
+    /* ── CBSE Report Card ── */
+    if (path === '/cbse-report-card' && method === 'POST') {
+      return json({
+        ...(body as Record<string, unknown>),
+        isPublished: false,
+        _id: 'cbse-rc-mock',
+      }, 201);
+    }
+
+    /* ── Student Performance (alternate route) ── */
+    if (path.match(/^\/academics\/student-performance\/([^/]+)$/)) {
+      const studentId = path.split('/')[3];
+      const studentResults = state.results.filter((r) => r.studentId === studentId);
+      const examIds = [...new Set(studentResults.map((r) => r.examId))];
+      const exams = examIds.map((eid) => {
+        const results = studentResults.filter((r) => r.examId === eid);
+        const total = results.reduce((a, r) => a + r.marks, 0);
+        const max = results.reduce((a, r) => a + r.maxMarks, 0);
+        return { examId: eid, percentage: max > 0 ? Math.round((total / max) * 100) : 0, subjects: results };
+      });
+      return json({ exams });
+    }
 
     /* ── Fees ── */
     if (path === '/fee-heads')        return json(state.feeHeads);
@@ -1094,11 +1341,11 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       }
       return json([...state.studentFeeStructures.values()]);
     }
-    if (path === '/fees' || path === '/fee-payments')  return json(state.payments);
+    if (path === '/fees' || path === '/fee-payments' || path === '/fees/payments')  return json(state.payments);
     if (path === '/fee-settings')     return json({ lateFeeEnabled: false, lateFeeAmount: 50, gracePeriodDays: 7 });
 
     /* ── Announcements & Messaging ── */
-    if (path === '/announcements' && method === 'GET')  return jsonList(state.announcements);
+    if (path === '/announcements' && method === 'GET')  return json(state.announcements);
     if (path === '/announcements' && method === 'POST') {
       const a = seedAnnouncement(state, body as Partial<AnnouncementRecord>);
       return json(a, 201);
@@ -1109,8 +1356,9 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     if (path === '/email-templates')     return json([]);
     if (path === '/sms-templates')       return json([]);
     if (path === '/conversations')       return json(state.conversations);
-    if (path.match(/^\/conversations\/([^/]+)\/messages/)) {
-      const convId = path.split('/')[2];
+    if (path === '/messages/conversations') return json(state.conversations);
+    if (path.match(/^\/conversations\/([^/]+)\/messages/) || path.match(/^\/messages\/conversations\/([^/]+)\/messages/)) {
+      const convId = path.split('/')[path.includes('/messages/conversations/') ? 3 : 2];
       return json(state.chatMessages[convId] || []);
     }
     if (path === '/messages')            return json([]);
@@ -1168,7 +1416,25 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       state.books = state.books.filter((b) => b.id !== id);
       return json({ message: 'Deleted' });
     }
-    if (path === '/library/issued' || path === '/library/issues') return jsonList(state.issuedBooks);
+    if (path === '/library/issued' || path === '/library/issues') {
+      const statusParam = url.searchParams.get('status');
+      const overdueParam = url.searchParams.get('overdue');
+      let filtered = state.issuedBooks;
+      if (overdueParam === 'true') filtered = filtered.filter((ib) => ib.status === 'overdue');
+      else if (statusParam && statusParam !== 'all') filtered = filtered.filter((ib) => ib.status === statusParam);
+      const enriched = filtered.map((ib) => {
+        const book = state.books.find((b) => b.id === ib.bookId || b._id === ib.bookId);
+        const student = state.students.find((s) => s.id === ib.studentId || (s as any)._id === ib.studentId);
+        return { ...ib, bookId: book ? { _id: book.id, title: book.title, isbn: book.isbn } : { _id: ib.bookId, title: 'Unknown', isbn: '' }, studentId: student ? { _id: student.id, name: student.name, admissionNo: student.id } : { _id: ib.studentId, name: 'Unknown', admissionNo: '' }, accruedFine: ib.fine || 0 };
+      });
+      return json({ issues: enriched, total: enriched.length, page: 1, limit: 25 });
+    }
+    if (path.match(/^\/library\/issues\/([^/]+)\/return$/) && method === 'PUT') {
+      const issueId = path.split('/')[3];
+      const idx = state.issuedBooks.findIndex((ib) => ib.id === issueId || ib._id === issueId);
+      if (idx >= 0) { state.issuedBooks[idx].status = 'returned'; state.issuedBooks[idx].returnDate = new Date().toISOString(); }
+      return json({ message: 'Returned' });
+    }
     if (path.match(/^\/library\/issue/i) && method === 'POST') {
       const ib = seedIssuedBook(state, (body as Record<string, string>).bookId, (body as Record<string, string>).studentId, body as Partial<IssuedBookRecord>);
       return json(ib, 201);
@@ -1179,43 +1445,139 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       if (idx >= 0) { state.issuedBooks[idx].status = 'returned'; state.issuedBooks[idx].returnDate = new Date().toISOString(); }
       return json({ message: 'Returned' });
     }
-    if (path === '/library/stats') return json({ totalBooks: state.books.length, totalIssued: state.issuedBooks.filter((ib) => ib.status === 'issued').length, overdue: state.issuedBooks.filter((ib) => ib.status === 'overdue').length });
+    if (path === '/library/stats') {
+      const overdue = state.issuedBooks.filter((ib) => ib.status === 'overdue');
+      const totalFines = overdue.reduce((s, ib) => s + (ib.fine || 0), 0);
+      const lowStockBooks = state.books.filter((b) => (b.availableCopies ?? 0) <= 2);
+      return json({
+        totalBooks: state.books.length,
+        totalCopies: state.books.reduce((s, b) => s + (b.totalCopies || 0), 0),
+        availableCopies: state.books.reduce((s, b) => s + (b.availableCopies || 0), 0),
+        issued: state.issuedBooks.filter((ib) => ib.status === 'issued').length,
+        overdue: overdue.length,
+        reserved: 0,
+        lowStock: lowStockBooks.length,
+        totalAccruedFines: totalFines,
+      });
+    }
+    if (path === '/library/reports') {
+      const overdue = state.issuedBooks.filter((ib) => ib.status === 'overdue');
+      const totalFines = overdue.reduce((s, ib) => s + (ib.fine || 0), 0);
+      // Group books by category
+      const catMap: Record<string, { totalBooks: number; totalCopies: number; availableCopies: number }> = {};
+      state.books.forEach((b) => {
+        const cat = b.category || 'other';
+        if (!catMap[cat]) catMap[cat] = { totalBooks: 0, totalCopies: 0, availableCopies: 0 };
+        catMap[cat].totalBooks++;
+        catMap[cat].totalCopies += b.totalCopies || 0;
+        catMap[cat].availableCopies += b.availableCopies || 0;
+      });
+      const categoryStats = Object.entries(catMap).map(([k, v]) => ({ _id: k, ...v }));
+      // Group overdue by student
+      const studentOverdue: Record<string, { count: number; studentName: string; admissionNo: string }> = {};
+      overdue.forEach((ib) => {
+        const student = state.students.find((s) => s.id === ib.studentId || (s as any)._id === ib.studentId);
+        const key = ib.studentId;
+        if (!studentOverdue[key]) studentOverdue[key] = { count: 0, studentName: student?.name || 'Unknown', admissionNo: student?.id || '' };
+        studentOverdue[key].count++;
+      });
+      const overdueByStudent = Object.entries(studentOverdue).map(([k, v]) => ({ _id: k, ...v }));
+      // Most borrowed (by number of issued records per book)
+      const borrowCount: Record<string, { bookTitle: string; count: number }> = {};
+      state.issuedBooks.forEach((ib) => {
+        const book = state.books.find((b) => b.id === ib.bookId || b._id === ib.bookId);
+        const key = ib.bookId;
+        if (!borrowCount[key]) borrowCount[key] = { bookTitle: book?.title || 'Unknown', count: 0 };
+        borrowCount[key].count++;
+      });
+      const mostBorrowed = Object.entries(borrowCount).map(([k, v]) => ({ _id: k, ...v })).sort((a, b) => b.count - a.count).slice(0, 10);
+      return json({
+        mostBorrowed,
+        categoryStats,
+        overdueByStudent,
+        unpaidFines: { total: totalFines, count: overdue.length },
+      });
+    }
 
     /* ── Hostels ── */
-    if (path === '/hostels' && method === 'GET')  return jsonList(state.hostels);
-    if (path === '/hostels' && method === 'POST') {
+    // Stats endpoint used by HostelDashboard
+    if (path === '/hostel/stats') {
+      const totalCapacity = state.hostelRooms.reduce((s, r) => s + (r.capacity || 0), 0);
+      const occupiedBeds = state.hostelAllocations.filter((a) => a.status === 'active').length;
+      return json({
+        totalHostels: state.hostels.length,
+        totalRooms: state.hostelRooms.length,
+        totalCapacity,
+        occupiedBeds,
+        availableBeds: totalCapacity - occupiedBeds,
+        occupancyRate: totalCapacity > 0 ? Math.round((occupiedBeds / totalCapacity) * 100) : 0,
+        activeAllocations: state.hostelAllocations.filter((a) => a.status === 'active').length,
+        vacatedAllocations: state.hostelAllocations.filter((a) => a.status === 'vacated').length,
+      });
+    }
+    // Hostel CRUD — frontend calls /hostel/hostels
+    if ((path === '/hostels' || path === '/hostel/hostels') && method === 'GET')  return json({ hostels: state.hostels, total: state.hostels.length });
+    if ((path === '/hostels' || path === '/hostel/hostels') && method === 'POST') {
       const h = seedHostel(state, body as Partial<HostelRecord>);
       return json(h, 201);
     }
-    if (path.match(/^\/hostels\/([^/]+)$/) && method === 'PUT') {
-      const id = path.split('/')[2];
+    if ((path.match(/^\/hostels\/([^/]+)$/) || path.match(/^\/hostel\/hostels\/([^/]+)$/)) && method === 'PUT') {
+      const id = path.split('/').pop()!;
       const idx = state.hostels.findIndex((h) => h.id === id);
       if (idx >= 0) { Object.assign(state.hostels[idx], body); return json(state.hostels[idx]); }
       return json({ error: 'Not found' }, 404);
     }
-    if (path.match(/^\/hostels\/([^/]+)$/) && method === 'DELETE') {
-      const id = path.split('/')[2];
+    if ((path.match(/^\/hostels\/([^/]+)$/) || path.match(/^\/hostel\/hostels\/([^/]+)$/)) && method === 'DELETE') {
+      const id = path.split('/').pop()!;
       state.hostels = state.hostels.filter((h) => h.id !== id);
       return json({ message: 'Deleted' });
     }
-    if (path === '/hostel-rooms' || path.match(/^\/hostels\/([^/]+)\/rooms/)) {
+    // Rooms — frontend calls /hostel/rooms
+    if (path === '/hostel-rooms' || path === '/hostel/rooms' || path.match(/^\/hostels\/([^/]+)\/rooms/)) {
       if (method === 'POST') {
-        const hostelId = path.includes('/rooms') ? path.split('/')[2] : (body as Record<string, string>).hostelId;
+        const hostelId = path.includes('/rooms') && path.startsWith('/hostels') ? path.split('/')[2] : (body as Record<string, string>).hostelId;
         const r = seedHostelRoom(state, hostelId, body as Partial<HostelRoomRecord>);
         return json(r, 201);
       }
-      const hostelId = path.includes('/rooms') ? path.split('/')[2] : null;
-      return jsonList(hostelId ? state.hostelRooms.filter((r) => r.hostelId === hostelId) : state.hostelRooms);
+      const hostelIdParam = url.searchParams.get('hostelId');
+      const hostelId = path.startsWith('/hostels') && path.includes('/rooms') ? path.split('/')[2] : hostelIdParam;
+      const filtered = hostelId ? state.hostelRooms.filter((r) => r.hostelId === hostelId) : state.hostelRooms;
+      return json({ rooms: filtered, total: filtered.length, pages: 1 });
     }
-    if (path === '/hostel-allocations') {
+    if (path.match(/^\/hostel\/rooms\/([^/]+)$/) && method === 'PUT') {
+      const id = path.split('/').pop()!;
+      const idx = state.hostelRooms.findIndex((r) => r.id === id);
+      if (idx >= 0) { Object.assign(state.hostelRooms[idx], body); return json(state.hostelRooms[idx]); }
+      return json({ error: 'Not found' }, 404);
+    }
+    if (path.match(/^\/hostel\/rooms\/([^/]+)$/) && method === 'DELETE') {
+      const id = path.split('/').pop()!;
+      state.hostelRooms = state.hostelRooms.filter((r) => r.id !== id);
+      return json({ message: 'Deleted' });
+    }
+    // Allocations — frontend calls /hostel/allocations
+    if (path === '/hostel-allocations' || path === '/hostel/allocations') {
       if (method === 'POST') {
         const a = seedHostelAllocation(state, body as Partial<HostelAllocationRecord>);
         return json(a, 201);
       }
-      return jsonList(state.hostelAllocations);
+      return json({ allocations: state.hostelAllocations, total: state.hostelAllocations.length, pages: 1 });
+    }
+    if (path.match(/^\/hostel\/allocations\/([^/]+)\/vacate$/) && method === 'PUT') {
+      const id = path.split('/')[3];
+      const idx = state.hostelAllocations.findIndex((a) => a.id === id);
+      if (idx >= 0) { state.hostelAllocations[idx].status = 'vacated'; return json(state.hostelAllocations[idx]); }
+      return json({ error: 'Not found' }, 404);
     }
 
     /* ── Inventory ── */
+    if (path === '/inventory/stats') {
+      const lowStockCount = state.inventoryAssets.filter((a: Record<string, unknown>) => (a.minimumQuantity as number) > 0 && ((a.quantity as number) ?? 0) <= (a.minimumQuantity as number)).length;
+      return json({ totalAssets: state.inventoryAssets.length, activeAssets: state.inventoryAssets.filter((a) => a.status === 'ACTIVE').length, underMaintenance: state.inventoryAssets.filter((a) => a.status === 'UNDER_MAINTENANCE').length, pendingProcurements: 0, totalVendors: state.inventoryVendors.length, lowStockAssets: lowStockCount });
+    }
+    if (path === '/inventory/assets/low-stock') {
+      return json(state.inventoryAssets.filter((a: Record<string, unknown>) => (a.minimumQuantity as number) > 0 && ((a.quantity as number) ?? 0) <= (a.minimumQuantity as number)));
+    }
     if (path === '/inventory/assets' && method === 'GET')  return jsonList(state.inventoryAssets);
     if (path === '/inventory/assets' && method === 'POST') {
       const a = seedInventoryAsset(state, body as Partial<InventoryAssetRecord>);
@@ -1232,15 +1594,26 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       state.inventoryAssets = state.inventoryAssets.filter((a) => a.id !== id);
       return json({ message: 'Deleted' });
     }
-    if (path === '/inventory/vendors' && method === 'GET')  return jsonList(state.inventoryVendors);
+    if (path === '/inventory/vendors' && method === 'GET')  return json(state.inventoryVendors);
     if (path === '/inventory/vendors' && method === 'POST') {
       const v = seedInventoryVendor(state, body as Partial<InventoryVendorRecord>);
       return json(v, 201);
     }
-    if (path === '/inventory/maintenance')  return json({ data: [], total: 0 });
-    if (path === '/inventory/procurement')  return json({ data: [], total: 0 });
-    if (path === '/inventory/audits')       return json({ data: [], total: 0 });
-    if (path === '/inventory/reports')      return json({ totals: { totalItems: 0, totalPurchaseValue: 0, totalCurrentValue: 0 }, categoryBreakdown: [], conditionSummary: [] });
+    if (path.match(/^\/inventory\/vendors\/([^/]+)$/) && method === 'PUT') {
+      const id = path.split('/')[3];
+      const idx = state.inventoryVendors.findIndex((v) => v.id === id);
+      if (idx >= 0) { Object.assign(state.inventoryVendors[idx], body); return json(state.inventoryVendors[idx]); }
+      return json({ error: 'Not found' }, 404);
+    }
+    if (path.match(/^\/inventory\/vendors\/([^/]+)$/) && method === 'DELETE') {
+      const id = path.split('/')[3];
+      state.inventoryVendors = state.inventoryVendors.filter((v) => v.id !== id);
+      return json({ message: 'Deleted' });
+    }
+    if (path === '/inventory/maintenance')  return json([]);
+    if (path === '/inventory/procurement')  return json([]);
+    if (path === '/inventory/audits')       return json([]);
+    if (path === '/inventory/reports')      return json({ totals: { totalItems: 0, totalPurchaseValue: 0, totalCurrentValue: 0 }, categoryBreakdown: [], conditionSummary: [], statusSummary: [] });
 
     /* ── Homework ── */
     if (path === '/homework' && method === 'GET')  return jsonList(state.homework);
@@ -1261,7 +1634,7 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     }
 
     /* ── Calendar ── */
-    if (path === '/calendar/events' && method === 'GET')  return jsonList(state.calendarEvents);
+    if (path === '/calendar/events' && method === 'GET')  return json(state.calendarEvents);
     if (path === '/calendar/events' && method === 'POST') {
       const e = seedCalendarEvent(state, body as Partial<CalendarEventRecord>);
       return json(e, 201);
@@ -1294,6 +1667,22 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       state.transportRoutes.push(r);
       return json(r, 201);
     }
+    if (path.match(/^\/transport\/routes\/([^/]+)\/students/)) {
+      if (method === 'POST') {
+        state.requestLog.add(`POST /api${path}`);
+        return json({ message: 'Assigned' }, 201);
+      }
+      if (method === 'DELETE') {
+        state.requestLog.add(`DELETE /api${path}`);
+        return json({ message: 'Removed' });
+      }
+      return json([]);
+    }
+    if (path.match(/^\/transport\/routes\/([^/]+)$/) && method === 'GET') {
+      const id = path.split('/')[3];
+      const r = state.transportRoutes.find((r: Record<string, unknown>) => r.id === id || r._id === id);
+      return r ? json({ data: r }) : json({ error: 'Not found' }, 404);
+    }
     if (path.match(/^\/transport\/routes\/([^/]+)$/) && method === 'PUT') {
       const id = path.split('/')[3];
       const idx = state.transportRoutes.findIndex((r: Record<string, unknown>) => r.id === id || r._id === id);
@@ -1305,15 +1694,16 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       state.transportRoutes = state.transportRoutes.filter((r: Record<string, unknown>) => r.id !== id && r._id !== id);
       return json({ message: 'Deleted' });
     }
-    if (path.match(/^\/transport\/routes\/([^/]+)\/students/)) {
-      if (method === 'POST') return json({ message: 'Assigned' }, 201);
-      return json([]);
-    }
     if (path === '/transport/vehicles' && method === 'GET')  return jsonList(state.transportVehicles);
     if (path === '/transport/vehicles' && method === 'POST') {
       const v = { _id: `tv-${Date.now()}`, id: `tv-${Date.now()}`, ...body, schoolId: SCHOOL_ID };
       state.transportVehicles.push(v);
       return json(v, 201);
+    }
+    if (path.match(/^\/transport\/vehicles\/([^/]+)$/) && method === 'GET') {
+      const id = path.split('/')[3];
+      const v = state.transportVehicles.find((v: Record<string, unknown>) => v.id === id || v._id === id);
+      return v ? json({ data: v }) : json({ error: 'Not found' }, 404);
     }
     if (path.match(/^\/transport\/vehicles\/([^/]+)$/) && method === 'PUT') {
       const id = path.split('/')[3];
@@ -1328,6 +1718,10 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     }
 
     /* ── Settings ── */
+    if (path === '/settings/holidays')    return json(state.holidays);
+    if (path === '/settings/leave-types') return json(state.leaveTypes ?? []);
+    if (path === '/settings/fee-heads')   return json(state.feeHeads);
+    if (path === '/settings/subjects')    return json(state.subjects);
     if (path === '/settings' || path.match(/^\/settings\//)) {
       if (method === 'PUT' || method === 'PATCH') { Object.assign(state.schoolSettings, body); return json(state.schoolSettings); }
       return json(state.schoolSettings);
@@ -1336,6 +1730,46 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     if (path === '/subjects')     return json(state.subjects);
     if (path === '/permissions')  return json(state.user.permissions);
     if (path === '/communication-settings') return json({ emailEnabled: true, smsEnabled: true, pushEnabled: true, whatsappEnabled: false });
+
+    /* ── Trash ── */
+    if (path === '/trash') {
+      if (method === 'GET') return json({ success: true, data: state.trashItems || [], total: (state.trashItems || []).length });
+      return json({ success: true });
+    }
+    if (path === '/trash/stats') return json({ success: true, byType: {}, totalExpiring: 0 });
+    if (path.match(/^\/trash\/[^/]+\/restore$/)) {
+      const id = path.split('/')[2];
+      state.trashItems = state.trashItems.filter((i) => i._id !== id);
+      return json({ success: true });
+    }
+    if (path.match(/^\/trash\/[^/]+$/) && method === 'DELETE') {
+      const id = path.split('/')[2];
+      state.trashItems = state.trashItems.filter((i) => i._id !== id);
+      return json({ success: true });
+    }
+
+    /* ── Permission Requests ── */
+    if (path === '/permissions/requests') {
+      if (method === 'GET') return json(state.permissionRequests || []);
+      return json({ success: true });
+    }
+    if (path.match(/^\/permissions\/requests\/[^/]+$/)) {
+      if (method === 'PUT' || method === 'PATCH') {
+        const id = path.split('/')[3];
+        const req = state.permissionRequests.find((r) => r._id === id);
+        if (req) Object.assign(req, body);
+        return json({ success: true });
+      }
+      return json({ success: true });
+    }
+
+    /* ── Custom Roles ── */
+    if (path === '/permissions/custom-roles') {
+      if (method === 'GET') return json([]);
+      if (method === 'POST') return json({ _id: 'cr-new', ...(body as Record<string, unknown>) }, 201);
+      return json({ success: true });
+    }
+    if (path.match(/^\/permissions\/custom-roles\/[^/]+$/)) return json({ success: true });
 
     /* ── Analytics / Dashboard ── */
     if (path === '/dashboard/stats' || path === '/analytics') {
@@ -1365,7 +1799,10 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
 
     /* ── Payroll ── */
     if (path === '/payroll' || path === '/payroll/runs')  return jsonList(state.payrollRuns);
-    if (path.match(/^\/payroll\//))  return json({ records: [], summary: { totalAmount: 0, processedCount: 0 } });
+    if (path.match(/^\/payroll\/dashboard\//))  return json({ success: true, data: { month: 0, year: 0, totalPayout: 0, pendingAmount: 0, projectedPayout: 0, paidCount: 0, pendingCount: 0, totalEmployees: 0 } });
+    if (path.match(/^\/payroll\/records/) && method === 'GET')  return json({ success: true, data: state.payrollRuns || [], total: 0 });
+    if (path.match(/^\/payroll\/fix-salaries/) && method === 'POST')  return json({ success: true, message: 'Fixed' });
+    if (path.match(/^\/payroll\//))  return json({ success: true, data: {} });
 
     /* ── AI Assistant ── */
     if (path === '/ai' || path.match(/^\/ai\//)) return json({ response: 'I am the AI assistant. How can I help you?', suggestions: [] });
@@ -1375,11 +1812,81 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     if (path.match(/^\/notifications\/preferences/))  return json({ email: true, push: true, sms: false });
     if (path === '/notification-preferences')  return json({ email: true, push: true, sms: false });
 
-    /* ── Intake Forms ── */
-    if (path === '/intake-forms' || path.match(/^\/intake-forms\//)) {
-      if (path.includes('/assignments'))  return json([]);
-      if (path.includes('/submissions'))  return json([]);
-      return json({ forms: [], total: 0 });
+    /* ── Intake Forms (CRUD) ── */
+    if (path === '/intake-forms' || path === '/intake-forms/') {
+      if (method === 'GET') return json(state.intakeForms ?? []);
+      if (method === 'POST') return json({ success: true, data: body }, 201);
+      return json({ success: true });
+    }
+    if (path.match(/^\/intake-forms\/[^/]+\/assign$/)) {
+      if (method === 'POST') return json({ success: true, data: body }, 201);
+      return json({ success: true });
+    }
+    if (path.match(/^\/intake-forms\/[^/]+\/duplicate$/)) {
+      return json({ success: true, data: body }, 201);
+    }
+    if (path.match(/^\/intake-forms\/[^/]+$/)) {
+      if (method === 'GET') return json((state.intakeForms ?? []).find((f: any) => f._id === path.split('/').pop()) || {});
+      if (method === 'PUT') return json({ success: true });
+      if (method === 'DELETE') return json({ success: true });
+      return json({ success: true });
+    }
+
+    /* ── Form Assignments ── */
+    if (path === '/form-assignments' || path === '/form-assignments/') {
+      if (method === 'GET') {
+        const statusParam = url.searchParams.get('status');
+        let result = state.intakeFormAssignments ?? [];
+        if (statusParam) result = result.filter((a: any) => a.status === statusParam);
+        return json(result);
+      }
+      if (method === 'POST') return json({ success: true, data: body }, 201);
+      return json({ success: true });
+    }
+    if (path.match(/^\/form-assignments\/[^/]+\/resend$/)) {
+      state.requestLog.add(`PUT ${'/api' + path}`);
+      return json({ success: true });
+    }
+    if (path.match(/^\/form-assignments\/[^/]+$/)) {
+      const id = path.split('/').pop();
+      if (method === 'GET') return json((state.intakeFormAssignments ?? []).find((a: any) => a._id === id) || {});
+      if (method === 'DELETE') {
+        state.requestLog.add(`DELETE ${'/api' + path}`);
+        state.intakeFormAssignments = (state.intakeFormAssignments ?? []).filter((a: any) => a._id !== id);
+        return json({ success: true });
+      }
+      if (method === 'PUT') return json({ success: true });
+      return json({ success: true });
+    }
+
+    /* ── Form Submissions ── */
+    if (path === '/form-submissions' || path === '/form-submissions/') {
+      if (method === 'GET') {
+        const reviewStatusParam = url.searchParams.get('reviewStatus');
+        let result = state.intakeFormSubmissions ?? [];
+        if (reviewStatusParam) result = result.filter((s: any) => s.reviewStatus === reviewStatusParam);
+        return json(result);
+      }
+      return json({ success: true });
+    }
+    if (path.match(/^\/form-submissions\/[^/]+\/review$/)) {
+      const subId = path.split('/')[2];
+      state.requestLog.add(`PUT ${'/api' + path}`);
+      const sub = (state.intakeFormSubmissions ?? []).find((s: any) => s._id === subId || s.id === subId);
+      if (sub && body) {
+        (sub as any).reviewStatus = body.reviewStatus;
+        if (body.reviewNotes) (sub as any).reviewNotes = body.reviewNotes;
+        (sub as any).reviewedBy = body.reviewedBy;
+        (sub as any).reviewedAt = new Date().toISOString();
+      }
+      return json({ success: true });
+    }
+    if (path.match(/^\/form-submissions\/[^/]+$/)) {
+      const subId = path.split('/').pop();
+      if (method === 'GET') return json((state.intakeFormSubmissions ?? []).find((s: any) => s._id === subId || s.id === subId) || {});
+      if (method === 'PUT') return json({ success: true });
+      if (method === 'DELETE') return json({ success: true });
+      return json({ success: true });
     }
 
     /* ── Super Admin ── */
@@ -1427,6 +1934,22 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
 
     /* ── Feature Flags ── */
     if (path === '/feature-flags') return json({});
+
+    /* ── Global Search ── */
+    if (path === '/search') {
+      const q = (url.searchParams.get('q') || '').toLowerCase();
+      const matchedStudents = q ? state.students.filter((s) => s.name.toLowerCase().includes(q)) : [];
+      const matchedStaff = q ? state.staff.filter((s) => s.name.toLowerCase().includes(q)) : [];
+      const matchedClasses = q ? state.classes.filter((c) => c.name.toLowerCase().includes(q) || c.section.toLowerCase().includes(q)) : [];
+      return json({
+        students: { results: matchedStudents, total: matchedStudents.length },
+        staff: { results: matchedStaff, total: matchedStaff.length },
+        classes: { results: matchedClasses, total: matchedClasses.length },
+        exams: { results: [], total: 0 },
+        fees: { results: [], total: 0 },
+        announcements: { results: [], total: 0 },
+      });
+    }
 
     /* ── Catch-all ── */
     // eslint-disable-next-line no-console

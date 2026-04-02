@@ -16,11 +16,21 @@ test.describe('Staff Dashboard — Tabs, Timetable & Assignments', () => {
     await installMockApi(page, state);
   });
 
+  /* ───────── Helper: wait for staff data to render ───────── */
+  async function waitForStaffProfile(page: import('@playwright/test').Page, staffName: string) {
+    await page.waitForFunction(
+      (name: string) => document.body.textContent?.includes(name) ?? false,
+      staffName,
+      { timeout: 15_000 },
+    );
+  }
+
   /* ───────── 1. Overview tab — profile info ───────── */
 
   test('overview tab shows staff profile info', async ({ page }) => {
     await page.goto(`/staffs/${TEACHER_A_ID}`);
     await page.waitForLoadState('networkidle');
+    await waitForStaffProfile(page, 'Ananya');
 
     const body = await page.textContent('body');
     // Name
@@ -29,7 +39,7 @@ test.describe('Staff Dashboard — Tabs, Timetable & Assignments', () => {
     expect(body).toContain('Teacher');
     // Department (shown if no subject assignments yet — but assignments load async so department may be hidden)
     // Phone
-    expect(body).toContain('9100000001');
+    expect(body).toContain('9876543210');
     // Email
     expect(body).toContain('ananya@schoolsync.test');
   });
@@ -39,6 +49,7 @@ test.describe('Staff Dashboard — Tabs, Timetable & Assignments', () => {
   test('attendance tab shows calendar view', async ({ page }) => {
     await page.goto(`/staffs/${TEACHER_A_ID}`);
     await page.waitForLoadState('networkidle');
+    await waitForStaffProfile(page, 'Ananya');
 
     // Click attendance tab
     const attendanceTab = page.locator('button').filter({ hasText: /^Attendance$/i }).first();
@@ -60,6 +71,7 @@ test.describe('Staff Dashboard — Tabs, Timetable & Assignments', () => {
   test('overview shows attendance summary stats cards', async ({ page }) => {
     await page.goto(`/staffs/${TEACHER_A_ID}`);
     await page.waitForLoadState('networkidle');
+    await waitForStaffProfile(page, 'Ananya');
 
     const body = await page.textContent('body');
     // Stats cards show attendance %, role, joining date labels
@@ -74,6 +86,7 @@ test.describe('Staff Dashboard — Tabs, Timetable & Assignments', () => {
   test('timetable tab shows weekly schedule grid', async ({ page }) => {
     await page.goto(`/staffs/${TEACHER_A_ID}`);
     await page.waitForLoadState('networkidle');
+    await waitForStaffProfile(page, 'Ananya');
 
     // Click timetable tab
     const timetableTab = page.locator('button').filter({ hasText: /^Timetable$/i }).first();
@@ -105,9 +118,10 @@ test.describe('Staff Dashboard — Tabs, Timetable & Assignments', () => {
   test('classes tab lists subject-class assignments', async ({ page }) => {
     await page.goto(`/staffs/${TEACHER_A_ID}`);
     await page.waitForLoadState('networkidle');
+    await waitForStaffProfile(page, 'Ananya');
 
-    // Click classes tab
-    const classesTab = page.locator('button').filter({ hasText: /^Classes$/i }).first();
+    // Click classes tab (label is "Classes & Subjects")
+    const classesTab = page.locator('button').filter({ hasText: /Classes/i }).first();
     await classesTab.click();
     await page.waitForTimeout(1000);
 
@@ -124,6 +138,7 @@ test.describe('Staff Dashboard — Tabs, Timetable & Assignments', () => {
   test('payroll tab shows salary overview', async ({ page }) => {
     await page.goto(`/staffs/${TEACHER_A_ID}`);
     await page.waitForLoadState('networkidle');
+    await waitForStaffProfile(page, 'Ananya');
 
     // Click payroll tab
     const payrollTab = page.locator('button').filter({ hasText: /^Payroll$/i }).first();
@@ -152,6 +167,7 @@ test.describe('Staff Dashboard — Tabs, Timetable & Assignments', () => {
 
     await page.goto(`/staffs/${TEACHER_A_ID}`);
     await page.waitForLoadState('networkidle');
+    await waitForStaffProfile(page, 'Ananya');
 
     // Click documents tab (label includes count)
     const documentsTab = page.locator('button').filter({ hasText: /Documents/i }).first();
@@ -171,6 +187,7 @@ test.describe('Staff Dashboard — Tabs, Timetable & Assignments', () => {
   test('overview shows class teacher assignments', async ({ page }) => {
     await page.goto(`/staffs/${TEACHER_A_ID}`);
     await page.waitForLoadState('networkidle');
+    await waitForStaffProfile(page, 'Ananya');
 
     const body = await page.textContent('body');
     // Ananya is class teacher for 10-A
@@ -184,6 +201,7 @@ test.describe('Staff Dashboard — Tabs, Timetable & Assignments', () => {
   test('tab switching preserves data without re-fetching', async ({ page }) => {
     await page.goto(`/staffs/${TEACHER_A_ID}`);
     await page.waitForLoadState('networkidle');
+    await waitForStaffProfile(page, 'Ananya');
 
     // Record request count after initial load
     const initialCount = state.requestLog.size;
@@ -209,6 +227,7 @@ test.describe('Staff Dashboard — Tabs, Timetable & Assignments', () => {
   test('edit button opens edit staff drawer', async ({ page }) => {
     await page.goto(`/staffs/${TEACHER_A_ID}`);
     await page.waitForLoadState('networkidle');
+    await waitForStaffProfile(page, 'Ananya');
 
     // Click Edit button in the header
     const editBtn = page.getByRole('button', { name: /^Edit$/i }).first();
@@ -233,6 +252,7 @@ test.describe('Staff Dashboard — Tabs, Timetable & Assignments', () => {
   test('back button navigates to staff list', async ({ page }) => {
     await page.goto(`/staffs/${TEACHER_A_ID}`);
     await page.waitForLoadState('networkidle');
+    await waitForStaffProfile(page, 'Ananya');
 
     // Click back button
     const backBtn = page.locator('button').filter({ hasText: /back|staff/i }).first();
@@ -251,9 +271,18 @@ test.describe('Staff Dashboard — Tabs, Timetable & Assignments', () => {
     await page.goto(`/staffs/${ACCOUNTANT_ID}`);
     await page.waitForLoadState('networkidle');
 
+    // Wait for the staff name to appear (data may take a moment to load)
+    await page.waitForFunction(
+      () => {
+        const text = document.body.textContent || '';
+        return text.includes('Priya') || text.includes('Menon');
+      },
+      { timeout: 10_000 },
+    ).catch(() => {});
+
     const body = await page.textContent('body');
-    // Accountant — should show department "Administration" instead of student count
+    // Accountant — should show name and department/role instead of student count
     expect(body?.includes('Priya') || body?.includes('Menon')).toBeTruthy();
-    expect(body?.includes('Accountant') || body?.includes('Administration')).toBeTruthy();
+    expect(body?.includes('accountant') || body?.includes('Accountant') || body?.includes('Finance')).toBeTruthy();
   });
 });

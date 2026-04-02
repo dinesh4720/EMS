@@ -145,8 +145,8 @@ async function installWizardRoutes(
     await route.fallback();
   });
 
-  // PUT /api/class-settings/:id/subjects — save subject assignments
-  await page.route('**/api/class-settings/*/subjects', async (route) => {
+  // PUT /api/classes/:id/subjects — save subject assignments
+  await page.route('**/api/classes/*/subjects', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname.replace(/\/+$/, '');
@@ -155,7 +155,7 @@ async function installWizardRoutes(
 
     if (method === 'PUT') {
       // After saving, remove this class from missing subjects
-      const classIdMatch = path.match(/\/api\/class-settings\/([^/]+)\/subjects$/);
+      const classIdMatch = path.match(/\/api\/classes\/([^/]+)\/subjects$/);
       if (classIdMatch) {
         const classId = classIdMatch[1];
         currentMissing.missingSubjects = currentMissing.missingSubjects.filter(
@@ -197,6 +197,13 @@ test.describe('Timetable Wizard — Full Generation Workflow', () => {
 
   test.beforeEach(async ({ page }) => {
     state = createMockState();
+    // Add subjects to schoolSettings so the wizard Select dropdowns are populated
+    (state.schoolSettings as Record<string, unknown>).subjects = [
+      { _id: 'sub-math', name: 'Mathematics', code: 'MATH' },
+      { _id: 'sub-sci', name: 'Science', code: 'SCI' },
+      { _id: 'sub-eng', name: 'English', code: 'ENG' },
+      { _id: 'sub-ss', name: 'Social Studies', code: 'SS' },
+    ];
     // Dismiss cookie consent so it doesn't block clicks
     await page.addInitScript(() => {
       localStorage.setItem(
@@ -211,7 +218,7 @@ test.describe('Timetable Wizard — Full Generation Workflow', () => {
   // 1. Wizard loads with all 4 sidebar tabs
   test('wizard loads with sidebar tabs: Missing Subjects, Teachers, Generate, View', async ({ page }) => {
     await page.goto('/timetable-wizard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const body = page.locator('body');
 
@@ -228,7 +235,7 @@ test.describe('Timetable Wizard — Full Generation Workflow', () => {
   // 2. Missing Subjects tab shows classes with unassigned subjects
   test('Missing Subjects tab shows classes with unassigned subjects', async ({ page }) => {
     await page.goto('/timetable-wizard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const body = page.locator('body');
     await expect(body.getByText('Master Timetable Wizard')).toBeVisible({ timeout: 10_000 });
@@ -252,7 +259,7 @@ test.describe('Timetable Wizard — Full Generation Workflow', () => {
   // 3. Subject selection dropdowns work per class
   test('subject selection dropdowns work per class', async ({ page }) => {
     await page.goto('/timetable-wizard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const body = page.locator('body');
     await expect(body.getByText('Missing Subject Assignments')).toBeVisible({ timeout: 10_000 });
@@ -268,7 +275,7 @@ test.describe('Timetable Wizard — Full Generation Workflow', () => {
     await selectTriggers.first().click();
 
     // Subject options from schoolSettings should appear in the popover
-    const listbox = page.locator('ul[role="listbox"]');
+    const listbox = page.locator('[role="listbox"]');
     await expect(listbox).toBeVisible({ timeout: 5_000 });
 
     // Options should include subjects from schoolSettings
@@ -283,7 +290,7 @@ test.describe('Timetable Wizard — Full Generation Workflow', () => {
   // 4. Save subject assignments triggers PUT and shows success
   test('save subject assignments triggers API call and shows success', async ({ page }) => {
     await page.goto('/timetable-wizard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const body = page.locator('body');
     await expect(body.getByText('Missing Subject Assignments')).toBeVisible({ timeout: 10_000 });
@@ -328,9 +335,9 @@ test.describe('Timetable Wizard — Full Generation Workflow', () => {
     await expect(saveBtn).toBeVisible();
     await saveBtn.click({ force: true });
 
-    // Verify PUT request was made to class-settings subjects endpoint
+    // Verify PUT request was made to classes subjects endpoint
     await expect.poll(() =>
-      [...state.requestLog].some(r => r.includes('PUT') && r.includes('/class-settings/') && r.includes('/subjects')),
+      [...state.requestLog].some(r => r.includes('PUT') && r.includes('/classes/') && r.includes('/subjects')),
       { timeout: 10_000 }
     ).toBeTruthy();
   });
@@ -338,7 +345,7 @@ test.describe('Timetable Wizard — Full Generation Workflow', () => {
   // 5. Generate tab shows 'Generate For All Classes' button
   test('Generate tab shows generate button', async ({ page }) => {
     await page.goto('/timetable-wizard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const body = page.locator('body');
     await expect(body.getByText('Master Timetable Wizard')).toBeVisible({ timeout: 10_000 });
@@ -349,17 +356,17 @@ test.describe('Timetable Wizard — Full Generation Workflow', () => {
 
     // Should show the generate content
     await expect(body.getByText('Auto-Generate Timetables')).toBeVisible({ timeout: 5_000 });
-    await expect(body.getByText(/Let our advanced algorithm/i)).toBeVisible();
+    await expect(body.getByText(/generate clash-free timetables/i)).toBeVisible();
 
-    // Should show the generate button
-    const generateBtn = body.getByRole('button', { name: /generate for all classes/i });
+    // Should show the generate button (text includes class count, e.g. "Generate For All 2 Classes")
+    const generateBtn = body.getByRole('button', { name: /generate for all/i });
     await expect(generateBtn).toBeVisible();
   });
 
   // 6. Generate triggers API call and shows result (generated count)
   test('generate triggers API call and shows result', async ({ page }) => {
     await page.goto('/timetable-wizard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const body = page.locator('body');
     await expect(body.getByText('Master Timetable Wizard')).toBeVisible({ timeout: 10_000 });
@@ -368,8 +375,8 @@ test.describe('Timetable Wizard — Full Generation Workflow', () => {
     await body.getByText('3. Generate Timetables').click();
     await expect(body.getByText('Auto-Generate Timetables')).toBeVisible({ timeout: 5_000 });
 
-    // Click the generate button
-    const generateBtn = body.getByRole('button', { name: /generate for all classes/i });
+    // Click the generate button (text includes class count, e.g. "Generate For All 2 Classes")
+    const generateBtn = body.getByRole('button', { name: /generate for all/i });
     await generateBtn.click();
 
     // Verify API call was made
@@ -378,15 +385,15 @@ test.describe('Timetable Wizard — Full Generation Workflow', () => {
     ).toBeTruthy();
 
     // After generation, the wizard should switch to the View tab
-    // The view tab shows stats cards
-    await expect(body.getByText('Total Classes')).toBeVisible({ timeout: 10_000 });
-    await expect(body.getByText('Timetables Created')).toBeVisible();
+    // The view tab shows stats cards (use .first() since "Total Classes" appears in header too)
+    await expect(body.getByText('Total Classes').first()).toBeVisible({ timeout: 10_000 });
+    await expect(body.getByText('Timetables Created').first()).toBeVisible();
   });
 
   // 7. View tab shows generated timetable grid for classes
   test('View tab shows timetable cards for each class', async ({ page }) => {
     await page.goto('/timetable-wizard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const body = page.locator('body');
     await expect(body.getByText('Master Timetable Wizard')).toBeVisible({ timeout: 10_000 });
@@ -394,10 +401,10 @@ test.describe('Timetable Wizard — Full Generation Workflow', () => {
     // Navigate to View tab
     await body.getByText('4. View & Edit Timetables').click();
 
-    // Should show summary stats
-    await expect(body.getByText('Total Classes')).toBeVisible({ timeout: 5_000 });
-    await expect(body.getByText('Timetables Created')).toBeVisible();
-    await expect(body.getByText('Missing Timetables')).toBeVisible();
+    // Should show summary stats (use .first() since "Total Classes" also appears in header stats)
+    await expect(body.getByText('Total Classes').first()).toBeVisible({ timeout: 5_000 });
+    await expect(body.getByText('Timetables Created').first()).toBeVisible();
+    await expect(body.getByText('Missing Timetables').first()).toBeVisible();
 
     // Should show class cards with status and "View / Edit" buttons
     await expect(body.getByText('10 - A').first()).toBeVisible();
@@ -409,6 +416,12 @@ test.describe('Timetable Wizard — Full Generation Workflow', () => {
   test('error handling when generation fails shows conflict message', async ({ page }) => {
     // Reinstall with generateShouldFail = true
     state = createMockState();
+    (state.schoolSettings as Record<string, unknown>).subjects = [
+      { _id: 'sub-math', name: 'Mathematics', code: 'MATH' },
+      { _id: 'sub-sci', name: 'Science', code: 'SCI' },
+      { _id: 'sub-eng', name: 'English', code: 'ENG' },
+      { _id: 'sub-ss', name: 'Social Studies', code: 'SS' },
+    ];
     await page.addInitScript(() => {
       localStorage.setItem(
         'ems_cookie_consent',
@@ -419,7 +432,7 @@ test.describe('Timetable Wizard — Full Generation Workflow', () => {
     await installWizardRoutes(page, state, { generateShouldFail: true });
 
     await page.goto('/timetable-wizard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const body = page.locator('body');
     await expect(body.getByText('Master Timetable Wizard')).toBeVisible({ timeout: 10_000 });
@@ -428,8 +441,8 @@ test.describe('Timetable Wizard — Full Generation Workflow', () => {
     await body.getByText('3. Generate Timetables').click();
     await expect(body.getByText('Auto-Generate Timetables')).toBeVisible({ timeout: 5_000 });
 
-    // Click generate
-    const generateBtn = body.getByRole('button', { name: /generate for all classes/i });
+    // Click generate (text includes class count, e.g. "Generate For All 2 Classes")
+    const generateBtn = body.getByRole('button', { name: /generate for all/i });
     await generateBtn.click();
 
     // Verify the API was called
@@ -437,7 +450,7 @@ test.describe('Timetable Wizard — Full Generation Workflow', () => {
       [...state.requestLog].some(r => r.includes('POST /api/timetable/generate-all'))
     ).toBeTruthy();
 
-    // Error toast should appear with the failure message
+    // Error toast should appear — the wizard shows "Failed to generate timetables. Ensure subjects and teachers are properly assigned."
     await expect(body.getByText(/failed to generate timetables/i)).toBeVisible({ timeout: 5_000 });
   });
 });

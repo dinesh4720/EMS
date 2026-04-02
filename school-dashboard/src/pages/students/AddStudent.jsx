@@ -1,18 +1,20 @@
 import { request } from '../../services/api.js';
-import { useState, useRef, useEffect, useMemo, useCallback, forwardRef, useImperativeHandle } from "react";
-import { parseDate } from "@internationalized/date";
+import { useState, useRef, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
 import logger from "../../utils/logger";
-import { Button, Input, Select, SelectItem, Checkbox, Textarea, Chip, Avatar, RadioGroup, Radio, cn, Divider, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, DatePicker, Popover, PopoverTrigger, PopoverContent, Calendar as CalendarIcon } from "@heroui/react";
-import { ArrowLeft, ArrowRight, Upload, X, Plus, User, FileText, Users, GraduationCap, Check, Heart, Bus, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, getDaysInMonth, isValid, parse } from "date-fns";
+// eslint-disable-next-line no-unused-vars -- all components used in JSX
+import { Button, Input, Select, SelectItem, Checkbox, Textarea, Chip, Avatar, RadioGroup, Radio, cn, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
+// eslint-disable-next-line no-unused-vars -- all icons used in JSX
+import { ArrowRight, Upload, X, User, FileText, Users, Check, Heart, Bus, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isValid, parse } from "date-fns";
 import { studentsApi, settingsApi, uploadApi, lookupPincode, classesApi } from "../../services/api";
 import { z } from "zod";
 import toast from "react-hot-toast";
-import PhotoEditorModal from "../../components/PhotoEditorModal";
-import CameraCaptureModal from "../../components/CameraCaptureModal";
-import { GENDERS, BLOOD_GROUPS, PARENT_RELATIONSHIPS, GUARDIAN_RELATIONSHIPS, RELIGIONS, CATEGORIES, MOTHER_TONGUES, DEFAULT_STUDENT_FORM } from "../../constants/studentConstants";
+import PhotoEditorModal from "../../components/PhotoEditorModal"; // eslint-disable-line no-unused-vars -- used in JSX
+import CameraCaptureModal from "../../components/CameraCaptureModal"; // eslint-disable-line no-unused-vars -- used in JSX
+import { GENDERS, BLOOD_GROUPS, PARENT_RELATIONSHIPS, GUARDIAN_RELATIONSHIPS, RELIGIONS, CATEGORIES, MOTHER_TONGUES } from "../../constants/studentConstants";
 import { INDIAN_STATES, normalizeStateName } from "../../constants/states";
 import { useTranslation } from 'react-i18next';
+import { useApp } from '../../context/AppContext';
 import { formatShortDate } from '../../utils/dateFormatter';
 
 // Note: Constants now imported from constants/ folder
@@ -43,7 +45,7 @@ const emptyForm = {
 
 // --- Click Away Listener Component ---
 // Simple hook-based click outside detector
-function ClickAwayListener({ children, onClickAway }) {
+function ClickAwayListener({ children, onClickAway }) { // eslint-disable-line no-unused-vars -- used in JSX below
   const ref = useRef(null);
 
   useEffect(() => {
@@ -65,14 +67,13 @@ function ClickAwayListener({ children, onClickAway }) {
 // --- Custom Calendar Component ---
 // Simple calendar that shows only the calendar grid, no nested input
 // Disables future dates to prevent selection
-function CustomCalendar({ selectedDate, onSelect, onClose }) {
+function CustomCalendar({ selectedDate, onSelect }) { // eslint-disable-line no-unused-vars -- used in JSX below
   const [currentMonth, setCurrentMonth] = useState(() => {
     if (selectedDate) return selectedDate;
     return new Date();
   });
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
 
-  const daysInMonth = getDaysInMonth(currentMonth);
   const firstDayOfMonth = startOfMonth(currentMonth);
   const lastDayOfMonth = endOfMonth(currentMonth);
 
@@ -224,8 +225,9 @@ function CustomCalendar({ selectedDate, onSelect, onClose }) {
   );
 }
 
-const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOptions = [], classesWithTeachers = [], initialData = null }, ref) {
+const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWithTeachers = [], initialData = null }, ref) {
   const { t } = useTranslation();
+  const { currentAcademicYear } = useApp();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -243,7 +245,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
         } else {
           // If class doesn't have the expected format, try to find matching class
           // FIXED: Use String() comparison for ObjectId matching
-          const matchingClass = classesWithTeachers.find(c => String(c.id) === String(initialData.classId));
+          const matchingClass = classesWithTeachers.find(cls => String(cls.id) === String(initialData.classId));
           if (matchingClass) {
             classGrade = matchingClass.name;
             section = matchingClass.section;
@@ -255,7 +257,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
       // Backend may store "Hindu" but constants use "Hinduism"
       let normalizedReligion = initialData.religion || "";
       if (normalizedReligion && !RELIGIONS.includes(normalizedReligion)) {
-        const match = RELIGIONS.find(r => r.toLowerCase().startsWith(normalizedReligion.toLowerCase()));
+        const match = RELIGIONS.find(rel => rel.toLowerCase().startsWith(normalizedReligion.toLowerCase()));
         if (match) normalizedReligion = match;
       }
 
@@ -270,11 +272,11 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
         religion: normalizedReligion,
         // Ensure parents array is populated
         parents: initialData.parents?.length > 0
-          ? initialData.parents.map(p => ({
-              ...p,
+          ? initialData.parents.map(parent => ({
+              ...parent,
               // Bug #8/#9 fix: Ensure isParent is explicitly set based on relationship
               // Backend may not store isParent, so derive it from relationship
-              isParent: p.isParent != null ? p.isParent : ["Father", "Mother"].includes(p.relationship),
+              isParent: parent.isParent != null ? parent.isParent : ["Father", "Mother"].includes(parent.relationship),
             }))
           : [{
           name: initialData.parentName || "",
@@ -313,7 +315,6 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
   const tcRef = useRef(null);
   const aadhaarFrontRef = useRef(null);
   const aadhaarBackRef = useRef(null);
-  const photoRef = useRef(null);
   const otherDocsRef = useRef(null);
   const zipLookupTimeoutRef = useRef(null);
   const manualCityStateEntryRef = useRef(false);
@@ -349,6 +350,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
       initialFormDataRef.current = JSON.stringify(formData);
     }, 500);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally capture formData only on mount; re-running would defeat dirty-state detection
   }, []);
 
   // Detect form changes for dirty state (debounced to avoid lag)
@@ -381,7 +383,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
     const generateRollNumber = async () => {
       if (formData.classGrade && formData.section && !initialData) {
         try {
-          const selectedClass = classesWithTeachers.find(c => c.name === formData.classGrade && c.section === formData.section);
+          const selectedClass = classesWithTeachers.find(cls => cls.name === formData.classGrade && cls.section === formData.section);
           if (selectedClass) {
             // Use optimized API endpoint
             const data = await request(`/classes/${selectedClass.id}/next-roll-number`);
@@ -395,6 +397,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
       }
     };
     generateRollNumber();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- updateField is stable, including it causes infinite loop
   }, [formData.classGrade, formData.section, initialData, classesWithTeachers]);
 
   // Initialize DOB validation when editing a student with existing DOB
@@ -411,7 +414,8 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
         validateDOBInRealTime(formData.dateOfBirth);
       }
     }
-  }, []); // Run once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs once on mount only
+  }, []);
 
   // Normalize state from initialData on mount
   useEffect(() => {
@@ -421,7 +425,8 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
         updateField("state", normalizedState);
       }
     }
-  }, []); // Run once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs once on mount only
+  }, []);
 
   // Cleanup zip lookup timeout on unmount
   useEffect(() => {
@@ -453,6 +458,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
         URL.revokeObjectURL(picturePreviewUrl);
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- cleanup depends only on the URL value, not formData.picture
   }, [picturePreviewUrl]);
 
   // Memoize state selectedKeys to prevent Select component from closing/flickering during PIN lookup
@@ -462,8 +468,8 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
 
   // Memoize unique class names to prevent recalculation on every render
   const uniqueClassNames = useMemo(() => {
-    return Array.from(new Set(classesWithTeachers.map(c => c.name)))
-      .sort((a, b) => parseInt(a) - parseInt(b));
+    return Array.from(new Set(classesWithTeachers.map(cls => cls.name)))
+      .sort((nameA, nameB) => parseInt(nameA) - parseInt(nameB));
   }, [classesWithTeachers]);
 
   // Memoize sections for selected class
@@ -471,8 +477,8 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
     if (!formData.classGrade) return [];
     return Array.from(new Set(
       classesWithTeachers
-        .filter(c => c.name === formData.classGrade)
-        .map(c => c.section)
+        .filter(cls => cls.name === formData.classGrade)
+        .map(cls => cls.section)
     )).sort();
   }, [classesWithTeachers, formData.classGrade]);
 
@@ -499,7 +505,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
     updateField("parents", updated);
   };
 
-  const addParent = () => {
+  const _addParent = () => {
     if (formData.parents.length < 3) {
       updateField("parents", [...formData.parents, { name: "", relationship: "Mother", phone: "", email: "", occupation: "", isWhatsapp: true, isParent: true }]);
     }
@@ -568,7 +574,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
     }
   };
 
-  const handleFileSelect = (e) => {
+  const _handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > MAX_IMAGE_SIZE) {
@@ -848,17 +854,6 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
     setDobValidation(validation);
   };
 
-  // Helper to show format progress
-  const getFormatProgress = (dateStr) => {
-    const parts = dateStr.split('/');
-    const digits = dateStr.replace(/\D/g, '');
-
-    if (digits.length === 0) return 'Enter day (DD)';
-    if (digits.length <= 2) return 'Enter month (MM)';
-    if (digits.length <= 4) return 'Enter year (YYYY)';
-    return 'Almost there...';
-  };
-
   const handleSubmit = async () => {
     // Validate all steps before submitting
     const step1Validation = validateStep(1);
@@ -883,12 +878,12 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
     setIsSubmitting(true);
     try {
       // Find the classId from the selected classGrade and section
-      const selectedClass = classesWithTeachers.find(c => c.name === formData.classGrade && c.section === formData.section);
+      const selectedClass = classesWithTeachers.find(cls => cls.name === formData.classGrade && cls.section === formData.section);
 
       if (!selectedClass) {
         logger.error('❌ Selected class not found!');
         logger.error('❌ Looking for classGrade:', formData.classGrade, 'section:', formData.section);
-        logger.error('❌ Available classes:', classesWithTeachers.map(c => ({ id: c.id, name: c.name, section: c.section })));
+        logger.error('❌ Available classes:', classesWithTeachers.map(cls => ({ id: cls.id, name: cls.name, section: cls.section })));
         toast.error(t('toast.error.selectedClassNotFound'));
         setIsSubmitting(false);
         return;
@@ -1088,10 +1083,8 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
         admissionId = initialData.admissionId;
       }
 
-      // Calculate academic year (e.g., 2024-25)
-      const currentYear = new Date().getFullYear();
-      const nextYear = (currentYear + 1).toString().slice(-2);
-      const academicYear = `${currentYear}-${nextYear}`;
+      // Use school-configured academic year from context
+      const academicYear = currentAcademicYear;
 
       const studentData = {
         name: formData.fullName,
@@ -1247,7 +1240,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
               labelPlacement="outside"
               placeholder={t('pages.enterStudentSFullName')}
               value={formData.fullName}
-              onValueChange={v => updateField("fullName", v.replace(/[0-9]/g, ''))}
+              onValueChange={val => updateField("fullName", val.replace(/[0-9]/g, ''))}
               isInvalid={!!errors.fullName}
               errorMessage={errors.fullName}
               variant="bordered"
@@ -1275,18 +1268,10 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
                   // Extract digits from input
                   const digits = value.replace(/\D/g, '');
 
-                  // Get existing value to determine context
-                  const existingDigits = (formData.dateOfBirth || '').replace(/\D/g, '');
-
-                  // Determine which part we're editing based on cursor position
-                  // If the new value is shorter, we're deleting
-                  const isDeleting = digits.length < existingDigits.length;
-
                   // Filter and validate digits in real-time
                   let filteredDigits = '';
                   let dayPart = '';
                   let monthPart = '';
-                  const yearPart = '';
 
                   if (digits.length > 0) {
                     // DAY VALIDATION (positions 0-1)
@@ -1507,13 +1492,13 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
         <RadioGroup
           orientation="horizontal"
           value={formData.gender}
-          onValueChange={v => updateField("gender", v)}
+          onValueChange={val => updateField("gender", val)}
           classNames={{ wrapper: "gap-4" }}
           isInvalid={!!errors.gender}
           errorMessage={errors.gender}
         >
-          {GENDERS.map(g => (
-            <Radio key={g} value={g} size="sm" classNames={{ label: "text-sm" }}>{g}</Radio>
+          {GENDERS.map(gender => (
+            <Radio key={gender} value={gender} size="sm" classNames={{ label: "text-sm" }}>{gender}</Radio>
           ))}
         </RadioGroup>
       </div>
@@ -1530,7 +1515,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
               placeholder={t('pages.selectClass2')}
               selectedKeys={formData.classGrade ? [formData.classGrade] : []}
               onSelectionChange={keys => {
-                const selectedClass = classesWithTeachers.find(c => c.name === Array.from(keys)[0]);
+                const selectedClass = classesWithTeachers.find(cls => cls.name === Array.from(keys)[0]);
                 updateField("classGrade", Array.from(keys)[0]);
                 updateField("section", selectedClass?.section || ""); // Auto-select section
                 updateField("rollNumber", ""); // Reset roll number
@@ -1596,8 +1581,8 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
               startContent={<span className="text-default-400 text-xs">+91</span>}
               placeholder={t('pages.studentSMobileIfAny')}
               value={formData.mobile}
-              onValueChange={v => {
-                const digitsOnly = v.replace(/\D/g, '').slice(0, 10);
+              onValueChange={val => {
+                const digitsOnly = val.replace(/\D/g, '').slice(0, 10);
                 updateField("mobile", digitsOnly);
               }}
               variant="bordered"
@@ -1605,7 +1590,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
               maxLength={10}
               classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
             />
-            <Checkbox size="sm" isSelected={formData.isWhatsapp} onValueChange={v => updateField("isWhatsapp", v)}
+            <Checkbox size="sm" isSelected={formData.isWhatsapp} onValueChange={val => updateField("isWhatsapp", val)}
               classNames={{ label: "text-xs text-default-500" }}>
               Same for WhatsApp
             </Checkbox>
@@ -1615,7 +1600,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
             labelPlacement="outside"
             placeholder={t('students.form.studentEmailPlaceholder')}
             value={formData.email}
-            onValueChange={v => updateField("email", v)}
+            onValueChange={val => updateField("email", val)}
             variant="bordered"
             radius="sm"
             classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
@@ -1627,7 +1612,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
               startContent={<span className="text-default-400 text-xs">+91</span>}
               placeholder={t('pages.whatsAppNumber')}
               value={formData.whatsappNumber}
-              onValueChange={v => updateField("whatsappNumber", v)}
+              onValueChange={val => updateField("whatsappNumber", val)}
               variant="bordered"
               radius="sm"
               classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
@@ -1639,7 +1624,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
           labelPlacement="outside"
           placeholder={t('pages.fullResidentialAddress')}
           value={formData.address}
-          onValueChange={v => updateField("address", v)}
+          onValueChange={val => updateField("address", val)}
           variant="bordered"
           radius="sm"
           isRequired
@@ -1652,8 +1637,8 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
             labelPlacement="outside"
             placeholder={t('pages.city1')}
             value={formData.city}
-            onValueChange={v => {
-              updateField("city", v);
+            onValueChange={val => {
+              updateField("city", val);
               manualCityStateEntryRef.current = true;  // Mark as manually entered
             }}
             variant="bordered"
@@ -1676,7 +1661,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
               radius="sm"
               classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
             >
-              {INDIAN_STATES.map(s => <SelectItem key={s}>{s}</SelectItem>)}
+              {INDIAN_STATES.map(state => <SelectItem key={state}>{state}</SelectItem>)}
             </Select>
           </div>
           <div className="relative">
@@ -1685,8 +1670,8 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
               labelPlacement="outside"
               placeholder={t('pages.pINCode')}
               value={formData.zipCode}
-              onValueChange={v => {
-                const digitsOnly = v.replace(/\D/g, '').slice(0, 6);
+              onValueChange={val => {
+                const digitsOnly = val.replace(/\D/g, '').slice(0, 6);
                 updateField("zipCode", digitsOnly);
 
                 // Clear previous timeout
@@ -1754,7 +1739,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
             labelPlacement="outside"
             placeholder={t('students.form.aadhaarPlaceholder')}
             value={formData.aadhaarNumber}
-            onValueChange={v => updateField("aadhaarNumber", v.replace(/\D/g, '').slice(0, 12))}
+            onValueChange={val => updateField("aadhaarNumber", val.replace(/\D/g, '').slice(0, 12))}
             variant="bordered"
             radius="sm"
             maxLength={12}
@@ -1770,14 +1755,14 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
             radius="sm"
             classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           >
-            {BLOOD_GROUPS.map(b => <SelectItem key={b}>{b}</SelectItem>)}
+            {BLOOD_GROUPS.map(bg => <SelectItem key={bg}>{bg}</SelectItem>)}
           </Select>
           <Input
             label={t('pages.nationality1')}
             labelPlacement="outside"
             placeholder={t('students.form.nationalityPlaceholder')}
             value={formData.nationality}
-            onValueChange={v => updateField("nationality", v)}
+            onValueChange={val => updateField("nationality", val)}
             variant="bordered"
             radius="sm"
             classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
@@ -1792,7 +1777,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
             radius="sm"
             classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           >
-            {RELIGIONS.map(r => <SelectItem key={r}>{r}</SelectItem>)}
+            {RELIGIONS.map(rel => <SelectItem key={rel}>{rel}</SelectItem>)}
           </Select>
           <Select
             label={t('pages.category1')}
@@ -1804,7 +1789,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
             radius="sm"
             classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           >
-            {CATEGORIES.map(c => <SelectItem key={c}>{c}</SelectItem>)}
+            {CATEGORIES.map(cat => <SelectItem key={cat}>{cat}</SelectItem>)}
           </Select>
           <Select
             label={t('pages.motherTongue1')}
@@ -1816,14 +1801,14 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
             radius="sm"
             classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           >
-            {MOTHER_TONGUES.map(m => <SelectItem key={m}>{m}</SelectItem>)}
+            {MOTHER_TONGUES.map(tongue => <SelectItem key={tongue}>{tongue}</SelectItem>)}
           </Select>
           <Input
             label={t('pages.previousSchool1')}
             labelPlacement="outside"
             placeholder={t('pages.nameOfPreviousSchool')}
             value={formData.previousSchool}
-            onValueChange={v => updateField("previousSchool", v)}
+            onValueChange={val => updateField("previousSchool", val)}
             variant="bordered"
             radius="sm"
             className="col-span-2"
@@ -1834,7 +1819,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
             labelPlacement="outside"
             placeholder={t('pages.tCNumber')}
             value={formData.tcNumber}
-            onValueChange={v => updateField("tcNumber", v.replace(/\D/g, ''))}
+            onValueChange={val => updateField("tcNumber", val.replace(/\D/g, ''))}
             variant="bordered"
             radius="sm"
             className="col-span-2"
@@ -1846,8 +1831,8 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
   );
 
   const renderStep2 = () => {
-    const parents = formData.parents.filter(p => p.isParent);
-    const guardians = formData.parents.filter(p => !p.isParent);
+    const parents = formData.parents.filter(entry => entry.isParent);
+    const guardians = formData.parents.filter(entry => !entry.isParent);
 
     return (
       <div className="space-y-5 animate-fade-in text-left">
@@ -1856,7 +1841,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
           <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.parentDetails')}</h3>
 
           {parents.map((parent, idx) => {
-            const index = formData.parents.findIndex(p => p === parent);
+            const index = formData.parents.findIndex(entry => entry === parent);
             return (
               <div key={`parent-${idx}`} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
                 <div className="flex justify-between items-center">
@@ -1876,7 +1861,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
                       labelPlacement="outside"
                       placeholder={t('pages.parentName1')}
                       value={parent.name}
-                      onValueChange={v => updateParent(index, "name", v)}
+                      onValueChange={val => updateParent(index, "name", val)}
                       isInvalid={index === 0 && !!errors.parentName}
                       errorMessage={index === 0 ? errors.parentName : ""}
                       variant="bordered"
@@ -1895,7 +1880,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
                     radius="sm"
                     classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                   >
-                    {PARENT_RELATIONSHIPS.map(r => <SelectItem key={r}>{r}</SelectItem>)}
+                    {PARENT_RELATIONSHIPS.map(rel => <SelectItem key={rel}>{rel}</SelectItem>)}
                   </Select>
                   <div className="space-y-2" ref={index === 0 ? parentPhoneRef : null}>
                     <Input
@@ -1904,9 +1889,9 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
                       startContent={<span className="text-default-400 text-xs">+91</span>}
                       placeholder={t('students.form.phonePlaceholder')}
                       value={parent.phone}
-                      onValueChange={v => {
+                      onValueChange={val => {
                         // Only allow digits and limit to 10 characters
-                        const digitsOnly = v.replace(/\D/g, '').slice(0, 10);
+                        const digitsOnly = val.replace(/\D/g, '').slice(0, 10);
                         updateParent(index, "phone", digitsOnly);
                       }}
                       isInvalid={index === 0 && !!errors.parentPhone}
@@ -1917,7 +1902,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
                       maxLength={10}
                       classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                     />
-                    <Checkbox size="sm" isSelected={parent.isWhatsapp} onValueChange={v => updateParent(index, "isWhatsapp", v)}
+                    <Checkbox size="sm" isSelected={parent.isWhatsapp} onValueChange={val => updateParent(index, "isWhatsapp", val)}
                       classNames={{ label: "text-xs text-default-500" }}>
                       Same as WhatsApp
                     </Checkbox>
@@ -1927,7 +1912,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
                     labelPlacement="outside"
                     placeholder={t('students.form.parentEmailPlaceholder')}
                     value={parent.email}
-                    onValueChange={v => updateParent(index, "email", v)}
+                    onValueChange={val => updateParent(index, "email", val)}
                     variant="bordered"
                     radius="sm"
                     classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
@@ -1937,7 +1922,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
                     labelPlacement="outside"
                     placeholder={t('students.form.occupationPlaceholder')}
                     value={parent.occupation}
-                    onValueChange={v => updateParent(index, "occupation", v)}
+                    onValueChange={val => updateParent(index, "occupation", val)}
                     variant="bordered"
                     radius="sm"
                     className="col-span-2"
@@ -1968,7 +1953,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
           </div>
 
           {guardians.map((guardian, idx) => {
-            const index = formData.parents.findIndex(p => p === guardian);
+            const index = formData.parents.findIndex(entry => entry === guardian);
             return (
               <div key={`guardian-${idx}`} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
                 <div className="flex justify-between items-center">
@@ -1985,7 +1970,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
                     labelPlacement="outside"
                     placeholder={t('pages.guardianName')}
                     value={guardian.name}
-                    onValueChange={v => updateParent(index, "name", v)}
+                    onValueChange={val => updateParent(index, "name", val)}
                     variant="bordered"
                     radius="sm"
                     classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
@@ -2000,7 +1985,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
                     radius="sm"
                     classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                   >
-                    {GUARDIAN_RELATIONSHIPS.map(r => <SelectItem key={r}>{r}</SelectItem>)}
+                    {GUARDIAN_RELATIONSHIPS.map(rel => <SelectItem key={rel}>{rel}</SelectItem>)}
                   </Select>
                   <div className="space-y-2">
                     <Input
@@ -2009,8 +1994,8 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
                       startContent={<span className="text-default-400 text-xs">+91</span>}
                       placeholder={t('students.form.phonePlaceholder')}
                       value={guardian.phone}
-                      onValueChange={v => {
-                        const digitsOnly = v.replace(/\D/g, '').slice(0, 10);
+                      onValueChange={val => {
+                        const digitsOnly = val.replace(/\D/g, '').slice(0, 10);
                         updateParent(index, "phone", digitsOnly);
                       }}
                       variant="bordered"
@@ -2018,7 +2003,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
                       maxLength={10}
                       classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                     />
-                    <Checkbox size="sm" isSelected={guardian.isWhatsapp} onValueChange={v => updateParent(index, "isWhatsapp", v)}
+                    <Checkbox size="sm" isSelected={guardian.isWhatsapp} onValueChange={val => updateParent(index, "isWhatsapp", val)}
                       classNames={{ label: "text-xs text-default-500" }}>
                       Same as WhatsApp
                     </Checkbox>
@@ -2028,7 +2013,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
                     labelPlacement="outside"
                     placeholder={t('students.form.guardianEmailPlaceholder')}
                     value={guardian.email}
-                    onValueChange={v => updateParent(index, "email", v)}
+                    onValueChange={val => updateParent(index, "email", val)}
                     variant="bordered"
                     radius="sm"
                     classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
@@ -2038,7 +2023,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
                     labelPlacement="outside"
                     placeholder={t('students.form.occupationPlaceholder')}
                     value={guardian.occupation}
-                    onValueChange={v => updateParent(index, "occupation", v)}
+                    onValueChange={val => updateParent(index, "occupation", val)}
                     variant="bordered"
                     radius="sm"
                     className="col-span-2"
@@ -2084,7 +2069,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
                   labelPlacement="outside"
                   placeholder={t('pages.siblingSFullName')}
                   value={sibling.name}
-                  onValueChange={v => updateSibling(idx, "name", v)}
+                  onValueChange={val => updateSibling(idx, "name", val)}
                   variant="bordered"
                   radius="sm"
                   classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
@@ -2092,9 +2077,9 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
                 <div className="flex items-center gap-2 pt-6">
                   <Checkbox size="sm"
                     isSelected={sibling.inSameSchool}
-                    onValueChange={v => {
-                      updateSibling(idx, "inSameSchool", v);
-                      if (!v) updateSibling(idx, "classId", "");
+                    onValueChange={val => {
+                      updateSibling(idx, "inSameSchool", val);
+                      if (!val) updateSibling(idx, "classId", "");
                     }}
                   >
                     <span className="text-sm text-default-700">{t('pages.isSiblingInThisSchool')}</span>
@@ -2111,9 +2096,9 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
                     radius="sm"
                     classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
                   >
-                    {classesWithTeachers.map(c => (
-                      <SelectItem key={c.id}>
-                        {c.name} {c.section}
+                    {classesWithTeachers.map(cls => (
+                      <SelectItem key={cls.id}>
+                        {cls.name} {cls.section}
                       </SelectItem>
                     ))}
                   </Select>
@@ -2138,7 +2123,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
             labelPlacement="outside"
             placeholder={t('pages.anyAllergiesMedicalConditionsOrSpecialNeedsOptional')}
             value={formData.medicalConditions}
-            onValueChange={v => updateField("medicalConditions", v)}
+            onValueChange={val => updateField("medicalConditions", val)}
             variant="bordered"
             radius="sm"
             minRows={2}
@@ -2358,12 +2343,12 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
         {/* Stepper */}
         <div className="px-6 py-4 border-b border-gray-100 dark:border-zinc-700">
           <div className="flex items-center justify-between relative">
-            {steps.map((s, i) => {
-              const isActive = step >= s.number;
-              const isCurrent = step === s.number;
-              const isCompleted = step > s.number;
+            {steps.map((stepItem, i) => {
+              const isActive = step >= stepItem.number;
+              const isCurrent = step === stepItem.number;
+              const isCompleted = step > stepItem.number;
               return (
-                <div key={s.number} className="flex flex-col items-center relative z-10 flex-1">
+                <div key={stepItem.number} className="flex flex-col items-center relative z-10 flex-1">
                   {/* Progress line */}
                   {i < steps.length - 1 && (
                     <div className={cn(
@@ -2377,13 +2362,13 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classOption
                       isCompleted ? "border-gray-900 text-white bg-gray-900 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900" :
                         "border-gray-300 text-gray-400 bg-white dark:border-zinc-600 dark:text-zinc-500 dark:bg-zinc-900"
                   )}>
-                    {isCompleted ? <Check size={16} strokeWidth={2.5} /> : <s.icon size={16} strokeWidth={2} />}
+                    {isCompleted ? <Check size={16} strokeWidth={2.5} /> : <stepItem.icon size={16} strokeWidth={2} />}
                   </div>
                   <span className={cn(
                     "text-[11px] font-medium mt-2 uppercase tracking-wide transition-colors duration-200",
                     isCurrent || isCompleted ? "text-gray-900 dark:text-zinc-100" : "text-gray-400 dark:text-zinc-500"
                   )}>
-                    {s.title}
+                    {stepItem.title}
                   </span>
                 </div>
               )

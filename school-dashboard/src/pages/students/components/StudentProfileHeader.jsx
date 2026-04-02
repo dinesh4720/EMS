@@ -16,7 +16,7 @@ import PrintableStudentProfile from "./PrintableStudentProfile";
 import MoveClassModal from "./modals/MoveClassModal";
 import WriteRemarkModal from "./modals/WriteRemarkModal";
 import MarkAlumniModal from "./modals/MarkAlumniModal";
-import SendFeeReminderModal from "./modals/SendFeeReminderModal";
+import FeeReminderModal from "./modals/FeeReminderModal";
 import ShareProfileModal from "./modals/ShareProfileModal";
 import { useStudentPhotoActions } from "../hooks/useStudentPhotoActions";
 import { useTranslation } from 'react-i18next';
@@ -314,10 +314,11 @@ export default function StudentProfileHeader({
         onMark={handleRefresh}
       />
 
-      <SendFeeReminderModal
+      <FeeReminderModal
         isOpen={isReminderOpen}
         onClose={() => setIsReminderOpen(false)}
         student={student}
+        studentFeeStructure={studentFeeStructure}
       />
 
       <ShareProfileModal

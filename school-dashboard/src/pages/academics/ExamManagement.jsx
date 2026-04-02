@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Card,
@@ -29,18 +29,8 @@ const STATUS_OPTIONS = ['all', 'scheduled', 'ongoing', 'completed', 'results_pub
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { formatShortDate } from '../../utils/dateFormatter';
 
-// Simple cache
-const examsCache = {
-  data: null,
-  timestamp: 0,
-  duration: 30000 // 30 seconds
-};
-
-/** Bust the exams cache so the next fetch returns fresh data */
-export const invalidateExamsCache = () => {
-  examsCache.data = null;
-  examsCache.timestamp = 0;
-};
+/** @deprecated Cache removed — kept for backward-compat with index.jsx import */
+export const invalidateExamsCache = () => {};
 
 const ExamManagement = ({ onCreateExam }) => {
   const { t } = useTranslation();
@@ -56,8 +46,6 @@ const ExamManagement = ({ onCreateExam }) => {
     status: 'all',
     academicYear: 'all'
   });
-
-  const initialFetchDone = useRef(false);
 
   // Get unique values for filter options
   const uniqueClasses = useMemo(() => {
@@ -111,34 +99,15 @@ const ExamManagement = ({ onCreateExam }) => {
   }, [filters, searchQuery]);
 
   useEffect(() => {
-    if (!initialFetchDone.current) {
-      fetchExams();
-      fetchClasses();
-      initialFetchDone.current = true;
-    }
-  }, []);
-
-  // Expose refresh method
-  const refreshExams = useCallback(() => {
-    examsCache.data = null;
     fetchExams();
+    fetchClasses();
   }, []);
 
-  const fetchExams = async (forceRefresh = false) => {
-    // Check cache first
-    const now = Date.now();
-    if (!forceRefresh && examsCache.data && (now - examsCache.timestamp) < examsCache.duration) {
-      setExams(examsCache.data);
-      setLoading(false);
-      return;
-    }
-
+  const fetchExams = async () => {
     setLoading(true);
     try {
       const data = await examsApi.getAll();
       setExams(data || []);
-      examsCache.data = data || [];
-      examsCache.timestamp = now;
     } catch (error) {
       console.error('Error fetching exams:', error);
       toast.error(t('toast.error.failedToLoadExams'));
@@ -189,7 +158,7 @@ const ExamManagement = ({ onCreateExam }) => {
     try {
       await examsApi.delete(deleteModal.examId);
       toast.success(t('toast.success.examDeletedSuccessfully'));
-      refreshExams();
+      fetchExams();
     } catch (error) {
       console.error('Error deleting exam:', error);
       toast.error(t('toast.error.failedToDeleteExam'));
@@ -202,7 +171,7 @@ const ExamManagement = ({ onCreateExam }) => {
     try {
       await examsApi.publish(examId);
       toast.success(`Results published for ${examName}`);
-      refreshExams();
+      fetchExams();
     } catch (error) {
       console.error('Error publishing results:', error);
       toast.error(t('toast.error.failedToPublishResults'));
