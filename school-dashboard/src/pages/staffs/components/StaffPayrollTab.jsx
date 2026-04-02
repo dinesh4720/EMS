@@ -20,7 +20,7 @@ export default function StaffPayrollTab({
   const { totalEarnings, totalDeductions, netSalary } = safeCalculateTotals(staffSalary);
 
   const generatePayslipPDF = (record) => {
-    const month = escapeHtml(record?.month || new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' }));
+    const month = escapeHtml(record?.month || new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }));
     const net = record?.netSalary ?? netSalary;
     const staffName = escapeHtml(staff?.name || 'Staff Member');
     const staffCode = escapeHtml(staff?.code || '');

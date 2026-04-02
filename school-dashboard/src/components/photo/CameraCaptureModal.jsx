@@ -4,6 +4,7 @@ import { Camera, Upload, X } from "lucide-react";
 import CameraView from "./CameraView";
 import PhotoEditorModal from "./PhotoEditorModal";
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 
 /**
  * CameraCaptureModal - Profile photo capture modal with upload and camera options

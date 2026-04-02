@@ -77,6 +77,7 @@ export default function Subjects() {
       setSubjects(data || []);
     } catch (error) {
       console.error('Error loading subjects:', error);
+        toast.error('Failed to load subjects');
       // Fallback to class subjects if API fails
       const classData = classes.find(c => c.id === id || c._id === id);
       if (classData && classData.subjects) {

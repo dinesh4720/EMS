@@ -107,6 +107,7 @@ const AdmissionsList = forwardRef((props, ref) => {
       setStaff(data.filter(s => s.role === 'Teacher'));
     } catch (error) {
       console.error('Failed to load staff:', error);
+        toast.error('Failed to load staff');
     }
   };
 
@@ -120,6 +121,7 @@ const AdmissionsList = forwardRef((props, ref) => {
       }
     } catch (error) {
       console.error('Failed to load classes:', error);
+        toast.error('Failed to load classes');
     }
   };
 

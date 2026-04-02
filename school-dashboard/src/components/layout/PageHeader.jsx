@@ -1,3 +1,4 @@
+/** @deprecated Use components/ui/PageHeader instead — it supports tabs, sticky, and description props */
 import { memo } from "react";
 import PropTypes from "prop-types";
 import { Breadcrumbs, BreadcrumbItem } from "@heroui/react";

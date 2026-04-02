@@ -267,6 +267,7 @@ export default function StudentDashboard() {
       const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
       const response = await uploadApi.uploadFile(file);
       await updateStudent(student.id, { photo: response.url });
+      setStudent(prev => prev ? { ...prev, photo: response.url } : prev);
       toast.success(t('toast.success.photoUpdated'));
     } catch (error) { toast.error(t('toast.error.failedToUpdatePhoto')); }
     finally { setIsUploadingPhoto(false); }

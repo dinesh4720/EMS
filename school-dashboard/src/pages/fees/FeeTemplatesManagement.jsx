@@ -50,7 +50,7 @@ export default function FeeTemplatesManagement() {
     try {
       setLoading(true);
       const data = await request('/fee-templates');
-      setTemplates(data);
+      setTemplates(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch templates:', error);
       toast.error(t('toast.error.failedToLoadFeeTemplates'));
