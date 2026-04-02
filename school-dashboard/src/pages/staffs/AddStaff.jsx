@@ -214,7 +214,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         else {
           // BUG-19: check for duplicate phone among existing staff
           const editingId = editingStaff?._id || editingStaff?.id;
-          const phoneDupe = Array.isArray(allStaff) && allStaff.find(s =>
+          const phoneDupe = Array.isArray(allStaff) && allStaff.length > 0 && allStaff.find(s =>
             s.phone && s.phone === value.trim() &&
             (s._id || s.id) !== editingId
           );
@@ -404,7 +404,11 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
   };
 
   const handleNext = () => {
-    if (validateStep(step)) setStep(prev => Math.min(prev + 1, 5));
+    if (validateStep(step)) {
+      setStep(prev => Math.min(prev + 1, 5));
+    } else {
+      toast.error('Please fix the highlighted errors before proceeding');
+    }
   };
 
   const handlePrev = () => setStep(prev => Math.max(prev - 1, 1));

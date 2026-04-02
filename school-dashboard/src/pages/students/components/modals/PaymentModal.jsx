@@ -47,6 +47,11 @@ export default function PaymentModal({
       setAmountError("Please enter a valid amount greater than 0");
       return;
     }
+    const totalBalance = studentFeeStructure?.totalBalance;
+    if (totalBalance != null && paymentAmount > totalBalance) {
+      setAmountError(`Amount exceeds outstanding balance of ₹${totalBalance.toLocaleString()}`);
+      return;
+    }
     setAmountError("");
 
     setIsLoading(true);

@@ -106,6 +106,7 @@ export default function Substitution() {
     if (isSubmitting) return;
     const newErrors = {};
     if (!formData.classId) newErrors.classId = t('toast.error.pleaseFillAllRequiredFields');
+    if (!formData.absentTeacherId) newErrors.absentTeacherId = t('toast.error.pleaseFillAllRequiredFields');
     if (!formData.period) newErrors.period = t('toast.error.pleaseFillAllRequiredFields');
     if (!formData.substituteTeacherId) newErrors.substituteTeacherId = t('toast.error.pleaseFillAllRequiredFields');
     if (Object.keys(newErrors).length > 0) {
