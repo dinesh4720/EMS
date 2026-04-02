@@ -205,8 +205,12 @@ export default function Substitution() {
         return <Chip size="sm" color="success" variant="flat">{t('pages.assigned1')}</Chip>;
       case 'not_assigned':
         return <Chip size="sm" color="warning" variant="flat">{t('pages.notAssigned1')}</Chip>;
+      case 'pending':
+        return <Chip size="sm" color="warning" variant="flat">Pending</Chip>;
       case 'completed':
         return <Chip size="sm" color="default" variant="flat">{t('pages.completed')}</Chip>;
+      case 'cancelled':
+        return <Chip size="sm" color="danger" variant="flat">Cancelled</Chip>;
       default:
         return <Chip size="sm" color="default" variant="flat">{status || 'Pending'}</Chip>;
     }
@@ -258,6 +262,9 @@ export default function Substitution() {
               <SelectItem key="all">{t('pages.allStatus1')}</SelectItem>
               <SelectItem key="assigned">{t('pages.assigned1')}</SelectItem>
               <SelectItem key="not_assigned">{t('pages.notAssigned1')}</SelectItem>
+              <SelectItem key="pending">Pending</SelectItem>
+              <SelectItem key="completed">{t('pages.completed')}</SelectItem>
+              <SelectItem key="cancelled">Cancelled</SelectItem>
             </Select>
 
             <Input
