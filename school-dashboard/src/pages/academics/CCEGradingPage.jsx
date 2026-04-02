@@ -59,8 +59,19 @@ export default function CCEGradingPage() {
   };
 
   const handleSave = async (overrideConfig) => {
-    setSaving(true);
     const payload = overrideConfig ?? { ...config, enabled };
+
+    // Validate assessment type weightages sum to 100%
+    const assessmentTypes = payload.assessmentTypes || [];
+    if (assessmentTypes.length > 0) {
+      const totalWeightage = assessmentTypes.reduce((sum, at) => sum + (Number(at.weightage) || 0), 0);
+      if (totalWeightage !== 100) {
+        toast.error(`Assessment type weightages must sum to 100%. Current total: ${totalWeightage}%`);
+        return;
+      }
+    }
+
+    setSaving(true);
     try {
       await request('/cce/config', {
         method: 'PUT',
@@ -265,7 +276,24 @@ export default function CCEGradingPage() {
             {/* Assessment Types */}
             <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
               <CardBody className="p-4">
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-4">Assessment Types</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-zinc-300">Assessment Types</h3>
+                  {(() => {
+                    const total = (config.assessmentTypes || []).reduce((s, at) => s + (Number(at.weightage) || 0), 0);
+                    return (
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                        className={total === 100
+                          ? 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300'
+                          : 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300'
+                        }
+                      >
+                        Total: {total}%{total !== 100 ? ' (must be 100%)' : ''}
+                      </Chip>
+                    );
+                  })()}
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {(config.assessmentTypes || []).map((at, i) => (
                     <div

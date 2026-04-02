@@ -30,7 +30,7 @@ const FormAssignments = lazyWithRetry(() => import("./pages/intake-forms/FormAss
 const FormSubmissions = lazyWithRetry(() => import("./pages/intake-forms/FormSubmissions"));
 const EnrollmentFunnel = lazyWithRetry(() => import("./pages/intake-forms/EnrollmentFunnel"));
 const HomeworkPage = lazyWithRetry(() => import("./pages/homework"));
-// const InventoryPage = lazyWithRetry(() => import("./pages/inventory")); // Commented out — not needed for launch
+const InventoryPage = lazyWithRetry(() => import("./pages/inventory"));
 const HostelPage = lazyWithRetry(() => import("./pages/hostel"));
 const TransportPage = lazyWithRetry(() => import("./pages/transport"));
 const LibraryPage = lazyWithRetry(() => import("./pages/library"));
@@ -286,7 +286,6 @@ function AuthenticatedApp() {
                         </PermissionGuard>
                       </RouteEB>
                     } />
-                    {/* Inventory route commented out — not needed for launch
                     <Route path="/inventory/*" element={
                       <RouteEB>
                         <PermissionGuard module="inventory">
@@ -294,7 +293,6 @@ function AuthenticatedApp() {
                         </PermissionGuard>
                       </RouteEB>
                     } />
-                    */}
                     <Route path="/hostel/*" element={
                       <RouteEB>
                         <PermissionGuard module="hostel">

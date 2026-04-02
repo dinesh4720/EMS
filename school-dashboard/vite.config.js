@@ -11,7 +11,15 @@ export default defineConfig({
     },
     dedupe: ['react', 'react-dom', 'three'],
   },
-  server: {},
+  server: {
+    watch: {
+      ignored: ['**/playwright-report/**', '**/test-results/**'],
+    },
+    fs: {
+      // Prevent Vite from serving/processing Playwright artifacts
+      deny: ['playwright-report', 'test-results'],
+    },
+  },
   preview: {
     historyApiFallback: true,
   },

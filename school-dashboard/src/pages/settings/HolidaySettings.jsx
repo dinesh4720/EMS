@@ -130,7 +130,6 @@ export default function HolidaySettings() {
     } catch (error) {
       console.error('Failed to delete holiday:', error);
       toast.error(t('toast.error.failedToDeleteHoliday'));
-      }
     }
   };
 

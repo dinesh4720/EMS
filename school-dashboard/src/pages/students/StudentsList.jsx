@@ -1,11 +1,10 @@
 import { useStudentsListData } from "./hooks/useStudentsListData";
-import EditStudentDrawer from "./EditStudentDrawer";
-import ScrollToTopButton from "../../components/ui/ScrollToTopButton";
-import SkeletonTable from "../../components/skeletons/SkeletonTable";
-import { StudentCsvUploadModal, StudentCsvPreviewModal } from "./components/modals/StudentImportModals";
-import StudentsFiltersBar from "./components/list/StudentsFiltersBar";
-import StudentsTableVirtualized from "./components/list/StudentsTableVirtualized";
-import StudentsBulkModals from "./components/list/StudentsBulkModals";
+import EditStudentDrawer from "./EditStudentDrawer"; // eslint-disable-line no-unused-vars -- used in JSX
+import ScrollToTopButton from "../../components/ui/ScrollToTopButton"; // eslint-disable-line no-unused-vars -- used in JSX
+import { StudentCsvUploadModal, StudentCsvPreviewModal } from "./components/modals/StudentImportModals"; // eslint-disable-line no-unused-vars -- used in JSX
+import StudentsFiltersBar from "./components/list/StudentsFiltersBar"; // eslint-disable-line no-unused-vars -- used in JSX
+import StudentsTableVirtualized from "./components/list/StudentsTableVirtualized"; // eslint-disable-line no-unused-vars -- used in JSX
+import StudentsBulkModals from "./components/list/StudentsBulkModals"; // eslint-disable-line no-unused-vars -- used in JSX
 
 export default function StudentsList() {
   const {
@@ -41,14 +40,14 @@ export default function StudentsList() {
     // edit drawer
     isEditDrawerOpen, setIsEditDrawerOpen, selectedStudent, setSelectedStudent,
     // local override
-    localStudents, setLocalStudents,
+    setLocalStudents,
     // refresh
     refreshStudentsList,
     // bulk modals
     isBulkActionOpen, onBulkActionClose,
-    isPromoteOpen, onPromoteClose, promotionPreview,
+    isPromoteOpen, onPromoteOpen, onPromoteClose, promotionPreview,
     isReminderOpen, onReminderClose, reminderMessage, setReminderMessage, reminderTime, setReminderTime, reminderTargetCount,
-    isTcModalOpen, onTcModalClose, tcStudents, setTcStudents,
+    isTcModalOpen, onTcModalOpen, onTcModalClose, tcStudents, setTcStudents,
     isDeleteOpen, onDeleteClose, onDeleteOpen, studentToDelete, setStudentToDelete, isDeleting, setIsDeleting,
     isStatusChangeOpen, onStatusChangeClose, onStatusChangeOpen, statusChangeData, setStatusChangeData,
     isCsvUploadOpen, onCsvUploadClose, onCsvUploadOpen,
@@ -206,9 +205,9 @@ export default function StudentsList() {
         setStatusChangeData={setStatusChangeData}
         onStatusChangeOpen={onStatusChangeOpen}
         setTcStudents={setTcStudents}
-        onTcModalOpen={() => {}}
+        onTcModalOpen={onTcModalOpen}
         handleBulkAction={handleBulkAction}
-        onPromoteOpen={() => {}}
+        onPromoteOpen={onPromoteOpen}
         closeAllDropdowns={closeAllDropdowns}
         searchQuery={deferredSearchQuery}
         hasActiveFilters={activeFiltersCount > 0}
@@ -297,7 +296,7 @@ export default function StudentsList() {
         student={selectedStudent}
         onUpdate={(updatedStudent) => {
           setLocalStudents(
-            students.map((s) => String(s.id) === String(updatedStudent.id) ? { ...s, ...updatedStudent } : s)
+            students.map((st) => String(st.id) === String(updatedStudent.id) ? { ...st, ...updatedStudent } : st)
           );
           setSelectedStudent(updatedStudent);
         }}

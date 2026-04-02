@@ -4,7 +4,7 @@ import { Breadcrumbs, BreadcrumbItem, Modal, ModalContent, ModalHeader, ModalBod
 import { Home, BarChart3, FileText, Plus, BookOpen, Award, ClipboardList } from 'lucide-react';
 import { PageLayout, MinimalButton } from '../../components/ui';
 import PerformanceDashboard from './PerformanceDashboard';
-import ExamManagement, { invalidateExamsCache } from './ExamManagement';
+import ExamManagement from './ExamManagement';
 import CreateExamModal from './CreateExamModal';
 import SubjectAssignment from '../../components/SubjectAssignment';
 import CBSEReportCardPage from './CBSEReportCardPage';
@@ -117,8 +117,7 @@ const AcademicLayout = () => {
 
   const handleExamCreated = useCallback(() => {
     setCreateExamOpen(false);
-    invalidateExamsCache(); // Bust stale cache so re-mount fetches fresh data
-    setRefreshKey(k => k + 1); // Trigger refresh of exam list
+    setRefreshKey(k => k + 1); // Force ExamManagement remount to fetch fresh data
   }, []);
 
   const actions = activeTab === 'exams' ? (

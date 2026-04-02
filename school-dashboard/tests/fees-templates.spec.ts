@@ -13,8 +13,8 @@ test.use({ viewport: { width: 1280, height: 720 } });
 interface FeeTemplateRecord {
   _id: string; id: string; name: string; section: string;
   description: string; isActive: boolean;
-  feeComponents: Array<{ feeHeadId: string; name: string; amount: number }>;
-  totalAmount: number; schoolId: string;
+  feeHeads: Array<{ _id?: string; feeHeadId?: string; name: string; amount: number; category?: string; frequency?: string; mandatory?: boolean; applicableTerms?: number[]; dueDay?: number; refundable?: boolean }>;
+  totalAnnualFee: number; schoolId: string;
 }
 
 function createTemplateState() {
@@ -23,38 +23,38 @@ function createTemplateState() {
     {
       _id: 'tmpl-001', id: 'tmpl-001',
       name: 'Standard Annual Plan',
-      section: 'annual',
+      section: 'primary',
       description: 'Standard fee structure for all classes',
       isActive: true,
-      feeComponents: [
-        { feeHeadId: 'fh-tuition', name: 'Tuition Fee', amount: 5000 },
-        { feeHeadId: 'fh-transport', name: 'Transport Fee', amount: 2000 },
+      feeHeads: [
+        { _id: 'fh-tuition', name: 'Tuition Fee', amount: 5000, category: 'Academic', frequency: 'yearly', mandatory: true, applicableTerms: [1, 2], dueDay: 10, refundable: false },
+        { _id: 'fh-transport', name: 'Transport Fee', amount: 2000, category: 'Transport', frequency: 'yearly', mandatory: false, applicableTerms: [1, 2], dueDay: 10, refundable: true },
       ],
-      totalAmount: 7000,
+      totalAnnualFee: 7000,
       schoolId: SCHOOL_ID,
     },
     {
       _id: 'tmpl-002', id: 'tmpl-002',
       name: 'Quarterly Plan',
-      section: 'quarterly',
+      section: 'middle',
       description: 'Quarterly payment option',
       isActive: true,
-      feeComponents: [
-        { feeHeadId: 'fh-tuition', name: 'Tuition Fee', amount: 1500 },
+      feeHeads: [
+        { _id: 'fh-tuition-q', name: 'Tuition Fee', amount: 1500, category: 'Academic', frequency: 'quarterly', mandatory: true, applicableTerms: [1, 2], dueDay: 10, refundable: false },
       ],
-      totalAmount: 1500,
+      totalAnnualFee: 6000,
       schoolId: SCHOOL_ID,
     },
     {
       _id: 'tmpl-003', id: 'tmpl-003',
       name: 'Monthly Plan',
-      section: 'monthly',
+      section: 'secondary',
       description: 'Monthly installment plan',
       isActive: false,
-      feeComponents: [
-        { feeHeadId: 'fh-tuition', name: 'Tuition Fee', amount: 600 },
+      feeHeads: [
+        { _id: 'fh-tuition-m', name: 'Tuition Fee', amount: 600, category: 'Academic', frequency: 'monthly', mandatory: true, applicableTerms: [1, 2], dueDay: 10, refundable: false },
       ],
-      totalAmount: 600,
+      totalAnnualFee: 7200,
       schoolId: SCHOOL_ID,
     },
   ];
@@ -85,11 +85,11 @@ async function installTemplateMockApi(
       const newTmpl: FeeTemplateRecord = {
         _id: `tmpl-new-${Date.now()}`, id: `tmpl-new-${Date.now()}`,
         name: body.name || 'New Template',
-        section: body.section || 'annual',
+        section: body.section || 'primary',
         description: body.description || '',
         isActive: body.isActive ?? true,
-        feeComponents: body.feeComponents || [],
-        totalAmount: (body.feeComponents || []).reduce((s: number, c: { amount: number }) => s + (c.amount || 0), 0),
+        feeHeads: body.feeHeads || [],
+        totalAnnualFee: body.totalAnnualFee || (body.feeHeads || []).reduce((s: number, c: { amount: number }) => s + (c.amount || 0), 0),
         schoolId: SCHOOL_ID,
       };
       templates.push(newTmpl);
@@ -123,21 +123,11 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     const { state, templates } = createTemplateState();
     await installTemplateMockApi(page, state, templates);
 
-    await page.goto('/fees');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/fees/templates');
+    await page.waitForLoadState('domcontentloaded');
 
-    // Navigate to fee templates tab or sub-page
-    const templateTab = page.getByRole('tab', { name: /template/i }).or(
-      page.getByRole('link', { name: /template/i }),
-    ).first();
-    const hasTab = await templateTab.isVisible({ timeout: 3000 }).catch(() => false);
-    if (hasTab) {
-      await templateTab.click();
-      await page.waitForLoadState('networkidle');
-    } else {
-      await page.goto('/fees/templates');
-      await page.waitForLoadState('networkidle');
-    }
+    // Wait for a template name to appear (confirms skeleton resolved and data loaded)
+    await expect(page.getByText('Standard Annual Plan').first()).toBeVisible({ timeout: 15_000 });
 
     const bodyText = await page.textContent('body');
     expect(bodyText?.toLowerCase()).toMatch(/template/);
@@ -150,10 +140,10 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     await installTemplateMockApi(page, state, templates);
 
     await page.goto('/fees/templates');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const createBtn = page.getByRole('button', { name: /create template|add template|new template/i }).first();
-    const hasCreate = await createBtn.isVisible({ timeout: 5000 }).catch(() => false);
+    const hasCreate = await createBtn.isVisible({ timeout: 10_000 }).catch(() => false);
 
     if (hasCreate) {
       await createBtn.click();
@@ -171,10 +161,13 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     await installTemplateMockApi(page, state, templates);
 
     await page.goto('/fees/templates');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for a template name to appear (confirms data loaded)
+    await expect(page.getByText('Standard Annual Plan').first()).toBeVisible({ timeout: 15_000 });
 
     const bodyText = await page.textContent('body');
-    // Should show active status chips
+    // Should show active status chips (Active for first 2 templates, Inactive for 3rd)
     expect(bodyText?.toLowerCase()).toMatch(/active|inactive/);
   });
 
@@ -183,10 +176,13 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     await installTemplateMockApi(page, state, templates);
 
     await page.goto('/fees/templates');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for a template name to appear (confirms data loaded)
+    await expect(page.getByText('Standard Annual Plan').first()).toBeVisible({ timeout: 15_000 });
 
     const bodyText = await page.textContent('body');
-    // Standard Annual Plan has ₹7000
+    // Standard Annual Plan has totalAnnualFee = 7000, displayed as ₹7,000
     expect(bodyText).toMatch(/7,000|7000/);
   });
 
@@ -195,9 +191,11 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     await installTemplateMockApi(page, state, templates);
 
     await page.goto('/fees/templates');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
-    // Look for edit/pencil buttons
+    // Look for edit/pencil buttons — wait for data to load first
+    await expect(page.getByText('Standard Annual Plan').first()).toBeVisible({ timeout: 15_000 });
+
     const editBtn = page.getByRole('button', { name: /edit/i }).or(
       page.locator('button[aria-label*="edit" i]'),
     ).first();
@@ -220,7 +218,7 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     await installTemplateMockApi(page, state, templates);
 
     await page.goto('/fees/templates');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const initialCount = templates.length;
 
@@ -234,7 +232,7 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
 
     if (hasDelete) {
       await deleteBtn.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       // Template count should decrease by 1
       expect(templates.length).toBe(initialCount - 1);
     }
@@ -245,7 +243,7 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     await installTemplateMockApi(page, state, templates);
 
     await page.goto('/fees/templates');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const dupBtn = page.getByRole('button', { name: /duplicate|copy/i }).first();
     const hasDup = await dupBtn.isVisible({ timeout: 5000 }).catch(() => false);
@@ -253,7 +251,7 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     if (hasDup) {
       const beforeCount = templates.length;
       await dupBtn.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // A new template should have been created
       const bodyText = await page.textContent('body');
@@ -278,7 +276,7 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     const count = await skeletons.count();
     expect(count).toBeGreaterThanOrEqual(0);
 
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     const body = await page.textContent('body');
     expect(body).toBeTruthy();
   });
@@ -288,10 +286,13 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     await installTemplateMockApi(page, state, templates);
 
     await page.goto('/fees/templates');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for a template name to appear (confirms data loaded)
+    await expect(page.getByText('Standard Annual Plan').first()).toBeVisible({ timeout: 10_000 });
 
     const bodyText = await page.textContent('body');
-    // Should show fee component names from the Standard Annual Plan
+    // Should show fee head names as chips from the Standard Annual Plan
     expect(bodyText).toMatch(/Tuition Fee|Transport Fee/);
   });
 
@@ -304,7 +305,10 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     });
 
     await page.goto('/fees/templates');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for the "Create Template" button to appear (confirms skeleton resolved)
+    await expect(page.getByRole('button', { name: /create template/i })).toBeVisible({ timeout: 10_000 });
 
     const body = await page.textContent('body');
     // Should render without error

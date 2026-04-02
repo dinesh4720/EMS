@@ -115,7 +115,9 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
       newErrors.visitorName = 'Visitor name is required';
     }
 
-    if (formData.phoneNumber && (!validatePhone(formData.phoneNumber) || /^(\d)\1{9}$/.test(formData.phoneNumber))) {
+    if (!formData.phoneNumber?.trim()) {
+      newErrors.phoneNumber = 'Phone number is required';
+    } else if (!validatePhone(formData.phoneNumber) || /^(\d)\1{9}$/.test(formData.phoneNumber)) {
       newErrors.phoneNumber = 'Please enter a valid 10-digit phone number';
     }
 
@@ -145,7 +147,8 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
         else if (!nameRegex.test(value)) error = 'Visitor name should contain only letters';
         break;
       case 'phoneNumber':
-        if (value && (!validatePhone(value) || /^(\d)\1{9}$/.test(value))) error = 'Please enter a valid 10-digit phone number';
+        if (!value?.trim()) error = 'Phone number is required';
+        else if (!validatePhone(value) || /^(\d)\1{9}$/.test(value)) error = 'Please enter a valid 10-digit phone number';
         break;
       case 'email':
         if (value && !/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(value)) error = 'Invalid email address';
@@ -459,6 +462,7 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
                   validateField('phoneNumber', val);
                 }}
                 maxLength={10}
+                required
                 error={errors.phoneNumber}
               />
               <FormInput

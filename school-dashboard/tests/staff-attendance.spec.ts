@@ -131,6 +131,15 @@ test.describe('Staff — Attendance (E2E-TEST-28)', () => {
     await page.goto('/staffs/attendance');
     await page.waitForLoadState('networkidle');
 
+    // Wait for the staff attendance page content to render
+    await page.waitForFunction(
+      () => {
+        const text = (document.body.textContent || '').toLowerCase();
+        return text.includes('present') || text.includes('absent') || text.includes('ananya') || text.includes('attendance');
+      },
+      { timeout: 15_000 },
+    ).catch(() => {});
+
     const bodyText = await page.textContent('body');
     // Should show "Present" status
     expect(bodyText?.toLowerCase()).toMatch(/present|absent|status/i);
@@ -211,6 +220,15 @@ test.describe('Staff — Attendance (E2E-TEST-28)', () => {
     await page.goto('/staffs/attendance');
     await page.waitForLoadState('networkidle');
 
+    // Wait for the staff attendance page to actually render (not just the loading spinner)
+    await page.waitForFunction(
+      () => {
+        const text = (document.body.textContent || '').toLowerCase();
+        return text.includes('absent') || text.includes('present') || text.includes('ananya') || text.includes('attendance');
+      },
+      { timeout: 15_000 },
+    ).catch(() => {});
+
     const bodyText = await page.textContent('body');
     expect(bodyText?.toLowerCase()).toMatch(/absent/);
   });
@@ -225,6 +243,15 @@ test.describe('Staff — Attendance (E2E-TEST-28)', () => {
 
     await page.goto('/staffs/attendance');
     await page.waitForLoadState('networkidle');
+
+    // Wait for the staff attendance page to actually render
+    await page.waitForFunction(
+      () => {
+        const text = (document.body.textContent || '').toLowerCase();
+        return text.includes('present') || text.includes('absent') || text.includes('total') || text.includes('attendance');
+      },
+      { timeout: 15_000 },
+    ).catch(() => {});
 
     const bodyText = await page.textContent('body');
     // Should show some form of attendance totals

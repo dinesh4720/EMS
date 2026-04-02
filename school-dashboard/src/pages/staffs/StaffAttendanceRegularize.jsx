@@ -4,22 +4,19 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import {
-  Card, CardBody, CardHeader,
-  Select, SelectItem, Button, Chip,
-  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Textarea, Input, Divider
-} from "@heroui/react";
+// eslint-disable-next-line no-unused-vars -- all components used in JSX
+import { Card, CardBody, CardHeader, Select, SelectItem, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Input, Divider } from "@heroui/react";
+// eslint-disable-next-line no-unused-vars -- all icons used in JSX
 import { ArrowLeft, Calendar as CalendarIcon, Check, X, AlertCircle, Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
-import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
+import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons'; // eslint-disable-line no-unused-vars -- used in JSX
 
 export default function StaffAttendanceRegularize() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { staff, staffAttendance, markStaffAttendance, fetchStaffAttendanceByStaff, loading } = useApp();
+  const { staff, staffAttendance, requestRegularization, fetchStaffAttendanceByStaff, loading } = useApp();
   const [selectedStaffId, setSelectedStaffId] = useState("");
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -33,7 +30,7 @@ export default function StaffAttendanceRegularize() {
   });
 
   const selectedStaff = useMemo(() => {
-    return staff.find(s => String(s.id) === String(selectedStaffId));
+    return staff.find(member => String(member.id) === String(selectedStaffId));
   }, [staff, selectedStaffId]);
 
   // Fetch attendance data when selection changes
@@ -120,21 +117,24 @@ export default function StaffAttendanceRegularize() {
     setRegularizeModalOpen(true);
   };
 
-  const handleRegularize = () => {
+  const handleRegularize = async () => {
     if (!selectedDate || !selectedStaffId) return;
 
-    markStaffAttendance(
-      selectedStaffId,
-      selectedDate.dateStr,
-      regularizeData.status,
-      regularizeData.inTime,
-      regularizeData.outTime,
-      regularizeData.reason
-    );
+    try {
+      await requestRegularization(
+        selectedStaffId,
+        selectedDate.dateStr,
+        regularizeData.status,
+        regularizeData.reason
+      );
 
-    toast.success(t('toast.success.attendanceRegularizedSuccessfully'));
-    setRegularizeModalOpen(false);
-    setSelectedDate(null);
+      toast.success(t('toast.success.attendanceRegularizedSuccessfully'));
+      setRegularizeModalOpen(false);
+      setSelectedDate(null);
+    } catch (error) {
+      console.error('Regularization failed:', error);
+      toast.error(error.message || 'Failed to regularize attendance');
+    }
   };
 
   const getDayStyle = (dayData) => {
@@ -243,9 +243,9 @@ export default function StaffAttendanceRegularize() {
               trigger: "h-14"
             }}
           >
-            {staff.filter(s => s.status === "active").map(s => (
-              <SelectItem key={s.id} value={s.id}>
-                {s.name} - {s.department}
+            {staff.filter(member => member.status === "active").map(member => (
+              <SelectItem key={member.id} value={member.id}>
+                {member.name} - {member.department}
               </SelectItem>
             ))}
           </Select>

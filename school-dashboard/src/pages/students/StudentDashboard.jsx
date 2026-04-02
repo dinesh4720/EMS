@@ -1,32 +1,38 @@
-import { useState, useEffect, useMemo, useRef, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, Suspense } from "react"; // eslint-disable-line no-unused-vars -- Suspense used in JSX
 import lazyWithRetry from "../../utils/lazyWithRetry";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
+/* eslint-disable no-unused-vars -- These imports are used in JSX. ESLint v9 flat config without eslint-plugin-react cannot detect JSX variable usage. */
 import {
   Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, useDisclosure,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Drawer, DrawerContent, DrawerHeader, DrawerBody,
-  Input, Select, SelectItem, Textarea, Checkbox
+  Input, Select, SelectItem, Textarea,
 } from "@heroui/react";
+/* eslint-enable no-unused-vars */
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useValidatedParams } from "../../hooks/useValidatedParams";
+/* eslint-disable no-unused-vars -- Icon imports used in JSX (not detected by ESLint without eslint-plugin-react) */
 import {
   ArrowLeft, Phone, IndianRupee, User, GraduationCap, FileText, Download, Edit,
-  MessageSquare, Clock, CheckCircle2, Award, TrendingUp, Camera, FileCheck,
-  Printer, MoreVertical, ChevronRight, BarChart3, Trash2, Bell, Share2, Move,
-  Users, Mail, Calendar, AlertCircle, BookOpen, Upload, XCircle, Plus,
-  Activity, Heart, Send
+  Clock, CheckCircle2, Award, TrendingUp, Camera, FileCheck,
+  Printer, MoreVertical, ChevronRight, BarChart3, Trash2, Bell, Move,
+  Users, Mail, Calendar, AlertCircle, BookOpen, XCircle,
+  Send,
 } from "lucide-react";
+/* eslint-enable no-unused-vars */
 import { format } from "date-fns";
+/* eslint-disable no-unused-vars -- Recharts components used in JSX */
 import {
-  LineChart as RechartsLineChart, Line, BarChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area
+  XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area,
 } from "recharts";
+/* eslint-enable no-unused-vars */
 import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
 import { feesApi, studentFeesApi, studentsApi, uploadApi, attendanceApi } from "../../services/api";
 import { CHART_COLORS } from "../../utils/chartTheme";
 import { escapeHtml } from "../../utils/sanitize";
+/* eslint-disable no-unused-vars -- Components used in JSX */
 const AddStudent = lazyWithRetry(() => import("./AddStudent"));
 import TCGeneratorModal from "./TCGeneratorModal";
 import PhotoEditorModal from "../../components/PhotoEditorModal";
@@ -37,11 +43,12 @@ import StudentRemarks from "./components/StudentRemarks";
 import StudentRatingSystem from "./components/StudentRatingSystem";
 import InvoicePrintModal from "./components/InvoicePrintModal";
 import MoveClassModal from "./components/modals/MoveClassModal";
+/* eslint-enable no-unused-vars */
 import { useStudentAttendance, useStudentData, useStudentFees, useStudentRemarks, useStudentResults } from "./hooks";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
-import { DetailPageSkeleton } from '../../components/skeletons/PageSkeletons';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { DetailPageSkeleton } from '../../components/skeletons/PageSkeletons'; // eslint-disable-line no-unused-vars -- used in JSX
+import ConfirmDialog from '../../components/ui/ConfirmDialog'; // eslint-disable-line no-unused-vars -- used in JSX
 import { getGradeFromPercentage } from '../../utils/grading';
 
 
@@ -55,7 +62,7 @@ import { formatShortDate } from '../../utils/dateFormatter';
 // confirmPermanentDeletion moved to ConfirmDialog in render
 
 // Helper to get next class for promotion
-const getNextClass = (currentClass, availableClasses) => {
+const getNextClass = (currentClass, _availableClasses) => {
   if (!currentClass || currentClass === "Alumni" || currentClass === "Passed Out / Alumni") return null;
   const preschoolMap = { "Nursery": "KG", "KG": "1", "LKG": "UKG", "UKG": "1" };
   for (const [from, to] of Object.entries(preschoolMap)) {
@@ -72,12 +79,12 @@ const getNextClass = (currentClass, availableClasses) => {
 };
 
 // Custom Tooltip
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label }) => { // eslint-disable-line no-unused-vars -- used in JSX
   if (active && payload && payload.length) {
     return (
       <div className="bg-white dark:bg-zinc-900 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 shadow-sm dark:shadow-zinc-900/50">
         <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mb-1">{label}</p>
-        {payload.map((entry, i) => (
+        {payload.map((entry) => (
           <div key={`tooltip-${entry.name}`} className="flex items-center gap-2 text-sm">
             <div className="w-2 h-2 rounded-full bg-gray-500" />
             <span className="text-gray-600 dark:text-zinc-400">{entry.name}:</span>
@@ -137,7 +144,7 @@ export default function StudentDashboard() {
     };
     document.addEventListener('click', handleBackdropClick, true);
     return () => document.removeEventListener('click', handleBackdropClick, true);
-  }, [isEditOpen]);
+  }, [isEditOpen, onEditClose]);
 
   const [selectedImageForEdit, setSelectedImageForEdit] = useState(null);
   const [isPhotoEditorOpen, setIsPhotoEditorOpen] = useState(false);
@@ -164,7 +171,7 @@ export default function StudentDashboard() {
   useEffect(() => {
     if (attendanceData?.length > 0) {
       const todayDate = new Date().toISOString().split('T')[0];
-      const todayRecord = attendanceData.find(r => r.date === todayDate);
+      const todayRecord = attendanceData.find(record => record.date === todayDate);
       if (todayRecord?.status) setTodayAttendanceStatus(todayRecord.status);
     }
   }, [attendanceData]);
@@ -186,7 +193,7 @@ export default function StudentDashboard() {
 
   // Available classes
   const availableClasses = useMemo(() => {
-    if (classesWithTeachers?.length) return classesWithTeachers.map(c => `${c.name}-${c.section}`);
+    if (classesWithTeachers?.length) return classesWithTeachers.map(cls => `${cls.name}-${cls.section}`);
     return ["1-A", "2-A", "3-A", "4-A", "5-A", "6-A", "7-A", "8-A", "9-A", "10-A"];
   }, [classesWithTeachers]);
 
@@ -194,12 +201,12 @@ export default function StudentDashboard() {
   const classInfo = useMemo(() => {
     if (!student?.class || typeof student.class !== 'string') return null;
     const parts = student.class.split("-");
-    return (classesWithTeachers || []).find(c => c.name === parts[0] && c.section === parts[1]);
+    return (classesWithTeachers || []).find(cls => cls.name === parts[0] && cls.section === parts[1]);
   }, [student, classesWithTeachers]);
 
   const classTeacher = useMemo(() => {
     if (!classInfo) return null;
-    return (staff || []).find(s => s.id === classInfo.classTeacherId);
+    return (staff || []).find(staffMember => staffMember.id === classInfo.classTeacherId);
   }, [classInfo, staff]);
 
   // Calculate monthly attendance for chart
@@ -208,15 +215,15 @@ export default function StudentDashboard() {
   // behavior -- the chart fills in naturally as teachers mark attendance each month.
   const monthlyAttendanceData = useMemo(() => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const currentYear = new Date().getFullYear();
+    const attendanceYear = new Date().getFullYear();
 
     return months.map((month, index) => {
-      const monthData = attendanceData.filter(a => {
-        const d = new Date(a.date);
-        return d.getMonth() === index && d.getFullYear() === currentYear;
+      const monthData = attendanceData.filter(att => {
+        const attDate = new Date(att.date);
+        return attDate.getMonth() === index && attDate.getFullYear() === attendanceYear;
       });
 
-      const present = monthData.filter(a => a.status === 'present').length;
+      const present = monthData.filter(att => att.status === 'present').length;
       const percentage = monthData.length > 0 ? Math.round((present / monthData.length) * 100) : 0;
 
       return { month, value: percentage };
@@ -225,7 +232,7 @@ export default function StudentDashboard() {
 
   // Average percentage
   const avgPercentage = results?.length > 0
-    ? Math.round(results.reduce((sum, r) => sum + (r.percentage || 0), 0) / results.length)
+    ? Math.round(results.reduce((sum, result) => sum + (result.percentage || 0), 0) / results.length)
     : null;
 
   useEffect(() => {
@@ -268,7 +275,7 @@ export default function StudentDashboard() {
       const response = await uploadApi.uploadFile(file);
       await updateStudent(student.id, { photo: response.url });
       toast.success(t('toast.success.photoUpdated'));
-    } catch (error) { toast.error(t('toast.error.failedToUpdatePhoto')); }
+    } catch { toast.error(t('toast.error.failedToUpdatePhoto')); }
     finally { setIsUploadingPhoto(false); }
     setIsPhotoEditorOpen(false);
   };
@@ -391,8 +398,8 @@ export default function StudentDashboard() {
       return;
     }
     try {
-      const resolvedEmail = student.parentEmail || student.parents?.find(p => p.isParent !== false)?.email || student.parents?.[0]?.email || '';
-      const resolvedPhone = student.parentPhone || student.parents?.find(p => p.isParent !== false)?.phone || student.parents?.[0]?.phone || '';
+      const resolvedEmail = student.parentEmail || student.parents?.find(par => par.isParent !== false)?.email || student.parents?.[0]?.email || '';
+      const resolvedPhone = student.parentPhone || student.parents?.find(par => par.isParent !== false)?.phone || student.parents?.[0]?.phone || '';
       await studentsApi.sendReminder(id, {
         type: 'fee',
         message: reminderMessage,
@@ -403,7 +410,7 @@ export default function StudentDashboard() {
 
       toast.success(`Reminder sent to ${student.parentName || 'parent'}`);
       setIsReminderOpen(false);
-    } catch (error) {
+    } catch {
       toast.error(t('toast.error.failedToSendReminder'));
     }
   };
@@ -436,8 +443,8 @@ export default function StudentDashboard() {
     const loadingToast = toast.loading(`Sending report via ${channel === 'email' ? 'Email' : 'SMS'}...`);
     try {
       const message = `Attendance Report for ${student.name}: ${attendanceStats.percentage}% attendance (${attendanceStats.present} present, ${attendanceStats.absent} absent out of ${attendanceStats.total} days).`;
-      const resolvedEmail = student.parentEmail || student.parents?.find(p => p.isParent !== false)?.email || student.parents?.[0]?.email || '';
-      const resolvedPhone = student.parentPhone || student.parents?.find(p => p.isParent !== false)?.phone || student.parents?.[0]?.phone || '';
+      const resolvedEmail = student.parentEmail || student.parents?.find(par => par.isParent !== false)?.email || student.parents?.[0]?.email || '';
+      const resolvedPhone = student.parentPhone || student.parents?.find(par => par.isParent !== false)?.phone || student.parents?.[0]?.phone || '';
       await studentsApi.sendReminder(id, {
         type: 'attendance',
         message,
@@ -462,7 +469,7 @@ export default function StudentDashboard() {
       });
       await updateStudent(student.id, { ratings: ratingsWithTimestamp });
       toast.success("Ratings saved successfully", { id: loadingToast });
-    } catch (error) {
+    } catch {
       toast.error(t('toast.error.failedToSaveRatings'));
     }
   };
@@ -473,14 +480,14 @@ export default function StudentDashboard() {
   const handleProgressCardDownload = () => {
     const studentResults = results || [];
     const photo = student?.photo || student?.picture || '';
-    const resultRows = studentResults.map(r => `
+    const resultRows = studentResults.map(res => `
       <tr>
-        <td>${escapeHtml(r.examName || r.exam?.name || '—')}</td>
-        <td>${escapeHtml(r.subject || '—')}</td>
-        <td style="text-align:center">${escapeHtml(r.marksObtained ?? r.marks ?? '—')}</td>
-        <td style="text-align:center">${escapeHtml(r.totalMarks ?? '—')}</td>
-        <td style="text-align:center">${r.percentage != null ? escapeHtml(r.percentage) + '%' : '—'}</td>
-        <td style="text-align:center">${escapeHtml(r.grade || '—')}</td>
+        <td>${escapeHtml(res.examName || res.exam?.name || '—')}</td>
+        <td>${escapeHtml(res.subject || '—')}</td>
+        <td style="text-align:center">${escapeHtml(res.marksObtained ?? res.marks ?? '—')}</td>
+        <td style="text-align:center">${escapeHtml(res.totalMarks ?? '—')}</td>
+        <td style="text-align:center">${res.percentage != null ? escapeHtml(res.percentage) + '%' : '—'}</td>
+        <td style="text-align:center">${escapeHtml(res.grade || '—')}</td>
       </tr>`).join('');
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
 <title>Progress Card – ${escapeHtml(student?.name || '')}</title>
@@ -517,7 +524,7 @@ tr:hover td{background:#f9fafb}
 </div>
 <div style="margin-bottom:20px">
   <div class="student-name">${escapeHtml(student?.name || '')}</div>
-  <div class="meta">Class ${escapeHtml(student?.class || '—')} &nbsp;•&nbsp; Admission No: ${escapeHtml(student?.admissionNo || '—')}</div>
+  <div class="meta">Class ${escapeHtml(student?.class || '—')} &nbsp;•&nbsp; Admission No: ${escapeHtml(student?.admissionId || '—')}</div>
 </div>
 <div class="stats">
   <div class="stat"><div class="stat-val">${avgPercentage != null ? escapeHtml(avgPercentage) + '%' : '—'}</div><div class="stat-lbl">Average</div></div>
@@ -531,12 +538,12 @@ ${studentResults.length > 0 ? `
 </table>` : '<p style="text-align:center;color:#9ca3af;padding:20px">No result records found</p>'}
 <div class="footer">Generated on ${new Date().toLocaleString()} — Confidential</div>
 </body></html>`;
-    const w = window.open('', '_blank', 'width=800,height=700');
-    if (!w) { toast.error('Pop-up blocked. Allow pop-ups to generate PDF.'); return; }
-    w.document.write(html);
-    w.document.close();
-    w.focus();
-    setTimeout(() => w.print(), 400);
+    const printWindow = window.open('', '_blank', 'width=800,height=700');
+    if (!printWindow) { toast.error('Pop-up blocked. Allow pop-ups to generate PDF.'); return; }
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => printWindow.print(), 400);
   };
 
   if (!isValid) return null;
@@ -821,7 +828,7 @@ ${studentResults.length > 0 ? `
                   {results?.length > 0 ? (
                     <div className="h-[200px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={results.map((r, i) => ({ name: r.examName || `Exam ${i + 1}`, value: r.percentage || 0 }))}>
+                        <AreaChart data={results.map((res, idx) => ({ name: res.examName || `Exam ${idx + 1}`, value: res.percentage || 0 }))}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                           <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} dy={10} />
                           <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} domain={[0, 100]} />
@@ -942,7 +949,7 @@ ${studentResults.length > 0 ? `
                 <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
                   <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.parentName2')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentName || "—"}</p></div>
                   <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.parentPhone1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentPhone || "—"}</p></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.parentEmail1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentEmail || student.parents?.find(p => p.isParent !== false)?.email || student.parents?.[0]?.email || "—"}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.parentEmail1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentEmail || student.parents?.find(par => par.isParent !== false)?.email || student.parents?.[0]?.email || "—"}</p></div>
                 </div>
               </div>
 
@@ -1026,17 +1033,17 @@ ${studentResults.length > 0 ? `
                   </div>
                 ) : results && results.length > 0 ? (
                   <div className="divide-y divide-gray-50 dark:divide-zinc-800">
-                    {Object.values(results.reduce((acc, r) => {
-                      const subject = r.subjectName || r.examId?.subjectName || r.examId?.subject || r.examId?.name || 'Unknown';
-                      if (!acc[subject] && r.percentage !== null && r.percentage !== undefined) {
+                    {Object.values(results.reduce((acc, res) => {
+                      const subject = res.subjectName || res.examId?.subjectName || res.examId?.subject || res.examId?.name || 'Unknown';
+                      if (!acc[subject] && res.percentage !== null && res.percentage !== undefined) {
                         acc[subject] = {
                           name: subject,
-                          score: Math.round(r.percentage),
-                          grade: r.grade || getGradeFromPercentage(r.percentage)
+                          score: Math.round(res.percentage),
+                          grade: res.grade || getGradeFromPercentage(res.percentage)
                         };
                       }
                       return acc;
-                    }, {})).slice(0, 6).map((subject, i) => (
+                    }, {})).slice(0, 6).map((subject) => (
                       <div key={`subject-${subject.name}`} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-zinc-400">
@@ -1074,7 +1081,7 @@ ${studentResults.length > 0 ? `
                 </div>
                 {results?.length > 0 ? (
                   <div className="divide-y divide-gray-50 dark:divide-zinc-800">
-                    {results.map((result, i) => (
+                    {results.map((result) => (
                       <div key={result._id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
@@ -1172,7 +1179,7 @@ ${studentResults.length > 0 ? `
                       { key: 'absent', label: t('pages.absent2'), Icon: XCircle, activeColor: 'border-red-500 bg-red-50 dark:bg-red-950/30', iconColor: 'text-red-600' },
                       { key: 'halfday', label: t('pages.halfDay'), Icon: Clock, activeColor: 'border-blue-500 bg-blue-50 dark:bg-blue-950/30', iconColor: 'text-blue-600' },
                       { key: 'leave', label: t('pages.leave'), Icon: Calendar, activeColor: 'border-purple-500 bg-purple-50 dark:bg-purple-950/30', iconColor: 'text-purple-600' },
-                    ].map(({ key, label, Icon, activeColor, iconColor }) => {
+                    ].map(({ key, label, Icon, activeColor, iconColor }) => { // eslint-disable-line no-unused-vars -- Icon used in JSX below
                       const isActive = todayAttendanceStatus === key;
                       return (
                         <button
@@ -1353,7 +1360,7 @@ ${studentResults.length > 0 ? `
                   </div>
                 ) : studentFeeStructure?.feeHeads?.length > 0 ? (
                   <div className="divide-y divide-gray-50 dark:divide-zinc-800">
-                    {studentFeeStructure.feeHeads.map((fee, i) => (
+                    {studentFeeStructure.feeHeads.map((fee) => (
                       <div key={fee._id || fee.feeHeadId} className="px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
@@ -1495,10 +1502,10 @@ ${studentResults.length > 0 ? `
           <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-100 dark:border-zinc-700 p-5">
             <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">{t('pages.contactInformation1')}</h3>
             <div className="space-y-4">
-              {(student.parentName || student.parents?.find(p => p.isParent !== false)?.name || student.parents?.[0]?.name) && (
+              {(student.parentName || student.parents?.find(par => par.isParent !== false)?.name || student.parents?.[0]?.name) && (
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><User size={14} className="text-gray-600 dark:text-zinc-400" /></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.parentName2', 'Parent Name')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentName || student.parents?.find(p => p.isParent !== false)?.name || student.parents?.[0]?.name}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.parentName2', 'Parent Name')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentName || student.parents?.find(par => par.isParent !== false)?.name || student.parents?.[0]?.name}</p></div>
                 </div>
               )}
               {student.parentPhone && (
@@ -1507,10 +1514,10 @@ ${studentResults.length > 0 ? `
                   <div><p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.parentPhone1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{student.parentPhone}</p></div>
                 </div>
               )}
-              {(student.parentEmail || student.parents?.find(p => p.isParent !== false)?.email || student.parents?.[0]?.email) && (
+              {(student.parentEmail || student.parents?.find(par => par.isParent !== false)?.email || student.parents?.[0]?.email) && (
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Mail size={14} className="text-gray-600 dark:text-zinc-400" /></div>
-                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.parentEmail1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100 truncate">{student.parentEmail || student.parents?.find(p => p.isParent !== false)?.email || student.parents?.[0]?.email}</p></div>
+                  <div><p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.parentEmail1')}</p><p className="text-sm text-gray-900 dark:text-zinc-100 truncate">{student.parentEmail || student.parents?.find(par => par.isParent !== false)?.email || student.parents?.[0]?.email}</p></div>
                 </div>
               )}
               {student.address && (
@@ -1564,7 +1571,7 @@ ${studentResults.length > 0 ? `
                 label={t('pages.amount1')}
                 type="number"
                 value={paymentForm.amount}
-                onValueChange={(v) => setPaymentForm({ ...paymentForm, amount: v })}
+                onValueChange={(val) => setPaymentForm({ ...paymentForm, amount: val })}
                 startContent="₹"
                 variant="bordered"
                 min={1}
@@ -1580,7 +1587,7 @@ ${studentResults.length > 0 ? `
                 <SelectItem key="card">{t('pages.card1')}</SelectItem>
                 <SelectItem key="cheque">{t('pages.cheque1')}</SelectItem>
               </Select>
-              <Input label={t('pages.paymentDate1')} type="date" value={paymentForm.date} onValueChange={(v) => setPaymentForm({ ...paymentForm, date: v })} variant="bordered" />
+              <Input label={t('pages.paymentDate1')} type="date" value={paymentForm.date} onValueChange={(val) => setPaymentForm({ ...paymentForm, date: val })} variant="bordered" />
             </div>
           </ModalBody>
           <ModalFooter>

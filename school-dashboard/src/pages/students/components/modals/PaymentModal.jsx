@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+// eslint-disable-next-line no-unused-vars -- all components used in JSX
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem, Textarea } from "@heroui/react";
 import toast from "react-hot-toast";
 import { useApp } from "../../../../context/AppContext";
@@ -58,8 +59,8 @@ export default function PaymentModal({
     const loadingToast = toast.loading(t('toast.loading.processingPayment'));
 
     try {
-      // Import api dynamically to avoid circular dependencies
-      const { api } = await import("../../../../services/api");
+      // Import studentFeesApi dynamically to avoid circular dependencies
+      const { studentFeesApi } = await import("../../../../services/api");
 
       const paymentData = {
         studentId: student.id,
@@ -77,7 +78,7 @@ export default function PaymentModal({
         collectedBy: null
       };
 
-      await api.post(`/students/${student.id}/fee-payment`, paymentData);
+      await studentFeesApi.recordPayment(student.id, paymentData);
 
       toast.success("Payment recorded successfully", { id: loadingToast });
 
@@ -116,7 +117,7 @@ export default function PaymentModal({
               label={t('pages.amount1')}
               type="number"
               value={paymentForm.amount}
-              onValueChange={(v) => { setPaymentForm({ ...paymentForm, amount: v }); if (amountError) setAmountError(""); }}
+              onValueChange={(val) => { setPaymentForm({ ...paymentForm, amount: val }); if (amountError) setAmountError(""); }}
               startContent="₹"
               variant="bordered"
               classNames={{
@@ -146,7 +147,7 @@ export default function PaymentModal({
               label={t('pages.paymentDate1')}
               type="date"
               value={paymentForm.date}
-              onValueChange={(v) => setPaymentForm({ ...paymentForm, date: v })}
+              onValueChange={(val) => setPaymentForm({ ...paymentForm, date: val })}
               variant="bordered"
               description="Format: DD/MM/YYYY"
             />
@@ -154,7 +155,7 @@ export default function PaymentModal({
               label={t('pages.notes', 'Notes / Memo')}
               placeholder={t('pages.enterNotes', 'Add any notes about this payment...')}
               value={paymentForm.notes}
-              onValueChange={(v) => setPaymentForm({ ...paymentForm, notes: v })}
+              onValueChange={(val) => setPaymentForm({ ...paymentForm, notes: val })}
               variant="bordered"
               minRows={2}
               maxLength={300}

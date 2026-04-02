@@ -344,6 +344,15 @@ test.describe('Auth — Redirect Behaviour (E2E-TEST-37)', () => {
       });
     });
     await page.route('**/api/**', async (route) => {
+      const url = new URL(route.request().url());
+      // Let Vite module/asset requests pass through
+      if (/\.(js|ts|jsx|tsx|css|map|html|svg|png|jpg|woff2?)(\?|$)/i.test(url.pathname)) {
+        return route.continue();
+      }
+      if (!url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api?')) {
+        return route.continue();
+      }
+
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({}) });
     });
 

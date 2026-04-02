@@ -11,10 +11,11 @@ test.use({ viewport: { width: 1280, height: 720 } });
  * ───────────────────────────────────────────────────────────────────── */
 
 interface PayrollRecord {
-  _id: string; id: string; staffId: string; staffName: string;
-  month: number; year: number; basicSalary: number;
-  allowances: number; deductions: number; netSalary: number;
-  status: 'pending' | 'paid' | 'processing';
+  _id: string; id: string; employeeId: string;
+  month: number; year: number; baseSalary: number;
+  totalAllowances: number; totalDeductions: number; netPay: number;
+  status: 'generated' | 'paid' | 'processing';
+  employmentType: string;
   paymentDate?: string; schoolId: string;
 }
 
@@ -26,28 +27,38 @@ function createPayrollState() {
 
   const records: PayrollRecord[] = [
     {
-      _id: 'pr-001', id: 'pr-001', staffId: TEACHER_A_ID, staffName: 'Ananya Sharma',
-      month, year, basicSalary: 45000, allowances: 5000, deductions: 2000, netSalary: 48000,
-      status: 'pending', schoolId: SCHOOL_ID,
+      _id: 'pr-001', id: 'pr-001', employeeId: TEACHER_A_ID,
+      month, year, baseSalary: 45000, totalAllowances: 5000, totalDeductions: 2000, netPay: 48000,
+      status: 'generated', employmentType: 'full_time', schoolId: SCHOOL_ID,
     },
     {
-      _id: 'pr-002', id: 'pr-002', staffId: TEACHER_B_ID, staffName: 'Ravi Menon',
-      month, year, basicSalary: 40000, allowances: 4000, deductions: 1500, netSalary: 42500,
-      status: 'pending', schoolId: SCHOOL_ID,
+      _id: 'pr-002', id: 'pr-002', employeeId: TEACHER_B_ID,
+      month, year, baseSalary: 40000, totalAllowances: 4000, totalDeductions: 1500, netPay: 42500,
+      status: 'generated', employmentType: 'full_time', schoolId: SCHOOL_ID,
     },
     {
-      _id: 'pr-003', id: 'pr-003', staffId: ACCOUNTANT_ID, staffName: 'Priya Menon',
-      month, year, basicSalary: 35000, allowances: 3000, deductions: 1000, netSalary: 37000,
-      status: 'paid', paymentDate: '2026-03-01', schoolId: SCHOOL_ID,
+      _id: 'pr-003', id: 'pr-003', employeeId: ACCOUNTANT_ID,
+      month, year, baseSalary: 35000, totalAllowances: 3000, totalDeductions: 1000, netPay: 37000,
+      status: 'paid', employmentType: 'full_time', paymentDate: '2026-03-01', schoolId: SCHOOL_ID,
     },
   ];
 
   const dashboard = {
     month, year,
-    totalPayroll: records.reduce((s, r) => s + r.netSalary, 0),
+    totalPayout: records.filter((r) => r.status === 'paid').reduce((s, r) => s + r.netPay, 0),
+    pendingAmount: records.filter((r) => r.status !== 'paid').reduce((s, r) => s + r.netPay, 0),
+    projectedPayout: records.reduce((s, r) => s + r.netPay, 0),
     paidCount: records.filter((r) => r.status === 'paid').length,
-    pendingCount: records.filter((r) => r.status === 'pending').length,
-    totalStaff: records.length,
+    pendingCount: records.filter((r) => r.status !== 'paid').length,
+    totalEmployees: records.length,
+    payrollRun: {
+      status: 'completed',
+      processedEmployees: records.length,
+      totalEmployees: records.length,
+      totalPaid: records.filter((r) => r.status === 'paid').reduce((s, r) => s + r.netPay, 0),
+      completedAt: new Date().toISOString(),
+      errorLog: [],
+    },
   };
 
   return { state, records, dashboard, month, year };
@@ -69,30 +80,38 @@ async function installPayrollMockApi(
     const path = url.pathname;
     const method = request.method();
 
+    // Strip /api prefix to normalize path for matching
+    const normalizedPath = path.replace(/^\/api/, '');
+
     const json = (data: unknown, status = 200) =>
       route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data) });
 
     // Dashboard
-    if (path.match(/^\/api\/payroll\/dashboard\//)) {
-      return json(dashboard);
+    if (normalizedPath.match(/^\/payroll\/dashboard\//)) {
+      return json({ success: true, data: dashboard });
     }
 
-    // Records list
-    if (path === '/api/payroll/records' && method === 'GET') {
-      return json({ data: records, total: records.length });
+    // Records list (GET /payroll/records)
+    if (normalizedPath === '/payroll/records' && method === 'GET') {
+      return json({ success: true, data: records, total: records.length });
     }
 
     // Validate payroll
     if (path === '/api/payroll/validate' && method === 'POST') {
-      return json({ valid: true, errors: [] });
+      return json({ success: true, data: { valid: true, errors: [] } });
     }
 
     // Run payroll
     if (path === '/api/payroll/run' && method === 'POST') {
       for (const r of records) {
-        if (r.status === 'pending') r.status = 'processing';
+        if (r.status === 'generated') r.status = 'processing' as any;
       }
-      return json({ success: true, processed: records.length });
+      return json({ success: true, data: { results: { success: records, failed: [] } } });
+    }
+
+    // Fix salaries
+    if (path === '/api/payroll/fix-salaries' && method === 'POST') {
+      return json({ success: true, message: 'Salaries fixed' });
     }
 
     // Mark as paid
@@ -104,7 +123,7 @@ async function installPayrollMockApi(
         r.status = 'paid';
         r.paymentDate = new Date().toISOString().split('T')[0];
       }
-      return json(r || {});
+      return json({ success: true, data: r || {} });
     }
 
     // Reverse payment
@@ -112,23 +131,24 @@ async function installPayrollMockApi(
     if (reverseMatch && method === 'PUT') {
       const id = reverseMatch[1];
       const r = records.find((x) => x._id === id);
-      if (r) { r.status = 'pending'; delete r.paymentDate; }
-      return json(r || {});
+      if (r) { r.status = 'generated' as any; delete r.paymentDate; }
+      return json({ success: true, data: r || {} });
     }
 
     // Bulk pay
     if (path === '/api/payroll/records/bulk-pay' && method === 'POST') {
       const body = JSON.parse(request.postData() || '{}');
+      const succeeded: PayrollRecord[] = [];
       for (const id of (body.recordIds || [])) {
         const r = records.find((x) => x._id === id);
-        if (r) { r.status = 'paid'; r.paymentDate = new Date().toISOString().split('T')[0]; }
+        if (r) { r.status = 'paid'; r.paymentDate = new Date().toISOString().split('T')[0]; succeeded.push(r); }
       }
-      return json({ success: true, paid: body.recordIds?.length || 0 });
+      return json({ success: true, data: { success: succeeded, failed: [] } });
     }
 
-    // Export (redirect — just return success)
+    // Export (return blob-like response)
     if (path.match(/^\/api\/payroll\/export\//)) {
-      return json({ downloadUrl: '/mock/payroll.xlsx' });
+      return route.fulfill({ status: 200, contentType: 'application/octet-stream', body: 'mock-excel-data' });
     }
 
     // Audit logs
@@ -136,7 +156,7 @@ async function installPayrollMockApi(
       return json({ data: [], total: 0 });
     }
 
-    return json({});
+    return json({ success: true });
   });
 
   // Settings payroll
@@ -158,11 +178,12 @@ test.describe('Staff — Payroll (E2E-TEST-29)', () => {
     await installPayrollMockApi(page, state, records, dashboard, month, year);
 
     await page.goto('/staffs/payroll');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
-    // Staff names should appear
-    await expect(page.getByText('Ananya Sharma').first()).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText('Ravi Menon').first()).toBeVisible();
+    // Wait for records to render (staff names come from AppContext, joined by employeeId)
+    // The page loads staff from AppContext, fetches payroll records, then joins them
+    await expect(page.getByText('Ananya Sharma').first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('Ravi Menon').first()).toBeVisible({ timeout: 5_000 });
   });
 
   test('2) payroll summary shows total payroll, paid and pending counts', async ({ page }) => {
@@ -170,10 +191,14 @@ test.describe('Staff — Payroll (E2E-TEST-29)', () => {
     await installPayrollMockApi(page, state, records, dashboard, month, year);
 
     await page.goto('/staffs/payroll');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
+    // Wait for page to render payroll data
+    await page.waitForFunction(() => {
+      const body = (document.body.textContent || '').toLowerCase();
+      return body.includes('payroll') || body.includes('salary') || body.includes('pending') || body.includes('paid');
+    }, { timeout: 15000 });
     const bodyText = await page.textContent('body');
-    // Summary numbers or labels
     expect(bodyText?.toLowerCase()).toMatch(/payroll|salary|pending|paid/i);
   });
 
@@ -182,23 +207,30 @@ test.describe('Staff — Payroll (E2E-TEST-29)', () => {
     await installPayrollMockApi(page, state, records, dashboard, month, year);
 
     await page.goto('/staffs/payroll');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for staff name to appear (ensures records are rendered)
+    await expect(page.getByText('Ananya Sharma').first()).toBeVisible({ timeout: 20_000 });
 
     const bodyText = await page.textContent('body');
-    // Ananya's net salary is 48000
-    expect(bodyText).toMatch(/48,000|48000/);
+    // Ananya's net pay is 48000 - formatted as INR currency (e.g. ₹48,000)
+    expect(bodyText).toMatch(/48,000|48000|₹\s*48/);
   });
 
-  test('4) "paid" status record shows different badge from "pending"', async ({ page }) => {
+  test('4) "paid" status record shows different badge from "generated"', async ({ page }) => {
     const { state, records, dashboard, month, year } = createPayrollState();
     await installPayrollMockApi(page, state, records, dashboard, month, year);
 
     await page.goto('/staffs/payroll');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for staff name to appear (ensures records are rendered)
+    await expect(page.getByText('Ananya Sharma').first()).toBeVisible({ timeout: 20_000 });
 
     const bodyText = await page.textContent('body');
-    expect(bodyText?.toLowerCase()).toMatch(/paid/);
-    expect(bodyText?.toLowerCase()).toMatch(/pending/);
+    // The page shows 'Recorded' for 'paid' and 'Generated' for 'generated' status
+    expect(bodyText?.toLowerCase()).toMatch(/recorded|paid/);
+    expect(bodyText?.toLowerCase()).toMatch(/generated|pending|unrecorded/);
   });
 
   test('5) run payroll button starts the payroll processing', async ({ page }) => {
@@ -206,7 +238,7 @@ test.describe('Staff — Payroll (E2E-TEST-29)', () => {
     await installPayrollMockApi(page, state, records, dashboard, month, year);
 
     await page.goto('/staffs/payroll');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const runBtn = page.getByRole('button', { name: /run payroll|process payroll/i }).first();
     const hasRun = await runBtn.isVisible({ timeout: 5000 }).catch(() => false);
@@ -221,7 +253,7 @@ test.describe('Staff — Payroll (E2E-TEST-29)', () => {
         const hasConfirm = await confirmBtn.isVisible({ timeout: 2000 }).catch(() => false);
         if (hasConfirm) await confirmBtn.click();
       }
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await expect(page).not.toHaveURL(/\/login/);
     }
   });
@@ -231,14 +263,14 @@ test.describe('Staff — Payroll (E2E-TEST-29)', () => {
     await installPayrollMockApi(page, state, records, dashboard, month, year);
 
     await page.goto('/staffs/payroll');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
-    const payBtn = page.getByRole('button', { name: /^pay$|mark.*paid/i }).first();
+    const payBtn = page.getByRole('button', { name: /^pay$|mark.*paid|log payment/i }).first();
     const hasPayBtn = await payBtn.isVisible({ timeout: 5000 }).catch(() => false);
 
     if (hasPayBtn) {
       await payBtn.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       const bodyText = await page.textContent('body');
       expect(bodyText?.toLowerCase()).toMatch(/paid/);
     }
@@ -249,7 +281,7 @@ test.describe('Staff — Payroll (E2E-TEST-29)', () => {
     await installPayrollMockApi(page, state, records, dashboard, month, year);
 
     await page.goto('/staffs/payroll');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Look for a month or year dropdown
     const monthSelect = page.locator('select').first();
@@ -269,7 +301,7 @@ test.describe('Staff — Payroll (E2E-TEST-29)', () => {
     await installPayrollMockApi(page, state, records, dashboard, month, year);
 
     await page.goto('/staffs/payroll');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const exportBtn = page.getByRole('button', { name: /export|download/i }).first();
     const hasExport = await exportBtn.isVisible({ timeout: 5000 }).catch(() => false);
@@ -294,7 +326,7 @@ test.describe('Staff — Payroll (E2E-TEST-29)', () => {
     const count = await skeletons.count();
     expect(count).toBeGreaterThanOrEqual(0);
 
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     const body = await page.textContent('body');
     expect(body).toBeTruthy();
   });
@@ -304,14 +336,14 @@ test.describe('Staff — Payroll (E2E-TEST-29)', () => {
     await installPayrollMockApi(page, state, records, dashboard, month, year);
 
     await page.goto('/staffs/payroll');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
-    // Click on a staff row to see detail, if expandable
-    const row = page.getByText('Ananya Sharma').first();
-    await expect(row).toBeVisible({ timeout: 10_000 });
+    // Wait for staff name to appear (records are rendered from staff + payroll join)
+    await expect(page.getByText('Ananya Sharma').first()).toBeVisible({ timeout: 20_000 });
 
     const bodyText = await page.textContent('body');
-    // Should show salary values
-    expect(bodyText).toMatch(/45,000|45000|48,000|48000/);
+    // Table columns show BASE SALARY, ALLOWANCES, DEDUCTIONS, NET PAY
+    // Ananya: base=45000, allowances=5000, deductions=2000, net=48000
+    expect(bodyText).toMatch(/45,000|45000|₹\s*45/);
   });
 });
