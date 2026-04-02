@@ -39,6 +39,10 @@ export const resultsApi = {
 
 // Academic Performance API
 export const academicPerformanceApi = {
+  getDashboard: (params) => {
+    const query = params ? `?${new URLSearchParams(params)}` : '';
+    return request(`/academic-performance/dashboard${query}`);
+  },
   getStudent: (studentId, params) => {
     const query = params ? `?${new URLSearchParams(params)}` : '';
     return request(`/academic-performance/student/${studentId}${query}`);
