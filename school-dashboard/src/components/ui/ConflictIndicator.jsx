@@ -343,6 +343,13 @@ export default function ConflictIndicator({
                   <div className="space-y-2">
                     {suggestResolutions(selectedConflict).map((resolution) => {
                       const Icon = resolution.icon;
+                      // Use complete Tailwind class strings to avoid dynamic class purging
+                      const resolutionColorMap = {
+                        danger:  { bg: 'bg-danger-100', text: 'text-danger-600' },
+                        primary: { bg: 'bg-primary-100', text: 'text-primary-600' },
+                        warning: { bg: 'bg-warning-100', text: 'text-warning-600' },
+                      };
+                      const colorClasses = resolutionColorMap[resolution.color] || resolutionColorMap.primary;
                       return (
                         <Card
                           key={resolution.id}
@@ -353,8 +360,8 @@ export default function ConflictIndicator({
                         >
                           <CardBody className="p-3">
                             <div className="flex items-start gap-3">
-                              <div className={`w-8 h-8 rounded-lg bg-${resolution.color}-100 flex items-center justify-center flex-shrink-0`}>
-                                <Icon size={16} className={`text-${resolution.color}-600`} />
+                              <div className={`w-8 h-8 rounded-lg ${colorClasses.bg} flex items-center justify-center flex-shrink-0`}>
+                                <Icon size={16} className={colorClasses.text} />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-semibold text-default-900 mb-0.5">

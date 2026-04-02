@@ -70,7 +70,7 @@ const ConfirmDialog = memo(function ConfirmDialog({
       size="md"
       classNames={{
         backdrop: "bg-black/50",
-        base: "bg-white dark:bg-gray-900"
+        base: "bg-white dark:bg-zinc-900"
       }}
     >
       <ModalContent>

@@ -9,6 +9,7 @@ import RouteModal from "./RouteModal";
 import StudentAssignModal from "./StudentAssignModal";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 
 export default function RoutesTab() {
   const { t } = useTranslation();
@@ -26,6 +27,7 @@ export default function RoutesTab() {
   const [editingRoute, setEditingRoute] = useState(null);
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [assigningRoute, setAssigningRoute] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const fetchData = async () => {
     try {
@@ -56,15 +58,17 @@ export default function RoutesTab() {
     return list;
   }, [routes, statusFilter, search]);
 
-  const handleDelete = async (route) => {
-    if (!confirm(t('confirm.deleteRoute', { name: route.routeName }))) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await transportApi.deleteRoute(route._id);
+      await transportApi.deleteRoute(deleteTarget._id);
       toast.success(t('toast.success.routeDeleted'));
       fetchData();
     } catch (error) {
       console.error('Failed to delete route:', error);
       toast.error(t('toast.error.failedToDeleteRoute'));
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -150,7 +154,7 @@ export default function RoutesTab() {
                     <DropdownMenu>
                       <DropdownItem key="edit" startContent={<Edit2 size={14} />} onPress={() => handleEdit(route)}>{t('pages.edit1')}</DropdownItem>
                       <DropdownItem key="assign" startContent={<UserPlus size={14} />} onPress={() => handleAssignStudents(route)}>{t('pages.assignStudents')}</DropdownItem>
-                      <DropdownItem key="delete" startContent={<Trash2 size={14} />} className="text-danger" color="danger" onPress={() => handleDelete(route)}>{t('pages.delete1')}</DropdownItem>
+                      <DropdownItem key="delete" startContent={<Trash2 size={14} />} className="text-danger" color="danger" onPress={() => setDeleteTarget(route)}>{t('pages.delete1')}</DropdownItem>
                     </DropdownMenu>
                   </Dropdown>
                 </div>
@@ -232,6 +236,16 @@ export default function RoutesTab() {
         onClose={() => { setIsStudentModalOpen(false); setAssigningRoute(null); }}
         route={assigningRoute}
         onSaved={fetchData}
+      />
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title={t('confirm.deleteRoute', { name: deleteTarget?.routeName || '' })}
+        message={t('confirm.deleteRoute', { name: deleteTarget?.routeName || '' })}
+        confirmText="Delete"
+        variant="danger"
       />
     </div>
   );

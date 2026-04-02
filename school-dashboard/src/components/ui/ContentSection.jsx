@@ -20,9 +20,9 @@ export default function ContentSection({
     <div
       className={cn(
         paddingStyles[padding],
-        minHeight && `min-h-[${minHeight}px]`,
         className
       )}
+      style={minHeight ? { minHeight: `${minHeight}px` } : undefined}
     >
       {children}
     </div>

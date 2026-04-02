@@ -20,7 +20,7 @@ export const TablePageSkeleton = ({
   rows = 6,
   hasAvatar = false,
 }) => (
-  <div className="space-y-6">
+  <div role="status" aria-busy="true" aria-label="Loading page" className="space-y-6">
     {/* Page title */}
     {title && <Bone className="h-7 w-48" />}
 
@@ -58,7 +58,7 @@ export const CardGridPageSkeleton = ({
   cards = 6,
   columns = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
 }) => (
-  <div className="space-y-6">
+  <div role="status" aria-busy="true" aria-label="Loading page" className="space-y-6">
     {title && <Bone className="h-7 w-48" />}
     <div className={`grid ${columns} gap-4`}>
       {Array.from({ length: cards }).map((_, i) => (
@@ -74,7 +74,7 @@ export const DetailPageSkeleton = ({
   avatar = false,
   fields = 6,
 }) => (
-  <div className="space-y-6">
+  <div role="status" aria-busy="true" aria-label="Loading page" className="space-y-6">
     <div className="flex items-center gap-4">
       {avatar && <Bone className="h-16 w-16 rounded-full" />}
       <div className="space-y-2">
