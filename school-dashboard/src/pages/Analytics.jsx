@@ -124,9 +124,17 @@ export default function Analytics() {
           ? activeStudents.sort(() => 0.5 - Math.random()).slice(0, sampleSize)
           : activeStudents;
 
-        const results = await Promise.allSettled(
-          sampledStudents.map(async (student) => attendanceApi.getStudentAttendance(student.id, startDate, endDate))
-        );
+        // Batch API calls in groups of 6 to prevent 429 rate-limit errors
+        const BATCH_SIZE = 6;
+        const results = [];
+        for (let i = 0; i < sampledStudents.length; i += BATCH_SIZE) {
+          const batch = sampledStudents.slice(i, i + BATCH_SIZE);
+          const batchResults = await Promise.allSettled(
+            batch.map((student) => attendanceApi.getStudentAttendance(student.id, startDate, endDate))
+          );
+          results.push(...batchResults);
+          if (cancelled) return;
+        }
 
         const weekdayBuckets = WEEKDAY_LABELS.reduce((acc, day) => {
           acc[day] = { present: 0, total: 0 };
@@ -267,7 +275,7 @@ export default function Analytics() {
         defaulters: feeDefaulters.length
       },
       staff: {
-        total: staff.length,
+        total: safeStaff.length,
         active: activeStaff,
         teachers,
         admins,
@@ -632,7 +640,18 @@ export default function Analytics() {
 
               <div className="p-3 bg-gray-50 rounded-lg dark:bg-zinc-900">
                 <div className="text-xs text-gray-500 mb-1 dark:text-zinc-500">{t('pages.overallHealthScore')}</div>
-                <div className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">85%</div>
+                <div className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
+                  {(() => {
+                    const scores = [
+                      analytics.students.avgAttendance,
+                      Number(analytics.fees.collectionRate),
+                      analytics.classes.total > 0 ? (analytics.classes.withTeacher / analytics.classes.total) * 100 : null,
+                    ].filter((v) => v != null && !Number.isNaN(v));
+                    return scores.length > 0
+                      ? `${Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)}%`
+                      : "\u2014";
+                  })()}
+                </div>
                 <div className="text-xs text-gray-400 mt-1 dark:text-zinc-500">{t('pages.basedOnAllMetrics')}</div>
               </div>
             </div>

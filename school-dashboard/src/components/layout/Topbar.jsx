@@ -26,14 +26,22 @@ function Topbar({ isSidebarOpen }) {
     const [resolvedStudentLabel, setResolvedStudentLabel] = useState(null);
 
     useEffect(() => {
-        notificationsApi.getAll()
-            .then((data) => {
-                const list = Array.isArray(data) ? data : [];
-                setNotificationUnreadCount(list.filter(n => !n.read).length);
-            })
-            .catch(() => {
-                setNotificationUnreadCount(0);
-            });
+        const fetchUnreadCount = () => {
+            notificationsApi.getAll()
+                .then((data) => {
+                    const list = Array.isArray(data) ? data : [];
+                    setNotificationUnreadCount(list.filter(n => !n.read).length);
+                })
+                .catch(() => {
+                    setNotificationUnreadCount(0);
+                });
+        };
+
+        fetchUnreadCount();
+
+        // Poll every 60 seconds for new notifications
+        const interval = setInterval(fetchUnreadCount, 60000);
+        return () => clearInterval(interval);
     }, []);
 
     useEffect(() => {
@@ -204,7 +212,8 @@ function Topbar({ isSidebarOpen }) {
                     isOpen={isNotificationOpen}
                     onOpenChange={(open) => {
                         setIsNotificationOpen(open);
-                        if (open) setNotificationUnreadCount(0);
+                        // Reset badge when closing (user has seen notifications)
+                        if (!open) setNotificationUnreadCount(0);
                     }}
                     placement="bottom-end"
                     offset={8}
@@ -212,6 +221,7 @@ function Topbar({ isSidebarOpen }) {
                 >
                     <PopoverTrigger>
                         <button
+                            data-tour="notifications"
                             aria-label={notificationUnreadCount > 0 ? `${notificationUnreadCount} unread notifications` : 'Notifications'}
                             className="relative h-9 w-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors"
                         >

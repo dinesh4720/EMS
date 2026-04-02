@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import logger from '../../utils/logger';
 import {
   Card, CardHeader, CardBody, Button, Select, SelectItem,
@@ -28,6 +29,7 @@ import { useTranslation } from 'react-i18next';
  */
 export default function SubstitutionAlertPanel({ className = '' }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { staff, classes, schoolSettings } = useApp();
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -336,7 +338,7 @@ export default function SubstitutionAlertPanel({ className = '' }) {
                 variant="flat"
                 color="danger"
                 className="w-full"
-                onPress={() => {/* Could open full view */}}
+                onPress={() => navigate('/classes')}
               >
                 View All ({alerts.length})
               </Button>

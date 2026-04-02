@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getDateLocale } from '../../i18n/index';
 
 import { useTranslation } from 'react-i18next';
@@ -49,6 +50,7 @@ const getRelativeTime = (date) => {
 
 function ActivityFeed({ payments, announcements, communications }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
 
   // Combine and sort all activities
@@ -97,7 +99,7 @@ function ActivityFeed({ payments, announcements, communications }) {
             return (
               <div
                 key={`${activity.type}-${activity.id || index}`}
-                className="group flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer"
+                className="group flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors"
               >
                 {/* Icon */}
                 <div className={`shrink-0 w-8 h-8 rounded-lg ${color} flex items-center justify-center`}>
@@ -138,7 +140,10 @@ function ActivityFeed({ payments, announcements, communications }) {
 
       {/* Footer */}
       <div className="p-4 border-t border-gray-200 dark:border-zinc-800">
-        <button className="w-full py-2 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 transition-colors flex items-center justify-center gap-1">
+        <button
+          onClick={() => navigate('/fees')}
+          className="w-full py-2 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 transition-colors flex items-center justify-center gap-1"
+        >
           View all activity
           <ChevronRight size={12} />
         </button>

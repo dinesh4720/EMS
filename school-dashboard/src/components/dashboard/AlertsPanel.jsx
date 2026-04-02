@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
@@ -39,6 +40,7 @@ const getAlertStyles = (type) => {
 
 function AlertsPanel({ alerts = [] }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [dismissedIds, setDismissedIds] = useState([]);
 
   const visibleAlerts = useMemo(
@@ -121,7 +123,10 @@ function AlertsPanel({ alerts = [] }) {
 
       {visibleAlerts.length > 0 && (
         <div className="p-4 border-t border-gray-200 dark:border-zinc-800">
-          <button className="w-full py-2 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 transition-colors flex items-center justify-center gap-1">
+          <button
+            onClick={() => navigate('/classes')}
+            className="w-full py-2 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 transition-colors flex items-center justify-center gap-1"
+          >
             Review alerts
             <ChevronRight size={12} />
           </button>
