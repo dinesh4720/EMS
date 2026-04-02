@@ -248,6 +248,53 @@ export default function TimetableWizardModal({
   // STEP 5: Generate Timetable
   // =====================
 
+  // Detect teacher conflicts: a teacher assigned to multiple classes at the same time slot
+  const detectTeacherConflicts = useCallback((schedule) => {
+    const conflicts = [];
+    // Map: teacherId -> [{day, periodIndex, classId, subject}]
+    const teacherSlots = {};
+
+    DAYS.forEach(day => {
+      const daySlots = schedule[day] || [];
+      daySlots.forEach((slot, periodIndex) => {
+        if (slot.teacherId && slot.subject) {
+          if (!teacherSlots[slot.teacherId]) {
+            teacherSlots[slot.teacherId] = [];
+          }
+          teacherSlots[slot.teacherId].push({
+            day,
+            periodIndex,
+            subject: slot.subject,
+            classId: selectedClassId,
+          });
+        }
+      });
+    });
+
+    // Check each teacher: if they appear more than once in the same day+period, that's a conflict
+    // (within the generated schedule itself this shouldn't happen, but we also warn about it)
+    Object.entries(teacherSlots).forEach(([teacherId, slots]) => {
+      const slotMap = {};
+      slots.forEach(s => {
+        const key = `${s.day}-${s.periodIndex}`;
+        if (slotMap[key]) {
+          const teacherName = staff.find(t => String(t.id || t._id) === String(teacherId))?.name || 'Unknown Teacher';
+          conflicts.push({
+            teacherName,
+            teacherId,
+            day: s.day,
+            periodIndex: s.periodIndex,
+            subjects: [slotMap[key].subject, s.subject],
+          });
+        } else {
+          slotMap[key] = s;
+        }
+      });
+    });
+
+    return conflicts;
+  }, [selectedClassId, staff]);
+
   const generateTimetable = useCallback(async () => {
     if (!selectedClassId || classSubjects.length === 0) {
       toast.error(t('toast.error.pleaseSelectAClassAndConfigureSubjects'));
@@ -381,15 +428,28 @@ export default function TimetableWizardModal({
         }
       }
 
+      // Detect teacher conflicts before finalizing
+      const conflicts = detectTeacherConflicts(schedule);
+      if (conflicts.length > 0) {
+        const conflictMessages = conflicts.map(c =>
+          `${c.teacherName} is double-booked on ${c.day} Period ${c.periodIndex + 1} (${c.subjects.join(' & ')})`
+        );
+        toast.error(`Teacher conflicts detected:\n${conflictMessages.join('\n')}`, { duration: 6000 });
+      }
+
       setGeneratedSchedule(schedule);
-      toast.success(t('toast.success.timetableGeneratedSuccessfully'));
+      if (conflicts.length === 0) {
+        toast.success(t('toast.success.timetableGeneratedSuccessfully'));
+      } else {
+        toast('Timetable generated with conflicts. Review and adjust before saving.', { duration: 5000 });
+      }
     } catch (error) {
       console.error('Error generating timetable:', error);
       toast.error(t('toast.error.failedToGenerateTimetable'));
     } finally {
       setIsGenerating(false);
     }
-  }, [selectedClassId, classSubjects, periods, periodRules, getTeachersForSubject, selectedClass]);
+  }, [selectedClassId, classSubjects, periods, periodRules, getTeachersForSubject, selectedClass, detectTeacherConflicts]);
 
   // Save timetable
   const handleSave = async () => {

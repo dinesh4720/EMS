@@ -420,6 +420,17 @@ export default function Timetable({ classId }) {
   };
 
   const handleSavePeriods = () => {
+    // Warn user that saving period changes will reset the entire timetable schedule
+    const hasExistingSchedule = Object.values(schedule).some(daySlots =>
+      Array.isArray(daySlots) && daySlots.some(slot => slot && slot.subject)
+    );
+
+    if (hasExistingSchedule) {
+      if (!window.confirm('Saving period changes will reset the entire timetable schedule. All currently assigned subjects and teachers will be cleared. Are you sure you want to continue?')) {
+        return;
+      }
+    }
+
     setSchedule(initializeSchedule());
     setHasChanges(true);
     onPeriodsClose();

@@ -75,7 +75,7 @@ export default function ClassTeacherAssignmentModal({
 
     if (String(currentTeacherId) === String(teacher.id)) {
       // Teacher is already assigned to this class
-      toast.info(`${teacher.name} is already the class teacher for ${className}-${section}`);
+      toast(`${teacher.name} is already the class teacher for ${className}-${section}`);
       return;
     }
 

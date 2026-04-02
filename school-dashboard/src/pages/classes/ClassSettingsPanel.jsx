@@ -115,6 +115,7 @@ export default function ClassSettingsPanel({
         successMessage: 'Class tag updated successfully!',
         errorMessage: null,
         onSuccess: () => {
+          setOriginalTag(classTag);
           setSaving(false);
         },
         onError: () => {
@@ -151,6 +152,7 @@ export default function ClassSettingsPanel({
         successMessage: 'Subjects updated successfully!',
         errorMessage: null,
         onSuccess: () => {
+          setOriginalSubjects(new Set(selectedSubjects));
           setSaving(false);
         },
         onError: () => {
@@ -168,13 +170,13 @@ export default function ClassSettingsPanel({
     await executeWithFeedback(
       async () => {
         setSaving(true);
-        
+
         // Update both tag and subjects
         await Promise.all([
           classesApi.updateTag(classId, classTag),
           classesApi.updateSubjects(classId, Array.from(selectedSubjects))
         ]);
-        
+
         setErrors({});
       },
       {
@@ -182,6 +184,9 @@ export default function ClassSettingsPanel({
         successMessage: 'Class settings saved successfully!',
         errorMessage: null,
         onSuccess: () => {
+          // Update original values so dirty tracking resets properly
+          setOriginalTag(classTag);
+          setOriginalSubjects(new Set(selectedSubjects));
           setSaving(false);
         },
         onError: () => {
