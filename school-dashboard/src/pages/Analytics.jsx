@@ -118,10 +118,10 @@ export default function Analytics() {
       try {
         const { startDate, endDate } = parseAcademicYearRange(currentAcademicYear, schoolSettings);
 
-        // Sample up to 50 students for analytics to avoid hundreds of API calls
-        const sampleSize = Math.min(activeStudents.length, 50);
+        // Sample up to 20 students deterministically to reduce API load and avoid flickering
+        const sampleSize = Math.min(activeStudents.length, 20);
         const sampledStudents = sampleSize < activeStudents.length
-          ? activeStudents.sort(() => 0.5 - Math.random()).slice(0, sampleSize)
+          ? [...activeStudents].sort((a, b) => (a.id || a._id || '').localeCompare(b.id || b._id || '')).slice(0, sampleSize)
           : activeStudents;
 
         // Batch API calls in groups of 6 to prevent 429 rate-limit errors
