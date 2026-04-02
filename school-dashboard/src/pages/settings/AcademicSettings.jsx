@@ -1084,7 +1084,7 @@ function AcademicYearForm({ settings, onSave, onCancel, saving }) {
         />
       </div>
       <div className="flex justify-end gap-2 pt-4">
-        <Button variant="light" onPress={onCancel} disabled={saving}>{t('pages.cancel2')}</Button>
+        <Button variant="light" onPress={onCancel} isDisabled={saving}>{t('pages.cancel2')}</Button>
         <Button color="primary" onPress={() => onSave(formData)} isLoading={saving}>
           Save Changes
         </Button>
@@ -1120,7 +1120,7 @@ function SchoolTimingsForm({ settings, onSave, onCancel, saving }) {
         />
       </div>
       <div className="flex justify-end gap-2 pt-4">
-        <Button variant="light" onPress={onCancel} disabled={saving}>{t('pages.cancel2')}</Button>
+        <Button variant="light" onPress={onCancel} isDisabled={saving}>{t('pages.cancel2')}</Button>
         <Button color="primary" onPress={() => onSave(formData)} isLoading={saving}>
           Save Changes
         </Button>
@@ -1171,7 +1171,7 @@ function PeriodConfigForm({ settings, onSave, onCancel, saving }) {
         </p>
       </div>
       <div className="flex justify-end gap-2 pt-4">
-        <Button variant="light" onPress={onCancel} disabled={saving}>{t('pages.cancel2')}</Button>
+        <Button variant="light" onPress={onCancel} isDisabled={saving}>{t('pages.cancel2')}</Button>
         <Button color="primary" onPress={() => onSave(formData)} isLoading={saving}>
           Save Changes
         </Button>
@@ -1224,7 +1224,7 @@ function WorkingDaysForm({ settings, onSave, onCancel, saving }) {
         })}
       </div>
       <div className="flex justify-end gap-2 pt-4">
-        <Button variant="light" onPress={onCancel} disabled={saving}>{t('pages.cancel2')}</Button>
+        <Button variant="light" onPress={onCancel} isDisabled={saving}>{t('pages.cancel2')}</Button>
         <Button color="primary" onPress={() => onSave({ workingDays })} isLoading={saving}>
           Save Changes
         </Button>

@@ -13,6 +13,7 @@ import AppointmentsList from './AppointmentsList';
 import FeedbacksList from './FeedbacksList';
 import CallLogsList from './CallLogsList';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 
 // Hardcoded UI strings — centralised here for future i18n migration
 const STRINGS = {
@@ -89,6 +90,7 @@ export default function FrontDeskDashboard() {
       setRecentActivity(activities);
     } catch (error) {
       console.error('Error loading stats:', error);
+      toast.error('Failed to load dashboard data');
     }
   };
 

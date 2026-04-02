@@ -245,7 +245,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
           )}
           {item.category === "Announcements" && (
             <p className="text-xs text-default-400 truncate">
-              {[item.status, item.createdAt && new Date(item.createdAt).toLocaleDateString()].filter(Boolean).join(" \u2022 ")}
+              {[item.status, item.createdAt && new Date(item.createdAt).toLocaleDateString('en-IN')].filter(Boolean).join(" \u2022 ")}
             </p>
           )}
         </div>

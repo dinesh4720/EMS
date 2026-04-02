@@ -33,7 +33,7 @@ export function StaffProvider({ children }) {
 
   // Called by AppContextCore when query data arrives
   const setStaffFromQuery = useCallback((data) => {
-    setStaff(data);
+    setStaff(Array.isArray(data) ? data : []);
   }, []);
 
   const addStaff = async (newStaff) => {

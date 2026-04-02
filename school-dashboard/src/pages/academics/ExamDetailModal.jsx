@@ -93,7 +93,7 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
       <div className="text-center py-12">
         <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
         <p className="text-gray-500 dark:text-zinc-400">{t('pages.examNotFound')}</p>
-        <Button className="mt-4" onClick={onClose}>{t('pages.close2')}</Button>
+        <Button className="mt-4" onPress={onClose}>{t('pages.close2')}</Button>
       </div>
     );
   }
@@ -231,7 +231,7 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
 
           {/* Actions */}
           <div className="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-zinc-800">
-            <Button variant="light" onClick={onClose}>
+            <Button variant="light" onPress={onClose}>
               Close
             </Button>
             <div className="flex gap-2">

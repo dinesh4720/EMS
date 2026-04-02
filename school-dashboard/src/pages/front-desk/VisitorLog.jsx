@@ -81,7 +81,7 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
   const loadVisitors = async () => {
     try {
       const response = await frontDeskApi.getVisitorsToday();
-      setVisitors(response);
+      setVisitors(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Failed to load visitors:', error);
       toast.error(t('toast.error.failedToLoadVisitors'));
@@ -102,6 +102,7 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
       setStudents(response.data || []);
     } catch (error) {
       console.error('Failed to load students:', error);
+        toast.error('Failed to load students');
     } finally {
       setStudentsLoading(false);
     }

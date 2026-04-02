@@ -185,7 +185,7 @@ export default function ChatInputBar({
             value={newMessage}
             onChange={onTyping}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && onSend()}
-            disabled={sending || uploadingFile || isRecording || !!voicePreview}
+            isDisabled={sending || uploadingFile || isRecording || !!voicePreview}
             classNames={{
               input: "text-sm",
               inputWrapper: "h-11 rounded-xl border-default-200 dark:border-zinc-700 hover:border-primary dark:hover:border-primary focus-within:border-primary dark:focus-within:border-primary shadow-sm"
