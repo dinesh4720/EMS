@@ -25,6 +25,7 @@ export default function AddRemarkDrawer({
     sendToParent: false
   });
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const resetForm = () => {
     setRemarkForm({ type: "", customType: "", title: "", description: "", sendToParent: false });
@@ -38,6 +39,7 @@ export default function AddRemarkDrawer({
     if (!remarkForm.description.trim()) e.description = t('students.profile.remarks.enterDescription', 'Please enter a description');
     if (Object.keys(e).length > 0) { setErrors(e); return; }
 
+    setIsSubmitting(true);
     try {
       const remarkData = {
         title: remarkForm.title.trim(),
@@ -64,6 +66,8 @@ export default function AddRemarkDrawer({
     } catch (error) {
       console.error("Error saving remark:", error);
       toast.error(error.message || t('students.profile.remarks.saveFailed', 'Failed to save remark'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -222,7 +226,8 @@ export default function AddRemarkDrawer({
                 color="primary"
                 onPress={handleSaveRemark}
                 startContent={<Plus size={16} />}
-                isDisabled={!remarkForm.title.trim() || !remarkForm.description.trim() || (!remarkForm.type && !remarkForm.customType.trim())}
+                isDisabled={!remarkForm.title.trim() || !remarkForm.description.trim() || (!remarkForm.type && !remarkForm.customType.trim()) || isSubmitting}
+                isLoading={isSubmitting}
               >
                 {remarkForm.sendToParent ? t('students.profile.remarks.saveAndSend', 'Save & Send') : t('students.profile.remarks.saveRemark', 'Save Remark')}
               </Button>

@@ -18,6 +18,7 @@ export default function AttendanceTab({
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString('default', { month: 'long' }).toLowerCase());
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch attendance data on component mount and when student changes
   useEffect(() => {
@@ -173,8 +174,9 @@ export default function AttendanceTab({
 
   // Handle marking attendance
   const handleMarkAttendance = async (status) => {
-    if (!student?.id || !selectedDate) return;
+    if (!student?.id || !selectedDate || isSubmitting) return;
 
+    setIsSubmitting(true);
     try {
       await attendanceApi.mark({
         studentId: student.id,
@@ -193,6 +195,8 @@ export default function AttendanceTab({
     } catch (error) {
       console.error('Error marking attendance:', error);
       toast.error(t('toast.error.failedToMarkAttendance'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -351,6 +355,8 @@ export default function AttendanceTab({
               className="border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
               startContent={<CheckCircle size={16} />}
               onPress={() => handleMarkAttendance('present')}
+              isDisabled={isSubmitting}
+              isLoading={isSubmitting}
             >
               Mark Present
             </Button>
@@ -359,6 +365,7 @@ export default function AttendanceTab({
               className="border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
               startContent={<XCircle size={16} />}
               onPress={() => handleMarkAttendance('absent')}
+              isDisabled={isSubmitting}
             >
               Mark Absent
             </Button>
@@ -367,6 +374,7 @@ export default function AttendanceTab({
               className="border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
               startContent={<Clock size={16} />}
               onPress={() => handleMarkAttendance('late')}
+              isDisabled={isSubmitting}
             >
               Mark Late
             </Button>
