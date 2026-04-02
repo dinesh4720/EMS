@@ -101,10 +101,18 @@ export default function Subjects() {
   });
 
   // Handle add subject
+  const [isAddingSubject, setIsAddingSubject] = useState(false);
+  const [isUpdatingChapter, setIsUpdatingChapter] = useState(false);
   const handleAddSubject = async () => {
+    if (!newSubject.subjectName?.trim()) {
+      toast.error('Please enter a subject name');
+      return;
+    }
+    if (isAddingSubject) return;
+    setIsAddingSubject(true);
     try {
       await classesEnhancedApi.addSubject(id, {
-        subjectName: newSubject.subjectName,
+        subjectName: newSubject.subjectName.trim(),
         subjectId: newSubject.subjectId || undefined,
         teacherId: newSubject.teacherId,
         assignedStudents: newSubject.assignTo === 'specific' ? newSubject.selectedStudents : []
@@ -124,13 +132,16 @@ export default function Subjects() {
     } catch (error) {
       console.error('Error adding subject:', error);
       toast.error(error.response?.data?.message || error.message || 'Failed to add subject');
+    } finally {
+      setIsAddingSubject(false);
     }
   };
 
   // Handle chapter progress update
   const handleUpdateChapter = async () => {
+    if (!selectedSubject || isUpdatingChapter) return;
+    setIsUpdatingChapter(true);
     try {
-      if (!selectedSubject) return;
       await classesEnhancedApi.updateChapter(selectedSubject._id, {
         chapters: selectedSubject.chapters
       });
@@ -141,6 +152,8 @@ export default function Subjects() {
     } catch (error) {
       console.error('Error updating chapter:', error);
       toast.error(error.response?.data?.message || error.message || 'Failed to update chapter progress');
+    } finally {
+      setIsUpdatingChapter(false);
     }
   };
 

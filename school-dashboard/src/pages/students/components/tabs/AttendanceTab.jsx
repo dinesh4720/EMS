@@ -228,6 +228,10 @@ export default function AttendanceTab({
     toast.success('Attendance report downloaded');
   };
 
+  // Resolve parent contact info — check top-level fields first, then fall back to parents array
+  const resolvedParentEmail = student?.parentEmail || student?.parents?.find(p => p.isParent !== false)?.email || student?.parents?.[0]?.email || '';
+  const resolvedParentPhone = student?.parentPhone || student?.parents?.find(p => p.isParent !== false)?.phone || student?.parents?.[0]?.phone || '';
+
   // Send attendance report to parent (MF-18)
   const handleSendToParent = async (channel) => {
     if (!student?.id) return;
@@ -247,10 +251,6 @@ export default function AttendanceTab({
       toast.error(`Failed to send: ${error.message || 'Unknown error'}`, { id: loadingToast });
     }
   };
-
-  // Resolve parent contact info — check top-level fields first, then fall back to parents array
-  const resolvedParentEmail = student?.parentEmail || student?.parents?.find(p => p.isParent !== false)?.email || student?.parents?.[0]?.email || '';
-  const resolvedParentPhone = student?.parentPhone || student?.parents?.find(p => p.isParent !== false)?.phone || student?.parents?.[0]?.phone || '';
 
   // Note: Subject-wise attendance is not currently supported by the backend
   // This feature would require tracking attendance per subject

@@ -398,7 +398,7 @@ export default function StaffDashboard() {
 
     try {
       const response = await uploadApi.uploadFile(file);
-      await updateStaff(id, { ...staff, picture: response.url });
+      await updateStaff(id, { picture: response.url });
       setPicturePreview(response.url);
       toast.success("Photo updated successfully", { id: loadingToast });
     } catch (error) {
@@ -422,7 +422,7 @@ export default function StaffDashboard() {
 
       const file = dataURLtoFile(croppedImage, "profile_photo.jpg");
       const response = await uploadApi.uploadFile(file);
-      await updateStaff(id, { ...staff, picture: response.url });
+      await updateStaff(id, { picture: response.url });
       setPicturePreview(response.url);
       toast.success("Photo updated successfully", { id: loadingToast });
     } catch (error) {
@@ -433,7 +433,7 @@ export default function StaffDashboard() {
 
   const handleRemovePhoto = async () => {
     try {
-      await updateStaff(id, { ...staff, picture: null });
+      await updateStaff(id, { picture: null });
       setPicturePreview(null);
       toast.success(t('toast.success.photoRemoved'));
     } catch {
@@ -441,15 +441,24 @@ export default function StaffDashboard() {
     }
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!message.trim()) {
       toast.error('Please enter a message');
       return;
     }
-    // TODO: Integrate with real messaging API when available
-    toast.error('Messaging feature is not yet connected to the backend');
-    setMessage("");
-    onClose();
+    try {
+      const { api } = await import("../../services/api");
+      await api.post('/messages/send', {
+        recipientId: staff?._id || staff?.id,
+        recipientType: 'staff',
+        message: message.trim(),
+      });
+      toast.success('Message sent successfully');
+      setMessage("");
+      onClose();
+    } catch (error) {
+      toast.error(error.message || 'Failed to send message');
+    }
   };
 
   const handleEditClick = () => {

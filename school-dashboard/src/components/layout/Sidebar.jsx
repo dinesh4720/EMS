@@ -61,11 +61,9 @@ const modules = {
       title: "Operations",
       items: [
         // { icon: Package, label: "Inventory", href: "/inventory" }, // Commented out — not needed for launch
-        // Hostel, Transport, Library modules are disabled for now
-        // Uncomment to re-enable:
+        { icon: Library, label: "Library", href: "/library" },
         // { icon: Building2, label: "Hostel", href: "/hostel" },
         // { icon: Bus, label: "Transport", href: "/transport" },
-        // { icon: Library, label: "Library", href: "/library" },
       ]
     }
   ],
@@ -262,8 +260,12 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                     >
                       <div className="pt-1 pb-1">
                         <div className="border-l border-gray-200 dark:border-zinc-800 ml-4 pl-3 space-y-0.5">
-                          {groups.map((group) =>
-                            group.items.map((item) => {
+                          {groups.filter(g => g.items.length > 0).map((group) => (
+                            <div key={group.title}>
+                              {groups.filter(g => g.items.length > 0).length > 1 && group.title && (
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-zinc-500 px-2 pt-2 pb-1">{group.title}</p>
+                              )}
+                            {group.items.map((item) => {
                               const isItemActive = location.pathname === item.href || (item.href !== "/" && location.pathname.startsWith(item.href));
                               const isMessaging = item.href === '/messaging';
                               const showBadge = isMessaging && unreadCount > 0;
@@ -286,8 +288,9 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                                   </div>
                                 </NavLink>
                               )
-                            })
-                          )}
+                            })}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </motion.div>

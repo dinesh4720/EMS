@@ -75,21 +75,24 @@ export default function TimetableWizardModal({
     doublePeriodsAllowed: false,
     preferMorningForCore: true,
     excludeBreaksFromRandomization: true,
-    firstPeriodMustBe: [], // Subjects that must be in first period
-    lastPeriodMustBe: [], // Subjects that must be in last period
     noConsecutiveSame: true,
     distributeEvenly: true,
   });
 
   // Step 5: Generated Timetable
   const [generatedSchedule, setGeneratedSchedule] = useState(null);
+  const [detectedConflicts, setDetectedConflicts] = useState([]);
   const [periods, setPeriods] = useState(DEFAULT_PERIODS_LIST);
+
+  // Cross-class teacher busy map: { "teacherId-day-periodIdx": classId }
+  const [teacherBusySlots, setTeacherBusySlots] = useState({});
 
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
       setCurrentStep(1);
       setGeneratedSchedule(null);
+      setDetectedConflicts([]);
 
       if (initialClassId) {
         setSelectedClassId(initialClassId);
@@ -104,6 +107,33 @@ export default function TimetableWizardModal({
       loadClassData(selectedClassId);
     }
   }, [selectedClassId]);
+
+  // Load all timetables to build teacher busy slots map (excluding current class)
+  const loadTeacherBusySlots = useCallback(async (excludeClassId) => {
+    try {
+      const allTimetables = await timetableApi.getAll(currentAcademicYear);
+      const busyMap = {};
+      (allTimetables || []).forEach(tt => {
+        const ttClassId = String(tt.classId?._id || tt.classId);
+        if (ttClassId === String(excludeClassId)) return; // Skip current class
+        if (!tt.schedule) return;
+        for (const day of Object.keys(tt.schedule)) {
+          const daySlots = tt.schedule[day];
+          if (!Array.isArray(daySlots)) continue;
+          daySlots.forEach((slot, periodIdx) => {
+            if (slot?.teacherId) {
+              const key = `${slot.teacherId}-${day}-${periodIdx}`;
+              busyMap[key] = ttClassId;
+            }
+          });
+        }
+      });
+      setTeacherBusySlots(busyMap);
+    } catch (error) {
+      console.error('Error loading teacher busy slots:', error);
+      // Non-blocking: proceed without cross-class checks
+    }
+  }, [currentAcademicYear]);
 
   const loadClassData = async (classId) => {
     try {
@@ -134,8 +164,11 @@ export default function TimetableWizardModal({
           setGeneratedSchedule(null);
         }
 
-        // Load teacher assignments for this class
-        await loadTeacherAssignments(classId);
+        // Load teacher assignments and cross-class busy slots in parallel
+        await Promise.all([
+          loadTeacherAssignments(classId),
+          loadTeacherBusySlots(classId),
+        ]);
       }
     } catch (error) {
       console.error('Error loading class data:', error);
@@ -271,8 +304,7 @@ export default function TimetableWizardModal({
       });
     });
 
-    // Check each teacher: if they appear more than once in the same day+period, that's a conflict
-    // (within the generated schedule itself this shouldn't happen, but we also warn about it)
+    // Check within-schedule conflicts (same teacher in two slots same day+period)
     Object.entries(teacherSlots).forEach(([teacherId, slots]) => {
       const slotMap = {};
       slots.forEach(s => {
@@ -292,8 +324,31 @@ export default function TimetableWizardModal({
       });
     });
 
+    // Check cross-class conflicts (teacher busy in another class at same slot)
+    Object.entries(teacherSlots).forEach(([teacherId, slots]) => {
+      slots.forEach(s => {
+        const busyKey = `${teacherId}-${s.day}-${s.periodIndex}`;
+        if (teacherBusySlots[busyKey]) {
+          const teacherName = staff.find(t => String(t.id || t._id) === String(teacherId))?.name || 'Unknown Teacher';
+          // Avoid duplicate conflict for same teacher+day+period
+          const alreadyReported = conflicts.some(c =>
+            c.teacherId === teacherId && c.day === s.day && c.periodIndex === s.periodIndex
+          );
+          if (!alreadyReported) {
+            conflicts.push({
+              teacherName,
+              teacherId,
+              day: s.day,
+              periodIndex: s.periodIndex,
+              subjects: [s.subject, 'another class'],
+            });
+          }
+        }
+      });
+    });
+
     return conflicts;
-  }, [selectedClassId, staff]);
+  }, [selectedClassId, staff, teacherBusySlots]);
 
   const generateTimetable = useCallback(async () => {
     if (!selectedClassId || classSubjects.length === 0) {
@@ -407,12 +462,24 @@ export default function TimetableWizardModal({
           }
 
           if (selectedSubject) {
-            // Get available teacher
+            // Get available teacher (checking cross-class busy slots)
             const teachers = getTeachersForSubject(selectedSubject);
             if (teachers.length > 0) {
-              // Rotate through teachers
-              const teacherIndex = subjectUsage[selectedSubject].perWeek % teachers.length;
-              selectedTeacher = teachers[teacherIndex].id;
+              // Try to find a teacher not busy in another class at this day+period
+              const startIdx = subjectUsage[selectedSubject].perWeek % teachers.length;
+              for (let t = 0; t < teachers.length; t++) {
+                const idx = (startIdx + t) % teachers.length;
+                const candidate = teachers[idx].id;
+                const busyKey = `${candidate}-${day}-${periodIdx}`;
+                if (!teacherBusySlots[busyKey]) {
+                  selectedTeacher = candidate;
+                  break;
+                }
+              }
+              // Fallback: if all teachers are busy in other classes, still assign (conflict will be detected)
+              if (!selectedTeacher) {
+                selectedTeacher = teachers[startIdx].id;
+              }
             }
 
             schedule[day][periodIdx] = {
@@ -430,18 +497,16 @@ export default function TimetableWizardModal({
 
       // Detect teacher conflicts before finalizing
       const conflicts = detectTeacherConflicts(schedule);
+      setDetectedConflicts(conflicts);
+      setGeneratedSchedule(schedule);
+
       if (conflicts.length > 0) {
         const conflictMessages = conflicts.map(c =>
           `${c.teacherName} is double-booked on ${c.day} Period ${c.periodIndex + 1} (${c.subjects.join(' & ')})`
         );
         toast.error(`Teacher conflicts detected:\n${conflictMessages.join('\n')}`, { duration: 6000 });
-      }
-
-      setGeneratedSchedule(schedule);
-      if (conflicts.length === 0) {
-        toast.success(t('toast.success.timetableGeneratedSuccessfully'));
       } else {
-        toast('Timetable generated with conflicts. Review and adjust before saving.', { duration: 5000 });
+        toast.success(t('toast.success.timetableGeneratedSuccessfully'));
       }
     } catch (error) {
       console.error('Error generating timetable:', error);
@@ -449,7 +514,7 @@ export default function TimetableWizardModal({
     } finally {
       setIsGenerating(false);
     }
-  }, [selectedClassId, classSubjects, periods, periodRules, getTeachersForSubject, selectedClass, detectTeacherConflicts]);
+  }, [selectedClassId, classSubjects, periods, periodRules, getTeachersForSubject, selectedClass, detectTeacherConflicts, teacherBusySlots]);
 
   // Save timetable
   const handleSave = async () => {
@@ -513,14 +578,14 @@ export default function TimetableWizardModal({
       case 2: return classSubjects.length > 0;
       case 3: return true; // Teacher assignments are optional
       case 4: return true;
-      case 5: return !!generatedSchedule;
+      case 5: return !!generatedSchedule && detectedConflicts.length === 0;
       default: return false;
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep === 4) {
-      generateTimetable();
+      await generateTimetable();
     }
     setCurrentStep(prev => Math.min(prev + 1, 5));
   };
@@ -991,6 +1056,31 @@ export default function TimetableWizardModal({
                 </Button>
               </div>
 
+              {/* Inline conflict warnings */}
+              {detectedConflicts.length > 0 && !isGenerating && (
+                <div className="p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle size={18} className="text-red-600 dark:text-red-400" />
+                    <h4 className="font-medium text-red-700 dark:text-red-300">
+                      {detectedConflicts.length} Teacher Conflict{detectedConflicts.length > 1 ? 's' : ''} Detected
+                    </h4>
+                  </div>
+                  <ul className="space-y-1 text-sm text-red-600 dark:text-red-400">
+                    {detectedConflicts.map((c, i) => (
+                      <li key={i} className="flex items-start gap-1.5">
+                        <span className="mt-0.5">•</span>
+                        <span>
+                          <strong>{c.teacherName}</strong> is double-booked on <strong>{c.day}</strong>, Period {c.periodIndex + 1} ({c.subjects.join(' & ')})
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-red-500 dark:text-red-400 mt-2">
+                    Resolve conflicts by clicking "Regenerate" or go back to adjust teacher assignments.
+                  </p>
+                </div>
+              )}
+
               {isGenerating ? (
                 <div className="space-y-4 py-4">
                   <div className="flex items-center justify-center gap-3">
@@ -1140,10 +1230,10 @@ export default function TimetableWizardModal({
                   color="success"
                   onPress={handleSave}
                   isLoading={isSaving}
-                  isDisabled={!generatedSchedule}
+                  isDisabled={!generatedSchedule || detectedConflicts.length > 0}
                   startContent={!isSaving && <Save size={16} />}
                 >
-                  Save Timetable
+                  {detectedConflicts.length > 0 ? 'Resolve Conflicts to Save' : 'Save Timetable'}
                 </Button>
               )}
             </div>

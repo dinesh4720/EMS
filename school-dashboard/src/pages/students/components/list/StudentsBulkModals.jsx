@@ -134,6 +134,7 @@ export default function StudentsBulkModals({
                                             onClose();
                                         } catch (error) {
                                             console.error("Bulk action error:", error);
+                                            toast.error(error.message || "Bulk action failed");
                                         } finally {
                                             setIsBulkSubmitting(false);
                                         }
@@ -205,8 +206,10 @@ export default function StudentsBulkModals({
                                 setIsPromoting(true);
                                 try {
                                     await executePromotion();
+                                    onPromoteClose();
                                 } catch (error) {
                                     console.error("Promotion error:", error);
+                                    toast.error(error.message || "Promotion failed");
                                 } finally {
                                     setIsPromoting(false);
                                 }
@@ -259,8 +262,10 @@ export default function StudentsBulkModals({
                                 setIsSendingReminders(true);
                                 try {
                                     await executeSendReminders();
+                                    onReminderClose();
                                 } catch (error) {
                                     console.error("Send reminders error:", error);
+                                    toast.error(error.message || "Failed to send reminders");
                                 } finally {
                                     setIsSendingReminders(false);
                                 }

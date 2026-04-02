@@ -322,11 +322,20 @@ export default function StaffAttendance() {
                 downloadType === "yearly" ? selectedYear :
                     `${customStartDate} to ${customEndDate}`;
 
+        // Sanitize cell values to prevent CSV formula injection
+        const sanitizeCsvCell = (value) => {
+            const str = String(value ?? '');
+            if (/^[=+\-@\t\r]/.test(str)) {
+                return "'" + str;
+            }
+            return str;
+        };
+
         const csvContent = [
             `Staff Attendance Report - ${typeLabel}`,
             "",
             headers.join(","),
-            ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+            ...rows.map(row => row.map(cell => `"${sanitizeCsvCell(cell)}"`).join(","))
         ].join("\n");
 
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });

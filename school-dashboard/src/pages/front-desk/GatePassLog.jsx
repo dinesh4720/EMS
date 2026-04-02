@@ -170,51 +170,53 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
+
+    // Validate BEFORE setting isSubmitting to prevent permanently disabled button
+    const student = getSelectedStudent();
+    const staffMember = getSelectedStaff();
+
+    if (!student) {
+      toast.error(t('toast.error.pleaseSelectAStudent'));
+      return;
+    }
+
+    if (!reason) {
+      toast.error(t('toast.error.pleaseSelectAReason'));
+      return;
+    }
+
+    if (reason === 'OTHER' && !otherReason) {
+      toast.error(t('toast.error.pleaseSpecifyTheReason'));
+      return;
+    }
+
+    if (!leavingWith) {
+      toast.error(t('toast.error.pleaseSelectWhoTheStudentIsLeavingWith'));
+      return;
+    }
+
+    if (leavingWith === 'OTHERS' && !escortName) {
+      toast.error(t('toast.error.pleaseEnterEscortName'));
+      return;
+    }
+
+    if (leavingWith === 'OTHERS' && escortPhone && !validatePhone(escortPhone)) {
+      toast.error(t('toast.error.pleaseEnterAValid10DigitPhoneNumber'));
+      return;
+    }
+
+    if (!approvedBy) {
+      toast.error(t('toast.error.pleaseSelectWhoApprovedThisGatePass'));
+      return;
+    }
+
+    if (!approvedByStaffId) {
+      toast.error(t('toast.error.pleaseSelectAStaffMember'));
+        return;
+      }
+
     setIsSubmitting(true);
     try {
-      const student = getSelectedStudent();
-      const staffMember = getSelectedStaff();
-
-      if (!student) {
-        toast.error(t('toast.error.pleaseSelectAStudent'));
-        return;
-      }
-
-      if (!reason) {
-        toast.error(t('toast.error.pleaseSelectAReason'));
-        return;
-      }
-
-      if (reason === 'OTHER' && !otherReason) {
-        toast.error(t('toast.error.pleaseSpecifyTheReason'));
-        return;
-      }
-
-      if (!leavingWith) {
-        toast.error(t('toast.error.pleaseSelectWhoTheStudentIsLeavingWith'));
-        return;
-      }
-
-      if (leavingWith === 'OTHERS' && !escortName) {
-        toast.error(t('toast.error.pleaseEnterEscortName'));
-        return;
-      }
-
-      if (leavingWith === 'OTHERS' && escortPhone && !validatePhone(escortPhone)) {
-        toast.error(t('toast.error.pleaseEnterAValid10DigitPhoneNumber'));
-        return;
-      }
-
-      if (!approvedBy) {
-        toast.error(t('toast.error.pleaseSelectWhoApprovedThisGatePass'));
-        return;
-      }
-
-      if (!approvedByStaffId) {
-        toast.error(t('toast.error.pleaseSelectAStaffMember'));
-        return;
-      }
-
       const formData = {
         studentId: student._id || student.id,
         studentName: student.name,

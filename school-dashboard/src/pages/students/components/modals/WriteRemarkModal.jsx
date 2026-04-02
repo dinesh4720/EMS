@@ -69,7 +69,7 @@ export default function WriteRemarkModal({ isOpen, onClose, student, onSave }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <Modal isOpen={isOpen} onClose={() => { setForm({ type: "", title: "", description: "", sendToParent: false }); setErrors({}); onClose(); }} size="md">
       <ModalContent>
         <ModalHeader>{t('pages.writeARemark')}</ModalHeader>
         <ModalBody>

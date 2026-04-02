@@ -5,7 +5,7 @@
  * to local state mutations in domain contexts.
  */
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { getStoredUser } from "../../utils/authSession";
 import logger from "../../utils/logger";
 
@@ -21,6 +21,10 @@ export function useSocketSync({
   addFeePayment,
   setStudents,
 }) {
+  // Use a ref to avoid stale closure over staff array in socket handlers
+  const staffRef = useRef(staff);
+  useEffect(() => { staffRef.current = staff; }, [staff]);
+
   useEffect(() => {
     const user = getStoredUser();
     if (!user?.id) return;
@@ -62,7 +66,7 @@ export function useSocketSync({
 
         socketService.on("class_updated", (data) => {
           if (data.classTeacherId !== undefined) {
-            const teacher = staff.find(
+            const teacher = staffRef.current.find(
               (s) =>
                 String(s.id) === String(data.classTeacherId) ||
                 String(s._id) === String(data.classTeacherId)
