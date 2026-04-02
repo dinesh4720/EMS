@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { ssoApi } from "../../services/settingsService";
 import toast from "react-hot-toast";
+import { useTranslation } from 'react-i18next';
 
 export default function SCIMSettings() {
   const [scimEnabled, setScimEnabled] = useState(false);
