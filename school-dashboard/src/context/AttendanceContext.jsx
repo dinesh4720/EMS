@@ -4,6 +4,12 @@ import { getStoredUser } from "../utils/authSession";
 import toast from "react-hot-toast";
 import logger from "../utils/logger";
 
+// TODO [AUDIT-64]: This context provides staff and student attendance state management
+// (optimistic updates, bulk marking, regularization) but the main Attendance.jsx page
+// does not consume it — it manages its own local state and API calls directly.
+// Consider wiring Attendance.jsx to use markStudentAttendance / studentAttendance
+// from this context for consistent state across the app, or remove the student
+// attendance portion if it's not needed outside of individual marking.
 export const AttendanceContext = createContext();
 
 export function AttendanceProvider({ children, staff }) {
