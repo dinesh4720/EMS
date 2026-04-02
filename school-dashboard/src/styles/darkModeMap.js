@@ -9,7 +9,8 @@
 
 const darkModeMap = {
   // Backgrounds
-  'bg-white':      'dark:bg-zinc-950',   // #0a0a0a
+  'bg-white':      'dark:bg-zinc-950',   // #0a0a0a  — page-level background
+  'bg-white-card': 'dark:bg-zinc-900',   // #18181b  — elevated cards/surfaces (MinimalCard, StatCard, ConfirmDialog)
   'bg-gray-50':    'dark:bg-zinc-900',   // #18181b
   'bg-gray-100':   'dark:bg-zinc-800',   // #27272a (was #3f3f46, corrected)
   'bg-gray-200':   'dark:bg-zinc-700',   // #3f3f46

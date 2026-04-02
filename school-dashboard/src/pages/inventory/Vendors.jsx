@@ -9,6 +9,7 @@ import { inventoryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 
 const emptyForm = {
   name: "", contactPerson: "", phone: "", email: "", address: "", category: "", notes: "", isActive: true,
@@ -24,6 +25,7 @@ export default function Vendors() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const fetchVendors = async () => {
     try {
@@ -69,13 +71,14 @@ export default function Vendors() {
     } finally { setSaving(false); }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm(t('confirm.deleteVendor'))) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await inventoryApi.deleteVendor(id);
+      await inventoryApi.deleteVendor(deleteTarget);
       toast.success(t('toast.success.vendorDeleted'));
       fetchVendors();
     } catch { toast.error(t('toast.error.deleteFailed')); }
+    finally { setDeleteTarget(null); }
   };
 
   const set = (key, val) => {
@@ -117,7 +120,7 @@ export default function Vendors() {
                 </div>
                 <div className="flex gap-1">
                   <button onClick={() => openEdit(v)} className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400"><Edit3 size={14} /></button>
-                  <button onClick={() => handleDelete(v._id)} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950 text-gray-500 dark:text-zinc-400 hover:text-red-600"><Trash2 size={14} /></button>
+                  <button onClick={() => setDeleteTarget(v._id)} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950 text-gray-500 dark:text-zinc-400 hover:text-red-600"><Trash2 size={14} /></button>
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -185,6 +188,16 @@ export default function Vendors() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title={t('confirm.deleteVendor')}
+        message={t('confirm.deleteVendor')}
+        confirmText="Delete"
+        variant="danger"
+      />
     </div>
   );
 }

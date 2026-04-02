@@ -11,7 +11,7 @@ const SkeletonTable = ({ columns = 4, rows = 5 }) => {
   const colCount = isArray ? columns.length : columns;
 
   return (
-    <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+    <div role="status" aria-busy="true" aria-label="Loading table" className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
       {/* Header row */}
       <div className="flex gap-4 px-4 py-3 border-b border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900">
         {Array.from({ length: colCount }).map((_, index) => {

@@ -15,7 +15,7 @@ const SkeletonCard = ({
   className = ""
 }) => {
   return (
-    <div className={`bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden ${className}`}>
+    <div role="status" aria-busy="true" aria-label="Loading card" className={`bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden ${className}`}>
       {hasHeader && (
         <div className="px-4 py-3 border-b border-gray-200 dark:border-zinc-800">
           <Bone className={`${headerHeight} w-1/3`} />

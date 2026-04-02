@@ -12,6 +12,14 @@
  * IMPORTANT: When changing colors here, also update the
  * matching CSS variables in index.css @theme block.
  * The CSS @theme block cannot import JS, so they must stay in sync.
+ *
+ * TODO (AUDIT-176): Three color systems coexist in the dashboard:
+ *   1. CSS custom properties (@theme / html.dark) — used by MinimalButton
+ *   2. Tailwind utility classes (gray-*, zinc-*) — used by most components
+ *   3. HeroUI semantic tokens (primary, danger, etc.) — used by HeroUI components
+ * This creates maintenance burden: a color change may need updates in all three.
+ * Long-term fix: migrate all custom components to CSS custom properties
+ * (approach #1) so this file truly becomes the single source of truth.
  * ============================================================
  */
 
