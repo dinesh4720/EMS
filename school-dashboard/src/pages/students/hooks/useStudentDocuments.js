@@ -25,7 +25,7 @@ export function useStudentDocuments(studentId) {
     try {
       const data = await request(`/students/${studentId}`);
       if (data.documents) {
-        setDocuments(data.documents);
+        setDocuments(Array.isArray(data.documents) ? data.documents : []);
       }
     } catch (err) {
       console.error("Error fetching documents:", err);

@@ -96,7 +96,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
     try {
       setLoading(true);
       const data = await request('/fee-heads');
-      setFeeHeads(data);
+      setFeeHeads(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching fee heads:', error);
       toast.error(t('toast.error.failedToLoadFeeHeads'));

@@ -237,7 +237,7 @@ const HomeworkPage = () => {
                   <ClipboardList size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
                   <p className="text-gray-500 dark:text-zinc-400 mb-4">{t('pages.noHomeworkFound')}</p>
                   {activeFiltersCount > 0 ? (
-                    <Button variant="flat" size="sm" onClick={handleClearFilters}>
+                    <Button variant="flat" size="sm" onPress={handleClearFilters}>
                       Clear Filters
                     </Button>
                   ) : (

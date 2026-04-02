@@ -54,7 +54,7 @@ export default function FeeDetailsCard({ student }) {
       toast.loading('Generating invoice...', { id: 'invoice' });
       const response = await request(`/students/${student.id || student._id}/fee-invoice`);
       if (response?.url) {
-        window.open(response.url, '_blank');
+        window.open(response.url, '_blank', 'noopener,noreferrer');
       }
       toast.dismiss('invoice');
       toast.success('Invoice downloaded');
@@ -93,11 +93,11 @@ export default function FeeDetailsCard({ student }) {
             <div className="flex flex-wrap gap-2 justify-center md:justify-start">
               {feeSummary?.nextDueDate && new Date(feeSummary.nextDueDate) < new Date() ? (
                 <p className="text-xs text-danger-600 bg-danger-100 px-3 py-1 rounded-full inline-block font-medium">
-                  Overdue: {new Date(feeSummary.nextDueDate).toLocaleDateString()}
+                  Overdue: {new Date(feeSummary.nextDueDate).toLocaleDateString('en-IN')}
                 </p>
               ) : feeSummary?.nextDueDate ? (
                 <p className="text-xs text-warning-600 bg-warning-100 px-3 py-1 rounded-full inline-block font-medium">
-                  Next Due: {new Date(feeSummary.nextDueDate).toLocaleDateString()}
+                  Next Due: {new Date(feeSummary.nextDueDate).toLocaleDateString('en-IN')}
                 </p>
               ) : (
                 <p className="text-xs text-success-600 bg-success-100 px-3 py-1 rounded-full inline-block font-medium">

@@ -63,7 +63,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
   const loadCallLogs = async () => {
     try {
       const response = await frontDeskApi.getCallLogs();
-      setCallLogs(response);
+      setCallLogs(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Failed to load call logs:', error);
       toast.error(t('toast.error.failedToLoadCallLogs'));

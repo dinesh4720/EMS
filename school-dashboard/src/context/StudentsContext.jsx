@@ -18,7 +18,7 @@ export function StudentsProvider({ children }) {
 
   // Called by AppContextCore when query data arrives
   const setStudentsFromQuery = useCallback((data, hydrated) => {
-    setStudents(data);
+    setStudents(Array.isArray(data) ? data : []);
     if (hydrated !== undefined) setStudentsHydrated(hydrated);
   }, []);
 

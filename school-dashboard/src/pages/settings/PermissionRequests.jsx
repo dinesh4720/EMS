@@ -100,7 +100,7 @@ export default function PermissionRequests() {
       setLoading(true);
       const status = activeTab === 'all' ? '' : activeTab;
       const data = await request(`/permissions/requests${status ? `?status=${status}` : ''}`);
-      setRequests(data);
+      setRequests(Array.isArray(data) ? data : []);
       // AUDIT-133: Always fetch actual pending count for badge
       if (activeTab === 'pending') {
         setPendingCount(Array.isArray(data) ? data.length : 0);

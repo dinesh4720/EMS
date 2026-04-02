@@ -17,7 +17,7 @@ export function ClassesProvider({ children, staff, students }) {
 
   // Called by AppContextCore when query data arrives
   const setClassesFromQuery = useCallback((data) => {
-    setClasses(data);
+    setClasses(Array.isArray(data) ? data : []);
   }, []);
 
   const addClass = async (newClass) => {

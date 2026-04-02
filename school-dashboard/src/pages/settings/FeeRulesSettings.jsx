@@ -37,7 +37,7 @@ export function ConcessionsTab() {
     try {
       setLoading(true);
       const data = await request(`/fee-settings/concessions?academicYear=${currentAcademicYear}`);
-      setConcessions(data);
+      setConcessions(Array.isArray(data) ? data : []);
     } catch (error) {
       logger.error(error);
       setFetchError(error.message || 'Failed to load concessions');
