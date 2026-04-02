@@ -57,9 +57,14 @@ describe('getNextClass', () => {
     expect(getNextClass('7')).toBe('8');
   });
 
-  it('promotes grade 10 to Passed Out / Alumni', () => {
-    expect(getNextClass('10-A')).toBe('Passed Out / Alumni');
-    expect(getNextClass('10')).toBe('Passed Out / Alumni');
+  it('promotes grade 10 to 11 (not alumni - schools go up to 12)', () => {
+    expect(getNextClass('10-A')).toBe('11-A');
+    expect(getNextClass('10')).toBe('11');
+  });
+
+  it('promotes grade 12 to Passed Out / Alumni', () => {
+    expect(getNextClass('12-A')).toBe('Passed Out / Alumni');
+    expect(getNextClass('12')).toBe('Passed Out / Alumni');
   });
 
   it('uses available classes list for next grade lookup', () => {

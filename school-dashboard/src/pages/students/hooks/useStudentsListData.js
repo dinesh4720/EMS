@@ -474,13 +474,27 @@ export function useStudentsListData() {
     }
   };
 
-  const executeSendReminders = () => {
+  const executeSendReminders = async () => {
+    if (!reminderMessage.trim()) {
+      toast.error(t("toast.error.pleaseEnterAMessage", "Please enter a message"));
+      return;
+    }
+    const ids = selectedKeys === "all" ? filteredItems.map((s) => s.id) : Array.from(selectedKeys);
     onReminderClose();
-    toast.promise(new Promise((resolve) => setTimeout(resolve, 1500)), {
-      loading: `Scheduling messages for ${reminderTargetCount} parents...`,
-      success: `Messages scheduled for ${reminderTime ? new Date(reminderTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : 'now'}`,
-      error: "Failed to schedule messages",
-    });
+    try {
+      await request("/messages/bulk-reminder", {
+        method: "POST",
+        body: JSON.stringify({
+          studentIds: ids.length > 0 ? ids : filteredItems.map((s) => s.id),
+          message: reminderMessage,
+          scheduledTime: reminderTime || undefined,
+        }),
+      });
+      toast.success(`Messages ${reminderTime ? 'scheduled' : 'sent'} for ${reminderTargetCount} parents`);
+    } catch (err) {
+      console.error("Failed to send reminders:", err);
+      toast.error(err.message || "Failed to send reminders");
+    }
   };
 
   const handleBulkMessage = () => {

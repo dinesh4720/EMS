@@ -119,7 +119,7 @@ export function useStudentDocuments(studentId) {
     }
 
     return { successCount, failCount };
-  }, [studentId]);
+  }, [studentId, t]);
 
   /**
    * Handle document deletion
@@ -151,7 +151,7 @@ export function useStudentDocuments(studentId) {
       toast.error(error.message || "Failed to delete document", { id: loadingToast });
       return false;
     }
-  }, [studentId, documents]);
+  }, [studentId, documents, t]);
 
   /**
    * Fix corrupted documents

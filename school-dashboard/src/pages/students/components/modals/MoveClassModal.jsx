@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Select, SelectItem } from "@heroui/react";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
@@ -13,11 +13,21 @@ import { useTranslation } from 'react-i18next';
  * - availableClasses: array - List of available classes
  * - onMove: function - Called after successful move with new class
  */
-export default function MoveClassModal({ isOpen, onClose, student, availableClasses = [], onMove }) {
+export default function MoveClassModal({ isOpen, onClose, student, availableClasses = [], classObjects = [], onMove }) {
   const { t } = useTranslation();
   const [newClass, setNewClass] = useState("");
   const [classError, setClassError] = useState("");
   const [isMoving, setIsMoving] = useState(false);
+
+  // Build a mapping from display label to ObjectId
+  const classIdMap = useMemo(() => {
+    const map = {};
+    for (const cls of classObjects) {
+      const label = cls.section ? `${cls.name}-${cls.section}` : cls.name;
+      map[label] = cls._id || cls.id;
+    }
+    return map;
+  }, [classObjects]);
 
   const handleMove = async () => {
     if (!newClass) {
@@ -31,9 +41,12 @@ export default function MoveClassModal({ isOpen, onClose, student, availableClas
     try {
       const { request } = await import("../../../../services/api");
 
+      // Resolve to ObjectId from classObjects, fall back to the string
+      const classId = classIdMap[newClass] || newClass;
+
       await request(`/students/${student.id}`, {
         method: 'PUT',
-        body: JSON.stringify({ classId: newClass })
+        body: JSON.stringify({ classId })
       });
 
       toast.success(t('toast.success.studentMovedToClass', { className: newClass, defaultValue: `Student moved to ${newClass}` }), { id: loadingToast });

@@ -9,7 +9,6 @@ import { useTranslation } from 'react-i18next';
  * Extracted from AddStudent.jsx
  */
 export default function ParentsStep({
-  const { t } = useTranslation();
   formData,
   errors,
   updateParent,
@@ -23,6 +22,7 @@ export default function ParentsStep({
   parentNameRef,
   parentPhoneRef,
 }) {
+  const { t } = useTranslation();
   const parents = formData.parents.filter((p) => p.isParent);
   const guardians = formData.parents.filter((p) => !p.isParent);
 

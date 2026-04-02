@@ -56,7 +56,9 @@ export default function StudentFormSubmissions() {
     onClose: onEditRequestClose,
   } = useDisclosure();
 
-  const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const loading = fetchLoading || reviewLoading;
   const [submissions, setSubmissions] = useState([]);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [filterStatus, setFilterStatus] = useState("pending");
@@ -69,7 +71,7 @@ export default function StudentFormSubmissions() {
 
   const fetchSubmissions = async () => {
     try {
-      setLoading(true);
+      setFetchLoading(true);
       const status = filterStatus === "all" ? null : filterStatus;
 
       // Get all submissions and filter for student forms
@@ -82,7 +84,7 @@ export default function StudentFormSubmissions() {
       toast.error(t('toast.error.failedToLoadSubmissions'));
       console.error(error);
     } finally {
-      setLoading(false);
+      setFetchLoading(false);
     }
   };
 
@@ -106,7 +108,7 @@ export default function StudentFormSubmissions() {
     }
 
     try {
-      setLoading(true);
+      setReviewLoading(true);
       await intakeFormsApi.reviewSubmission(selectedSubmission.id, {
         reviewStatus: status,
         reviewNotes: reviewNotes,
@@ -126,7 +128,7 @@ export default function StudentFormSubmissions() {
     } catch (error) {
       toast.error(error.message || "Failed to review submission");
     } finally {
-      setLoading(false);
+      setReviewLoading(false);
     }
   };
 
@@ -139,7 +141,7 @@ export default function StudentFormSubmissions() {
     }
 
     try {
-      setLoading(true);
+      setReviewLoading(true);
       // Request edit using dedicated endpoint
       await intakeFormsApi.requestEdit(selectedSubmission.id, {
         notes: editRequestNotes,
@@ -156,7 +158,7 @@ export default function StudentFormSubmissions() {
     } catch (error) {
       toast.error(error.message || "Failed to request edit");
     } finally {
-      setLoading(false);
+      setReviewLoading(false);
     }
   };
 
