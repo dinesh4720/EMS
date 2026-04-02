@@ -64,6 +64,7 @@ export default function StudentRatingSystem({
   const [internalEditing, setInternalEditing] = useState(false);
   const [tempRatings, setTempRatings] = useState({});
   const [tempComments, setTempComments] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isEditing = externalIsEditing || internalEditing;
 
@@ -108,7 +109,7 @@ export default function StudentRatingSystem({
     setTempComments((prev) => ({ ...prev, [dimension]: comment }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const hasEmptyRatings = RATING_DIMENSIONS.some(
       (dim) => !tempRatings[dim.key] || tempRatings[dim.key].rating === 0
     );
@@ -118,9 +119,17 @@ export default function StudentRatingSystem({
       return;
     }
 
-    onRatingChange(tempRatings);
-    setInternalEditing(false);
-    toast.success(t('toast.success.ratingsUpdatedSuccessfully'));
+    setIsSubmitting(true);
+    try {
+      await onRatingChange(tempRatings);
+      setInternalEditing(false);
+      toast.success(t('toast.success.ratingsUpdatedSuccessfully'));
+    } catch (error) {
+      console.error("Error saving ratings:", error);
+      toast.error(error.message || 'Failed to save ratings');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Calculate overall rating
@@ -293,6 +302,8 @@ export default function StudentRatingSystem({
                 className="bg-gray-900 text-white hover:bg-gray-800"
                 startContent={<Save size={14} />}
                 onPress={handleSave}
+                isLoading={isSubmitting}
+                isDisabled={isSubmitting}
               >
                 Save Changes
               </Button>

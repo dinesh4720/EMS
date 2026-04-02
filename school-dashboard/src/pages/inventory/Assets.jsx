@@ -9,6 +9,7 @@ import { inventoryApi, staffApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 
 const CATEGORIES = ["FURNITURE", "ELECTRONICS", "LAB_EQUIPMENT", "SPORTS", "STATIONERY", "VEHICLE", "OTHER"];
 const CONDITIONS = ["GOOD", "FAIR", "POOR", "DAMAGED"];
@@ -52,6 +53,7 @@ export default function Assets() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
@@ -129,13 +131,14 @@ export default function Assets() {
     } finally { setSaving(false); }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm(t('confirm.deleteAsset'))) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await inventoryApi.deleteAsset(id);
+      await inventoryApi.deleteAsset(deleteTarget);
       toast.success(t('toast.success.assetDeleted'));
       fetchAssets();
     } catch { toast.error(t('toast.error.deleteFailed')); }
+    finally { setDeleteTarget(null); }
   };
 
   const set = (key, val) => {
@@ -220,7 +223,7 @@ export default function Assets() {
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
                         <button onClick={() => openEdit(a)} className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400"><Edit3 size={14} /></button>
-                        <button onClick={() => handleDelete(a._id)} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950 text-gray-500 dark:text-zinc-400 hover:text-red-600"><Trash2 size={14} /></button>
+                        <button onClick={() => setDeleteTarget(a._id)} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950 text-gray-500 dark:text-zinc-400 hover:text-red-600"><Trash2 size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -301,6 +304,16 @@ export default function Assets() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title={t('confirm.deleteAsset')}
+        message={t('confirm.deleteAsset')}
+        confirmText="Delete"
+        variant="danger"
+      />
     </div>
   );
 }

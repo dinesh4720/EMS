@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import VehicleModal from "./VehicleModal";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 
 export default function VehiclesTab() {
   const { t } = useTranslation();
@@ -17,6 +18,7 @@ export default function VehiclesTab() {
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const fetchVehicles = async () => {
     try {
@@ -47,14 +49,16 @@ export default function VehiclesTab() {
     return list;
   }, [vehicles, statusFilter, search]);
 
-  const handleDelete = async (vehicle) => {
-    if (!confirm(t('confirm.deleteVehicle', { regNum: vehicle.registrationNumber }))) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await transportApi.deleteVehicle(vehicle._id);
+      await transportApi.deleteVehicle(deleteTarget._id);
       toast.success(t('toast.success.vehicleDeleted'));
       fetchVehicles();
     } catch {
       toast.error(t('toast.error.failedToDeleteVehicle'));
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -134,7 +138,7 @@ export default function VehiclesTab() {
                     </DropdownTrigger>
                     <DropdownMenu>
                       <DropdownItem key="edit" startContent={<Edit2 size={14} />} onPress={() => { setEditingVehicle(vehicle); setIsModalOpen(true); }}>{t('pages.edit1')}</DropdownItem>
-                      <DropdownItem key="delete" startContent={<Trash2 size={14} />} className="text-danger" color="danger" onPress={() => handleDelete(vehicle)}>{t('pages.delete1')}</DropdownItem>
+                      <DropdownItem key="delete" startContent={<Trash2 size={14} />} className="text-danger" color="danger" onPress={() => setDeleteTarget(vehicle)}>{t('pages.delete1')}</DropdownItem>
                     </DropdownMenu>
                   </Dropdown>
                 </div>
@@ -174,6 +178,16 @@ export default function VehiclesTab() {
         onClose={() => { setIsModalOpen(false); setEditingVehicle(null); }}
         vehicle={editingVehicle}
         onSaved={fetchVehicles}
+      />
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title={t('confirm.deleteVehicle', { regNum: deleteTarget?.registrationNumber || '' })}
+        message={t('confirm.deleteVehicle', { regNum: deleteTarget?.registrationNumber || '' })}
+        confirmText="Delete"
+        variant="danger"
       />
     </div>
   );

@@ -8,6 +8,7 @@ import { transportApi } from "../../services/api";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 
 export default function StudentAssignModal({
   isOpen, onClose, route, onSaved }) {
@@ -24,6 +25,7 @@ export default function StudentAssignModal({
   const [selectedStopId, setSelectedStopId] = useState("");
   const [pickupActive, setPickupActive] = useState(true);
   const [dropActive, setDropActive] = useState(true);
+  const [removeTarget, setRemoveTarget] = useState(null);
 
   const fetchRouteDetail = async () => {
     if (!route?._id) return;
@@ -92,21 +94,24 @@ export default function StudentAssignModal({
     }
   };
 
-  const handleRemove = async (studentId) => {
-    if (!confirm(t('confirm.removeStudentFromRoute'))) return;
+  const handleRemove = async () => {
+    if (!removeTarget) return;
     try {
-      await transportApi.removeStudent(route._id, studentId);
+      await transportApi.removeStudent(route._id, removeTarget);
       toast.success(t('toast.success.studentRemoved'));
       fetchRouteDetail();
       onSaved?.();
     } catch {
       toast.error(t('toast.error.failedToRemoveStudent'));
+    } finally {
+      setRemoveTarget(null);
     }
   };
 
   const assignedStudents = routeDetail?.students || [];
 
   return (
+    <>
     <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
       <ModalContent>
         <ModalHeader>
@@ -228,7 +233,7 @@ export default function StudentAssignModal({
                             size="sm"
                             variant="light"
                             color="danger"
-                            onPress={() => handleRemove(studentObjId)}
+                            onPress={() => setRemoveTarget(studentObjId)}
                           >
                             <Trash2 size={14} />
                           </Button>
@@ -246,5 +251,16 @@ export default function StudentAssignModal({
         </ModalFooter>
       </ModalContent>
     </Modal>
+
+    <ConfirmDialog
+      isOpen={!!removeTarget}
+      onClose={() => setRemoveTarget(null)}
+      onConfirm={handleRemove}
+      title={t('confirm.removeStudentFromRoute')}
+      message={t('confirm.removeStudentFromRoute')}
+      confirmText="Remove"
+      variant="danger"
+    />
+    </>
   );
 }

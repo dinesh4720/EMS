@@ -27,11 +27,17 @@ const MinimalButton = memo(function MinimalButton({
    * with the single color system and responds to dark-mode token overrides.
    *
    * Color system hierarchy (CSS-03):
-   *   1. CSS custom properties (@theme / html.dark overrides) ← source of truth
+   *   1. CSS custom properties (@theme / html.dark overrides) <- source of truth
    *   2. Tailwind utilities that reference those vars (text-[var(--color-*)])
-   *   3. HeroUI tokens (used by HeroUI Button only — not here)
+   *   3. HeroUI tokens (used by HeroUI Button only -- not here)
    *
    * Do not add hardcoded hex or Tailwind gray-* classes to this component.
+   *
+   * TODO (AUDIT-176): MinimalButton is the only custom component using CSS
+   * custom properties for colors. Other components (MinimalCard, StatCard,
+   * etc.) use Tailwind utility classes directly. This inconsistency means
+   * theme changes need updates in multiple places. Ideally all custom
+   * components should migrate to the same approach. See theme/colors.js.
    */
   const variantStyles = {
     primary: "bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]",

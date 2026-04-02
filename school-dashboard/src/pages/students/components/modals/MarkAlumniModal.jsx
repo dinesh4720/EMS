@@ -45,6 +45,7 @@ export default function MarkAlumniModal({ isOpen, onClose, student, onMark }) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="sm">
+      <ModalContent>
       <ModalHeader>{t('pages.markAsAlumni')}</ModalHeader>
       <ModalBody>
         <div className="space-y-4">
@@ -65,6 +66,7 @@ export default function MarkAlumniModal({ isOpen, onClose, student, onMark }) {
         <Button variant="bordered" className="border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300" onPress={onClose}>{t('pages.cancel2')}</Button>
         <Button className="bg-gray-900 dark:bg-zinc-100 hover:bg-gray-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900" onPress={handleMarkAsAlumni} isLoading={isMarking}>{t('pages.confirm')}</Button>
       </ModalFooter>
+      </ModalContent>
     </Modal>
   );
 }

@@ -8,7 +8,7 @@ const SkeletonForm = ({
   className = ""
 }) => {
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div role="status" aria-busy="true" aria-label="Loading form" className={`space-y-4 ${className}`}>
       {Array.from({ length: fields }).map((_, index) => (
         <div key={`skeleton-field-${index}`} className="space-y-2">
           <div className="h-4 w-1/4 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />

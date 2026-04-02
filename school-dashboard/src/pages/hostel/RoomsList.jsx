@@ -5,6 +5,7 @@ import { hostelApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 
 const INITIAL_FORM = {
   hostelId: "", roomNumber: "", floor: 0, type: "double",
@@ -36,6 +37,7 @@ export default function RoomsList() {
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
     const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 300);
@@ -113,14 +115,16 @@ export default function RoomsList() {
     onOpen();
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm(t('confirm.deleteRoom'))) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await hostelApi.deleteRoom(id);
+      await hostelApi.deleteRoom(deleteTarget);
       toast.success(t('toast.success.roomDeleted'));
       fetchRooms();
     } catch (err) {
       toast.error(err?.message || "Failed to delete room");
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -236,7 +240,7 @@ export default function RoomsList() {
                         <Button isIconOnly size="sm" variant="light" onPress={() => handleEdit(room)}>
                           <Edit2 size={14} className="text-gray-500 dark:text-zinc-400" />
                         </Button>
-                        <Button isIconOnly size="sm" variant="light" onPress={() => handleDelete(room._id)}>
+                        <Button isIconOnly size="sm" variant="light" onPress={() => setDeleteTarget(room._id)}>
                           <Trash2 size={14} className="text-red-500" />
                         </Button>
                       </div>
@@ -337,6 +341,17 @@ export default function RoomsList() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title={t('confirm.deleteRoom')}
+        message={t('confirm.deleteRoom')}
+        confirmText="Delete"
+        variant="danger"
+      />
     </div>
   );
 }
