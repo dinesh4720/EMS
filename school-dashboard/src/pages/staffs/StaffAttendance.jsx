@@ -357,7 +357,7 @@ export default function StaffAttendance() {
     return (
         <div className="w-full flex flex-col">
             {/* Reason Modal */}
-            <Modal isOpen={reasonModalOpen} onOpenChange={setReasonModalOpen} size="md">
+            <Modal isOpen={reasonModalOpen} onOpenChange={(open) => { if (!open) setReason(''); setReasonModalOpen(open); }} size="md">
                 <ModalContent>
                     {(onClose) => (
                         <>
