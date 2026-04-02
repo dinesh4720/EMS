@@ -107,7 +107,7 @@ export default function AttendanceRules() {
       <h3 className="text-sm font-semibold text-default-700">{title}</h3>
       {editingSection === section ? (
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="light" color="danger" onPress={handleCancel} disabled={saving} className="h-8 min-w-0 px-2 text-xs">{t('pages.cancel2')}</Button>
+          <Button size="sm" variant="light" color="danger" onPress={handleCancel} isDisabled={saving} className="h-8 min-w-0 px-2 text-xs">{t('pages.cancel2')}</Button>
           <Button size="sm" color="primary" onPress={handleSave} isLoading={saving} className="h-8 min-w-0 px-3 text-xs" startContent={!saving && <Save size={12} />}>
             Save
           </Button>

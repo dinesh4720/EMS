@@ -31,7 +31,7 @@ export default function Refunds() {
     try {
       setLoading(true);
       const data = await feesApi.getRefunds({});
-      setRefunds(data);
+      setRefunds(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching refunds:', error);
       toast.error(t('toast.error.failedToLoadRefunds'));

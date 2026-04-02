@@ -50,7 +50,7 @@ export default function SubstitutionAlertPanel({ className = '' }) {
       const response = await request(`/substitution-alerts?date=${today}`);
 
       if (response.success) {
-        setAlerts(response.alerts);
+        setAlerts(Array.isArray(response.alerts) ? response.alerts : []);
 
         // Play alert sound for new urgent alerts
         if (soundEnabled && response.summary.urgentAlerts > 0) {
@@ -384,7 +384,7 @@ export default function SubstitutionAlertPanel({ className = '' }) {
                     </div>
                     <div>
                       <p className="text-default-400">{t('components.date1')}</p>
-                      <p className="font-medium">{selectedAlert.date ? new Date(selectedAlert.date).toLocaleDateString() : '—'}</p>
+                      <p className="font-medium">{selectedAlert.date ? new Date(selectedAlert.date).toLocaleDateString('en-IN') : '—'}</p>
                     </div>
                     <div>
                       <p className="text-default-400">{t('components.day1')}</p>

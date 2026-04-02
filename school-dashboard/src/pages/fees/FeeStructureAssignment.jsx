@@ -76,7 +76,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
     setTemplateError(null);
     try {
       const data = await request('/fee-templates');
-      setTemplates(data);
+      setTemplates(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch templates:', error);
       setTemplateError(error.message || 'Failed to load fee templates');
@@ -209,7 +209,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
 
     try {
       const data = await request(`/students/class/${selectedClass}/fee-status?academicYear=${academicYear}`);
-      setPreviewStudents(data);
+      setPreviewStudents(Array.isArray(data) ? data : []);
       onPreviewOpen();
     } catch (error) {
       console.error('Failed to fetch students:', error);

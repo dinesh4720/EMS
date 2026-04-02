@@ -283,7 +283,7 @@ export default function StaffDashboard() {
       try {
         const data = await teacherAssignmentsApi.getAll(id);
         if (data && data.assignments) {
-          setSubjectAssignments(data.assignments);
+          setSubjectAssignments(Array.isArray(data.assignments) ? data.assignments : []);
         }
       } catch (error) {
         logger.error("Error loading subject assignments:", error);

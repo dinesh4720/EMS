@@ -70,7 +70,7 @@ export default function FormAssignments() {
   const fetchForms = async () => {
     try {
       const data = await intakeFormsApi.getAll(null, "active");
-      setForms(data);
+      setForms(Array.isArray(data) ? data : []);
     } catch (error) {
       toast.error(t('toast.error.failedToLoadForms'));
     }
@@ -81,7 +81,7 @@ export default function FormAssignments() {
       setLoading(true);
       const status = filterStatus === "all" ? null : filterStatus;
       const data = await intakeFormsApi.getAssignments(null, status);
-      setAssignments(data);
+      setAssignments(Array.isArray(data) ? data : []);
     } catch (error) {
       toast.error(t('toast.error.failedToLoadAssignments'));
     } finally {

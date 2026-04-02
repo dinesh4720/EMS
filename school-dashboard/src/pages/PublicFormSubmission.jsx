@@ -503,7 +503,7 @@ export default function PublicFormSubmission() {
                   color="primary"
                   size="lg"
                   isLoading={submitting}
-                  disabled={submitting}
+                  isDisabled={submitting}
                   className="shadow-lg shadow-primary/20 font-medium px-8"
                   endContent={!submitting && <CheckCircle className="w-5 h-5" />}
                 >
