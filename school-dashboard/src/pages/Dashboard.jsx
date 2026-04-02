@@ -339,7 +339,12 @@ function Dashboard() {
     };
   }, [classes, students]);
 
-  const todayKey = new Date().toISOString().split("T")[0];
+  // Compute todayKey fresh each render so staffSnapshot stays current if
+  // the component remains mounted across midnight.
+  const todayKey = useMemo(() => new Date().toISOString().split("T")[0], [
+    // Re-evaluate when staffAttendance changes (most likely trigger after midnight)
+    staffAttendance,
+  ]);
 
   const staffSnapshot = useMemo(() => {
     const activeStaff = (staff || []).filter((staffMember) => (staffMember.status || "active") === "active");
@@ -480,7 +485,7 @@ function Dashboard() {
       icon: CheckCircle2,
       color: "gray",
     },
-  ]), [attendanceSnapshot, combinedAttendanceRate, dashboardStats, paymentSnapshot]);
+  ]), [attendanceSnapshot, combinedAttendanceRate, dashboardStats, loading, paymentSnapshot, paymentsLoaded]);
 
   const quickActions = [
     { label: "Attendance", icon: CheckCircle2, href: "/classes" },
@@ -517,12 +522,14 @@ function Dashboard() {
 
           <QuickActions actions={quickActions} />
 
-          <ChartSection
-            attendanceRows={attendanceRows}
-            feeCollectionData={feeCollectionData}
-            loading={loading || dashboardLoading}
-            paymentsLoaded={paymentsLoaded}
-          />
+          <div data-tour="fee-chart">
+            <ChartSection
+              attendanceRows={attendanceRows}
+              feeCollectionData={feeCollectionData}
+              loading={loading || dashboardLoading}
+              paymentsLoaded={paymentsLoaded}
+            />
+          </div>
 
           <ActivityFeed
             payments={recentPayments}

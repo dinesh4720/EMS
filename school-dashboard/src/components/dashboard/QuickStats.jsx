@@ -1,3 +1,9 @@
+/**
+ * @deprecated This component is no longer used by any page. The dashboard
+ * now computes stats inline in Dashboard.jsx. Kept for backward
+ * compatibility with barrel re-exports. Safe to remove once all
+ * references are cleaned up.
+ */
 import { Target, UserPlus, UserMinus } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 

@@ -1,3 +1,9 @@
+/**
+ * @deprecated This component is no longer used by any page. The dashboard
+ * attendance snapshot is now computed in Dashboard.jsx. Kept for backward
+ * compatibility with barrel re-exports. Safe to remove once all
+ * references are cleaned up.
+ */
 import { Calendar, Users, BookOpen } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 

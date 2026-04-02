@@ -28,7 +28,7 @@ export default function PayrollReminder() {
         if (data.shouldShow) {
           setReminder(data);
           // Show toast notification
-          toast.custom((t) => (
+          toast.custom((toastInstance) => (
             <div className="bg-white dark:bg-zinc-950 border-l-4 border-warning shadow-lg rounded-lg p-4 max-w-md flex items-start gap-3">
               <AlertCircle className="text-warning flex-shrink-0 mt-0.5" size={20} />
               <div className="flex-1">
@@ -36,7 +36,7 @@ export default function PayrollReminder() {
                 <p className="text-xs text-default-600 mt-1">{data.message}</p>
               </div>
               <button
-                onClick={() => toast.dismiss(t.id)}
+                onClick={() => toast.dismiss(toastInstance.id)}
                 className="text-default-400 hover:text-default-600 transition-colors"
               >
                 <X size={16} />

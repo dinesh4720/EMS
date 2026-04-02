@@ -1,3 +1,8 @@
+/**
+ * @deprecated This component uses hardcoded fake data and is not imported
+ * by any page. The dashboard now uses ChartSection (components/ChartSection.jsx)
+ * with real API data. Safe to remove once all barrel re-exports are cleaned up.
+ */
 import React from 'react';
 import { Card, CardBody, CardHeader } from "@heroui/react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
