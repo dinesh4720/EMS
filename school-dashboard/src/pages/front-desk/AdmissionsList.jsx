@@ -4,7 +4,7 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select, SelectItem,
   Chip, useDisclosure, Textarea, Checkbox, Tabs, Tab, Button
 } from '@heroui/react';
-import { Edit, Trash2, Eye, Plus, History } from 'lucide-react';
+import { Edit, Trash2, Eye, Plus, History, Search } from 'lucide-react';
 import { frontDeskApi, staffApi, classesApi } from '../../services/api';
 import FormInput from '../../components/FormInput';
 import { validatePhone, validateEmail, validateFutureDate } from '../../utils/validations';
@@ -47,6 +47,8 @@ const AdmissionsList = forwardRef((props, ref) => {
   const [selectedAdmission, setSelectedAdmission] = useState(null);
   const [selectedAdmissionForTracker, setSelectedAdmissionForTracker] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingLink, setIsSendingLink] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     studentName: '',
     dateOfBirth: '',
@@ -278,7 +280,6 @@ const AdmissionsList = forwardRef((props, ref) => {
   };
 
   const handleSendFormLink = async () => {
-    // Get the current admission data based on whether we're editing or viewing
     const admissionData = editingId
       ? admissions.find(a => a._id === editingId)
       : null;
@@ -288,26 +289,26 @@ const AdmissionsList = forwardRef((props, ref) => {
       return;
     }
 
-    const contactInfo = admissionData?.phoneNumber || formData.phoneNumber;
-    const contactMethod = formData.email ? 'email' : 'phone';
+    setIsSendingLink(true);
+    try {
+      const contactInfo = admissionData?.phoneNumber || formData.phoneNumber;
+      const contactMethod = formData.email ? 'email' : 'phone';
 
-    // Simulate sending the form link (in real implementation, this would call an API)
-    toast.success(`Admission form link sent via ${contactMethod} to ${contactInfo}`, {
-      duration: 3000,
-      icon: '📧'
-    });
-
-    // Update status to form-sent if not already sent
-    if (formData.status === 'inquiry-logged' || formData.status === 'form-sent') {
-      const updatedData = { ...formData, status: 'form-sent' };
-      if (editingId) {
-        try {
-          await frontDeskApi.updateAdmission(editingId, updatedData);
-          loadAdmissions();
-        } catch (error) {
-          toast.error(t('toast.error.failedToUpdateAdmissionStatus'));
-        }
+      // Update status to form-sent
+      if (editingId && (formData.status === 'inquiry-logged' || formData.status === 'form-sent')) {
+        const updatedData = { ...formData, status: 'form-sent' };
+        await frontDeskApi.updateAdmission(editingId, updatedData);
+        loadAdmissions();
       }
+
+      // TODO: Replace with real send-link API when backend supports it
+      toast.success(`Status updated to "Form Sent" for ${contactInfo}. Actual link delivery requires backend integration.`, {
+        duration: 4000,
+      });
+    } catch (error) {
+      toast.error(t('toast.error.failedToUpdateAdmissionStatus'));
+    } finally {
+      setIsSendingLink(false);
     }
   };
 
@@ -355,9 +356,29 @@ const AdmissionsList = forwardRef((props, ref) => {
     return statusObj?.color || 'default';
   };
 
+  const filteredAdmissions = admissions.filter(a => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      a.studentName?.toLowerCase().includes(term) ||
+      a.parentName?.toLowerCase().includes(term) ||
+      a.phoneNumber?.includes(searchTerm) ||
+      a.classApplyingFor?.toLowerCase().includes(term)
+    );
+  });
+
   return (
     <>
-      <div className="flex justify-end mb-4">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
+        <Input
+          placeholder="Search admissions..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          startContent={<Search size={16} />}
+          className="max-w-xs"
+          isClearable
+          onClear={() => setSearchTerm('')}
+        />
         <Button
           color="primary"
           startContent={<Plus size={16} />}
@@ -381,7 +402,7 @@ const AdmissionsList = forwardRef((props, ref) => {
           <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
         </TableHeader>
         <TableBody
-          items={admissions}
+          items={filteredAdmissions}
           isLoading={loading}
           emptyContent="No admission inquiries"
         >
@@ -735,7 +756,7 @@ const AdmissionsList = forwardRef((props, ref) => {
                   <div className="bg-primary-50 border border-primary-200 p-4 rounded-lg">
                     <p className="text-sm font-medium text-primary-700 mb-2">📧 Send Admission Form Link</p>
                     <p className="text-xs text-primary-600 mb-3">Send the admission form link to parent's email/phone</p>
-                    <Button color="primary" size="sm" onPress={handleSendFormLink}>
+                    <Button color="primary" size="sm" onPress={handleSendFormLink} isLoading={isSendingLink} isDisabled={isSendingLink}>
                       Send Form Link
                     </Button>
                   </div>

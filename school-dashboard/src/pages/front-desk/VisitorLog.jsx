@@ -21,7 +21,7 @@ const VISITOR_REASONS = [
   { key: 'OTHER', label: 'Other', needsGatePass: false, needsAppointment: false, needsStudentMapping: false },
 ];
 
-const VisitorLog = forwardRef((props, ref) => {
+const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
   const { t } = useTranslation();
   const [visitors, setVisitors] = useState([]);
   const [students, setStudents] = useState([]);
@@ -114,7 +114,7 @@ const VisitorLog = forwardRef((props, ref) => {
       newErrors.visitorName = 'Visitor name is required';
     }
 
-    if (formData.phoneNumber && !validatePhone(formData.phoneNumber)) {
+    if (formData.phoneNumber && (!validatePhone(formData.phoneNumber) || /^(\d)\1{9}$/.test(formData.phoneNumber))) {
       newErrors.phoneNumber = 'Please enter a valid 10-digit phone number';
     }
 
@@ -207,6 +207,7 @@ const VisitorLog = forwardRef((props, ref) => {
       onClose();
       resetForm();
       loadVisitors();
+      onSave?.();
     } catch (error) {
       toast.error(t('toast.error.failedToSaveVisitor'));
     } finally {
@@ -219,6 +220,7 @@ const VisitorLog = forwardRef((props, ref) => {
       await frontDeskApi.checkoutVisitor(id);
       toast.success(t('toast.success.visitorCheckedOutSuccessfully'));
       loadVisitors();
+      onSave?.();
     } catch (error) {
       toast.error(t('toast.error.failedToCheckOutVisitor'));
     }
@@ -229,12 +231,12 @@ const VisitorLog = forwardRef((props, ref) => {
     setEditingId(visitor._id);
     setStudentLookupQuery(visitor.studentName || '');
     setFormData({
-      visitorName: visitor.visitorName || '',
-      phoneNumber: visitor.phoneNumber || '',
+      visitorName: visitor.name || visitor.visitorName || '',
+      phoneNumber: visitor.phone || visitor.phoneNumber || '',
       email: visitor.email || '',
       date: visitor.date || new Date().toISOString().split('T')[0],
       checkInTime: visitor.checkInTime || new Date().toTimeString().slice(0, 5),
-      reasonForVisit: visitor.reasonForVisit || '',
+      reasonForVisit: visitor.purpose || visitor.reasonForVisit || '',
       concernedPerson: visitor.whomToMeet || visitor.concernedPerson || '',
       studentId: visitor.studentId || '',
       studentName: visitor.studentName || '',
@@ -270,6 +272,7 @@ const VisitorLog = forwardRef((props, ref) => {
       await frontDeskApi.deleteVisitor(id);
       toast.success(t('toast.success.visitorRecordDeleted'));
       loadVisitors();
+      onSave?.();
     } catch (error) {
       toast.error(t('toast.error.failedToDeleteVisitorRecord'));
     }
@@ -326,9 +329,14 @@ const VisitorLog = forwardRef((props, ref) => {
     return found?.label || reason;
   };
 
+  // Backend returns `name`/`phone`/`purpose`, but may also have legacy `visitorName`/`phoneNumber`/`reasonForVisit`
+  const getVisitorName = (v) => v?.name || v?.visitorName || '';
+  const getVisitorPhone = (v) => v?.phone || v?.phoneNumber || '';
+  const getVisitorPurpose = (v) => v?.purpose || v?.reasonForVisit || '';
+
   const filteredVisitors = visitors.filter(visitor =>
-    (visitor.visitorName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (visitor.phoneNumber?.includes(searchTerm)) ||
+    getVisitorName(visitor).toLowerCase().includes(searchTerm.toLowerCase()) ||
+    getVisitorPhone(visitor).includes(searchTerm) ||
     ((visitor.whomToMeet || visitor.concernedPerson)?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   ) || []; // Ensure array is never null
 
@@ -367,10 +375,10 @@ const VisitorLog = forwardRef((props, ref) => {
         >
           {(visitor) => (
             <TableRow key={visitor._id}>
-              <TableCell>{visitor.visitorName}</TableCell>
-              <TableCell>{visitor.phoneNumber || '-'}</TableCell>
+              <TableCell>{getVisitorName(visitor)}</TableCell>
+              <TableCell>{getVisitorPhone(visitor) || '-'}</TableCell>
               <TableCell>
-                <Chip size="sm" variant="flat">{getReasonLabel(visitor.reasonForVisit)}</Chip>
+                <Chip size="sm" variant="flat">{getReasonLabel(getVisitorPurpose(visitor))}</Chip>
               </TableCell>
               <TableCell>{visitor.whomToMeet || visitor.concernedPerson || '-'}</TableCell>
               <TableCell>{visitor.studentName || '-'}</TableCell>
