@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardBody, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Select, SelectItem, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Textarea, Spinner } from "@heroui/react";
 import { Download, Check, X, Lock, Bell, AlertTriangle, Users, Clock, TrendingUp, TimerOff, LogOut, AlarmClock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { useSettings } from "../../context/SettingsContext";
 import { attendanceApi, classesApi } from "../../services/api";
 import { useTranslation } from 'react-i18next';
 
@@ -26,20 +27,20 @@ export default function Attendance({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { students, classesWithTeachers } = useApp();
+  const { schoolSettings } = useSettings();
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedClass, setSelectedClass] = useState(classId || "");
   const [attendance, setAttendance] = useState({});
-  // AUDIT-64: isLocked was hardcoded to false. Now derived from whether the selected date
-  // is older than 7 days (a reasonable default until a backend attendance-locking API exists).
-  // TODO: Wire up to AttendanceContext or a school settings endpoint for configurable lock policy.
+  // AUDIT-227: Use school setting for lock period, fallback to 7 days
+  const attendanceLockDays = schoolSettings?.attendanceLockDays ?? 7;
   const isLocked = useMemo(() => {
     if (!date) return false;
     const selected = new Date(date + 'T00:00:00');
     const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 7);
+    cutoff.setDate(cutoff.getDate() - attendanceLockDays);
     cutoff.setHours(0, 0, 0, 0);
     return selected < cutoff;
-  }, [date]);
+  }, [date, attendanceLockDays]);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
   const [saveMessage, setSaveMessage] = useState(null);
@@ -111,6 +112,7 @@ export default function Attendance({
   const fetchAttendance = useCallback(async () => {
     if (!resolvedClassId || !date) return;
     const currentStudents = classStudentsRef.current;
+    if (!currentStudents?.length) return;
 
     try {
       setIsLoadingAttendance(true);
