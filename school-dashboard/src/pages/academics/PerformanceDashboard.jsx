@@ -12,7 +12,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
-import { examsApi } from '../../services/api';
+import { examsApi, academicPerformanceApi } from '../../services/api';
 import { useApp } from '../../context/AppContext';
 import StatCard from '../../components/StatCard';
 import FiltersDropdown from '../../components/FiltersDropdown';
@@ -21,8 +21,6 @@ import { getAcademicYearOptions } from '../../utils/constants';
 import { useChartTheme, CHART_COLORS } from '../../utils/chartTheme';
 import { useTranslation } from 'react-i18next';
 import { formatShortDate } from '../../utils/dateFormatter';
-
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 // Global cache for API responses - persists across component mounts
 const dashboardCache = {
@@ -40,8 +38,11 @@ const PerformanceDashboard = ({ onCreateExam }) => {
   const [loading, setLoading] = useState(true);
   const [exams, setExams] = useState([]);
   const [classPerformance, setClassPerformance] = useState([]);
+  const [subjectAverages, setSubjectAverages] = useState([]);
+  const [gradeDistribution, setGradeDistribution] = useState([]);
   const [topPerformers, setTopPerformers] = useState([]);
   const [classes, setClasses] = useState([]);
+  const [dashboardStats, setDashboardStats] = useState(null);
   const [filters, setFilters] = useState({
     class: 'all',
     year: null
@@ -100,7 +101,10 @@ const PerformanceDashboard = ({ onCreateExam }) => {
       const cached = dashboardCache.data;
       setExams(cached.exams || []);
       setClassPerformance(cached.classPerformance || []);
+      setSubjectAverages(cached.subjectAverages || []);
+      setGradeDistribution(cached.gradeDistribution || []);
       setTopPerformers(cached.topPerformers || []);
+      setDashboardStats(cached.dashboardStats || null);
       setClasses(cached.classes || []);
       setLoading(false);
       return;
@@ -108,27 +112,45 @@ const PerformanceDashboard = ({ onCreateExam }) => {
 
     setLoading(true);
     try {
-      // Fetch all data in parallel
-      const [examsData] = await Promise.all([
+      // Fetch exams and performance dashboard data in parallel
+      const [examsData, perfData] = await Promise.all([
         examsApi.getAll({ academicYear: selectedAcademicYear }),
+        academicPerformanceApi.getDashboard({ academicYear: selectedAcademicYear }).catch(() => null),
       ]);
 
       setExams(examsData || []);
 
-      // Build derived data from exams (no extra API calls)
-      const uniqueClasses = [...new Set(examsData?.map(e => e.classId).filter(Boolean))];
-      const mockClasses = uniqueClasses.map(id => ({ id, name: id }));
+      // Use backend performance data when available
+      if (perfData) {
+        setClassPerformance(perfData.classPerformance || []);
+        setSubjectAverages(perfData.subjectAverages || []);
+        setGradeDistribution(perfData.gradeDistribution || []);
+        setTopPerformers(perfData.topPerformers || []);
+        setDashboardStats(perfData);
+      } else {
+        setClassPerformance([]);
+        setSubjectAverages([]);
+        setGradeDistribution([]);
+        setTopPerformers([]);
+        setDashboardStats(null);
+      }
 
-      setClasses(mockClasses);
-      setClassPerformance([]);
-      setTopPerformers([]);
+      // Build class list from performance data or exams
+      const classesFromPerf = (perfData?.classPerformance || []).map(c => ({ id: c.classId, name: c.className }));
+      const uniqueClasses = classesFromPerf.length > 0
+        ? classesFromPerf
+        : [...new Set(examsData?.map(e => e.classId).filter(Boolean))].map(id => ({ id, name: id }));
+      setClasses(uniqueClasses);
 
       // Cache the results
       dashboardCache.data = {
         exams: examsData || [],
-        classPerformance: [],
-        topPerformers: [],
-        classes: mockClasses
+        classPerformance: perfData?.classPerformance || [],
+        subjectAverages: perfData?.subjectAverages || [],
+        gradeDistribution: perfData?.gradeDistribution || [],
+        topPerformers: perfData?.topPerformers || [],
+        dashboardStats: perfData || null,
+        classes: uniqueClasses
       };
       dashboardCache.timestamp = now;
       dashboardCache.key = cacheKey;
@@ -150,49 +172,28 @@ const PerformanceDashboard = ({ onCreateExam }) => {
     setFilters({ class: 'all', year: null });
   };
 
-  // Build class comparison data — only from real data
+  // Build class comparison chart data from backend performance data
   const buildClassComparisonData = () => {
     if (classPerformance.length > 0) {
       return classPerformance.map(c => ({
-        class: c.classId,
+        class: c.className || c.classId,
         average: c.averagePercentage
       }));
     }
     return [];
   };
 
-  // Build subject averages — only from real data
-  const buildSubjectAverages = () => {
-    if (classPerformance.length > 0 && classPerformance[0]?.subjectWisePerformance?.length > 0) {
-      const subjectMap = {};
-      classPerformance.forEach(cp => {
-        (cp.subjectWisePerformance || []).forEach(s => {
-          if (!subjectMap[s.subjectName]) {
-            subjectMap[s.subjectName] = { total: 0, count: 0 };
-          }
-          subjectMap[s.subjectName].total += s.average || 0;
-          subjectMap[s.subjectName].count += 1;
-        });
-      });
-      return Object.entries(subjectMap).map(([name, d]) => ({
-        subject: name,
-        average: d.count > 0 ? d.total / d.count : 0
-      })).slice(0, 6);
-    }
-    return [];
+  // Build subject averages chart data from backend performance data
+  const buildSubjectAveragesData = () => {
+    return subjectAverages.slice(0, 6);
   };
 
-  // Grade distribution — only from real data
-  const buildGradeDistribution = () => {
-    if (classPerformance.length === 0) return [];
+  // Build grade distribution pie chart data from backend performance data
+  const buildGradeDistributionData = () => {
     const gradeColors = { 'A+': '#10b981', 'A': '#3b82f6', 'B+': '#8b5cf6', 'B': '#f59e0b', 'C': '#ef4444', 'D': '#6b7280', 'F': '#374151' };
-    const gradeCounts = {};
-    classPerformance.forEach(p => {
-      const g = p.overallGrade || 'N/A';
-      gradeCounts[g] = (gradeCounts[g] || 0) + 1;
-    });
-    return Object.entries(gradeCounts).map(([name, value]) => ({
-      name, value, color: gradeColors[name] || '#6b7280'
+    return gradeDistribution.map(g => ({
+      ...g,
+      color: gradeColors[g.name] || '#6b7280'
     }));
   };
 
@@ -201,17 +202,13 @@ const PerformanceDashboard = ({ onCreateExam }) => {
     scheduled: exams.filter(e => e.status === 'scheduled').length,
     completed: exams.filter(e => e.status === 'completed' || e.status === 'results_published').length,
     published: exams.filter(e => e.isPublished).length,
-    avgScore: classPerformance.length > 0
-      ? (classPerformance.reduce((sum, c) => sum + (c.averagePercentage || 0), 0) / classPerformance.length).toFixed(1)
-      : '—',
-    passingRate: classPerformance.length > 0
-      ? `${Math.round((classPerformance.filter(p => (p.overallPercentage || 0) >= 33).length / classPerformance.length) * 100)}%`
-      : '—'
+    avgScore: dashboardStats?.averageScore != null ? dashboardStats.averageScore : '—',
+    passingRate: dashboardStats?.passingRate != null ? `${dashboardStats.passingRate}%` : '—'
   };
 
   const classComparisonData = buildClassComparisonData();
-  const subjectAverages = buildSubjectAverages();
-  const gradeDistribution = buildGradeDistribution();
+  const subjectAveragesData = buildSubjectAveragesData();
+  const gradeDistributionData = buildGradeDistributionData();
 
   if (loading) {
     return (
@@ -258,15 +255,13 @@ const PerformanceDashboard = ({ onCreateExam }) => {
         />
         <StatCard
           label={t('pages.avgScore1')}
-          value={`${stats.avgScore}%`}
+          value={stats.avgScore !== '—' ? `${stats.avgScore}%` : '—'}
           icon={TrendingUp}
-          trend={{ value: '+2.5%', positive: true }}
         />
         <StatCard
           label={t('pages.passRate')}
           value={stats.passingRate}
           icon={Users}
-          trend={{ value: '+1.2%', positive: true }}
         />
       </div>
 
@@ -312,9 +307,9 @@ const PerformanceDashboard = ({ onCreateExam }) => {
             </div>
           </CardHeader>
           <CardBody className="p-6">
-            {subjectAverages.length > 0 ? (
+            {subjectAveragesData.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={subjectAverages} layout="vertical">
+                <BarChart data={subjectAveragesData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke={chart.gridAlt} />
                   <XAxis type="number" domain={[0, 100]} tick={{ fill: chart.tick, fontSize: 11 }} />
                   <YAxis dataKey="subject" type="category" tick={{ fill: chart.tick, fontSize: 11 }} width={80} />
@@ -388,7 +383,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie
-                  data={gradeDistribution}
+                  data={gradeDistributionData}
                   cx="50%"
                   cy="50%"
                   innerRadius={40}
@@ -396,7 +391,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                   paddingAngle={2}
                   dataKey="value"
                 >
-                  {gradeDistribution.map((entry) => (
+                  {gradeDistributionData.map((entry) => (
                     <Cell key={`cell-${entry.name}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -404,7 +399,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
               </PieChart>
             </ResponsiveContainer>
             <div className="flex flex-wrap justify-center gap-3 mt-4">
-              {gradeDistribution.map((item) => (
+              {gradeDistributionData.map((item) => (
                 <div key={`legend-${item.name}`} className="flex items-center gap-1.5 text-xs">
                   <div className="w-3 h-3 rounded" style={{ backgroundColor: item.color }} />
                   <span className="text-gray-600 dark:text-zinc-400">{item.name}</span>
