@@ -3,8 +3,11 @@ import { Card, CardBody, CardHeader, Button, Input, Divider, Chip, Modal, ModalC
 import { Plus, Edit, Trash2, DollarSign, X } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 
+// TODO: AUDIT-115 - This is hardcoded placeholder data. Replace with API fetch
+// from a salary templates endpoint (e.g. GET /settings/salary-templates).
+// All CRUD operations below only update local state and are lost on refresh.
 const initialTemplates = [
-  { 
+  {
     id: 1,
     name: "Teacher", 
     breakdown: [
@@ -72,6 +75,7 @@ export default function SalaryTemplates() {
     onOpen();
   };
 
+  // TODO: AUDIT-115 - Wire up to API: POST/PUT /settings/salary-templates
   const handleSave = () => {
     if (templates.find(t => t.id === editingTemplate.id)) {
       setTemplates(templates.map(t => t.id === editingTemplate.id ? editingTemplate : t));
@@ -82,6 +86,7 @@ export default function SalaryTemplates() {
     setEditingTemplate(null);
   };
 
+  // TODO: AUDIT-115 - Wire up to API: DELETE /settings/salary-templates/:id
   const handleDelete = (id) => {
     if (confirm(t('confirm.deleteTemplate'))) {
       setTemplates(templates.filter(t => t.id !== id));

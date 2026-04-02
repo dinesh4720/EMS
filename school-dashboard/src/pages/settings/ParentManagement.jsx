@@ -3,6 +3,7 @@ import logger from "../../utils/logger";
 import { parentApi } from "../../services/api";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import toast from "react-hot-toast";
 
 import {
   Search,
@@ -73,7 +74,9 @@ export default function ParentManagement() {
     }
   };
 
+  // AUDIT-131: Added confirmation before password reset
   const handleResetPassword = async (parentId) => {
+    if (!confirm('Are you sure you want to reset this parent\'s password? Their current password will stop working.')) return;
     setActionLoading(parentId);
     try {
       const response = await parentApi.resetPassword(parentId);
@@ -83,6 +86,7 @@ export default function ParentManagement() {
       }
     } catch (error) {
       logger.error("Error resetting password:", error);
+      toast.error("Failed to reset password");
     } finally {
       setActionLoading(null);
     }
@@ -112,7 +116,7 @@ export default function ParentManagement() {
     try {
       const response = await parentApi.bulkCreate();
       if (response.success) {
-        alert(`Bulk creation complete: ${response.data.created} created, ${response.data.skipped} skipped, ${response.data.errors} errors`);
+        toast.success(`Bulk creation complete: ${response.data.created} created, ${response.data.skipped} skipped, ${response.data.errors} errors`);
         fetchParents(1);
       }
     } catch (error) {
