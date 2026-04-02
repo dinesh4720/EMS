@@ -39,7 +39,7 @@ const degreeOptions = [
   { label: "B.Tech", value: "B.Tech" }, { label: "M.Tech", value: "M.Tech" },
   { label: "Other", value: "Other" }
 ];
-const departments = ["Academic", "Science", "Mathematics", "Languages", "Social Studies", "Arts", "Sports", "Administration", "Accounts", "IT", "Library", "Transport", "Maintenance", "Others"];
+const DEFAULT_DEPARTMENTS = ["Academic", "Science", "Mathematics", "Languages", "Social Studies", "Arts", "Sports", "Administration", "Accounts", "IT", "Library", "Transport", "Maintenance", "Others"];
 const shiftOptions = ["Morning", "Afternoon", "Evening", "Full Day"];
 
 // Fallback class options - will be replaced by actual API data
@@ -64,6 +64,12 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
   const { hasPermission } = usePermissions();
   const { staff: allStaff } = useApp();
   const canEdit = editingStaff ? hasPermission('staff', 'edit') : hasPermission('staff', 'create');
+
+  // AUDIT-210: Merge hardcoded departments with any custom ones from existing staff
+  const departments = useMemo(() => {
+    const staffDepts = (allStaff || []).map(s => s.department).filter(Boolean);
+    return [...new Set([...DEFAULT_DEPARTMENTS, ...staffDepts])].sort();
+  }, [allStaff]);
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState(emptyForm);

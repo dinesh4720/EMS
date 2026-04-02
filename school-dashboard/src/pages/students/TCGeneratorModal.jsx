@@ -320,6 +320,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                     savedCount++;
                 } catch (err) {
                     console.warn(`[TC] Failed to record TC for ${student.name}:`, err?.message);
+                    errors.push(student.name);
                 }
 
                 // Print TC
