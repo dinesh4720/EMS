@@ -81,7 +81,6 @@ export default function AcademicSettings() {
   // AUDIT-132: Initialize with null to prevent race condition with stale data
   const [localSettings, setLocalSettings] = useState(schoolSettings || null);
   const [saving, setSaving] = useState(false);
-  const [, setSaveSuccess] = useState(false);
   const [subjectErrors, setSubjectErrors] = useState({});
   const [sectionError, setSectionError] = useState('');
 
@@ -131,9 +130,7 @@ export default function AcademicSettings() {
       const updated = { ...localSettings, ...sectionData };
       await updateSchoolSettings(updated);
       setLocalSettings(updated);
-      setSaveSuccess(true);
       toast.success(t('toast.success.settingsSavedSuccessfully'));
-      setTimeout(() => setSaveSuccess(false), 2000);
       closeModal();
     } catch (error) {
       logger.error('Failed to save settings:', error);

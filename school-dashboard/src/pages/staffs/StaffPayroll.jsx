@@ -380,7 +380,7 @@ export default function StaffPayroll() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(r => {
-        const emp = staff.find(s => String(s.id) === String(r.employeeId));
+        const emp = staff.find(s => String(s._id || s.id) === String(r.employeeId));
         return emp && (
           emp.name.toLowerCase().includes(query) ||
           emp.code.toLowerCase().includes(query)
@@ -962,7 +962,7 @@ export default function StaffPayroll() {
                     console.warn('⚠️ Employee not found for record:', { 
                       employeeId: record.employeeId, 
                       employeeIdType: typeof record.employeeId,
-                      availableStaffIds: staff.slice(0, 3).map(s => s._id || s.id)
+                      availableStaffIds: staff.map(s => s._id || s.id)
                     });
                     return null;
                   }
