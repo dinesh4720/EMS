@@ -1,6 +1,4 @@
-import { request } from './core.js';
-import { API_URL } from '../../config/api.js';
-import { getAuthHeaders } from '../../utils/authSession.js';
+import { request, requestBlob } from './core.js';
 
 export const calendarEventsApi = {
   getAll: (options) => options?.signal ? request('/calendar/events', { signal: options.signal }) : request('/calendar/events'),
@@ -147,12 +145,9 @@ export const payrollApi = {
   reversePayment: (id, data) => request(`/payroll/records/${id}/reverse`, { method: 'PUT', body: JSON.stringify(data) }),
   bulkPay: (data) => request('/payroll/records/bulk-pay', { method: 'POST', body: JSON.stringify(data) }),
   fixSalaries: (data) => request('/payroll/fix-salaries', { method: 'POST', body: JSON.stringify(data || {}) }),
+  // [AUDIT-159] Now uses centralized requestBlob() for automatic token refresh
   exportPayroll: async (month, year) => {
-    const response = await fetch(`${API_URL}/payroll/export/${month}/${year}`, {
-      credentials: 'include',
-      headers: getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Export failed');
+    const response = await requestBlob(`/payroll/export/${month}/${year}`);
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');

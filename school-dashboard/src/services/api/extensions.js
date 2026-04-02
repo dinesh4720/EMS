@@ -1,4 +1,4 @@
-import { request } from './core.js';
+import { request, requestUpload } from './core.js';
 import { getAuthHeaders, saveStoredUser } from '../../utils/authSession';
 import { API_URL } from '../../config/api.js';
 
@@ -247,22 +247,8 @@ export const exportApi = {
 // Bulk Import API
 export const bulkImportApi = {
   downloadTemplate: (type) => request(`/bulk-import/template/${type}`),
-  upload: (formData) => {
-    const headers = getAuthHeaders();
-    delete headers['Content-Type']; // Let browser set multipart boundary
-    return fetch(`${API_URL}/bulk-import/upload`, {
-      method: 'POST',
-      headers,
-      credentials: 'include',
-      body: formData,
-    }).then(async (r) => {
-      if (!r.ok) {
-        const err = await r.json().catch(() => ({ error: 'Upload failed' }));
-        throw new Error(err.error || 'Upload failed');
-      }
-      return r.json();
-    });
-  },
+  // [AUDIT-159] Now uses centralized requestUpload() for automatic token refresh
+  upload: (formData) => requestUpload('/bulk-import/upload', formData),
   preview: (jobId) => request(`/bulk-import/preview/${jobId}`),
   confirm: (jobId) => request(`/bulk-import/confirm/${jobId}`, { method: 'POST' }),
 };

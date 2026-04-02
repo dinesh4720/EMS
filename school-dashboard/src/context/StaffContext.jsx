@@ -61,7 +61,10 @@ export function StaffProvider({ children }) {
         finalUpdates.picture = updates.picture;
       }
 
-      setStaff((curr) => curr.map((s) => (String(s.id) === String(id) ? finalUpdates : s)));
+      // [AUDIT-161] Merge into existing staff object instead of replacing it entirely.
+      // The API response may not include all fields (e.g., computed or
+      // populated fields), so spreading the existing object first preserves them.
+      setStaff((curr) => curr.map((s) => (String(s.id) === String(id) ? { ...s, ...finalUpdates } : s)));
       void invalidateAppData();
       return finalUpdates;
     } catch (err) {
@@ -97,7 +100,7 @@ export function StaffProvider({ children }) {
     const staffMember = staff.find((s) => s.id === id);
     if (staffMember) {
       const newStatus = staffMember.status === "active" ? "inactive" : "active";
-      await updateStaff(id, { ...staffMember, status: newStatus });
+      await updateStaff(id, { status: newStatus });
     }
   };
 
