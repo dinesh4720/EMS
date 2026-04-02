@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
     Button, Textarea, Input,
     Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
@@ -71,6 +72,10 @@ export default function StudentsBulkModals({
     updateStudent,
 }) {
     const { t } = useTranslation();
+    const [isBulkSubmitting, setIsBulkSubmitting] = useState(false);
+    const [isPromoting, setIsPromoting] = useState(false);
+    const [isSendingReminders, setIsSendingReminders] = useState(false);
+    const [isStatusChanging, setIsStatusChanging] = useState(false);
 
     return (
         <>
@@ -120,9 +125,18 @@ export default function StudentsBulkModals({
                                 </Button>
                                 <Button
                                     color="primary"
-                                    onPress={() => {
-                                        executeBulkAction();
-                                        onClose();
+                                    isLoading={isBulkSubmitting}
+                                    isDisabled={isBulkSubmitting}
+                                    onPress={async () => {
+                                        setIsBulkSubmitting(true);
+                                        try {
+                                            await executeBulkAction();
+                                            onClose();
+                                        } catch (error) {
+                                            console.error("Bulk action error:", error);
+                                        } finally {
+                                            setIsBulkSubmitting(false);
+                                        }
                                     }}
                                 >
                                     {t("pages.confirm")}
@@ -183,7 +197,21 @@ export default function StudentsBulkModals({
                         <Button variant="flat" onPress={onPromoteClose}>
                             {t("pages.cancel2")}
                         </Button>
-                        <Button color="primary" onPress={executePromotion}>
+                        <Button
+                            color="primary"
+                            isLoading={isPromoting}
+                            isDisabled={isPromoting}
+                            onPress={async () => {
+                                setIsPromoting(true);
+                                try {
+                                    await executePromotion();
+                                } catch (error) {
+                                    console.error("Promotion error:", error);
+                                } finally {
+                                    setIsPromoting(false);
+                                }
+                            }}
+                        >
                             Promote{" "}
                             {promotionPreview.filter((s) => s.nextClass).length} Student
                             {promotionPreview.filter((s) => s.nextClass).length !== 1
@@ -225,8 +253,18 @@ export default function StudentsBulkModals({
                         </Button>
                         <Button
                             color="primary"
-                            onPress={executeSendReminders}
-                            isDisabled={!reminderMessage || !reminderTime}
+                            isLoading={isSendingReminders}
+                            isDisabled={!reminderMessage || !reminderTime || isSendingReminders}
+                            onPress={async () => {
+                                setIsSendingReminders(true);
+                                try {
+                                    await executeSendReminders();
+                                } catch (error) {
+                                    console.error("Send reminders error:", error);
+                                } finally {
+                                    setIsSendingReminders(false);
+                                }
+                            }}
                         >
                             Schedule Message
                         </Button>
@@ -353,7 +391,10 @@ export default function StudentsBulkModals({
                                 </Button>
                                 <Button
                                     color="primary"
+                                    isLoading={isStatusChanging}
+                                    isDisabled={isStatusChanging}
                                     onPress={async () => {
+                                        setIsStatusChanging(true);
                                         try {
                                             await updateStudent(statusChangeData.student.id, {
                                                 status: statusChangeData.newStatus,
@@ -370,6 +411,8 @@ export default function StudentsBulkModals({
                                             });
                                         } catch (error) {
                                             toast.error(t("toast.error.failedToUpdateStatus"));
+                                        } finally {
+                                            setIsStatusChanging(false);
                                         }
                                     }}
                                 >
