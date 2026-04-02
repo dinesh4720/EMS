@@ -123,20 +123,20 @@ const StudentAttendance = memo(function StudentAttendance() {
     }, [students, searchQuery, classFilter, statusFilter, attendance]);
 
     const stats = useMemo(() => {
-        const total = students.length;
+        // Count stats only for filtered students (matching current class filter)
+        const total = filteredStudents.length;
         let present = 0, absent = 0, leave = 0, halfday = 0;
-        
-        // Only count students that have attendance records
-        for (const studentId in attendance) {
-            const status = attendance[studentId]?.status;
+
+        for (const student of filteredStudents) {
+            const status = attendance[student.id]?.status;
             if (status === "present") present++;
             else if (status === "absent") absent++;
             else if (status === "leave") leave++;
             else if (status === "halfday") halfday++;
         }
-        
+
         return { total, present, absent, leave, halfday };
-    }, [students.length, attendance]);
+    }, [filteredStudents, attendance]);
 
     const handleStatusChange = (studentId, newStatus) => {
         setAttendance(prev => ({
@@ -261,44 +261,44 @@ const StudentAttendance = memo(function StudentAttendance() {
             <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-background border-b border-default-200 py-4 -mx-6 px-6">
                 {/* Left Side - Date Picker */}
                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <Popover placement="bottom-start">
-                        <PopoverTrigger>
-                            <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        const date = new Date(selectedDate);
-                                        date.setDate(date.getDate() - 1);
-                                        setSelectedDate(date.toISOString().split('T')[0]);
-                                    }}
-                                    className="p-0.5 hover:bg-default-100 rounded cursor-pointer"
-                                >
-                                    <ChevronLeft size={14} className="text-default-400" />
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => {
+                                const date = new Date(selectedDate);
+                                date.setDate(date.getDate() - 1);
+                                setSelectedDate(date.toISOString().split('T')[0]);
+                            }}
+                            className="p-1.5 hover:bg-default-100 rounded cursor-pointer border border-default-300"
+                        >
+                            <ChevronLeft size={14} className="text-default-400" />
+                        </button>
+                        <Popover placement="bottom-start">
+                            <PopoverTrigger>
+                                <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
+                                    <CalendarDays size={16} className="text-default-400 flex-shrink-0" />
+                                    <span>{new Date(selectedDate).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                                 </button>
-                                <CalendarDays size={16} className="text-default-400 flex-shrink-0" />
-                                <span>{new Date(selectedDate).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        const date = new Date(selectedDate);
-                                        date.setDate(date.getDate() + 1);
-                                        setSelectedDate(date.toISOString().split('T')[0]);
-                                    }}
-                                    disabled={selectedDate >= new Date().toISOString().split('T')[0]}
-                                    className="p-0.5 hover:bg-default-100 rounded cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                                >
-                                    <ChevronRight size={14} className="text-default-400" />
-                                </button>
-                            </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="p-0">
-                            <Calendar
-                                value={parseDate(selectedDate)}
-                                onChange={(date) => setSelectedDate(date.toString())}
-                                aria-label={t('aria.inputs.selectDate')}
-                            />
-                        </PopoverContent>
-                    </Popover>
+                            </PopoverTrigger>
+                            <PopoverContent className="p-0">
+                                <Calendar
+                                    value={parseDate(selectedDate)}
+                                    onChange={(date) => setSelectedDate(date.toString())}
+                                    aria-label={t('aria.inputs.selectDate')}
+                                />
+                            </PopoverContent>
+                        </Popover>
+                        <button
+                            onClick={() => {
+                                const date = new Date(selectedDate);
+                                date.setDate(date.getDate() + 1);
+                                setSelectedDate(date.toISOString().split('T')[0]);
+                            }}
+                            disabled={selectedDate >= new Date().toISOString().split('T')[0]}
+                            className="p-1.5 hover:bg-default-100 rounded cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed border border-default-300"
+                        >
+                            <ChevronRight size={14} className="text-default-400" />
+                        </button>
+                    </div>
                     <button
                         onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
                         disabled={selectedDate === new Date().toISOString().split('T')[0]}

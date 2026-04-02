@@ -11,7 +11,6 @@ import { useTranslation } from 'react-i18next';
  * Extracted from AddStudent.jsx
  */
 export default function PersonalInfoStep({
-  const { t } = useTranslation();
   formData,
   errors,
   updateField,
@@ -21,6 +20,7 @@ export default function PersonalInfoStep({
   genderRef,
   classRef,
 }) {
+  const { t } = useTranslation();
   const [dobValidation, setDobValidation] = useState({ isValid: false, message: "", warning: "" });
   const [isDobCalendarOpen, setIsDobCalendarOpen] = useState(false);
   const [isZipLookupLoading, setIsZipLookupLoading] = useState(false);

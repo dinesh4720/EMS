@@ -173,25 +173,9 @@ const StudentAcademicsContent = memo(function StudentAcademicsContent({
         <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-700">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t("students.academics.achievements", "Achievements")}</h3>
         </div>
-        <div className="p-5">
-          {/* TODO: Achievements are currently hardcoded placeholder data. Replace with
-              real achievements fetched from backend. The "Perfect Attendance" entry can
-              appear contradictory when the student actually has low attendance -- this
-              will be resolved once achievements are driven by real data. */}
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { title: "Best Student Award", date: "Dec 2024" },
-              { title: "Science Fair Winner", date: "Nov 2024" },
-            ].map((a, i) => (
-              <div key={a.title} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-zinc-800">
-                <Award size={18} className="text-gray-400 dark:text-zinc-500" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{a.title}</p>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400">{a.date}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+        <div className="px-5 py-12 text-center">
+          <Award size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
+          <p className="text-sm text-gray-500 dark:text-zinc-400">{t("students.academics.noAchievements", "No achievements recorded yet")}</p>
         </div>
       </div>
     </div>

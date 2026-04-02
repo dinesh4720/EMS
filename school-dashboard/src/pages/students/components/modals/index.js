@@ -6,4 +6,5 @@
 
 export { default as PaymentModal } from './PaymentModal';
 export { default as ReminderModal } from './ReminderModal';
-export { default as PromoteStudentModal, getNextClass } from './PromoteStudentModal';
+export { default as PromoteStudentModal } from './PromoteStudentModal';
+export { getNextClass } from '../../utils/studentHelpers';

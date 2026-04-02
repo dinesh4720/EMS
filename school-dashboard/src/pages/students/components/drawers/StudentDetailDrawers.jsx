@@ -92,8 +92,9 @@ export function FeeStatusDrawer({ isOpen, onOpenChange, onViewFees, studentFeeSt
   );
 }
 
-export function ParentAppDrawer({ isOpen, onOpenChange }) {
+export function ParentAppDrawer({ isOpen, onOpenChange, parentAppInfo }) {
   const { t } = useTranslation();
+  const isConnected = parentAppInfo?.isConnected ?? false;
 
   return (
     <Drawer
@@ -110,23 +111,36 @@ export function ParentAppDrawer({ isOpen, onOpenChange }) {
               <h3 className="text-lg font-semibold">{t('students.profile.overview.parentApp', 'Parent App')}</h3>
             </DrawerHeader>
             <DrawerBody className="p-6">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="p-3 bg-success-50 rounded-full text-success"><Phone size={24} /></div>
-                <div>
-                  <h4 className="font-bold">{t('students.profile.overview.connected', 'Connected')}</h4>
-                  <p className="text-sm text-default-500">{t('students.profile.overview.activeSince', 'Active since Aug 2024')}</p>
+              {isConnected ? (
+                <>
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="p-3 bg-success-50 rounded-full text-success"><Phone size={24} /></div>
+                    <div>
+                      <h4 className="font-bold">{t('students.profile.overview.connected', 'Connected')}</h4>
+                      {parentAppInfo?.activeSince && <p className="text-sm text-default-500">{t('students.profile.overview.activeSince', 'Active since')} {parentAppInfo.activeSince}</p>}
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    {parentAppInfo?.lastLogin && (
+                      <div className="flex justify-between border-b border-default-100 pb-2">
+                        <span className="text-default-500">{t('students.profile.overview.lastLogin', 'Last Login')}</span>
+                        <span>{parentAppInfo.lastLogin}</span>
+                      </div>
+                    )}
+                    {parentAppInfo?.device && (
+                      <div className="flex justify-between border-b border-default-100 pb-2">
+                        <span className="text-default-500">{t('students.profile.overview.device', 'Device')}</span>
+                        <span>{parentAppInfo.device}</span>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-12">
+                  <Phone size={32} className="mx-auto text-default-300 mb-3" />
+                  <p className="text-sm text-default-500">{t('students.profile.overview.parentAppNotConnected', 'Parent app not connected yet')}</p>
                 </div>
-              </div>
-              <div className="space-y-4">
-                <div className="flex justify-between border-b border-default-100 pb-2">
-                  <span className="text-default-500">{t('students.profile.overview.lastLogin', 'Last Login')}</span>
-                  <span>{t('pages.today1030Am')}</span>
-                </div>
-                <div className="flex justify-between border-b border-default-100 pb-2">
-                  <span className="text-default-500">{t('students.profile.overview.device', 'Device')}</span>
-                  <span>iPhone 14 Pro</span>
-                </div>
-              </div>
+              )}
             </DrawerBody>
           </>
         )}
