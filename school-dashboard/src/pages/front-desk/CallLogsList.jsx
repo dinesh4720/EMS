@@ -4,7 +4,7 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, useDisclosure, Button,
   Select, SelectItem, Checkbox
 } from '@heroui/react';
-import { Edit, Trash2, Eye, Plus, Phone } from 'lucide-react';
+import { Edit, Trash2, Eye, Plus, Phone, Search } from 'lucide-react';
 import { frontDeskApi } from '../../services/api';
 import { validatePhone, validateFutureDate } from '../../utils/validations';
 import toast from 'react-hot-toast';
@@ -22,7 +22,7 @@ const CALL_PURPOSES = [
   { key: 'OTHER', label: 'Other' },
 ];
 
-const CallLogsList = forwardRef((props, ref) => {
+const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
   const { t } = useTranslation();
   const [callLogs, setCallLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +31,7 @@ const CallLogsList = forwardRef((props, ref) => {
   const { isOpen: isDetailOpen, onOpen: onDetailOpen, onClose: onDetailClose } = useDisclosure();
   const [editingId, setEditingId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedLog, setSelectedLog] = useState(null);
   const [formData, setFormData] = useState({
     callerName: '',
@@ -108,7 +109,7 @@ const CallLogsList = forwardRef((props, ref) => {
     try {
       const submitData = {
         ...formData,
-        purpose: formData.purpose === 'OTHER' ? formData.otherPurpose : formData.purpose,
+        otherPurpose: formData.purpose === 'OTHER' ? formData.otherPurpose : '',
       };
 
       if (editingId) {
@@ -121,6 +122,7 @@ const CallLogsList = forwardRef((props, ref) => {
       onClose();
       resetForm();
       loadCallLogs();
+      onSave?.();
     } catch (error) {
       toast.error(t('toast.error.failedToSaveCallLog'));
     } finally {
@@ -158,6 +160,7 @@ const CallLogsList = forwardRef((props, ref) => {
       await frontDeskApi.deleteCallLog(id);
       toast.success(t('toast.success.callLogDeleted'));
       loadCallLogs();
+      onSave?.();
     } catch (error) {
       toast.error(t('toast.error.failedToDeleteCallLog'));
     }
@@ -182,14 +185,45 @@ const CallLogsList = forwardRef((props, ref) => {
     });
   };
 
-  const getPurposeLabel = (purpose) => {
-    const found = CALL_PURPOSES.find(p => p.key === purpose);
-    return found?.label || purpose || '-';
+  const getPurposeLabel = (log) => {
+    if (typeof log === 'string') {
+      // Backward compat: called with just a purpose string
+      const found = CALL_PURPOSES.find(p => p.key === log);
+      return found?.label || log || '-';
+    }
+    const found = CALL_PURPOSES.find(p => p.key === log?.purpose);
+    if (found) {
+      if (log.purpose === 'OTHER' && log.otherPurpose) {
+        return `Other: ${log.otherPurpose}`;
+      }
+      return found.label;
+    }
+    return log?.purpose || '-';
   };
+
+  const filteredCallLogs = callLogs.filter(log => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      log.callerName?.toLowerCase().includes(term) ||
+      log.phoneNumber?.includes(searchTerm) ||
+      log.purpose?.toLowerCase().includes(term) ||
+      log.title?.toLowerCase().includes(term)
+    );
+  });
 
   return (
     <>
-      <div className="flex justify-end mb-4">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
+        <Input
+          placeholder="Search call logs..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          startContent={<Search size={16} />}
+          className="max-w-xs"
+          isClearable
+          onClear={() => setSearchTerm('')}
+        />
         <Button color="primary" startContent={<Plus size={16} />} onPress={onOpen}>
           Log New Call
         </Button>
@@ -204,7 +238,7 @@ const CallLogsList = forwardRef((props, ref) => {
           <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
         </TableHeader>
         <TableBody
-          items={callLogs}
+          items={filteredCallLogs}
           isLoading={loading}
           emptyContent="No call logs"
         >
@@ -213,7 +247,7 @@ const CallLogsList = forwardRef((props, ref) => {
               <TableCell className="font-medium">{log.callerName || '-'}</TableCell>
               <TableCell>{log.phoneNumber || '-'}</TableCell>
               <TableCell>
-                <span className="text-sm">{getPurposeLabel(log.purpose)}</span>
+                <span className="text-sm">{getPurposeLabel(log)}</span>
               </TableCell>
               <TableCell>{formatDateTime(log.dateTime)}</TableCell>
               <TableCell>
@@ -442,7 +476,7 @@ const CallLogsList = forwardRef((props, ref) => {
                   </div>
                   <div>
                     <p className="text-sm text-default-500">{t('pages.purpose1')}</p>
-                    <p className="font-medium">{getPurposeLabel(selectedLog.purpose)}</p>
+                    <p className="font-medium">{getPurposeLabel(selectedLog)}</p>
                   </div>
                 </div>
                 <div>
