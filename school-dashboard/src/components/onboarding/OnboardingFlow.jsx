@@ -68,7 +68,13 @@ export default function OnboardingFlow({ onComplete }) {
     };
 
     const handleComplete = () => {
-        // Save completion state
+        // TODO: AUDIT-164 — This handler only persists to localStorage. It should also
+        // call the backend PUT /api/settings/school/onboarding-progress endpoint to
+        // persist school-details, academic-year, admin-profile, and preferences steps,
+        // and then PATCH /api/settings/school to set onboardingCompleted: true.
+        // The backend endpoints already exist (routes/settings/school.js) but are not
+        // wired up here. Until this is connected, onboarding completion is lost on
+        // logout / device switch.
         safeSetItem("hasCompletedOnboarding", "true");
         if (onComplete) onComplete();
     };
