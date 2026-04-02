@@ -88,10 +88,19 @@ export default function AttendanceRules() {
     setEditingSection(null);
   };
 
-  // Sync tempRules when entering edit mode or when rules change
-  if (editingSection === null && tempRules !== rules) {
-    setTempRules(rules);
-  }
+  // AUDIT-121: Moved from render-phase to useEffect to avoid state update during render
+  useEffect(() => {
+    if (editingSection === null) {
+      setTempRules(rules);
+    }
+  }, [rules, editingSection]);
+
+  // AUDIT-127: Warn before leaving with unsaved edits
+  useEffect(() => {
+    const handler = (e) => { if (editingSection) { e.preventDefault(); e.returnValue = ''; } };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [editingSection]);
 
   const SectionHeader = ({ title, section }) => (
     <div className="flex justify-between items-center py-4 px-4 bg-default-50/50 border-b border-default-100">

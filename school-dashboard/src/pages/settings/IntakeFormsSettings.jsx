@@ -146,6 +146,7 @@ const DraggableFieldItem = ({
 };
 
 export default function IntakeFormsSettings() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();

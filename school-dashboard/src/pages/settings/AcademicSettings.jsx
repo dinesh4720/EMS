@@ -78,7 +78,8 @@ export default function AcademicSettings() {
   const [activeTab, setActiveTab] = useState(() => {
     return safeGetItem('academicSettingsTab') || "schedule";
   });
-  const [localSettings, setLocalSettings] = useState(schoolSettings);
+  // AUDIT-132: Initialize with null to prevent race condition with stale data
+  const [localSettings, setLocalSettings] = useState(schoolSettings || null);
   const [saving, setSaving] = useState(false);
   const [, setSaveSuccess] = useState(false);
   const [subjectErrors, setSubjectErrors] = useState({});
@@ -97,6 +98,8 @@ export default function AcademicSettings() {
   const [selectedClassNum, setSelectedClassNum] = useState(null); // For adding sections
   const [newSection, setNewSection] = useState("");
   const [editingSection, setEditingSection] = useState(null); // { classNum, section, classId }
+  // AUDIT-128: State-driven delete confirmation
+  const [pendingDeleteKey, setPendingDeleteKey] = useState(null);
 
   // Sync local settings when context updates
   useEffect(() => {
@@ -111,7 +114,12 @@ export default function AcademicSettings() {
   }, [activeTab]);
 
   // Generic save handler for modals
+  // AUDIT-132: Guard against saving while settings are still loading
   const handleSaveSection = async (sectionData, closeModal) => {
+    if (saving || loading || !localSettings) {
+      toast.error('Please wait for settings to load before saving');
+      return;
+    }
     const errors = validateSettings({ ...localSettings, ...sectionData });
     if (errors.length > 0) {
       errors.forEach(error => toast.error(error));
@@ -193,7 +201,15 @@ export default function AcademicSettings() {
       toast.error(t('toast.error.cannotDeleteSubjectMissingId'));
       return;
     }
-    if (!confirm(t('confirm.deleteSubject', { name: subject.name }))) return;
+    // AUDIT-128: Replaced confirm() with state-driven confirmation
+    const deleteKey = `subject-${subjectId}`;
+    if (pendingDeleteKey !== deleteKey) {
+      setPendingDeleteKey(deleteKey);
+      toast(`Delete "${subject.name}"? Click delete again to confirm.`, { icon: '\u26A0\uFE0F', duration: 3000 });
+      setTimeout(() => setPendingDeleteKey(null), 3000);
+      return;
+    }
+    setPendingDeleteKey(null);
     try {
       await deleteSubject(subjectId);
       toast.success(t('toast.success.subjectDeletedSuccessfully'));
@@ -265,7 +281,15 @@ export default function AcademicSettings() {
       return;
     }
     const classNum = cls.name?.replace(/\D/g, '') || '?';
-    if (!confirm(t('confirm.deleteClass', { classNum, section: cls.section }))) return;
+    // AUDIT-128: Replaced confirm() with state-driven confirmation
+    const deleteKey = `class-${classId}`;
+    if (pendingDeleteKey !== deleteKey) {
+      setPendingDeleteKey(deleteKey);
+      toast(`Delete Class ${classNum} Section ${cls.section}? Click delete again to confirm.`, { icon: '\u26A0\uFE0F', duration: 3000 });
+      setTimeout(() => setPendingDeleteKey(null), 3000);
+      return;
+    }
+    setPendingDeleteKey(null);
     try {
       await deleteClass(classId);
       toast.success(t('toast.success.sectionDeletedSuccessfully'));
@@ -282,6 +306,7 @@ export default function AcademicSettings() {
 
   // Disable a class (delete all sections) - with error handling
   const handleDisableClass = async (classNum) => {
+    if (saving) return;
     const config = classConfig[classNum];
     if (!config || !config.sectionDetails.length) return;
 
@@ -292,7 +317,15 @@ export default function AcademicSettings() {
       return;
     }
 
-    if (!confirm(t('confirm.disableClass', { classNum }))) return;
+    // AUDIT-128: Replaced confirm() with state-driven confirmation
+    const deleteKey = `disable-class-${classNum}`;
+    if (pendingDeleteKey !== deleteKey) {
+      setPendingDeleteKey(deleteKey);
+      toast(`Disable Class ${classNum}? Click again to confirm.`, { icon: '\u26A0\uFE0F', duration: 3000 });
+      setTimeout(() => setPendingDeleteKey(null), 3000);
+      return;
+    }
+    setPendingDeleteKey(null);
 
     try {
       // Delete sections one by one

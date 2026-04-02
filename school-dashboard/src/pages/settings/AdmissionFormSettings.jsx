@@ -142,21 +142,20 @@ export default function AdmissionFormSettings() {
     }
   };
 
+  // AUDIT-134: Fixed save logic to handle mix of new and existing document configs
   const handleSaveDocumentConfig = async () => {
     setSaving(true);
     try {
-      // If documents have IDs, bulk update, otherwise create new
-      const hasIds = documentConfigs.some(doc => doc._id || doc.id);
-      
-      if (hasIds) {
-        await settingsApi.bulkUpdateDocumentConfig(documentConfigs);
-      } else {
-        // Create each document config
-        for (const doc of documentConfigs) {
-          await settingsApi.createDocumentConfig(doc);
-        }
+      const existingDocs = documentConfigs.filter(doc => doc._id || doc.id);
+      const newDocs = documentConfigs.filter(doc => !doc._id && !doc.id);
+
+      if (existingDocs.length > 0) {
+        await settingsApi.bulkUpdateDocumentConfig(existingDocs);
       }
-      
+      for (const doc of newDocs) {
+        await settingsApi.createDocumentConfig(doc);
+      }
+
       toast.success(t('toast.success.documentConfigurationSavedSuccessfully'));
       await loadConfigurations();
     } catch (error) {
