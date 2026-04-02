@@ -360,7 +360,7 @@ export default function ClassDashboard() {
                     <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{cls?.teacher || 'Teacher'}</p>
                     <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.classTeacher2')}</p>
                   </div>
-                  <button onClick={() => navigate(`/messages?to=${cls.classTeacherId}`)} className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-900 rounded-lg">
+                  <button onClick={() => navigate(`/messaging`, { state: { recipientId: cls.classTeacherId } })} className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-900 rounded-lg">
                     <MessageSquare size={14} className="text-gray-400 dark:text-zinc-500" />
                   </button>
                 </div>

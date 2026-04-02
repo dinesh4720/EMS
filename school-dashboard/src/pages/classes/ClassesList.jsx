@@ -498,7 +498,7 @@ export default function ClassesList() {
         // Implement download report
         break;
       case 'send-announcement':
-        navigate(`/classes/${cls.id}/announce`);
+        navigate('/messaging', { state: { prefillClass: cls.id } });
         break;
       default:
         break;
