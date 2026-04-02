@@ -57,14 +57,18 @@ export default function StaffIdSettings() {
     setPreview(previewId);
   };
 
+  // AUDIT-134: Added validation before save
   const handleSave = async () => {
+    if (!config.prefix?.trim()) { toast.error('Prefix is required'); return; }
+    if (config.digits < 1 || config.digits > 10) { toast.error('Digits must be between 1 and 10'); return; }
+    if (config.startingNumber < 0) { toast.error('Starting number cannot be negative'); return; }
     setLoading(true);
     try {
       await request('/staff-id-config', {
         method: 'PUT',
         body: JSON.stringify(config)
       });
-      
+
       toast.success(t('toast.success.staffIdConfigurationSavedSuccessfully'));
     } catch (error) {
       console.error("Error saving config:", error);

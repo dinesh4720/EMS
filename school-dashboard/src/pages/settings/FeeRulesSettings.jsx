@@ -65,8 +65,15 @@ export function ConcessionsTab() {
     onOpen();
   };
 
+  // AUDIT-129: Added validation for discount value
   const handleSave = async () => {
     if (!formData.name.trim()) { toast.error(t('toast.error.nameRequired')); return; }
+    if (formData.discountType === 'percentage' && (formData.discountValue < 0 || formData.discountValue > 100)) {
+      toast.error('Discount percentage must be between 0 and 100'); return;
+    }
+    if (formData.discountType === 'fixed' && formData.discountValue < 0) {
+      toast.error('Discount amount cannot be negative'); return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -225,7 +232,14 @@ export function LateFeeTab() {
 
   useEffect(() => { fetchConfig(); }, [fetchConfig]);
 
+  // AUDIT-129: Added validation for late fee amounts
   const handleSave = async () => {
+    if (formData.enabled) {
+      if (formData.gracePeriod < 0) { toast.error('Grace period cannot be negative'); return; }
+      if (formData.fineType === 'flat' && formData.flatAmount <= 0) { toast.error('Flat amount must be greater than 0'); return; }
+      if (formData.fineType === 'per_day' && formData.perDayAmount <= 0) { toast.error('Per day amount must be greater than 0'); return; }
+      if (formData.maximumCap < 0) { toast.error('Maximum cap cannot be negative'); return; }
+    }
     try {
       setSaving(true);
       await request(`/fee-settings/late-fee-rules`, {

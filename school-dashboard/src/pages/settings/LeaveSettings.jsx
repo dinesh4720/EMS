@@ -19,6 +19,8 @@ export default function LeaveSettings() {
     approver: "reporter"
   });
   const [saving, setSaving] = useState(false);
+  // AUDIT-128: State-driven delete confirmation
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
   // Lazy loading state
   const ITEMS_PER_LOAD = 10;
@@ -89,7 +91,7 @@ export default function LeaveSettings() {
     setSaving(true);
     try {
       if (editingLeave) {
-        await updateLeaveType(editingLeave.id, formData);
+        await updateLeaveType(editingLeave._id || editingLeave.id, formData);
         toast.success(t('toast.success.leaveTypeUpdatedSuccessfully'));
       } else {
         await addLeaveType(formData);
@@ -104,15 +106,21 @@ export default function LeaveSettings() {
     }
   };
 
+  // AUDIT-128: Replaced confirm() with state-driven confirmation
   const handleDelete = async (id) => {
-    if (confirm(t('confirm.deleteLeaveType'))) {
-      try {
-        await deleteLeaveType(id);
-        toast.success(t('toast.success.leaveTypeDeletedSuccessfully'));
-      } catch (error) {
-        console.error('Failed to delete leave type:', error);
-        toast.error(t('toast.error.failedToDeleteLeaveType'));
-      }
+    if (pendingDeleteId !== id) {
+      setPendingDeleteId(id);
+      toast(t('confirm.deleteLeaveType') + ' Click delete again to confirm.', { icon: '\u26A0\uFE0F', duration: 3000 });
+      setTimeout(() => setPendingDeleteId(null), 3000);
+      return;
+    }
+    setPendingDeleteId(null);
+    try {
+      await deleteLeaveType(id);
+      toast.success(t('toast.success.leaveTypeDeletedSuccessfully'));
+    } catch (error) {
+      console.error('Failed to delete leave type:', error);
+      toast.error(t('toast.error.failedToDeleteLeaveType'));
     }
   };
 
@@ -208,7 +216,7 @@ export default function LeaveSettings() {
             </TableHeader>
             <TableBody emptyContent="No leave types configured">
               {visibleLeaveTypes.map((leaveType) => (
-                <TableRow key={leaveType.id}>
+                <TableRow key={leaveType._id || leaveType.id}>
                   <TableCell className="font-medium text-default-700">{leaveType.name}</TableCell>
                   <TableCell>
                     <Chip 
@@ -251,7 +259,7 @@ export default function LeaveSettings() {
                         size="sm" 
                         variant="light" 
                         color="danger" 
-                        onPress={() => handleDelete(leaveType.id)}
+                        onPress={() => handleDelete(leaveType._id || leaveType.id)}
                         className="transition-all duration-200"
                       >
                         <Trash2 size={16} />

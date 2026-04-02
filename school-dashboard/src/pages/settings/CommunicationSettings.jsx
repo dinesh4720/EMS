@@ -43,6 +43,13 @@ export default function CommunicationSettings() {
       .finally(() => setLoadingSettings(false));
   }, []);
 
+  // AUDIT-127: Warn before leaving with unsaved edits
+  useEffect(() => {
+    const handler = (e) => { if (editingSection) { e.preventDefault(); e.returnValue = ''; } };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [editingSection]);
+
   // Fetch email + SMS templates from backend
   useEffect(() => {
     let cancelled = false;
@@ -290,7 +297,7 @@ export default function CommunicationSettings() {
                       {smsConfig.senderId ? `Sender: ${smsConfig.senderId}` : 'Add API key to enable SMS'}
                     </p>
                   </div>
-                  <button className="px-4 py-2 bg-white dark:bg-zinc-900 text-success-700 dark:text-success-300 rounded-lg border border-success-200 dark:border-success-800 text-xs font-medium hover:bg-success-50 dark:hover:bg-success-950/50">
+                  <button onClick={() => toast.error('SMS test not yet implemented')} className="px-4 py-2 bg-white dark:bg-zinc-900 text-success-700 dark:text-success-300 rounded-lg border border-success-200 dark:border-success-800 text-xs font-medium hover:bg-success-50 dark:hover:bg-success-950/50">
                     Test SMS
                   </button>
                 </div>
@@ -397,7 +404,7 @@ export default function CommunicationSettings() {
                 )}
 
                 <div className="md:col-span-2 flex justify-end mt-2">
-                  <button className="px-4 py-2 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300 rounded-lg border border-primary-100 dark:border-primary-800 text-sm font-medium hover:bg-primary-100 dark:hover:bg-primary-950/50">
+                  <button onClick={() => toast.error('Email test not yet implemented')} className="px-4 py-2 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300 rounded-lg border border-primary-100 dark:border-primary-800 text-sm font-medium hover:bg-primary-100 dark:hover:bg-primary-950/50">
                     Send Test Email
                   </button>
                 </div>
@@ -425,7 +432,7 @@ export default function CommunicationSettings() {
                 <p className="text-xs text-default-500">{t('pages.manageSmsAndEmailTemplates')}</p>
               </div>
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary-600 transition-colors shadow-sm">
+            <button onClick={() => toast('Template creation coming soon')} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary-600 transition-colors shadow-sm">
               <Plus size={16} />
               <span>{t('pages.addTemplate')}</span>
             </button>
@@ -521,7 +528,7 @@ export default function CommunicationSettings() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <button className="p-2 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-primary-50 dark:hover:bg-primary-950/30 transition-all duration-200 cursor-pointer text-default-400 hover:text-primary">
+                        <button onClick={() => toast('Template editing coming soon')} className="p-2 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-primary-50 dark:hover:bg-primary-950/30 transition-all duration-200 cursor-pointer text-default-400 hover:text-primary">
                           <Edit size={16} />
                         </button>
                       </div>
