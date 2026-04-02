@@ -36,8 +36,8 @@ export default function PaymentRecordingModal({ isOpen, onClose, studentFeeStruc
       return;
     }
 
-    const paymentAmount = parseInt(paymentForm.amount);
-    if (paymentAmount <= 0) {
+    const paymentAmount = parseFloat(paymentForm.amount);
+    if (isNaN(paymentAmount) || paymentAmount <= 0) {
       toast.error(t('students.profile.overview.enterValidAmount', 'Please enter a valid amount'));
       return;
     }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardBody, Button, Checkbox, Chip } from '@heroui/react';
 import {
   AlertTriangle, ArrowUpCircle, GraduationCap, Minus, ArrowRight,
@@ -9,6 +9,18 @@ import toast from 'react-hot-toast';
 export default function StepConfirm({ onNext, onBack, wizardState, setWizardState }) {
   const [executing, setExecuting] = useState(false);
   const [generateRolls, setGenerateRolls] = useState(false);
+
+  // AUDIT-111: Nav guard -- warn on browser close/refresh before promotion is executed
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (!executing) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [executing]);
 
   const { classMappings, summary, fromYear, toYear } = wizardState;
 

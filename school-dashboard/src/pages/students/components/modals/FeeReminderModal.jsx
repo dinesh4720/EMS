@@ -9,6 +9,9 @@ import { request } from "../../../../services/api";
 import { useApp } from "../../../../context/AppContext";
 import toast from "react-hot-toast";
 
+// TODO: AUDIT-103 - This modal is a DUPLICATE of SendFeeReminderModal.jsx and ReminderModal.jsx.
+// This is the most complete version (real API, fee status display, school name).
+// Consolidate all three into this single component and update all imports.
 export default function FeeReminderModal({ isOpen, onClose, student, studentFeeStructure }) {
   const { t } = useTranslation();
   const { schoolSettings } = useApp();
