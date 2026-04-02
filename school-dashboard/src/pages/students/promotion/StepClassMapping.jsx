@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardBody, Select, SelectItem, Button, Chip, Checkbox } from '@heroui/react';
 import { ArrowRight, GraduationCap, Users, AlertTriangle, Loader2 } from 'lucide-react';
 import { promotionApi } from '../../../services/api/extensions';
@@ -9,6 +9,18 @@ export default function StepClassMapping({ onNext, onBack, wizardState, setWizar
   const [loading, setLoading] = useState(true);
   const [previewData, setPreviewData] = useState(null);
   const [mappings, setMappings] = useState([]); // local editable copy
+
+  // AUDIT-111: Nav guard -- warn on browser close/refresh when mappings have been edited
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (mappings.length > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [mappings]);
 
   useEffect(() => {
     loadPreviewAll();

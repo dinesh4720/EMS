@@ -5,6 +5,10 @@ import { MessageSquare, User, Phone, Mail, Send } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 
+// TODO: AUDIT-103 - This modal is a DUPLICATE of SendFeeReminderModal.jsx and FeeReminderModal.jsx.
+// All three do the same thing (send fee reminders). Consolidate into FeeReminderModal (most complete).
+// Delete this file after migrating all imports to use FeeReminderModal.
+
 /**
  * ReminderModal - Modal for sending fee reminders to parents
  *
