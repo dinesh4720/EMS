@@ -8,6 +8,11 @@ import en from './locales/en.json';
 // ──────────────────────────────────────────────────────────────
 // i18n is DISABLED for now. Set this to true to re-enable
 // multi-language support, language detection, and lazy loading.
+//
+// AUDIT-172: When disabled, i18n still initializes with English
+// so that t() calls return keys/English values without errors.
+// To re-enable: set I18N_ENABLED = true and verify that all
+// locale JSON files in ./locales/ have complete translations.
 // ──────────────────────────────────────────────────────────────
 const I18N_ENABLED = false;
 

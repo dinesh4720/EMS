@@ -82,6 +82,7 @@ export default function ShareProfileModal({ isOpen, onClose, student, staff = []
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="md">
+      <ModalContent>
       <ModalHeader>{t('pages.shareStudentProfile')}</ModalHeader>
       <ModalBody>
         <div className="space-y-4">
@@ -168,6 +169,7 @@ export default function ShareProfileModal({ isOpen, onClose, student, staff = []
           {t('pages.shareProfile', 'Share Profile')}
         </Button>
       </ModalFooter>
+      </ModalContent>
     </Modal>
   );
 }

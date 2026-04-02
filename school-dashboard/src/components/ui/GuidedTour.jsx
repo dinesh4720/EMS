@@ -216,14 +216,13 @@ export default function GuidedTour({ steps, isOpen, onClose, tourId, autoStart =
         ref={tooltipRef}
         role="dialog"
         aria-label={`Tour step ${stepIndex + 1} of ${steps.length}: ${currentStep.title}`}
+        className="bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 shadow-xl dark:shadow-zinc-950/40"
         style={{
           position: 'absolute',
           top: tooltipPos.top ?? 200,
           left: tooltipPos.left ?? 200,
           zIndex: TOOLTIP_Z,
-          background: '#fff',
           borderRadius: 12,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
           padding: '20px 24px',
           maxWidth: 320,
           minWidth: 260,
@@ -232,17 +231,17 @@ export default function GuidedTour({ steps, isOpen, onClose, tourId, autoStart =
         }}
       >
         {/* Step counter */}
-        <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 8, fontWeight: 600 }}>
+        <div className="text-gray-400 dark:text-zinc-500" style={{ fontSize: 12, marginBottom: 8, fontWeight: 600 }}>
           {stepIndex + 1} / {steps.length}
         </div>
 
         {/* Title */}
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: 8 }}>
+        <div className="text-gray-900 dark:text-zinc-100" style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>
           {currentStep.title}
         </div>
 
         {/* Content */}
-        <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.6, marginBottom: 20 }}>
+        <div className="text-gray-500 dark:text-zinc-400" style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
           {currentStep.content}
         </div>
 
@@ -250,8 +249,9 @@ export default function GuidedTour({ steps, isOpen, onClose, tourId, autoStart =
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <button
             onClick={handleClose}
+            className="text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300"
             style={{
-              background: 'none', border: 'none', color: '#9ca3af',
+              background: 'none', border: 'none',
               fontSize: 13, cursor: 'pointer', padding: '4px 0',
             }}
           >
@@ -261,9 +261,10 @@ export default function GuidedTour({ steps, isOpen, onClose, tourId, autoStart =
             {stepIndex > 0 && (
               <button
                 onClick={handlePrev}
+                className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700"
                 style={{
-                  background: '#f3f4f6', border: 'none', borderRadius: 6,
-                  padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', color: '#374151',
+                  border: 'none', borderRadius: 6,
+                  padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 }}
               >
                 Back
@@ -271,13 +272,14 @@ export default function GuidedTour({ steps, isOpen, onClose, tourId, autoStart =
             )}
             <button
               onClick={handleNext}
+              className="bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-400"
               style={{
-                background: '#4f46e5', border: 'none', borderRadius: 6,
+                border: 'none', borderRadius: 6,
                 padding: '8px 18px', fontSize: 13, fontWeight: 700,
-                cursor: 'pointer', color: '#fff',
+                cursor: 'pointer',
               }}
             >
-              {stepIndex === steps.length - 1 ? 'Finish' : 'Next →'}
+              {stepIndex === steps.length - 1 ? 'Finish' : 'Next \u2192'}
             </button>
           </div>
         </div>
@@ -287,11 +289,11 @@ export default function GuidedTour({ steps, isOpen, onClose, tourId, autoStart =
           {steps.map((_, i) => (
             <div
               key={i}
+              className={i === stepIndex ? 'bg-indigo-600 dark:bg-indigo-400' : 'bg-gray-200 dark:bg-zinc-700'}
               style={{
                 width: i === stepIndex ? 20 : 8,
                 height: 8,
                 borderRadius: 4,
-                background: i === stepIndex ? '#4f46e5' : '#e5e7eb',
                 transition: 'all 0.2s',
               }}
             />

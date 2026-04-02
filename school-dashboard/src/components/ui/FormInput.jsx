@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 const FormInput = memo(function FormInput({ label, startContent, endContent, className, wrapperClassName, error, ...props }) {
     const generatedId = useId();
     const inputId = props.id || generatedId;
+    const errorId = error ? `${inputId}-error` : undefined;
 
     return (
         <div className={`space-y-1.5 ${wrapperClassName || ""}`}>
@@ -16,12 +17,14 @@ const FormInput = memo(function FormInput({ label, startContent, endContent, cla
                 <input
                     {...props}
                     id={inputId}
+                    aria-invalid={error ? "true" : undefined}
+                    aria-describedby={errorId}
                     onClick={(e) => {
                         if (props.type === "date" && typeof e.target.showPicker === "function") {
                             // Prevent default only if necessary, but showPicker usually needs user activation which click is.
                             try {
                                 e.target.showPicker();
-                            } catch (error) {
+                            } catch (pickerError) {
                                 // Ignore if constrained
                             }
                         }
@@ -31,7 +34,7 @@ const FormInput = memo(function FormInput({ label, startContent, endContent, cla
                 />
                 {endContent}
             </div>
-            {error && <p className="text-xs text-danger">{error}</p>}
+            {error && <p id={errorId} role="alert" className="text-xs text-danger">{error}</p>}
         </div>
     );
 });

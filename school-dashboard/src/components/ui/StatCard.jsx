@@ -25,7 +25,7 @@ function StatCard({ label, value, subtext, icon: Icon, color = 'gray', trend }) 
   const colors = colorMap[color] || colorMap.gray;
 
   return (
-    <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
+    <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
       <div className="flex items-start justify-between mb-3">
         {/* Icon */}
         <div className={`${colors.bg} w-9 h-9 rounded-lg flex items-center justify-center`}>

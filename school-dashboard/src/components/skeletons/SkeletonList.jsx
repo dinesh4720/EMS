@@ -10,7 +10,7 @@ const SkeletonList = ({
   className = ""
 }) => {
   return (
-    <div className={`space-y-3 ${className}`}>
+    <div role="status" aria-busy="true" aria-label="Loading list" className={`space-y-3 ${className}`}>
       {Array.from({ length: items }).map((_, index) => (
         <div
           key={`skeleton-item-${index}`}

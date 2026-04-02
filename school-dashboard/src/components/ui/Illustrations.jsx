@@ -9,10 +9,21 @@ import {
     Calendar, Clock, Star
 } from "lucide-react";
 
+// Use complete Tailwind class strings to avoid dynamic class purging
+const floatingIconColorMap = {
+    primary: 'text-primary-500',
+    success: 'text-success-500',
+    danger: 'text-danger-500',
+    blue: 'text-blue-500',
+    warning: 'text-warning-500',
+    secondary: 'text-secondary-500',
+    default: 'text-default-500',
+};
+
 // Helper to render a floating icon
 const FloatingIcon = ({ icon: Icon, color, size, className, style, delay = "0s" }) => (
     <div
-        className={`absolute text-${color}-500 opacity-90 ${className}`}
+        className={`absolute ${floatingIconColorMap[color] || 'text-default-500'} opacity-90 ${className}`}
         style={{ ...style, animation: `float 6s ease-in-out infinite ${delay}` }}
     >
         <Icon size={size} strokeWidth={1.5} />
