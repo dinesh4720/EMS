@@ -21,6 +21,7 @@ import StepClassMapping from './promotion/StepClassMapping';
 import StepStudentReview from './promotion/StepStudentReview';
 import StepConfirm from './promotion/StepConfirm';
 import StepResults from './promotion/StepResults';
+import { useTranslation } from 'react-i18next';
 
 const STEPS = [
   { key: 'year', label: 'Academic Year', icon: Calendar },

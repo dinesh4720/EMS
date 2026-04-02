@@ -7,6 +7,7 @@ import { ClipboardList, Clock, Star, UserCheck, Paperclip, ExternalLink } from '
 import { request } from '../../services/api';
 import toast from 'react-hot-toast';
 import { formatShortDate } from '../../utils/dateFormatter';
+import { useTranslation } from 'react-i18next';
 
 const SUBMISSION_STATUS_COLORS = {
   submitted: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',

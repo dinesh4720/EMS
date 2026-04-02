@@ -5,6 +5,7 @@ import { TrendingUp, Users, ThumbsUp, ThumbsDown, Minus, MessageSquare } from 'l
 import { request } from '../../services/api';
 import toast from 'react-hot-toast';
 import { formatShortDate } from '../../utils/dateFormatter';
+import { useTranslation } from 'react-i18next';
 
 function NpsGauge({ score }) {
   if (score == null) return <p className="text-3xl font-bold text-gray-300 dark:text-zinc-600">N/A</p>;
