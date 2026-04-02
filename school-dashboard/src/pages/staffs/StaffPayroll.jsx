@@ -197,7 +197,7 @@ export default function StaffPayroll() {
       });
 
       if (response.success) {
-        const { success: succeeded, failed } = response.data.results;
+        const { success: succeeded = [], failed = [] } = response?.data?.results || {};
         if (failed.length === 0) {
           toast.success(`Records prepared! ${succeeded.length} employees processed`);
         } else {
