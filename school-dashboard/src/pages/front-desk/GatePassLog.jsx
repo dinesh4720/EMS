@@ -3,9 +3,9 @@ import logger from "../../utils/logger";
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select, SelectItem,
-  Button, Textarea, Autocomplete, AutocompleteItem
+  Button, Textarea, Autocomplete, AutocompleteItem, Chip
 } from '@heroui/react';
-import { Trash2, Plus, Edit, Download, CheckCircle, XCircle, Search, RotateCcw } from 'lucide-react';
+import { Trash2, Plus, Edit, Download, Check, X } from 'lucide-react';
 import { frontDeskApi, studentsApi, staffApi } from '../../services/api';
 import { validatePhone } from '../../utils/validations';
 import toast from 'react-hot-toast';
@@ -34,7 +34,7 @@ const APPROVED_BY_OPTIONS = [
   { key: 'OTHER', label: 'Other' },
 ];
 
-const GatePassLog = forwardRef((props, ref) => {
+const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
   const { t } = useTranslation();
   const [gatePasses, setGatePasses] = useState([]);
   const [students, setStudents] = useState([]);
@@ -63,7 +63,6 @@ const GatePassLog = forwardRef((props, ref) => {
   const [approvedByStaffId, setApprovedByStaffId] = useState(null);
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const loadData = async () => {
@@ -171,46 +170,51 @@ const GatePassLog = forwardRef((props, ref) => {
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
-
-    // Validate before setting isSubmitting to avoid permanently disabling submit
-    const student = getSelectedStudent();
-    const staffMember = getSelectedStaff();
-
-    if (!student) {
-      toast.error(t('toast.error.pleaseSelectAStudent'));
-      return;
-    }
-    if (!reason) {
-      toast.error(t('toast.error.pleaseSelectAReason'));
-      return;
-    }
-    if (reason === 'OTHER' && !otherReason) {
-      toast.error(t('toast.error.pleaseSpecifyTheReason'));
-      return;
-    }
-    if (!leavingWith) {
-      toast.error(t('toast.error.pleaseSelectWhoTheStudentIsLeavingWith'));
-      return;
-    }
-    if (leavingWith === 'OTHERS' && !escortName) {
-      toast.error(t('toast.error.pleaseEnterEscortName'));
-      return;
-    }
-    if (leavingWith === 'OTHERS' && escortPhone && !validatePhone(escortPhone)) {
-      toast.error(t('toast.error.pleaseEnterAValid10DigitPhoneNumber'));
-      return;
-    }
-    if (!approvedBy) {
-      toast.error(t('toast.error.pleaseSelectWhoApprovedThisGatePass'));
-      return;
-    }
-    if (!approvedByStaffId || !staffMember) {
-      toast.error(t('toast.error.pleaseSelectAStaffMember'));
-      return;
-    }
-
     setIsSubmitting(true);
     try {
+      const student = getSelectedStudent();
+      const staffMember = getSelectedStaff();
+
+      if (!student) {
+        toast.error(t('toast.error.pleaseSelectAStudent'));
+        return;
+      }
+
+      if (!reason) {
+        toast.error(t('toast.error.pleaseSelectAReason'));
+        return;
+      }
+
+      if (reason === 'OTHER' && !otherReason) {
+        toast.error(t('toast.error.pleaseSpecifyTheReason'));
+        return;
+      }
+
+      if (!leavingWith) {
+        toast.error(t('toast.error.pleaseSelectWhoTheStudentIsLeavingWith'));
+        return;
+      }
+
+      if (leavingWith === 'OTHERS' && !escortName) {
+        toast.error(t('toast.error.pleaseEnterEscortName'));
+        return;
+      }
+
+      if (leavingWith === 'OTHERS' && escortPhone && !validatePhone(escortPhone)) {
+        toast.error(t('toast.error.pleaseEnterAValid10DigitPhoneNumber'));
+        return;
+      }
+
+      if (!approvedBy) {
+        toast.error(t('toast.error.pleaseSelectWhoApprovedThisGatePass'));
+        return;
+      }
+
+      if (!approvedByStaffId) {
+        toast.error(t('toast.error.pleaseSelectAStaffMember'));
+        return;
+      }
+
       const formData = {
         studentId: student._id || student.id,
         studentName: student.name,
@@ -243,7 +247,7 @@ const GatePassLog = forwardRef((props, ref) => {
       setIsModalOpen(false);
       resetForm();
       loadGatePasses();
-      if (props.onSave) props.onSave();
+      onSave?.();
     } catch (error) {
       logger.error('Failed to save gate pass:', error);
       toast.error(error.response?.data?.message || 'Failed to save gate pass');
@@ -295,8 +299,30 @@ const GatePassLog = forwardRef((props, ref) => {
       await frontDeskApi.deleteGatePass(id);
       toast.success(t('toast.success.gatePassDeleted'));
       loadGatePasses();
+      onSave?.();
     } catch (error) {
       toast.error(t('toast.error.failedToDeleteGatePass'));
+    }
+  };
+
+  const handleApproval = async (id, status) => {
+    try {
+      await frontDeskApi.updateGatePass(id, { approvalStatus: status });
+      toast.success(status === 'APPROVED' ? t('toast.success.gatePassApproved') || 'Gate pass approved' : t('toast.success.gatePassRejected') || 'Gate pass rejected');
+      loadGatePasses();
+      onSave?.();
+    } catch (error) {
+      logger.error('Failed to update gate pass status:', error);
+      toast.error('Failed to update gate pass status');
+    }
+  };
+
+  const getApprovalStatusColor = (status) => {
+    switch (status) {
+      case 'APPROVED': return 'success';
+      case 'REJECTED': return 'danger';
+      case 'PENDING': return 'warning';
+      default: return 'default';
     }
   };
 
@@ -342,6 +368,7 @@ const GatePassLog = forwardRef((props, ref) => {
           <TableColumn scope="col">{t('pages.lEFTWith')}</TableColumn>
           <TableColumn scope="col">{t('pages.aPPROVEDBy')}</TableColumn>
           <TableColumn scope="col">{t('pages.dATETime')}</TableColumn>
+          <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
           <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
         </TableHeader>
         <TableBody
@@ -374,7 +401,40 @@ const GatePassLog = forwardRef((props, ref) => {
                 }
               </TableCell>
               <TableCell>
-                <div className="flex gap-2">
+                <Chip
+                  size="sm"
+                  color={getApprovalStatusColor(gatePass.approvalStatus)}
+                  variant="flat"
+                >
+                  {gatePass.approvalStatus || 'PENDING'}
+                </Chip>
+              </TableCell>
+              <TableCell>
+                <div className="flex gap-1">
+                  {(!gatePass.approvalStatus || gatePass.approvalStatus === 'PENDING') && (
+                    <>
+                      <Button
+                        size="sm"
+                        color="success"
+                        variant="flat"
+                        isIconOnly
+                        onPress={() => handleApproval(gatePass._id, 'APPROVED')}
+                        title="Approve"
+                      >
+                        <Check size={14} />
+                      </Button>
+                      <Button
+                        size="sm"
+                        color="danger"
+                        variant="flat"
+                        isIconOnly
+                        onPress={() => handleApproval(gatePass._id, 'REJECTED')}
+                        title="Reject"
+                      >
+                        <X size={14} />
+                      </Button>
+                    </>
+                  )}
                   <Button
                     size="sm"
                     color="primary"
