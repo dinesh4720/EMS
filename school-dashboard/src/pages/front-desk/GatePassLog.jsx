@@ -5,7 +5,7 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select, SelectItem,
   Button, Textarea, Autocomplete, AutocompleteItem
 } from '@heroui/react';
-import { Trash2, Plus, Edit, Download } from 'lucide-react';
+import { Trash2, Plus, Edit, Download, CheckCircle, XCircle, Search, RotateCcw } from 'lucide-react';
 import { frontDeskApi, studentsApi, staffApi } from '../../services/api';
 import { validatePhone } from '../../utils/validations';
 import toast from 'react-hot-toast';
@@ -63,6 +63,7 @@ const GatePassLog = forwardRef((props, ref) => {
   const [approvedByStaffId, setApprovedByStaffId] = useState(null);
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const loadData = async () => {
@@ -170,51 +171,46 @@ const GatePassLog = forwardRef((props, ref) => {
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
+
+    // Validate before setting isSubmitting to avoid permanently disabling submit
+    const student = getSelectedStudent();
+    const staffMember = getSelectedStaff();
+
+    if (!student) {
+      toast.error(t('toast.error.pleaseSelectAStudent'));
+      return;
+    }
+    if (!reason) {
+      toast.error(t('toast.error.pleaseSelectAReason'));
+      return;
+    }
+    if (reason === 'OTHER' && !otherReason) {
+      toast.error(t('toast.error.pleaseSpecifyTheReason'));
+      return;
+    }
+    if (!leavingWith) {
+      toast.error(t('toast.error.pleaseSelectWhoTheStudentIsLeavingWith'));
+      return;
+    }
+    if (leavingWith === 'OTHERS' && !escortName) {
+      toast.error(t('toast.error.pleaseEnterEscortName'));
+      return;
+    }
+    if (leavingWith === 'OTHERS' && escortPhone && !validatePhone(escortPhone)) {
+      toast.error(t('toast.error.pleaseEnterAValid10DigitPhoneNumber'));
+      return;
+    }
+    if (!approvedBy) {
+      toast.error(t('toast.error.pleaseSelectWhoApprovedThisGatePass'));
+      return;
+    }
+    if (!approvedByStaffId || !staffMember) {
+      toast.error(t('toast.error.pleaseSelectAStaffMember'));
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const student = getSelectedStudent();
-      const staffMember = getSelectedStaff();
-
-      if (!student) {
-        toast.error(t('toast.error.pleaseSelectAStudent'));
-        return;
-      }
-
-      if (!reason) {
-        toast.error(t('toast.error.pleaseSelectAReason'));
-        return;
-      }
-
-      if (reason === 'OTHER' && !otherReason) {
-        toast.error(t('toast.error.pleaseSpecifyTheReason'));
-        return;
-      }
-
-      if (!leavingWith) {
-        toast.error(t('toast.error.pleaseSelectWhoTheStudentIsLeavingWith'));
-        return;
-      }
-
-      if (leavingWith === 'OTHERS' && !escortName) {
-        toast.error(t('toast.error.pleaseEnterEscortName'));
-        return;
-      }
-
-      if (leavingWith === 'OTHERS' && escortPhone && !validatePhone(escortPhone)) {
-        toast.error(t('toast.error.pleaseEnterAValid10DigitPhoneNumber'));
-        return;
-      }
-
-      if (!approvedBy) {
-        toast.error(t('toast.error.pleaseSelectWhoApprovedThisGatePass'));
-        return;
-      }
-
-      if (!approvedByStaffId) {
-        toast.error(t('toast.error.pleaseSelectAStaffMember'));
-        return;
-      }
-
       const formData = {
         studentId: student._id || student.id,
         studentName: student.name,
@@ -247,6 +243,7 @@ const GatePassLog = forwardRef((props, ref) => {
       setIsModalOpen(false);
       resetForm();
       loadGatePasses();
+      if (props.onSave) props.onSave();
     } catch (error) {
       logger.error('Failed to save gate pass:', error);
       toast.error(error.response?.data?.message || 'Failed to save gate pass');
