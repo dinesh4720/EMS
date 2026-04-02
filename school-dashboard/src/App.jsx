@@ -44,9 +44,10 @@ const SuperAdminDashboard = lazyWithRetry(() => import("./pages/super-admin"));
 
 // New module pages
 const PTMPage = lazyWithRetry(() => import("./pages/ptm"));
-const CBSEReportCardPage = lazyWithRetry(() => import("./pages/academics/CBSEReportCardPage"));
-const CCEGradingPage = lazyWithRetry(() => import("./pages/academics/CCEGradingPage"));
+// CBSEReportCardPage and CCEGradingPage are rendered as tabs within
+// AcademicLayout — no standalone routes needed, so no lazy imports here.
 const ExamDetail = lazyWithRetry(() => import("./pages/academics/ExamDetail"));
+const ClassPerformance = lazyWithRetry(() => import("./pages/academics/ClassPerformance"));
 const ResultsEntry = lazyWithRetry(() => import("./pages/academics/ResultsEntry"));
 // const EmailCampaignsPage = lazyWithRetry(() => import("./pages/messaging/EmailCampaignsPage")); // Commented out — using announcements instead
 const StudentPromotionPage = lazyWithRetry(() => import("./pages/students/StudentPromotionPage"));
@@ -316,6 +317,13 @@ function AuthenticatedApp() {
                       </RouteEB>
                     } />
                     <Route path="/accounts/*" element={<Navigate to="/fees" replace />} />
+                    <Route path="/academics/class-performance/:classId" element={
+                      <RouteEB>
+                        <PermissionGuard module="academics">
+                          <ClassPerformance />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
                     <Route path="/academics/exams/:examId/results" element={
                       <RouteEB>
                         <PermissionGuard module="academics">
@@ -351,20 +359,9 @@ function AuthenticatedApp() {
                         </PermissionGuard>
                       </RouteEB>
                     } />
-                    <Route path="/academics/cbse-report-card" element={
-                      <RouteEB>
-                        <PermissionGuard module="academics">
-                          <CBSEReportCardPage />
-                        </PermissionGuard>
-                      </RouteEB>
-                    } />
-                    <Route path="/academics/cce-grading" element={
-                      <RouteEB>
-                        <PermissionGuard module="academics">
-                          <CCEGradingPage />
-                        </PermissionGuard>
-                      </RouteEB>
-                    } />
+                    {/* CBSE/CCE routes removed — these pages are rendered as tabs
+                        within AcademicLayout (/academics/cbse-report-card, /academics/cce-grading)
+                        so standalone routes are unnecessary duplicates. */}
                     {/* Email Campaigns route commented out — using announcements instead
                     <Route path="/messaging/email-campaigns" element={
                       <RouteEB>
@@ -434,6 +431,22 @@ function AuthenticatedApp() {
                           <TimetableWizardPage />
                         </PermissionGuard>
                       </RouteEB>
+                    } />
+                    {/* 404 catch-all for authenticated users */}
+                    <Route path="*" element={
+                      <div className="flex flex-col items-center justify-center py-24 gap-4">
+                        <div className="text-6xl font-bold text-gray-200 dark:text-zinc-700">404</div>
+                        <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Page Not Found</h2>
+                        <p className="text-sm text-gray-500 dark:text-zinc-400 max-w-md text-center">
+                          The page you are looking for does not exist or has been moved.
+                        </p>
+                        <a
+                          href="/"
+                          className="mt-2 px-4 py-2 bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                        >
+                          Back to Dashboard
+                        </a>
+                      </div>
                     } />
                   </Routes>
                 </div>

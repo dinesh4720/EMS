@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ModalHeader, ModalBody, Chip, Button } from '@heroui/react';
+import { ModalHeader, ModalBody, ModalFooter, Chip, Button, Modal, ModalContent } from '@heroui/react';
 import { FileText, Calendar, Award, Users, Eye, Pencil, Send, AlertTriangle, BookOpen, Clock } from 'lucide-react';
 import { examsApi, resultsApi, classesApi } from '../../services/api';
 import { MinimalButton } from '../../components/ui';
@@ -12,6 +12,8 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
   const [exam, setExam] = useState(null);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [publishing, setPublishing] = useState(false);
+  const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (examId) {
@@ -38,13 +40,17 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
   };
 
   const handlePublish = async () => {
+    setPublishing(true);
     try {
       await examsApi.publish(examId);
       toast.success(t('toast.success.resultsPublishedSuccessfully'));
+      setPublishConfirmOpen(false);
       fetchExamDetails();
     } catch (error) {
       console.error('Error publishing results:', error);
       toast.error(t('toast.error.failedToPublishResults'));
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -196,13 +202,22 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
                         {result.marksObtained} / {exam.maxMarks || 100}
                       </td>
                       <td className="px-4 py-3">
-                        <Chip
-                          size="sm"
-                          color={result.marksObtained >= (exam.passingMarks || 35) ? 'success' : 'danger'}
-                          variant="flat"
-                        >
-                          {result.marksObtained >= (exam.passingMarks || 35) ? 'Pass' : 'Fail'}
-                        </Chip>
+                        {(() => {
+                          const status = result.status || (result.marksObtained >= (exam.passingMarks || 35) ? 'passed' : 'failed');
+                          const statusConfig = {
+                            passed:   { color: 'success', label: 'Passed' },
+                            failed:   { color: 'danger',  label: 'Failed' },
+                            absent:   { color: 'warning', label: 'Absent' },
+                            promoted: { color: 'primary', label: 'Promoted' },
+                            withheld: { color: 'default', label: 'Withheld' },
+                          };
+                          const cfg = statusConfig[status] || { color: 'default', label: status || 'Unknown' };
+                          return (
+                            <Chip size="sm" color={cfg.color} variant="flat">
+                              {cfg.label}
+                            </Chip>
+                          );
+                        })()}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500 dark:text-zinc-400">
                         {result.remarks || '-'}
@@ -231,7 +246,7 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
                   {results.length > 0 && (
                     <MinimalButton
                       icon={<Send size={16} />}
-                      onClick={handlePublish}
+                      onClick={() => setPublishConfirmOpen(true)}
                       variant="primary"
                     >
                       Publish Results
@@ -243,6 +258,42 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
           </div>
         </div>
       </ModalBody>
+
+      {/* Publish Confirmation Modal */}
+      <Modal
+        isOpen={publishConfirmOpen}
+        onClose={() => !publishing && setPublishConfirmOpen(false)}
+        size="sm"
+        classNames={{ backdrop: 'bg-black/30', base: 'bg-white dark:bg-zinc-950' }}
+      >
+        <ModalContent>
+          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                <Send size={20} className="text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-medium">Publish Results</h3>
+                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">Make results visible to students and parents</p>
+              </div>
+            </div>
+          </ModalHeader>
+          <ModalBody className="py-4">
+            <p className="text-sm text-gray-600 dark:text-zinc-400">
+              Are you sure you want to publish results for <span className="font-medium">{exam?.name}</span>?
+              This action cannot be undone.
+            </p>
+          </ModalBody>
+          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
+            <Button variant="light" onPress={() => setPublishConfirmOpen(false)} isDisabled={publishing}>
+              Cancel
+            </Button>
+            <Button color="success" onPress={handlePublish} isLoading={publishing}>
+              Publish Results
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </>
   );
 };

@@ -299,7 +299,15 @@ const ExamDetail = () => {
                 </thead>
                 <tbody>
                   {results.map((result) => {
-                    const isPassed = result.status === 'passed' || result.marksObtained >= (exam.passingMarks || 35);
+                    const status = result.status || (result.marksObtained >= (exam.passingMarks || 35) ? 'passed' : 'failed');
+                    const statusConfig = {
+                      passed:   { color: 'success', label: 'Passed',   icon: <CheckCircle2 size={11} /> },
+                      failed:   { color: 'danger',  label: 'Failed',   icon: <AlertCircle size={11} /> },
+                      absent:   { color: 'warning', label: 'Absent',   icon: <AlertCircle size={11} /> },
+                      promoted: { color: 'primary', label: 'Promoted', icon: <CheckCircle2 size={11} /> },
+                      withheld: { color: 'default', label: 'Withheld', icon: <AlertCircle size={11} /> },
+                    };
+                    const cfg = statusConfig[status] || { color: 'default', label: status || 'Unknown', icon: null };
                     return (
                       <tr key={result.id || result._id} className="border-b border-gray-50 dark:border-zinc-800/50 hover:bg-gray-50 dark:hover:bg-zinc-900">
                         <td className="py-3 px-4">
@@ -329,11 +337,11 @@ const ExamDetail = () => {
                         <td className="py-3 px-4">
                           <Chip
                             size="sm"
-                            color={isPassed ? 'success' : 'danger'}
+                            color={cfg.color}
                             variant="flat"
-                            startContent={isPassed ? <CheckCircle2 size={11} /> : <AlertCircle size={11} />}
+                            startContent={cfg.icon}
                           >
-                            {isPassed ? 'Passed' : 'Failed'}
+                            {cfg.label}
                           </Chip>
                         </td>
                       </tr>
