@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { CURRENT_ACADEMIC_YEAR } from '../../utils/constants';
+import { useApp } from '../../context/AppContext';
 import {
   Card, CardBody, Input, Button, Select, SelectItem,
   Breadcrumbs, BreadcrumbItem, Chip,
@@ -374,6 +374,7 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
 export default function CBSEReportCardPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { currentAcademicYear } = useApp();
   const [admissionNo, setAdmissionNo] = useState('');
   const [term, setTerm] = useState('term_1');
   const [loading, setLoading] = useState(false);
@@ -600,11 +601,11 @@ export default function CBSEReportCardPage() {
                       <CardBody className="p-4">
                         <h3 className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-3">Co-Scholastic Areas</h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                          {reportCard.coScholasticGrades.map((area, i) => (
+                          {reportCard.coScholasticGrades.map((item, i) => (
                             <div key={i} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-zinc-900 rounded-lg">
-                              <span className="text-xs text-gray-600 dark:text-zinc-400">{area.areaName}</span>
-                              <span className={`text-xs font-semibold px-2 py-0.5 rounded ${GRADE_COLORS[area.grade] || 'bg-gray-100 text-gray-700'}`}>
-                                {area.grade || '—'}
+                              <span className="text-xs text-gray-600 dark:text-zinc-400">{item.area}{item.activity ? ` — ${item.activity}` : ''}</span>
+                              <span className={`text-xs font-semibold px-2 py-0.5 rounded ${GRADE_COLORS[item.grade] || 'bg-gray-100 text-gray-700'}`}>
+                                {item.grade || '—'}
                               </span>
                             </div>
                           ))}
@@ -672,7 +673,7 @@ export default function CBSEReportCardPage() {
         isOpen={bulkDisclosure.isOpen}
         onClose={bulkDisclosure.onClose}
         term={term}
-        academicYear={CURRENT_ACADEMIC_YEAR}
+        academicYear={currentAcademicYear}
       />
     </div>
   );
