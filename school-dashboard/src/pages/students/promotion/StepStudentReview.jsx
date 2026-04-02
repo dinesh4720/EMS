@@ -22,6 +22,19 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
   // classStudents: { [fromClassId]: { students: [...], decisions: { [studentId]: decision } } }
   const [classStudents, setClassStudents] = useState({});
 
+  // AUDIT-111: Nav guard -- warn on browser close/refresh when student decisions are loaded
+  useEffect(() => {
+    const hasDecisions = Object.keys(classStudents).length > 0;
+    const handleBeforeUnload = (e) => {
+      if (hasDecisions) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [classStudents]);
+
   const loadStudents = useCallback(async () => {
     setLoading(true);
     const result = {};

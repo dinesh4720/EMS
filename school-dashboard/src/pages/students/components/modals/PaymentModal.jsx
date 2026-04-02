@@ -42,7 +42,7 @@ export default function PaymentModal({
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRecordPayment = async () => {
-    const paymentAmount = parseInt(paymentForm.amount);
+    const paymentAmount = parseFloat(paymentForm.amount);
     if (!paymentForm.amount || isNaN(paymentAmount) || paymentAmount <= 0) {
       setAmountError("Please enter a valid amount greater than 0");
       return;

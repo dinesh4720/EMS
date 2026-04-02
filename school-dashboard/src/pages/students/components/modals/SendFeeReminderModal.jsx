@@ -4,6 +4,12 @@ import { Send, User, Phone, Mail } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 
+// TODO: AUDIT-103 - This modal is a DUPLICATE of FeeReminderModal.jsx and ReminderModal.jsx.
+// All three do the same thing (send fee reminders). Consolidate into a single component.
+// FeeReminderModal and ReminderModal use real API calls; this one uses a FAKE simulated API.
+// Recommendation: Keep FeeReminderModal (most complete), delete this file and ReminderModal,
+// and update all imports to use the single consolidated modal.
+
 /**
  * SendFeeReminderModal - Modal for sending fee reminder to parents
  *
@@ -30,8 +36,9 @@ export default function SendFeeReminderModal({ isOpen, onClose, student }) {
     const loadingToast = toast.loading(t('toast.loading.sendingReminder'));
 
     try {
-      // Here you would integrate with your SMS/email service
-      // For now, just simulate the call
+      // TODO: AUDIT-103 - FAKE API: This just simulates a delay with no real backend call.
+      // Replace with actual API call: request(`/students/${student.id}/send-reminder`, { method: 'POST', body: ... })
+      // See FeeReminderModal.jsx for a working implementation.
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       toast.success(`Reminder sent to ${student?.parentName || 'parent'} via ${channel}`, { id: loadingToast });

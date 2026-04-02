@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
 import { AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
