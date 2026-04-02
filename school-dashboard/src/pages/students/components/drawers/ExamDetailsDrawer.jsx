@@ -36,7 +36,9 @@ export default function ExamDetailsDrawer({ isOpen, onOpenChange, selectedExam, 
               <div className="p-6 grid grid-cols-2 gap-4 bg-default-50 border-b border-default-200">
                 <div className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-default-200 text-center">
                   <span className="text-xs text-default-500 uppercase">{t('students.profile.overview.totalScore', 'Total Score')}</span>
-                  <div className="text-2xl font-bold text-default-900 mt-1">{selectedExam?.score || "-"}</div>
+                  <div className="text-2xl font-bold text-default-900 mt-1">
+                    {selectedExam?.percentage != null ? `${selectedExam.percentage}%` : selectedExam?.totalMarksObtained != null ? `${selectedExam.totalMarksObtained}/${selectedExam.totalMaxMarks}` : '—'}
+                  </div>
                 </div>
                 <div className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-default-200 text-center">
                   <span className="text-xs text-default-500 uppercase">{t('students.profile.overview.rank', 'Rank')}</span>
@@ -47,23 +49,28 @@ export default function ExamDetailsDrawer({ isOpen, onOpenChange, selectedExam, 
                 <h4 className="font-semibold text-default-900 mb-4">{t('students.profile.overview.subjectwisePerformance', 'Subject-wise Performance')}</h4>
                 {results && results.length > 0 ? (
                   <div className="space-y-4">
-                    {results.slice(0, 5).map((r, i) => (
-                      <div key={r.subjectName || `result-${i}`} className="flex items-center gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-default-700">{r.subjectName || 'Subject'}</span>
-                            <span className="text-sm font-semibold">{Math.round(Math.min(100, Math.max(0, r.percentage || 0)))}%</span>
+                    {results.slice(0, 5).map((r, i) => {
+                      const pct = r.maxMarks > 0
+                        ? Math.round(Math.min(100, Math.max(0, (r.marksObtained / r.maxMarks) * 100)))
+                        : 0;
+                      return (
+                        <div key={r.subjectName || `result-${i}`} className="flex items-center gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-default-700">{r.subjectName || 'Subject'}</span>
+                              <span className="text-sm font-semibold">{r.marksObtained ?? '—'}/{r.maxMarks ?? '—'} ({pct}%)</span>
+                            </div>
+                            <Progress
+                              aria-label={t('common.subjectScore', {subject: r.subjectName, defaultValue: '{{subject}} score'})}
+                              value={pct}
+                              color={pct >= 90 ? "success" : pct >= 75 ? "primary" : "warning"}
+                              size="sm"
+                              className="w-full"
+                            />
                           </div>
-                          <Progress
-                            aria-label={t('common.subjectScore', {subject: r.subjectName, defaultValue: '{{subject}} score'})}
-                            value={Math.min(100, Math.max(0, r.percentage || 0))}
-                            color={Math.min(100, Math.max(0, r.percentage || 0)) >= 90 ? "success" : Math.min(100, Math.max(0, r.percentage || 0)) >= 75 ? "primary" : "warning"}
-                            size="sm"
-                            className="w-full"
-                          />
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-default-400">
