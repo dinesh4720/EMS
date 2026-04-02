@@ -1,37 +1,12 @@
-import { request } from './core.js';
-import { getAuthHeaders, clearStoredUser } from '../../utils/authSession';
-import { API_URL } from '../../config/api.js';
-import { retryRequest } from '../../utils/requestQueue.js';
+import { request, requestUpload } from './core.js';
 import logger from '../../utils/logger';
 
+// [AUDIT-159] Upload now uses centralized requestUpload() for automatic token refresh
 export const uploadApi = {
   uploadFile: async (file) => {
-    return retryRequest(async () => {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch(`${API_URL}/upload`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: formData,
-        // Content-Type header is skipped so browser can set boundary
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
-
-        if (response.status === 401) {
-          console.warn('⚠️ 401 Unauthorized - clearing session');
-          clearStoredUser();
-        }
-
-        const err = new Error(errorData.error || `Upload failed with status ${response.status}`);
-        err.status = response.status;
-        throw err;
-      }
-      return await response.json();
-    }, 2, 1500); // 2 retries, 1.5s base delay (uploads are slower)
+    const formData = new FormData();
+    formData.append('file', file);
+    return requestUpload('/upload', formData);
   }
 };
 
