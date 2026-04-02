@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { request } from '../../services/api';
 import { PageLayout, MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const GRADE_COLOR = (g) => {
   if (['A1', 'A2'].includes(g)) return 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300';

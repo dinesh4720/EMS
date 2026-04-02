@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../../../context/SettingsContext';
 import { promotionApi } from '../../../services/api/extensions';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 function computeNextYear(current) {
   if (!current || typeof current !== 'string') return '';
