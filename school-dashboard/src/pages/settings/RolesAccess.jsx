@@ -559,7 +559,7 @@ export default function RolesAccess() {
                     size="sm"
                     variant="bordered"
                     className="w-48"
-                    onChange={(e) => handleCopyFromRole(parseInt(e.target.value))}
+                    onChange={(e) => handleCopyFromRole(e.target.value)}
                   >
                     {roles.map((role) => (
                       <SelectItem key={role.id} value={role.id}>

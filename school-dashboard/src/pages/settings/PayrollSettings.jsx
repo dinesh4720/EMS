@@ -280,6 +280,19 @@ function GeneralPayrollSettings() {
         const d = data.data?.disburseDate || "";
         setDisburseDate(d);
         setTempDisburseDate(d);
+        // AUDIT-116: Also load payment method and reminder settings if present
+        if (data.data?.paymentMethod) {
+          setPaymentMethod(data.data.paymentMethod);
+          setTempPaymentMethod(data.data.paymentMethod);
+        }
+        if (data.data?.autoReminder !== undefined) {
+          setAutoReminder(data.data.autoReminder);
+          setTempAutoReminder(data.data.autoReminder);
+        }
+        if (data.data?.reminderDays) {
+          setReminderDays(String(data.data.reminderDays));
+          setTempReminderDays(String(data.data.reminderDays));
+        }
         setInitialLoad(false);
       } catch (error) {
         console.error("Failed to fetch payroll settings:", error);
@@ -288,6 +301,13 @@ function GeneralPayrollSettings() {
     };
     fetchPayrollSettings();
   }, []);
+
+  // AUDIT-127: Warn before leaving with unsaved edits
+  useEffect(() => {
+    const handler = (e) => { if (editingSection) { e.preventDefault(); e.returnValue = ''; } };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [editingSection]);
 
   const getOrdinalSuffix = (day) => {
     const num = parseInt(day);
@@ -330,17 +350,40 @@ function GeneralPayrollSettings() {
     }
   };
 
-  const handleSavePayment = () => {
-    setPaymentMethod(tempPaymentMethod);
-    toast.success("Payment settings saved");
-    setEditingSection(null);
+  // TODO: AUDIT-116 - Wire up to API: PUT /settings/payroll (paymentMethod field)
+  const handleSavePayment = async () => {
+    setLoading(true);
+    try {
+      await settingsApi.updatePayrollSettings({ paymentMethod: tempPaymentMethod });
+      setPaymentMethod(tempPaymentMethod);
+      toast.success("Payment settings saved");
+      setEditingSection(null);
+    } catch (error) {
+      console.error("Failed to save payment settings:", error);
+      toast.error(error.message || "Failed to save payment settings");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSaveReminders = () => {
-    setAutoReminder(tempAutoReminder);
-    setReminderDays(tempReminderDays);
-    toast.success("Reminder settings saved");
-    setEditingSection(null);
+  // TODO: AUDIT-116 - Wire up to API: PUT /settings/payroll (reminder fields)
+  const handleSaveReminders = async () => {
+    setLoading(true);
+    try {
+      await settingsApi.updatePayrollSettings({
+        autoReminder: tempAutoReminder,
+        reminderDays: parseInt(tempReminderDays),
+      });
+      setAutoReminder(tempAutoReminder);
+      setReminderDays(tempReminderDays);
+      toast.success("Reminder settings saved");
+      setEditingSection(null);
+    } catch (error) {
+      console.error("Failed to save reminder settings:", error);
+      toast.error(error.message || "Failed to save reminder settings");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const paymentMethodLabels = {

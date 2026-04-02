@@ -236,11 +236,19 @@ export default function FeeHeadsUnified({ embedded = false }) {
     }
   };
 
+  // AUDIT-124: Added dependency check before delete
   const handleDelete = async (id) => {
     if (!confirm(t('confirm.deleteFeeHead'))) return;
 
     setDeletingId(id);
     try {
+      // Check if fee head is in use before deleting
+      const depCheck = await request(`/fee-heads/${id}/dependencies`).catch(() => null);
+      if (depCheck?.inUse) {
+        toast.error(`Cannot delete: fee head is assigned to ${depCheck.studentCount || 'some'} student(s). Remove assignments first.`);
+        setDeletingId(null);
+        return;
+      }
       await request(`/fee-heads/${id}`, { method: 'DELETE' });
       setFeeHeads(prev => prev.filter(fh => fh._id !== id));
       toast.success(t('toast.success.feeHeadDeleted'));
@@ -251,7 +259,9 @@ export default function FeeHeadsUnified({ embedded = false }) {
     }
   };
 
+  // AUDIT-124: Added confirmation before bulk apply
   const handleApplyToStudents = async (id) => {
+    if (!confirm('Apply this fee head to all applicable students? This will create fee structures for students who do not have them yet.')) return;
     try {
       await request(`/fee-heads/${id}/apply`, { method: 'POST' });
       toast.success(t('toast.success.feeHeadAppliedToStudents'));

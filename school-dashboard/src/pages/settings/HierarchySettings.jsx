@@ -290,7 +290,8 @@ export default function HierarchySettings() {
                         selectedKeys={staffMember.reporterId ? [String(staffMember.reporterId)] : []}
                         onSelectionChange={(keys) => {
                           const selectedKey = Array.from(keys)[0];
-                          handleUpdateReporter(staffMember.id, selectedKey || null);
+                          // AUDIT-126: Convert 'none' string to null for proper backend storage
+                          handleUpdateReporter(staffMember.id, selectedKey === 'none' ? null : selectedKey || null);
                         }}
                         variant="bordered"
                         size="sm"

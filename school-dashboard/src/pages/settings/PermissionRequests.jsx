@@ -66,6 +66,8 @@ export default function PermissionRequests() {
   const [reviewNotes, setReviewNotes] = useState("");
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState("pending");
+  // AUDIT-133: Track pending count independently so it persists across tab changes
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     if (isAdmin()) {
@@ -99,6 +101,15 @@ export default function PermissionRequests() {
       const status = activeTab === 'all' ? '' : activeTab;
       const data = await request(`/permissions/requests${status ? `?status=${status}` : ''}`);
       setRequests(data);
+      // AUDIT-133: Always fetch actual pending count for badge
+      if (activeTab === 'pending') {
+        setPendingCount(Array.isArray(data) ? data.length : 0);
+      } else {
+        try {
+          const pendingData = await request('/permissions/requests?status=pending');
+          setPendingCount(Array.isArray(pendingData) ? pendingData.length : 0);
+        } catch { /* keep previous count */ }
+      }
     } catch (error) {
       logger.error('Error fetching requests:', error);
       setFetchError(error.message || 'Failed to load permission requests');
@@ -220,9 +231,9 @@ export default function PermissionRequests() {
             <div className="flex items-center gap-2">
               <Clock size={16} />
               <span>{t('pages.pending2')}</span>
-              {requests.filter(r => r.status === 'pending').length > 0 && (
+              {pendingCount > 0 && (
                 <Chip size="sm" color="warning" variant="flat">
-                  {requests.filter(r => r.status === 'pending').length}
+                  {pendingCount}
                 </Chip>
               )}
             </div>

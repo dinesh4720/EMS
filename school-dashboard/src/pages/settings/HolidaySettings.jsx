@@ -20,6 +20,8 @@ export default function HolidaySettings() {
     description: ""
   });
   const [saving, setSaving] = useState(false);
+  // AUDIT-128: State-driven delete confirmation instead of confirm()
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
   // Lazy loading state
   const ITEMS_PER_LOAD = 10;
@@ -28,8 +30,9 @@ export default function HolidaySettings() {
   const loaderRef = useRef(null);
 
   const holidays = events.filter(e => e.type === "holiday");
-  const sortedHolidays = useMemo(() => 
-    holidays.sort((a, b) => new Date(a.date) - new Date(b.date)),
+  // AUDIT-122: Use spread to avoid mutating the context array
+  const sortedHolidays = useMemo(() =>
+    [...holidays].sort((a, b) => new Date(a.date) - new Date(b.date)),
     [holidays]
   );
 
@@ -97,7 +100,7 @@ export default function HolidaySettings() {
       };
 
       if (editingHoliday) {
-        await updateEvent(editingHoliday.id, holidayData);
+        await updateEvent(editingHoliday._id || editingHoliday.id, holidayData);
         toast.success(t('toast.success.holidayUpdatedSuccessfully'));
       } else {
         await addEvent(holidayData);
@@ -112,14 +115,21 @@ export default function HolidaySettings() {
     }
   };
 
+  // AUDIT-128: Replaced confirm() with state-driven confirmation
   const handleDelete = async (id) => {
-    if (confirm(t('confirm.deleteHoliday'))) {
-      try {
-        await deleteEvent(id);
-        toast.success(t('toast.success.holidayDeletedSuccessfully'));
-      } catch (error) {
-        console.error('Failed to delete holiday:', error);
-        toast.error(t('toast.error.failedToDeleteHoliday'));
+    if (pendingDeleteId !== id) {
+      setPendingDeleteId(id);
+      toast(t('confirm.deleteHoliday') + ' Click delete again to confirm.', { icon: '\u26A0\uFE0F', duration: 3000 });
+      setTimeout(() => setPendingDeleteId(null), 3000);
+      return;
+    }
+    setPendingDeleteId(null);
+    try {
+      await deleteEvent(id);
+      toast.success(t('toast.success.holidayDeletedSuccessfully'));
+    } catch (error) {
+      console.error('Failed to delete holiday:', error);
+      toast.error(t('toast.error.failedToDeleteHoliday'));
       }
     }
   };
@@ -218,7 +228,7 @@ export default function HolidaySettings() {
                 const date = new Date(holiday.date);
                 const dayName = date.toLocaleDateString(getDateLocale(), { weekday: 'short' });
                 return (
-                  <TableRow key={holiday.id}>
+                  <TableRow key={holiday._id || holiday.id}>
                     <TableCell className="font-medium text-default-700">{holiday.title}</TableCell>
                     <TableCell className="text-sm text-default-600">
                       {date.toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -250,7 +260,7 @@ export default function HolidaySettings() {
                           size="sm" 
                           variant="light" 
                           color="danger" 
-                          onPress={() => handleDelete(holiday.id)}
+                          onPress={() => handleDelete(holiday._id || holiday.id)}
                           className="transition-all duration-200"
                         >
                           <Trash2 size={16} />

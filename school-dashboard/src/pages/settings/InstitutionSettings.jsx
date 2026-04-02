@@ -29,14 +29,17 @@ export default function InstitutionSettings() {
   }, [schoolSettings]);
   const [editingSection, setEditingSection] = useState(null); // 'identity', 'branding', or null
 
+  // AUDIT-125: Added toast feedback for success/error
   const handleSave = async () => {
     setSaving(true);
     try {
       await updateSchoolSettings(localSettings);
       setIsDirty(false);
       setEditingSection(null);
+      toast.success('Settings saved successfully');
     } catch (error) {
       console.error('Failed to save settings:', error);
+      toast.error(error.message || 'Failed to save settings');
     } finally {
       setSaving(false);
     }
@@ -108,7 +111,7 @@ export default function InstitutionSettings() {
               </div>
               {editingSection === 'identity' ? (
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="light" color="danger" onPress={handleCancel} disabled={saving}>{t('pages.cancel2')}</Button>
+                  <Button size="sm" variant="light" color="danger" onPress={handleCancel} isDisabled={saving}>{t('pages.cancel2')}</Button>
                   <Button size="sm" color="primary" onPress={handleSave} isLoading={saving} startContent={<Save size={14} />}>
                     Save Changes
                   </Button>
@@ -218,7 +221,7 @@ export default function InstitutionSettings() {
               </div>
               {editingSection === 'branding' ? (
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="light" color="danger" onPress={handleCancel} disabled={saving}>{t('pages.cancel2')}</Button>
+                  <Button size="sm" variant="light" color="danger" onPress={handleCancel} isDisabled={saving}>{t('pages.cancel2')}</Button>
                   <Button size="sm" color="primary" onPress={handleSave} isLoading={saving} startContent={<Save size={14} />}>
                     Save Changes
                   </Button>

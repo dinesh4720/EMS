@@ -125,23 +125,25 @@ export default function UserManagement() {
         }
     };
 
-    const handleResetPassword = async (userData) => {
+    // AUDIT-118: Show confirmation modal first, then reset on explicit confirm
+    const handleResetPassword = (userData) => {
         setSelectedUser(userData);
         setGeneratedPassword("");
         setResetSuccess(false);
         setCopiedPassword(false);
         setShowGeneratedPassword(false);
         onResetModalOpen();
+    };
 
-        // Generate password immediately
+    const confirmResetPassword = async () => {
+        if (!selectedUser) return;
         const newPassword = generateSecurePassword(12);
         setGeneratedPassword(newPassword);
 
-        // Call API to update password
         try {
             setResetting(true);
-            await staffApi.updateCredentials(userData.id, { password: newPassword });
-            await refetch(true); // Skip cache to get fresh data
+            await staffApi.updateCredentials(selectedUser.id, { password: newPassword });
+            await refetch(true);
             setResetSuccess(true);
         } catch (err) {
             toast.error("Failed to reset password: " + err.message);
@@ -393,7 +395,23 @@ export default function UserManagement() {
                                 </span>
                             </ModalHeader>
                             <ModalBody>
-                                {resetting ? (
+                                {!resetting && !resetSuccess && !generatedPassword ? (
+                                    <div className="space-y-4">
+                                        <div className="p-4 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800">
+                                            <div className="flex gap-3">
+                                                <AlertTriangle size={20} className="text-warning flex-shrink-0 mt-0.5" />
+                                                <div className="text-sm text-warning-800 dark:text-warning-200">
+                                                    <p className="font-semibold mb-1">Are you sure?</p>
+                                                    <p className="text-xs">This will generate a new password for <strong>{selectedUser?.name}</strong>. Their current password will stop working immediately.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end gap-2">
+                                            <Button variant="light" onPress={onResetModalOpenChange}>Cancel</Button>
+                                            <Button color="danger" onPress={confirmResetPassword}>Reset Password</Button>
+                                        </div>
+                                    </div>
+                                ) : resetting ? (
                                     <div className="flex flex-col items-center justify-center py-8">
                                         <div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-900" />
                                         <p className="text-sm text-default-500 mt-4">{t('pages.generatingSecurePassword')}</p>

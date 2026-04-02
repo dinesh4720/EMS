@@ -218,6 +218,18 @@ export default function PeriodSettings() {
       }
     }
 
+    // AUDIT-130: Check for time overlaps between periods
+    for (let i = 0; i < periods.length; i++) {
+      for (let j = i + 1; j < periods.length; j++) {
+        const a = periods[i];
+        const b = periods[j];
+        if (a.startTime < b.endTime && b.startTime < a.endTime) {
+          toast.error(`"${a.name}" and "${b.name}" have overlapping times`);
+          return;
+        }
+      }
+    }
+
     setSaving(true);
     try {
       // Strip _key before sending to API
