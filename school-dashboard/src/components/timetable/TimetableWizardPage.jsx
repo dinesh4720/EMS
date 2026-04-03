@@ -39,7 +39,7 @@ const TimetableWizardPage = () => {
     try {
       setLoading(true);
       const [classesData, timetablesData, missingData] = await Promise.all([
-        classesApi.getAll(true),
+        classesApi.getAll(),
         timetableApi.getAll(),
         classesEnhancedApi.getMissingSubjects().catch(() => ({ missingSubjects: [] }))
       ]);

@@ -40,6 +40,11 @@ class SocketServiceEnhanced {
     }
 
     return new Promise((resolve, reject) => {
+      // [AUDIT-533] Guard: promise must settle only once
+      let settled = false;
+      const safeResolve = () => { if (!settled) { settled = true; resolve(); } };
+      const safeReject = (err) => { if (!settled) { settled = true; reject(err); } };
+
       this.socket = io(SOCKET_URL, {
         transports: ['websocket', 'polling'],
         withCredentials: true, // Send httpOnly cookies with handshake
@@ -56,7 +61,7 @@ class SocketServiceEnhanced {
           console.warn('⚠️ Socket connection/authentication timeout');
           console.warn('⚠️ Connection status:', { connected: this.connected, authenticated: this.authenticated });
           this.disconnect(); // Ensure we clean up if we timeout
-          reject(new Error('Connection/Authentication timeout'));
+          safeReject(new Error('Connection/Authentication timeout'));
         }
       }, 10000); // Increased to 10s to allow for slower connections
 
@@ -86,7 +91,7 @@ class SocketServiceEnhanced {
         this.userId = data.userId;
         this.userType = data.userType;
         this.emit('authenticated', data);
-        resolve();
+        safeResolve();
       });
 
       this.socket.on('disconnect', (reason) => {
@@ -98,7 +103,7 @@ class SocketServiceEnhanced {
       this.socket.on('error', (error) => {
         logger.error('❌ Socket error:', error);
         this.emit('error', error);
-        reject(error);
+        safeReject(error);
       });
 
       this.socket.on('connect_error', (error) => {
@@ -107,7 +112,7 @@ class SocketServiceEnhanced {
 
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
           logger.error('❌ Max reconnection attempts reached');
-          reject(new Error('Failed to connect after multiple attempts'));
+          safeReject(new Error('Failed to connect after multiple attempts'));
         }
 
         this.emit('connect_error', error);
@@ -162,8 +167,16 @@ class SocketServiceEnhanced {
       this.authenticated = false;
       this.userId = null;
       this.userType = null;
-      this.listeners.clear();
+      // [AUDIT-564] Do NOT clear application-level listeners here.
+      // They need to survive temporary disconnects so reconnect re-registers them.
+      // Only clear on explicit destroy/logout via destroyAll().
     }
+  }
+
+  // Full teardown: clears all listeners. Call on logout only.
+  destroyAll() {
+    this.disconnect();
+    this.listeners.clear();
   }
 
   // Join a conversation room

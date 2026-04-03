@@ -393,6 +393,7 @@ const HomeworkPage = () => {
       <HomeworkDetailModal
         homeworkId={detailId}
         onClose={() => setDetailId(null)}
+        onDataChanged={() => fetchHomework(true)}
       />
 
       {/* Delete Confirmation Modal */}

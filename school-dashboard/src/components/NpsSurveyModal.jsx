@@ -77,8 +77,8 @@ function NpsSurveyModal() {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="lg" data-testid="nps-modal">
-      <ModalContent>
+    <Modal isOpen={isOpen} onClose={handleClose} size="lg">
+      <ModalContent data-testid="nps-modal">
         {submitted ? (
           <>
             <ModalHeader className="flex flex-col gap-1">

@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Cookie, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Cookie, X } from 'lucide-react';
 import { safeGetItem, safeSetItem } from '../../utils/safeStorage';
 import { useTranslation } from 'react-i18next';
 
 const CONSENT_KEY = 'ems_cookie_consent';
 
-function getStoredConsent() {
+/**
+ * Read stored consent preferences.
+ * Returns { necessary: true, timestamp } or null if not yet consented.
+ */
+export function getStoredConsent() {
   try {
     const raw = safeGetItem(CONSENT_KEY);
     return raw ? JSON.parse(raw) : null;
@@ -24,8 +28,6 @@ function saveConsent(consent) {
 export default function CookieConsentBanner() {
   const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
-  const [preferences, setPreferences] = useState({ necessary: true, analytics: false, marketing: false });
 
   useEffect(() => {
     const stored = getStoredConsent();
@@ -36,24 +38,11 @@ export default function CookieConsentBanner() {
 
   if (!visible) return null;
 
-  const handleAcceptAll = () => {
-    const consent = { necessary: true, analytics: true, marketing: true };
+  const handleAccept = () => {
+    const consent = { necessary: true };
     saveConsent(consent);
     setVisible(false);
     window.dispatchEvent(new CustomEvent('cookie-consent-updated', { detail: consent }));
-  };
-
-  const handleRejectNonEssential = () => {
-    const consent = { necessary: true, analytics: false, marketing: false };
-    saveConsent(consent);
-    setVisible(false);
-    window.dispatchEvent(new CustomEvent('cookie-consent-updated', { detail: consent }));
-  };
-
-  const handleSavePreferences = () => {
-    saveConsent(preferences);
-    setVisible(false);
-    window.dispatchEvent(new CustomEvent('cookie-consent-updated', { detail: preferences }));
   };
 
   return (
@@ -67,86 +56,28 @@ export default function CookieConsentBanner() {
           <Cookie size={20} className="text-teal-600 dark:text-teal-400 flex-shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-sm text-gray-800 dark:text-zinc-200 font-medium mb-1">
-              We use cookies to improve your experience
+              We use cookies to keep you signed in
             </p>
             <p className="text-xs text-gray-500 dark:text-zinc-400">
-              We use essential cookies to keep SchoolSync running and optional analytics cookies to understand how it's used.
+              SchoolSync uses essential cookies for authentication and security. No tracking or marketing cookies are used.
               See our{' '}
               <Link to="/privacy" className="text-teal-600 hover:text-teal-700 dark:text-teal-400 underline">
                 Privacy Policy
               </Link>{' '}
               for details.
             </p>
-
-            {showDetails && (
-              <div className="mt-3 space-y-2">
-                <label className="flex items-center gap-2 cursor-not-allowed opacity-60">
-                  <input type="checkbox" checked disabled className="accent-teal-600" />
-                  <span className="text-xs text-gray-700 dark:text-zinc-300 font-medium">
-                    Necessary cookies <span className="text-gray-400">(always on)</span>
-                  </span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={preferences.analytics}
-                    onChange={(e) => setPreferences(p => ({ ...p, analytics: e.target.checked }))}
-                    className="accent-teal-600"
-                  />
-                  <span className="text-xs text-gray-700 dark:text-zinc-300">
-                    Analytics cookies <span className="text-gray-400">(Google Analytics, Mixpanel)</span>
-                  </span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={preferences.marketing}
-                    onChange={(e) => setPreferences(p => ({ ...p, marketing: e.target.checked }))}
-                    className="accent-teal-600"
-                  />
-                  <span className="text-xs text-gray-700 dark:text-zinc-300">
-                    Marketing cookies
-                  </span>
-                </label>
-              </div>
-            )}
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
-              onClick={() => setShowDetails(v => !v)}
-              className="flex items-center gap-1 text-xs text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 transition-colors"
+              onClick={handleAccept}
+              className="px-3 py-1.5 text-xs font-medium rounded-md bg-teal-600 text-white hover:bg-teal-700 transition-colors"
             >
-              Preferences
-              {showDetails ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+              Got it
             </button>
 
-            {showDetails ? (
-              <button
-                onClick={handleSavePreferences}
-                className="px-3 py-1.5 text-xs font-medium rounded-md bg-teal-600 text-white hover:bg-teal-700 transition-colors"
-              >
-                Save
-              </button>
-            ) : (
-              <>
-                <button
-                  onClick={handleRejectNonEssential}
-                  className="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
-                >
-                  Reject optional
-                </button>
-                <button
-                  onClick={handleAcceptAll}
-                  className="px-3 py-1.5 text-xs font-medium rounded-md bg-teal-600 text-white hover:bg-teal-700 transition-colors"
-                >
-                  Accept all
-                </button>
-              </>
-            )}
-
             <button
-              onClick={handleRejectNonEssential}
+              onClick={handleAccept}
               className="p-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded transition-colors text-gray-400"
               aria-label={t('aria.buttons.dismiss')}
             >

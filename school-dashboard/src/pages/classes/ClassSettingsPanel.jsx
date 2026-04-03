@@ -82,25 +82,26 @@ export default function ClassSettingsPanel({
     }
   };
 
-  const validateForm = () => {
+  const validateTag = () => {
     const newErrors = {};
-    
-    // Class tag validation (optional field, but if provided should be reasonable length)
     if (classTag && classTag.length > 50) {
       newErrors.classTag = "Class tag must be 50 characters or less";
     }
-    
-    // Subjects validation
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateSubjects = () => {
+    const newErrors = {};
     if (selectedSubjects.size === 0) {
       newErrors.subjects = "Please select at least one subject";
     }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleTagUpdate = async () => {
-    if (!validateForm()) {
+    if (!validateTag()) {
       return;
     }
 
@@ -136,7 +137,7 @@ export default function ClassSettingsPanel({
   };
 
   const handleSaveSubjects = async () => {
-    if (!validateForm()) {
+    if (!validateSubjects()) {
       return;
     }
 
@@ -163,7 +164,17 @@ export default function ClassSettingsPanel({
   };
 
   const handleSaveAll = async () => {
-    if (!validateForm()) {
+    const tagErrors = {};
+    if (classTag && classTag.length > 50) {
+      tagErrors.classTag = "Class tag must be 50 characters or less";
+    }
+    const subjectErrors = {};
+    if (selectedSubjects.size === 0) {
+      subjectErrors.subjects = "Please select at least one subject";
+    }
+    const allErrors = { ...tagErrors, ...subjectErrors };
+    setErrors(allErrors);
+    if (Object.keys(allErrors).length > 0) {
       return;
     }
 

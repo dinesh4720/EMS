@@ -501,7 +501,8 @@ function Dashboard() {
 
   // ── Role Detection ──
   const storedUser = getStoredUser();
-  const role = (storedUser?.role || "admin").toLowerCase();
+  const rawRole = storedUser?.role || "admin";
+  const role = (Array.isArray(rawRole) ? rawRole[0] || "admin" : String(rawRole)).toLowerCase();
 
   // ── Principal View: Academic Overview + Staff Attendance ──
   const principalStats = useMemo(() => {

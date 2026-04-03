@@ -26,8 +26,14 @@ import { useTranslation } from 'react-i18next';
 import { calculateGrade as calculateGradeUtil } from '../../utils/grading';
 
 // Simple cache for exam data
+// [AUDIT-539] Clear on logout to prevent tenant data leaking across sessions
 const examCache = new Map();
 const CACHE_DURATION = 60000; // 1 minute
+
+// Listen for logout events to clear module-level cache
+if (typeof window !== 'undefined') {
+  window.addEventListener('auth-session-cleared', () => examCache.clear());
+}
 
 const ResultsEntry = ({ standalone = false }) => {
   const { t } = useTranslation();
@@ -265,7 +271,7 @@ const ResultsEntry = ({ standalone = false }) => {
   }, [students, searchQuery]);
 
   // Calculate stats
-  const enteredCount = Object.values(results).filter(r => r.marksObtained > 0).length;
+  const enteredCount = Object.values(results).filter(r => r.marksObtained != null && r.marksObtained !== '').length;
   const passCount = Object.values(results).filter(r => r.marksObtained >= (exam?.passingMarks || 35)).length;
 
   if (!isValid) return null;

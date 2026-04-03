@@ -23,12 +23,21 @@ import { useTranslation } from 'react-i18next';
 import { formatShortDate } from '../../utils/dateFormatter';
 
 // Global cache for API responses - persists across component mounts
+// [AUDIT-539] Clear on logout to prevent tenant data leaking across sessions
 const dashboardCache = {
   data: null,
   timestamp: 0,
   duration: 60000, // 1 minute
   key: null
 };
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('auth-session-cleared', () => {
+    dashboardCache.data = null;
+    dashboardCache.timestamp = 0;
+    dashboardCache.key = null;
+  });
+}
 
 const PerformanceDashboard = ({ onCreateExam }) => {
   const { t } = useTranslation();

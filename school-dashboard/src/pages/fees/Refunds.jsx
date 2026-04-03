@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, Spinner } from "@heroui/react";
 import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
 import { Search, X, Plus, Download } from "lucide-react";
-import { feesApi } from "../../services/api";
+import { feesApi, studentsApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 
@@ -22,6 +22,11 @@ export default function Refunds() {
   const [savingRefund, setSavingRefund] = useState(false);
   // BUG-30: track total paid for the selected student to prevent over-refund
   const [studentTotalPaid, setStudentTotalPaid] = useState(null);
+
+  // [AUDIT-515] Student search picker state
+  const [studentSearch, setStudentSearch] = useState("");
+  const [studentResults, setStudentResults] = useState([]);
+  const [selectedStudent, setSelectedStudent] = useState(null);
 
   useEffect(() => {
     fetchRefunds();
@@ -88,17 +93,48 @@ export default function Refunds() {
       });
   }, [newRefundForm.studentId]);
 
+  // [AUDIT-515] Debounced student search
+  useEffect(() => {
+    if (!studentSearch || studentSearch.length < 2) {
+      setStudentResults([]);
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      try {
+        const data = await studentsApi.getAll({ search: studentSearch, limit: 20 });
+        setStudentResults(data.students || []);
+      } catch {
+        setStudentResults([]);
+      }
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [studentSearch]);
+
+  // [AUDIT-515] Handle student selection from search results
+  const handleSelectStudent = (student) => {
+    setSelectedStudent(student);
+    setStudentSearch("");
+    setStudentResults([]);
+    const classId = student.classId?._id || student.classId || "";
+    setNewRefundForm((f) => ({ ...f, studentId: student._id, classId: String(classId) }));
+  };
+
+  // [AUDIT-515] Clear student selection
+  const handleClearStudent = () => {
+    setSelectedStudent(null);
+    setStudentSearch("");
+    setStudentResults([]);
+    setNewRefundForm((f) => ({ ...f, studentId: "", classId: "" }));
+    setStudentTotalPaid(null);
+  };
+
   const handleCreateRefund = async () => {
     if (!newRefundForm.studentId || !newRefundForm.classId || !newRefundForm.amount || !newRefundForm.reason || !newRefundForm.refundMode) {
       toast.error(t('toast.error.pleaseFillAllRequiredFields'));
       return;
     }
-    if (!OBJECT_ID_REGEX.test(newRefundForm.studentId)) {
-      toast.error(t('toast.error.invalidStudentIdFormat'));
-      return;
-    }
-    if (!OBJECT_ID_REGEX.test(newRefundForm.classId)) {
-      toast.error(t('toast.error.invalidClassIdFormat'));
+    if (!selectedStudent) {
+      toast.error(t('toast.error.pleaseSelectAStudent', 'Please select a student'));
       return;
     }
     const parsedAmount = parseFloat(newRefundForm.amount);
@@ -120,6 +156,7 @@ export default function Refunds() {
       toast.success(t('toast.success.refundRequestCreated'));
       setNewRefundOpen(false);
       setNewRefundForm({ studentId: "", classId: "", amount: "", reason: "", refundMode: "cash", remarks: "" });
+      handleClearStudent();
       fetchRefunds();
     } catch (error) {
       toast.error(t('toast.error.failedToCreateRefund'));
@@ -335,28 +372,71 @@ export default function Refunds() {
       </div>
 
       {/* New Refund Modal */}
-      <Modal isOpen={newRefundOpen} onClose={() => setNewRefundOpen(false)} size="lg">
+      <Modal isOpen={newRefundOpen} onClose={() => { setNewRefundOpen(false); handleClearStudent(); }} size="lg">
         <ModalContent>
           {(onClose) => (
             <>
               <ModalHeader className="border-b border-gray-200 dark:border-zinc-800">{t('pages.newRefundRequest')}</ModalHeader>
               <ModalBody className="py-4 space-y-4">
-                <Input
-                  label={t('pages.studentId')}
-                  placeholder={t('pages.enterStudentId')}
-                  value={newRefundForm.studentId}
-                  onValueChange={(v) => setNewRefundForm({ ...newRefundForm, studentId: v })}
-                  variant="bordered"
-                  isRequired
-                />
-                <Input
-                  label={t('pages.classId')}
-                  placeholder={t('pages.enterClassId')}
-                  value={newRefundForm.classId}
-                  onValueChange={(v) => setNewRefundForm({ ...newRefundForm, classId: v })}
-                  variant="bordered"
-                  isRequired
-                />
+                {/* [AUDIT-515] Student search picker — replaces raw ObjectId inputs */}
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1 block">
+                    {t('pages.student', 'Student')} <span className="text-danger">*</span>
+                  </label>
+                  {selectedStudent ? (
+                    <div className="flex items-center gap-2 px-3 py-2 border border-default-200 rounded-lg bg-default-50 dark:bg-zinc-900">
+                      <div className="w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-medium text-primary-700 dark:text-primary-300">{selectedStudent.name?.charAt(0)}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{selectedStudent.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">
+                          {selectedStudent.admissionNo || selectedStudent.admissionId || ''} — Class {selectedStudent.classId?.name || ''}{selectedStudent.classId?.section ? ` ${selectedStudent.classId.section}` : ''}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleClearStudent}
+                        className="p-1 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded transition-colors"
+                      >
+                        <X size={14} className="text-gray-400" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <Input
+                        placeholder={t('pages.searchStudentsByNameOrAdmissionNo', 'Search by name or admission number...')}
+                        value={studentSearch}
+                        onValueChange={(v) => setStudentSearch(v)}
+                        variant="bordered"
+                        startContent={<Search size={14} className="text-gray-400" />}
+                        size="sm"
+                      />
+                      {studentResults.length > 0 && studentSearch && (
+                        <div className="absolute z-50 w-full border border-gray-200 dark:border-zinc-700 rounded-lg mt-1 max-h-48 overflow-y-auto bg-white dark:bg-zinc-900 shadow-lg">
+                          {studentResults.map((s) => (
+                            <button
+                              key={s._id}
+                              type="button"
+                              onClick={() => handleSelectStudent(s)}
+                              className="w-full text-left px-3 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors border-b border-gray-100 dark:border-zinc-800 last:border-b-0"
+                            >
+                              <span className="font-medium text-gray-900 dark:text-zinc-100">{s.name}</span>
+                              <span className="text-gray-500 dark:text-zinc-400 ml-2 text-xs">
+                                {s.admissionNo || s.admissionId || ''} — Class {s.classId?.name || ''}{s.classId?.section ? ` ${s.classId.section}` : ''}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {studentSearch.length >= 2 && studentResults.length === 0 && (
+                        <div className="absolute z-50 w-full border border-gray-200 dark:border-zinc-700 rounded-lg mt-1 bg-white dark:bg-zinc-900 shadow-lg px-3 py-3 text-sm text-gray-500 dark:text-zinc-400">
+                          {t('common.noResultsFound', 'No students found')}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <Input
                   type="number"
                   label="Amount (₹)"

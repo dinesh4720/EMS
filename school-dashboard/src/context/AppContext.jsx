@@ -299,6 +299,7 @@ function AppContextCore({ children }) {
     }
     if (message === "Unauthorized" || message === "Authentication required") {
       clearStoredUser();
+      setSessionVersion(v => v + 1);
       return;
     }
     setError(message);

@@ -662,7 +662,7 @@ export default function CBSEReportCardPage() {
           onClose={markEntryDisclosure.onClose}
           student={foundStudent}
           classId={foundStudent.classId}
-          academicYear={result?.student?.academicYear}
+          academicYear={result?.student?.academicYear || currentAcademicYear}
           term={term}
           onSaved={handleSearch}
         />

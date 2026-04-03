@@ -200,8 +200,10 @@ export default function Substitution() {
   };
 
   const getTeacherName = (teacherId) => {
-    const teacher = teachers.find(t => t.id === teacherId || t._id === teacherId);
-    return teacher ? teacher.name : 'Unknown';
+    if (!teacherId) return t('common.unknown', 'Unknown');
+    const tid = String(teacherId);
+    const teacher = teachers.find(tc => String(tc.id) === tid || String(tc._id) === tid);
+    return teacher ? teacher.name : t('common.unknown', 'Unknown');
   };
 
   // FIXED: Use String() comparison for ObjectId matching

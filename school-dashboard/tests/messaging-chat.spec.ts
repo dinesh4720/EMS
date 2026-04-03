@@ -704,17 +704,15 @@ test.describe('Messaging — Chat Full', () => {
     await page.goto('/messaging');
     await page.waitForLoadState('networkidle');
 
-    // Use the sidebar search (cross-conversation search triggers on 2+ chars)
+    // Sidebar search filters conversations by participant name (not message content)
     const searchInput = page.locator('input[placeholder*="Search conversations"]').first();
     if (await searchInput.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await searchInput.fill('exam schedule');
+      await searchInput.fill('Ananya');
       await page.waitForTimeout(1000); // Wait for debounced search (400ms + response)
 
       const bodyText = await page.textContent('body');
-      // Search results or filtered conversations should appear
-      expect(
-        bodyText?.includes('exam') || bodyText?.includes('Ananya'),
-      ).toBeTruthy();
+      // Conversation with Ananya Sharma should appear in filtered results
+      expect(bodyText?.includes('Ananya')).toBeTruthy();
     }
   });
 

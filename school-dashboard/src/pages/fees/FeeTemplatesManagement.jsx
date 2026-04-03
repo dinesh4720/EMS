@@ -49,7 +49,7 @@ export default function FeeTemplatesManagement() {
   const fetchTemplates = async () => {
     try {
       setLoading(true);
-      const data = await request('/fee-templates');
+      const data = await request(`/fee-templates?academicYear=${CURRENT_ACADEMIC_YEAR}`);
       setTemplates(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch templates:', error);

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useMemo, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { settingsApi, calendarEventsApi } from "../services/api";
 import { useLeaveTypes } from "./hooks/useLeaveTypes";
@@ -79,7 +79,8 @@ export function SettingsProvider({ children }) {
   );
 
   // [AUDIT-162] Guard against empty/invalid schoolStartTime which causes NaN dates
-  const isBeforeSchoolHours = useMemo(() => {
+  // [AUDIT-568] Convert to a function so it always checks current time (useMemo was stale)
+  const getIsBeforeSchoolHours = useCallback(() => {
     if (!schoolSettings.schoolStartTime || !schoolSettings.schoolStartTime.includes(':')) {
       return false; // No valid start time configured — assume school hours
     }
@@ -94,6 +95,17 @@ export function SettingsProvider({ children }) {
     schoolStart.setHours(startHour, startMin, 0, 0);
     return now < schoolStart;
   }, [schoolSettings.schoolStartTime]);
+
+  // Keep backward-compatible property that auto-refreshes every minute
+  const [isBeforeSchoolHours, setIsBeforeSchoolHours] = useState(() => getIsBeforeSchoolHours());
+
+  useEffect(() => {
+    setIsBeforeSchoolHours(getIsBeforeSchoolHours());
+    const interval = setInterval(() => {
+      setIsBeforeSchoolHours(getIsBeforeSchoolHours());
+    }, 60_000); // Re-check every minute
+    return () => clearInterval(interval);
+  }, [getIsBeforeSchoolHours]);
 
   // School Settings functions
   const updateSchoolSettings = async (updates) => {

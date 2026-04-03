@@ -7,7 +7,8 @@ export const INDIAN_STATES = [
   "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland",
   "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
   "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi", "Jammu & Kashmir", "Ladakh",
-  "Puducherry", "Chandigarh", "Andaman and Nicobar Islands"
+  "Puducherry", "Chandigarh", "Andaman and Nicobar Islands",
+  "Lakshadweep", "Dadra and Nagar Haveli and Daman and Diu"
 ];
 // Normalize state name from API to match predefined indianStates array
 export const normalizeStateName = (apiState) => {
@@ -89,7 +90,15 @@ export const normalizeStateName = (apiState) => {
     "Andaman and Nicobar": "Andaman and Nicobar Islands",
     "AN": "Andaman and Nicobar Islands",
     "Ladakh": "Ladakh",
-    "LA": "Ladakh"
+    "LA": "Ladakh",
+    "Lakshadweep": "Lakshadweep",
+    "LD": "Lakshadweep",
+    "DadraNagarHaveli": "Dadra and Nagar Haveli and Daman and Diu",
+    "DamanDiu": "Dadra and Nagar Haveli and Daman and Diu",
+    "Daman and Diu": "Dadra and Nagar Haveli and Daman and Diu",
+    "Dadra and Nagar Haveli": "Dadra and Nagar Haveli and Daman and Diu",
+    "DN": "Dadra and Nagar Haveli and Daman and Diu",
+    "DD": "Dadra and Nagar Haveli and Daman and Diu"
   };
 
   // Try exact match first (case-insensitive)

@@ -73,9 +73,7 @@ export default function TrashSettings() {
   const [stats, setStats] = useState({
     total: 0,
     expiringSoon: 0,
-    students: 0,
-    staff: 0,
-    classes: 0,
+    byType: {}, // dynamic: { Student: { count, expiringSoon }, ... }
   });
   const [loading, setLoading] = useState(true);
   const [selectedItems, setSelectedItems] = useState(new Set());
@@ -111,21 +109,16 @@ export default function TrashSettings() {
       setTotalPages(itemsData.pagination?.totalPages || 1);
       setHasMore(itemsData.pagination?.hasMore || false);
       
-      // Transform backend stats format to frontend format
-      // Backend returns: { Student: { count, expiringSoon }, Staff: {...} }
-      // Frontend expects: { total, expiringSoon, students, staff, classes }
+      // Transform backend stats format
+      // Backend returns: { Student: { count, expiringSoon }, Staff: {...}, ... }
       const transformedStats = statsData ? {
         total: itemsData.total || Object.values(statsData).reduce((sum, type) => sum + (type.count || 0), 0),
         expiringSoon: statsData.totalExpiring || Object.values(statsData).reduce((sum, type) => sum + (type.expiringSoon || 0), 0),
-        students: statsData.Student?.count || 0,
-        staff: statsData.Staff?.count || 0,
-        classes: statsData.Class?.count || 0,
+        byType: statsData || {},
       } : {
         total: 0,
         expiringSoon: 0,
-        students: 0,
-        staff: 0,
-        classes: 0,
+        byType: {},
       };
       setStats(transformedStats);
     } catch (error) {
@@ -153,12 +146,100 @@ export default function TrashSettings() {
     return "success";
   };
 
+  // Friendly display labels for entity types
+  const TYPE_LABELS = {
+    Student: 'Student',
+    Staff: 'Staff',
+    Class: 'Class',
+    Exam: 'Exam',
+    ExamSchedule: 'Exam Schedule',
+    Homework: 'Homework',
+    CBSEReportCard: 'CBSE Report Card',
+    CCEConfig: 'CCE Config',
+    FeeHead: 'Fee Head',
+    FeeTemplate: 'Fee Template',
+    FeeRefund: 'Fee Refund',
+    FeeRule: 'Fee Rule',
+    Announcement: 'Announcement',
+    Admission: 'Admission',
+    CallLog: 'Call Log',
+    Feedback: 'Feedback',
+    Appointment: 'Appointment',
+    GatePass: 'Gate Pass',
+    Visitor: 'Visitor',
+    Asset: 'Asset',
+    AssetCategory: 'Asset Category',
+    Vendor: 'Vendor',
+    MaintenanceLog: 'Maintenance Log',
+    ProcurementRequest: 'Procurement',
+    AssetAudit: 'Asset Audit',
+    Hostel: 'Hostel',
+    HostelRoom: 'Hostel Room',
+    TransportRoute: 'Transport Route',
+    Vehicle: 'Vehicle',
+    Book: 'Book',
+    IntakeForm: 'Intake Form',
+    FormAssignment: 'Form Assignment',
+    FormSubmission: 'Form Submission',
+    EmailCampaign: 'Email Campaign',
+    Coupon: 'Coupon',
+    Changelog: 'Changelog',
+    BulkCleanup: 'Bulk Cleanup',
+  };
+
+  // Grouped type options for the filter dropdown
+  const TYPE_GROUPS = [
+    { label: 'Core', types: ['Student', 'Staff', 'Class'] },
+    { label: 'Academic', types: ['Exam', 'ExamSchedule', 'Homework', 'CBSEReportCard', 'CCEConfig'] },
+    { label: 'Financial', types: ['FeeHead', 'FeeTemplate', 'FeeRefund', 'FeeRule'] },
+    { label: 'Operations', types: ['Announcement', 'GatePass', 'Visitor'] },
+    { label: 'Front Desk', types: ['Admission', 'CallLog', 'Feedback', 'Appointment'] },
+    { label: 'Inventory', types: ['Asset', 'AssetCategory', 'Vendor', 'MaintenanceLog', 'ProcurementRequest', 'AssetAudit'] },
+    { label: 'Facilities', types: ['Hostel', 'HostelRoom', 'TransportRoute', 'Vehicle', 'Book'] },
+    { label: 'Forms', types: ['IntakeForm', 'FormAssignment', 'FormSubmission'] },
+    { label: 'Other', types: ['EmailCampaign', 'Coupon', 'Changelog', 'BulkCleanup'] },
+  ];
+
   // Get type icon/color mapping
   const getTypeColor = (type) => {
     const colors = {
       Student: "primary",
       Staff: "secondary",
       Class: "success",
+      Exam: "warning",
+      ExamSchedule: "warning",
+      Homework: "warning",
+      CBSEReportCard: "warning",
+      CCEConfig: "warning",
+      FeeHead: "danger",
+      FeeTemplate: "danger",
+      FeeRefund: "danger",
+      FeeRule: "danger",
+      Announcement: "primary",
+      Admission: "secondary",
+      CallLog: "secondary",
+      Feedback: "secondary",
+      Appointment: "secondary",
+      GatePass: "secondary",
+      Visitor: "secondary",
+      Asset: "success",
+      AssetCategory: "success",
+      Vendor: "success",
+      MaintenanceLog: "success",
+      ProcurementRequest: "success",
+      AssetAudit: "success",
+      Hostel: "default",
+      HostelRoom: "default",
+      TransportRoute: "default",
+      Vehicle: "default",
+      Book: "default",
+      IntakeForm: "primary",
+      FormAssignment: "primary",
+      FormSubmission: "primary",
+      EmailCampaign: "warning",
+      Coupon: "danger",
+      Changelog: "default",
+      BulkCleanup: "default",
     };
     return colors[type] || "default";
   };
@@ -338,43 +419,31 @@ export default function TrashSettings() {
           </CardBody>
         </Card>
 
-        {/* Students */}
-        <Card className="shadow-sm border border-primary-200 rounded-lg bg-primary-50/50 dark:bg-primary-900/20">
-          <CardBody className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-primary-100 rounded-lg">
-                <span className="text-lg font-semibold text-primary-700 dark:text-primary-400">S</span>
-              </div>
-              <div>
-                <p className="text-xs text-primary-700 dark:text-primary-400 uppercase tracking-wider font-medium">
-                  Students
-                </p>
-                <p className="text-2xl font-semibold text-primary-700 dark:text-primary-400">
-                  {stats.students}
-                </p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* Staff */}
-        <Card className="shadow-sm border border-secondary-200 rounded-lg bg-secondary-50/50 dark:bg-secondary-900/20">
-          <CardBody className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-secondary-100 rounded-lg">
-                <span className="text-lg font-semibold text-secondary-700 dark:text-secondary-400">T</span>
-              </div>
-              <div>
-                <p className="text-xs text-secondary-700 dark:text-secondary-400 uppercase tracking-wider font-medium">
-                  Staff
-                </p>
-                <p className="text-2xl font-semibold text-secondary-700 dark:text-secondary-400">
-                  {stats.staff}
-                </p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
+        {/* Dynamic type breakdown — show top types with counts */}
+        {Object.entries(stats.byType)
+          .sort(([, a], [, b]) => (b.count || 0) - (a.count || 0))
+          .slice(0, 2)
+          .map(([typeName, typeStats]) => (
+            <Card key={typeName} className="shadow-sm border border-default-200 rounded-lg">
+              <CardBody className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-default-100 rounded-lg">
+                    <Chip size="sm" variant="flat" color={getTypeColor(typeName)} className="min-w-0">
+                      {(TYPE_LABELS[typeName] || typeName).charAt(0)}
+                    </Chip>
+                  </div>
+                  <div>
+                    <p className="text-xs text-default-500 uppercase tracking-wider font-medium">
+                      {TYPE_LABELS[typeName] || typeName}
+                    </p>
+                    <p className="text-2xl font-semibold text-default-900">
+                      {typeStats.count || 0}
+                    </p>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          ))}
       </div>
 
       {/* Filters Card */}
@@ -410,15 +479,14 @@ export default function TrashSettings() {
               <SelectItem key="all" value="all">
                 All Types
               </SelectItem>
-              <SelectItem key="Student" value="Student">
-                Students
-              </SelectItem>
-              <SelectItem key="Staff" value="Staff">
-                Staff
-              </SelectItem>
-              <SelectItem key="Class" value="Class">
-                Classes
-              </SelectItem>
+              {TYPE_GROUPS.flatMap((group) =>
+                group.types.map((type) => (
+                  <SelectItem key={type} value={type} textValue={TYPE_LABELS[type] || type}>
+                    <span className="text-xs text-default-400 mr-1">{group.label}:</span>
+                    {TYPE_LABELS[type] || type}
+                  </SelectItem>
+                ))
+              )}
             </Select>
           </div>
         </CardBody>
@@ -530,7 +598,7 @@ export default function TrashSettings() {
                         variant="flat"
                         color={getTypeColor(itemType)}
                       >
-                        {itemType}
+                        {TYPE_LABELS[itemType] || itemType}
                       </Chip>
                     </TableCell>
                     <TableCell>

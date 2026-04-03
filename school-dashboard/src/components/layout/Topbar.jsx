@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Search, Command, ChevronRight, MessageCircle, Bell, Globe, Check } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -97,7 +97,7 @@ function Topbar({ isSidebarOpen }) {
         };
     }, [location.pathname]);
 
-    const getBreadcrumbs = () => {
+    const breadcrumbs = useMemo(() => {
         const path = location.pathname;
         const parts = path.split("/").filter(Boolean);
 
@@ -122,11 +122,11 @@ function Topbar({ isSidebarOpen }) {
         return parts.map((part, index) => {
             const currentPath = `/${parts.slice(0, index + 1).join("/")}`;
             let label = pathMap[part] || part.charAt(0).toUpperCase() + part.slice(1);
-            
+
             // If this looks like an ObjectId or MongoDB ID, try to resolve it to a name
             if (isObjectId(part) || /^[a-f\d]{20,}$/i.test(part)) {
                 const prevPart = parts[index - 1];
-                
+
                 // Check if it's a staff ID
                 if (prevPart === 'staffs' && staff) {
                     const staffMember = staff.find(s => s.id === part || s._id === part);
@@ -145,15 +145,13 @@ function Topbar({ isSidebarOpen }) {
                     label = `...${part.slice(-8)}`;
                 }
             }
-            
+
             return {
                 label,
                 path: currentPath
             };
         });
-    };
-
-    const breadcrumbs = getBreadcrumbs();
+    }, [location.pathname, staff, resolvedStudentLabel]);
 
     return (
         <header

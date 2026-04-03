@@ -9,7 +9,8 @@ import { useTranslation } from 'react-i18next';
 
 function computeNextYear(current) {
   if (!current || typeof current !== 'string') return '';
-  const match = current.match(/^(\d{4})-(\d{2})$/);
+  // Support both YYYY-YY (e.g. 2025-26) and YYYY-YYYY (e.g. 2025-2026)
+  const match = current.match(/^(\d{4})-(\d{2,4})$/);
   if (!match) return '';
   const start = parseInt(match[1], 10);
   return `${start + 1}-${String((start + 2) % 100).padStart(2, '0')}`;

@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
+const monorepoRoot = path.resolve(__dirname, '..');
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
@@ -16,6 +18,8 @@ export default defineConfig({
       ignored: ['**/playwright-report/**', '**/test-results/**'],
     },
     fs: {
+      // Allow Vite to serve files from the monorepo root (hoisted node_modules)
+      allow: [monorepoRoot],
       // Prevent Vite from serving/processing Playwright artifacts
       deny: ['playwright-report', 'test-results'],
     },
@@ -31,6 +35,9 @@ export default defineConfig({
       'react',
       'react-dom',
       'react-router-dom',
+      'three',
+      '@react-three/fiber',
+      '@react-three/drei',
     ],
     force: false, // Set to true if issues persist
   },

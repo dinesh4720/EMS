@@ -53,9 +53,16 @@ export default function InstitutionSettings() {
 
   const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
+  const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+
   const handleFileUpload = (field, event) => {
     const file = event.target.files[0];
     if (file) {
+      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+        toast.error(t('toast.error.invalidFileType', 'Only image files (JPEG, PNG, GIF, WebP, SVG) are allowed'));
+        event.target.value = null;
+        return;
+      }
       if (file.size > MAX_IMAGE_SIZE) {
         toast.error(t('toast.error.fileTooLarge', 'File size must be less than 5MB'));
         event.target.value = null;
@@ -129,7 +136,7 @@ export default function InstitutionSettings() {
                   <Input
                     label={t('pages.institutionName')}
                     value={localSettings.name}
-                    onValueChange={(v) => updateLocalSettings({ ...localSettings, name: v })}
+                    onValueChange={(v) => updateLocalSettings(prev => ({ ...prev, name: v }))}
                     variant="bordered"
                     labelPlacement="outside"
                     classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200" }}

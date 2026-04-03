@@ -144,6 +144,7 @@ export const AuthProvider = ({ children }) => {
       const timeoutId = setTimeout(() => controller.abort(), 5000);
       await fetch(`${API_URL}/auth/logout`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         signal: controller.signal,
       });
