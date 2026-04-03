@@ -14,7 +14,7 @@ export const PermissionProvider = ({ children }) => {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      fetchUserPermissions();
+      fetchUserPermissions(user.id);
     } else {
       setPermissions([]);
       setLoading(false);
@@ -25,11 +25,14 @@ export const PermissionProvider = ({ children }) => {
   // server confirms the role (transitions from false -> true).
   }, [isAuthenticated, user?.id, user?._roleVerified]);
 
-  const fetchUserPermissions = async () => {
+  // [AUDIT-563] Accept userId as parameter to avoid stale closure over user object
+  const fetchUserPermissions = async (userId) => {
+    const id = userId || user?.id;
+    if (!id) return;
     try {
       setLoading(true);
 
-      const data = await request(`/permissions/user/${user.id}`);
+      const data = await request(`/permissions/user/${id}`);
       const apiPermissions = data.permissions || [];
 
       // If API returns empty or incomplete permissions, merge with role defaults

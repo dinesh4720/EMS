@@ -85,6 +85,7 @@ export function useStudentPayment(studentId, {
         amount: paymentAmount,
         feeHeadPayments,
         paymentMode: paymentForm.paymentMode,
+        paymentDate: paymentForm.date,
         academicYear: currentAcademicYear,
       });
 

@@ -68,6 +68,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
             motherName: student.parents?.find(p => p.relationship?.toLowerCase() === 'mother')?.name || "",
             fatherName: student.parents?.find(p => p.relationship?.toLowerCase() === 'father')?.name || student.parentName || "",
             dob: student.dob || "",
+            dobInWords: student.dob ? new Date(student.dob).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : "",
             admissionClass: student.admissionClass || "I",
             standardLeaving: student.class || "",
             dateOfAdmission: student.admissionDate || "",

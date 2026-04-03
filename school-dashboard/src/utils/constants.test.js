@@ -160,9 +160,10 @@ describe('API_STATUS', () => {
 });
 
 describe('FEE_STATUS', () => {
-  it('has PAID, PENDING, and OVERDUE', () => {
+  it('has PAID, PENDING, PARTIAL, and OVERDUE', () => {
     expect(FEE_STATUS.PAID).toBe('paid');
     expect(FEE_STATUS.PENDING).toBe('pending');
+    expect(FEE_STATUS.PARTIAL).toBe('partial');
     expect(FEE_STATUS.OVERDUE).toBe('overdue');
   });
 });

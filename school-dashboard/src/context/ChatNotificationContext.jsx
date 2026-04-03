@@ -103,6 +103,9 @@ export function ChatNotificationProvider({ children }) {
     return () => {
       isSubscribed = false;
       if (cleanup) cleanup();
+      // [AUDIT-536] Disconnect socket on unmount to prevent leaks after logout
+      socketService.disconnect();
+      setIsConnected(false);
     };
   }, [isAuthenticated, user?.id]); // Removed location.pathname from dependencies
 

@@ -36,7 +36,9 @@ function SalaryComponents() {
     onClose();
   };
 
+  // [AUDIT-557] Added confirmation before removing salary components
   const handleRemove = (type, id) => {
+    if (!window.confirm('Are you sure you want to remove this salary component? This cannot be undone.')) return;
     updateSalarySettings(type, "remove", { id });
   };
 

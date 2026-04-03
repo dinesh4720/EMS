@@ -1,7 +1,7 @@
 import { request } from './core.js';
 
 export const classesApi = {
-  getAll: (skipCache = false) => request('/classes', { skipCache }),
+  getAll: () => request('/classes'),
   getPublic: () => request('/classes/public'),
   getById: (id) => request(`/classes/${id}`),
   create: (data) => request('/classes', { method: 'POST', body: JSON.stringify(data) }),

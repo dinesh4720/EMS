@@ -41,7 +41,7 @@ const CameraCaptureModal = ({ isOpen, onClose, onPhotoCaptured, title, descripti
     }
     // Reset input so same file can be selected again
     e.target.value = '';
-  }, []);
+  }, [openEditor]);
 
   const handleOpenCamera = useCallback(() => {
     setMode('camera');
@@ -51,7 +51,7 @@ const CameraCaptureModal = ({ isOpen, onClose, onPhotoCaptured, title, descripti
     setCapturedFile(file);
     setMode(null); // Reset mode
     openEditor(file);
-  }, []);
+  }, [openEditor]);
 
   const openEditor = useCallback((file) => {
     const reader = new FileReader();
@@ -61,6 +61,14 @@ const CameraCaptureModal = ({ isOpen, onClose, onPhotoCaptured, title, descripti
     };
     reader.readAsDataURL(file);
   }, []);
+
+  const handleClose = useCallback(() => {
+    setMode(null);
+    setCapturedFile(null);
+    setEditorImage(null);
+    setIsEditorOpen(false);
+    onClose();
+  }, [onClose]);
 
   const handleEditorSave = useCallback((croppedImage) => {
     // Convert the cropped image (data URL) back to a File object
@@ -74,15 +82,7 @@ const CameraCaptureModal = ({ isOpen, onClose, onPhotoCaptured, title, descripti
       .catch(err => {
         console.error("Error processing cropped image:", err);
       });
-  }, [onPhotoCaptured]);
-
-  const handleClose = useCallback(() => {
-    setMode(null);
-    setCapturedFile(null);
-    setEditorImage(null);
-    setIsEditorOpen(false);
-    onClose();
-  }, [onClose]);
+  }, [onPhotoCaptured, handleClose]);
 
   const handleBack = useCallback(() => {
     setMode(null);

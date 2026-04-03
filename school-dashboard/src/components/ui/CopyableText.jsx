@@ -14,10 +14,10 @@ export default function CopyableText({ text, children, className = "" }) {
         try {
             await navigator.clipboard.writeText(text);
             setCopied(true);
-            toast.success("Copied to clipboard", { duration: 1500 });
+            toast.success(t('common:toast.copiedToClipboard', 'Copied to clipboard'), { duration: 1500 });
             setTimeout(() => setCopied(false), 2000);
         } catch (err) {
-            toast.error("Failed to copy");
+            toast.error(t('common:toast.failedToCopy', 'Failed to copy'));
         }
     };
 

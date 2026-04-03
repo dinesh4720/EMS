@@ -2,9 +2,9 @@ import { useState, useMemo } from "react";
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Button, Avatar, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Select, SelectItem, User
+  Select, SelectItem, User, Input
 } from "@heroui/react";
-import { Search, X, AlertCircle } from "lucide-react";
+import { Search, AlertCircle, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
 import { usePermissions } from "../../context/PermissionContext";
@@ -87,32 +87,39 @@ export default function BulkClassTeacherAssignment() {
   };
 
   const handleSaveAssignment = async () => {
+    const { targetClass, selectedTeacherId } = modal;
+    const teacherIdToSet = selectedTeacherId || null;
+
+    // Prepare teacher info for optimistic update
+    let teacherInfo = { name: null, picture: null };
+    if (teacherIdToSet) {
+      const teacher = teachers.find(tc => String(tc.id || tc._id) === String(teacherIdToSet));
+      if (teacher) teacherInfo = { name: teacher.name, picture: teacher.picture };
+    }
+
+    // Save previous state for rollback
+    const prevState = {
+      classTeacherId: targetClass.classTeacherId,
+      teacher: targetClass.teacher,
+      teacherPhoto: targetClass.teacherPhoto
+    };
+
+    // Optimistic update — close modal and update UI immediately
+    updateClassLocal(targetClass.id, {
+      classTeacherId: teacherIdToSet,
+      teacher: teacherInfo.name,
+      teacherPhoto: teacherInfo.picture
+    });
+    handleClose();
+
     try {
       setIsProcessing(true);
-      const { targetClass, selectedTeacherId } = modal;
-
-      const teacherIdToSet = selectedTeacherId || null;
-
       await classesApi.updateClassTeacher(targetClass.id, teacherIdToSet);
-
-      let teacherInfo = { name: null, picture: null };
-      if (teacherIdToSet) {
-        const t = teachers.find(t => String(t.id || t._id) === String(teacherIdToSet));
-        if (t) {
-          teacherInfo = { name: t.name, picture: t.picture };
-        }
-      }
-
-      updateClassLocal(targetClass.id, {
-        classTeacherId: teacherIdToSet,
-        teacher: teacherInfo.name,
-        teacherPhoto: teacherInfo.picture
-      });
-
       toast.success(t('toast.success.classTeacherUpdated', 'Class teacher updated for {{class}}', { class: `${targetClass.name}-${targetClass.section}` }));
       if (refetch) await refetch();
-      handleClose();
     } catch (error) {
+      // Rollback on failure
+      updateClassLocal(targetClass.id, prevState);
       console.error('Error executing assignment:', error);
       toast.error(error.message || t('toast.error.failedToUpdateAssignment', 'Failed to update assignment'));
     } finally {
@@ -125,17 +132,29 @@ export default function BulkClassTeacherAssignment() {
       toast.error(t('toast.error.youDoNotHavePermissionToEditClassAssignments'));
       return;
     }
+
+    // Save previous state for rollback
+    const prevState = {
+      classTeacherId: cls.classTeacherId,
+      teacher: cls.teacher,
+      teacherPhoto: cls.teacherPhoto
+    };
+
+    // Optimistic update
+    updateClassLocal(cls.id, {
+      classTeacherId: null,
+      teacher: null,
+      teacherPhoto: null
+    });
+
     try {
       setIsProcessing(true);
       await classesApi.updateClassTeacher(cls.id, null);
-      updateClassLocal(cls.id, {
-        classTeacherId: null,
-        teacher: null,
-        teacherPhoto: null
-      });
       toast.success(t('toast.success.classTeacherRemoved', 'Removed class teacher from {{class}}', { class: `${cls.name}-${cls.section}` }));
       if (refetch) await refetch();
     } catch (error) {
+      // Rollback on failure
+      updateClassLocal(cls.id, prevState);
       console.error('Error unassigning teacher:', error);
       toast.error(error.message || t('toast.error.failedToUnassignTeacher', 'Failed to unassign teacher'));
     } finally {
@@ -159,21 +178,20 @@ export default function BulkClassTeacherAssignment() {
           </Chip>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:max-w-[350px] px-3 py-2 bg-default-100 rounded-lg border border-default-200 focus-within:border-primary transition-all">
-          <Search size={16} className="text-default-400" />
-          <input
-            type="search"
-            placeholder={t('pages.searchClassesOrTeachers')}
-            className="flex-1 bg-transparent outline-none text-sm"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-default-200 rounded">
-              <X size={14} className="text-default-400" />
-            </button>
-          )}
-        </div>
+        <Input
+          placeholder={t('pages.searchClassesOrTeachers')}
+          size="sm"
+          startContent={<Search size={16} />}
+          value={searchQuery}
+          onValueChange={setSearchQuery}
+          className="w-full sm:max-w-[350px]"
+          variant="flat"
+          isClearable
+          onClear={() => setSearchQuery("")}
+          classNames={{
+            inputWrapper: "bg-default-100 data-[hover=true]:bg-default-200 group-data-[focus=true]:bg-default-100",
+          }}
+        />
       </div>
 
       <Table

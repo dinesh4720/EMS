@@ -180,7 +180,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
   }, [students, searchQuery]);
 
   // Calculate stats
-  const enteredCount = Object.values(results).filter(r => r.marksObtained > 0).length;
+  const enteredCount = Object.values(results).filter(r => r.marksObtained != null && r.marksObtained !== '').length;
   const passCount = Object.values(results).filter(r => r.marksObtained >= (exam?.passingMarks || 35)).length;
 
   if (loading) {

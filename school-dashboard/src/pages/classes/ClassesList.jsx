@@ -1,54 +1,47 @@
 import { safeGetItem, safeSetItem } from '../../utils/safeStorage';
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import logger from "../../utils/logger";
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-  Chip, Button, Progress, Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Checkbox, Select, SelectItem, Input
+  Spinner
 } from "@heroui/react";
 import { useNavigate } from "react-router-dom";
-import { Eye, MessageSquare, Search, Filter, ArrowUpDown, X, MoreVertical, Settings, UserPlus, ChevronRight, ChevronDown, ChevronUp, RefreshCw, CheckCircle2, Clock, BookOpen, AlertCircle, Pencil, Trash2 } from "lucide-react";
-import { useApp } from "../../context/AppContext";
-import { Link } from "react-router-dom";
-import toast from "react-hot-toast";
-import PhotoAvatar from "../../components/PhotoAvatar";
+import { Search, Settings, BookOpen, X } from "lucide-react";
 import ClassTeacherAssignmentModal from "./components/ClassTeacherAssignmentModal";
 import { useTranslation } from 'react-i18next';
 
+import { ITEMS_PER_LOAD, AVAILABLE_COLUMNS } from './classesListConstants';
+import { useClassesListData } from './useClassesListData';
+import { EditColumnsModal } from './components/EditColumnsModal';
+import { EditClassModal } from './components/EditClassModal';
+import { DeleteClassModal } from './components/DeleteClassModal';
+import { renderClassParentRow } from './components/ClassParentRow';
+import { renderClassChildRow } from './components/ClassChildRow';
 
-const ITEMS_PER_LOAD = 10;
-const SEARCH_DEBOUNCE_MS = 300;
-const CLASS_DETAILS_BATCH_SIZE = 1;
-const CLASS_DETAILS_BATCH_DELAY_MS = 300;
-
-const hasOwnKey = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
-
-// Available columns configuration
-const AVAILABLE_COLUMNS = [
-  { key: 'class', labelKey: 'classes.columnClassDetails', label: 'CLASS DETAILS', width: 180, visible: true, fixed: true },
-  { key: 'teacher', labelKey: 'classes.columnClassTeacher', label: 'CLASS TEACHER', width: 200, visible: true },
-  { key: 'subjects', labelKey: 'classes.columnSubjects', label: 'SUBJECTS', width: 100, visible: true },
-  { key: 'strength', labelKey: 'classes.columnStrength', label: 'STRENGTH', width: 120, visible: true },
-  { key: 'academic', labelKey: 'classes.columnAcademicPerformance', label: 'ACADEMIC PERFORMANCE', width: 160, visible: true },
-  { key: 'attendance', labelKey: 'classes.columnAvgAttendance', label: 'AVG ATTENDANCE', width: 150, visible: true },
-  { key: 'status', labelKey: 'classes.columnFeeStatus', label: 'FEE STATUS', width: 140, visible: true },
-  { key: 'actions', labelKey: 'classes.columnActions', label: 'ACTIONS', width: 80, visible: true, fixed: true },
-];
 
 export default function ClassesList() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { classesWithTeachers: classesData, feeDefaulters, classesEnhancedApi, classesApi, staff, updateClassLocal, refetch } = useApp();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
-  const [isLoading, setIsLoading] = useState(false);
-  const loaderRef = useRef(null);
-  const [sortDescriptor, setSortDescriptor] = useState({ column: "name", direction: "ascending" });
-  const [selectedKeys, setSelectedKeys] = useState(new Set([]));
 
-  // Expanded classes state
-  const [expandedClasses, setExpandedClasses] = useState(new Set([]));
+  // All data logic lives in the custom hook
+  const {
+    searchQuery,
+    setSearchQuery,
+    sortDescriptor,
+    setSortDescriptor,
+    visibleItems,
+    hasMore,
+    isLoading,
+    loaderRef,
+    expandedClasses,
+    toggleClassExpansion,
+    feeDefaulters,
+    attendanceData,
+    academicPerformance,
+    classSettingsMap,
+  } = useClassesListData();
+
+  const [selectedKeys, setSelectedKeys] = useState(new Set([]));
 
   // Column visibility state
   const [visibleColumns, setVisibleColumns] = useState(() => {
@@ -57,366 +50,15 @@ export default function ClassesList() {
   });
   const [showColumnModal, setShowColumnModal] = useState(false);
 
-  // Academic performance data state
-  const [academicPerformance, setAcademicPerformance] = useState({});
-
-  // Attendance data state
-  const [attendanceData, setAttendanceData] = useState({});
-
-  // Class settings data state (for tags)
-  const [classSettingsMap, setClassSettingsMap] = useState({});
-
   // Assign teacher modal state
   const [assignTeacherModal, setAssignTeacherModal] = useState(false);
   const [selectedClassForTeacher, setSelectedClassForTeacher] = useState(null);
 
-  const classDetailsRequestStateRef = useRef(new Map());
-
-  // Debounced search effect
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, SEARCH_DEBOUNCE_MS);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  // Extract class number from name
-  const extractClassNum = (name) => {
-    const match = name?.match(/(\d+)/);
-    return match ? parseInt(match[1], 10) : 0;
-  };
-
-  // Group classes by class number
-  const groupedClasses = useMemo(() => {
-    try {
-      const groups = {};
-
-      classesData.forEach((cls) => {
-        // Skip null/undefined classes
-        if (!cls || !cls.name) return;
-
-        const classNum = extractClassNum(cls.name);
-        if (!groups[classNum]) {
-          groups[classNum] = {
-            classNum,
-            className: cls.name,
-            sections: [],
-            totalStudents: 0,
-            totalPendingFees: 0,
-            averageAttendance: 0,
-            averageAcademic: 0,
-          };
-        }
-        groups[classNum].sections.push(cls);
-
-        // Aggregate data
-        groups[classNum].totalStudents += cls.studentCount || cls.strength || 0;
-
-        const classKey = `${cls.name}-${cls.section}`;
-        const pendingCount = feeDefaulters?.filter(s => s?.class === classKey)?.length || 0;
-        groups[classNum].totalPendingFees += pendingCount;
-
-        // For average calculations, we'll collect values - use real attendance data if available
-        const attendance = cls.averageAttendance || cls.attendance || null;
-        const academic = cls.averageAcademicPerformance || 0;
-        groups[classNum].averageAttendance = (groups[classNum].averageAttendance || 0) + attendance;
-        groups[classNum].averageAcademic = (groups[classNum].averageAcademic || 0) + academic;
-      });
-
-      // Calculate averages
-      Object.values(groups).forEach(group => {
-        const sectionCount = group.sections?.length || 0;
-        group.averageAttendance = sectionCount > 0 ? Math.round((group.averageAttendance || 0) / sectionCount) : 0;
-        group.averageAcademic = sectionCount > 0 ? Math.round((group.averageAcademic || 0) / sectionCount) : 0;
-      });
-
-      const sorted = Object.values(groups);
-      // Apply sorting based on sortDescriptor
-      sorted.sort((a, b) => {
-        let cmp = 0;
-        switch (sortDescriptor.column) {
-          case 'class':
-          case 'name':
-            cmp = a.classNum - b.classNum;
-            break;
-          case 'strength':
-            cmp = (a.totalStudents || 0) - (b.totalStudents || 0);
-            break;
-          case 'academic':
-            cmp = (a.averageAcademic || 0) - (b.averageAcademic || 0);
-            break;
-          case 'attendance':
-            cmp = (a.averageAttendance || 0) - (b.averageAttendance || 0);
-            break;
-          case 'status':
-            cmp = (a.totalPendingFees || 0) - (b.totalPendingFees || 0);
-            break;
-          default:
-            cmp = a.classNum - b.classNum;
-        }
-        return sortDescriptor.direction === 'descending' ? -cmp : cmp;
-      });
-      return sorted;
-    } catch (error) {
-      logger.error('Error grouping classes:', error);
-      return [];
-    }
-  }, [classesData, feeDefaulters, sortDescriptor]);
-
-  // Filter grouped classes
-  const filteredGroupedClasses = useMemo(() => {
-    try {
-      if (!debouncedSearchQuery) return groupedClasses || [];
-
-      const search = debouncedSearchQuery.toLowerCase();
-      const keywords = search.split(' ').filter(k => k.length > 0);
-
-      return (groupedClasses || []).filter((group) => {
-        if (!group || !group.sections) return false;
-
-        // Check if any section in this group matches the search
-        return group.sections.some((cls) => {
-          if (!cls) return false;
-
-          const searchableText = [
-            cls.name,
-            cls.section,
-            cls.teacher || '',
-            `${cls.name} ${cls.section}`,
-            `${cls.name}${cls.section}`
-          ].join(' ').toLowerCase();
-
-          return keywords.every(keyword => searchableText.includes(keyword));
-        });
-      });
-    } catch (error) {
-      logger.error('Error filtering grouped classes:', error);
-      return groupedClasses || [];
-    }
-  }, [groupedClasses, debouncedSearchQuery]);
-
-  // Flatten for display - include parent rows and expanded children
-  const visibleItems = useMemo(() => {
-    try {
-      const items = [];
-      let count = 0;
-
-      if (!filteredGroupedClasses || !Array.isArray(filteredGroupedClasses)) {
-        console.warn('filteredGroupedClasses is not an array:', filteredGroupedClasses);
-        return [];
-      }
-
-      for (const group of filteredGroupedClasses) {
-        // Skip null/undefined groups
-        if (!group || typeof group !== 'object') {
-          console.warn('Skipping invalid group:', group);
-          continue;
-        }
-
-        if (count >= visibleCount) break;
-
-        // Add parent row with required 'type' property
-        items.push({ type: 'parent', data: group });
-        count++;
-
-        // Add child rows if expanded
-        if (expandedClasses.has(group.classNum) && group.sections && Array.isArray(group.sections)) {
-          for (const section of group.sections) {
-            // Skip null/undefined sections
-            if (!section || typeof section !== 'object') {
-              console.warn('Skipping invalid section:', section);
-              continue;
-            }
-
-            if (count >= visibleCount) break;
-            // Add child row with required 'type' property
-            items.push({ type: 'child', data: section });
-            count++;
-          }
-        }
-      }
-
-      return items;
-    } catch (error) {
-      logger.error('Error in visibleItems useMemo:', error);
-      return [];
-    }
-  }, [filteredGroupedClasses, expandedClasses, visibleCount]);
-
-  const hasMore = useMemo(() => {
-    try {
-      if (!filteredGroupedClasses || !groupedClasses) return false;
-
-      const totalItems = (filteredGroupedClasses.length || 0) +
-        Array.from(expandedClasses).reduce((sum, classNum) => {
-          const group = groupedClasses.find(g => g && g.classNum === classNum);
-          return sum + (group?.sections?.length || 0);
-        }, 0);
-
-      return visibleItems.length < totalItems;
-    } catch (error) {
-      logger.error('Error calculating hasMore:', error);
-      return false;
-    }
-  }, [visibleItems.length, filteredGroupedClasses, groupedClasses, expandedClasses]);
-
-  // Toggle class expansion
-  const toggleClassExpansion = (classNum) => {
-    setExpandedClasses(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(classNum)) {
-        newSet.delete(classNum);
-      } else {
-        newSet.add(classNum);
-      }
-      return newSet;
-    });
-  };
-
-  const visibleChildClassIds = useMemo(() => (
-    visibleItems
-      .filter((item) => item?.type === 'child' && item?.data?.id)
-      .map((item) => String(item.data.id))
-  ), [visibleItems]);
-
-  // Only fetch detail data for section rows the user can actually see.
-  useEffect(() => {
-    if (visibleChildClassIds.length === 0) {
-      return undefined;
-    }
-
-    let cancelled = false;
-
-    const loadVisibleClassDetails = async () => {
-      const pendingIds = visibleChildClassIds.filter((classId) => {
-        const requestState = classDetailsRequestStateRef.current.get(classId);
-        const hasAcademic = hasOwnKey(academicPerformance, classId);
-        const hasAttendance = hasOwnKey(attendanceData, classId);
-        const hasSettings = hasOwnKey(classSettingsMap, classId);
-
-        if (hasAcademic && hasAttendance && hasSettings) {
-          classDetailsRequestStateRef.current.set(classId, 'loaded');
-          return false;
-        }
-
-        return requestState !== 'loading';
-      });
-
-      for (let i = 0; i < pendingIds.length; i += CLASS_DETAILS_BATCH_SIZE) {
-        const batch = pendingIds.slice(i, i + CLASS_DETAILS_BATCH_SIZE);
-
-        await Promise.all(batch.map(async (classId) => {
-          const cls = classesData.find((classItem) => String(classItem?.id) === classId);
-
-          if (!cls) {
-            classDetailsRequestStateRef.current.delete(classId);
-            return;
-          }
-
-          classDetailsRequestStateRef.current.set(classId, 'loading');
-
-          const needsAcademic = !hasOwnKey(academicPerformance, classId);
-          const needsAttendance = !hasOwnKey(attendanceData, classId);
-          const needsSettings = !hasOwnKey(classSettingsMap, classId);
-
-          const [academic, attendance, settings] = await Promise.all([
-            needsAcademic
-              ? classesEnhancedApi.getAcademicPerformance(classId).catch((error) => {
-                  logger.error(`Error loading academic performance for class ${classId}:`, error);
-                  return { classAverage: cls.averageAcademicPerformance || 0 };
-                })
-              : Promise.resolve(academicPerformance[classId]),
-            needsAttendance
-              ? classesEnhancedApi.getAttendanceAnalytics(classId, 'month').catch((error) => {
-                  logger.error(`Error loading attendance analytics for class ${classId}:`, error);
-                  return null;
-                })
-              : Promise.resolve(attendanceData[classId]),
-            needsSettings
-              ? classesApi.getSettings(classId).catch((error) => {
-                  logger.error(`Error loading settings for class ${classId}:`, error);
-                  return null;
-                })
-              : Promise.resolve(classSettingsMap[classId]),
-          ]);
-
-          if (cancelled) {
-            return;
-          }
-
-          if (needsAcademic) {
-            setAcademicPerformance((prev) => (
-              hasOwnKey(prev, classId) ? prev : { ...prev, [classId]: academic }
-            ));
-          }
-
-          if (needsAttendance) {
-            setAttendanceData((prev) => (
-              hasOwnKey(prev, classId) ? prev : { ...prev, [classId]: attendance }
-            ));
-          }
-
-          if (needsSettings) {
-            setClassSettingsMap((prev) => (
-              hasOwnKey(prev, classId) ? prev : { ...prev, [classId]: settings }
-            ));
-          }
-
-          classDetailsRequestStateRef.current.set(classId, 'loaded');
-        }));
-
-        if (cancelled) {
-          return;
-        }
-
-        if (i + CLASS_DETAILS_BATCH_SIZE < pendingIds.length) {
-          await new Promise((resolve) => setTimeout(resolve, CLASS_DETAILS_BATCH_DELAY_MS));
-        }
-      }
-    };
-
-    loadVisibleClassDetails();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    academicPerformance,
-    attendanceData,
-    classSettingsMap,
-    classesApi,
-    classesData,
-    classesEnhancedApi,
-    visibleChildClassIds,
-  ]);
-
-  // Reset visible count when filters change
-  useEffect(() => {
-    setVisibleCount(ITEMS_PER_LOAD);
-  }, [debouncedSearchQuery, sortDescriptor]);
-
-  // Intersection Observer for lazy loading
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoading) {
-          setIsLoading(true);
-          setTimeout(() => {
-            setVisibleCount(prev => prev + ITEMS_PER_LOAD);
-            setIsLoading(false);
-          }, 300);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, isLoading]);
+  // Edit / Delete class state
+  const [editClassModal, setEditClassModal] = useState(false);
+  const [deleteClassModal, setDeleteClassModal] = useState(false);
+  const [selectedClassForEdit, setSelectedClassForEdit] = useState(null);
+  const [selectedClassForDelete, setSelectedClassForDelete] = useState(null);
 
   // Save column visibility to localStorage
   useEffect(() => {
@@ -440,12 +82,12 @@ export default function ClassesList() {
         return prev.map(col => {
           if (!col) {
             const found = AVAILABLE_COLUMNS.find(c => c.key === key);
-            return found || AVAILABLE_COLUMNS[0]; // Never return null
+            return found || AVAILABLE_COLUMNS[0];
           }
           if (col.fixed) return col;
           if (col.key === key) return { ...col, visible: !col.visible };
           return col;
-        }).filter(col => col != null); // Remove any null columns
+        }).filter(col => col != null);
       } catch (error) {
         logger.error('Error toggling column:', error);
         return AVAILABLE_COLUMNS.map(col => ({ ...col }));
@@ -460,7 +102,6 @@ export default function ClassesList() {
         return AVAILABLE_COLUMNS.filter(col => col && typeof col === 'object' && col.visible);
       }
       const filtered = visibleColumns.filter(col => col && typeof col === 'object' && col.visible && col.key);
-      // Fallback to defaults if no valid columns
       return filtered.length > 0 ? filtered : AVAILABLE_COLUMNS.filter(col => col && typeof col === 'object' && col.visible);
     } catch (error) {
       logger.error('Error getting visible columns:', error);
@@ -474,78 +115,10 @@ export default function ClassesList() {
     setAssignTeacherModal(true);
   };
 
-  // Handle class actions
-  const handleClassActions = (cls, e) => {
-    e.stopPropagation();
-    setSelectedClassForActions(cls);
-    setActionsModal(true);
-  };
-
-  // Handle action menu item click
-  const handleActionMenuItem = (action, cls) => {
-    switch (action) {
-      case 'view':
-        navigate(`/classes/${cls.id}`);
-        break;
-      case 'settings':
-        navigate(`/classes/${cls.id}?tab=settings`);
-        break;
-      case 'download-report':
-        toast(t('toast.info.downloadReportComingSoon', 'Download report coming soon'));
-        break;
-      case 'send-announcement':
-        navigate('/messaging', { state: { prefillClass: cls.id } });
-        break;
-      default:
-        break;
-    }
-  };
-
-  // ---- Edit / Delete class state ----
-  const [editClassModal, setEditClassModal] = useState(false);
-  const [deleteClassModal, setDeleteClassModal] = useState(false);
-  const [selectedClassForEdit, setSelectedClassForEdit] = useState(null);
-  const [selectedClassForDelete, setSelectedClassForDelete] = useState(null);
-  const [editFormData, setEditFormData] = useState({ section: '', strengthLimit: '', room: '', block: '' });
-  const [editErrors, setEditErrors] = useState({});
-  const [isEditing, setIsEditing] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const { updateClass, deleteClass } = useApp();
-
+  // Handle edit / delete class
   const handleEditClass = (cls) => {
     setSelectedClassForEdit(cls);
-    setEditFormData({
-      section: cls?.section || '',
-      strengthLimit: String(cls?.strengthLimit?.current || cls?.strengthLimit?.default || ''),
-      room: cls?.room || '',
-      block: cls?.block || '',
-    });
-    setEditErrors({});
     setEditClassModal(true);
-  };
-
-  const handleSaveEdit = async () => {
-    const newErrors = {};
-    if (!editFormData.strengthLimit) newErrors.strengthLimit = t('classes.validation.capacityRequired', 'Capacity is required');
-    else if (isNaN(editFormData.strengthLimit) || parseInt(editFormData.strengthLimit) <= 0) newErrors.strengthLimit = t('classes.validation.capacityPositive', 'Capacity must be a positive number');
-    if (Object.keys(newErrors).length > 0) { setEditErrors(newErrors); return; }
-
-    setIsEditing(true);
-    try {
-      const capacity = parseInt(editFormData.strengthLimit);
-      await updateClass(selectedClassForEdit.id, {
-        strengthLimit: { current: capacity, default: capacity },
-        ...(editFormData.room !== undefined && { room: editFormData.room }),
-        ...(editFormData.block !== undefined && { block: editFormData.block }),
-      });
-      toast.success(t('toast.success.classUpdated', `Class ${selectedClassForEdit.name}-${selectedClassForEdit.section} updated`));
-      setEditClassModal(false);
-      if (refetch) await refetch(true);
-    } catch (error) {
-      toast.error(error.message || t('toast.error.updateClassFailed', 'Failed to update class'));
-    } finally {
-      setIsEditing(false);
-    }
   };
 
   const handleDeleteClass = (cls) => {
@@ -553,20 +126,58 @@ export default function ClassesList() {
     setDeleteClassModal(true);
   };
 
-  const confirmDeleteClass = async () => {
-    if (!selectedClassForDelete) return;
-    setIsDeleting(true);
-    try {
-      await deleteClass(selectedClassForDelete.id);
-      toast.success(t('toast.success.classDeleted', `Class ${selectedClassForDelete.name}-${selectedClassForDelete.section} deleted`));
-      setDeleteClassModal(false);
-      setSelectedClassForDelete(null);
-      if (refetch) await refetch(true);
-    } catch (error) {
-      toast.error(error.message || t('toast.error.deleteClassFailed', 'Failed to delete class'));
-    } finally {
-      setIsDeleting(false);
+  // Render a table row item (parent or child).
+  // IMPORTANT: We call plain functions (not JSX components) so that
+  // HeroUI's collection system receives <TableRow> elements directly.
+  const renderItem = (item) => {
+    if (!item || !item.type || !item.data) {
+      return <TableRow key="invalid-item"><TableCell>{' '}</TableCell></TableRow>;
     }
+
+    if (item.type === 'parent') {
+      const group = item.data;
+      if (!group) {
+        return <TableRow key="empty-parent"><TableCell>{' '}</TableCell></TableRow>;
+      }
+
+      return renderClassParentRow({
+        group,
+        isExpanded: expandedClasses.has(group?.classNum),
+        pendingCount: group?.totalPendingFees || 0,
+        visibleColumns: getVisibleColumns(),
+        onToggleExpansion: toggleClassExpansion,
+        t,
+      });
+    }
+
+    // Child row - individual section
+    const cls = item.data;
+    if (!cls || !cls.id) {
+      return <TableRow key="empty-child"><TableCell>{' '}</TableCell></TableRow>;
+    }
+
+    const classKey = `${cls?.name || ''}-${cls?.section || ''}`;
+    const pendingCount = feeDefaulters?.filter(s => s?.class === classKey)?.length || 0;
+    const classAttendanceData = attendanceData?.[cls?.id];
+    const attendanceValue = classAttendanceData?.overallPercentage || classAttendanceData?.attendanceRate || cls?.averageAttendance || cls?.attendance || null;
+    const academicData = academicPerformance?.[cls?.id] || {};
+    const academicAverage = academicData?.classAverage || cls?.averageAcademicPerformance || 0;
+    const classSettings = classSettingsMap?.[cls?.id];
+
+    return renderClassChildRow({
+      cls,
+      pendingCount,
+      attendanceValue,
+      academicAverage,
+      classSettings,
+      visibleColumns: getVisibleColumns(),
+      onAssignTeacher: handleAssignTeacher,
+      onEditClass: handleEditClass,
+      onDeleteClass: handleDeleteClass,
+      onRowClick: () => handleRowClick(item),
+      t,
+      navigate,
+    });
   };
 
   return (
@@ -651,438 +262,7 @@ export default function ClassesList() {
             </div>
           }
         >
-          {(item) => {
-            // Safety check - ensure item has type and data
-            if (!item || !item.type || !item.data) {
-              console.warn('Invalid item in TableBody:', item);
-              return null;
-            }
-
-            if (item.type === 'parent') {
-              const group = item.data;
-              if (!group) {
-                console.warn('Parent item has no data:', item);
-                return null;
-              }
-
-              const isExpanded = expandedClasses.has(group?.classNum);
-              const pendingCount = group?.totalPendingFees || 0;
-
-              return (
-                <TableRow
-                  key={`parent-${group.classNum}`}
-                  className="cursor-pointer"
-                  onClick={(e) => {
-                    // Don't toggle if clicking on interactive elements
-                    if (e.target.closest("button") || e.target.closest("a")) return;
-
-                    // Don't toggle if text is being selected
-                    const selection = window.getSelection();
-                    if (selection && selection.toString().length > 0) return;
-
-                    toggleClassExpansion(group.classNum);
-                  }}
-                >
-                  {/* Class Details - Parent */}
-                  <TableCell>
-                    <div className="flex items-center gap-3 py-5">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (group?.classNum) toggleClassExpansion(group.classNum);
-                        }}
-                        className="p-1 hover:bg-default-200 rounded transition-colors"
-                      >
-                        {isExpanded ? (
-                          <ChevronDown size={16} className="text-default-500" />
-                        ) : (
-                          <ChevronRight size={16} className="text-default-500" />
-                        )}
-                      </button>
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-primary font-semibold text-sm">{group?.classNum || '-'}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-default-900 font-semibold text-base">
-                          {t('classes.classNumber', 'Class {{num}}', { num: group?.classNum || '-' })}
-                        </span>
-                        <span className="text-default-500 text-xs">
-                          {t('classes.sectionCount', '{{count}} section', { count: group?.sections?.length || 0 })}{(group?.sections?.length || 0) > 1 ? 's' : ''} • {t('classes.studentCount', '{{count}} students', { count: group?.totalStudents || 0 })}
-                        </span>
-                      </div>
-                    </div>
-                  </TableCell>
-
-                  {/* Class Teacher - Parent */}
-                  {getVisibleColumns().find(c => c?.key === 'teacher')?.visible && (
-                    <TableCell>
-                      <div className="flex items-center gap-2 py-5">
-                        {group?.sections?.length > 0 && group.sections[0]?.teacher ? (
-                          <>
-                            <span className="text-default-600 text-sm">
-                              {group.sections[0].teacher}
-                            </span>
-                            {group.sections.length > 1 && (
-                              <span className="text-default-400 text-xs">
-                                {t('classes.moreTeachers', '+{{count}} more', { count: group.sections.length - 1 })}
-                              </span>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-default-400 text-sm">{t('pages.unassigned1')}</span>
-                        )}
-                      </div>
-                    </TableCell>
-                  )}
-
-                  {/* Subjects - Parent */}
-                  {getVisibleColumns().find(c => c?.key === 'subjects')?.visible && (
-                    <TableCell>
-                      <div className="py-5">
-                        <span className="text-default-600 text-sm">
-                          {group?.sections?.[0]?.subjects?.length || 0}
-                        </span>
-                      </div>
-                    </TableCell>
-                  )}
-
-                  {/* Strength - Parent */}
-                  {getVisibleColumns().find(c => c?.key === 'strength')?.visible && (
-                    <TableCell>
-                      <div className="py-5">
-                        <span className="text-default-900 font-semibold text-lg">{group?.totalStudents || 0}</span>
-                        <span className="text-default-500 text-xs"> {t('classes.students', 'students')}</span>
-                      </div>
-                    </TableCell>
-                  )}
-
-                  {/* Academic Performance - Parent */}
-                  {getVisibleColumns().find(c => c?.key === 'academic')?.visible && (
-                    <TableCell>
-                      <div className="flex items-center gap-2 py-5">
-                        <Progress
-                          aria-label={t('aria.charts.academicPerformance')}
-                          value={group?.averageAcademic || 0}
-                          size="sm"
-                          className="max-w-[100px]"
-                          color={(group?.averageAcademic || 0) >= 80 ? "success" : (group?.averageAcademic || 0) >= 60 ? "warning" : "danger"}
-                          classNames={{
-                            indicator: (group?.averageAcademic || 0) >= 80
-                              ? "bg-success-300"
-                              : (group?.averageAcademic || 0) >= 60
-                                ? "bg-warning-300"
-                                : "bg-danger-300",
-                            track: "bg-default-100"
-                          }}
-                        />
-                        <span className="text-xs font-semibold text-default-700 min-w-[32px]">{group?.averageAcademic || 0}%</span>
-                      </div>
-                    </TableCell>
-                  )}
-
-                  {/* Attendance - Parent */}
-                  {getVisibleColumns().find(c => c?.key === 'attendance')?.visible && (
-                    <TableCell>
-                      <div className="flex items-center gap-2 py-5">
-                        {group?.averageAttendance != null ? (
-                          <>
-                            <Progress
-                              aria-label={t('aria.charts.attendance')}
-                              value={group?.averageAttendance || 0}
-                              size="sm"
-                              className="max-w-[100px]"
-                              classNames={{
-                                indicator: (group?.averageAttendance || 0) >= 90
-                                  ? "bg-emerald-300"
-                                  : (group?.averageAttendance || 0) >= 75
-                                    ? "bg-amber-300"
-                                    : "bg-rose-300",
-                                track: "bg-default-100"
-                              }}
-                            />
-                            <span className="text-xs font-semibold text-default-700 min-w-[32px]">{group?.averageAttendance || 0}%</span>
-                          </>
-                        ) : (
-                          <span className="text-xs text-default-400">—</span>
-                        )}
-                      </div>
-                    </TableCell>
-                  )}
-
-                  {/* Fee Status - Parent */}
-                  {getVisibleColumns().find(c => c?.key === 'status')?.visible && (
-                    <TableCell>
-                      <div className={`inline-flex items-center px-3 py-1.5 rounded-lg border text-xs font-medium ${pendingCount > 5
-                          ? "bg-danger-50 border-danger-200 text-danger-700"
-                          : pendingCount > 0
-                            ? "bg-warning-50 border-warning-200 text-warning-700"
-                            : "bg-success-50 border-success-200 text-success-700"
-                        }`}>
-                        {pendingCount > 0 ? `${pendingCount} ${t('classes.feePending', 'Pending')}` : t('classes.feeAllClear', 'All Clear')}
-                      </div>
-                    </TableCell>
-                  )}
-
-                  {/* Actions - Parent */}
-                  <TableCell>
-                    <div className="flex justify-end py-5">
-                      <button
-                        className="p-2 hover:bg-default-100 rounded-lg transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (group?.classNum) toggleClassExpansion(group.classNum);
-                        }}
-                      >
-                        {isExpanded ? (
-                          <ChevronUp size={18} className="text-default-500" />
-                        ) : (
-                          <ChevronDown size={18} className="text-default-500" />
-                        )}
-                      </button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            } else {
-              // Child row - individual section
-              const cls = item.data;
-              if (!cls || !cls.id) {
-                console.warn('Child item has invalid data:', item);
-                return null;
-              }
-
-              const classKey = `${cls?.name || ''}-${cls?.section || ''}`;
-              const pendingCount = feeDefaulters?.filter(s => s?.class === classKey)?.length || 0;
-              // Use real attendance data from API when available, fallback to class data
-              const classAttendanceData = attendanceData?.[cls?.id];
-              const attendanceValue = classAttendanceData?.overallPercentage || classAttendanceData?.attendanceRate || cls?.averageAttendance || cls?.attendance || null;
-              const academicData = academicPerformance?.[cls?.id] || {};
-              const academicAverage = academicData?.classAverage || cls?.averageAcademicPerformance || 0;
-              const classSettings = classSettingsMap?.[cls?.id];
-
-              return (
-                <TableRow
-                  key={cls?.id || 'child-unknown'}
-                  className="cursor-pointer hover:bg-default-50 bg-default-50/50"
-                  onClick={(e) => {
-                    // Don't navigate if clicking on interactive elements
-                    if (e.target.closest("button") || e.target.closest("label") || e.target.closest("input") || e.target.closest("a")) return;
-
-                    // Don't navigate if text is being selected
-                    const selection = window.getSelection();
-                    if (selection && selection.toString().length > 0) return;
-
-                    item && handleRowClick(item);
-                  }}
-                >
-                  {/* Class Details - Child */}
-                  <TableCell>
-                    <div className="flex items-center gap-3 py-3 pl-8">
-                      <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center ml-6">
-                        <span className="text-secondary font-semibold text-xs">{cls?.section || '-'}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <Link
-                            to={cls?.id ? `/classes/${cls.id}` : '#'}
-                            className="text-default-700 font-medium text-sm hover:text-primary transition-colors cursor-pointer"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {t('classes.sectionLabel', 'Section {{section}}', { section: cls?.section || '-' })}
-                          </Link>
-                          {classSettings?.classTag && (
-                            <Chip size="sm" variant="flat" color="primary" className="text-xs">
-                              {classSettings.classTag}
-                            </Chip>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-default-500 text-xs">
-                            {t('classes.studentCount', '{{count}} students', { count: cls?.studentCount || cls?.strength || 0 })}
-                          </span>
-                          {/* Health indicator dots */}
-                          {(attendanceValue != null && attendanceValue < 75) && (
-                            <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0" title={t('classes.lowAttendance', 'Low attendance')} />
-                          )}
-                          {!cls?.classTeacherId && (
-                            <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" title={t('classes.noClassTeacher', 'No class teacher')} />
-                          )}
-                          {pendingCount > 0 && pendingCount > (cls?.studentCount || 0) * 0.3 && (
-                            <span className="w-2 h-2 rounded-full bg-rose-400 flex-shrink-0" title={t('classes.highFeeDefaulters', 'High fee defaulters')} />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </TableCell>
-
-                  {/* Class Teacher - Child */}
-                  {getVisibleColumns().find(c => c?.key === 'teacher')?.visible && (
-                    <TableCell>
-                      <div className="flex items-center gap-3 py-3">
-                        {cls?.classTeacherId ? (
-                          <PhotoAvatar
-                            src={cls?.teacherPhoto}
-                            alt={cls?.teacher || t('classes.teacher', 'Teacher')}
-                            name={cls?.teacher || t('classes.unassigned', 'Unassigned')}
-                            size="sm"
-                            type="staff"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-default-200 flex items-center justify-center">
-                            <UserPlus size={14} className="text-default-400" />
-                          </div>
-                        )}
-                        <div className="flex flex-col">
-                          {cls?.classTeacherId ? (
-                            <div className="flex items-center gap-2">
-                              <Link
-                                to={`/staffs/${cls.classTeacherId}`}
-                                className="text-default-700 font-medium text-sm hover:text-primary transition-colors cursor-pointer"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                {cls?.teacher || t('classes.unassigned', 'Unassigned')}
-                              </Link>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); if (cls) handleAssignTeacher(cls); }}
-                                className="text-default-400 hover:text-primary transition-colors"
-                                title={t('pages.changeClassTeacher')}
-                              >
-                                <RefreshCw size={12} />
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); if (cls) handleAssignTeacher(cls); }}
-                              className="text-primary font-medium text-xs hover:underline flex items-center gap-1"
-                            >
-                              <UserPlus size={10} />
-                              {t('classes.assign', 'Assign')}
-                            </button>
-                          )}
-                          <span className="text-default-500 text-xs">{t('pages.classTeacher2')}</span>
-                        </div>
-                      </div>
-                    </TableCell>
-                  )}
-
-                  {/* Subjects - Child */}
-                  {getVisibleColumns().find(c => c?.key === 'subjects')?.visible && (
-                    <TableCell>
-                      <div className="py-3">
-                        <span className="text-default-700 text-sm">{cls?.subjects?.length || 0}</span>
-                      </div>
-                    </TableCell>
-                  )}
-
-                  {/* Strength - Child */}
-                  {getVisibleColumns().find(c => c?.key === 'strength')?.visible && (
-                    <TableCell>
-                      <div className="py-3">
-                        <span className="text-default-700 font-semibold text-base">{cls?.studentCount || cls?.strength || 0}</span>
-                        <span className="text-default-500 text-xs">
-                          {cls?.strengthLimit?.current ? `/${cls.strengthLimit.current}` : ''}
-                        </span>
-                      </div>
-                    </TableCell>
-                  )}
-
-                  {/* Academic Performance - Child */}
-                  {getVisibleColumns().find(c => c?.key === 'academic')?.visible && (
-                    <TableCell>
-                      <div className="flex items-center gap-2 py-3">
-                        <Progress
-                          aria-label={t('aria.charts.academicPerformance')}
-                          value={academicAverage || 0}
-                          size="sm"
-                          className="max-w-[100px]"
-                          color={(academicAverage || 0) >= 80 ? "success" : (academicAverage || 0) >= 60 ? "warning" : "danger"}
-                          classNames={{
-                            indicator: (academicAverage || 0) >= 80
-                              ? "bg-success-300"
-                              : (academicAverage || 0) >= 60
-                                ? "bg-warning-300"
-                                : "bg-danger-300",
-                            track: "bg-default-100"
-                          }}
-                        />
-                        <span className="text-xs font-semibold text-default-700 min-w-[32px]">{academicAverage || 0}%</span>
-                      </div>
-                    </TableCell>
-                  )}
-
-                  {/* Attendance - Child */}
-                  {getVisibleColumns().find(c => c?.key === 'attendance')?.visible && (
-                    <TableCell>
-                      <div className="flex items-center gap-2 py-3">
-                        {attendanceValue != null ? (
-                          <>
-                            <Progress
-                              aria-label={t('aria.charts.attendance')}
-                              value={attendanceValue || 0}
-                              size="sm"
-                              className="max-w-[100px]"
-                              classNames={{
-                                indicator: (attendanceValue || 0) >= 90
-                                  ? "bg-emerald-300"
-                                  : (attendanceValue || 0) >= 75
-                                    ? "bg-amber-300"
-                                    : "bg-rose-300",
-                                track: "bg-default-100"
-                              }}
-                            />
-                            <span className="text-xs font-semibold text-default-700 min-w-[32px]">{attendanceValue || 0}%</span>
-                          </>
-                        ) : (
-                          <span className="text-xs text-default-400">—</span>
-                        )}
-                      </div>
-                    </TableCell>
-                  )}
-
-                  {/* Fee Status - Child */}
-                  {getVisibleColumns().find(c => c?.key === 'status')?.visible && (
-                    <TableCell>
-                      <div className={`inline-flex items-center px-3 py-1.5 rounded-lg border text-xs font-medium ${pendingCount > 2
-                          ? "bg-danger-50 border-danger-200 text-danger-700"
-                          : pendingCount > 0
-                            ? "bg-warning-50 border-warning-200 text-warning-700"
-                            : "bg-success-50 border-success-200 text-success-700"
-                        }`}>
-                        {pendingCount > 0 ? `${pendingCount}` : "0"}
-                      </div>
-                    </TableCell>
-                  )}
-
-                  {/* Actions - Child (Quick action buttons) */}
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1 py-3" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => cls?.id && navigate(`/classes/${cls.id}`)}
-                        className="p-1.5 hover:bg-default-100 rounded-lg transition-colors"
-                        title={t('classes.viewClass', 'View class')}
-                      >
-                        <Eye size={14} className="text-default-400" />
-                      </button>
-                      <button
-                        onClick={() => cls && handleEditClass(cls)}
-                        className="p-1.5 hover:bg-default-100 rounded-lg transition-colors"
-                        title={t('classes.editClass', 'Edit class')}
-                      >
-                        <Pencil size={14} className="text-default-400" />
-                      </button>
-                      <button
-                        onClick={() => cls && handleDeleteClass(cls)}
-                        className="p-1.5 hover:bg-danger-100 rounded-lg transition-colors"
-                        title={t('classes.deleteClass', 'Delete class')}
-                      >
-                        <Trash2 size={14} className="text-danger-400" />
-                      </button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            }
-          }}
+          {renderItem}
         </TableBody>
       </Table>
 
@@ -1095,32 +275,14 @@ export default function ClassesList() {
       </div>
 
       {/* Edit Columns Modal */}
-      <Modal isOpen={showColumnModal} onClose={() => setShowColumnModal(false)} size="sm">
-        <ModalContent>
-          <ModalHeader>{t('pages.editColumns')}</ModalHeader>
-          <ModalBody>
-            <div className="flex flex-col gap-2">
-              {AVAILABLE_COLUMNS.filter(col => col && typeof col === 'object' && col.key).map(col => (
-                <Checkbox size="sm"
-                  key={col.key}
-                  isSelected={getVisibleColumns().find(c => c?.key === col.key)?.visible ?? true}
-                  isDisabled={col.fixed}
-                  onValueChange={() => col?.key && toggleColumn(col.key)}
-                >
-                  {col.labelKey ? t(col.labelKey, col.label || col.key) : (col.label || col.key)}
-                </Checkbox>
-              ))}
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button color="primary" onPress={() => setShowColumnModal(false)}>
-              {t('common.done', 'Done')}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <EditColumnsModal
+        isOpen={showColumnModal}
+        onClose={() => setShowColumnModal(false)}
+        getVisibleColumns={getVisibleColumns}
+        toggleColumn={toggleColumn}
+      />
 
-      {/* Assign Teacher Modal - Enhanced */}
+      {/* Assign Teacher Modal */}
       <ClassTeacherAssignmentModal
         isOpen={assignTeacherModal}
         onClose={() => setAssignTeacherModal(false)}
@@ -1131,81 +293,18 @@ export default function ClassesList() {
       />
 
       {/* Edit Class Modal */}
-      <Modal isOpen={editClassModal} onClose={() => setEditClassModal(false)} size="md">
-        <ModalContent>
-          <ModalHeader>
-            {t('classes.editClassTitle', 'Edit {{name}} - {{section}}', { name: selectedClassForEdit?.name, section: selectedClassForEdit?.section })}
-          </ModalHeader>
-          <ModalBody className="space-y-4">
-            <Input
-              label={t('classes.section', 'Section')}
-              value={editFormData.section}
-              isReadOnly
-              variant="bordered"
-              size="sm"
-              description={t('classes.sectionReadonlyDescription', 'Section cannot be changed after creation')}
-            />
-            <Input
-              label={t('classes.classCapacity', 'Class Capacity')}
-              type="number"
-              value={editFormData.strengthLimit}
-              onValueChange={(val) => setEditFormData(prev => ({ ...prev, strengthLimit: val }))}
-              isInvalid={!!editErrors.strengthLimit}
-              errorMessage={editErrors.strengthLimit}
-              isRequired
-              variant="bordered"
-              size="sm"
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                label={t('classes.room', 'Room')}
-                value={editFormData.room}
-                onValueChange={(val) => setEditFormData(prev => ({ ...prev, room: val }))}
-                variant="bordered"
-                size="sm"
-              />
-              <Input
-                label={t('classes.block', 'Block')}
-                value={editFormData.block}
-                onValueChange={(val) => setEditFormData(prev => ({ ...prev, block: val }))}
-                variant="bordered"
-                size="sm"
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={() => setEditClassModal(false)} isDisabled={isEditing}>
-              {t('common.cancel', 'Cancel')}
-            </Button>
-            <Button color="primary" onPress={handleSaveEdit} isLoading={isEditing}>
-              {t('common.saveChanges', 'Save Changes')}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <EditClassModal
+        isOpen={editClassModal}
+        onClose={() => { setEditClassModal(false); setSelectedClassForEdit(null); }}
+        classData={selectedClassForEdit}
+      />
 
       {/* Delete Class Confirmation Modal */}
-      <Modal isOpen={deleteClassModal} onClose={() => setDeleteClassModal(false)} size="sm">
-        <ModalContent>
-          <ModalHeader className="text-danger">{t('classes.deleteClassTitle', 'Delete Class')}</ModalHeader>
-          <ModalBody>
-            <p className="text-default-600">
-              {t('classes.deleteConfirmation', 'Are you sure you want to delete')} <strong>{selectedClassForDelete?.name}-{selectedClassForDelete?.section}</strong>?
-            </p>
-            <p className="text-sm text-danger-500 mt-2">
-              {t('classes.deleteWarning', 'This will remove the class and may affect students, attendance records, timetables, and fee structures linked to this class. This action cannot be undone.')}
-            </p>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={() => setDeleteClassModal(false)} isDisabled={isDeleting}>
-              {t('common.cancel', 'Cancel')}
-            </Button>
-            <Button color="danger" onPress={confirmDeleteClass} isLoading={isDeleting}>
-              {t('classes.deleteClassTitle', 'Delete Class')}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <DeleteClassModal
+        isOpen={deleteClassModal}
+        onClose={() => { setDeleteClassModal(false); setSelectedClassForDelete(null); }}
+        classData={selectedClassForDelete}
+      />
     </div>
   );
 }

@@ -27,7 +27,7 @@ const SubjectAssignment = () => {
       setLoading(true);
       setError(null);
       const [classData, subjectData] = await Promise.all([
-        classesApi.getAll(true),
+        classesApi.getAll(),
         settingsApi.getSubjects(),
       ]);
       setClasses(classData);

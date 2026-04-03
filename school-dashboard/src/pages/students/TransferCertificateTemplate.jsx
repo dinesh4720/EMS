@@ -118,3 +118,5 @@ export const TransferCertificateTemplate = React.forwardRef(({ data, schoolData:
         </div>
     );
 });
+
+TransferCertificateTemplate.displayName = 'TransferCertificateTemplate';

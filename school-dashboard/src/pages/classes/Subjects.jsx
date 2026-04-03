@@ -16,9 +16,14 @@ import { useTranslation } from 'react-i18next';
 
 export default function Subjects() {
   const { t } = useTranslation();
-  const { params: { id }, isValid } = useValidatedParams({ id: 'objectId' }, { redirectTo: '/classes' });
+  // [AUDIT-514] id is optional — Subjects tab doesn't receive :id from route.
+  // Instead of redirecting, show a class selector when no class is chosen.
+  const { params: { id: routeId } } = useValidatedParams({ id: 'optional' }, {});
   const navigate = useNavigate();
   const { classesEnhancedApi, staff, classes, students } = useApp();
+  const [selectedClassId, setSelectedClassId] = useState(routeId || '');
+  const id = routeId || selectedClassId;
+  const isValid = true; // Always valid — class selection handled by UI
 
   // Filter students for this class
   const classStudents = (students || []).filter(s =>
@@ -49,9 +54,7 @@ export default function Subjects() {
     }
   }, [id, isValid]);
 
-  if (!isValid) return null;
-
-  // If no id provided, show message to select a class
+  // If no class selected, show class selector
   if (!id) {
     return (
       <div className="space-y-6">
@@ -60,22 +63,28 @@ export default function Subjects() {
           <p className="text-default-500 mt-1">{t('pages.manageSubjectsChapterProgressAndTeacherAssignments')}</p>
         </div>
         <Card className="border-default-200">
-          <CardBody className="py-12 text-center">
-            <BookOpen size={48} className="mx-auto text-default-300 mb-4" />
-            <p className="text-default-500">{t('pages.pleaseSelectAClassToViewItsSubjects')}</p>
-            <Button
-              color="primary"
-              variant="flat"
-              className="mt-4"
-              onPress={() => navigate('/classes')}
+          <CardBody className="py-8 space-y-4">
+            <BookOpen size={48} className="mx-auto text-default-300" />
+            <p className="text-default-500 text-center">{t('pages.pleaseSelectAClassToViewItsSubjects')}</p>
+            <Select
+              label={t('pages.selectClass')}
+              placeholder={t('pages.chooseAClass')}
+              variant="bordered"
+              className="max-w-xs mx-auto"
+              onChange={(e) => setSelectedClassId(e.target.value)}
             >
-              {t('classes.viewAllClasses', 'View All Classes')}
-            </Button>
+              {(classes || []).map((cls) => (
+                <SelectItem key={cls._id} value={cls._id}>
+                  {cls.name}{cls.section ? ` - ${cls.section}` : ''}
+                </SelectItem>
+              ))}
+            </Select>
           </CardBody>
         </Card>
       </div>
     );
   }
+
 
   const loadSubjects = async () => {
     try {
@@ -92,7 +101,7 @@ export default function Subjects() {
           subjectName: sub,
           chapters: [],
           overallProgress: 0,
-          teacherName: 'Not Assigned'
+          teacherName: t('classes.noTeacherAssigned', 'No Teacher Assigned')
         }));
         setSubjects(fallbackSubjects);
       }
@@ -170,6 +179,22 @@ export default function Subjects() {
     } finally {
       setIsUpdatingChapter(false);
     }
+  };
+
+  // Subject color mapping — consistent colors per subject name
+  const SUBJECT_COLORS = [
+    { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' },
+    { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400' },
+    { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-600 dark:text-purple-400' },
+    { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400' },
+    { bg: 'bg-rose-100 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
+    { bg: 'bg-cyan-100 dark:bg-cyan-900/30', text: 'text-cyan-600 dark:text-cyan-400' },
+    { bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400' },
+    { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400' },
+  ];
+  const getSubjectColor = (name) => {
+    const hash = (name || '').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    return SUBJECT_COLORS[hash % SUBJECT_COLORS.length];
   };
 
   // Get progress color
@@ -282,7 +307,7 @@ export default function Subjects() {
               <TableRow key={subject._id || subject.subjectName}>
                 <TableCell>
                   <div className="py-4 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <div className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${getSubjectColor(subject.subjectName).bg} ${getSubjectColor(subject.subjectName).text}`}>
                       <BookOpen size={16} />
                     </div>
                     <span className="font-semibold text-default-900 select-text">{subject.subjectName}</span>

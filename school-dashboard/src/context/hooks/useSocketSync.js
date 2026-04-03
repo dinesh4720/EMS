@@ -21,9 +21,14 @@ export function useSocketSync({
   addFeePayment,
   setStudents,
 }) {
-  // Use a ref to avoid stale closure over staff array in socket handlers
+  // [AUDIT-537] Use refs for ALL handler dependencies to avoid stale closures
+  // The effect runs once (empty deps) so all functions must be accessed via refs
   const staffRef = useRef(staff);
+  const handlersRef = useRef({ updateStaffLocal, updateStudentLocal, updateClassLocal, setStaffAttendance, addFeePayment, setStudents });
   useEffect(() => { staffRef.current = staff; }, [staff]);
+  useEffect(() => {
+    handlersRef.current = { updateStaffLocal, updateStudentLocal, updateClassLocal, setStaffAttendance, addFeePayment, setStudents };
+  }, [updateStaffLocal, updateStudentLocal, updateClassLocal, setStaffAttendance, addFeePayment, setStudents]);
 
   useEffect(() => {
     const user = getStoredUser();
@@ -43,7 +48,7 @@ export function useSocketSync({
         });
 
         socketService.on("staff_updated", (data) => {
-          updateStaffLocal(data.staffId, {
+          handlersRef.current.updateStaffLocal(data.staffId, {
             name: data.name,
             role: data.role,
             department: data.department,
@@ -55,7 +60,7 @@ export function useSocketSync({
         });
 
         socketService.on("student_updated", (data) => {
-          updateStudentLocal(data.studentId, {
+          handlersRef.current.updateStudentLocal(data.studentId, {
             name: data.name,
             classId: data.classId,
             rollNo: data.rollNo,
@@ -71,7 +76,7 @@ export function useSocketSync({
                 String(s.id) === String(data.classTeacherId) ||
                 String(s._id) === String(data.classTeacherId)
             );
-            updateClassLocal(data.classId, {
+            handlersRef.current.updateClassLocal(data.classId, {
               name: data.name,
               section: data.section,
               classTeacherId: data.classTeacherId,
@@ -79,7 +84,7 @@ export function useSocketSync({
               teacherPhoto: teacher?.picture,
             });
           } else {
-            updateClassLocal(data.classId, {
+            handlersRef.current.updateClassLocal(data.classId, {
               name: data.name,
               section: data.section,
               classTeacherId: data.classTeacherId,
@@ -89,7 +94,7 @@ export function useSocketSync({
 
         socketService.on("attendance_updated", (data) => {
           if (data.type === "staff") {
-            setStaffAttendance((prev) => {
+            handlersRef.current.setStaffAttendance((prev) => {
               if (!data.status || data.status === "unmarked") {
                 const updated = { ...prev };
                 if (updated[data.staffId]?.[data.date]) {
@@ -117,18 +122,18 @@ export function useSocketSync({
         });
 
         socketService.on("fee_payment_created", (data) => {
-          addFeePayment({
+          handlersRef.current.addFeePayment({
             id: data.paymentId,
             studentId: data.studentId,
             amount: data.amount,
             date: data.paymentDate,
             status: "paid",
           });
-          updateStudentLocal(data.studentId, { feeStatus: "paid" });
+          handlersRef.current.updateStudentLocal(data.studentId, { feeStatus: "paid" });
         });
 
         socketService.on("student_created", (data) => {
-          setStudents((prev) => [
+          handlersRef.current.setStudents((prev) => [
             ...prev,
             {
               id: data.id,

@@ -3,10 +3,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { classesApi } from "../services/api";
 import toast from "react-hot-toast";
 import logger from "../utils/logger";
+import { useTranslation } from 'react-i18next';
 
 export const ClassesContext = createContext();
 
 export function ClassesProvider({ children, staff, students }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [classes, setClasses] = useState([]);
 
@@ -31,7 +33,7 @@ export function ClassesProvider({ children, staff, students }) {
       return created;
     } catch (err) {
       logger.error("Failed to add class:", err);
-      toast.error("Failed to add class");
+      toast.error(t('toast.error.failedToAddClass', 'Failed to add class'));
       throw err;
     }
   };
@@ -45,7 +47,7 @@ export function ClassesProvider({ children, staff, students }) {
       return updated;
     } catch (err) {
       logger.error("Failed to update class:", err);
-      toast.error("Failed to update class");
+      toast.error(t('toast.error.failedToUpdateClass', 'Failed to update class'));
       setClasses(prev);
       throw err;
     }
@@ -66,7 +68,7 @@ export function ClassesProvider({ children, staff, students }) {
       void invalidateAppData();
     } catch (err) {
       logger.error("Failed to delete class:", err);
-      toast.error("Failed to delete class");
+      toast.error(t('toast.error.failedToDeleteClass', 'Failed to delete class'));
       setClasses(prev);
       throw err;
     }
@@ -84,7 +86,7 @@ export function ClassesProvider({ children, staff, students }) {
           (s) =>
             String(s.id) === String(c.classTeacherId) ||
             String(s._id) === String(c.classTeacherId)
-        )?.name || "Unassigned",
+        )?.name || null,
       teacherPhoto:
         staff.find(
           (s) =>
@@ -113,7 +115,11 @@ export function ClassesProvider({ children, staff, students }) {
     getClassById,
   };
 
-  return <ClassesContext.Provider value={value}>{children}</ClassesContext.Provider>;
+  return (
+    <ClassesContext.Provider value={value}>
+      {children}
+    </ClassesContext.Provider>
+  );
 }
 
 export const useClasses = () => {

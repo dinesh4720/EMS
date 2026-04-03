@@ -1,12 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Button, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Spinner } from "@heroui/react";
-import { motion } from "framer-motion";
-import { Settings, Plus, Trash2, Save, X, Clock, AlertTriangle, CheckCircle2, Wand2 } from "lucide-react";
+import { useDisclosure } from "@heroui/react";
 import { useApp } from "../../context/AppContext";
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
-import { timetableApi, teacherAssignmentsApi, classesEnhancedApi } from "../../services/api";
-import ConflictIndicator from "../../components/ConflictIndicator";
+import { timetableApi, teacherAssignmentsApi } from "../../services/api";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import SlotInfoModal from "../../components/timetable/SlotInfoModal";
 import {
@@ -20,39 +17,15 @@ import {
 import { DEFAULT_PERIODS, TIMETABLE_DAYS } from "../../utils/constants";
 import { useTranslation } from 'react-i18next';
 
+// Extracted components
+import { TimetableToolbar } from './components/TimetableToolbar';
+import { TimetableGrid } from './components/TimetableGrid';
+import { TimetableEmptyState } from './components/TimetableEmptyState';
+import { PeriodsModal } from './components/PeriodsModal';
+import { EditSlotModal } from './components/EditSlotModal';
+
 const days = TIMETABLE_DAYS;
 const defaultPeriods = DEFAULT_PERIODS;
-
-const getSubjectColor = (subject) => {
-  if (!subject) return "default";
-  const colors = {
-    Mathematics: "primary", Math: "primary",
-    Science: "success", Physics: "success", Chemistry: "success", Biology: "success",
-    English: "warning",
-    Hindi: "danger",
-    History: "secondary", Geography: "secondary", "Social Studies": "secondary",
-    Computer: "secondary", "Computer Science": "secondary",
-    Art: "warning",
-    Music: "success",
-    Library: "default",
-    PT: "danger", "Physical Education": "danger"
-  };
-  return colors[subject] || "default";
-};
-
-// Get Tailwind classes for subject cards — supports dark mode
-const getSubjectClasses = (subject) => {
-  const color = getSubjectColor(subject);
-  const colorMap = {
-    primary:   { card: 'bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800',     text: 'text-blue-700 dark:text-blue-300',   pill: 'bg-blue-100/60 dark:bg-blue-900/60' },
-    success:   { card: 'bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800', text: 'text-green-700 dark:text-green-300', pill: 'bg-green-100/60 dark:bg-green-900/60' },
-    warning:   { card: 'bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800', text: 'text-yellow-700 dark:text-yellow-300', pill: 'bg-yellow-100/60 dark:bg-yellow-900/60' },
-    danger:    { card: 'bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800',         text: 'text-red-700 dark:text-red-300',     pill: 'bg-red-100/60 dark:bg-red-900/60' },
-    secondary: { card: 'bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800', text: 'text-purple-700 dark:text-purple-300', pill: 'bg-purple-100/60 dark:bg-purple-900/60' },
-    default:   { card: 'bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700',    text: 'text-gray-700 dark:text-zinc-300',   pill: 'bg-gray-100/60 dark:bg-zinc-700/60' },
-  };
-  return colorMap[color] || colorMap.default;
-};
 
 export default function Timetable({ classId }) {
   const { t } = useTranslation();
@@ -140,11 +113,11 @@ export default function Timetable({ classId }) {
     const slot = schedule[day]?.[periodIndex] || { subject: "", teacherId: null, room: "" };
 
     if (slot.subject) {
-      // Filled slot → show info modal
+      // Filled slot -> show info modal
       setInfoSlot({ day, periodIndex, slot, period });
       onInfoOpen();
     } else {
-      // Empty slot → open edit modal directly
+      // Empty slot -> open edit modal directly
       setEditingSlot({ day, periodIndex });
       setSlotForm({ ...slot, teacherId: slot.teacherId || "" });
       setConflicts([]);
@@ -162,14 +135,7 @@ export default function Timetable({ classId }) {
     onSlotOpen();
   };
 
-  // Fetch available teachers when subject is selected
-  useEffect(() => {
-    if (isSlotOpen && slotForm.subject && editingSlot && selectedClass) {
-      fetchAvailableTeachers();
-    }
-  }, [slotForm.subject, isSlotOpen, editingSlot, selectedClass]);
-
-  const fetchAvailableTeachers = async () => {
+  const fetchAvailableTeachers = useCallback(async () => {
     if (!slotForm.subject || !editingSlot || !selectedClass) return;
 
     try {
@@ -196,7 +162,14 @@ export default function Timetable({ classId }) {
     } finally {
       setLoadingTeachers(false);
     }
-  };
+  }, [slotForm.subject, editingSlot, selectedClass]);
+
+  // Fetch available teachers when subject is selected
+  useEffect(() => {
+    if (isSlotOpen && slotForm.subject && editingSlot && selectedClass) {
+      fetchAvailableTeachers();
+    }
+  }, [slotForm.subject, isSlotOpen, editingSlot, selectedClass, fetchAvailableTeachers]);
 
   // Check for conflicts when teacher is selected
   const checkConflict = async (teacherId) => {
@@ -208,7 +181,6 @@ export default function Timetable({ classId }) {
     try {
       const { day, periodIndex } = editingSlot;
 
-      // Call the conflict detection endpoint
       const params = {
         classId: selectedClass,
         subject: slotForm.subject,
@@ -224,7 +196,6 @@ export default function Timetable({ classId }) {
       );
 
       if (!isAvailable && teacherId) {
-        // Teacher has a conflict
         setConflicts([{
           type: 'double_booking',
           message: 'This teacher is already assigned to another class at this time',
@@ -292,7 +263,6 @@ export default function Timetable({ classId }) {
         errorMessage: null,
         retries: 2,
         onSuccess: async () => {
-          // Clear success status after 2 seconds
           setTimeout(() => setSyncStatus(null), 2000);
 
           onSlotClose();
@@ -306,7 +276,6 @@ export default function Timetable({ classId }) {
         onError: (error) => {
           setSyncStatus('error');
 
-          // Check if error is a conflict error
           if (error.type === 'ConflictError') {
             setConflicts([{
               type: 'conflict_error',
@@ -321,8 +290,6 @@ export default function Timetable({ classId }) {
 
   const handleClearSlot = async () => {
     if (!editingSlot) return;
-
-    // Show confirmation dialog
     onConfirmClearOpen();
   };
 
@@ -365,7 +332,6 @@ export default function Timetable({ classId }) {
         errorMessage: null,
         retries: 2,
         onSuccess: async () => {
-          // Clear success status after 2 seconds
           setTimeout(() => setSyncStatus(null), 2000);
 
           onConfirmClearClose();
@@ -386,7 +352,6 @@ export default function Timetable({ classId }) {
   };
 
   const handleSaveTimetable = async () => {
-    // Show confirmation dialog
     onConfirmSaveOpen();
   };
 
@@ -421,7 +386,6 @@ export default function Timetable({ classId }) {
   };
 
   const handleSavePeriods = () => {
-    // Warn user that saving period changes will reset the entire timetable schedule
     const hasExistingSchedule = Object.values(schedule).some(daySlots =>
       Array.isArray(daySlots) && daySlots.some(slot => slot && slot.subject)
     );
@@ -452,12 +416,6 @@ export default function Timetable({ classId }) {
     setPeriods(updated);
   };
 
-  const getTeacherName = (teacherId) => {
-    if (!teacherId) return "";
-    const teacher = staff.find(s => s.id === teacherId || s.id === String(teacherId));
-    return teacher?.name || "";
-  };
-
   const handleWizardClick = () => {
     navigate('/timetable-wizard');
   };
@@ -475,455 +433,67 @@ export default function Timetable({ classId }) {
   return (
     <div className="w-full flex flex-col">
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-gray-200 dark:border-zinc-800 py-4 px-4 mb-4">
-        {/* Left Side - Filters & Status */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
-          <div className="flex items-center gap-2">
-            {!classId && (
-              <Select
-                size="sm"
-                selectedKeys={selectedClass ? [selectedClass] : []}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                className="w-[160px]"
-                aria-label={t('aria.inputs.selectClass')}
-                variant="flat"
-              >
-                {classesWithTeachers.map(c => (
-                  <SelectItem key={c.id} textValue={`Class ${c.name}-${c.section}`}>
-                    Class {c.name}-{c.section}
-                  </SelectItem>
-                ))}
-              </Select>
-            )}
-            {selectedClassData && (
-              <Chip size="sm" variant="flat" color="primary">
-                {currentAcademicYear}
-              </Chip>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Sync Status Indicator */}
-            {syncStatus === 'syncing' && (
-              <Chip size="sm" variant="flat" color="default" className="h-8" startContent={<Spinner size="sm" />}>
-                Syncing...
-              </Chip>
-            )}
-            {syncStatus === 'success' && (
-              <Chip size="sm" variant="flat" color="success" className="h-8" startContent={<CheckCircle2 size={14} />}>
-                Synced
-              </Chip>
-            )}
-            {syncStatus === 'error' && (
-              <Chip size="sm" variant="flat" color="danger" className="h-8" startContent={<AlertTriangle size={14} />}>
-                Sync Failed
-              </Chip>
-            )}
-          </div>
-        </div>
-
-        {/* Right Side - Actions */}
-        <div className="flex gap-2 w-full sm:w-auto justify-end">
-          <Button
-            size="sm"
-            color="primary"
-            variant="flat"
-            startContent={<Wand2 size={14} />}
-            onPress={handleWizardClick}
-          >
-            <span className="hidden sm:inline">{t('pages.timetableWizard')}</span>
-            <span className="sm:hidden">{t('pages.wizard')}</span>
-          </Button>
-          <Button
-            size="sm"
-            variant="flat"
-            startContent={<Settings size={14} />}
-            onPress={onPeriodsOpen}
-          >
-            <span className="hidden sm:inline">{t('pages.periods')}</span>
-            <span className="sm:hidden">{t('pages.settings2')}</span>
-          </Button>
-          {hasChanges && (
-            <Button
-              size="sm"
-              color="primary"
-              startContent={<Save size={14} />}
-              onPress={handleSaveTimetable}
-              isLoading={loading}
-            >
-              Save Changes
-            </Button>
-          )}
-        </div>
-      </div>
+      <TimetableToolbar
+        classId={classId}
+        selectedClass={selectedClass}
+        setSelectedClass={setSelectedClass}
+        classesWithTeachers={classesWithTeachers}
+        selectedClassData={selectedClassData}
+        currentAcademicYear={currentAcademicYear}
+        syncStatus={syncStatus}
+        hasChanges={hasChanges}
+        loading={loading}
+        onWizardClick={handleWizardClick}
+        onPeriodsOpen={onPeriodsOpen}
+        onSaveTimetable={handleSaveTimetable}
+      />
 
       {loading && !hasChanges ? (
         <TablePageSkeleton />
       ) : !timetable ? (
-        /* No timetable set - grayed out state */
-        <div className="flex flex-col items-center justify-center h-full min-h-[400px] bg-gray-50 dark:bg-zinc-900 border-2 border-dashed border-gray-200 dark:border-zinc-800 rounded-lg">
-          <div className="text-center space-y-4">
-            <div className="w-20 h-20 bg-gray-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto">
-              <Clock size={40} className="text-gray-400 dark:text-zinc-500" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-700 dark:text-zinc-300 mb-2">{t('pages.noTimetableSet')}</h3>
-              <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
-                Timetable has not been created for this class yet.
-              </p>
-              <div className="flex items-center justify-center gap-3">
-                <Button
-                  size="sm"
-                  color="primary"
-                  variant="solid"
-                  startContent={<Wand2 size={14} />}
-                  onPress={handleWizardClick}
-                >
-                  Generate Timetable
-                </Button>
-                <Button
-                  size="sm"
-                  variant="flat"
-                  onPress={onPeriodsOpen}
-                >
-                  Manage Periods
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <TimetableEmptyState
+          onWizardClick={handleWizardClick}
+          onPeriodsOpen={onPeriodsOpen}
+        />
       ) : (
-        <>
-          <Table
-            aria-label={t('aria.misc.classTimetable')}
-            shadow="none"
-            isStriped={false}
-            radius="sm"
-            removeWrapper
-            classNames={{
-              base: "overflow-x-auto",
-              th: "bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 font-semibold text-xs uppercase h-10 border-b border-gray-200 dark:border-zinc-800 text-center",
-              td: "p-1 border-b border-gray-100 dark:border-zinc-800",
-              tr: "hover:bg-gray-50 dark:hover:bg-zinc-900",
-              wrapper: "p-0"
-            }}
-          >
-            <TableHeader>
-              <TableColumn className="w-24" scope="col">{t('pages.day2')}</TableColumn>
-              {periods.map((period, i) => (
-                <TableColumn key={`period-${period.name}-${period.startTime}`} className="w-32" scope="col">
-                  <div className="flex flex-col items-center justify-center gap-0.5">
-                    <span className="text-xs font-bold">{period.name}</span>
-                    <span className="text-[9px] text-gray-400 dark:text-zinc-500 font-normal">
-                      {period.startTime}-{period.endTime}
-                    </span>
-                  </div>
-                </TableColumn>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {days.map((day) => (
-                <TableRow key={day}>
-                  <TableCell className="font-semibold text-gray-700 dark:text-zinc-300 text-xs">
-                    <span className="hidden sm:inline">{day}</span>
-                    <span className="sm:hidden">{day.slice(0, 3)}</span>
-                  </TableCell>
-                  {periods.map((period, i) => {
-                    const slot = schedule[day]?.[i] || { subject: "", teacherId: null, room: "" };
-
-                    if (period.isBreak) {
-                      return (
-                        <TableCell key={`${day}-${i}`} className="text-center bg-amber-50 dark:bg-amber-950 p-0">
-                          <div className="h-24 flex items-center justify-center">
-                            <span className="text-[9px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 opacity-70 [writing-mode:vertical-rl] rotate-180">
-                              {period.name}
-                            </span>
-                          </div>
-                        </TableCell>
-                      );
-                    }
-
-                    const subjectClasses = slot.subject ? getSubjectClasses(slot.subject) : null;
-                    return (
-                      <TableCell key={`${day}-${i}`} className="p-1">
-                        {slot.subject ? (
-                          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                            <div
-                              className={`${subjectClasses.card} rounded-lg h-24 flex flex-col justify-center items-center gap-1 p-1.5 cursor-pointer transition-opacity hover:opacity-90`}
-                              onClick={() => handleSlotClick(day, i)}
-                            >
-                              <span className={`text-xs font-bold text-center line-clamp-2 ${subjectClasses.text}`}>
-                                {slot.subject}
-                              </span>
-                              {slot.teacherId && (
-                                <div className={`flex items-center gap-1 ${subjectClasses.pill} px-1.5 py-0.5 rounded-full max-w-full`}>
-                                  <span className="text-[10px] text-gray-600 dark:text-zinc-300 text-center truncate">
-                                    {getTeacherName(slot.teacherId)}
-                                  </span>
-                                </div>
-                              )}
-                              {slot.room && (
-                                <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${subjectClasses.pill} text-gray-500 dark:text-zinc-400`}>
-                                  {slot.room}
-                                </span>
-                              )}
-                            </div>
-                          </motion.div>
-                        ) : (
-                          <div
-                            className="w-full h-24 border border-dashed border-gray-200 dark:border-zinc-800 rounded-lg flex flex-col items-center justify-center gap-1 text-gray-300 dark:text-zinc-600 hover:border-blue-400 dark:hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950 cursor-pointer"
-                            onClick={() => handleSlotClick(day, i)}
-                          >
-                            <Plus size={16} />
-                            <span className="text-[10px]">{t('pages.add1')}</span>
-                          </div>
-                        )}
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          {/* Legend */}
-          <div className="mt-4 flex flex-wrap gap-4 text-xs text-gray-500 dark:text-zinc-400 items-center justify-end px-4 pb-4 border-t border-gray-100 dark:border-zinc-800 pt-4">
-            <span className="font-medium mr-2">{t('pages.subjectTypes')}</span>
-            <div className="flex gap-2 items-center">
-              <span className="w-3 h-3 rounded-full bg-blue-200 border border-blue-300"></span>
-              <span>{t('pages.coreMath')}</span>
-            </div>
-            <div className="flex gap-2 items-center">
-              <span className="w-3 h-3 rounded-full bg-green-200 border border-green-300"></span>
-              <span>{t('pages.science')}</span>
-            </div>
-            <div className="flex gap-2 items-center">
-              <span className="w-3 h-3 rounded-full bg-yellow-200 border border-yellow-300"></span>
-              <span>Languages/Art</span>
-            </div>
-            <div className="flex gap-2 items-center">
-              <span className="w-3 h-3 rounded-full bg-purple-200 border border-purple-300"></span>
-              <span>Social/Computer</span>
-            </div>
-            <div className="flex gap-2 items-center">
-              <span className="w-3 h-3 rounded-full bg-red-200 border border-red-300"></span>
-              <span>Sports/Hindi</span>
-            </div>
-          </div>
-        </>
+        <TimetableGrid
+          days={days}
+          periods={periods}
+          schedule={schedule}
+          staff={staff}
+          onSlotClick={handleSlotClick}
+        />
       )}
 
       {/* Periods Management Modal */}
-      <Modal isOpen={isPeriodsOpen} onClose={onPeriodsClose} size="2xl" scrollBehavior="inside">
-        <ModalContent>
-          <ModalHeader className="flex items-center gap-2">
-            <Clock size={20} className="text-primary" />
-            <span>{t('pages.managePeriods')}</span>
-          </ModalHeader>
-          <ModalBody>
-            <div className="space-y-3">
-              {periods.map((period, i) => (
-                <div key={`period-edit-${i}`} className="flex gap-2 items-end">
-                  <Input
-                    size="sm"
-                    value={period.name}
-                    onValueChange={(v) => updatePeriod(i, 'name', v)}
-                    label={t('pages.periodName')}
-                    className="flex-1"
-                    variant="bordered"
-                  />
-                  <Input
-                    size="sm"
-                    type="time"
-                    value={period.startTime}
-                    onValueChange={(v) => updatePeriod(i, 'startTime', v)}
-                    label={t('pages.startTime1')}
-                    className="w-32"
-                    variant="bordered"
-                  />
-                  <Input
-                    size="sm"
-                    type="time"
-                    value={period.endTime}
-                    onValueChange={(v) => updatePeriod(i, 'endTime', v)}
-                    label={t('pages.endTime1')}
-                    className="w-32"
-                    variant="bordered"
-                  />
-                  <div className="flex items-center gap-2">
-                    <label className="flex items-center gap-1 text-xs cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={period.isBreak}
-                        onChange={(e) => updatePeriod(i, 'isBreak', e.target.checked)}
-                        className="rounded"
-                      />
-                      <span>{t('pages.break')}</span>
-                    </label>
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      color="danger"
-                      variant="flat"
-                      radius="md"
-                      onPress={() => removePeriod(i)}
-                      isDisabled={periods.length <= 1}
-                    >
-                      <Trash2 size={14} />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              <Button
-                size="sm"
-                variant="flat"
-                radius="md"
-                startContent={<Plus size={14} />}
-                onPress={addPeriod}
-                className="w-full"
-              >
-                Add Period
-              </Button>
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onPeriodsClose}>{t('pages.cancel2')}</Button>
-            <Button color="primary" onPress={handleSavePeriods}>{t('pages.applyChanges')}</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <PeriodsModal
+        isOpen={isPeriodsOpen}
+        onClose={onPeriodsClose}
+        periods={periods}
+        onAddPeriod={addPeriod}
+        onRemovePeriod={removePeriod}
+        onUpdatePeriod={updatePeriod}
+        onSavePeriods={handleSavePeriods}
+      />
 
       {/* Edit Slot Modal */}
-      <Modal isOpen={isSlotOpen} onClose={onSlotClose} size="md">
-        <ModalContent>
-          <ModalHeader>
-            {editingSlot && `Edit ${editingSlot.day} - ${periods[editingSlot.periodIndex]?.name}`}
-          </ModalHeader>
-          <ModalBody>
-            <div className="space-y-4">
-              <Select
-                label={t('pages.subject2')}
-                placeholder={t('pages.selectSubject')}
-                selectedKeys={slotForm.subject ? [slotForm.subject] : []}
-                onSelectionChange={(keys) => setSlotForm({ ...slotForm, subject: Array.from(keys)[0] || "" })}
-                variant="bordered"
-              >
-                {(schoolSettings.subjects || []).map(subject => (
-                  <SelectItem key={subject.name} textValue={subject.name}>
-                    {subject.name}
-                  </SelectItem>
-                ))}
-              </Select>
-
-              {/* Show loading state while fetching teachers */}
-              {loadingTeachers && slotForm.subject && (
-                <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">
-                  <Spinner size="sm" />
-                  <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.loadingAvailableTeachers')}</span>
-                </div>
-              )}
-
-              {/* Teacher selection - only show available teachers */}
-              {slotForm.subject && !loadingTeachers && (
-                <>
-                  <Select
-                    label={t('pages.teacher2')}
-                    placeholder={availableTeachers.length > 0 ? "Select teacher" : "No teachers available"}
-                    selectedKeys={slotForm.teacherId ? [String(slotForm.teacherId)] : []}
-                    onSelectionChange={(keys) => handleTeacherChange(Array.from(keys)[0] || "")}
-                    variant="bordered"
-                    isDisabled={availableTeachers.length === 0}
-                    description={
-                      availableTeachers.length === 0
-                        ? "No qualified teachers are available for this subject and time slot"
-                        : `${availableTeachers.length} teacher(s) available and free at this time`
-                    }
-                  >
-                    {availableTeachers.map(teacher => (
-                      <SelectItem
-                        key={String(teacher.id || teacher._id)}
-                        textValue={teacher.name}
-                      >
-                        {teacher.name}
-                      </SelectItem>
-                    ))}
-                  </Select>
-
-                  {availableTeachers.length === 0 && (
-                    <div className="p-3 bg-warning-50 border border-warning-200 rounded-lg">
-                      <p className="text-xs text-warning-700">
-                        <strong>{t('pages.tip')}</strong> No teachers are qualified or available. You can:
-                      </p>
-                      <ul className="text-xs text-warning-600 mt-2 ml-4 list-disc space-y-1">
-                        <li>{t('pages.assignATeacherToThisSubjectInStaffManagement')}</li>
-                        <li>{t('pages.chooseADifferentTimeSlot')}</li>
-                        <li>{t('pages.selectADifferentSubject')}</li>
-                      </ul>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Show conflict warning using ConflictIndicator */}
-              {conflicts.length > 0 && (
-                <ConflictIndicator
-                  conflicts={conflicts}
-                  onResolve={(resolutionData) => {
-                    const { action, classId } = resolutionData;
-
-                    if (action === 'remove_current') {
-                      // Clear the current slot
-                      handleClearSlot();
-                    } else if (action === 'choose_different') {
-                      // User needs to select a different teacher
-                      setConflicts([]);
-                      setSlotForm({ ...slotForm, teacherId: "" });
-                    } else if (action === 'remove_from_class') {
-                      // This would require additional API call to remove teacher from conflicting class
-                      alert(`To resolve this conflict, please go to ${resolutionData.resolution.className} timetable and remove the teacher from that slot.`);
-                    } else if (action === 'update_assignments') {
-                      alert('Please go to Staff Assignments to add this subject-class assignment to the teacher.');
-                    }
-                  }}
-                />
-              )}
-
-              <Input
-                label={t('pages.room')}
-                placeholder={t('classes.roomOptionalPlaceholder')}
-                value={slotForm.room}
-                onValueChange={(v) => setSlotForm({ ...slotForm, room: v })}
-                variant="bordered"
-              />
-
-              {slotForm.subject && (
-                <Button
-                  size="sm"
-                  color="danger"
-                  variant="flat"
-                  startContent={<X size={14} />}
-                  onPress={handleClearSlot}
-                  className="w-full"
-                  isLoading={syncStatus === 'syncing'}
-                >
-                  Clear Slot
-                </Button>
-              )}
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onSlotClose}>{t('pages.cancel2')}</Button>
-            <Button
-              color="primary"
-              onPress={handleSaveSlot}
-              isDisabled={!slotForm.subject || conflicts.length > 0}
-              isLoading={syncStatus === 'syncing'}
-            >
-              {syncStatus === 'syncing' ? 'Saving & Syncing...' : 'Save'}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <EditSlotModal
+        isOpen={isSlotOpen}
+        onClose={onSlotClose}
+        editingSlot={editingSlot}
+        periods={periods}
+        slotForm={slotForm}
+        setSlotForm={setSlotForm}
+        loadingTeachers={loadingTeachers}
+        availableTeachers={availableTeachers}
+        conflicts={conflicts}
+        setConflicts={setConflicts}
+        syncStatus={syncStatus}
+        schoolSettings={schoolSettings}
+        onTeacherChange={handleTeacherChange}
+        onSaveSlot={handleSaveSlot}
+        onClearSlot={handleClearSlot}
+      />
 
       {/* Confirmation Dialogs */}
       <ConfirmDialog
@@ -950,7 +520,7 @@ export default function Timetable({ classId }) {
         isLoading={loading}
       />
 
-      {/* Slot Info Modal — rich details view for filled slots */}
+      {/* Slot Info Modal */}
       <SlotInfoModal
         isOpen={isInfoOpen}
         onClose={onInfoClose}
@@ -964,7 +534,6 @@ export default function Timetable({ classId }) {
         staff={staff}
         onEdit={handleEditFromInfo}
       />
-
     </div>
   );
 }

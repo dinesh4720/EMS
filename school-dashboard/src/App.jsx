@@ -253,6 +253,21 @@ function AuthenticatedApp() {
                         </PermissionGuard>
                       </RouteEB>
                     } />
+                    {/* [AUDIT-571] Specific /students/ routes BEFORE wildcard to avoid shadowing */}
+                    <Route path="/students/promotion" element={
+                      <RouteEB>
+                        <PermissionGuard module="students">
+                          <StudentPromotionPage />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
+                    <Route path="/students/transfer-certificate" element={
+                      <RouteEB>
+                        <PermissionGuard module="students">
+                          <TransferCertificatePage />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
                     <Route path="/students/*" element={
                       <RouteEB>
                         <PermissionGuard module="students">
@@ -376,20 +391,6 @@ function AuthenticatedApp() {
                       </RouteEB>
                     } />
                     */}
-                    <Route path="/students/promotion" element={
-                      <RouteEB>
-                        <PermissionGuard module="students">
-                          <StudentPromotionPage />
-                        </PermissionGuard>
-                      </RouteEB>
-                    } />
-                    <Route path="/students/transfer-certificate" element={
-                      <RouteEB>
-                        <PermissionGuard module="students">
-                          <TransferCertificatePage />
-                        </PermissionGuard>
-                      </RouteEB>
-                    } />
                     <Route path="/settings/*" element={
                       <RouteEB>
                         <PermissionGuard module="settings">

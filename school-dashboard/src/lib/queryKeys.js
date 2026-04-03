@@ -63,12 +63,12 @@ export const queryKeys = {
 
   // ── Student Fees ───────────────────────────────────────────────────
   studentFees: {
-    all: ['student-fees'],
+    all: ['studentFees'],
     detail: (studentId, academicYear, autoInitialize) => [
-      'student-fees', studentId, academicYear, autoInitialize,
+      'studentFees', studentId, academicYear, autoInitialize,
     ],
     batch: (academicYear, idsKey) => [
-      'student-fees', 'batch', academicYear, idsKey,
+      'studentFees', 'batch', academicYear, idsKey,
     ],
   },
 

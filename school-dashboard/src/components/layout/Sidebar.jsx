@@ -328,7 +328,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
           `}
         >
           {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
-          {isSidebarOpen && <span className="text-sm font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
+          {isSidebarOpen && <span className="text-sm font-medium">{theme === 'dark' ? t('sidebar.lightMode', 'Light Mode') : t('sidebar.darkMode', 'Dark Mode')}</span>}
         </button>
 
         {/* User Profile */}
@@ -380,7 +380,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                   }}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
                 >
-                  My Settings
+                  {t('sidebar.mySettings', 'My Settings')}
                 </button>
                 <div className="h-px bg-gray-200 dark:bg-zinc-700 my-1" />
                 <button
@@ -392,7 +392,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                   className="w-full text-left px-4 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors flex items-center gap-2"
                 >
                   <LogOut size={14} />
-                  Log Out
+                  {t('sidebar.logOut', 'Log Out')}
                 </button>
               </div>
             </div>

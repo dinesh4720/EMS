@@ -80,6 +80,7 @@ export const API_STATUS = {
 export const FEE_STATUS = {
   PAID: 'paid',
   PENDING: 'pending',
+  PARTIAL: 'partial',
   OVERDUE: 'overdue'
 };
 

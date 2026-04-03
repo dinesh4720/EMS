@@ -111,7 +111,7 @@ export default function PersonalInfoStep({
             setDobValidation={setDobValidation}
             isOpen={isDobCalendarOpen}
             setIsOpen={setIsDobCalendarOpen}
-            ref={dobRef}
+            inputRef={dobRef}
           />
         </div>
       </div>
@@ -144,7 +144,7 @@ export default function PersonalInfoStep({
         classesWithTeachers={classesWithTeachers}
         onClassChange={handleClassChange}
         onSectionChange={(section) => updateField("section", section)}
-        ref={classRef}
+        inputRef={classRef}
       />
 
       {/* Contact Info */}
@@ -211,9 +211,10 @@ function ProfileSection({ formData, updateField }) {
   );
 }
 
-function DateOfBirthInput({ value, onChange, error, ref }) {
+// [AUDIT-541] Changed ref prop to inputRef — function components can't receive ref as plain prop
+function DateOfBirthInput({ value, onChange, error, inputRef }) {
   return (
-    <div ref={ref} className="space-y-1">
+    <div ref={inputRef} className="space-y-1">
       <label className="text-xs font-medium text-default-600">
         Date of Birth <span className="text-danger">*</span>
       </label>
@@ -233,7 +234,8 @@ function DateOfBirthInput({ value, onChange, error, ref }) {
   );
 }
 
-function ClassSection({ formData, errors, classesWithTeachers, onClassChange, onSectionChange, ref }) {
+// [AUDIT-541] Changed ref prop to inputRef
+function ClassSection({ formData, errors, classesWithTeachers, onClassChange, onSectionChange, inputRef }) {
   const uniqueClasses = [...new Set(classesWithTeachers.map((c) => c.name))].sort(
     (a, b) => parseInt(a) - parseInt(b)
   );

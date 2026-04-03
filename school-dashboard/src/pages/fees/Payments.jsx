@@ -27,14 +27,8 @@ import { showErrorToast } from "../../utils/errorHandling";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { formatShortDate } from '../../utils/dateFormatter';
+import { getStoredUser } from '../../utils/authSession';
 
-function getCurrentUser() {
-  try {
-    const stored = sessionStorage.getItem('app_user');
-    if (stored) return JSON.parse(stored);
-  } catch (_) { /* ignored */ }
-  return null;
-}
 
 export default function Payments() {
   const { t } = useTranslation();
@@ -246,7 +240,7 @@ export default function Payments() {
       .map((h, index) => {
         const balance = h.balanceAmount ?? Math.max((h.amount || 0) - (h.paidAmount || 0), 0);
         return {
-          id: h.feeHeadId?._id || h.feeHeadId || `head-${index}`,
+          id: h.feeHeadId?._id || h.feeHeadId || null,
           head: h.name || 'Fee',
           category: h.category || '',
           frequency: h.frequency || '',
@@ -259,17 +253,17 @@ export default function Payments() {
       });
   };
 
-  const studentFees = getStudentFees(selectedStudent);
+  const studentFees = useMemo(() => getStudentFees(selectedStudent), [selectedStudent]);
 
   // Auto-select all pending fees by default
   useEffect(() => {
     if (selectedStudent && studentFees.length > 0) {
-      setSelectedFees(studentFees.map(f => f.id.toString()));
+      setSelectedFees(studentFees.filter(f => f.id).map(f => f.id.toString()));
     }
-  }, [selectedStudent, studentFees.length]);
+  }, [selectedStudent, studentFees]);
 
   const totalSelected = studentFees
-    .filter((f) => selectedFees.includes(f.id.toString()))
+    .filter((f) => f.id && selectedFees.includes(f.id.toString()))
     .reduce((sum, f) => sum + f.amount, 0);
 
   const handleCollect = async () => {
@@ -277,7 +271,7 @@ export default function Payments() {
     setCollectingPayment(true);
     try {
       const student = students.find(s => s.id === selectedStudent.id);
-      const currentUser = getCurrentUser();
+      const currentUser = getStoredUser();
 
       const paymentData = {
         studentId: selectedStudent.id,
@@ -286,9 +280,9 @@ export default function Payments() {
         amount: totalSelected,
         paymentMode,
         feeHeads: studentFees
-          .filter((f) => selectedFees.includes(f.id.toString()))
-          .map(f => ({ feeHeadId: f.id, name: f.head, amount: f.amount, month: f.month })),
-        collectedBy: currentUser?._id || currentUser?.id || null,
+          .filter((f) => f.id && selectedFees.includes(f.id.toString()))
+          .map(f => ({ ...(f.id ? { feeHeadId: f.id } : {}), name: f.head, amount: f.amount, month: f.month })),
+        collectedBy: currentUser?.id || null,
         remarks: "Payment collected via dashboard"
       };
 

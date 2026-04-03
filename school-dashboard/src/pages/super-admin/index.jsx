@@ -380,11 +380,16 @@ export default function SuperAdminDashboard() {
       });
 
       setForm(INITIAL_FORM);
-      setMessage(
-        response.temporaryPassword
-          ? `School created. Temporary admin password: ${response.temporaryPassword}`
-          : 'School created and provisioned successfully.'
-      );
+      // [AUDIT-529] Show temp password in a one-time alert instead of persistent DOM
+      if (response.temporaryPassword) {
+        // Use window.prompt so user can copy, then clear from memory
+        window.alert(
+          `School created successfully.\n\nTemporary admin password (copy now — it will not be shown again):\n\n${response.temporaryPassword}`
+        );
+        setMessage('School created and provisioned successfully.');
+      } else {
+        setMessage('School created and provisioned successfully.');
+      }
       await loadData();
     } catch (err) {
       setError(err.message || 'Failed to create school');

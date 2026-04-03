@@ -4,6 +4,7 @@ import { Activity, CheckCircle, XCircle, Calendar, BookOpen, AlertTriangle, Mail
 import toast from "react-hot-toast";
 import { attendanceApi, studentsApi } from "../../../../services/api.js";
 import { useTranslation } from 'react-i18next';
+import { useApp } from "../../../../context/AppContext";
 
 /**
  * AttendanceTab - Student attendance overview and management
@@ -14,6 +15,7 @@ export default function AttendanceTab({
   onRegularizeOpen
 }) {
   const { t } = useTranslation();
+  const { currentAcademicYear } = useApp();
   const [attendanceData, setAttendanceData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString('default', { month: 'long' }).toLowerCase());
@@ -27,9 +29,10 @@ export default function AttendanceTab({
 
       setLoading(true);
       try {
-        // Get attendance for current year
-        const startDate = new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0];
-        const endDate = new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
+        // Get attendance for academic year (April to March for Indian schools)
+        const startYear = parseInt(currentAcademicYear?.split('-')[0]) || new Date().getFullYear();
+        const startDate = new Date(startYear, 3, 1).toISOString().split('T')[0]; // April 1
+        const endDate = new Date(startYear + 1, 2, 31).toISOString().split('T')[0]; // March 31
 
         const data = await attendanceApi.getStudentAttendance(student.id, startDate, endDate);
         setAttendanceData(Array.isArray(data) ? data : []);
@@ -43,7 +46,7 @@ export default function AttendanceTab({
     };
 
     fetchAttendance();
-  }, [student?.id]);
+  }, [student?.id, currentAcademicYear]);
 
   // Removed redundant useEffect — selectedMonth already initialized with same value in useState
 

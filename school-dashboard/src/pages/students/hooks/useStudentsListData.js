@@ -670,7 +670,7 @@ export function useStudentsListData() {
     isPreviewOpen, onPreviewClose,
     // bulk handlers
     bulkAction, handleBulkAction, executeBulkAction,
-    executePromotion, executeSendReminders, handleBulkMessage,
+    executePromotion, executeSendReminders,
     isBulkProcessing, isPromoting,
     // delete/update
     deleteStudent, updateStudent,

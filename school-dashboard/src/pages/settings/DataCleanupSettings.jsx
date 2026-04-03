@@ -24,17 +24,18 @@ const CATEGORY_DEFS = [
   { key: "results", label: "Results", icon: "R", color: "danger" },
 ];
 
-const FALLBACK_COUNTS = {
-  students: 120,
-  staff: 25,
-  classes: 10,
-  attendance: 500,
-  results: 80,
+const EMPTY_COUNTS = {
+  students: 0,
+  staff: 0,
+  classes: 0,
+  attendance: 0,
+  results: 0,
 };
 
 export default function DataCleanupSettings() {
-  const [counts, setCounts] = useState(FALLBACK_COUNTS);
+  const [counts, setCounts] = useState(EMPTY_COUNTS);
   const [loading, setLoading] = useState(true);
+  const [countsError, setCountsError] = useState(false);
   const [selected, setSelected] = useState(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -48,18 +49,20 @@ export default function DataCleanupSettings() {
   const fetchCounts = async () => {
     try {
       setLoading(true);
+      setCountsError(false);
       const data = await request("/settings/data-counts");
       if (data && typeof data === "object" && Object.keys(data).length > 0) {
         setCounts({
-          students: data.students ?? FALLBACK_COUNTS.students,
-          staff: data.staff ?? FALLBACK_COUNTS.staff,
-          classes: data.classes ?? FALLBACK_COUNTS.classes,
-          attendance: data.attendance ?? FALLBACK_COUNTS.attendance,
-          results: data.results ?? FALLBACK_COUNTS.results,
+          students: data.students ?? 0,
+          staff: data.staff ?? 0,
+          classes: data.classes ?? 0,
+          attendance: data.attendance ?? 0,
+          results: data.results ?? 0,
         });
       }
     } catch {
-      // Use fallback counts on error
+      setCountsError(true);
+      setCounts(EMPTY_COUNTS);
     } finally {
       setLoading(false);
     }
@@ -199,6 +202,17 @@ export default function DataCleanupSettings() {
         </p>
       </div>
 
+      {/* Error Banner */}
+      {countsError && (
+        <Card className="border-2 border-warning-300 bg-warning-50/50 dark:bg-warning-900/20">
+          <CardBody className="p-4">
+            <p className="text-sm text-warning-700 dark:text-warning-300 font-medium">
+              Failed to load data counts from the server. Counts shown as 0 to prevent accidental deletions. Please refresh the page to try again.
+            </p>
+          </CardBody>
+        </Card>
+      )}
+
       {/* Danger Zone Banner */}
       <Card className="border-2 border-danger-300 bg-danger-50/50 dark:bg-danger-900/20">
         <CardBody className="p-4">
@@ -282,7 +296,7 @@ export default function DataCleanupSettings() {
           size="lg"
           startContent={<Trash2 size={18} />}
           onPress={handleRemove}
-          isDisabled={selected.size === 0}
+          isDisabled={selected.size === 0 || countsError}
         >
           Remove All Data
         </Button>

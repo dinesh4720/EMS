@@ -131,7 +131,8 @@ export default function FeeDefaulters() {
   const handleExportDefaulters = () => {
     const headers = [t('common.student', 'Student'), t('common.class', 'Class'), t('common.rollNo', 'Roll No'), t('fees.pendingAmount', 'Pending Amount'), t('fees.dueDate', 'Due Date'), t('fees.daysOverdue', 'Days Overdue'), t('common.phone', 'Phone')];
     const rows = filteredDefaulters.map(d => [d.student, d.class, d.rollNo, d.pending, d.dueDate, d.days, d.phone || 'N/A']);
-    const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+    const escapeCSV = (val) => `"${String(val ?? '').replace(/"/g, '""')}"`;
+    const csvContent = [headers.map(escapeCSV).join(','), ...rows.map(row => row.map(escapeCSV).join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
