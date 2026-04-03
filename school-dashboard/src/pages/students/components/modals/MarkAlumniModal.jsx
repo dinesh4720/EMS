@@ -55,7 +55,7 @@ export default function MarkAlumniModal({ isOpen, onClose, student, onMark }) {
               <div>
                 <p className="font-semibold text-gray-900 dark:text-zinc-100">{t('pages.confirmAction1')}</p>
                 <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
-                  This will change {student?.name}'s status to "Alumni". The student will no longer appear in active student lists.
+                  {t('students.modals.markAlumniConfirmText', { name: student?.name, defaultValue: `This will change ${student?.name}'s status to "Alumni". The student will no longer appear in active student lists.` })}
                 </p>
               </div>
             </div>

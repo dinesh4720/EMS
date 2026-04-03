@@ -299,7 +299,7 @@ const PrintableStudentProfile = forwardRef(({
             <div style={styles.field}><span style={styles.label}>ID: </span><span style={styles.value}>{student.admissionId || `ADM${student.id}`}</span></div>
             <div style={styles.field}><span style={styles.label}>Class: </span><span style={styles.value}>{student.class || "N/A"}</span></div>
             <div style={styles.field}><span style={styles.label}>Roll No: </span><span style={styles.value}>{student.rollNo || "N/A"}</span></div>
-            <div style={styles.field}><span style={styles.label}>Status: </span><span style={{...styles.value, color: student.status === "active" ? "#22c55e" : "#f59e0b"}}>{student.status || "Active"}</span></div>
+            <div style={styles.field}><span style={styles.label}>Status: </span><span style={{...styles.value, color: student.status === "active" ? "#22c55e" : student.status === "graduated" ? "#3b82f6" : student.status === "transferred" ? "#8b5cf6" : "#f59e0b"}}>{student.status || "Active"}</span></div>
             <div style={styles.field}><span style={styles.label}>Teacher: </span><span style={styles.value}>{classTeacher?.name || "N/A"}</span></div>
             <div style={styles.field}>
               <span style={styles.label}>Performance: </span>

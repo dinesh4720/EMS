@@ -390,16 +390,16 @@ const StudentAttendance = memo(function StudentAttendance() {
                             disabledKeys={selectedKeys !== "all" && selectedKeys.size === 0 ? ["present", "absent", "leave", "halfday"] : []}
                         >
                             <DropdownItem key="present" startContent={<Check size={14} className="text-success" />} className="text-success">
-                                Mark Selected Present
+                                {t('attendance.markSelectedPresent', 'Mark Selected Present')}
                             </DropdownItem>
                             <DropdownItem key="halfday" startContent={<AlertCircle size={14} className="text-secondary" />} className="text-secondary">
-                                Mark Selected Half Day
+                                {t('attendance.markSelectedHalfDay', 'Mark Selected Half Day')}
                             </DropdownItem>
                             <DropdownItem key="absent" startContent={<X size={14} className="text-danger" />} className="text-danger">
-                                Mark Selected Absent
+                                {t('attendance.markSelectedAbsent', 'Mark Selected Absent')}
                             </DropdownItem>
                             <DropdownItem key="leave" startContent={<Clock size={14} className="text-warning" />} className="text-warning">
-                                Mark Selected On Leave
+                                {t('attendance.markSelectedOnLeave', 'Mark Selected On Leave')}
                             </DropdownItem>
                         </DropdownMenu>
                     </Dropdown>
@@ -413,7 +413,7 @@ const StudentAttendance = memo(function StudentAttendance() {
                         onPress={handleSaveAttendance}
                         className="whitespace-nowrap"
                     >
-                        Save Attendance
+                        {t('attendance.saveAttendance', 'Save Attendance')}
                     </Button>
                 </div>
             </div>

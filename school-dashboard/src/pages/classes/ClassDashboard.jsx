@@ -111,7 +111,7 @@ export default function ClassDashboard() {
   const handleExportReport = () => {
     const classStudents = students.filter(s => String(s.classId?._id || s.classId) === String(id));
     if (classStudents.length === 0) { toast.error(t('toast.error.noStudentsToExport', 'No students to export')); return; }
-    const headers = ['Name', 'Roll No', 'Admission No', 'Gender', 'Parent Name', 'Parent Phone'];
+    const headers = [t('common.name', 'Name'), t('classes.rollNo', 'Roll No'), t('classes.admissionNo', 'Admission No'), t('common.gender', 'Gender'), t('classes.parentName', 'Parent Name'), t('classes.parentPhone', 'Parent Phone')];
     const rows = classStudents.map(s => [s.name || '', s.rollNo || '', s.admissionNo || '', s.gender || '', s.parentName || s.fatherName || '', s.parentPhone || '']);
     const csvContent = [headers.join(','), ...rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -131,13 +131,13 @@ export default function ClassDashboard() {
   };
 
   const tabs = [
-    { key: "overview", label: "Overview" },
-    { key: "students", label: "Students" },
-    { key: "attendance", label: "Attendance" },
-    { key: "fees", label: "Fees" },
-    { key: "academics", label: "Academics" },
-    { key: "timetable", label: "Time Table" },
-    { key: "settings", label: "Settings" },
+    { key: "overview", label: t('classes.overview', 'Overview') },
+    { key: "students", label: t('classes.students', 'Students') },
+    { key: "attendance", label: t('classes.attendance', 'Attendance') },
+    { key: "fees", label: t('classes.fees', 'Fees') },
+    { key: "academics", label: t('classes.academics', 'Academics') },
+    { key: "timetable", label: t('classes.timeTable', 'Time Table') },
+    { key: "settings", label: t('common.settings', 'Settings') },
   ];
 
   if (!isValid) return null;
@@ -159,7 +159,7 @@ export default function ClassDashboard() {
           <h2 className="text-lg font-semibold text-gray-800 dark:text-zinc-200 mb-1">{t('pages.classNotFound1')}</h2>
           <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.theClassYouReLookingForDoesnTExistOrHasBeenRemoved')}</p>
           <button onClick={() => navigate('/classes')} className="mt-4 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-lg text-sm text-gray-700 dark:text-zinc-300 transition-colors">
-            View All Classes
+            {t('classes.viewAllClasses', 'View All Classes')}
           </button>
         </div>
       </div>
@@ -171,30 +171,30 @@ export default function ClassDashboard() {
   // Header KPI stats (always visible)
   const headerStats = [
     {
-      label: "Attendance",
+      label: t('classes.attendance', 'Attendance'),
       value: `${attendancePercentage}%`,
-      subtext: `${todayStatus?.attendance?.present || 0} present today`,
+      subtext: t('classes.presentToday', '{{count}} present today', { count: todayStatus?.attendance?.present || 0 }),
       icon: CheckCircle2,
       color: attendancePercentage >= 75 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400',
     },
     {
-      label: "Current Period",
-      value: todayStatus?.currentClass?.subject || "Free",
-      subtext: todayStatus?.currentClass?.teacher || "No class now",
+      label: t('classes.currentPeriod', 'Current Period'),
+      value: todayStatus?.currentClass?.subject || t('classes.free', 'Free'),
+      subtext: todayStatus?.currentClass?.teacher || t('classes.noClassNow', 'No class now'),
       icon: BookOpen,
       color: 'text-blue-600 dark:text-blue-400',
     },
     {
-      label: "Class Rating",
+      label: t('classes.classRating', 'Class Rating'),
       value: (classRating?.overallRating || classRating?.rating || 0).toFixed(1),
-      subtext: "out of 5.0",
+      subtext: t('classes.outOf5', 'out of 5.0'),
       icon: Star,
       color: 'text-amber-500 dark:text-amber-400',
     },
     {
-      label: "Students",
+      label: t('classes.students', 'Students'),
       value: `${cls?.studentCount || 0}`,
-      subtext: `of ${cls?.strengthLimit?.current || 40} capacity`,
+      subtext: t('classes.ofCapacity', 'of {{count}} capacity', { count: cls?.strengthLimit?.current || 40 }),
       icon: Users,
       color: 'text-gray-600 dark:text-zinc-400',
     },
@@ -221,13 +221,13 @@ export default function ClassDashboard() {
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
-                  {cls?.name || 'N/A'} - Section {cls?.section || 'N/A'}
+                  {cls?.name || 'N/A'} - {t('classes.section', 'Section')} {cls?.section || 'N/A'}
                 </h1>
                 <div className="flex items-center gap-2 mt-1 text-sm text-gray-500 dark:text-zinc-400 flex-wrap">
-                  <span>{cls?.studentCount || 0} Students</span>
+                  <span>{cls?.studentCount || 0} {t('classes.students', 'Students')}</span>
                   <span className="text-gray-300 dark:text-zinc-600">·</span>
-                  <span>{cls?.strengthLimit?.current || 40} Capacity</span>
-                  {cls?.room && (<><span className="text-gray-300 dark:text-zinc-600">·</span><span>Room {cls.room}</span></>)}
+                  <span>{cls?.strengthLimit?.current || 40} {t('classes.capacity', 'Capacity')}</span>
+                  {cls?.room && (<><span className="text-gray-300 dark:text-zinc-600">·</span><span>{t('classes.room', 'Room')} {cls.room}</span></>)}
                 </div>
                 {cls?.classTeacherId ? (
                   <div className="flex items-center gap-2 mt-1.5">
@@ -236,7 +236,7 @@ export default function ClassDashboard() {
                       className="text-xs text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 cursor-pointer"
                       onClick={() => navigate(`/staffs/${cls.classTeacherId}`)}
                     >
-                      {cls?.teacher || 'Class Teacher'}
+                      {cls?.teacher || t('classes.classTeacher', 'Class Teacher')}
                     </span>
                   </div>
                 ) : (
@@ -244,7 +244,7 @@ export default function ClassDashboard() {
                     <AlertCircle size={12} className="text-amber-500" />
                     <span className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.noClassTeacherAssigned')}</span>
                     <button onClick={() => setIsAssignTeacherModalOpen(true)} className="text-xs font-medium text-blue-600 hover:text-blue-800 underline">
-                      Assign
+                      {t('classes.assign', 'Assign')}
                     </button>
                   </div>
                 )}
@@ -262,7 +262,7 @@ export default function ClassDashboard() {
                   <DropdownItem key="export" startContent={<Download size={14} className="text-gray-400" />} onPress={handleExportReport}>{t('pages.exportReport')}</DropdownItem>
                   <DropdownItem key="notice" startContent={<Send size={14} className="text-gray-400" />} onPress={handleSendNotice}>{t('pages.sendNotice')}</DropdownItem>
                   <DropdownItem key="timetable" startContent={<Clock size={14} className="text-gray-400" />} onPress={() => setActiveTab("timetable")}>{t('pages.viewTimetable')}</DropdownItem>
-                  <DropdownItem key="settings" startContent={<GraduationCap size={14} className="text-gray-400" />} onPress={() => setActiveTab("settings")}>Settings</DropdownItem>
+                  <DropdownItem key="settings" startContent={<GraduationCap size={14} className="text-gray-400" />} onPress={() => setActiveTab("settings")}>{t('common.settings', 'Settings')}</DropdownItem>
                 </DropdownMenu>
               </Dropdown>
             </div>
@@ -357,7 +357,7 @@ export default function ClassDashboard() {
                     <span className="text-sm font-medium text-gray-600 dark:text-zinc-400">{cls?.teacher?.charAt(0) || 'T'}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{cls?.teacher || 'Teacher'}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{cls?.teacher || t('classes.teacher', 'Teacher')}</p>
                     <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.classTeacher2')}</p>
                   </div>
                   <button onClick={() => navigate(`/messaging`, { state: { recipientId: cls.classTeacherId } })} className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-900 rounded-lg">
@@ -406,6 +406,7 @@ export default function ClassDashboard() {
 // ═══════════════════════════════════════════════════════════════════
 
 function SidebarSchedule({ todayStatus, onViewTimetable }) {
+  const { t } = useTranslation();
   const periods = [];
   if (todayStatus?.currentClass) periods.push({ ...todayStatus.currentClass, isCurrent: true });
   if (todayStatus?.upcomingClass) periods.push({ ...todayStatus.upcomingClass, isCurrent: false });
@@ -413,9 +414,9 @@ function SidebarSchedule({ todayStatus, onViewTimetable }) {
   return (
     <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Today's Schedule</h3>
+        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('classes.todaysSchedule', "Today's Schedule")}</h3>
         <button onClick={onViewTimetable} className="text-xs text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 flex items-center gap-1">
-          Full <ChevronRight size={12} />
+          {t('classes.full', 'Full')} <ChevronRight size={12} />
         </button>
       </div>
       {periods.length > 0 ? (
@@ -425,31 +426,32 @@ function SidebarSchedule({ todayStatus, onViewTimetable }) {
               <div className={`w-1 h-8 rounded-full flex-shrink-0 ${p.isCurrent ? 'bg-blue-500' : 'bg-gray-200 dark:bg-zinc-700'}`} />
               <div className="min-w-0 flex-1">
                 <p className={`text-sm font-medium truncate ${p.isCurrent ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-zinc-300'}`}>
-                  {p.subject || 'Free Period'}
+                  {p.subject || t('classes.freePeriod', 'Free Period')}
                 </p>
                 <p className="text-[11px] text-gray-500 dark:text-zinc-400 truncate">
-                  {p.isCurrent ? 'Now' : p.time || 'Next'}{p.teacher ? ` · ${p.teacher}` : ''}
+                  {p.isCurrent ? t('classes.now', 'Now') : p.time || t('classes.next', 'Next')}{p.teacher ? ` · ${p.teacher}` : ''}
                 </p>
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <p className="text-xs text-gray-400 dark:text-zinc-500 text-center py-3">No schedule data available</p>
+        <p className="text-xs text-gray-400 dark:text-zinc-500 text-center py-3">{t('classes.noScheduleData', 'No schedule data available')}</p>
       )}
     </div>
   );
 }
 
 function SidebarAnnouncements({ announcements, onSend }) {
+  const { t } = useTranslation();
   if (!announcements || announcements.length === 0) {
     return (
       <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-3">Announcements</h3>
+        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-3">{t('classes.announcements', 'Announcements')}</h3>
         <div className="text-center py-3">
           <Megaphone size={24} className="mx-auto text-gray-200 dark:text-zinc-700 mb-2" />
-          <p className="text-xs text-gray-400 dark:text-zinc-500 mb-3">No announcements yet</p>
-          <button onClick={onSend} className="text-xs font-medium text-blue-600 hover:text-blue-800">Send Announcement</button>
+          <p className="text-xs text-gray-400 dark:text-zinc-500 mb-3">{t('classes.noAnnouncementsYet', 'No announcements yet')}</p>
+          <button onClick={onSend} className="text-xs font-medium text-blue-600 hover:text-blue-800">{t('classes.sendAnnouncement', 'Send Announcement')}</button>
         </div>
       </div>
     );
@@ -460,8 +462,8 @@ function SidebarAnnouncements({ announcements, onSend }) {
   return (
     <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Announcements</h3>
-        <button onClick={onSend} className="text-xs text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300">Send</button>
+        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('classes.announcements', 'Announcements')}</h3>
+        <button onClick={onSend} className="text-xs text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300">{t('common.send', 'Send')}</button>
       </div>
       <div className="space-y-2">
         {announcements.slice(0, 3).map((a, i) => (
@@ -493,6 +495,7 @@ function OverviewTab({ id, cls, classesEnhancedApi, todayStatus, classRating }) 
   const [academicPerformance, setAcademicPerformance] = useState(null);
   const [academicLoading, setAcademicLoading] = useState(true);
   const [chronicAbsentees, setChronicAbsentees] = useState([]);
+  const [chronicAbsenteesLoading, setChronicAbsenteesLoading] = useState(true);
   const [activityLog, setActivityLog] = useState([]);
   const [activityLoading, setActivityLoading] = useState(true);
 
@@ -509,9 +512,11 @@ function OverviewTab({ id, cls, classesEnhancedApi, todayStatus, classRating }) 
       .catch(e => { if (!aborted()) logger.error('academic:', e); })
       .finally(() => { if (!aborted()) setAcademicLoading(false); });
 
+    setChronicAbsenteesLoading(true);
     classesEnhancedApi.getChronicAbsentees(id)
       .then(d => { if (!aborted()) setChronicAbsentees(d || []); })
-      .catch(e => { if (!aborted()) logger.error('chronic:', e); });
+      .catch(e => { if (!aborted()) logger.error('chronic:', e); })
+      .finally(() => { if (!aborted()) setChronicAbsenteesLoading(false); });
 
     classesEnhancedApi.getActivityLog(id, { limit: 5 })
       .then(d => { if (!aborted()) setActivityLog(d || []); })
@@ -534,12 +539,12 @@ function OverviewTab({ id, cls, classesEnhancedApi, todayStatus, classRating }) 
             <div className="space-y-1">
               {attendancePercentage < 75 && (
                 <p className="text-sm text-amber-800 dark:text-amber-300">
-                  Attendance is at <strong>{attendancePercentage}%</strong> today — below the 75% target
+                  {t('classes.attendanceIsAt', 'Attendance is at')} <strong>{attendancePercentage}%</strong> {t('classes.belowTarget', 'today — below the 75% target')}
                 </p>
               )}
               {chronicAbsentees.length > 0 && (
                 <p className="text-sm text-amber-800 dark:text-amber-300">
-                  <strong>{chronicAbsentees.length} student{chronicAbsentees.length > 1 ? 's' : ''}</strong> with attendance below 60% this month
+                  <strong>{chronicAbsentees.length} {chronicAbsentees.length > 1 ? t('classes.students', 'Students') : t('classes.studentSingular', 'student')}</strong> {t('classes.attendanceBelow60', 'with attendance below 60% this month')}
                 </p>
               )}
             </div>
@@ -549,24 +554,24 @@ function OverviewTab({ id, cls, classesEnhancedApi, todayStatus, classRating }) 
 
       {/* Today's Schedule Strip */}
       <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-4">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-3">Today's Schedule</h3>
+        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-3">{t('classes.todaysSchedule', "Today's Schedule")}</h3>
         <div className="flex gap-2 overflow-x-auto pb-1">
           {todayStatus?.currentClass && (
             <div className="flex-shrink-0 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
-              <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">Now</p>
+              <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">{t('classes.now', 'Now')}</p>
               <p className="text-sm font-medium text-blue-900 dark:text-blue-200">{todayStatus.currentClass.subject}</p>
               {todayStatus.currentClass.teacher && <p className="text-[11px] text-blue-600 dark:text-blue-400">{todayStatus.currentClass.teacher}</p>}
             </div>
           )}
           {todayStatus?.upcomingClass && (
             <div className="flex-shrink-0 px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800">
-              <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400">Next{todayStatus.upcomingClass.time ? ` · ${todayStatus.upcomingClass.time}` : ''}</p>
+              <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400">{t('classes.next', 'Next')}{todayStatus.upcomingClass.time ? ` · ${todayStatus.upcomingClass.time}` : ''}</p>
               <p className="text-sm font-medium text-gray-800 dark:text-zinc-200">{todayStatus.upcomingClass.subject}</p>
               {todayStatus.upcomingClass.teacher && <p className="text-[11px] text-gray-500 dark:text-zinc-400">{todayStatus.upcomingClass.teacher}</p>}
             </div>
           )}
           {!todayStatus?.currentClass && !todayStatus?.upcomingClass && (
-            <p className="text-xs text-gray-400 dark:text-zinc-500 py-2">No schedule data for today</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500 py-2">{t('classes.noScheduleDataToday', 'No schedule data for today')}</p>
           )}
         </div>
       </div>
@@ -628,7 +633,7 @@ function OverviewTab({ id, cls, classesEnhancedApi, todayStatus, classRating }) 
             </div>
             <div>
               <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.classRatings')}</h3>
-              <p className="text-[11px] text-gray-500 dark:text-zinc-400">Overall: {(classRating?.overallRating || classRating?.rating || 0).toFixed(1)} / 5.0</p>
+              <p className="text-[11px] text-gray-500 dark:text-zinc-400">{t('classes.overall', 'Overall')}: {(classRating?.overallRating || classRating?.rating || 0).toFixed(1)} / 5.0</p>
             </div>
           </div>
           <div className="p-4">
@@ -669,8 +674,8 @@ function OverviewTab({ id, cls, classesEnhancedApi, todayStatus, classRating }) 
               <AlertCircle size={14} className="text-red-500 dark:text-red-400" />
             </div>
             <div>
-              <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Chronic Absentees</h3>
-              <p className="text-[11px] text-gray-500 dark:text-zinc-400">Students below 60% attendance this month</p>
+              <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('classes.chronicAbsentees', 'Chronic Absentees')}</h3>
+              <p className="text-[11px] text-gray-500 dark:text-zinc-400">{t('classes.studentsBelow60', 'Students below 60% attendance this month')}</p>
             </div>
           </div>
           <div className="divide-y divide-gray-50 dark:divide-zinc-800">
@@ -682,16 +687,16 @@ function OverviewTab({ id, cls, classesEnhancedApi, todayStatus, classRating }) 
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{s.studentName}</p>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">Roll {s.rollNo || '-'}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{t('classes.roll', 'Roll')} {s.rollNo || '-'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-right">
                     <p className="text-sm font-semibold text-red-500 dark:text-red-400">{s.percentage?.toFixed(0) || 0}%</p>
-                    <p className="text-[11px] text-gray-400 dark:text-zinc-500">attendance</p>
+                    <p className="text-[11px] text-gray-400 dark:text-zinc-500">{t('classes.attendance', 'Attendance').toLowerCase()}</p>
                   </div>
                   {s.hasParentContact && (
-                    <div className="w-6 h-6 rounded-full bg-green-50 dark:bg-green-950/30 flex items-center justify-center" title="Parent contact available">
+                    <div className="w-6 h-6 rounded-full bg-green-50 dark:bg-green-950/30 flex items-center justify-center" title={t('classes.parentContactAvailable', 'Parent contact available')}>
                       <CheckCircle2 size={12} className="text-green-500" />
                     </div>
                   )}
@@ -709,8 +714,8 @@ function OverviewTab({ id, cls, classesEnhancedApi, todayStatus, classRating }) 
             <Activity size={14} className="text-gray-600 dark:text-zinc-400" />
           </div>
           <div>
-            <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">Recent Activity</h3>
-            <p className="text-[11px] text-gray-500 dark:text-zinc-400">Latest actions on this class</p>
+            <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('classes.recentActivity', 'Recent Activity')}</h3>
+            <p className="text-[11px] text-gray-500 dark:text-zinc-400">{t('classes.latestActions', 'Latest actions on this class')}</p>
           </div>
         </div>
         <div className="p-4">
@@ -727,14 +732,14 @@ function OverviewTab({ id, cls, classesEnhancedApi, todayStatus, classRating }) 
                     <div className="absolute -left-[18px] top-1 w-2.5 h-2.5 rounded-full bg-gray-400 dark:bg-zinc-500 border-2 border-white dark:border-zinc-950" />
                     <p className="text-sm text-gray-700 dark:text-zinc-300">{entry.description || entry.activityType?.replace(/_/g, ' ')}</p>
                     <p className="text-[11px] text-gray-400 dark:text-zinc-500">
-                      {entry.performedBy?.name || 'System'}{entry.createdAt ? ` · ${formatShortDate(entry.createdAt)}` : ''}
+                      {entry.performedBy?.name || t('classes.system', 'System')}{entry.createdAt ? ` · ${formatShortDate(entry.createdAt)}` : ''}
                     </p>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <p className="text-xs text-gray-400 dark:text-zinc-500 text-center py-4">No activity recorded yet</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-500 text-center py-4">{t('classes.noActivityYet', 'No activity recorded yet')}</p>
           )}
         </div>
       </div>
@@ -765,11 +770,11 @@ function StudentsTab({ id, cls, navigate, classesEnhancedApi }) {
         if (key) map[String(key)] = s.percentage || s.averagePercentage || 0;
       });
       setPerformanceMap(map);
-    }).catch(() => {});
+    }).catch(e => logger.error('student performance:', e));
   }, [id, classesEnhancedApi]);
 
   const classStudents = useMemo(() => students.filter(s =>
-    String(s.classId) === String(cls?.id) &&
+    String(s.classId?._id || s.classId) === String(cls?.id) &&
     (s.status || 'active') === 'active' &&
     s.isDeleted !== true
   ), [students, cls]);
@@ -812,13 +817,13 @@ function StudentsTab({ id, cls, navigate, classesEnhancedApi }) {
       {/* Summary chips */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 rounded-lg">
-          {classStudents.length} Students
+          {classStudents.length} {t('classes.students', 'Students')}
         </span>
         <span className="px-3 py-1.5 text-xs font-medium bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 rounded-lg">
-          {paidCount} Paid
+          {paidCount} {t('classes.paid', 'Paid')}
         </span>
         <span className="px-3 py-1.5 text-xs font-medium bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 rounded-lg">
-          {pendingCount} Pending
+          {pendingCount} {t('classes.pending', 'Pending')}
         </span>
       </div>
 
@@ -834,7 +839,7 @@ function StudentsTab({ id, cls, navigate, classesEnhancedApi }) {
             {["all", "paid", "pending"].map((f) => (
               <button key={f} onClick={() => setFilter(f)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${filter === f ? 'bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 shadow-sm' : 'text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300'}`}>
-                {f.charAt(0).toUpperCase() + f.slice(1)}
+                {f === 'all' ? t('common.all', 'All') : f === 'paid' ? t('classes.paid', 'Paid') : t('classes.pending', 'Pending')}
               </button>
             ))}
           </div>
@@ -846,17 +851,17 @@ function StudentsTab({ id, cls, navigate, classesEnhancedApi }) {
         {/* Table header */}
         <div className="hidden sm:grid grid-cols-12 gap-2 px-5 py-3 bg-gray-50 dark:bg-zinc-900 border-b border-gray-100 dark:border-zinc-800 text-xs font-medium text-gray-500 dark:text-zinc-400">
           <div className="col-span-1 cursor-pointer flex items-center gap-1" onClick={() => handleSort('rollNo')}>
-            Roll {sortBy === 'rollNo' && <ArrowUpDown size={10} />}
+            {t('classes.roll', 'Roll')} {sortBy === 'rollNo' && <ArrowUpDown size={10} />}
           </div>
           <div className="col-span-4 cursor-pointer flex items-center gap-1" onClick={() => handleSort('name')}>
-            Student {sortBy === 'name' && <ArrowUpDown size={10} />}
+            {t('classes.student', 'Student')} {sortBy === 'name' && <ArrowUpDown size={10} />}
           </div>
           <div className="col-span-2 cursor-pointer flex items-center gap-1" onClick={() => handleSort('academic')}>
-            Academic {sortBy === 'academic' && <ArrowUpDown size={10} />}
+            {t('classes.academic', 'Academic')} {sortBy === 'academic' && <ArrowUpDown size={10} />}
           </div>
-          <div className="col-span-2">Attendance</div>
+          <div className="col-span-2">{t('classes.attendance', 'Attendance')}</div>
           <div className="col-span-2 cursor-pointer flex items-center gap-1" onClick={() => handleSort('feeStatus')}>
-            Fee {sortBy === 'feeStatus' && <ArrowUpDown size={10} />}
+            {t('classes.fee', 'Fee')} {sortBy === 'feeStatus' && <ArrowUpDown size={10} />}
           </div>
           <div className="col-span-1"></div>
         </div>
@@ -883,8 +888,8 @@ function StudentsTab({ id, cls, navigate, classesEnhancedApi }) {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{student.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400 truncate sm:hidden">Roll {student.rollNo} · {student.parentName || 'Parent'}</p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400 truncate hidden sm:block">{student.parentName || 'Parent'}</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400 truncate sm:hidden">{t('classes.roll', 'Roll')} {student.rollNo} · {student.parentName || t('classes.parent', 'Parent')}</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400 truncate hidden sm:block">{student.parentName || t('classes.parent', 'Parent')}</p>
                     </div>
                   </div>
                   {/* Academic */}
@@ -901,7 +906,7 @@ function StudentsTab({ id, cls, navigate, classesEnhancedApi }) {
                   <div className="col-span-2 hidden sm:flex items-center gap-1.5">
                     <div className={`w-2 h-2 rounded-full ${student.attendanceStatus === 'present' ? "bg-green-500" : student.attendanceStatus === 'absent' ? "bg-red-400" : "bg-gray-300 dark:bg-zinc-600"}`} />
                     <span className="text-xs text-gray-500 dark:text-zinc-400">
-                      {student.attendanceStatus === 'present' ? 'Present' : student.attendanceStatus === 'absent' ? 'Absent' : '—'}
+                      {student.attendanceStatus === 'present' ? t('classes.present', 'Present') : student.attendanceStatus === 'absent' ? t('classes.absent', 'Absent') : '—'}
                     </span>
                   </div>
                   {/* Fee */}
@@ -909,7 +914,7 @@ function StudentsTab({ id, cls, navigate, classesEnhancedApi }) {
                     <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
                       student.feeStatus === 'paid' ? 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400' : 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400'
                     }`}>
-                      {student.feeStatus === 'paid' ? 'Paid' : 'Pending'}
+                      {student.feeStatus === 'paid' ? t('classes.paid', 'Paid') : t('classes.pending', 'Pending')}
                     </span>
                   </div>
                   {/* Arrow */}
@@ -919,7 +924,7 @@ function StudentsTab({ id, cls, navigate, classesEnhancedApi }) {
                   {/* Mobile badges */}
                   <div className="flex items-center gap-2 sm:hidden">
                     <span className={`text-xs px-2 py-0.5 rounded-md ${student.feeStatus === 'paid' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
-                      {student.feeStatus === 'paid' ? 'Paid' : 'Pending'}
+                      {student.feeStatus === 'paid' ? t('classes.paid', 'Paid') : t('classes.pending', 'Pending')}
                     </span>
                     <ChevronRight size={14} className="text-gray-300" />
                   </div>
@@ -956,20 +961,20 @@ function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
   }, [id, classesEnhancedApi]);
 
   const classStudents = students.filter(s =>
-    String(s.classId) === String(cls?.id) && (s.status || 'active') === 'active' && s.isDeleted !== true
+    String(s.classId?._id || s.classId) === String(cls?.id) && (s.status || 'active') === 'active' && s.isDeleted !== true
   );
   const pendingStudents = classStudents.filter(s => s.feeStatus !== 'paid');
 
   const stats = [
-    { label: "Collected", value: `₹${feesOverview?.collected?.toLocaleString('en-IN') || "0"}`, icon: CheckCircle2, bg: 'bg-green-50 dark:bg-green-950/30', iconColor: 'text-green-600 dark:text-green-400' },
-    { label: "Pending", value: `₹${feesOverview?.pending?.toLocaleString('en-IN') || "0"}`, icon: AlertCircle, bg: 'bg-amber-50 dark:bg-amber-950/30', iconColor: 'text-amber-600 dark:text-amber-400' },
-    { label: "Overdue", value: `₹${feesOverview?.overdue?.toLocaleString('en-IN') || "0"}`, icon: AlertTriangle, bg: 'bg-red-50 dark:bg-red-950/30', iconColor: 'text-red-500 dark:text-red-400' },
+    { label: t('classes.collected', 'Collected'), value: `₹${feesOverview?.collected?.toLocaleString('en-IN') || "0"}`, icon: CheckCircle2, bg: 'bg-green-50 dark:bg-green-950/30', iconColor: 'text-green-600 dark:text-green-400' },
+    { label: t('classes.pending', 'Pending'), value: `₹${feesOverview?.pending?.toLocaleString('en-IN') || "0"}`, icon: AlertCircle, bg: 'bg-amber-50 dark:bg-amber-950/30', iconColor: 'text-amber-600 dark:text-amber-400' },
+    { label: t('classes.overdue', 'Overdue'), value: `₹${feesOverview?.overdue?.toLocaleString('en-IN') || "0"}`, icon: AlertTriangle, bg: 'bg-red-50 dark:bg-red-950/30', iconColor: 'text-red-500 dark:text-red-400' },
   ];
 
   return (
     <div className="space-y-4">
       {/* Fee Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {feesLoading ? (
           [1, 2, 3].map(i => (
             <div key={i} className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 space-y-2">
@@ -994,7 +999,7 @@ function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
         <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.defaultersList')}</h3>
-            <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{pendingStudents.length} pending payments</p>
+            <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{t('classes.pendingPaymentsCount', '{{count}} pending payments', { count: pendingStudents.length })}</p>
           </div>
         </div>
 
@@ -1012,7 +1017,7 @@ function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{student.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">Roll {student.rollNo}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{t('classes.roll', 'Roll')} {student.rollNo}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -1025,7 +1030,7 @@ function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
         ) : (
           <div className="px-5 py-12 text-center">
             <IndianRupee size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
-            <p className="text-sm font-medium text-gray-600 dark:text-zinc-300 mb-1">All fees collected!</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-zinc-300 mb-1">{t('classes.allFeesCollected', 'All fees collected!')}</p>
             <p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.noPendingFees')}</p>
           </div>
         )}
@@ -1100,7 +1105,7 @@ function AcademicsTab({ id, cls, classesEnhancedApi }) {
             </div>
           </div>
           <Button size="sm" className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900" startContent={<FileText size={14} />}
-            onPress={() => navigate('/academics/exams')}>Manage Exams</Button>
+            onPress={() => navigate('/academics/exams')}>{t('classes.manageExams', 'Manage Exams')}</Button>
         </div>
 
         {loading ? (
@@ -1112,7 +1117,7 @@ function AcademicsTab({ id, cls, classesEnhancedApi }) {
             <FileText size={40} className="mx-auto text-gray-200 dark:text-zinc-700 mb-4" />
             <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noExamsScheduledForThisClassYet')}</p>
             <Button className="mt-4 bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900" startContent={<FileText size={16} />}
-              onPress={() => navigate('/academics/exams')}>Create Exam</Button>
+              onPress={() => navigate('/academics/exams')}>{t('classes.createExam', 'Create Exam')}</Button>
           </div>
         ) : (
           <div className="divide-y divide-gray-50 dark:divide-zinc-800">
@@ -1125,15 +1130,15 @@ function AcademicsTab({ id, cls, classesEnhancedApi }) {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{exam.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.subjectName || 'General'} · {exam.type?.replace('_', ' ') || 'Exam'}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.subjectName || t('classes.general', 'General')} · {exam.type?.replace('_', ' ') || t('classes.exam', 'Exam')}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right hidden sm:block">
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.startDate ? formatShortDate(exam.startDate) : 'Not scheduled'}</p>
-                    <p className="text-xs text-gray-400 dark:text-zinc-500">Max: {exam.maxMarks || 100} | Pass: {exam.passingMarks || 35}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.startDate ? formatShortDate(exam.startDate) : t('classes.notScheduled', 'Not scheduled')}</p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500">{t('classes.max', 'Max')}: {exam.maxMarks || 100} | {t('classes.pass', 'Pass')}: {exam.passingMarks || 35}</p>
                   </div>
-                  <Chip size="sm" color={getStatusColor(exam.status)} variant="flat">{exam.status?.replace('_', ' ') || 'scheduled'}</Chip>
+                  <Chip size="sm" color={getStatusColor(exam.status)} variant="flat">{t(`classes.examStatus.${exam.status || 'scheduled'}`, exam.status?.replace('_', ' ') || 'scheduled')}</Chip>
                 </div>
               </div>
             ))}

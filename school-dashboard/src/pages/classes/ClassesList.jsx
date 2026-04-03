@@ -25,14 +25,14 @@ const hasOwnKey = (object, key) => Object.prototype.hasOwnProperty.call(object, 
 
 // Available columns configuration
 const AVAILABLE_COLUMNS = [
-  { key: 'class', label: 'CLASS DETAILS', width: 180, visible: true, fixed: true },
-  { key: 'teacher', label: 'CLASS TEACHER', width: 200, visible: true },
-  { key: 'subjects', label: 'SUBJECTS', width: 100, visible: true },
-  { key: 'strength', label: 'STRENGTH', width: 120, visible: true },
-  { key: 'academic', label: 'ACADEMIC PERFORMANCE', width: 160, visible: true },
-  { key: 'attendance', label: 'AVG ATTENDANCE', width: 150, visible: true },
-  { key: 'status', label: 'FEE STATUS', width: 140, visible: true },
-  { key: 'actions', label: 'ACTIONS', width: 80, visible: true, fixed: true },
+  { key: 'class', labelKey: 'classes.columnClassDetails', label: 'CLASS DETAILS', width: 180, visible: true, fixed: true },
+  { key: 'teacher', labelKey: 'classes.columnClassTeacher', label: 'CLASS TEACHER', width: 200, visible: true },
+  { key: 'subjects', labelKey: 'classes.columnSubjects', label: 'SUBJECTS', width: 100, visible: true },
+  { key: 'strength', labelKey: 'classes.columnStrength', label: 'STRENGTH', width: 120, visible: true },
+  { key: 'academic', labelKey: 'classes.columnAcademicPerformance', label: 'ACADEMIC PERFORMANCE', width: 160, visible: true },
+  { key: 'attendance', labelKey: 'classes.columnAvgAttendance', label: 'AVG ATTENDANCE', width: 150, visible: true },
+  { key: 'status', labelKey: 'classes.columnFeeStatus', label: 'FEE STATUS', width: 140, visible: true },
+  { key: 'actions', labelKey: 'classes.columnActions', label: 'ACTIONS', width: 80, visible: true, fixed: true },
 ];
 
 export default function ClassesList() {
@@ -70,9 +70,6 @@ export default function ClassesList() {
   const [assignTeacherModal, setAssignTeacherModal] = useState(false);
   const [selectedClassForTeacher, setSelectedClassForTeacher] = useState(null);
 
-  // Actions modal state
-  const [, setActionsModal] = useState(false);
-  const [, setSelectedClassForActions] = useState(null);
   const classDetailsRequestStateRef = useRef(new Map());
 
   // Debounced search effect
@@ -486,7 +483,6 @@ export default function ClassesList() {
 
   // Handle action menu item click
   const handleActionMenuItem = (action, cls) => {
-    setActionsModal(false);
     switch (action) {
       case 'view':
         navigate(`/classes/${cls.id}`);
@@ -495,7 +491,7 @@ export default function ClassesList() {
         navigate(`/classes/${cls.id}?tab=settings`);
         break;
       case 'download-report':
-        // Implement download report
+        toast(t('toast.info.downloadReportComingSoon', 'Download report coming soon'));
         break;
       case 'send-announcement':
         navigate('/messaging', { state: { prefillClass: cls.id } });
@@ -530,8 +526,8 @@ export default function ClassesList() {
 
   const handleSaveEdit = async () => {
     const newErrors = {};
-    if (!editFormData.strengthLimit) newErrors.strengthLimit = 'Capacity is required';
-    else if (isNaN(editFormData.strengthLimit) || parseInt(editFormData.strengthLimit) <= 0) newErrors.strengthLimit = 'Capacity must be a positive number';
+    if (!editFormData.strengthLimit) newErrors.strengthLimit = t('classes.validation.capacityRequired', 'Capacity is required');
+    else if (isNaN(editFormData.strengthLimit) || parseInt(editFormData.strengthLimit) <= 0) newErrors.strengthLimit = t('classes.validation.capacityPositive', 'Capacity must be a positive number');
     if (Object.keys(newErrors).length > 0) { setEditErrors(newErrors); return; }
 
     setIsEditing(true);
@@ -542,11 +538,11 @@ export default function ClassesList() {
         ...(editFormData.room !== undefined && { room: editFormData.room }),
         ...(editFormData.block !== undefined && { block: editFormData.block }),
       });
-      toast.success(`Class ${selectedClassForEdit.name}-${selectedClassForEdit.section} updated`);
+      toast.success(t('toast.success.classUpdated', `Class ${selectedClassForEdit.name}-${selectedClassForEdit.section} updated`));
       setEditClassModal(false);
       if (refetch) await refetch(true);
     } catch (error) {
-      toast.error(error.message || 'Failed to update class');
+      toast.error(error.message || t('toast.error.updateClassFailed', 'Failed to update class'));
     } finally {
       setIsEditing(false);
     }
@@ -562,12 +558,12 @@ export default function ClassesList() {
     setIsDeleting(true);
     try {
       await deleteClass(selectedClassForDelete.id);
-      toast.success(`Class ${selectedClassForDelete.name}-${selectedClassForDelete.section} deleted`);
+      toast.success(t('toast.success.classDeleted', `Class ${selectedClassForDelete.name}-${selectedClassForDelete.section} deleted`));
       setDeleteClassModal(false);
       setSelectedClassForDelete(null);
       if (refetch) await refetch(true);
     } catch (error) {
-      toast.error(error.message || 'Failed to delete class');
+      toast.error(error.message || t('toast.error.deleteClassFailed', 'Failed to delete class'));
     } finally {
       setIsDeleting(false);
     }
@@ -640,7 +636,7 @@ export default function ClassesList() {
                 allowsSorting={col.key !== 'actions'}
                 style={{ width: col.width }}
                scope="col">
-                {col.label || ''}
+                {col.labelKey ? t(col.labelKey, col.label || '') : (col.label || '')}
               </TableColumn>
             ))
           }
@@ -650,8 +646,8 @@ export default function ClassesList() {
           emptyContent={
             <div className="py-12 text-center">
               <BookOpen size={48} className="mx-auto text-default-200 mb-4" />
-              <h3 className="text-lg font-semibold text-default-700 mb-1">No classes found</h3>
-              <p className="text-sm text-default-400 mb-4">Get started by creating your first class</p>
+              <h3 className="text-lg font-semibold text-default-700 mb-1">{t('classes.emptyStateTitle', 'No classes found')}</h3>
+              <p className="text-sm text-default-400 mb-4">{t('classes.emptyStateDescription', 'Get started by creating your first class')}</p>
             </div>
           }
         >
@@ -708,10 +704,10 @@ export default function ClassesList() {
                       </div>
                       <div className="flex flex-col">
                         <span className="text-default-900 font-semibold text-base">
-                          Class {group?.classNum || '-'}
+                          {t('classes.classNumber', 'Class {{num}}', { num: group?.classNum || '-' })}
                         </span>
                         <span className="text-default-500 text-xs">
-                          {group?.sections?.length || 0} section{(group?.sections?.length || 0) > 1 ? 's' : ''} • {group?.totalStudents || 0} students
+                          {t('classes.sectionCount', '{{count}} section', { count: group?.sections?.length || 0 })}{(group?.sections?.length || 0) > 1 ? 's' : ''} • {t('classes.studentCount', '{{count}} students', { count: group?.totalStudents || 0 })}
                         </span>
                       </div>
                     </div>
@@ -728,7 +724,7 @@ export default function ClassesList() {
                             </span>
                             {group.sections.length > 1 && (
                               <span className="text-default-400 text-xs">
-                                +{group.sections.length - 1} more
+                                {t('classes.moreTeachers', '+{{count}} more', { count: group.sections.length - 1 })}
                               </span>
                             )}
                           </>
@@ -755,7 +751,7 @@ export default function ClassesList() {
                     <TableCell>
                       <div className="py-5">
                         <span className="text-default-900 font-semibold text-lg">{group?.totalStudents || 0}</span>
-                        <span className="text-default-500 text-xs"> students</span>
+                        <span className="text-default-500 text-xs"> {t('classes.students', 'students')}</span>
                       </div>
                     </TableCell>
                   )}
@@ -822,7 +818,7 @@ export default function ClassesList() {
                             ? "bg-warning-50 border-warning-200 text-warning-700"
                             : "bg-success-50 border-success-200 text-success-700"
                         }`}>
-                        {pendingCount > 0 ? `${pendingCount} Pending` : "All Clear"}
+                        {pendingCount > 0 ? `${pendingCount} ${t('classes.feePending', 'Pending')}` : t('classes.feeAllClear', 'All Clear')}
                       </div>
                     </TableCell>
                   )}
@@ -892,7 +888,7 @@ export default function ClassesList() {
                             className="text-default-700 font-medium text-sm hover:text-primary transition-colors cursor-pointer"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            Section {cls?.section || '-'}
+                            {t('classes.sectionLabel', 'Section {{section}}', { section: cls?.section || '-' })}
                           </Link>
                           {classSettings?.classTag && (
                             <Chip size="sm" variant="flat" color="primary" className="text-xs">
@@ -902,17 +898,17 @@ export default function ClassesList() {
                         </div>
                         <div className="flex items-center gap-1.5">
                           <span className="text-default-500 text-xs">
-                            {cls?.studentCount || cls?.strength || 0} students
+                            {t('classes.studentCount', '{{count}} students', { count: cls?.studentCount || cls?.strength || 0 })}
                           </span>
                           {/* Health indicator dots */}
                           {(attendanceValue != null && attendanceValue < 75) && (
-                            <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0" title="Low attendance" />
+                            <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0" title={t('classes.lowAttendance', 'Low attendance')} />
                           )}
                           {!cls?.classTeacherId && (
-                            <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" title="No class teacher" />
+                            <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" title={t('classes.noClassTeacher', 'No class teacher')} />
                           )}
                           {pendingCount > 0 && pendingCount > (cls?.studentCount || 0) * 0.3 && (
-                            <span className="w-2 h-2 rounded-full bg-rose-400 flex-shrink-0" title="High fee defaulters" />
+                            <span className="w-2 h-2 rounded-full bg-rose-400 flex-shrink-0" title={t('classes.highFeeDefaulters', 'High fee defaulters')} />
                           )}
                         </div>
                       </div>
@@ -926,8 +922,8 @@ export default function ClassesList() {
                         {cls?.classTeacherId ? (
                           <PhotoAvatar
                             src={cls?.teacherPhoto}
-                            alt={cls?.teacher || "Teacher"}
-                            name={cls?.teacher || "Unassigned"}
+                            alt={cls?.teacher || t('classes.teacher', 'Teacher')}
+                            name={cls?.teacher || t('classes.unassigned', 'Unassigned')}
                             size="sm"
                             type="staff"
                           />
@@ -944,7 +940,7 @@ export default function ClassesList() {
                                 className="text-default-700 font-medium text-sm hover:text-primary transition-colors cursor-pointer"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                {cls?.teacher || "Unassigned"}
+                                {cls?.teacher || t('classes.unassigned', 'Unassigned')}
                               </Link>
                               <button
                                 onClick={(e) => { e.stopPropagation(); if (cls) handleAssignTeacher(cls); }}
@@ -960,7 +956,7 @@ export default function ClassesList() {
                               className="text-primary font-medium text-xs hover:underline flex items-center gap-1"
                             >
                               <UserPlus size={10} />
-                              Assign
+                              {t('classes.assign', 'Assign')}
                             </button>
                           )}
                           <span className="text-default-500 text-xs">{t('pages.classTeacher2')}</span>
@@ -1063,21 +1059,21 @@ export default function ClassesList() {
                       <button
                         onClick={() => cls?.id && navigate(`/classes/${cls.id}`)}
                         className="p-1.5 hover:bg-default-100 rounded-lg transition-colors"
-                        title="View class"
+                        title={t('classes.viewClass', 'View class')}
                       >
                         <Eye size={14} className="text-default-400" />
                       </button>
                       <button
                         onClick={() => cls && handleEditClass(cls)}
                         className="p-1.5 hover:bg-default-100 rounded-lg transition-colors"
-                        title="Edit class"
+                        title={t('classes.editClass', 'Edit class')}
                       >
                         <Pencil size={14} className="text-default-400" />
                       </button>
                       <button
                         onClick={() => cls && handleDeleteClass(cls)}
                         className="p-1.5 hover:bg-danger-100 rounded-lg transition-colors"
-                        title="Delete class"
+                        title={t('classes.deleteClass', 'Delete class')}
                       >
                         <Trash2 size={14} className="text-danger-400" />
                       </button>
@@ -1111,14 +1107,14 @@ export default function ClassesList() {
                   isDisabled={col.fixed}
                   onValueChange={() => col?.key && toggleColumn(col.key)}
                 >
-                  {col.label || col.key}
+                  {col.labelKey ? t(col.labelKey, col.label || col.key) : (col.label || col.key)}
                 </Checkbox>
               ))}
             </div>
           </ModalBody>
           <ModalFooter>
             <Button color="primary" onPress={() => setShowColumnModal(false)}>
-              Done
+              {t('common.done', 'Done')}
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -1138,19 +1134,19 @@ export default function ClassesList() {
       <Modal isOpen={editClassModal} onClose={() => setEditClassModal(false)} size="md">
         <ModalContent>
           <ModalHeader>
-            Edit {selectedClassForEdit?.name} - {selectedClassForEdit?.section}
+            {t('classes.editClassTitle', 'Edit {{name}} - {{section}}', { name: selectedClassForEdit?.name, section: selectedClassForEdit?.section })}
           </ModalHeader>
           <ModalBody className="space-y-4">
             <Input
-              label="Section"
+              label={t('classes.section', 'Section')}
               value={editFormData.section}
               isReadOnly
               variant="bordered"
               size="sm"
-              description="Section cannot be changed after creation"
+              description={t('classes.sectionReadonlyDescription', 'Section cannot be changed after creation')}
             />
             <Input
-              label="Class Capacity"
+              label={t('classes.classCapacity', 'Class Capacity')}
               type="number"
               value={editFormData.strengthLimit}
               onValueChange={(val) => setEditFormData(prev => ({ ...prev, strengthLimit: val }))}
@@ -1162,14 +1158,14 @@ export default function ClassesList() {
             />
             <div className="grid grid-cols-2 gap-3">
               <Input
-                label="Room"
+                label={t('classes.room', 'Room')}
                 value={editFormData.room}
                 onValueChange={(val) => setEditFormData(prev => ({ ...prev, room: val }))}
                 variant="bordered"
                 size="sm"
               />
               <Input
-                label="Block"
+                label={t('classes.block', 'Block')}
                 value={editFormData.block}
                 onValueChange={(val) => setEditFormData(prev => ({ ...prev, block: val }))}
                 variant="bordered"
@@ -1179,10 +1175,10 @@ export default function ClassesList() {
           </ModalBody>
           <ModalFooter>
             <Button variant="flat" onPress={() => setEditClassModal(false)} isDisabled={isEditing}>
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button color="primary" onPress={handleSaveEdit} isLoading={isEditing}>
-              Save Changes
+              {t('common.saveChanges', 'Save Changes')}
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -1191,21 +1187,21 @@ export default function ClassesList() {
       {/* Delete Class Confirmation Modal */}
       <Modal isOpen={deleteClassModal} onClose={() => setDeleteClassModal(false)} size="sm">
         <ModalContent>
-          <ModalHeader className="text-danger">Delete Class</ModalHeader>
+          <ModalHeader className="text-danger">{t('classes.deleteClassTitle', 'Delete Class')}</ModalHeader>
           <ModalBody>
             <p className="text-default-600">
-              Are you sure you want to delete <strong>{selectedClassForDelete?.name}-{selectedClassForDelete?.section}</strong>?
+              {t('classes.deleteConfirmation', 'Are you sure you want to delete')} <strong>{selectedClassForDelete?.name}-{selectedClassForDelete?.section}</strong>?
             </p>
             <p className="text-sm text-danger-500 mt-2">
-              This will remove the class and may affect students, attendance records, timetables, and fee structures linked to this class. This action cannot be undone.
+              {t('classes.deleteWarning', 'This will remove the class and may affect students, attendance records, timetables, and fee structures linked to this class. This action cannot be undone.')}
             </p>
           </ModalBody>
           <ModalFooter>
             <Button variant="flat" onPress={() => setDeleteClassModal(false)} isDisabled={isDeleting}>
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button color="danger" onPress={confirmDeleteClass} isLoading={isDeleting}>
-              Delete Class
+              {t('classes.deleteClassTitle', 'Delete Class')}
             </Button>
           </ModalFooter>
         </ModalContent>

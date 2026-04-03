@@ -85,6 +85,7 @@ export default function WriteRemarkModal({ isOpen, onClose, student, onSave }) {
               <SelectItem key="behavioral">{t('pages.behavioral1')}</SelectItem>
               <SelectItem key="achievement">{t('pages.achievement1')}</SelectItem>
               <SelectItem key="attendance">{t('pages.attendance2')}</SelectItem>
+              <SelectItem key="health">Health</SelectItem>
               <SelectItem key="general">{t('pages.general1')}</SelectItem>
             </Select>
 

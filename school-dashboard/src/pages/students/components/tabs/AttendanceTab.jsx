@@ -45,10 +45,7 @@ export default function AttendanceTab({
     fetchAttendance();
   }, [student?.id]);
 
-  // Set initial month to current month
-  useEffect(() => {
-    setSelectedMonth(new Date().toLocaleString('default', { month: 'long' }).toLowerCase());
-  }, []);
+  // Removed redundant useEffect — selectedMonth already initialized with same value in useState
 
   // Calculate statistics from real attendance data
   const calculatedStats = useMemo(() => {
@@ -68,7 +65,7 @@ export default function AttendanceTab({
 
   // Calculate monthly attendance
   const monthlyAttendance = useMemo(() => {
-    const monthNum = new Date(Date.parse(selectedMonth + ' 1, 2024')).getMonth();
+    const monthNum = new Date(Date.parse(selectedMonth + ' 1, ' + new Date().getFullYear())).getMonth();
     const year = new Date().getFullYear();
     
     return attendanceData.filter(att => {

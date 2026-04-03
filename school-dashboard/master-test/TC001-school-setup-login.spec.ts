@@ -30,40 +30,41 @@ async function mockAuthEndpoints(page: import('@playwright/test').Page) {
     },
   };
 
-  // Mock /auth/login
-  await page.route('**/auth/login', async (route) => {
-    const body = JSON.parse(route.request().postData() || '{}');
-    if (body.email === 'admin@schoolsync.test' && body.password === 'Admin@123') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(adminUser),
-      });
-    } else {
-      await route.fulfill({
-        status: 401,
-        contentType: 'application/json',
-        body: JSON.stringify({ message: 'Invalid email or password' }),
-      });
+  // Register catch-all FIRST so specific routes (registered after) take priority
+  await page.route('**/api/**', async (route) => {
+    const url = new URL(route.request().url());
+    // Let auth routes be handled by their specific handlers
+    if (url.pathname.includes('/auth/')) {
+      return route.fallback();
     }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({}),
+    });
   });
 
-  // Mock /auth/session — initially unauthenticated, then authenticated after login
-  let loggedIn = false;
-  await page.route('**/auth/session', async (route) => {
-    if (loggedIn) {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(adminUser),
-      });
-    } else {
-      await route.fulfill({
-        status: 401,
-        contentType: 'application/json',
-        body: JSON.stringify({ error: 'Unauthorized' }),
-      });
-    }
+  // Mock NPS
+  await page.route('**/api/nps/**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ shouldShow: false }),
+    });
+  });
+
+  // Mock settings
+  await page.route('**/api/settings**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schoolName: 'SchoolSync Demo School',
+        academicYear: '2025-2026',
+        currency: 'INR',
+        timezone: 'Asia/Kolkata',
+      }),
+    });
   });
 
   // Mock dashboard stats
@@ -87,36 +88,40 @@ async function mockAuthEndpoints(page: import('@playwright/test').Page) {
     });
   });
 
-  // Mock settings
-  await page.route('**/api/settings**', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        schoolName: 'SchoolSync Demo School',
-        academicYear: '2025-2026',
-        currency: 'INR',
-        timezone: 'Asia/Kolkata',
-      }),
-    });
+  // Mock /auth/session — initially unauthenticated, then authenticated after login
+  let loggedIn = false;
+  await page.route('**/auth/session', async (route) => {
+    if (loggedIn) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(adminUser),
+      });
+    } else {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Unauthorized' }),
+      });
+    }
   });
 
-  // Mock NPS
-  await page.route('**/api/nps/**', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ shouldShow: false }),
-    });
-  });
-
-  // Catch-all for other API routes
-  await page.route('**/api/**', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({}),
-    });
+  // Mock /auth/login
+  await page.route('**/auth/login', async (route) => {
+    const body = JSON.parse(route.request().postData() || '{}');
+    if (body.email === 'admin@schoolsync.test' && body.password === 'Admin@123') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(adminUser),
+      });
+    } else {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Invalid email or password' }),
+      });
+    }
   });
 
   return { markLoggedIn: () => { loggedIn = true; } };

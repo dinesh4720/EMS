@@ -28,8 +28,6 @@ export default function TeacherCard({
   isSwapTarget = false,
   actionHint = "Click to assign",
 }) {
-  const getTeacherId = (teacher) => String(teacher.id || teacher._id || '');
-
   return (
     <div
       className={`teacher-card group relative flex items-center gap-3 p-3 rounded-lg transition-all duration-200 cursor-pointer
@@ -50,10 +48,10 @@ export default function TeacherCard({
             onSelect?.(teacher);
           }}
         >
-          <Checkbox size="sm"
+          <Checkbox
+            size="sm"
             isSelected={isSelected}
             onValueChange={() => onSelect?.(teacher)}
-            size="sm"
             color="primary"
           />
         </div>

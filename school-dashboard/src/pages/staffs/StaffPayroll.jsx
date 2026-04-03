@@ -153,6 +153,8 @@ export default function StaffPayroll() {
   };
 
   const handlePrepareRecords = async () => {
+    // AUDIT-208: Prevent duplicate submissions
+    if (validating || preparingRecords) return;
     // First, validate before showing the modal
     try {
       setValidating(true);

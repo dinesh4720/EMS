@@ -216,6 +216,19 @@ export const PermissionProvider = ({ children }) => {
     }
   };
 
+  const isAdmin = () => {
+    const roleVerified = user?._roleVerified === true;
+    const roleStr = typeof user?.role === 'string' ? user.role :
+                    user?.role?.toString?.() || '';
+    const normalizedRole = roleStr.toLowerCase().trim();
+    return roleVerified && (
+      normalizedRole === 'admin' ||
+      normalizedRole === 'super admin' ||
+      normalizedRole === 'superadmin' ||
+      normalizedRole === 'principal'
+    );
+  };
+
   const refreshPermissions = () => {
     if (isAuthenticated && user) {
       fetchUserPermissions();
@@ -228,6 +241,7 @@ export const PermissionProvider = ({ children }) => {
         permissions,
         loading,
         hasPermission,
+        isAdmin,
         requestPermission,
         refreshPermissions,
       }}

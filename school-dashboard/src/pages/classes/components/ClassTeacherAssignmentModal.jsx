@@ -75,7 +75,7 @@ export default function ClassTeacherAssignmentModal({
 
     if (String(currentTeacherId) === String(teacher.id)) {
       // Teacher is already assigned to this class
-      toast(`${teacher.name} is already the class teacher for ${className}-${section}`);
+      toast(t('classes.teacherAlreadyAssignedHere', '{{name}} is already the class teacher for {{class}}', { name: teacher.name, class: `${className}-${section}` }));
       return;
     }
 
@@ -83,8 +83,8 @@ export default function ClassTeacherAssignmentModal({
       // Teacher is assigned to another class - show confirmation
       setConfirmDialog({
         isOpen: true,
-        title: "Replace Class Teacher Assignment",
-        message: `${teacher.name} is currently the class teacher for ${currentAssignedClass.name}-${currentAssignedClass.section}.\n\nDo you want to assign them to ${className}-${section} instead?\n\n${currentAssignedClass.name}-${currentAssignedClass.section} will become unassigned.`,
+        title: t('classes.replaceClassTeacher', 'Replace Class Teacher Assignment'),
+        message: t('classes.replaceClassTeacherMessage', '{{name}} is currently the class teacher for {{currentClass}}.\n\nDo you want to assign them to {{newClass}} instead?\n\n{{currentClass}} will become unassigned.', { name: teacher.name, currentClass: `${currentAssignedClass.name}-${currentAssignedClass.section}`, newClass: `${className}-${section}` }),
         onConfirm: async () => {
           await performAssignment(teacher.id);
         },
@@ -94,8 +94,8 @@ export default function ClassTeacherAssignmentModal({
       // Teacher is not assigned to any class - direct assignment
       setConfirmDialog({
         isOpen: true,
-        title: "Assign as Class Teacher",
-        message: `Assign ${teacher.name} as class teacher for ${className}-${section}?`,
+        title: t('classes.assignAsClassTeacher', 'Assign as Class Teacher'),
+        message: t('classes.assignAsClassTeacherMessage', 'Assign {{name}} as class teacher for {{class}}?', { name: teacher.name, class: `${className}-${section}` }),
         onConfirm: async () => {
           await performAssignment(teacher.id);
         },
@@ -123,12 +123,12 @@ export default function ClassTeacherAssignmentModal({
         teacherPhoto: teacher?.picture || null
       });
 
-      toast.success(`${teacherName} assigned as class teacher for ${className}-${section}`);
+      toast.success(t('toast.success.classTeacherAssigned', '{{name}} assigned as class teacher for {{class}}', { name: teacherName, class: `${className}-${section}` }));
       setConfirmDialog(prev => ({ ...prev, isOpen: false }));
       onClose();
     } catch (error) {
       console.error('Error assigning class teacher:', error);
-      toast.error(error.message || 'Failed to assign class teacher');
+      toast.error(error.message || t('toast.error.failedToAssignClassTeacher', 'Failed to assign class teacher'));
     } finally {
       setIsProcessing(false);
     }
@@ -158,7 +158,7 @@ export default function ClassTeacherAssignmentModal({
             <div>
               <h3 className="text-xl font-semibold">{t('pages.assignClassTeacher1')}</h3>
               <p className="text-sm text-default-500 font-normal">
-                Class: <span className="font-medium text-primary">{className}-{section}</span>
+                {t('classes.classLabel', 'Class')}: <span className="font-medium text-primary">{className}-{section}</span>
               </p>
             </div>
           </ModalHeader>
@@ -187,10 +187,10 @@ export default function ClassTeacherAssignmentModal({
                 <div className="text-center py-8 px-4">
                   <GraduationCap size={32} className="text-default-300 mx-auto mb-2" />
                   <p className="text-sm text-default-500 mb-1">
-                    {searchQuery ? "No teachers found matching your search" : "No teachers available"}
+                    {searchQuery ? t('classes.noTeachersFoundSearch', 'No teachers found matching your search') : t('classes.noTeachersAvailable', 'No teachers available')}
                   </p>
                   <p className="text-xs text-default-400">
-                    {searchQuery ? "Try a different search term" : "Add teachers first to assign as class teacher"}
+                    {searchQuery ? t('classes.tryDifferentSearch', 'Try a different search term') : t('classes.addTeachersFirst', 'Add teachers first to assign as class teacher')}
                   </p>
                 </div>
               ) : (
@@ -237,12 +237,12 @@ export default function ClassTeacherAssignmentModal({
                         ) : hasOtherClass ? (
                           <div className="flex items-center gap-2">
                             <Badge color="warning" variant="flat" size="sm">
-                              Already assigned to {teacher.classTeacherOf}
+                              {t('classes.alreadyAssignedTo', 'Already assigned to {{class}}', { class: teacher.classTeacherOf })}
                             </Badge>
                           </div>
                         ) : (
                           <Badge color="default" variant="flat" size="sm">
-                            Available
+                            {t('classes.available', 'Available')}
                           </Badge>
                         )}
                       </div>
@@ -256,7 +256,7 @@ export default function ClassTeacherAssignmentModal({
                         isDisabled={isProcessing || isCurrentTeacher}
                         className="min-w-[80px]"
                       >
-                        {isProcessing ? <Spinner size="sm" /> : isCurrentTeacher ? "Assigned" : "Assign"}
+                        {isProcessing ? <Spinner size="sm" /> : isCurrentTeacher ? t('classes.assigned', 'Assigned') : t('classes.assign', 'Assign')}
                       </Button>
                     </div>
                   );
@@ -268,10 +268,10 @@ export default function ClassTeacherAssignmentModal({
             {filteredTeachers.length > 0 && (
               <div className="mt-4 pt-4 border-t border-default-200 flex items-center justify-between text-xs text-default-500">
                 <span>
-                  Showing {filteredTeachers.length} teacher{filteredTeachers.length !== 1 ? 's' : ''}
+                  {t('classes.showingTeachers', 'Showing {{count}} teacher(s)', { count: filteredTeachers.length })}
                 </span>
                 <span>
-                  {filteredTeachers.filter(t => t.classTeacherOf).length} assigned to classes
+                  {filteredTeachers.filter(t => t.classTeacherOf).length} {t('classes.assignedToClasses', 'assigned to classes')}
                 </span>
               </div>
             )}
@@ -283,7 +283,7 @@ export default function ClassTeacherAssignmentModal({
               onPress={handleClose}
               isDisabled={isProcessing}
             >
-              Close
+              {t('common.close', 'Close')}
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -296,8 +296,8 @@ export default function ClassTeacherAssignmentModal({
         onConfirm={confirmDialog.onConfirm}
         title={confirmDialog.title}
         message={confirmDialog.message}
-        confirmText={confirmDialog.variant === 'warning' ? "Yes, Replace" : "Yes, Assign"}
-        cancelText="Cancel"
+        confirmText={confirmDialog.variant === 'warning' ? t('classes.yesReplace', 'Yes, Replace') : t('classes.yesAssign', 'Yes, Assign')}
+        cancelText={t('common.cancel', 'Cancel')}
         variant={confirmDialog.variant}
         isLoading={isProcessing}
       />

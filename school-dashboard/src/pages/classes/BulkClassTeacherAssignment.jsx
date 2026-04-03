@@ -109,12 +109,12 @@ export default function BulkClassTeacherAssignment() {
         teacherPhoto: teacherInfo.picture
       });
 
-      toast.success(`Updated class teacher for Class ${targetClass.name}-${targetClass.section}`);
+      toast.success(t('toast.success.classTeacherUpdated', 'Class teacher updated for {{class}}', { class: `${targetClass.name}-${targetClass.section}` }));
       if (refetch) await refetch();
       handleClose();
     } catch (error) {
       console.error('Error executing assignment:', error);
-      toast.error(error.message || 'Failed to update assignment');
+      toast.error(error.message || t('toast.error.failedToUpdateAssignment', 'Failed to update assignment'));
     } finally {
       setIsProcessing(false);
     }
@@ -133,11 +133,11 @@ export default function BulkClassTeacherAssignment() {
         teacher: null,
         teacherPhoto: null
       });
-      toast.success(`Removed class teacher from Class ${cls.name}-${cls.section}`);
+      toast.success(t('toast.success.classTeacherRemoved', 'Removed class teacher from {{class}}', { class: `${cls.name}-${cls.section}` }));
       if (refetch) await refetch();
     } catch (error) {
       console.error('Error unassigning teacher:', error);
-      toast.error(error.message || 'Failed to unassign teacher');
+      toast.error(error.message || t('toast.error.failedToUnassignTeacher', 'Failed to unassign teacher'));
     } finally {
       setIsProcessing(false);
     }
@@ -155,7 +155,7 @@ export default function BulkClassTeacherAssignment() {
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold text-default-800">{t('pages.classTeachers1')}</h2>
           <Chip size="sm" variant="flat" color={stats.unassigned > 0 ? "warning" : "success"}>
-            {stats.assigned} Assigned • {stats.unassigned} Unassigned
+            {stats.assigned} {t('classes.assigned', 'Assigned')} • {stats.unassigned} {t('classes.unassigned', 'Unassigned')}
           </Chip>
         </div>
 
@@ -197,8 +197,8 @@ export default function BulkClassTeacherAssignment() {
         </TableHeader>
         <TableBody items={filteredClasses} emptyContent={
           <div className="py-12 text-center">
-            <p className="text-sm font-medium text-default-600 mb-1">No classes found</p>
-            <p className="text-xs text-default-400">Create classes first before assigning teachers</p>
+            <p className="text-sm font-medium text-default-600 mb-1">{t('classes.noClassesFound', 'No classes found')}</p>
+            <p className="text-xs text-default-400">{t('classes.createClassesFirst', 'Create classes first before assigning teachers')}</p>
           </div>
         }>
           {(cls) => (
@@ -209,7 +209,7 @@ export default function BulkClassTeacherAssignment() {
                     <span className="font-semibold text-sm">{cls.name}</span>
                   </div>
                   <span className="font-medium text-default-900">
-                    Class {cls.name}-{cls.section}
+                    {t('classes.classLabel', 'Class')} {cls.name}-{cls.section}
                   </span>
                 </div>
               </TableCell>
@@ -218,7 +218,7 @@ export default function BulkClassTeacherAssignment() {
                   {cls.classTeacherId ? (
                     <User
                       name={cls.teacher || 'Unknown'}
-                      description="Class Teacher"
+                      description={t('classes.classTeacher', 'Class Teacher')}
                       avatarProps={{
                         src: cls.teacherPhoto,
                         size: "sm",
@@ -232,7 +232,7 @@ export default function BulkClassTeacherAssignment() {
               </TableCell>
               <TableCell>
                 <div className="py-4 text-sm text-default-600">
-                  {cls.studentCount || 0} students
+                  {cls.studentCount || 0} {t('classes.students', 'students')}
                 </div>
               </TableCell>
               <TableCell>
@@ -244,7 +244,7 @@ export default function BulkClassTeacherAssignment() {
                     onPress={() => handleOpenAssign(cls)}
                     isDisabled={!canEdit}
                   >
-                    {cls.classTeacherId ? 'Change' : 'Assign'}
+                    {cls.classTeacherId ? t('classes.change', 'Change') : t('classes.assign', 'Assign')}
                   </Button>
                   {cls.classTeacherId && (
                     <Button
@@ -269,10 +269,10 @@ export default function BulkClassTeacherAssignment() {
       <Modal isOpen={modal.isOpen} onClose={handleClose} size="md">
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">
-            Assign Class Teacher
+            {t('classes.assignClassTeacher', 'Assign Class Teacher')}
             {modal.targetClass && (
               <span className="text-sm font-normal text-default-500">
-                Class {modal.targetClass.name}-{modal.targetClass.section}
+                {t('classes.classLabel', 'Class')} {modal.targetClass.name}-{modal.targetClass.section}
               </span>
             )}
           </ModalHeader>
@@ -307,8 +307,7 @@ export default function BulkClassTeacherAssignment() {
                 <div>
                   <p className="text-sm font-medium text-warning-800">{t('pages.alreadyAssignedToOtherClasses')}</p>
                   <p className="text-xs text-warning-600 mt-1">
-                    This teacher is currently the class teacher for: {selectedTeacherCurrentClasses.map(c => `Class ${c.name}-${c.section}`).join(', ')}.
-                    They will manage multiple classes.
+                    {t('classes.teacherAlreadyAssignedWarning', 'This teacher is currently the class teacher for: {{classes}}. They will manage multiple classes.', { classes: selectedTeacherCurrentClasses.map(c => `${c.name}-${c.section}`).join(', ') })}
                   </p>
                 </div>
               </div>
@@ -316,10 +315,10 @@ export default function BulkClassTeacherAssignment() {
           </ModalBody>
           <ModalFooter>
             <Button variant="flat" onPress={handleClose} isDisabled={isProcessing}>
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button color="primary" onPress={handleSaveAssignment} isLoading={isProcessing}>
-              Save
+              {t('common.save', 'Save')}
             </Button>
           </ModalFooter>
         </ModalContent>

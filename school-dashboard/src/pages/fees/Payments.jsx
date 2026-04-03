@@ -669,7 +669,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;paddi
       </div>
 
       {/* Collection Modal */}
-      <Modal isOpen={selectedStudent !== null} onClose={() => { if (!collectingPayment) setSelectedStudent(null); }} size="xl">
+      <Modal isOpen={selectedStudent !== null} onClose={() => setSelectedStudent(null)} isDismissable={!collectingPayment} size="xl">
         <ModalContent>
           {(onClose) => (
             <>

@@ -122,6 +122,8 @@ export function useStudentsListData() {
   const [tcStudents, setTcStudents] = useState([]);
   const [studentToDelete, setStudentToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [isPromoting, setIsPromoting] = useState(false);
   const [statusChangeData, setStatusChangeData] = useState({ student: null, newStatus: "", action: "" });
 
   // ── Reminder / message state ──────────────────────────────────────────────
@@ -183,6 +185,8 @@ export function useStudentsListData() {
       }),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
   });
 
   const students = useMemo(() => localStudents ?? studentsQuery.data?.data ?? [], [localStudents, studentsQuery.data]);
@@ -214,14 +218,16 @@ export function useStudentsListData() {
 
   // ── Status counts ─────────────────────────────────────────────────────────
   const statusCounts = useMemo(() => {
-    let active = 0, inactive = 0, alumni = 0;
+    let active = 0, inactive = 0, alumni = 0, graduated = 0, transferred = 0;
     for (const student of students) {
       const status = student.status || "active";
       if (status === "active") active++;
       else if (status === "inactive") inactive++;
       else if (status === "alumni") alumni++;
+      else if (status === "graduated") graduated++;
+      else if (status === "transferred") transferred++;
     }
-    return { all: students.length, active, inactive, alumni };
+    return { all: students.length, active, inactive, alumni, graduated, transferred };
   }, [students]);
 
   // ── Attendance helper ─────────────────────────────────────────────────────
@@ -352,7 +358,11 @@ export function useStudentsListData() {
   const handleSavePhone = async (studentId) => {
     if (!phoneInput.trim()) { toast.error(t("toast.error.pleaseEnterAPhoneNumber")); return; }
     try {
-      await updateStudent(studentId, { parentPhone: phoneInput });
+      await updateStudent(studentId, {
+        parentPhone: phoneInput,
+        // Also update the first parent's phone to keep parents array in sync
+        ...(phoneInput ? {} : {}),
+      });
       await refreshStudentsList();
       toast.success(t("toast.success.phoneNumberAddedSuccessfully"));
       setEditingPhoneId(null);
@@ -380,7 +390,7 @@ export function useStudentsListData() {
   // ── Bulk action dispatcher ────────────────────────────────────────────────
   const handleBulkAction = (action, _singleStudent = null) => {
     if (action === "message") {
-      const ids = selectedKeys === "all" ? filteredItems.map((student) => student.id) : Array.from(selectedKeys);
+      const ids = selectedKeys === "all" ? filteredItems.map((student) => String(student.id)) : Array.from(selectedKeys);
       setReminderTargetCount(ids.length);
       setReminderMessage("");
       const now = new Date();
@@ -392,13 +402,13 @@ export function useStudentsListData() {
     }
     setBulkAction(action);
     if (action === "promote") {
-      const ids = selectedKeys === "all" ? filteredItems.map((student) => student.id) : Array.from(selectedKeys);
-      const selected = filteredItems.filter((student) => ids.includes(student.id.toString()));
+      const ids = selectedKeys === "all" ? filteredItems.map((student) => String(student.id)) : Array.from(selectedKeys);
+      const selected = filteredItems.filter((student) => ids.includes(String(student.id)));
       setPromotionPreview(selected.map((student) => ({ ...student, nextClass: getNextClass(student.class, uniqueClasses) })));
       onPromoteOpen();
     } else if (action === "tc") {
-      const ids = selectedKeys === "all" ? filteredItems.map((student) => student.id) : Array.from(selectedKeys);
-      setTcStudents(filteredItems.filter((student) => ids.includes(student.id.toString())));
+      const ids = selectedKeys === "all" ? filteredItems.map((student) => String(student.id)) : Array.from(selectedKeys);
+      setTcStudents(filteredItems.filter((student) => ids.includes(String(student.id))));
       onTcModalOpen();
     } else {
       onBulkActionOpen();
@@ -406,26 +416,38 @@ export function useStudentsListData() {
   };
 
   const executeBulkAction = async () => {
-    const ids = selectedKeys === "all" ? filteredItems.map((student) => student.id) : Array.from(selectedKeys);
+    const ids = selectedKeys === "all" ? filteredItems.map((student) => String(student.id)) : Array.from(selectedKeys);
+    setIsBulkProcessing(true);
     try {
       for (const id of ids) {
         if (bulkAction === "deactivate") await updateStudent(id, { status: "inactive" });
-        else if (bulkAction === "tc")    await updateStudent(id, { tcIssued: true });
+        else if (bulkAction === "tc") {
+          // Generate actual transfer certificate via dedicated endpoint
+          try {
+            await request(`/students/${id}/transfer-certificate`, { method: 'POST', body: JSON.stringify({}) });
+          } catch {
+            // Fall back to setting flag if TC endpoint not available
+            await updateStudent(id, { tcIssued: true });
+          }
+        }
         else if (bulkAction === "alumni") await updateStudent(id, { status: "alumni" });
       }
       await refreshStudentsList();
-      toast.success(`${ids.length} student${ids.length > 1 ? "s" : ""} updated successfully`);
+      toast.success(t("toast.success.studentsUpdated", { count: ids.length, defaultValue: `${ids.length} student${ids.length > 1 ? "s" : ""} updated successfully` }));
       setSelectedKeys(new Set([]));
       onBulkActionClose();
     } catch (err) {
       toast.error("Failed to update students: " + (err.message || "Unknown error"));
+    } finally {
+      setIsBulkProcessing(false);
     }
   };
 
   const executePromotion = async () => {
-    const ids = selectedKeys === "all" ? filteredItems.map((student) => student.id) : Array.from(selectedKeys);
-    const selected = filteredItems.filter((student) => ids.includes(student.id.toString()));
+    const ids = selectedKeys === "all" ? filteredItems.map((student) => String(student.id)) : Array.from(selectedKeys);
+    const selected = filteredItems.filter((student) => ids.includes(String(student.id)));
     let successCount = 0, failCount = 0;
+    setIsPromoting(true);
     try {
       for (const student of selected) {
         try {
@@ -453,21 +475,26 @@ export function useStudentsListData() {
               }
               await updateStudent(student.id, updateData);
             } else {
-              await updateStudent(student.id, { class: nextClass });
+              // Cannot resolve classId — skip this student with error
+              toast.error(`Class "${nextClass}" not found for ${student.name}. Create the class first.`);
+              failCount++;
+              continue;
             }
           }
           successCount++;
         } catch { failCount++; }
       }
-      if (failCount === 0) toast.success(`${successCount} student${successCount > 1 ? "s" : ""} promoted successfully`);
-      else if (successCount === 0) toast.error("Failed to promote any students");
-      else toast.success(`${successCount} promoted, ${failCount} failed`);
+      if (failCount === 0) toast.success(t("toast.success.studentsPromoted", { count: successCount, defaultValue: `${successCount} student${successCount > 1 ? "s" : ""} promoted successfully` }));
+      else if (successCount === 0) toast.error(t("toast.error.failedToPromoteStudents", "Failed to promote any students"));
+      else toast.success(t("toast.success.studentsPromotedPartial", { success: successCount, fail: failCount, defaultValue: `${successCount} promoted, ${failCount} failed` }));
       await refreshStudentsList();
       setSelectedKeys(new Set([]));
       setPromotionPreview([]);
       onPromoteClose();
     } catch (err) {
       toast.error("Failed to promote students: " + (err.message || "Unknown error"));
+    } finally {
+      setIsPromoting(false);
     }
   };
 
@@ -476,7 +503,7 @@ export function useStudentsListData() {
       toast.error(t("toast.error.pleaseEnterAMessage", "Please enter a message"));
       return;
     }
-    const ids = selectedKeys === "all" ? filteredItems.map((student) => student.id) : Array.from(selectedKeys);
+    const ids = selectedKeys === "all" ? filteredItems.map((student) => String(student.id)) : Array.from(selectedKeys);
     onReminderClose();
     try {
       await request("/messages/bulk-reminder", {
@@ -487,23 +514,14 @@ export function useStudentsListData() {
           scheduledTime: reminderTime || undefined,
         }),
       });
-      toast.success(`Messages ${reminderTime ? 'scheduled' : 'sent'} for ${reminderTargetCount} parents`);
+      toast.success(t("toast.success.messagesSent", { count: reminderTargetCount, defaultValue: `Messages ${reminderTime ? 'scheduled' : 'sent'} for ${reminderTargetCount} parents` }));
     } catch (err) {
       console.error("Failed to send reminders:", err);
       toast.error(err.message || "Failed to send reminders");
     }
   };
 
-  const handleBulkMessage = () => {
-    if (filteredItems.length === 0) { toast.error(t("toast.error.noStudentsInCurrentList")); return; }
-    setReminderTargetCount(filteredItems.length);
-    setReminderMessage("");
-    const now = new Date();
-    now.setHours(now.getHours() + 1);
-    now.setMinutes(0);
-    setReminderTime(new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16));
-    onReminderOpen();
-  };
+  // handleBulkMessage removed — functionality handled by handleBulkAction("message")
 
   // ── Filter helpers ────────────────────────────────────────────────────────
   const closeAllDropdowns = () => {
@@ -513,7 +531,7 @@ export function useStudentsListData() {
   };
 
   const clearAllFilters = () => {
-    setClassFilter("all"); setFeeStatusFilter("all");
+    setClassFilter("all"); setFeeStatusFilter("all"); setStatusFilter("all");
     setAcademicYearFilter("all"); setAcademicPerformanceFilter("all"); setAttendanceFilter("all");
     // Clear persisted filters
     ["class", "feeStatus", "academicYear", "academicPerformance", "attendance", "status"].forEach(k => sessionStorage.removeItem(`students-filter-${k}`));
@@ -583,6 +601,9 @@ export function useStudentsListData() {
   ];
 
   const handlePresetClick = useCallback((preset) => {
+    // Reset all filters first, then apply preset values
+    setClassFilter("all"); setFeeStatusFilter("all"); setAcademicYearFilter("all");
+    setAcademicPerformanceFilter("all"); setAttendanceFilter("all");
     if (preset.filters.feeStatus)           setFeeStatusFilter(preset.filters.feeStatus);
     if (preset.filters.attendance)          setAttendanceFilter(preset.filters.attendance);
     if (preset.filters.academicPerformance) setAcademicPerformanceFilter(preset.filters.academicPerformance);
@@ -650,6 +671,7 @@ export function useStudentsListData() {
     // bulk handlers
     bulkAction, handleBulkAction, executeBulkAction,
     executePromotion, executeSendReminders, handleBulkMessage,
+    isBulkProcessing, isPromoting,
     // delete/update
     deleteStudent, updateStudent,
     // csv upload

@@ -43,12 +43,14 @@ import StudentRemarks from "./components/StudentRemarks";
 import StudentRatingSystem from "./components/StudentRatingSystem";
 import InvoicePrintModal from "./components/InvoicePrintModal";
 import MoveClassModal from "./components/modals/MoveClassModal";
+import CertificateModal from "./components/modals/CertificateModal";
 /* eslint-enable no-unused-vars */
 import { useStudentAttendance, useStudentData, useStudentFees, useStudentRemarks, useStudentResults } from "./hooks";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
 import { DetailPageSkeleton } from '../../components/skeletons/PageSkeletons'; // eslint-disable-line no-unused-vars -- used in JSX
 import ConfirmDialog from '../../components/ui/ConfirmDialog'; // eslint-disable-line no-unused-vars -- used in JSX
+import ErrorBoundary from '../../components/ui/ErrorBoundary'; // eslint-disable-line no-unused-vars -- used in JSX
 import { getGradeFromPercentage } from '../../utils/grading';
 
 
@@ -112,6 +114,8 @@ export default function StudentDashboard() {
   const { isOpen: isPromoteOpen, onOpen: onPromoteOpen, onClose: onPromoteClose } = useDisclosure();
   const { isOpen: isProgressOpen, onOpen: onProgressOpen, onClose: onProgressClose } = useDisclosure();
   const { isOpen: isPaymentOpen, onOpen: onPaymentOpen, onClose: onPaymentClose } = useDisclosure();
+  const { isOpen: isBonafideOpen, onOpen: onBonafideOpen, onClose: onBonafideClose } = useDisclosure();
+  const { isOpen: isCharacterOpen, onOpen: onCharacterOpen, onClose: onCharacterClose } = useDisclosure();
   const [isMoveClassOpen, setIsMoveClassOpen] = useState(false);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
 
@@ -155,9 +159,18 @@ export default function StudentDashboard() {
   const [paymentForm, setPaymentForm] = useState({ amount: "", paymentMode: "cash", date: new Date().toISOString().split('T')[0] });
   const [reminderMessage, setReminderMessage] = useState("");
   const [isReminderOpen, setIsReminderOpen] = useState(false);
-  const currentYear = new Date().getFullYear();
-  const attendanceStartDate = `${currentYear}-01-01`;
-  const attendanceEndDate = `${currentYear}-12-31`;
+  // Use academic year boundaries instead of calendar year for attendance data
+  const attendanceStartDate = useMemo(() => {
+    if (!currentAcademicYear) return `${new Date().getFullYear()}-01-01`;
+    const [startYear] = currentAcademicYear.split('-').map(Number);
+    return startYear ? `${startYear}-04-01` : `${new Date().getFullYear()}-01-01`; // Academic year typically starts April
+  }, [currentAcademicYear]);
+  const attendanceEndDate = useMemo(() => {
+    if (!currentAcademicYear) return `${new Date().getFullYear()}-12-31`;
+    const parts = currentAcademicYear.split('-').map(Number);
+    const endYear = parts[1] || parts[0];
+    return endYear ? `${endYear}-03-31` : `${new Date().getFullYear()}-12-31`; // Academic year typically ends March
+  }, [currentAcademicYear]);
 
   const contextStudent = getStudentById(id);
   const { student: hydratedStudent, loading: studentDataLoading, error: studentError, refetch: refetchStudent } = useStudentData(id);
@@ -171,7 +184,7 @@ export default function StudentDashboard() {
   useEffect(() => {
     if (attendanceData?.length > 0) {
       const todayDate = new Date().toISOString().split('T')[0];
-      const todayRecord = attendanceData.find(record => record.date === todayDate);
+      const todayRecord = attendanceData.find(record => (record.date || '').split('T')[0] === todayDate);
       if (todayRecord?.status) setTodayAttendanceStatus(todayRecord.status);
     }
   }, [attendanceData]);
@@ -194,7 +207,7 @@ export default function StudentDashboard() {
   // Available classes
   const availableClasses = useMemo(() => {
     if (classesWithTeachers?.length) return classesWithTeachers.map(cls => `${cls.name}-${cls.section}`);
-    return ["1-A", "2-A", "3-A", "4-A", "5-A", "6-A", "7-A", "8-A", "9-A", "10-A"];
+    return []; // Return empty array instead of fake hardcoded classes
   }, [classesWithTeachers]);
 
   // Class info
@@ -300,8 +313,8 @@ export default function StudentDashboard() {
       return;
     }
 
-    const paymentAmount = parseInt(paymentForm.amount, 10);
-    if (!paymentAmount || paymentAmount <= 0) {
+    const paymentAmount = parseFloat(paymentForm.amount);
+    if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) {
       toast.error(t('toast.error.pleaseEnterAValidAmount'));
       return;
     }
@@ -375,9 +388,27 @@ export default function StudentDashboard() {
     }
     try {
       const loadingToast = toast.loading(t('toast.loading.promotingStudent', { name: student.name, class: nextClass, defaultValue: `Promoting ${student.name} to ${nextClass}...` }));
-      await updateStudent(student.id, { class: nextClass === "Passed Out / Alumni" ? "Passed Out" : nextClass });
+      if (nextClass === "Passed Out / Alumni") {
+        await updateStudent(student.id, { status: "alumni" });
+      } else {
+        // Resolve classId from display string
+        const classMatch = nextClass.match(/^(\d+|[A-Za-z]+)(?:-([A-Z]))?$/i);
+        let classId = null;
+        if (classMatch) {
+          const [, grade, section = ""] = classMatch;
+          const target = (classesWithTeachers || []).find((cls) => String(cls.name) === String(grade) && (cls.section || "") === String(section));
+          if (target) classId = target._id || target.id;
+        }
+        if (classId) {
+          await updateStudent(student.id, { classId, class: nextClass });
+        } else {
+          toast.error(t('toast.error.classNotFound', { class: nextClass, defaultValue: `Target class "${nextClass}" not found. Create the class first.` }), { id: loadingToast });
+          return;
+        }
+      }
       toast.success(t('toast.success.studentPromoted', { name: student.name, class: nextClass, defaultValue: `${student.name} promoted to ${nextClass}` }), { id: loadingToast });
       onPromoteClose();
+      refetchStudent();
     } catch (e) {
       toast.error("Failed to promote student: " + (e.message || "Unknown error"));
     }
@@ -665,7 +696,7 @@ ${studentResults.length > 0 ? `
             <div className="flex items-center gap-4">
               {/* Avatar */}
               <div className="relative">
-                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect} />
+                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect} aria-label="Upload student photo" />
                 <div className="w-20 h-20 rounded-lg bg-gray-100 dark:bg-zinc-800 overflow-hidden flex items-center justify-center relative">
                   {student.photo ? (
                     <img src={student.photo} alt={student.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
@@ -719,6 +750,8 @@ ${studentResults.length > 0 ? `
                   <DropdownItem key="promote" startContent={<TrendingUp size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={onPromoteOpen}>{t('pages.promoteStudent')}</DropdownItem>
                   <DropdownItem key="move" startContent={<Move size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={() => setIsMoveClassOpen(true)}>{t('pages.moveToClass')}</DropdownItem>
                   <DropdownItem key="tc" startContent={<FileCheck size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={onTcOpen}>{t('pages.generateTc')}</DropdownItem>
+                  <DropdownItem key="bonafide" startContent={<FileText size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={onBonafideOpen}>Bonafide Certificate</DropdownItem>
+                  <DropdownItem key="character" startContent={<Award size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={onCharacterOpen}>Character Certificate</DropdownItem>
                   <DropdownItem key="progress" startContent={<BarChart3 size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={onProgressOpen}>{t('pages.progressCard')}</DropdownItem>
                   <DropdownItem key="reminder" startContent={<Bell size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={handleSendReminder}>{t('pages.sendReminder1')}</DropdownItem>
                   <DropdownItem key="download" startContent={<Download size={14} className="text-gray-400 dark:text-zinc-500" />} onPress={handleDownload}>{t('pages.download')}</DropdownItem>
@@ -775,8 +808,9 @@ ${studentResults.length > 0 ? `
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          CONTENT AREA
+          CONTENT AREA (wrapped in ErrorBoundary to prevent tab crashes from killing the page)
       ═══════════════════════════════════════════════════════════════════ */}
+      <ErrorBoundary>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* MAIN CONTENT - 2/3 */}
@@ -1447,10 +1481,12 @@ ${studentResults.length > 0 ? `
           {/* Quick Actions */}
           <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-100 dark:border-zinc-700 p-5">
             <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">{t('pages.quickActions1')}</h3>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button onClick={onEditOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><Edit size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.edit1')}</span></button>
               <button onClick={() => student.parentPhone && (window.location.href = `tel:${student.parentPhone.replace(/[^\d+]/g, '')}`)} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><Phone size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.call')}</span></button>
               <button onClick={onTcOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><FileCheck size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">TC</span></button>
+              <button onClick={onBonafideOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><FileText size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">Bonafide</span></button>
+              <button onClick={onCharacterOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><Award size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">Character</span></button>
               <button onClick={onProgressOpen} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700"><BarChart3 size={18} className="text-gray-600 dark:text-zinc-400" /><span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.progress')}</span></button>
             </div>
           </div>
@@ -1530,6 +1566,7 @@ ${studentResults.length > 0 ? `
           </div>
         </div>
       </div>
+      </ErrorBoundary>
 
       {/* ═══════════════════════════════════════════════════════════════════
           MODALS & DRAWERS
@@ -1609,6 +1646,12 @@ ${studentResults.length > 0 ? `
 
       {/* TC Modal */}
       <TCGeneratorModal isOpen={isTcOpen} onClose={onTcClose} students={[student]} />
+
+      {/* Bonafide Certificate Modal */}
+      <CertificateModal isOpen={isBonafideOpen} onClose={onBonafideClose} student={student} type="bonafide" />
+
+      {/* Character Certificate Modal */}
+      <CertificateModal isOpen={isCharacterOpen} onClose={onCharacterClose} student={student} type="character" />
 
       {/* Move Class Modal */}
       <MoveClassModal

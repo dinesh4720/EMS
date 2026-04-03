@@ -173,7 +173,8 @@ export function AttendanceProvider({ children, staff }) {
         ? staff.filter((s) => s.status === "active").map((s) => s.id)
         : []);
 
-    const checkIn = inTime || (status === "present" ? "09:00" : "-");
+    // Use actual current time for present, not hardcoded 09:00
+    const checkIn = inTime || (status === "present" ? new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) : "-");
     const checkOut = outTime || "-";
 
     // Save previous state for rollback

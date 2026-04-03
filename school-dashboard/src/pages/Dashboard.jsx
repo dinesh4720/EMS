@@ -7,14 +7,19 @@ import ActivityFeed from "../components/ActivityFeed";
 import AlertsPanel from "../components/AlertsPanel";
 import QuickActions from "../components/QuickActions";
 import SubstitutionAlertPanel from "../components/SubstitutionAlertPanel";
+import NpsSurveyModal from "../components/NpsSurveyModal";
 import GuidedTour, { useGuidedTour } from "../components/ui/GuidedTour";
+import { getStoredUser } from "../utils/authSession";
 import {
   GraduationCap,
   Users,
   IndianRupee,
   Calendar,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  BookOpen,
+  ClipboardList,
+  Clock,
 } from "lucide-react";
 import { getDateLocale } from "../i18n/index";
 const getNumberFormatter = () => new Intl.NumberFormat(getDateLocale());
@@ -494,6 +499,102 @@ function Dashboard() {
     { label: "Announce", icon: AlertCircle, href: "/messaging" },
   ];
 
+  // ── Role Detection ──
+  const storedUser = getStoredUser();
+  const role = (storedUser?.role || "admin").toLowerCase();
+
+  // ── Principal View: Academic Overview + Staff Attendance ──
+  const principalStats = useMemo(() => {
+    if (role !== "principal") return null;
+    return [
+      {
+        label: "Total Students",
+        value: loading ? "—" : getNumberFormatter().format(dashboardStats.totalStudents || 0),
+        subtext: `${getNumberFormatter().format(dashboardStats.totalClasses || 0)} classes active`,
+        icon: GraduationCap,
+        color: "blue",
+      },
+      {
+        label: "Total Staff",
+        value: loading ? "—" : getNumberFormatter().format(dashboardStats.totalStaff || 0),
+        subtext: `${getNumberFormatter().format(dashboardStats.activeStaff || 0)} active staff members`,
+        icon: Users,
+        color: "purple",
+      },
+    ];
+  }, [role, loading, dashboardStats]);
+
+  const principalStaffAttendance = useMemo(() => {
+    if (role !== "principal") return null;
+    return {
+      total: attendanceSnapshot.staffTotal,
+      present: attendanceSnapshot.staffPresent,
+      marked: attendanceSnapshot.staffMarked,
+      rate: attendanceSnapshot.staffRate,
+    };
+  }, [role, attendanceSnapshot]);
+
+  // ── Accountant View: Finance Overview ──
+  const accountantStats = useMemo(() => {
+    if (role !== "accountant") return null;
+    return [
+      {
+        label: "Today's Collections",
+        value: paymentsLoaded ? getCurrencyFormatter().format(paymentSnapshot.today || 0) : "—",
+        subtext: "Fee payments received today",
+        icon: IndianRupee,
+        color: "green",
+      },
+      {
+        label: "Monthly Collections",
+        value: paymentsLoaded ? getCurrencyFormatter().format(paymentSnapshot.month || 0) : "—",
+        subtext: "Total collected this month",
+        icon: IndianRupee,
+        color: "blue",
+      },
+    ];
+  }, [role, paymentsLoaded, paymentSnapshot]);
+
+  // ── Teacher View: My Classes + Pending Tasks ──
+  const teacherData = useMemo(() => {
+    if (role !== "teacher") return null;
+    const teacherId = storedUser?.id || storedUser?._id;
+    const assignedClasses = (classes || []).filter(
+      (c) => c.classTeacherId === teacherId
+    );
+    const classIds = new Set(assignedClasses.map((c) => c.id));
+    const totalClassStudents = (students || []).filter((s) =>
+      classIds.has(s.classId)
+    ).length;
+
+    // Check which assigned classes have attendance marked today
+    const todayStr = new Date().toISOString().split("T")[0];
+    const classesWithAttendance = assignedClasses.map((c) => {
+      const classStudents = (students || []).filter(
+        (s) => s.classId === c.id
+      );
+      // Check attendance snapshot from state for today
+      const hasAttendance = classStudents.some((s) =>
+        (attendanceSnapshot.markedClasses || 0) > 0
+      );
+      return {
+        ...c,
+        studentCount: classStudents.length,
+        attendanceMarked: hasAttendance,
+      };
+    });
+
+    const unmarkedCount = assignedClasses.length > 0
+      ? assignedClasses.length - (attendanceSnapshot.markedClasses || 0)
+      : 0;
+
+    return {
+      assignedClasses: classesWithAttendance,
+      totalStudents: totalClassStudents,
+      unmarkedAttendanceCount: Math.max(0, unmarkedCount),
+    };
+  }, [role, storedUser, classes, students, attendanceSnapshot]);
+
   return (
     <div className="min-h-screen pb-8">
       <GuidedTour
@@ -536,6 +637,155 @@ function Dashboard() {
             announcements={recentAnnouncements}
             communications={[]}
           />
+
+          {/* ── Principal View ── */}
+          {role === "principal" && (
+            <div className="space-y-4" data-testid="principal-section">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
+                Academic Overview
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {principalStats?.map((stat) => (
+                  <StatCard key={stat.label} {...stat} />
+                ))}
+              </div>
+              {principalStaffAttendance && (
+                <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3 flex items-center gap-2">
+                    <Users size={16} className="text-purple-500" />
+                    Staff Attendance
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">
+                        {getNumberFormatter().format(principalStaffAttendance.total)}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">Total Staff</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                        {getNumberFormatter().format(principalStaffAttendance.present)}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">Present Today</p>
+                    </div>
+                  </div>
+                  {typeof principalStaffAttendance.rate === "number" && (
+                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2">
+                      {principalStaffAttendance.rate}% attendance rate ({principalStaffAttendance.marked} marked)
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Accountant View ── */}
+          {role === "accountant" && (
+            <div className="space-y-4" data-testid="accountant-section">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
+                Finance Overview
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {accountantStats?.map((stat) => (
+                  <StatCard key={stat.label} {...stat} />
+                ))}
+              </div>
+              {feeCollectionData.length > 0 && (
+                <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3 flex items-center gap-2">
+                    <IndianRupee size={16} className="text-green-500" />
+                    Monthly Collection Breakdown
+                  </h3>
+                  <div className="space-y-2">
+                    {feeCollectionData.map((month) => (
+                      <div key={month.key} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 dark:text-zinc-400">{month.month}</span>
+                        <span className="font-medium text-gray-900 dark:text-zinc-100">
+                          {getCurrencyFormatter().format(month.collected)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {recentPayments.length > 0 && (
+                <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3">
+                    Recent Transactions
+                  </h3>
+                  <div className="space-y-3">
+                    {recentPayments.map((payment) => (
+                      <div
+                        key={payment.id}
+                        className="flex items-center justify-between text-sm border-b border-gray-50 dark:border-zinc-800 pb-2 last:border-0"
+                      >
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-zinc-100">
+                            {payment.student}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-zinc-500">
+                            {payment.className}
+                          </p>
+                        </div>
+                        <span className="font-medium text-green-600 dark:text-green-400">
+                          {getCurrencyFormatter().format(payment.amount)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Teacher View ── */}
+          {role === "teacher" && teacherData && (
+            <div className="space-y-4" data-testid="teacher-section">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
+                My Classes
+              </h2>
+              {teacherData.assignedClasses.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {teacherData.assignedClasses.map((cls) => (
+                    <div
+                      key={cls.id}
+                      className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <BookOpen size={16} className="text-blue-500" />
+                        <span className="font-medium text-gray-900 dark:text-zinc-100">
+                          Class {cls.name}-{cls.section}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">
+                        {cls.studentCount} students
+                      </p>
+                      <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
+                        Attendance: {cls.attendanceMarked ? "Marked" : "Not marked"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 dark:text-zinc-400">
+                  No classes assigned.
+                </p>
+              )}
+              {teacherData.unmarkedAttendanceCount > 0 && (
+                <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4" data-testid="pending-tasks">
+                  <div className="flex items-center gap-2">
+                    <Clock size={16} className="text-amber-600 dark:text-amber-400" />
+                    <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                      Pending Tasks
+                    </h3>
+                  </div>
+                  <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                    {teacherData.unmarkedAttendanceCount} {teacherData.unmarkedAttendanceCount === 1 ? "class has" : "classes have"} unmarked attendance for today.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="xl:col-span-4 space-y-4">
@@ -543,6 +793,8 @@ function Dashboard() {
           <AlertsPanel alerts={alerts} />
         </div>
       </div>
+
+      <NpsSurveyModal />
     </div>
   );
 }

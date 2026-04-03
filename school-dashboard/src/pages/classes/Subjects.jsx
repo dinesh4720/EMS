@@ -18,7 +18,14 @@ export default function Subjects() {
   const { t } = useTranslation();
   const { params: { id }, isValid } = useValidatedParams({ id: 'objectId' }, { redirectTo: '/classes' });
   const navigate = useNavigate();
-  const { classesEnhancedApi, staff, classes } = useApp();
+  const { classesEnhancedApi, staff, classes, students } = useApp();
+
+  // Filter students for this class
+  const classStudents = (students || []).filter(s =>
+    String(s.classId?._id || s.classId) === String(id) &&
+    (s.status || 'active') === 'active' &&
+    s.isDeleted !== true
+  );
 
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +69,7 @@ export default function Subjects() {
               className="mt-4"
               onPress={() => navigate('/classes')}
             >
-              View All Classes
+              {t('classes.viewAllClasses', 'View All Classes')}
             </Button>
           </CardBody>
         </Card>
@@ -77,7 +84,7 @@ export default function Subjects() {
       setSubjects(data || []);
     } catch (error) {
       console.error('Error loading subjects:', error);
-        toast.error('Failed to load subjects');
+        toast.error(t('toast.error.failedToLoadSubjects', 'Failed to load subjects'));
       // Fallback to class subjects if API fails
       const classData = classes.find(c => c.id === id || c._id === id);
       if (classData && classData.subjects) {
@@ -105,7 +112,15 @@ export default function Subjects() {
   const [isUpdatingChapter, setIsUpdatingChapter] = useState(false);
   const handleAddSubject = async () => {
     if (!newSubject.subjectName?.trim()) {
-      toast.error('Please enter a subject name');
+      toast.error(t('toast.error.pleaseEnterSubjectName', 'Please enter a subject name'));
+      return;
+    }
+    // Check for duplicate subject
+    const isDuplicate = subjects.some(s =>
+      s.subjectName?.toLowerCase() === newSubject.subjectName.trim().toLowerCase()
+    );
+    if (isDuplicate) {
+      toast.error(t('toast.error.subjectAlreadyExists', 'This subject already exists in this class'));
       return;
     }
     if (isAddingSubject) return;
@@ -128,10 +143,10 @@ export default function Subjects() {
       });
 
       loadSubjects();
-      toast.success(`Subject "${newSubject.subjectName}" added successfully`);
+      toast.success(t('toast.success.subjectAdded', 'Subject added successfully'));
     } catch (error) {
       console.error('Error adding subject:', error);
-      toast.error(error.response?.data?.message || error.message || 'Failed to add subject');
+      toast.error(error.response?.data?.message || error.message || t('toast.error.failedToAddSubject', 'Failed to add subject'));
     } finally {
       setIsAddingSubject(false);
     }
@@ -151,7 +166,7 @@ export default function Subjects() {
       toast.success(t('toast.success.chapterProgressUpdatedSuccessfully'));
     } catch (error) {
       console.error('Error updating chapter:', error);
-      toast.error(error.response?.data?.message || error.message || 'Failed to update chapter progress');
+      toast.error(error.response?.data?.message || error.message || t('toast.error.failedToUpdateChapter', 'Failed to update chapter progress'));
     } finally {
       setIsUpdatingChapter(false);
     }
@@ -190,7 +205,7 @@ export default function Subjects() {
         {/* Left Side */}
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold text-default-800">{t('pages.subjectsTeachers')}</h2>
-          <Chip size="sm" variant="flat">{subjects.length} Subjects</Chip>
+          <Chip size="sm" variant="flat">{subjects.length} {t('classes.subjects', 'Subjects')}</Chip>
         </div>
 
         {/* Right Side - Actions */}
@@ -201,7 +216,7 @@ export default function Subjects() {
             startContent={<Plus size={16} />}
             onPress={() => setAddSubjectModal(true)}
           >
-            Add Subject
+            {t('classes.addSubject', 'Add Subject')}
           </Button>
         </div>
       </div>
@@ -210,18 +225,18 @@ export default function Subjects() {
       {subjects.length > 0 && (
         <div className="grid grid-cols-3 gap-4 mb-4">
           <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-default-200">
-            <p className="text-xs text-default-500">Total Subjects</p>
+            <p className="text-xs text-default-500">{t('classes.totalSubjects', 'Total Subjects')}</p>
             <p className="text-2xl font-semibold text-default-900">{subjects.length}</p>
           </div>
           <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-default-200">
-            <p className="text-xs text-green-600">On Track</p>
+            <p className="text-xs text-green-600">{t('classes.onTrack', 'On Track')}</p>
             <p className="text-2xl font-semibold text-green-700">{onTrackCount}</p>
-            <p className="text-[11px] text-default-400">50%+ progress</p>
+            <p className="text-[11px] text-default-400">{t('classes.fiftyPlusProgress', '50%+ progress')}</p>
           </div>
           <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-default-200">
-            <p className="text-xs text-amber-600">Behind Schedule</p>
+            <p className="text-xs text-amber-600">{t('classes.behindSchedule', 'Behind Schedule')}</p>
             <p className="text-2xl font-semibold text-amber-700">{behindCount}</p>
-            <p className="text-[11px] text-default-400">Below 50%</p>
+            <p className="text-[11px] text-default-400">{t('classes.belowFifty', 'Below 50%')}</p>
           </div>
         </div>
       )}
@@ -238,7 +253,7 @@ export default function Subjects() {
             className="mt-4"
             onPress={() => setAddSubjectModal(true)}
           >
-            Add First Subject
+            {t('classes.addFirstSubject', 'Add First Subject')}
           </Button>
         </div>
       ) : (
@@ -270,7 +285,7 @@ export default function Subjects() {
                     <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary shrink-0">
                       <BookOpen size={16} />
                     </div>
-                    <span className="font-semibold text-default-900">{subject.subjectName}</span>
+                    <span className="font-semibold text-default-900 select-text">{subject.subjectName}</span>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -278,7 +293,7 @@ export default function Subjects() {
                     {subject.teacherName || subject.teacherId?.name ? (
                       <User
                         name={subject.teacherName || subject.teacherId?.name}
-                        description="Teacher"
+                        description={t('common.teacher', 'Teacher')}
                         avatarProps={{
                           size: "sm",
                           className: "bg-default-100 text-default-500",
@@ -307,11 +322,11 @@ export default function Subjects() {
                 <TableCell>
                   <div className="py-4">
                     <div className="flex flex-col gap-1">
-                      <span className="text-small text-default-700">{subject.chapters?.length || 0} Chapters</span>
+                      <span className="text-small text-default-700">{subject.chapters?.length || 0} {t('classes.chapters', 'Chapters')}</span>
                       {subject.upcomingChapters?.length > 0 && (
                         <div className="flex items-center gap-1 text-xs text-default-400 max-w-[180px]">
                           <Clock size={10} />
-                          <span className="truncate">Next: {subject.upcomingChapters[0]}</span>
+                          <span className="truncate">{t('classes.next', 'Next')}: {subject.upcomingChapters[0]}</span>
                         </div>
                       )}
                     </div>
@@ -325,7 +340,7 @@ export default function Subjects() {
                       color="primary"
                       onPress={() => { setSelectedSubject(subject); setEditChapterModal(true); }}
                     >
-                      Manage
+                      {t('common.manage', 'Manage')}
                     </Button>
                   </div>
                 </TableCell>
@@ -370,11 +385,11 @@ export default function Subjects() {
                   isSelected={newSubject.assignTo === 'all'}
                   onValueChange={(checked) => {
                     if (checked) {
-                      setNewSubject(prev => ({ ...prev, assignTo: 'all' }));
+                      setNewSubject(prev => ({ ...prev, assignTo: 'all', selectedStudents: [] }));
                     }
                   }}
                 >
-                  All Students
+                  {t('pages.allStudents', 'All Students')}
                 </Checkbox>
                 <Checkbox size="sm"
                   isSelected={newSubject.assignTo === 'specific'}
@@ -384,9 +399,33 @@ export default function Subjects() {
                     }
                   }}
                 >
-                  Specific Students
+                  {t('pages.specificStudents', 'Specific Students')}
                 </Checkbox>
               </div>
+              {newSubject.assignTo === 'specific' && (
+                <div className="mt-2 max-h-40 overflow-y-auto border border-default-200 rounded-lg p-2 space-y-1">
+                  {classStudents.length > 0 ? classStudents.map(student => (
+                    <Checkbox
+                      key={student._id || student.id}
+                      size="sm"
+                      isSelected={newSubject.selectedStudents.includes(String(student._id || student.id))}
+                      onValueChange={(checked) => {
+                        const sid = String(student._id || student.id);
+                        setNewSubject(prev => ({
+                          ...prev,
+                          selectedStudents: checked
+                            ? [...prev.selectedStudents, sid]
+                            : prev.selectedStudents.filter(s => s !== sid)
+                        }));
+                      }}
+                    >
+                      <span className="text-sm">{student.name} {student.rollNo ? `(${student.rollNo})` : ''}</span>
+                    </Checkbox>
+                  )) : (
+                    <p className="text-sm text-default-400 text-center py-2">{t('pages.noStudentsInClass', 'No students in this class')}</p>
+                  )}
+                </div>
+              )}
             </div>
           </ModalBody>
           <ModalFooter>
@@ -394,14 +433,14 @@ export default function Subjects() {
               variant="flat"
               onPress={() => setAddSubjectModal(false)}
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button
               color="primary"
               onPress={handleAddSubject}
               isDisabled={!newSubject.subjectName}
             >
-              Add Subject
+              {t('classes.addSubject', 'Add Subject')}
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -417,7 +456,7 @@ export default function Subjects() {
                 <div>
                   <h3 className="font-semibold text-lg">{selectedSubject.subjectName}</h3>
                   <p className="text-sm text-default-500">
-                    Teacher: {selectedSubject.teacherName || selectedSubject.teacherId?.name || 'No Teacher Assigned'}
+                    {t('common.teacher', 'Teacher')}: {selectedSubject.teacherName || selectedSubject.teacherId?.name || t('classes.noTeacherAssigned', 'No Teacher Assigned')}
                   </p>
                 </div>
 
@@ -435,7 +474,7 @@ export default function Subjects() {
                                 variant="flat"
                                 className="mt-1 h-5 text-[10px]"
                               >
-                                {chapter.status?.replace('_', ' ') || 'Not Started'}
+                                {chapter.status === 'not_started' ? t('classes.notStarted', 'Not Started') : chapter.status === 'in_progress' ? t('classes.inProgress', 'In Progress') : chapter.status === 'completed' ? t('pages.completed', 'Completed') : t('classes.notStarted', 'Not Started')}
                               </Chip>
                             </div>
                             <div className="text-right shrink-0">
@@ -476,13 +515,13 @@ export default function Subjects() {
               variant="flat"
               onPress={() => setEditChapterModal(false)}
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button
               color="primary"
               onPress={handleUpdateChapter}
             >
-              Save Changes
+              {t('common.saveChanges', 'Save Changes')}
             </Button>
           </ModalFooter>
         </ModalContent>

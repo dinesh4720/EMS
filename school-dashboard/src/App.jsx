@@ -52,6 +52,8 @@ const ResultsEntry = lazyWithRetry(() => import("./pages/academics/ResultsEntry"
 // const EmailCampaignsPage = lazyWithRetry(() => import("./pages/messaging/EmailCampaignsPage")); // Commented out — using announcements instead
 const StudentPromotionPage = lazyWithRetry(() => import("./pages/students/StudentPromotionPage"));
 const TransferCertificatePage = lazyWithRetry(() => import("./pages/students/TransferCertificatePage"));
+const ReportsPage = lazyWithRetry(() => import("./pages/reports"));
+const DataToolsPage = lazyWithRetry(() => import("./pages/data-tools"));
 
 // Lazy load components that aren't needed on initial render
 const PublicFormSubmission = lazyWithRetry(() => import("./pages/PublicFormSubmission"));
@@ -314,6 +316,11 @@ function AuthenticatedApp() {
                         </PermissionGuard>
                       </RouteEB>
                     } />
+                    <Route path="/reports/*" element={
+                      <RouteEB>
+                        <ReportsPage />
+                      </RouteEB>
+                    } />
                     <Route path="/accounts/*" element={<Navigate to="/fees" replace />} />
                     <Route path="/academics/class-performance/:classId" element={
                       <RouteEB>
@@ -427,6 +434,13 @@ function AuthenticatedApp() {
                       <RouteEB>
                         <PermissionGuard module="timetable">
                           <TimetableWizardPage />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
+                    <Route path="/data-tools/*" element={
+                      <RouteEB>
+                        <PermissionGuard module="dataTools">
+                          <DataToolsPage />
                         </PermissionGuard>
                       </RouteEB>
                     } />

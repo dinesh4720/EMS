@@ -97,6 +97,13 @@ export default function FeeTemplatesManagement() {
       return;
     }
 
+    // Validate all fee heads have non-empty names
+    const emptyNameHead = formData.feeHeads.find(h => !h.name?.trim());
+    if (emptyNameHead) {
+      toast.error(t('toast.error.allFeeHeadsMustHaveName', 'All fee heads must have a name'));
+      return;
+    }
+
     setSaving(true);
     try {
       const totalAnnualFee = calculateTotalAnnualFee();
@@ -420,6 +427,11 @@ export default function FeeTemplatesManagement() {
               </div>
 
               <div className="space-y-4">
+                {formData.feeHeads.length === 0 && (
+                  <div className="text-center py-8 text-default-400 border-2 border-dashed border-default-200 rounded-lg">
+                    <p className="text-sm">{t('fees.noFeeHeadsAdded', 'No fee heads added yet. Click "Add Fee Head" to get started.')}</p>
+                  </div>
+                )}
                 {formData.feeHeads.map((head, index) => (
                   <div key={head._id || head.name || index} className="p-4 bg-default-50 rounded-xl border border-default-200">
                     <div className="flex items-center justify-between mb-4">
@@ -474,7 +486,7 @@ export default function FeeTemplatesManagement() {
                         label="Amount (₹)"
                         placeholder={t('fees.amountPlaceholder')}
                         value={head.amount}
-                        onValueChange={(v) => updateFeeHead(index, 'amount', parseInt(v) || 0)}
+                        onValueChange={(v) => updateFeeHead(index, 'amount', Math.max(0, parseInt(v) || 0))}
                         variant="bordered"
                         startContent={<IndianRupee size={16} className="text-default-400" />}
                         size="sm"

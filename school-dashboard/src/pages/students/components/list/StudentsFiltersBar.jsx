@@ -178,6 +178,42 @@ export default function StudentsFiltersBar({
                             >
                                 {t("pages.alumni")}
                             </DropdownItem>
+                            <DropdownItem
+                                key="graduated"
+                                className={statusCounts.graduated === 0 ? "opacity-50" : ""}
+                                startContent={
+                                    statusFilter === "graduated" ? (
+                                        <Check size={14} className="text-teal-600" />
+                                    ) : (
+                                        <span className="w-3.5"></span>
+                                    )
+                                }
+                                endContent={
+                                    <span className="text-gray-400 dark:text-zinc-500 text-xs">
+                                        {statusCounts.graduated}
+                                    </span>
+                                }
+                            >
+                                Graduated
+                            </DropdownItem>
+                            <DropdownItem
+                                key="transferred"
+                                className={statusCounts.transferred === 0 ? "opacity-50" : ""}
+                                startContent={
+                                    statusFilter === "transferred" ? (
+                                        <Check size={14} className="text-teal-600" />
+                                    ) : (
+                                        <span className="w-3.5"></span>
+                                    )
+                                }
+                                endContent={
+                                    <span className="text-gray-400 dark:text-zinc-500 text-xs">
+                                        {statusCounts.transferred}
+                                    </span>
+                                }
+                            >
+                                Transferred
+                            </DropdownItem>
                         </DropdownMenu>
                     </Dropdown>
 

@@ -10,11 +10,11 @@ import { useTranslation } from 'react-i18next';
 const ITEMS_PER_LOAD = 10;
 
 const ATTENDANCE_STATUSES = [
-  { key: 'present', label: 'Present', color: 'success', icon: Check, bgClass: 'bg-green-100', textClass: 'text-green-600' },
-  { key: 'absent', label: 'Absent', color: 'danger', icon: X, bgClass: 'bg-red-100', textClass: 'text-red-600' },
-  { key: 'late', label: 'Late', color: 'warning', icon: AlarmClock, bgClass: 'bg-amber-100', textClass: 'text-amber-600' },
-  { key: 'leave', label: 'Leave', color: 'secondary', icon: LogOut, bgClass: 'bg-purple-100', textClass: 'text-purple-600' },
-  { key: 'halfday', label: 'Half Day', color: 'primary', icon: TimerOff, bgClass: 'bg-blue-100', textClass: 'text-blue-600' },
+  { key: 'present', labelKey: 'attendance.present', label: 'Present', color: 'success', icon: Check, bgClass: 'bg-green-100', textClass: 'text-green-600' },
+  { key: 'absent', labelKey: 'attendance.absent', label: 'Absent', color: 'danger', icon: X, bgClass: 'bg-red-100', textClass: 'text-red-600' },
+  { key: 'late', labelKey: 'attendance.late', label: 'Late', color: 'warning', icon: AlarmClock, bgClass: 'bg-amber-100', textClass: 'text-amber-600' },
+  { key: 'leave', labelKey: 'attendance.leave', label: 'Leave', color: 'secondary', icon: LogOut, bgClass: 'bg-purple-100', textClass: 'text-purple-600' },
+  { key: 'halfday', labelKey: 'attendance.halfDay', label: 'Half Day', color: 'primary', icon: TimerOff, bgClass: 'bg-blue-100', textClass: 'text-blue-600' },
 ];
 
 const STATUS_MAP = Object.fromEntries(ATTENDANCE_STATUSES.map(s => [s.key, s]));
@@ -35,7 +35,7 @@ export default function Attendance({
   const attendanceLockDays = schoolSettings?.attendanceLockDays ?? 7;
   const isLocked = useMemo(() => {
     if (!date) return false;
-    const selected = new Date(date + 'T00:00:00');
+    const selected = new Date(date + 'T00:00:00Z'); // Use UTC to avoid timezone issues
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - attendanceLockDays);
     cutoff.setHours(0, 0, 0, 0);
@@ -223,14 +223,14 @@ export default function Attendance({
       const res = await classesApi.notifyParents({ classId: resolvedClassId, date });
       setSaveMessage({
         type: 'success',
-        text: res?.message || `Notified parents of ${absentCount} absent student(s)`,
+        text: res?.message || t('attendance.notifiedParents', 'Notified parents of {{count}} absent student(s)', { count: absentCount }),
       });
     } catch (error) {
       // Graceful fallback: if the endpoint doesn't exist or fails, show a toast-style message
       console.warn('Notify parents failed:', error?.message);
       setSaveMessage({
         type: 'error',
-        text: error?.message || 'Failed to notify parents. The notification service may be unavailable.',
+        text: error?.message || t('attendance.failedToNotifyParents', 'Failed to notify parents. The notification service may be unavailable.'),
       });
     } finally {
       setIsNotifying(false);
@@ -244,7 +244,7 @@ export default function Attendance({
     // AUDIT-45: Prevent saving attendance for future dates
     const today = new Date().toISOString().split('T')[0];
     if (date > today) {
-      setSaveMessage({ type: 'error', text: 'Cannot save attendance for a future date.' });
+      setSaveMessage({ type: 'error', text: t('attendance.cannotSaveFutureDate', 'Cannot save attendance for a future date.') });
       setTimeout(() => setSaveMessage(null), 3000);
       return;
     }
@@ -258,14 +258,14 @@ export default function Attendance({
     if (markedStudents.length === 0) {
       setSaveMessage({
         type: 'error',
-        text: 'Please mark attendance for at least one student before saving'
+        text: t('attendance.markAtLeastOne', 'Please mark attendance for at least one student before saving')
       });
       setTimeout(() => setSaveMessage(null), 3000);
       return;
     }
 
     if (!resolvedClassId) {
-      setSaveMessage({ type: 'error', text: 'Please select a valid class' });
+      setSaveMessage({ type: 'error', text: t('attendance.selectValidClass', 'Please select a valid class') });
       setTimeout(() => setSaveMessage(null), 3000);
       return;
     }
@@ -289,10 +289,11 @@ export default function Attendance({
       });
 
       // Show success message with unmarked warning if applicable
-      const unmarkedWarning = unmarkedCount > 0 ? ` (${unmarkedCount} still unmarked)` : '';
+      const savedCount = response.results?.length || markedStudents.length;
+      const unmarkedWarning = unmarkedCount > 0 ? ` (${unmarkedCount} ${t('attendance.stillUnmarked', 'still unmarked')})` : '';
       setSaveMessage({
         type: 'success',
-        text: `Attendance saved for ${response.results?.length || markedStudents.length} students${unmarkedWarning}`
+        text: t('attendance.savedForStudents', 'Attendance saved for {{count}} students', { count: savedCount }) + unmarkedWarning
       });
 
       // Auto-hide message after 3 seconds
@@ -301,7 +302,7 @@ export default function Attendance({
       console.error('Error saving attendance:', error);
       setSaveMessage({
         type: 'error',
-        text: error.message || 'Failed to save attendance'
+        text: error.message || t('attendance.failedToSave', 'Failed to save attendance')
       });
 
       // Auto-hide error message after 5 seconds
@@ -341,7 +342,7 @@ export default function Attendance({
                 trigger: "bg-default-100 data-[hover=true]:bg-default-200",
               }}
             >
-              {classesWithTeachers.map(c => <SelectItem key={c.id || c._id || `${c.name}-${c.section}`} textValue={`Class ${c.name} - ${c.section}`}>Class {c.name} - {c.section}</SelectItem>)}
+              {classesWithTeachers.map(c => <SelectItem key={c.id || c._id || `${c.name}-${c.section}`} textValue={`${c.name} - ${c.section}`}>{c.name} - {c.section}</SelectItem>)}
             </Select>
           )}
           <Input
@@ -353,7 +354,7 @@ export default function Attendance({
               const selected = e.target.value;
               const today = new Date().toISOString().split('T')[0];
               if (selected > today) {
-                setSaveMessage({ type: 'error', text: 'Cannot mark attendance for a future date.' });
+                setSaveMessage({ type: 'error', text: t('attendance.cannotMarkFutureDate', 'Cannot mark attendance for a future date.') });
                 setTimeout(() => setSaveMessage(null), 3000);
                 return;
               }
@@ -371,7 +372,7 @@ export default function Attendance({
         {/* Right Side - Actions */}
         <div className="flex gap-2 w-full sm:w-auto justify-end">
           <Button size="sm" color="success" variant="flat" startContent={<Check size={14} />} onPress={markAllPresent} isDisabled={isLocked}>{t('pages.markAllPresent')}</Button>
-          {absentCount > 0 && <Button size="sm" color="warning" variant="flat" startContent={<Bell size={14} />} onPress={handleNotifyParents} isLoading={isNotifying}>Notify Parents ({absentCount})</Button>}
+          {absentCount > 0 && <Button size="sm" color="warning" variant="flat" startContent={<Bell size={14} />} onPress={handleNotifyParents} isLoading={isNotifying}>{t('attendance.notifyParents', 'Notify Parents')} ({absentCount})</Button>}
         </div>
       </div>
 
@@ -426,7 +427,7 @@ export default function Attendance({
               </div>
             </div>
             <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{lateCount}</h3>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">Late</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{t('attendance.late', 'Late')}</p>
           </div>
         )}
 
@@ -439,7 +440,7 @@ export default function Attendance({
               </div>
             </div>
             <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{leaveCount}</h3>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">Leave</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{t('attendance.leave', 'Leave')}</p>
           </div>
         )}
 
@@ -452,7 +453,7 @@ export default function Attendance({
               </div>
             </div>
             <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{halfdayCount}</h3>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">Half Day</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{t('attendance.halfDay', 'Half Day')}</p>
           </div>
         )}
 
@@ -498,7 +499,7 @@ export default function Attendance({
           isLoading={isSaving}
           className="font-medium px-8"
         >
-          {isSaving ? 'Saving...' : 'Save Attendance'}
+          {isSaving ? t('common.saving', 'Saving...') : t('attendance.saveAttendance', 'Save Attendance')}
         </Button>
       </div>
 
@@ -524,10 +525,10 @@ export default function Attendance({
         </TableHeader>
         <TableBody emptyContent={
           isLoadingAttendance
-            ? "Loading attendance..."
+            ? t('common.loading', 'Loading attendance...')
             : classStudents.length === 0
-              ? "No students found in this class"
-              : "No data"
+              ? t('attendance.noStudentsInClass', 'No students found in this class')
+              : t('common.noData', 'No data')
         }>
           {visibleStudents.map((student) => (
             <TableRow key={sid(student)} className="hover:bg-default-50">
@@ -554,7 +555,7 @@ export default function Attendance({
                     variant="flat"
                     className="capitalize"
                   >
-                    {STATUS_MAP[attendance[sid(student)]]?.label || "Not Marked"}
+                    {STATUS_MAP[attendance[sid(student)]] ? t(STATUS_MAP[attendance[sid(student)]].labelKey, STATUS_MAP[attendance[sid(student)]].label) : t('attendance.notMarked', 'Not Marked')}
                   </Chip>
                 </div>
               </TableCell>
@@ -573,7 +574,7 @@ export default function Attendance({
                         className={`min-w-0 px-2 gap-1 text-xs ${isActive ? '' : 'text-default-400'}`}
                         startContent={<Icon size={13} />}
                       >
-                        <span className="hidden sm:inline">{label}</span>
+                        <span className="hidden sm:inline">{t(ATTENDANCE_STATUSES.find(s => s.key === key)?.labelKey || key, label)}</span>
                       </Button>
                     );
                   })}
@@ -588,7 +589,7 @@ export default function Attendance({
       <div ref={loaderRef} className="flex justify-center py-4">
         {isLoadingMore && <Spinner size="sm" color="primary" />}
         {!hasMore && classStudents.length > ITEMS_PER_LOAD && (
-          <span className="text-default-400 text-sm">All {classStudents.length} students loaded</span>
+          <span className="text-default-400 text-sm">{t('attendance.allStudentsLoaded', 'All {{count}} students loaded', { count: classStudents.length })}</span>
         )}
       </div>
 

@@ -476,9 +476,13 @@ export default function TimetableWizardModal({
                   break;
                 }
               }
-              // Fallback: if all teachers are busy in other classes, still assign (conflict will be detected)
+              // Fallback: if all teachers are busy in other classes, log a warning instead of silently assigning a busy teacher
               if (!selectedTeacher) {
+                console.warn(`All teachers for ${selectedSubject} are busy on ${day} Period ${periodIdx + 1}. Assigning first available teacher (conflict expected).`);
                 selectedTeacher = teachers[startIdx].id;
+                // Mark this slot explicitly as a known conflict so the user is warned
+                if (!schedule._knownConflicts) schedule._knownConflicts = [];
+                schedule._knownConflicts.push({ day, periodIdx, subject: selectedSubject, teacherId: selectedTeacher });
               }
             }
 
@@ -502,9 +506,9 @@ export default function TimetableWizardModal({
 
       if (conflicts.length > 0) {
         const conflictMessages = conflicts.map(c =>
-          `${c.teacherName} is double-booked on ${c.day} Period ${c.periodIndex + 1} (${c.subjects.join(' & ')})`
+          `${c.teacherName} ${t('classes.isDoubleBookedOn', 'is double-booked on')} ${c.day} ${t('common.period', 'Period')} ${c.periodIndex + 1} (${c.subjects.join(' & ')})`
         );
-        toast.error(`Teacher conflicts detected:\n${conflictMessages.join('\n')}`, { duration: 6000 });
+        toast.error(t('toast.error.teacherConflictsDetected', 'Teacher conflicts detected:') + `\n${conflictMessages.join('\n')}`, { duration: 6000 });
       } else {
         toast.success(t('toast.success.timetableGeneratedSuccessfully'));
       }
@@ -520,6 +524,15 @@ export default function TimetableWizardModal({
   const handleSave = async () => {
     if (!generatedSchedule) {
       toast.error(t('toast.error.pleaseGenerateATimetableFirst'));
+      return;
+    }
+
+    // Validate schedule is not empty (has at least one assigned slot)
+    const hasSlots = Object.values(generatedSchedule).some(
+      daySlots => Array.isArray(daySlots) && daySlots.some(slot => slot && slot.subject)
+    );
+    if (!hasSlots) {
+      toast.error(t('toast.error.generatedScheduleIsEmpty', 'Generated schedule is empty. Please check subject and teacher assignments.'));
       return;
     }
 
@@ -539,7 +552,7 @@ export default function TimetableWizardModal({
         existing = await timetableApi.getByClass(selectedClassId, currentAcademicYear);
       } catch (err) {
         // 404 means no timetable exists - that's fine, we'll create a new one
-        if (err.message && err.message.includes('not found')) {
+        if (err.status === 404 || (err.message && err.message.includes('not found'))) {
           existing = null;
         } else {
           throw err; // Re-throw other errors
@@ -565,7 +578,7 @@ export default function TimetableWizardModal({
       onClose();
     } catch (error) {
       console.error('Error saving timetable:', error);
-      toast.error(error.message || 'Failed to save timetable');
+      toast.error(error.message || t('toast.error.failedToSaveTimetable', 'Failed to save timetable'));
     } finally {
       setIsSaving(false);
     }
@@ -596,11 +609,11 @@ export default function TimetableWizardModal({
 
   // Steps configuration
   const steps = [
-    { number: 1, title: "Select Class", icon: Calendar },
-    { number: 2, title: "Configure Subjects", icon: BookOpen },
-    { number: 3, title: "Assign Teachers", icon: Users },
-    { number: 4, title: "Set Rules", icon: Settings },
-    { number: 5, title: "Generate & Preview", icon: Wand2 },
+    { number: 1, title: t('classes.selectClass', 'Select Class'), icon: Calendar },
+    { number: 2, title: t('classes.configureSubjects', 'Configure Subjects'), icon: BookOpen },
+    { number: 3, title: t('classes.assignTeachers', 'Assign Teachers'), icon: Users },
+    { number: 4, title: t('classes.setRules', 'Set Rules'), icon: Settings },
+    { number: 5, title: t('classes.generateAndPreview', 'Generate & Preview'), icon: Wand2 },
   ];
 
   return (
@@ -623,7 +636,7 @@ export default function TimetableWizardModal({
             <div>
               <h2 className="text-xl font-semibold">{t('pages.timetableWizard')}</h2>
               <p className="text-sm text-gray-500 dark:text-zinc-400">
-                Create and configure class timetables with smart generation
+                {t('classes.timetableWizardDescription', 'Create and configure class timetables with smart generation')}
               </p>
             </div>
           </div>
@@ -669,7 +682,7 @@ export default function TimetableWizardModal({
               <div>
                 <h3 className="text-lg font-medium mb-2">{t('pages.selectAClass')}</h3>
                 <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
-                  Choose the class for which you want to create or edit the timetable.
+                  {t('classes.chooseClassDescription', 'Choose the class for which you want to create or edit the timetable.')}
                 </p>
 
                 <Select
@@ -710,11 +723,11 @@ export default function TimetableWizardModal({
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.classTeacher2')}</p>
-                        <p className="font-medium">{selectedClass.teacher || 'Not assigned'}</p>
+                        <p className="font-medium">{selectedClass.teacher || t('common.notAssigned', 'Not assigned')}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.currentSubjects')}</p>
-                        <p className="font-medium">{selectedClass.subjects?.length || 0} subjects</p>
+                        <p className="font-medium">{selectedClass.subjects?.length || 0} {t('common.subjects', 'subjects')}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.academicYear1')}</p>
@@ -733,7 +746,7 @@ export default function TimetableWizardModal({
               <div>
                 <h3 className="text-lg font-medium mb-2">{t('pages.configureSubjects')}</h3>
                 <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
-                  Add or remove subjects for this class. These subjects will be used in the timetable.
+                  {t('classes.subjectConfigDescription', 'Add or remove subjects for this class. These subjects will be used in the timetable.')}
                 </p>
               </div>
 
@@ -761,7 +774,7 @@ export default function TimetableWizardModal({
 
               {/* Current Subjects */}
               <div>
-                <h4 className="font-medium mb-3">Selected Subjects ({classSubjects.length})</h4>
+                <h4 className="font-medium mb-3">{t('classes.selectedSubjects', 'Selected Subjects')} ({classSubjects.length})</h4>
                 <div className="flex flex-wrap gap-2">
                   {classSubjects.map(subject => (
                     <Chip
@@ -813,8 +826,7 @@ export default function TimetableWizardModal({
               <div>
                 <h3 className="text-lg font-medium mb-2">{t('pages.assignTeachersToSubjects')}</h3>
                 <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
-                  Select which teachers can teach each subject for this class.
-                  Teachers must already have subject assignments configured.
+                  {t('classes.teacherAssignDescription', 'Select which teachers can teach each subject for this class. Teachers must already have subject assignments configured.')}
                 </p>
               </div>
 
@@ -831,7 +843,7 @@ export default function TimetableWizardModal({
                             <BookOpen size={18} className="text-gray-500 dark:text-zinc-400" />
                             <span className="font-medium">{subject}</span>
                             <Chip size="sm" variant="flat" color={getSubjectColor(subject)}>
-                              {assignedTeachers.length} teacher(s)
+                              {assignedTeachers.length} {t('classes.teacherCount', 'teacher(s)')}
                             </Chip>
                           </div>
                         </div>
@@ -855,7 +867,7 @@ export default function TimetableWizardModal({
                           <div className="bg-warning-50 border border-warning-200 rounded-lg p-3 flex items-center gap-2">
                             <AlertCircle size={16} className="text-warning-600" />
                             <p className="text-sm text-warning-700">
-                              No teachers assigned for this subject. Add teachers via Staff &gt; Subjects or continue without assigned teachers.
+                              {t('classes.noTeachersAssignedWarning', 'No teachers assigned for this subject. Add teachers via Staff > Subjects or continue without assigned teachers.')}
                             </p>
                           </div>
                         )}
@@ -873,7 +885,7 @@ export default function TimetableWizardModal({
               <div>
                 <h3 className="text-lg font-medium mb-2">{t('pages.setPeriodRules')}</h3>
                 <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
-                  Configure constraints for timetable generation. These rules will be applied when generating the schedule.
+                  {t('classes.periodRulesDescription', 'Configure constraints for timetable generation. These rules will be applied when generating the schedule.')}
                 </p>
               </div>
 
@@ -883,7 +895,7 @@ export default function TimetableWizardModal({
                   <CardBody className="p-4 space-y-4">
                     <h4 className="font-medium flex items-center gap-2">
                       <Settings size={18} className="text-gray-500 dark:text-zinc-400" />
-                      Basic Rules
+                      {t('classes.basicRules', 'Basic Rules')}
                     </h4>
 
                     <div className="space-y-3">
@@ -927,14 +939,14 @@ export default function TimetableWizardModal({
                         isSelected={periodRules.noConsecutiveSame}
                         onValueChange={(v) => updatePeriodRule('noConsecutiveSame', v)}
                       >
-                        No consecutive same subject
+                        {t('classes.noConsecutiveSameSubject', 'No consecutive same subject')}
                       </Checkbox>
 
                       <Checkbox size="sm"
                         isSelected={periodRules.distributeEvenly}
                         onValueChange={(v) => updatePeriodRule('distributeEvenly', v)}
                       >
-                        Distribute subjects evenly across days
+                        {t('classes.distributeSubjectsEvenly', 'Distribute subjects evenly across days')}
                       </Checkbox>
                     </div>
                   </CardBody>
@@ -945,7 +957,7 @@ export default function TimetableWizardModal({
                   <CardBody className="p-4 space-y-4">
                     <h4 className="font-medium flex items-center gap-2">
                       <Clock size={18} className="text-gray-500 dark:text-zinc-400" />
-                      Advanced Rules
+                      {t('classes.advancedRules', 'Advanced Rules')}
                     </h4>
 
                     <div className="space-y-3">
@@ -953,14 +965,14 @@ export default function TimetableWizardModal({
                         isSelected={periodRules.doublePeriodsAllowed}
                         onValueChange={(v) => updatePeriodRule('doublePeriodsAllowed', v)}
                       >
-                        Allow double periods (2 consecutive periods)
+                        {t('classes.allowDoublePeriods', 'Allow double periods (2 consecutive periods)')}
                       </Checkbox>
 
                       <Checkbox size="sm"
                         isSelected={periodRules.preferMorningForCore}
                         onValueChange={(v) => updatePeriodRule('preferMorningForCore', v)}
                       >
-                        Prefer morning slots for core subjects
+                        {t('classes.preferMorningForCore', 'Prefer morning slots for core subjects')}
                       </Checkbox>
 
                       <Checkbox size="sm"
@@ -968,7 +980,7 @@ export default function TimetableWizardModal({
                         onValueChange={(v) => updatePeriodRule('excludeBreaksFromRandomization', v)}
                         defaultSelected
                       >
-                        Keep breaks fixed (don't randomize)
+                        {t('classes.keepBreaksFixed', "Keep breaks fixed (don't randomize)")}
                       </Checkbox>
 
                       <Divider />
@@ -999,7 +1011,7 @@ export default function TimetableWizardModal({
                 <CardBody className="p-4">
                   <h4 className="font-medium mb-4 flex items-center gap-2">
                     <Calendar size={18} className="text-gray-500 dark:text-zinc-400" />
-                    Period Configuration ({periods.length} periods)
+                    {t('classes.periodConfiguration', 'Period Configuration')} ({periods.length} {t('common.periods', 'periods')})
                   </h4>
 
                   <div className="overflow-x-auto">
@@ -1022,7 +1034,7 @@ export default function TimetableWizardModal({
                             <td className="py-2 px-3">{period.endTime}</td>
                             <td className="py-2 px-3">
                               <Chip size="sm" color={period.isBreak ? "warning" : "success"} variant="flat">
-                                {period.isBreak ? 'Break' : 'Class'}
+                                {period.isBreak ? t('common.break', 'Break') : t('common.class', 'Class')}
                               </Chip>
                             </td>
                           </tr>
@@ -1042,7 +1054,7 @@ export default function TimetableWizardModal({
                 <div>
                   <h3 className="text-lg font-medium mb-2">{t('pages.generatedTimetable')}</h3>
                   <p className="text-sm text-gray-500 dark:text-zinc-400">
-                    Preview the generated timetable. Click "Regenerate" to create a new arrangement.
+                    {t('classes.previewDescription', 'Preview the generated timetable. Click "Regenerate" to create a new arrangement.')}
                   </p>
                 </div>
                 <Button
@@ -1052,7 +1064,7 @@ export default function TimetableWizardModal({
                   onPress={generateTimetable}
                   isLoading={isGenerating}
                 >
-                  Regenerate
+                  {t('classes.regenerate', 'Regenerate')}
                 </Button>
               </div>
 
@@ -1062,7 +1074,7 @@ export default function TimetableWizardModal({
                   <div className="flex items-center gap-2 mb-2">
                     <AlertCircle size={18} className="text-red-600 dark:text-red-400" />
                     <h4 className="font-medium text-red-700 dark:text-red-300">
-                      {detectedConflicts.length} Teacher Conflict{detectedConflicts.length > 1 ? 's' : ''} Detected
+                      {detectedConflicts.length} {t('classes.teacherConflict', 'Teacher Conflict')}{detectedConflicts.length > 1 ? 's' : ''} {t('common.detected', 'Detected')}
                     </h4>
                   </div>
                   <ul className="space-y-1 text-sm text-red-600 dark:text-red-400">
@@ -1070,13 +1082,13 @@ export default function TimetableWizardModal({
                       <li key={i} className="flex items-start gap-1.5">
                         <span className="mt-0.5">•</span>
                         <span>
-                          <strong>{c.teacherName}</strong> is double-booked on <strong>{c.day}</strong>, Period {c.periodIndex + 1} ({c.subjects.join(' & ')})
+                          <strong>{c.teacherName}</strong> {t('classes.isDoubleBookedOn', 'is double-booked on')} <strong>{c.day}</strong>, {t('common.period', 'Period')} {c.periodIndex + 1} ({c.subjects.join(' & ')})
                         </span>
                       </li>
                     ))}
                   </ul>
                   <p className="text-xs text-red-500 dark:text-red-400 mt-2">
-                    Resolve conflicts by clicking "Regenerate" or go back to adjust teacher assignments.
+                    {t('classes.resolveConflictsHint', 'Resolve conflicts by clicking "Regenerate" or go back to adjust teacher assignments.')}
                   </p>
                 </div>
               )}
@@ -1157,7 +1169,7 @@ export default function TimetableWizardModal({
                     startContent={<Wand2 size={16} />}
                     onPress={generateTimetable}
                   >
-                    Generate Timetable
+                    {t('classes.generateTimetable', 'Generate Timetable')}
                   </Button>
                 </div>
               )}
@@ -1169,7 +1181,7 @@ export default function TimetableWizardModal({
                     <h4 className="font-medium mb-3">{t('pages.scheduleSummary')}</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">Total Periods/Week</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">{t('classes.totalPeriodsPerWeek', 'Total Periods/Week')}</p>
                         <p className="text-lg font-semibold">
                           {periods.filter(p => !p.isBreak).length * DAYS.length}
                         </p>
@@ -1183,7 +1195,7 @@ export default function TimetableWizardModal({
                         <p className="text-lg font-semibold">{DAYS.length}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">Breaks/Day</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400">{t('classes.breaksPerDay', 'Breaks/Day')}</p>
                         <p className="text-lg font-semibold">
                           {periods.filter(p => p.isBreak).length}
                         </p>
@@ -1202,7 +1214,7 @@ export default function TimetableWizardModal({
               variant="light"
               onPress={onClose}
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
 
             <div className="flex items-center gap-2">
@@ -1212,7 +1224,7 @@ export default function TimetableWizardModal({
                   onPress={handleBack}
                   startContent={<ChevronLeft size={16} />}
                 >
-                  Back
+                  {t('common.back', 'Back')}
                 </Button>
               )}
 
@@ -1223,7 +1235,7 @@ export default function TimetableWizardModal({
                   isDisabled={!canGoNext()}
                   endContent={<ChevronRight size={16} />}
                 >
-                  Next
+                  {t('common.next', 'Next')}
                 </Button>
               ) : (
                 <Button
@@ -1233,7 +1245,7 @@ export default function TimetableWizardModal({
                   isDisabled={!generatedSchedule || detectedConflicts.length > 0}
                   startContent={!isSaving && <Save size={16} />}
                 >
-                  {detectedConflicts.length > 0 ? 'Resolve Conflicts to Save' : 'Save Timetable'}
+                  {detectedConflicts.length > 0 ? t('classes.resolveConflictsToSave', 'Resolve Conflicts to Save') : t('classes.saveTimetable', 'Save Timetable')}
                 </Button>
               )}
             </div>

@@ -37,17 +37,26 @@ export default function ShareProfileModal({ isOpen, onClose, student, staff = []
 
       const { request } = await import("../../../../services/api");
 
-      // Send message to each selected user
+      // Send a notification to each selected staff member with the profile link
       const sendPromises = selectedUsers.map(async (userId) => {
         try {
+          // First, create or get a conversation with this user
+          const conversation = await request('/messages/conversations', {
+            method: 'POST',
+            body: JSON.stringify({
+              participantId: userId,
+              participantModel: 'Staff',
+            })
+          });
+          // Then send the message in the conversation
           await request('/messages', {
             method: 'POST',
             body: JSON.stringify({
-              senderId: user?.id,
+              conversationId: conversation._id || conversation.id,
               receiverId: userId,
+              receiverModel: 'Staff',
               content: message,
               type: 'text',
-              timestamp: new Date().toISOString()
             })
           });
         } catch (error) {

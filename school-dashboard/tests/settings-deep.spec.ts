@@ -47,6 +47,7 @@ test.describe('Settings — Data Management (Trash, Seed Data, Cleanup)', () => 
   test('trash page shows list of soft-deleted records with type, name, deleted date', async ({ page }) => {
     await page.goto('/settings/trash');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     const body = await page.textContent('body');
     // Verify trash items are displayed
@@ -73,6 +74,7 @@ test.describe('Settings — Data Management (Trash, Seed Data, Cleanup)', () => 
   test('restore action moves record out of trash', async ({ page }) => {
     await page.goto('/settings/trash');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Verify item is present
     await expect(page.getByText('Rahul Sharma')).toBeVisible();
@@ -92,6 +94,7 @@ test.describe('Settings — Data Management (Trash, Seed Data, Cleanup)', () => 
   test('permanent delete shows double-confirmation and removes forever', async ({ page }) => {
     await page.goto('/settings/trash');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Wait for trash items to render
     await expect(page.getByText('Rahul Sharma')).toBeVisible({ timeout: 10_000 });
@@ -116,10 +119,10 @@ test.describe('Settings — Data Management (Trash, Seed Data, Cleanup)', () => 
   });
 
   // Test 4: Seed data page shows DummyDataGenerator with entity count chips
-  // Page not yet implemented
-  test.skip('seed data page shows DummyDataGenerator with entity count chips', async ({ page }) => {
+  test('seed data page shows DummyDataGenerator with entity count chips', async ({ page }) => {
     await page.goto('/settings/seed-data');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     const body = await page.textContent('body');
 
@@ -143,10 +146,10 @@ test.describe('Settings — Data Management (Trash, Seed Data, Cleanup)', () => 
   });
 
   // Test 5: Generate dummy data creates records and shows counts
-  // Page not yet implemented
-  test.skip('generate dummy data creates records and shows counts', async ({ page }) => {
+  test('generate dummy data creates records and shows counts', async ({ page }) => {
     await page.goto('/settings/seed-data');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Select all categories
     await page.getByRole('button', { name: 'Select All', exact: true }).click();
@@ -174,10 +177,10 @@ test.describe('Settings — Data Management (Trash, Seed Data, Cleanup)', () => 
   });
 
   // Test 6: Data cleanup page shows DataCleanup with WARNING banner
-  // Page not yet implemented
-  test.skip('data cleanup page shows DataCleanup with WARNING banner', async ({ page }) => {
+  test('data cleanup page shows DataCleanup with WARNING banner', async ({ page }) => {
     await page.goto('/settings/data-cleanup');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     const body = await page.textContent('body');
 
@@ -198,10 +201,10 @@ test.describe('Settings — Data Management (Trash, Seed Data, Cleanup)', () => 
   });
 
   // Test 7: Cleanup requires typing 'REMOVE ALL DATA' confirmation
-  // Page not yet implemented
-  test.skip('cleanup requires typing confirmation phrase', async ({ page }) => {
+  test('cleanup requires typing confirmation phrase', async ({ page }) => {
     await page.goto('/settings/data-cleanup');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Wait for the data preview to load (loading spinner disappears)
     await expect(page.getByText('Select data to remove')).toBeVisible({ timeout: 10_000 });
@@ -232,10 +235,10 @@ test.describe('Settings — Data Management (Trash, Seed Data, Cleanup)', () => 
   });
 
   // Test 8: After cleanup confirmation, POST triggers and shows deleted counts
-  // Page not yet implemented
-  test.skip('after cleanup confirmation POST triggers and shows deleted counts', async ({ page }) => {
+  test('after cleanup confirmation POST triggers and shows deleted counts', async ({ page }) => {
     await page.goto('/settings/data-cleanup');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Wait for the data preview to load
     await expect(page.getByText('Select data to remove')).toBeVisible({ timeout: 10_000 });
@@ -348,6 +351,7 @@ test.describe('Settings — User Management, Roles & Permissions', () => {
   test('user management page shows user list with name, role, and status', async ({ page }) => {
     await page.goto('/settings/users');
     await page.waitForLoadState('domcontentloaded');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Wait for staff data to render (staff names, not just heading)
     const firstStaff = state.staff[0];
@@ -372,6 +376,7 @@ test.describe('Settings — User Management, Roles & Permissions', () => {
   test('user list shows staff with phone and role information', async ({ page }) => {
     await page.goto('/settings/users');
     await page.waitForLoadState('domcontentloaded');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Wait for staff data to render
     await page.waitForFunction(() => {
@@ -396,6 +401,7 @@ test.describe('Settings — User Management, Roles & Permissions', () => {
   test('change password button opens modal for selected user', async ({ page }) => {
     await page.goto('/settings/users');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Click "Change" button for first staff member
     const changeBtn = page.getByRole('button', { name: /change/i }).first();
@@ -414,6 +420,7 @@ test.describe('Settings — User Management, Roles & Permissions', () => {
   test('search filters the staff user list', async ({ page }) => {
     await page.goto('/settings/users');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Search for a specific staff name
     const searchInput = page.getByPlaceholder(/search/i).first();
@@ -431,6 +438,7 @@ test.describe('Settings — User Management, Roles & Permissions', () => {
   test('reset password triggers API call and shows generated password', async ({ page }) => {
     await page.goto('/settings/users');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Click "Reset Password" for first staff member in the table
     const resetBtn = page.getByRole('button', { name: /reset password/i }).first();
@@ -469,6 +477,7 @@ test.describe('Settings — User Management, Roles & Permissions', () => {
   test('roles & permissions page shows role list with permission counts', async ({ page }) => {
     await page.goto('/settings/users');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Click on "Roles & Permissions" tab
     const rolesTab = page.getByRole('tab', { name: /roles/i }).first();
@@ -490,6 +499,7 @@ test.describe('Settings — User Management, Roles & Permissions', () => {
   test('creating a new role with module permissions saves correctly', async ({ page }) => {
     await page.goto('/settings/users');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Switch to Roles tab
     const rolesTab = page.getByRole('tab', { name: /roles/i }).first();
@@ -531,6 +541,7 @@ test.describe('Settings — User Management, Roles & Permissions', () => {
   test('permission matrix shows view/create/edit/delete toggles per module', async ({ page }) => {
     await page.goto('/settings/users');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Switch to Roles tab
     const rolesTab = page.getByRole('tab', { name: /roles/i }).first();
@@ -564,25 +575,23 @@ test.describe('Settings — User Management, Roles & Permissions', () => {
   });
 
   // ── Test 9: Permission requests page shows pending requests ──
-  // Feature broken: PermissionRequests uses isAdmin() from usePermissions() but the context does not export isAdmin
-  test.skip('permission requests page shows pending requests', async ({ page }) => {
+  test('permission requests page shows pending requests', async ({ page }) => {
     await page.goto('/settings/permission-requests');
     await page.waitForLoadState('domcontentloaded');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     await expect(page.getByText('Ravi Sharma').first()).toBeVisible({ timeout: 15000 });
 
-    const body = await page.textContent('body');
-    expect(body?.includes('Permission Requests')).toBeTruthy();
-    expect(body?.includes('Fee Management') || body?.includes('fees')).toBeTruthy();
-    expect(body?.includes('pending') || body?.includes('Pending')).toBeTruthy();
+    await expect(page.locator('body')).toContainText('Permission Requests', { timeout: 15000 });
+    await expect(page.locator('body')).toContainText(/Fee Management|fees/i, { timeout: 15000 });
+    await expect(page.locator('body')).toContainText(/pending|Pending/, { timeout: 15000 });
 
     const reviewBtn = page.getByRole('button', { name: /review/i }).first();
-    expect(await reviewBtn.isVisible({ timeout: 5000 }).catch(() => false)).toBeTruthy();
+    await expect(reviewBtn).toBeVisible({ timeout: 15000 });
   });
 
   // ── Test 10: Approve/reject permission request updates status ──
-  // Feature broken: PermissionRequests uses isAdmin() from usePermissions() but the context does not export isAdmin
-  test.skip('approve permission request updates status via API', async ({ page }) => {
+  test('approve permission request updates status via API', async ({ page }) => {
     await page.goto('/settings/permission-requests');
     await page.waitForLoadState('domcontentloaded');
 
@@ -611,10 +620,16 @@ test.describe('Settings — User Management, Roles & Permissions', () => {
   });
 
   // ── Test 11: Active sessions page shows current sessions with force logout button ──
-  // Page not yet implemented
-  test.skip('active sessions page shows sessions with device info and logout button', async ({ page }) => {
+  test('active sessions page shows sessions with device info and logout button', async ({ page }) => {
     await page.goto('/settings/sessions');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
+
+    // Wait for session data to render (not just the skeleton)
+    await page.waitForFunction(() => {
+      const body = document.body.textContent || '';
+      return body.includes('Chrome') || body.includes('Current session');
+    }, { timeout: 15000 });
 
     const body = await page.textContent('body');
     // Should show "Active Sessions" heading
@@ -636,10 +651,16 @@ test.describe('Settings — User Management, Roles & Permissions', () => {
   });
 
   // ── Test 12: Force logout action removes session from list ──
-  // Page not yet implemented
-  test.skip('force logout removes session from list', async ({ page }) => {
+  test('force logout removes session from list', async ({ page }) => {
     await page.goto('/settings/sessions');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
+
+    // Wait for session data to render
+    await page.waitForFunction(() => {
+      const body = document.body.textContent || '';
+      return body.includes('Safari') || body.includes('Current session');
+    }, { timeout: 15000 });
 
     // Verify we start with sessions visible
     const bodyBefore = await page.textContent('body');
