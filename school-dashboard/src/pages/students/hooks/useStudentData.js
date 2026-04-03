@@ -28,6 +28,8 @@ export function useStudentData(studentId, options = {}) {
     queryKey,
     enabled: Boolean(studentId) && autoFetch,
     queryFn: () => studentsApi.getById(studentId),
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
   });
 
   const updateMutation = useMutation({

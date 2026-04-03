@@ -86,7 +86,6 @@ const JOB_STATS = {
   systemJobs: { total: 4, running: 1, scheduled: 1, completed: 1, failed: 1 },
 };
 
-// Skipped: /data-tools/* pages not yet implemented
 test.describe('Data Tools — Background Jobs & Govt Export', () => {
   let state: MockState;
 
@@ -179,67 +178,62 @@ test.describe('Data Tools — Background Jobs & Govt Export', () => {
   // ─── Background Jobs Tests ───────────────────────────────────────
 
   // Test 1: Jobs page shows import jobs table and system jobs table
-  test.skip('jobs page shows import jobs table and system jobs table', async ({ page }) => {
+  test('jobs page shows import jobs table and system jobs table', async ({ page }) => {
     await page.goto('/data-tools/jobs');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
-    const body = await page.textContent('body');
-
-    // Import jobs section
-    expect(body).toContain('Import Jobs');
-    // System jobs section
-    expect(body).toContain('System');
-
-    // Verify import job data is shown
-    expect(body).toContain('students_2026.csv');
-    expect(body).toContain('fees_march.xlsx');
-    expect(body).toContain('attendance_march.csv');
-    expect(body).toContain('staff_new.csv');
-
-    // Verify system job data is shown
-    expect(body).toContain('Daily Attendance Summary');
-    expect(body).toContain('Fee Reminder Emails');
-    expect(body).toContain('Database Backup');
-    expect(body).toContain('Report Generation');
-
-    // Verify both tables exist
+    // Use retrying assertions for import job data
     const importTable = page.locator('table[aria-label="Import jobs"]');
+    await expect(importTable).toBeVisible({ timeout: 15000 });
+    await expect(importTable.getByText('students_2026.csv')).toBeVisible({ timeout: 10000 });
+
+    const bodyLocator = page.locator('body');
+    await expect(bodyLocator).toContainText('Import Jobs');
+    await expect(bodyLocator).toContainText('fees_march.xlsx');
+    await expect(bodyLocator).toContainText('attendance_march.csv');
+    await expect(bodyLocator).toContainText('staff_new.csv');
+    await expect(bodyLocator).toContainText('Daily Attendance Summary');
+    await expect(bodyLocator).toContainText('Fee Reminder Emails');
+    await expect(bodyLocator).toContainText('Database Backup');
+    await expect(bodyLocator).toContainText('Report Generation');
+
     const systemTable = page.locator('table[aria-label="System jobs"]');
-    await expect(importTable).toBeVisible();
     await expect(systemTable).toBeVisible();
   });
 
   // Test 2: Job status badges render correctly (scheduled, running, completed, failed)
-  test.skip('job status badges render correctly', async ({ page }) => {
+  test('job status badges render correctly', async ({ page }) => {
     await page.goto('/data-tools/jobs');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
-    const body = await page.textContent('body');
-
-    // Import job statuses
-    expect(body).toContain('Completed');
-    expect(body).toContain('Running');
-    expect(body).toContain('Failed');
-    expect(body).toContain('Queued');
-
-    // System job statuses
-    expect(body).toContain('Scheduled');
-
-    // Verify status badge chips are rendered in the tables (HeroUI Chip uses data-slot="base")
+    // Use retrying assertions — wait for table to appear first
     const importTable = page.locator('table[aria-label="Import jobs"]');
-    await expect(importTable.getByText('Completed').first()).toBeVisible();
+    await expect(importTable).toBeVisible({ timeout: 15000 });
+
+    // Verify status badge chips in import jobs table
+    await expect(importTable.getByText('Completed').first()).toBeVisible({ timeout: 10000 });
     await expect(importTable.getByText('Running').first()).toBeVisible();
     await expect(importTable.getByText('Failed').first()).toBeVisible();
     await expect(importTable.getByText('Queued').first()).toBeVisible();
 
+    // Verify system job statuses
     const systemTable = page.locator('table[aria-label="System jobs"]');
+    await expect(systemTable).toBeVisible();
     await expect(systemTable.getByText('Scheduled').first()).toBeVisible();
   });
 
   // Test 3: Job detail modal opens on click
-  test.skip('job detail modal opens on click', async ({ page }) => {
+  test('job detail modal opens on click', async ({ page }) => {
     await page.goto('/data-tools/jobs');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
+
+    // Wait for import jobs table to render
+    const importTable = page.locator('table[aria-label="Import jobs"]');
+    await expect(importTable).toBeVisible({ timeout: 15000 });
+    await expect(importTable.getByText('students_2026.csv')).toBeVisible({ timeout: 10000 });
 
     // Click the view button on the first import job (use evaluate for mobile viewports where cells overlap)
     const viewBtn = page.getByLabel('View details').first();
@@ -258,9 +252,15 @@ test.describe('Data Tools — Background Jobs & Govt Export', () => {
   });
 
   // Test 4: Delete job confirms and removes
-  test.skip('delete job confirms and removes', async ({ page }) => {
+  test('delete job confirms and removes', async ({ page }) => {
     await page.goto('/data-tools/jobs');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
+
+    // Wait for import jobs table to render
+    const importTable = page.locator('table[aria-label="Import jobs"]');
+    await expect(importTable).toBeVisible({ timeout: 15000 });
+    await expect(importTable.getByText('students_2026.csv')).toBeVisible({ timeout: 10000 });
 
     // Set up confirm dialog listener
     page.on('dialog', async (dialog) => {
@@ -284,9 +284,10 @@ test.describe('Data Tools — Background Jobs & Govt Export', () => {
   });
 
   // Test 5: Refresh button reloads job data
-  test.skip('refresh button reloads job data', async ({ page }) => {
+  test('refresh button reloads job data', async ({ page }) => {
     await page.goto('/data-tools/jobs');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Click refresh button and wait for re-fetch
     const refreshBtn = page.getByRole('button', { name: /refresh/i });
@@ -304,9 +305,10 @@ test.describe('Data Tools — Background Jobs & Govt Export', () => {
   // ─── Govt Export Tests ───────────────────────────────────────────
 
   // Test 6: Govt export page shows 6 export types
-  test.skip('govt export page shows 6 export types', async ({ page }) => {
+  test('govt export page shows 6 export types', async ({ page }) => {
     await page.goto('/data-tools/govt-export');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     const body = await page.textContent('body');
 
@@ -331,9 +333,10 @@ test.describe('Data Tools — Background Jobs & Govt Export', () => {
   });
 
   // Test 7: Selecting export type shows filter options (academic year, classId)
-  test.skip('selecting export type shows filter options', async ({ page }) => {
+  test('selecting export type shows filter options', async ({ page }) => {
     await page.goto('/data-tools/govt-export');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // UDISE only has academicYear filter
     const udiseSection = page.locator('text=UDISE+ Enrollment').locator('..');
@@ -353,9 +356,10 @@ test.describe('Data Tools — Background Jobs & Govt Export', () => {
   });
 
   // Test 8: Format selector (CSV, Excel, PDF)
-  test.skip('format selector shows CSV, Excel, PDF buttons', async ({ page }) => {
+  test('format selector shows CSV, Excel, PDF buttons', async ({ page }) => {
     await page.goto('/data-tools/govt-export');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Each export type should have 3 format buttons
     const csvButtons = page.getByRole('button', { name: 'CSV' });
@@ -369,9 +373,10 @@ test.describe('Data Tools — Background Jobs & Govt Export', () => {
   });
 
   // Test 9: Export triggers download with correct parameters
-  test.skip('export triggers download with correct parameters', async ({ page }) => {
+  test('export triggers download with correct parameters', async ({ page }) => {
     await page.goto('/data-tools/govt-export');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Fill in academic year for the first export type (UDISE)
     const academicYearInputs = page.locator('input[placeholder*="2025-26"]');
@@ -402,9 +407,10 @@ test.describe('Data Tools — Background Jobs & Govt Export', () => {
   });
 
   // Test 10: Empty academic year filter shows validation error
-  test.skip('empty academic year filter shows validation error on export', async ({ page }) => {
+  test('empty academic year filter shows validation error on export', async ({ page }) => {
     await page.goto('/data-tools/govt-export');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Don't fill in academic year — leave it empty
     // Click CSV button for UDISE (first card)
@@ -576,7 +582,6 @@ async function installBulkImportRoutes(
   });
 }
 
-// Skipped: /data-tools/* pages not yet implemented
 test.describe('Data Tools — Bulk Import', () => {
   let state: MockState;
   let jobs: ImportJob[];
@@ -598,9 +603,10 @@ test.describe('Data Tools — Bulk Import', () => {
   });
 
   // 1. Bulk import page loads with 4 import type cards
-  test.skip('bulk import page loads with 4 import type cards (Students, Staff, Fee Payments, Attendance)', async ({ page }) => {
+  test('bulk import page loads with 4 import type cards (Students, Staff, Fee Payments, Attendance)', async ({ page }) => {
     await page.goto('/data-tools/bulk-import');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     await expect(page.getByText('Bulk Import')).toBeVisible();
     await expect(page.getByRole('button', { name: /students/i }).first()).toBeVisible();
@@ -610,9 +616,10 @@ test.describe('Data Tools — Bulk Import', () => {
   });
 
   // 2. Selecting an import type shows upload area
-  test.skip('selecting an import type shows upload area', async ({ page }) => {
+  test('selecting an import type shows upload area', async ({ page }) => {
     await page.goto('/data-tools/bulk-import');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Students is selected by default — upload area should be visible
     await expect(page.getByText(/drop a file here|click to browse/i)).toBeVisible();
@@ -628,9 +635,10 @@ test.describe('Data Tools — Bulk Import', () => {
   });
 
   // 3. Download template button triggers file download for selected type
-  test.skip('download template button triggers file download for selected type', async ({ page }) => {
+  test('download template button triggers file download for selected type', async ({ page }) => {
     await page.goto('/data-tools/bulk-import');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     const downloadPromise = page.waitForEvent('download').catch(() => null);
     await page.getByRole('button', { name: /download template/i }).click();
@@ -641,9 +649,10 @@ test.describe('Data Tools — Bulk Import', () => {
   });
 
   // 4. File upload accepts CSV/XLSX/XLS only — rejects other types with error
-  test.skip('file upload accepts CSV/XLSX/XLS only — rejects other types with error', async ({ page }) => {
+  test('file upload accepts CSV/XLSX/XLS only — rejects other types with error', async ({ page }) => {
     await page.goto('/data-tools/bulk-import');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     const fileInput = page.locator('input[type="file"]');
 
@@ -669,9 +678,10 @@ test.describe('Data Tools — Bulk Import', () => {
   });
 
   // 5. Drag-and-drop file upload works
-  test.skip('drag-and-drop file upload works', async ({ page }) => {
+  test('drag-and-drop file upload works', async ({ page }) => {
     await page.goto('/data-tools/bulk-import');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     const dropZone = page.locator('.border-dashed').first();
     await expect(dropZone).toBeVisible();
@@ -688,9 +698,10 @@ test.describe('Data Tools — Bulk Import', () => {
   });
 
   // 6. Dry run toggle is available and defaults to off
-  test.skip('dry run toggle is available and defaults to off', async ({ page }) => {
+  test('dry run toggle is available and defaults to off', async ({ page }) => {
     await page.goto('/data-tools/bulk-import');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     const dryRunCheckbox = page.locator('input[type="checkbox"]').first();
     await expect(dryRunCheckbox).toBeVisible();
@@ -711,9 +722,10 @@ test.describe('Data Tools — Bulk Import', () => {
   });
 
   // 7. Upload triggers POST with file and shows progress
-  test.skip('upload triggers POST with file and shows progress', async ({ page }) => {
+  test('upload triggers POST with file and shows progress', async ({ page }) => {
     await page.goto('/data-tools/bulk-import');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     await page.locator('input[type="file"]').setInputFiles({
       name: 'students_import.csv',
@@ -734,9 +746,10 @@ test.describe('Data Tools — Bulk Import', () => {
   });
 
   // 8. Import result display shows success/error counts
-  test.skip('import result display shows success/error counts', async ({ page }) => {
+  test('import result display shows success/error counts', async ({ page }) => {
     await page.goto('/data-tools/bulk-import');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     await page.locator('input[type="file"]').setInputFiles({
       name: 'data.csv',
@@ -756,9 +769,10 @@ test.describe('Data Tools — Bulk Import', () => {
   });
 
   // 9. Import history table shows previous imports with status badges
-  test.skip('import history table shows previous imports with status badges (completed, running, queued, failed, rolled_back)', async ({ page }) => {
+  test('import history table shows previous imports with status badges (completed, running, queued, failed, rolled_back)', async ({ page }) => {
     await page.goto('/data-tools/bulk-import');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Switch to History tab
     await page.getByRole('button', { name: /history/i }).first().click();
@@ -795,9 +809,10 @@ test.describe('Data Tools — Bulk Import', () => {
   });
 
   // 10. Rollback import action changes status to rolled_back
-  test.skip('rollback import action changes status to rolled_back', async ({ page }) => {
+  test('rollback import action changes status to rolled_back', async ({ page }) => {
     await page.goto('/data-tools/bulk-import');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Switch to History tab
     await page.getByRole('button', { name: /history/i }).first().click();

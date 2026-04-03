@@ -42,6 +42,9 @@ export default function Substitution() {
   const [selectedSubstitution, setSelectedSubstitution] = useState(null);
   const [selectedTeacher, setSelectedTeacher] = useState("");
 
+  // Delete confirmation modal
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+
   // Fetch periods from school settings or use default
   const [periods, setPeriods] = useState([]);
 
@@ -123,27 +126,29 @@ export default function Substitution() {
       resetForm();
       loadSubstitutions();
     } catch (error) {
-      toast.error(error.message || 'Failed to assign substitution');
+      toast.error(error.message || t('toast.error.failedToAssignSubstitution', 'Failed to assign substitution'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm(t('confirm.removeSubstitution'))) return;
     try {
       await request(`/substitutions/${id}`, { method: 'DELETE' });
       toast.success(t('toast.success.substitutionRemoved'));
       loadSubstitutions();
     } catch (error) {
       toast.error(t('toast.error.failedToRemoveSubstitution'));
+    } finally {
+      setDeleteConfirmId(null);
     }
   };
 
   const handleAssignTeacher = async () => {
-    if (!selectedTeacher || !selectedSubstitution) return;
+    if (!selectedTeacher || !selectedSubstitution || isSubmitting) return;
 
     try {
+      setIsSubmitting(true);
       await request(`/substitutions/${selectedSubstitution._id}`, {
         method: 'PUT',
         body: JSON.stringify({ substituteTeacherId: selectedTeacher, status: 'assigned' })
@@ -155,13 +160,16 @@ export default function Substitution() {
       loadSubstitutions();
     } catch (error) {
       toast.error(t('toast.error.failedToAssignTeacher'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleChangeTeacher = async () => {
-    if (!selectedTeacher || !selectedSubstitution) return;
+    if (!selectedTeacher || !selectedSubstitution || isSubmitting) return;
 
     try {
+      setIsSubmitting(true);
       await request(`/substitutions/${selectedSubstitution._id}`, {
         method: 'PUT',
         body: JSON.stringify({ substituteTeacherId: selectedTeacher })
@@ -173,6 +181,8 @@ export default function Substitution() {
       loadSubstitutions();
     } catch (error) {
       toast.error(t('toast.error.failedToChangeTeacher'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -207,13 +217,13 @@ export default function Substitution() {
       case 'not_assigned':
         return <Chip size="sm" color="warning" variant="flat">{t('pages.notAssigned1')}</Chip>;
       case 'pending':
-        return <Chip size="sm" color="warning" variant="flat">Pending</Chip>;
+        return <Chip size="sm" color="warning" variant="flat">{t('classes.pending', 'Pending')}</Chip>;
       case 'completed':
         return <Chip size="sm" color="default" variant="flat">{t('pages.completed')}</Chip>;
       case 'cancelled':
-        return <Chip size="sm" color="danger" variant="flat">Cancelled</Chip>;
+        return <Chip size="sm" color="danger" variant="flat">{t('classes.cancelled', 'Cancelled')}</Chip>;
       default:
-        return <Chip size="sm" color="default" variant="flat">{status || 'Pending'}</Chip>;
+        return <Chip size="sm" color="default" variant="flat">{status || t('classes.pending', 'Pending')}</Chip>;
     }
   };
 
@@ -290,7 +300,7 @@ export default function Substitution() {
             startContent={<Plus size={16} />}
             onPress={onOpen}
           >
-            New Substitution
+            {t('classes.newSubstitution', 'New Substitution')}
           </Button>
           <Button
             isIconOnly
@@ -307,17 +317,17 @@ export default function Substitution() {
       <div className="flex gap-2 flex-wrap mb-4 px-1">
         {filteredSubstitutions.length > 0 && (
           <Chip size="sm" variant="flat" className="h-6">
-            {filteredSubstitutions.length} substitution{filteredSubstitutions.length !== 1 ? 's' : ''} found
+            {filteredSubstitutions.length} {t('classes.substitutionsFound', 'substitution(s) found')}
           </Chip>
         )}
         {substitutions.filter(s => s.status === 'assigned' || s.substituteTeacherId).length > 0 && (
           <Chip size="sm" color="success" variant="flat" className="h-6">
-            {substitutions.filter(s => s.status === 'assigned' || s.substituteTeacherId).length} assigned
+            {substitutions.filter(s => s.status === 'assigned' || s.substituteTeacherId).length} {t('classes.assigned', 'assigned')}
           </Chip>
         )}
         {substitutions.filter(s => !s.substituteTeacherId || s.status === 'not_assigned').length > 0 && (
           <Chip size="sm" color="warning" variant="flat" className="h-6">
-            {substitutions.filter(s => !s.substituteTeacherId || s.status === 'not_assigned').length} pending
+            {substitutions.filter(s => !s.substituteTeacherId || s.status === 'not_assigned').length} {t('classes.pending', 'pending')}
           </Chip>
         )}
         {(searchQuery || statusFilter !== 'all') && (
@@ -331,7 +341,7 @@ export default function Substitution() {
             }}
             className="h-6 min-w-0 px-2 text-xs"
           >
-            Clear Filters
+            {t('common.clearFilters', 'Clear Filters')}
           </Button>
         )}
       </div>
@@ -351,7 +361,7 @@ export default function Substitution() {
             className="mt-4"
             onPress={onOpen}
           >
-            Create Substitution
+            {t('classes.createSubstitution', 'Create Substitution')}
           </Button>
         </div>
       ) : (
@@ -370,7 +380,7 @@ export default function Substitution() {
         >
           <TableHeader>
             <TableColumn scope="col">{t('pages.cLASS')}</TableColumn>
-            <TableColumn scope="col">PERIOD / SUBJECT</TableColumn>
+            <TableColumn scope="col">{t('classes.periodSubject', 'PERIOD / SUBJECT')}</TableColumn>
             <TableColumn scope="col">{t('pages.tEACHERAbsent')}</TableColumn>
             <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
             <TableColumn scope="col">{t('pages.rEASON')}</TableColumn>
@@ -378,8 +388,8 @@ export default function Substitution() {
           </TableHeader>
           <TableBody items={filteredSubstitutions} emptyContent={
             <div className="py-12 text-center">
-              <p className="text-sm font-medium text-default-600 mb-1">No substitutions scheduled</p>
-              <p className="text-xs text-default-400">Create a substitution when a teacher is absent</p>
+              <p className="text-sm font-medium text-default-600 mb-1">{t('classes.noSubstitutionsScheduled', 'No substitutions scheduled')}</p>
+              <p className="text-xs text-default-400">{t('classes.createSubstitutionWhenAbsent', 'Create a substitution when a teacher is absent')}</p>
             </div>
           }>
             {(sub) => (
@@ -392,7 +402,7 @@ export default function Substitution() {
                 <TableCell>
                   <div className="py-4 flex items-center gap-2">
                     <Clock size={14} className="text-default-400" />
-                    <span className="font-medium text-sm">Period {sub.period}</span>
+                    <span className="font-medium text-sm">{t('classes.periodN', 'Period {{n}}', { n: sub.period })}</span>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -429,7 +439,7 @@ export default function Substitution() {
                         }}
                         className="font-medium"
                       >
-                        Assign
+                        {t('classes.assign', 'Assign')}
                       </Button>
                     ) : (
                       <>
@@ -441,14 +451,14 @@ export default function Substitution() {
                             onChangeOpen();
                           }}
                         >
-                          Change
+                          {t('classes.change', 'Change')}
                         </Button>
                         <Button
                           isIconOnly
                           size="sm"
                           color="danger"
                           variant="light"
-                          onPress={() => handleDelete(sub._id)}
+                          onPress={() => setDeleteConfirmId(sub._id)}
                         >
                           <UserMinus size={16} />
                         </Button>
@@ -508,7 +518,7 @@ export default function Substitution() {
               >
                 {periods.map((p) => (
                   <SelectItem key={p} value={p}>
-                    Period {p}
+                    {t('classes.periodN', 'Period {{n}}', { n: p })}
                   </SelectItem>
                 ))}
               </Select>
@@ -564,10 +574,10 @@ export default function Substitution() {
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={onClose}>
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button color="primary" onPress={handleSubmit} isLoading={isSubmitting}>
-              Create Substitution
+              {t('classes.createSubstitution', 'Create Substitution')}
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -604,14 +614,14 @@ export default function Substitution() {
           </ModalBody>
           <ModalFooter>
             <Button variant="flat" onPress={onAssignClose}>
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button
               color="primary"
               onPress={handleAssignTeacher}
               isDisabled={!selectedTeacher}
             >
-              Assign Teacher
+              {t('classes.assignTeacher', 'Assign Teacher')}
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -648,15 +658,29 @@ export default function Substitution() {
           </ModalBody>
           <ModalFooter>
             <Button variant="flat" onPress={onChangeClose}>
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button
               color="primary"
               onPress={handleChangeTeacher}
               isDisabled={!selectedTeacher}
             >
-              Change Teacher
+              {t('classes.changeTeacher', 'Change Teacher')}
             </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)} size="sm">
+        <ModalContent>
+          <ModalHeader>{t('confirm.removeSubstitutionTitle', 'Remove Substitution')}</ModalHeader>
+          <ModalBody>
+            <p className="text-default-600">{t('confirm.removeSubstitution', 'Are you sure you want to remove this substitution?')}</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={() => setDeleteConfirmId(null)}>{t('common.cancel', 'Cancel')}</Button>
+            <Button color="danger" onPress={() => handleDelete(deleteConfirmId)}>{t('common.remove', 'Remove')}</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

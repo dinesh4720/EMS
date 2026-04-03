@@ -198,7 +198,7 @@ export default function StudentRemarks({
               <h4 className="font-semibold text-gray-700 mb-1 dark:text-zinc-300">{t('pages.noRemarksYet')}</h4>
               <p className="text-sm text-gray-500 mb-4 dark:text-zinc-400">{t('pages.addYourFirstRemarkOrObservationAboutThisStudent')}</p>
               <Button color="primary" variant="flat" startContent={<Plus size={16} />} onPress={() => setIsRemarkOpen(true)}>
-                Add First Remark
+                {t('remarks.addFirstRemark', 'Add First Remark')}
               </Button>
             </div>
           ) : (

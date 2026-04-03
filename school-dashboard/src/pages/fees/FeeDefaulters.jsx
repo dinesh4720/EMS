@@ -44,7 +44,7 @@ export default function FeeDefaulters() {
             : Math.floor((Date.now() - new Date(d.createdAt).getTime()) / 86400000);
           return {
             id: d.studentId?._id || d.studentId || d._id,
-            student: student.name || 'Unknown',
+            student: student?.name || 'Unknown',
             class: cls.name ? `${cls.name} ${cls.section || ''}`.trim() : '—',
             rollNo: student.rollNo || '—',
             pending: d.totalBalance || 0,
@@ -129,7 +129,7 @@ export default function FeeDefaulters() {
   };
 
   const handleExportDefaulters = () => {
-    const headers = ['Student', 'Class', 'Roll No', 'Pending Amount', 'Due Date', 'Days Overdue', 'Phone'];
+    const headers = [t('common.student', 'Student'), t('common.class', 'Class'), t('common.rollNo', 'Roll No'), t('fees.pendingAmount', 'Pending Amount'), t('fees.dueDate', 'Due Date'), t('fees.daysOverdue', 'Days Overdue'), t('common.phone', 'Phone')];
     const rows = filteredDefaulters.map(d => [d.student, d.class, d.rollNo, d.pending, d.dueDate, d.days, d.phone || 'N/A']);
     const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -177,7 +177,7 @@ export default function FeeDefaulters() {
           <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">₹{totalPending.toLocaleString()}</p>
         </div>
         <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
-          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">30+ Days Overdue</p>
+          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">{t('fees.thirtyDaysOverdue', '30+ Days Overdue')}</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{defaulters.filter((d) => d.days >= 30).length}</p>
         </div>
       </div>
@@ -185,7 +185,7 @@ export default function FeeDefaulters() {
       {/* Truncation Warning */}
       {isTruncated && (
         <div className="flex items-center gap-2 px-4 py-2.5 -mx-6 px-6 mb-2 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm text-yellow-700 dark:text-yellow-400">
-          <span className="font-medium">Showing 500 of {totalCount.toLocaleString()} total defaulters.</span>
+          <span className="font-medium">{t('fees.showingLimitedDefaulters', { limit: 500, total: totalCount.toLocaleString(), defaultValue: `Showing 500 of ${totalCount.toLocaleString()} total defaulters.` })}</span>
           <span>Use filters to narrow results.</span>
         </div>
       )}

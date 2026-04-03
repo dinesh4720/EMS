@@ -210,10 +210,10 @@ test.describe('Reports Page', () => {
     await installReportRoutes(page, state);
   });
 
-  // Feature not yet implemented — /reports page does not exist
-  test.skip('1. Reports page loads with tab navigation (Attendance, Marks, Fees)', async ({ page }) => {
+  test('1. Reports page loads with tab navigation (Attendance, Marks, Fees)', async ({ page }) => {
     await page.goto('/reports');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     const body = await page.locator('#root').textContent();
     expect(body).toContain('Reports');
@@ -224,10 +224,16 @@ test.describe('Reports Page', () => {
     expect(body).toContain('Fees');
   });
 
-  // Feature not yet implemented — /reports page does not exist
-  test.skip('2. Each tab shows stat cards with summary data', async ({ page }) => {
+  test('2. Each tab shows stat cards with summary data', async ({ page }) => {
     await page.goto('/reports');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
+
+    // Wait for metrics data to load (stat cards show real values, not 0)
+    await page.waitForFunction(() => {
+      const body = document.getElementById('root')?.textContent || '';
+      return body.includes('120');
+    }, { timeout: 15000 });
 
     const body = await page.locator('#root').textContent();
     // Dashboard metrics stat cards
@@ -237,10 +243,16 @@ test.describe('Reports Page', () => {
     expect(body).toContain('105');
   });
 
-  // Feature not yet implemented — /reports page does not exist
-  test.skip('3. Date range filter updates table data on Attendance tab', async ({ page }) => {
+  test('3. Date range filter updates table data on Attendance tab', async ({ page }) => {
     await page.goto('/reports');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
+
+    // Wait for attendance data to load (student names from the mock)
+    await page.waitForFunction(() => {
+      const body = document.getElementById('root')?.textContent || '';
+      return body.includes('Aarav') || body.includes('Priya') || body.includes('85.7');
+    }, { timeout: 15000 });
 
     // Attendance is the default tab; the table should show student data
     const body = await page.locator('#root').textContent();
@@ -253,10 +265,10 @@ test.describe('Reports Page', () => {
     expect(await dateInputs.count()).toBeGreaterThanOrEqual(2);
   });
 
-  // Feature not yet implemented — /reports page does not exist
-  test.skip('4. Class filter dropdown works for attendance tab', async ({ page }) => {
+  test('4. Class filter dropdown works for attendance tab', async ({ page }) => {
     await page.goto('/reports');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // The class filter should show "All Classes" placeholder or a select with class names
     const body = await page.locator('#root').textContent();
@@ -265,10 +277,10 @@ test.describe('Reports Page', () => {
     ).toBeTruthy();
   });
 
-  // Feature not yet implemented — /reports page does not exist
-  test.skip('5. Exam filter dropdown works for marks tab', async ({ page }) => {
+  test('5. Exam filter dropdown works for marks tab', async ({ page }) => {
     await page.goto('/reports');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Click on Marks tab
     const marksTab = page.locator('button, [role="tab"]').filter({ hasText: /Marks/i }).first();
@@ -284,10 +296,10 @@ test.describe('Reports Page', () => {
     ).toBeTruthy();
   });
 
-  // Feature not yet implemented — /reports page does not exist
-  test.skip('6. Table displays correct columns per report type', async ({ page }) => {
+  test('6. Table displays correct columns per report type', async ({ page }) => {
     await page.goto('/reports');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Attendance tab columns
     const body = await page.locator('#root').textContent();
@@ -297,8 +309,7 @@ test.describe('Reports Page', () => {
     expect(body).toContain('Attendance %');
   });
 
-  // Feature not yet implemented — /reports page does not exist
-  test.skip('7. Empty state when no data for selected filters', async ({ page }) => {
+  test('7. Empty state when no data for selected filters', async ({ page }) => {
     // Create a state with no students
     const emptyState = createMockState();
 
@@ -323,6 +334,13 @@ test.describe('Reports Page', () => {
 
     await page.goto('/reports');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
+
+    // Wait for the empty state message to appear (all API calls must complete first)
+    await page.waitForFunction(() => {
+      const body = document.getElementById('root')?.textContent || '';
+      return body.includes('No attendance records') || body.includes('No data');
+    }, { timeout: 20000 });
 
     const body = await page.locator('#root').textContent();
     // Should show empty state message
@@ -354,10 +372,10 @@ test.describe('Export Center', () => {
     await installExportRoutes(page);
   });
 
-  // Feature not yet implemented — /reports/export page does not exist
-  test.skip('8. Export center shows module cards', async ({ page }) => {
+  test('8. Export center shows module cards', async ({ page }) => {
     await page.goto('/reports/export');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     const body = await page.locator('#root').textContent();
     expect(body).toContain('Export Center');
@@ -377,10 +395,10 @@ test.describe('Export Center', () => {
     expect(foundCount).toBeGreaterThanOrEqual(8);
   });
 
-  // Feature not yet implemented — /reports/export page does not exist
-  test.skip('9. Selecting a module shows its filter options', async ({ page }) => {
+  test('9. Selecting a module shows its filter options', async ({ page }) => {
     await page.goto('/reports/export');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // The Attendance Summary card should show date filter inputs (startDate, endDate)
     const attendanceCard = page.locator('div').filter({ hasText: /Attendance Summary/ }).first();
@@ -394,10 +412,10 @@ test.describe('Export Center', () => {
     ).toBeTruthy();
   });
 
-  // Feature not yet implemented — /reports/export page does not exist
-  test.skip('10. Required filter validation (Attendance needs dates)', async ({ page }) => {
+  test('10. Required filter validation (Attendance needs dates)', async ({ page }) => {
     await page.goto('/reports/export');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Find the Attendance Summary card and click Download without filling dates
     const attendanceCard = page.locator('div.rounded-xl, div[class*="rounded"]')
@@ -418,10 +436,10 @@ test.describe('Export Center', () => {
     }
   });
 
-  // Feature not yet implemented — /reports/export page does not exist
-  test.skip('11. Format selector works (CSV, Excel/XLSX, PDF)', async ({ page }) => {
+  test('11. Format selector works (CSV, Excel/XLSX, PDF)', async ({ page }) => {
     await page.goto('/reports/export');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Each export card has a format <select> with CSV, Excel, PDF options
     // Find a select that contains the CSV option (format selector, not filter selects)
@@ -441,10 +459,10 @@ test.describe('Export Center', () => {
     expect(optionTexts.some((t) => t.includes('PDF'))).toBeTruthy();
   });
 
-  // Feature not yet implemented — /reports/export page does not exist
-  test.skip('12. Download triggers export request with correct filters', async ({ page }) => {
+  test('12. Download triggers export request with correct filters', async ({ page }) => {
     await page.goto('/reports/export');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Use the Student List card (no required filters) to test download
     const studentCard = page.locator('div.rounded-xl, div[class*="rounded"]')
@@ -469,10 +487,10 @@ test.describe('Export Center', () => {
     }
   });
 
-  // Feature not yet implemented — /reports/export page does not exist
-  test.skip('13. Export with missing required filters shows validation error', async ({ page }) => {
+  test('13. Export with missing required filters shows validation error', async ({ page }) => {
     await page.goto('/reports/export');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Exam Results card requires examId
     const examCard = page.locator('div.rounded-xl, div[class*="rounded"]')
@@ -492,8 +510,7 @@ test.describe('Export Center', () => {
     }
   });
 
-  // Feature not yet implemented — /reports/export page does not exist
-  test.skip('14. Loading state during export generation', async ({ page }) => {
+  test('14. Loading state during export generation', async ({ page }) => {
     // Install a slow export route to see the loading state
     await page.route('**/export/students**', async (route) => {
       // Delay the response to observe loading state
@@ -508,6 +525,7 @@ test.describe('Export Center', () => {
 
     await page.goto('/reports/export');
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     const studentCard = page.locator('div.rounded-xl, div[class*="rounded"]')
       .filter({ hasText: /Student List/ })

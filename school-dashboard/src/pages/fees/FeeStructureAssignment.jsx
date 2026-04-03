@@ -67,8 +67,10 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
 
   useEffect(() => {
     // BUG-29: guard prevents API call with academicYear=undefined
+    // Debounce to prevent rapid API calls when switching classes quickly
     if (selectedClass && academicYear) {
-      fetchExistingStructure();
+      const timer = setTimeout(() => fetchExistingStructure(), 300);
+      return () => clearTimeout(timer);
     }
   }, [selectedClass, academicYear]);
 
@@ -223,7 +225,8 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
       return;
     }
 
-    if (!confirm(t('confirm.applyFeeStructure'))) {
+    // Note: Using window.confirm for now — should be replaced with custom ConfirmDialog component for i18n
+    if (!window.confirm(t('confirm.applyFeeStructure', 'Apply this fee structure to all students in the selected class? This cannot be undone.'))) {
       return;
     }
 
@@ -545,7 +548,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                 <div key={student.id} className="flex items-center justify-between p-3 bg-white dark:bg-zinc-950 border border-default-200 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-bold text-primary-700">{student.name.charAt(0)}</span>
+                      <span className="text-sm font-bold text-primary-700">{student.name?.charAt(0) || '?'}</span>
                     </div>
                     <div>
                       <p className="font-medium text-default-900">{student.name}</p>

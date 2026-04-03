@@ -139,6 +139,7 @@ test.describe('Academics — Performance Dashboard & CBSE Reports', () => {
     // Navigate to student detail to check academic results
     await page.goto(`/students/${state.students[0].id}`);
     await page.waitForLoadState('networkidle');
+    await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
     // Look for academics/results tab
     const resultsTab = page.getByRole('tab', { name: /academic|result|exam/i }).first();
@@ -147,15 +148,12 @@ test.describe('Academics — Performance Dashboard & CBSE Reports', () => {
       await page.waitForLoadState('networkidle');
     }
 
-    const body = await page.textContent('body');
-    expect(body).toBeTruthy();
-    // Student results should be accessible
-    expect(
-      body?.includes(state.students[0].name) ||
-      body?.includes('English') ||
-      body?.includes('70') ||
-      body?.includes('85'),
-    ).toBeTruthy();
+    // Student results should be accessible — use retrying assertions
+    const bodyLocator = page.locator('body');
+    await expect(bodyLocator).toContainText(
+      new RegExp(`${state.students[0].name}|English|70|85`),
+      { timeout: 15000 },
+    );
   });
 
   /* ───── 6. Report cards page loads student list with marks, grade, rank ───── */

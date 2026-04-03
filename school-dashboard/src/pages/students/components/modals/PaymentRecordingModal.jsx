@@ -45,17 +45,19 @@ export default function PaymentRecordingModal({ isOpen, onClose, studentFeeStruc
     setIsRecording(true);
     try {
       await onRecordPayment(paymentForm);
+      // Reset form only after successful payment
+      setPaymentForm({
+        amount: "",
+        paymentMode: "cash",
+        date: toDateInputValue(new Date()),
+        notes: ""
+      });
+      onClose();
+    } catch (error) {
+      toast.error(error?.message || t('students.profile.overview.failedToRecordPayment', 'Failed to record payment'));
     } finally {
       setIsRecording(false);
     }
-
-    // Reset form after successful payment
-    setPaymentForm({
-      amount: "",
-      paymentMode: "cash",
-      date: toDateInputValue(new Date()),
-      notes: ""
-    });
   };
 
   return (

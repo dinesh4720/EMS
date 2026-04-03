@@ -99,10 +99,48 @@ test.describe('Dashboard Deep — Admin Widgets', () => {
    ═══════════════════════════════════════════════════════════ */
 
 test.describe('Dashboard Deep — Principal View', () => {
-  // Feature not yet implemented — the app uses a single Dashboard for all roles
-  // There is no separate "Principal Dashboard" view
-  test.skip('principal dashboard shows academic overview with student and staff stats', async () => {});
-  test.skip('principal sees staff attendance summary with total/present counts', async () => {});
+  let state: MockState;
+
+  test.beforeEach(async ({ page }) => {
+    state = createMockState(createPrincipalUser());
+    // Seed students across two classes
+    for (let i = 0; i < 5; i++) seedStudent(state, { name: `Student P${i + 1}`, classId: CLASS_10A_ID });
+    for (let i = 0; i < 3; i++) seedStudent(state, { name: `Student Q${i + 1}`, classId: CLASS_11A_ID });
+    await installMockApi(page, state);
+  });
+
+  test('principal dashboard shows academic overview with student and staff stats', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const body = page.locator('body');
+
+    // Wait for the principal section to appear
+    await expect(body.getByText('Academic Overview').first()).toBeVisible({ timeout: 15_000 });
+
+    // Student count (8 students seeded)
+    await expect(body.getByText('Total Students').first()).toBeVisible();
+    await expect(body.getByText('8', { exact: true }).first()).toBeVisible({ timeout: 5_000 });
+
+    // Staff count (3 staff in default mock state)
+    await expect(body.getByText('Total Staff').first()).toBeVisible();
+    await expect(body.getByText('3', { exact: true }).first()).toBeVisible({ timeout: 5_000 });
+  });
+
+  test('principal sees staff attendance summary with total/present counts', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const body = page.locator('body');
+
+    // Wait for the dashboard to load
+    await expect(body.getByText('Academic Overview').first()).toBeVisible({ timeout: 15_000 });
+
+    // Staff attendance section should be present
+    await expect(body.getByText('Staff Attendance').first()).toBeVisible({ timeout: 5_000 });
+    await expect(body.getByText('Total Staff').first()).toBeVisible();
+    await expect(body.getByText('Present Today').first()).toBeVisible();
+  });
 });
 
 /* ═══════════════════════════════════════════════════════════
@@ -110,10 +148,54 @@ test.describe('Dashboard Deep — Principal View', () => {
    ═══════════════════════════════════════════════════════════ */
 
 test.describe('Dashboard Deep — Accountant View', () => {
-  // Feature not yet implemented — the app uses a single Dashboard for all roles
-  // There is no separate "Accounts Dashboard" view
-  test.skip('accountant dashboard shows fee collection stats with today and monthly totals', async () => {});
-  test.skip('accountant sees monthly collection chart and recent transactions', async () => {});
+  let state: MockState;
+
+  test.beforeEach(async ({ page }) => {
+    state = createMockState(createAccountantUser());
+    // Seed students with fee structures and record payments
+    for (let i = 0; i < 3; i++) seedStudentWithFees(state, { name: `Fee Student ${i + 1}`, classId: CLASS_10A_ID });
+    const today = new Date().toISOString().split('T')[0];
+    recordFeePayment(state, state.students[0].id, 5000, 'cash', today);
+    recordFeePayment(state, state.students[1].id, 3000, 'online', today);
+    recordFeePayment(state, state.students[2].id, 7000, 'cash', today);
+    await installMockApi(page, state);
+  });
+
+  test('accountant dashboard shows fee collection stats with today and monthly totals', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const body = page.locator('body');
+
+    // Wait for the accountant section
+    await expect(body.getByText('Finance Overview').first()).toBeVisible({ timeout: 15_000 });
+
+    // Fee stat cards should show today and monthly collection labels
+    await expect(body.getByText("Today's Collections").first()).toBeVisible({ timeout: 5_000 });
+    await expect(body.getByText('Monthly Collections').first()).toBeVisible();
+
+    // Total today = 5000 + 3000 + 7000 = 15000
+    await expect(body.getByText(/15,000/).first()).toBeVisible({ timeout: 5_000 });
+  });
+
+  test('accountant sees monthly collection chart and recent transactions', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const body = page.locator('body');
+
+    // Wait for the finance section to fully load
+    await expect(body.getByText('Finance Overview').first()).toBeVisible({ timeout: 15_000 });
+
+    // Recent transactions section
+    await expect(body.getByText('Recent Transactions').first()).toBeVisible({ timeout: 5_000 });
+
+    // Should see student names in the transactions
+    await expect(body.getByText('Fee Student 1').first()).toBeVisible({ timeout: 5_000 });
+
+    // Monthly breakdown should be present
+    await expect(body.getByText('Monthly Collection Breakdown').first()).toBeVisible({ timeout: 5_000 });
+  });
 });
 
 /* ═══════════════════════════════════════════════════════════
@@ -121,10 +203,53 @@ test.describe('Dashboard Deep — Accountant View', () => {
    ═══════════════════════════════════════════════════════════ */
 
 test.describe('Dashboard Deep — Teacher View', () => {
-  // Feature not yet implemented — the app uses a single Dashboard for all roles
-  // There is no separate "Teacher Dashboard" view
-  test.skip('teacher dashboard shows assigned classes with attendance status', async () => {});
-  test.skip('teacher sees pending tasks indicator for unmarked attendance', async () => {});
+  let state: MockState;
+
+  test.beforeEach(async ({ page }) => {
+    state = createMockState(createTeacherUser());
+    // Seed students in the class that Ananya Sharma (TEACHER_A_ID) is class teacher of (10-A)
+    for (let i = 0; i < 4; i++) seedStudent(state, { name: `Class Student ${i + 1}`, classId: CLASS_10A_ID });
+    await installMockApi(page, state);
+  });
+
+  test('teacher dashboard shows assigned classes with attendance status', async ({ page }) => {
+    // Dismiss the guided tour so it doesn't overlay the content
+    await page.addInitScript(() => {
+      localStorage.setItem('ems_completed_tours', JSON.stringify(['dashboard-v1']));
+    });
+
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const body = page.locator('body');
+
+    // Wait for the teacher section
+    await expect(body.getByText('My Classes').first()).toBeVisible({ timeout: 15_000 });
+
+    // Class 10-A should appear (teacher is class teacher of 10-A)
+    await expect(body.getByText(/10-A/).first()).toBeVisible({ timeout: 10_000 });
+
+    // Attendance status text
+    await expect(body.getByText(/Attendance/).first()).toBeVisible();
+  });
+
+  test('teacher sees pending tasks indicator for unmarked attendance', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const body = page.locator('body');
+
+    // Wait for the teacher section
+    await expect(body.getByText('My Classes').first()).toBeVisible({ timeout: 15_000 });
+
+    // Should show pending/unmarked attendance indicator
+    const bodyText = await body.textContent();
+    const hasPendingIndicator =
+      bodyText?.toLowerCase().includes('pending') ||
+      bodyText?.toLowerCase().includes('unmarked') ||
+      bodyText?.toLowerCase().includes('not marked');
+    expect(hasPendingIndicator).toBeTruthy();
+  });
 });
 
 /* ═══════════════════════════════════════════════════════════
@@ -159,10 +284,66 @@ test.describe('Dashboard Deep — Widget Navigation', () => {
    ═══════════════════════════════════════════════════════════ */
 
 test.describe('Dashboard Deep — NPS Survey', () => {
-  // Feature not yet implemented — NPS survey modal does not exist on the dashboard
-  // Only an NPS Analytics settings page exists at /settings/nps
-  test.skip('NPS survey modal appears when API indicates eligible', async () => {});
-  test.skip('submit NPS score and feedback shows thank-you message', async () => {});
+  test('NPS survey modal appears when API indicates eligible', async ({ page }) => {
+    const state = createMockState();
+    await installMockApi(page, state);
+
+    // Override the /nps/status route to return shouldShow: true
+    await page.route('**/api/nps/status', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ shouldShow: true }),
+      });
+    });
+
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    // NPS modal should appear with the question
+    await expect(
+      page.getByText(/How likely are you to recommend SchoolSync/).first()
+    ).toBeVisible({ timeout: 10_000 });
+
+    // Score buttons should be present (0 through 10)
+    await expect(page.getByRole('button', { name: 'Score 0' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Score 10' })).toBeVisible();
+  });
+
+  test('submit NPS score and feedback shows thank-you message', async ({ page }) => {
+    const state = createMockState();
+    await installMockApi(page, state);
+
+    // Override the /nps/status route to return shouldShow: true
+    await page.route('**/api/nps/status', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ shouldShow: true }),
+      });
+    });
+
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    // Wait for the NPS modal to appear
+    await expect(
+      page.getByText(/How likely are you to recommend SchoolSync/).first()
+    ).toBeVisible({ timeout: 10_000 });
+
+    // Click score 8
+    await page.getByRole('button', { name: 'Score 8' }).click();
+
+    // Fill in feedback
+    const textarea = page.locator('textarea').first();
+    await textarea.fill('Great product, very useful for our school!');
+
+    // Submit
+    await page.getByRole('button', { name: 'Submit' }).click();
+
+    // Should show thank-you message
+    await expect(page.getByText(/Thank you/).first()).toBeVisible({ timeout: 5_000 });
+  });
 });
 
 /* ═══════════════════════════════════════════════════════════

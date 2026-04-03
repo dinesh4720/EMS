@@ -30,10 +30,11 @@ import { useTranslation } from 'react-i18next';
 const ClassCard = ({ classItem, onPress, onActionPress, theme }) => {
   const { t } = useTranslation();
   const { colors, typography, shape, spacing } = theme;
-  const attendancePercentage = classItem.attendancePercentage || 85;
+  const attendancePercentage = classItem.attendancePercentage ?? null;
 
   // Dynamic status color based on percentage
   const getStatusColor = () => {
+    if (attendancePercentage == null) return colors.textSecondary;
     if (attendancePercentage >= 90) return colors.primary;
     if (attendancePercentage >= 75) return colors.tertiary;
     return colors.error;
@@ -73,7 +74,7 @@ const ClassCard = ({ classItem, onPress, onActionPress, theme }) => {
         </View>
         <View style={[styles.attendanceBadge, { backgroundColor: statusColor + '15' }]}>
           <Text style={[typography.labelMedium, { color: statusColor, fontWeight: '700' }]}>
-            {attendancePercentage}%
+            {attendancePercentage != null ? `${attendancePercentage}%` : 'N/A'}
           </Text>
         </View>
       </View>

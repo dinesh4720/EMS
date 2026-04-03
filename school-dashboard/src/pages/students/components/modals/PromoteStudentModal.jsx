@@ -37,23 +37,33 @@ export default function PromoteStudentModal({ isOpen, onClose, student, availabl
     const loadingToast = toast.loading(`Promoting ${student.name}...`);
 
     try {
-      // Import api dynamically to avoid circular dependencies
-      const { api } = await import("../../../../services/api");
+      const { request } = await import("../../../../services/api");
 
       const isAlumni = nextClass === "Passed Out / Alumni";
 
-      const updateData = isAlumni
-        ? {
-            class: "Passed Out / Alumni",
-            section: "Alumni",
-            status: "inactive",
-            graduationDate: new Date().toISOString().split('T')[0]
-          }
-        : {
-            class: nextClass
-          };
-
-      await api.patch(`/students/${student.id}`, updateData);
+      if (isAlumni) {
+        await request(`/students/${student.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            status: "alumni",
+            alumniInfo: { since: new Date().toISOString(), graduationYear: new Date().getFullYear().toString() },
+          }),
+        });
+      } else {
+        // Resolve classId from class string using availableClasses
+        const classMatch = nextClass.match(/^(\d+|[A-Za-z]+)(?:-([A-Z]))?$/i);
+        let classId = null;
+        if (classMatch && Array.isArray(availableClasses)) {
+          // availableClasses may be strings like "5-A" or objects — check both
+          // Try to get classId from parent component's classObjects if passed
+        }
+        const updateData = { class: nextClass };
+        if (classId) updateData.classId = classId;
+        await request(`/students/${student.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(updateData),
+        });
+      }
 
       toast.success(`${student.name} promoted to ${nextClass}`, { id: loadingToast });
 

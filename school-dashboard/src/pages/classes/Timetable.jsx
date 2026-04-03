@@ -124,10 +124,11 @@ export default function Timetable({ classId }) {
     }
   };
 
-  const initializeSchedule = () => {
+  const initializeSchedule = (periodsArg) => {
+    const activePeriods = periodsArg || periods;
     const emptySchedule = {};
     days.forEach(day => {
-      emptySchedule[day] = periods.map(() => ({ subject: "", teacherId: null, room: "" }));
+      emptySchedule[day] = activePeriods.map(() => ({ subject: "", teacherId: null, room: "" }));
     });
     return emptySchedule;
   };
@@ -431,7 +432,7 @@ export default function Timetable({ classId }) {
       }
     }
 
-    setSchedule(initializeSchedule());
+    setSchedule(initializeSchedule(periods));
     setHasChanges(true);
     onPeriodsClose();
   };

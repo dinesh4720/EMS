@@ -137,7 +137,8 @@ export default function StudentDocuments({
   const handleDeleteDocument = (docId) => {
     // Find the document to show its name in confirmation
     const docIndex = documents.findIndex(d => d.id === docId);
-    const doc = docIndex !== -1 ? documents[docIndex] : documents[parseInt(docId.replace('doc-', ''))];
+    const parsedIndex = parseInt(docId?.toString().replace('doc-', ''), 10);
+    const doc = docIndex !== -1 ? documents[docIndex] : (!isNaN(parsedIndex) ? documents[parsedIndex] : null);
     setDocToDelete({ id: docId, name: doc?.name || t('common.document', 'Document') });
   };
 

@@ -51,6 +51,9 @@ import NPSAnalyticsPage from "./NPSAnalyticsPage";
 import SCIMSettings from "./SCIMSettings";
 import PromotionRulesSettings from "./PromotionRulesSettings";
 import PeriodSettings from "./PeriodSettings";
+import SeedDataSettings from "./SeedDataSettings";
+import DataCleanupSettings from "./DataCleanupSettings";
+import ActiveSessions from "./ActiveSessions";
 import { useTranslation } from 'react-i18next';
 
 export default function SettingsPage() {
@@ -136,6 +139,9 @@ export default function SettingsPage() {
         { key: "subscription", label: "Subscription", icon: CreditCard, path: "/settings/subscription" },
         { key: "integrations", label: "Apps & Integrations", icon: Puzzle, path: "/settings/integrations" },
         { key: "trash", label: "Trash", icon: Trash2, path: "/settings/trash", isNew: true },
+        { key: "seed-data", label: "Seed Data", icon: Zap, path: "/settings/seed-data", isNew: true },
+        { key: "data-cleanup", label: "Data Cleanup", icon: Trash2, path: "/settings/data-cleanup", isNew: true },
+        { key: "sessions", label: "Active Sessions", icon: Activity, path: "/settings/sessions", isNew: true },
         { key: "onboarding", label: "Setup Wizard", icon: Zap, isAction: true, onClick: () => setShowOnboarding(true) },
       ]
     }
@@ -284,6 +290,9 @@ export default function SettingsPage() {
             <Route path="periods" element={<PeriodSettings />} />
             <Route path="promotion-rules" element={<PromotionRulesSettings />} />
             <Route path="nps" element={<NPSAnalyticsPage />} />
+            <Route path="seed-data" element={<SeedDataSettings />} />
+            <Route path="data-cleanup" element={<DataCleanupSettings />} />
+            <Route path="sessions" element={<ActiveSessions />} />
             <Route path="timetable-cleanup" element={
               <div className="space-y-6">
                 <div>

@@ -280,7 +280,17 @@ export interface MockState {
  * ═══════════════════════════════════════════════════════════════════ */
 
 function objectId(prefix: string, counter: number): string {
-  return `${prefix}${String(counter).padStart(6, '0')}`;
+  // Generate a valid 24-character hex string (MongoDB ObjectId format) so pages
+  // that use useValidatedParams({ id: 'objectId' }) don't reject the ID.
+  // We encode the prefix into a deterministic hex segment to keep IDs unique
+  // across different entity types.
+  const prefixHex = Array.from(prefix)
+    .map((c) => c.charCodeAt(0).toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 12)
+    .padEnd(12, '0');
+  const counterHex = counter.toString(16).padStart(12, '0');
+  return `${prefixHex}${counterHex}`;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1177,6 +1187,10 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       const s = state.staff.find((st) => st.id === id);
       return s ? json(s) : json({ error: 'Not found' }, 404);
     }
+    if (path.match(/^\/staff\/([^/]+)\/classes$/)) {
+      const staffId = path.split('/')[2];
+      return json(state.classes.filter((c) => c.classTeacherId === staffId));
+    }
     if (path.match(/^\/staff\/([^/]+)\/attendance/)) return json(state.staffAttendance.filter((a) => a.staffId === path.split('/')[2]));
     if (path.match(/^\/staff\/([^/]+)\/timetable/))  return json({ timetable: [] });
     if (path.match(/^\/staff\/([^/]+)\/assignments/)) return json({ assignments: [] });
@@ -1187,6 +1201,9 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       const staffId = path.split('/')[3];
       return json(state.staffAttendance.filter((a) => a.staffId === staffId));
     }
+
+    /* ── Teacher Timetable ── */
+    if (path.match(/^\/teacher-timetable\/([^/]+)/)) return json({ timetable: [] });
 
     /* ── Teacher Assignments ── */
     if (path.match(/^\/teacher-assignments\/available-teachers/)) return json([]);
@@ -1363,10 +1380,50 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     }
     if (path === '/messages')            return json([]);
 
-    /* ── Front Desk ── */
+    /* ── Front Desk (with /front-desk/ prefix — matches the actual API service paths) ── */
+    if (path === '/visitors/today')      return json({ data: state.visitors });
+    if (path === '/gate-passes/today')   return json({ data: state.gatePasses });
+    if (path === '/front-desk/appointments' && method === 'GET')  return json(state.appointments);
+    if (path === '/front-desk/appointments' && method === 'POST') {
+      const a = seedAppointment(state, body as Partial<AppointmentRecord>);
+      return json(a, 201);
+    }
+    if (path.match(/^\/front-desk\/appointments\/([^/]+)$/) && method === 'PUT') {
+      const id = path.split('/')[3];
+      const idx = state.appointments.findIndex((a) => a.id === id);
+      if (idx >= 0) { Object.assign(state.appointments[idx], body); return json(state.appointments[idx]); }
+      return json({ error: 'Not found' }, 404);
+    }
+    if (path.match(/^\/front-desk\/appointments\/([^/]+)$/) && method === 'DELETE') {
+      const id = path.split('/')[3];
+      state.appointments = state.appointments.filter((a) => a.id !== id);
+      return json({ message: 'Deleted' });
+    }
+    if (path === '/front-desk/call-logs' && method === 'GET')  return json(state.callLogs);
+    if (path === '/front-desk/call-logs' && method === 'POST') {
+      const c = seedCallLog(state, body as Partial<CallLogRecord>);
+      return json(c, 201);
+    }
+    if (path === '/front-desk/feedbacks' && method === 'GET')  return json(state.feedbacks);
+    if (path === '/front-desk/feedbacks' && method === 'POST') {
+      const f = seedFeedback(state, body as Partial<FeedbackRecord>);
+      return json(f, 201);
+    }
+    if (path.match(/^\/front-desk\/feedbacks\/([^/]+)$/) && method === 'PUT') {
+      const id = path.split('/')[3];
+      const idx = state.feedbacks.findIndex((f) => f.id === id);
+      if (idx >= 0) { Object.assign(state.feedbacks[idx], body); return json(state.feedbacks[idx]); }
+      return json({ error: 'Not found' }, 404);
+    }
+    if (path === '/front-desk/admissions' && method === 'GET')  return jsonList(state.admissions || []);
+    if (path === '/front-desk/admissions' && method === 'POST') {
+      return json({ ...(body as Record<string, unknown>), _id: `adm-${Date.now()}`, id: `adm-${Date.now()}` }, 201);
+    }
+
+    /* ── Front Desk (legacy paths without prefix — kept for backward compat) ── */
     if (path === '/visitors')       return jsonList(state.visitors);
     if (path === '/gate-passes')    return jsonList(state.gatePasses);
-    if (path === '/appointments' && method === 'GET')  return jsonList(state.appointments);
+    if (path === '/appointments' && method === 'GET')  return json(state.appointments);
     if (path === '/appointments' && method === 'POST') {
       const a = seedAppointment(state, body as Partial<AppointmentRecord>);
       return json(a, 201);
@@ -1382,12 +1439,12 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       state.appointments = state.appointments.filter((a) => a.id !== id);
       return json({ message: 'Deleted' });
     }
-    if (path === '/call-logs' && method === 'GET')  return jsonList(state.callLogs);
+    if (path === '/call-logs' && method === 'GET')  return json(state.callLogs);
     if (path === '/call-logs' && method === 'POST') {
       const c = seedCallLog(state, body as Partial<CallLogRecord>);
       return json(c, 201);
     }
-    if (path === '/feedbacks' && method === 'GET')  return jsonList(state.feedbacks);
+    if (path === '/feedbacks' && method === 'GET')  return json(state.feedbacks);
     if (path === '/feedbacks' && method === 'POST') {
       const f = seedFeedback(state, body as Partial<FeedbackRecord>);
       return json(f, 201);
@@ -1717,6 +1774,22 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       return json({ message: 'Deleted' });
     }
 
+    /* ── Seed Data ── */
+    if (path === '/seed/generate' && method === 'POST') {
+      const cats = (body as Record<string, unknown>)?.categories as string[] || [];
+      const counts: Record<string, number> = {};
+      cats.forEach((c) => { counts[c] = c === 'staff' ? 15 : c === 'classes' ? 8 : c === 'students' ? 50 : 200; });
+      return json({ success: true, counts, categories: counts });
+    }
+
+    /* ── Data Cleanup ── */
+    if (path === '/settings/data-counts') {
+      return json({ students: 120, staff: 25, classes: 10, attendance: 500, results: 80 });
+    }
+    if (path === '/settings/data-cleanup' && method === 'POST') {
+      return json({ success: true, moved: 735, categories: { students: 120, staff: 25, classes: 10, attendance: 500, results: 80 } });
+    }
+
     /* ── Settings ── */
     if (path === '/settings/holidays')    return json(state.holidays);
     if (path === '/settings/leave-types') return json(state.leaveTypes ?? []);
@@ -1746,6 +1819,16 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       const id = path.split('/')[2];
       state.trashItems = state.trashItems.filter((i) => i._id !== id);
       return json({ success: true });
+    }
+
+    /* ── User Permissions (PermissionProvider) ── */
+    if (path.match(/^\/permissions\/user\/[^/]+$/)) {
+      const perms = state.user.permissions || {};
+      // Convert {students: true, staff: true, ...} to [{module: 'students', actions: [...]}]
+      const permArray = Object.entries(perms)
+        .filter(([, v]) => v)
+        .map(([module]) => ({ module, actions: ['view', 'create', 'edit', 'delete'] }));
+      return json({ permissions: permArray });
     }
 
     /* ── Permission Requests ── */
@@ -1917,6 +2000,9 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       if (method === 'POST')            return json({ promoted: 0, detained: 0, message: 'Promotion completed' });
       return json([]);
     }
+
+    /* ── Substitution Alerts ── */
+    if (path === '/substitution-alerts') return json([]);
 
     /* ── Changelog (public endpoint used by all roles) ── */
     if (path === '/changelog') return json({ entries: [], total: 0 });

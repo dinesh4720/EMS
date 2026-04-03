@@ -81,7 +81,11 @@ export default function Refunds() {
           : 0;
         setStudentTotalPaid(total);
       })
-      .catch(() => setStudentTotalPaid(null));
+      .catch((err) => {
+        console.error('Failed to fetch student payments for refund validation:', err);
+        toast.error(t('toast.error.failedToLoadPaymentHistory', 'Failed to load payment history — refund limit cannot be verified'));
+        setStudentTotalPaid(null);
+      });
   }, [newRefundForm.studentId]);
 
   const handleCreateRefund = async () => {
@@ -104,7 +108,7 @@ export default function Refunds() {
     }
     // BUG-30: prevent refund amount from exceeding total paid
     if (studentTotalPaid !== null && parsedAmount > studentTotalPaid) {
-      toast.error(`Refund amount (₹${parsedAmount}) cannot exceed total paid (₹${studentTotalPaid})`);
+      toast.error(t('toast.error.refundExceedsTotalPaid', { amount: parsedAmount, totalPaid: studentTotalPaid, defaultValue: `Refund amount (₹${parsedAmount.toLocaleString()}) cannot exceed total paid (₹${studentTotalPaid.toLocaleString()})` }));
       return;
     }
     setSavingRefund(true);
@@ -400,9 +404,9 @@ export default function Refunds() {
                 <button
                   onClick={handleCreateRefund}
                   disabled={savingRefund}
-                  className="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {savingRefund ? 'Creating...' : 'Create Refund'}
+                  {savingRefund ? t('common.creating', 'Creating...') : t('fees.createRefund', 'Create Refund')}
                 </button>
               </ModalFooter>
             </>

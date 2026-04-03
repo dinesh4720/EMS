@@ -1,3 +1,4 @@
+import React from "react";
 import {
     Button, Chip, Checkbox, Tooltip,
     Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection,
@@ -55,7 +56,7 @@ function formatPhoneNumber(phone) {
  * All data and handler props are drilled in — this component has
  * no local state of its own.
  */
-export default function StudentsTableVirtualized({
+function StudentsTableVirtualized({
     // ── Data ─────────────────────────────────────────────────────────────
     visibleItems,
     filteredItems,
@@ -913,3 +914,6 @@ export default function StudentsTableVirtualized({
         </div>
     );
 }
+
+// Memoize to prevent re-renders when parent state changes (e.g. modal opens)
+export default React.memo(StudentsTableVirtualized);

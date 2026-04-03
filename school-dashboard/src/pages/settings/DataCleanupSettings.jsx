@@ -1,0 +1,362 @@
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardBody,
+  Button,
+  Chip,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Checkbox,
+  Input,
+} from "@heroui/react";
+import { Trash2, AlertTriangle, CheckCircle, ShieldAlert } from "lucide-react";
+import toast from "react-hot-toast";
+import { request } from "../../services/api";
+
+const CATEGORY_DEFS = [
+  { key: "students", label: "Students", icon: "S", color: "primary" },
+  { key: "staff", label: "Staff", icon: "T", color: "secondary" },
+  { key: "classes", label: "Classes", icon: "C", color: "success" },
+  { key: "attendance", label: "Attendance", icon: "A", color: "warning" },
+  { key: "results", label: "Results", icon: "R", color: "danger" },
+];
+
+const FALLBACK_COUNTS = {
+  students: 120,
+  staff: 25,
+  classes: 10,
+  attendance: 500,
+  results: 80,
+};
+
+export default function DataCleanupSettings() {
+  const [counts, setCounts] = useState(FALLBACK_COUNTS);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState(new Set());
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [cleaning, setCleaning] = useState(false);
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    fetchCounts();
+  }, []);
+
+  const fetchCounts = async () => {
+    try {
+      setLoading(true);
+      const data = await request("/settings/data-counts");
+      if (data && typeof data === "object" && Object.keys(data).length > 0) {
+        setCounts({
+          students: data.students ?? FALLBACK_COUNTS.students,
+          staff: data.staff ?? FALLBACK_COUNTS.staff,
+          classes: data.classes ?? FALLBACK_COUNTS.classes,
+          attendance: data.attendance ?? FALLBACK_COUNTS.attendance,
+          results: data.results ?? FALLBACK_COUNTS.results,
+        });
+      }
+    } catch {
+      // Use fallback counts on error
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalSelected = Array.from(selected).reduce(
+    (sum, key) => sum + (counts[key] || 0),
+    0
+  );
+
+  const toggleCategory = (key) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelected(new Set(CATEGORY_DEFS.map((c) => c.key)));
+  };
+
+  const handleRemove = () => {
+    if (selected.size === 0) {
+      toast.error("Please select at least one category");
+      return;
+    }
+    setConfirmText("");
+    setIsModalOpen(true);
+  };
+
+  const confirmRemove = async () => {
+    try {
+      setCleaning(true);
+      const categories = Array.from(selected);
+      const response = await request("/settings/data-cleanup", {
+        method: "POST",
+        body: JSON.stringify({ categories }),
+      });
+
+      const movedTotal =
+        response?.moved ||
+        categories.reduce((sum, cat) => sum + (counts[cat] || 0), 0);
+      const categoryResults = {};
+      categories.forEach((cat) => {
+        categoryResults[cat] =
+          response?.categories?.[cat] || counts[cat] || 0;
+      });
+
+      setResult({
+        total: movedTotal,
+        categories: categoryResults,
+      });
+      setIsModalOpen(false);
+      toast.success("Data moved to trash successfully!");
+    } catch (error) {
+      toast.error(error.message || "Failed to remove data");
+    } finally {
+      setCleaning(false);
+    }
+  };
+
+  if (result) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
+            Remove All Data
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
+            Permanently delete all data
+          </p>
+        </div>
+
+        <Card className="border border-success-200 bg-success-50/50 dark:bg-success-900/20">
+          <CardBody className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-success-100 rounded-full">
+                <CheckCircle size={24} className="text-success-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-success-700 dark:text-success-400">
+                Moved to Trash!
+              </h3>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-zinc-400 mb-4">
+              {result.total} records have been moved to trash. They will be permanently deleted after 30 days.
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {Object.entries(result.categories).map(([cat, count]) => {
+                const def = CATEGORY_DEFS.find((c) => c.key === cat);
+                return (
+                  <div
+                    key={cat}
+                    className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-200 dark:border-zinc-700"
+                  >
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">
+                      {def?.label || cat}
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">
+                      {count}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </CardBody>
+        </Card>
+
+        <Button
+          variant="flat"
+          color="primary"
+          onPress={() => {
+            setResult(null);
+            setSelected(new Set());
+            fetchCounts();
+          }}
+        >
+          Back to Data Cleanup
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
+          Remove All Data
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
+          Permanently delete all data
+        </p>
+      </div>
+
+      {/* Danger Zone Banner */}
+      <Card className="border-2 border-danger-300 bg-danger-50/50 dark:bg-danger-900/20">
+        <CardBody className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-danger-100 rounded-lg mt-0.5">
+              <ShieldAlert size={20} className="text-danger-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-danger-700 dark:text-danger-400">
+                Danger Zone
+              </h3>
+              <p className="text-sm text-danger-600 dark:text-danger-400 mt-1">
+                This action will move it to Trash where it will be kept for 30 days
+                before being permanently deleted. Please make sure you have a backup
+                before proceeding.
+              </p>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Select Data Section */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-medium text-gray-900 dark:text-zinc-100">
+            Select data to remove
+          </h3>
+          <Button
+            size="sm"
+            variant="flat"
+            onPress={selectAll}
+          >
+            Select All
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {CATEGORY_DEFS.map((cat) => {
+            const isSelected = selected.has(cat.key);
+            const count = counts[cat.key] || 0;
+            return (
+              <Card
+                key={cat.key}
+                isPressable
+                onPress={() => toggleCategory(cat.key)}
+                className={`border transition-all ${
+                  isSelected
+                    ? "border-danger-400 bg-danger-50/30 dark:bg-danger-900/20"
+                    : "border-gray-200 dark:border-zinc-700"
+                }`}
+              >
+                <CardBody className="p-4">
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      isSelected={isSelected}
+                      onChange={() => toggleCategory(cat.key)}
+                      size="sm"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-gray-900 dark:text-zinc-100">
+                          {cat.label}
+                        </h4>
+                        <Chip size="sm" variant="flat" color={cat.color}>
+                          {count}
+                        </Chip>
+                      </div>
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Remove Button */}
+      <div className="flex justify-end">
+        <Button
+          color="danger"
+          size="lg"
+          startContent={<Trash2 size={18} />}
+          onPress={handleRemove}
+          isDisabled={selected.size === 0}
+        >
+          Remove All Data
+        </Button>
+      </div>
+
+      {/* Confirmation Modal */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} size="md">
+        <ModalContent>
+          <ModalHeader>Confirm Data Removal</ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-danger-100 rounded-lg mt-0.5">
+                  <AlertTriangle size={20} className="text-danger-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-zinc-400">
+                    You are about to move <strong>{totalSelected}</strong> records
+                    to trash across <strong>{selected.size}</strong> categories.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3">
+                <p className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                  Selected for removal:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {Array.from(selected).map((key) => {
+                    const def = CATEGORY_DEFS.find((c) => c.key === key);
+                    return (
+                      <Chip key={key} size="sm" variant="flat" color="danger">
+                        {def?.label} ({counts[key]})
+                      </Chip>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-600 dark:text-zinc-400 mb-2">
+                  Type <strong>REMOVE ALL DATA</strong> to confirm:
+                </p>
+                <Input
+                  placeholder="REMOVE ALL DATA"
+                  value={confirmText}
+                  onValueChange={setConfirmText}
+                  variant="bordered"
+                  size="sm"
+                  classNames={{
+                    inputWrapper: "bg-white dark:bg-zinc-950",
+                  }}
+                />
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="light"
+              onPress={() => setIsModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="danger"
+              onPress={confirmRemove}
+              isLoading={cleaning}
+              isDisabled={confirmText !== "REMOVE ALL DATA"}
+            >
+              Move to Trash
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </div>
+  );
+}

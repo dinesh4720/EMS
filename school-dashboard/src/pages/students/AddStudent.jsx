@@ -7,7 +7,8 @@ import { Button, Input, Select, SelectItem, Checkbox, Textarea, Chip, Avatar, Ra
 import { ArrowRight, Upload, X, User, FileText, Users, Check, Heart, Bus, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isValid, parse } from "date-fns";
 import { studentsApi, settingsApi, uploadApi, lookupPincode, classesApi } from "../../services/api";
-import { z } from "zod";
+import { z } from "zod"; // eslint-disable-line no-unused-vars -- kept for inline parent schema usage
+import { validateStep as validateStepUtil, isoToDdmmyy as isoToDdmmyyUtil, buildStudentPayload } from "./utils/studentFormValidation";
 import toast from "react-hot-toast";
 import PhotoEditorModal from "../../components/PhotoEditorModal"; // eslint-disable-line no-unused-vars -- used in JSX
 import CameraCaptureModal from "../../components/CameraCaptureModal"; // eslint-disable-line no-unused-vars -- used in JSX
@@ -40,7 +41,7 @@ const emptyForm = {
   // Transport & Hostel
   transportRequired: false, hostelRequired: false,
   // Documents
-  birthCertificate: null, transferCertificate: null, aadhaarFront: null, aadhaarBack: null, studentPhoto: null, otherDocuments: []
+  birthCertificate: null, transferCertificate: null, aadhaarFront: null, aadhaarBack: null, otherDocuments: []
 };
 
 // --- Click Away Listener Component ---
@@ -294,6 +295,17 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
         section,
       };
     }
+    // Restore draft from sessionStorage if available (new student only)
+    try {
+      const draft = sessionStorage.getItem('student-form-draft');
+      if (draft) {
+        const parsed = JSON.parse(draft);
+        // Restore saved step too
+        const savedStep = sessionStorage.getItem('student-form-draft-step');
+        if (savedStep) setTimeout(() => setStep(parseInt(savedStep) || 1), 0);
+        return { ...emptyForm, ...parsed };
+      }
+    } catch { /* corrupt draft — ignore */ }
     return emptyForm;
   });
   const [errors, setErrors] = useState({});
@@ -354,6 +366,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
   }, []);
 
   // Detect form changes for dirty state (debounced to avoid lag)
+  // Also auto-save draft to sessionStorage for recovery on page reload
   useEffect(() => {
     if (!initialFormDataRef.current) return;
 
@@ -361,9 +374,16 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
       const currentData = JSON.stringify(formData);
       const hasChanges = currentData !== initialFormDataRef.current;
       setHasUnsavedChanges(hasChanges);
-    }, 300);
+      // Auto-save draft for new students (not edits)
+      if (!initialData && hasChanges) {
+        try {
+          sessionStorage.setItem('student-form-draft', currentData);
+          sessionStorage.setItem('student-form-draft-step', String(step));
+        } catch { /* storage full — ignore */ }
+      }
+    }, 500);
     return () => clearTimeout(timer);
-  }, [formData]);
+  }, [formData, step, initialData]);
 
   // Browser navigation warning
   useEffect(() => {
@@ -620,54 +640,56 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
     updateField("picture", file);
   };
 
+  // ── Zod validation schemas (mirrors backend createStudentSchema) ──
+  const parentZodSchema = z.object({
+    name: z.string().min(1, "Parent name is required").max(100, "Name must not exceed 100 characters"),
+    phone: z.string().regex(/^\d{10}$/, "Phone must be 10 digits"),
+    email: z.string().email("Invalid email").or(z.literal("")).optional(),
+    relationship: z.string().optional(),
+    occupation: z.string().max(100).optional(),
+    isWhatsapp: z.boolean().optional(),
+    isParent: z.boolean().optional(),
+  });
+
+  const step1Schema = z.object({
+    fullName: z.string().min(2, "Name must be at least 2 characters").max(100, "Name must not exceed 100 characters").trim(),
+    dateOfBirth: z.string().min(1, "Required").regex(/^\d{2}\/\d{2}\/\d{4}$/, "Please enter date in DD/MM/YYYY format"),
+    gender: z.string().min(1, "Required"),
+    classGrade: z.string().min(1, "Required"),
+    section: z.string().min(1, "Required"),
+    aadhaarNumber: z.string().regex(/^[0-9]{12}$/, "Aadhaar must be exactly 12 digits").or(z.literal("")).optional(),
+    mobile: z.string().regex(/^\d{10}$/, "Phone must be 10 digits").or(z.literal("")).optional(),
+    email: z.string().email("Invalid email").or(z.literal("")).optional(),
+    zipCode: z.string().regex(/^\d{6}$/, "PIN code must be exactly 6 digits").or(z.literal("")).optional(),
+  });
+
   const validateStep = (stepNum) => {
     const newErrors = {};
     if (stepNum === 1) {
-      if (!formData.fullName.trim()) newErrors.fullName = "Required";
-
-      // Validate date of birth (accepts DD/MM/YYYY format)
-      if (!formData.dateOfBirth) {
-        newErrors.dateOfBirth = "Required";
-      } else {
-        // Check if it's in proper DD/MM/YYYY format
-        const ddmmyyPattern = /^\d{2}\/\d{2}\/\d{4}$/;
-        if (!ddmmyyPattern.test(formData.dateOfBirth)) {
-          newErrors.dateOfBirth = "Please enter date in DD/MM/YYYY format";
-        } else {
-          // Additional validation for the date values
-          const [day, month, year] = formData.dateOfBirth.split('/').map(Number);
-          const currentYear = new Date().getFullYear();
-
-          // Check calendar validity first
-          const date = new Date(year, month - 1, day);
-          const isValidDate = date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
-
-          if (!isValidDate) {
-            newErrors.dateOfBirth = "Invalid calendar date";
-          } else if (year < 1900) {
-            newErrors.dateOfBirth = "Year must be 1900 or later";
-          } else if (year === currentYear) {
-            newErrors.dateOfBirth = "Year cannot be the current year";
-          }
-          // Note: We allow future dates and very old dates - warnings are shown via real-time validation
-          // but they don't block submission (more permissive approach)
+      const result = step1Schema.safeParse(formData);
+      if (!result.success) {
+        result.error.errors.forEach(err => {
+          const field = err.path[0];
+          if (!newErrors[field]) newErrors[field] = err.message;
+        });
+      }
+      // Additional calendar validity check for DOB
+      if (!newErrors.dateOfBirth && formData.dateOfBirth) {
+        const [day, month, year] = formData.dateOfBirth.split('/').map(Number);
+        const date = new Date(year, month - 1, day);
+        const isValidDate = date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+        if (!isValidDate) {
+          newErrors.dateOfBirth = "Invalid calendar date";
+        } else if (year < 1900) {
+          newErrors.dateOfBirth = "Year must be 1900 or later";
         }
       }
-
-      if (!formData.gender) newErrors.gender = "Required";
-      if (!formData.classGrade) newErrors.classGrade = "Required";
-      if (!formData.section) newErrors.section = "Required";
     }
     if (stepNum === 2) {
-      const parentSchema = z.object({
-        name: z.string().min(1, "Parent name is required"),
-        phone: z.string().regex(/^\d{10}$/, "Phone must be 10 digits"),
-        email: z.string().email("Invalid email").or(z.literal("")).optional(),
-      });
       if (formData.parents.length === 0 || !formData.parents[0].name.trim()) {
         newErrors.parentName = "At least one parent/guardian is required";
       } else {
-        const result = parentSchema.safeParse(formData.parents[0]);
+        const result = parentZodSchema.safeParse(formData.parents[0]);
         if (!result.success) {
           result.error.errors.forEach(err => {
             if (err.path[0] === 'name') newErrors.parentName = err.message;
@@ -1164,6 +1186,9 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
       setIsSubmitting(false);
       // Reset dirty state after successful save
       setHasUnsavedChanges(false);
+      // Clear draft from sessionStorage
+      sessionStorage.removeItem('student-form-draft');
+      sessionStorage.removeItem('student-form-draft-step');
       // Success toast is shown in parent component
     } catch (error) {
       logger.error('Error submitting student:', error);

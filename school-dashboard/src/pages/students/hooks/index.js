@@ -6,3 +6,5 @@ export { useStudentFees, useBatchStudentFees } from './useStudentFees';
 export { useStudentData, useStudentAttendance, useStudentResults, useStudentRemarks } from './useStudentData';
 export { useStudentDocuments } from './useStudentDocuments';
 export { useStudentPhotoActions } from './useStudentPhotoActions';
+export { useStudentPayment } from './useStudentPayment';
+export { useStudentPromotion } from './useStudentPromotion';
