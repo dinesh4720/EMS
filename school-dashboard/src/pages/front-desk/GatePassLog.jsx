@@ -11,7 +11,9 @@ import { validatePhone } from '../../utils/validations';
 import toast from 'react-hot-toast';
 import GatePassPrint from './GatePassPrint.jsx';
 import { useTranslation } from 'react-i18next';
-import { formatShortDate } from '../../utils/dateFormatter';
+import { formatShortDate, toCurrentTimeString } from '../../utils/dateFormatter';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 const GATE_PASS_REASONS = [
   { key: 'MEDICAL_EMERGENCY', label: 'Medical Emergency' },
@@ -36,6 +38,7 @@ const APPROVED_BY_OPTIONS = [
 
 const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
   const { t } = useTranslation();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [gatePasses, setGatePasses] = useState([]);
   const [students, setStudents] = useState([]);
   const [staff, setStaff] = useState([]);
@@ -52,7 +55,7 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
   const [reason, setReason] = useState(null);
   const [otherReason, setOtherReason] = useState('');
   const [leavingDate, setLeavingDate] = useState(new Date().toISOString().split('T')[0]);
-  const [leavingTime, setLeavingTime] = useState(new Date().toTimeString().slice(0, 5));
+  const [leavingTime, setLeavingTime] = useState(toCurrentTimeString());
   const [expectedReturnDate, setExpectedReturnDate] = useState('');
   const [expectedReturnTime, setExpectedReturnTime] = useState('');
   const [leavingWith, setLeavingWith] = useState(null);
@@ -145,7 +148,7 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
     setReason(null);
     setOtherReason('');
     setLeavingDate(new Date().toISOString().split('T')[0]);
-    setLeavingTime(new Date().toTimeString().slice(0, 5));
+    setLeavingTime(toCurrentTimeString());
     setExpectedReturnDate('');
     setExpectedReturnTime('');
     setLeavingWith(null);
@@ -168,7 +171,8 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
     return staff.find(s => (s._id || s.id) === approvedByStaffId);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
     if (isSubmitting) return;
 
     // Validate BEFORE setting isSubmitting to prevent permanently disabled button
@@ -266,7 +270,7 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
     setReason(gatePass.reason || null);
     setOtherReason(gatePass.otherReason || '');
     setLeavingDate(gatePass.leavingDate || new Date().toISOString().split('T')[0]);
-    setLeavingTime(gatePass.leavingTime || new Date().toTimeString().slice(0, 5));
+    setLeavingTime(gatePass.leavingTime || toCurrentTimeString());
     setExpectedReturnDate(gatePass.expectedReturnDate || '');
     setExpectedReturnTime(gatePass.expectedReturnTime || '');
     setLeavingWith(gatePass.leavingWith || null);
@@ -295,16 +299,23 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm(t('confirm.deleteGatePass'))) return;
-    try {
-      await frontDeskApi.deleteGatePass(id);
-      toast.success(t('toast.success.gatePassDeleted'));
-      loadGatePasses();
-      onSave?.();
-    } catch (error) {
-      toast.error(t('toast.error.failedToDeleteGatePass'));
-    }
+  const handleDelete = (id) => {
+    showConfirm({
+      title: 'Delete Gate Pass',
+      message: t('confirm.deleteGatePass'),
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await frontDeskApi.deleteGatePass(id);
+          toast.success(t('toast.success.gatePassDeleted'));
+          loadGatePasses();
+          onSave?.();
+        } catch (error) {
+          toast.error(t('toast.error.failedToDeleteGatePass'));
+        }
+      },
+    });
   };
 
   const handleApproval = async (id, status) => {
@@ -693,6 +704,8 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
       />
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </>
   );
 });

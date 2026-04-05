@@ -9,8 +9,10 @@ import {
     Popover, PopoverTrigger, PopoverContent, Calendar
 } from "@heroui/react";
 import { parseDate, today, getLocalTimeZone } from "@internationalized/date";
-import { Search, Filter, ArrowUpDown, Layers, MoreVertical, Check, X, Clock, ChevronDown, Download, AlertCircle, CalendarDays, ChevronLeft, ChevronRight, UserCheck, UserX, Users } from "lucide-react";
+import { Search, Filter, ArrowUpDown, Layers, MoreVertical, Check, X, Clock, ChevronDown, Download, AlertCircle, CalendarDays, ChevronLeft, ChevronRight, UserCheck, UserX, Users, AlertTriangle } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { useSettings } from "../../context/SettingsContext";
+import { staffAttendanceApi } from "../../services/api/classes";
 import PhotoAvatar from "../../components/PhotoAvatar";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
@@ -21,8 +23,26 @@ const ITEMS_PER_LOAD = 10;
 export default function StaffAttendance() {
   const { t } = useTranslation();
     const { staff, staffAttendance: attendance, markStaffAttendance: markAttendance, fetchStaffAttendanceForDate, markAllStaffAttendance: markBulkAttendance } = useApp();
+    const { schoolSettings, events } = useSettings();
     const navigate = useNavigate();
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+
+    // AUDIT-444: Check if selected date is a holiday or non-working day
+    const invalidDateReason = useMemo(() => {
+      if (!selectedDate) return null;
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const d = new Date(selectedDate + 'T00:00:00Z');
+      const dayOfWeek = dayNames[d.getUTCDay()];
+      const workingDays = schoolSettings?.workingDays || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      if (!workingDays.includes(dayOfWeek)) {
+        return t('attendance.nonWorkingDay', '{{day}} is not a working day', { day: dayOfWeek });
+      }
+      const holiday = (events || []).find(e => e.type === 'holiday' && e.date === selectedDate);
+      if (holiday) {
+        return t('attendance.holidayDate', '{{date}} is a holiday ({{name}})', { date: selectedDate, name: holiday.title });
+      }
+      return null;
+    }, [selectedDate, schoolSettings?.workingDays, events, t]);
     const [attendancePeriod, setAttendancePeriod] = useState("this_month");
     const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
     const [isLoading, setIsLoading] = useState(false);
@@ -166,6 +186,7 @@ export default function StaffAttendance() {
     }, [hasMore, isLoading]);
 
     const handleStatusChange = (staffId, status) => {
+        if (invalidDateReason) return;
         if (status === "absent" || status === "leave" || status === "halfday") {
             setPendingStatus({ staffId, status });
             setReason("");
@@ -191,6 +212,7 @@ export default function StaffAttendance() {
     };
 
     const handleBulkAction = (action) => {
+        if (invalidDateReason) return;
         if (action === "absent" || action === "leave" || action === "halfday") {
             setPendingStatus({ staffId: "bulk", status: action });
             setReason("");
@@ -291,63 +313,65 @@ export default function StaffAttendance() {
         return { startDate, endDate };
     };
 
-    const handleDownloadReport = () => {
+    const [downloadLoading, setDownloadLoading] = useState(false);
+
+    const handleDownloadReport = async () => {
         const { startDate, endDate } = getDateRange();
-        const headers = ["Name", "Department", "Role", "Date", "Status", "Check In", "Check Out", "Reason"];
-        const rows = [];
+        const startStr = startDate.toISOString().split('T')[0];
+        const endStr = endDate.toISOString().split('T')[0];
 
-        filteredStaff.forEach(s => {
-            const staffAtt = attendance[s.id] || {};
-            const currentDate = new Date(startDate);
+        setDownloadLoading(true);
+        try {
+            const res = await staffAttendanceApi.getReport(startStr, endStr);
+            const records = res?.data || [];
 
-            while (currentDate <= endDate) {
-                const dateStr = currentDate.toISOString().split('T')[0];
-                const att = staffAtt[dateStr] || { status: "unmarked", inTime: "-", outTime: "-", reason: "" };
-                rows.push([
-                    s.name,
-                    s.department,
-                    s.role,
-                    dateStr,
-                    getStatusLabel(att.status),
-                    att.inTime,
-                    att.outTime,
-                    att.reason || ""
-                ]);
-                currentDate.setDate(currentDate.getDate() + 1);
-            }
-        });
+            const headers = ["Name", "Department", "Role", "Date", "Status", "Check In", "Check Out", "Reason"];
+            const rows = records.map(r => [
+                r.name,
+                r.department,
+                r.role,
+                r.date,
+                getStatusLabel(r.status),
+                r.checkInTime,
+                r.checkOutTime,
+                r.reason || ""
+            ]);
 
-        const typeLabel = downloadType === "this_week" ? "This Week" :
-            downloadType === "monthly" ? `${months[parseInt(selectedMonth)]} ${selectedYear}` :
-                downloadType === "yearly" ? selectedYear :
-                    `${customStartDate} to ${customEndDate}`;
+            const typeLabel = downloadType === "this_week" ? "This Week" :
+                downloadType === "monthly" ? `${months[parseInt(selectedMonth)]} ${selectedYear}` :
+                    downloadType === "yearly" ? selectedYear :
+                        `${customStartDate} to ${customEndDate}`;
 
-        // Sanitize cell values to prevent CSV formula injection
-        const sanitizeCsvCell = (value) => {
-            const str = String(value ?? '');
-            if (/^[=+\-@\t\r]/.test(str)) {
-                return "'" + str;
-            }
-            return str;
-        };
+            const sanitizeCsvCell = (value) => {
+                const str = String(value ?? '');
+                if (/^[=+\-@\t\r]/.test(str)) {
+                    return "'" + str;
+                }
+                return str;
+            };
 
-        const csvContent = [
-            `Staff Attendance Report - ${typeLabel}`,
-            "",
-            headers.join(","),
-            ...rows.map(row => row.map(cell => `"${sanitizeCsvCell(cell)}"`).join(","))
-        ].join("\n");
+            const csvContent = [
+                `Staff Attendance Report - ${typeLabel}`,
+                "",
+                headers.join(","),
+                ...rows.map(row => row.map(cell => `"${sanitizeCsvCell(cell)}"`).join(","))
+            ].join("\n");
 
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `attendance-report-${downloadType}-${Date.now()}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        setDownloadModalOpen(false);
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `attendance-report-${downloadType}-${Date.now()}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Failed to download attendance report:', error);
+        } finally {
+            setDownloadLoading(false);
+            setDownloadModalOpen(false);
+        }
     };
 
     const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -470,7 +494,7 @@ export default function StaffAttendance() {
                             </ModalBody>
                             <ModalFooter>
                                 <Button variant="light" onPress={onClose}>{t('pages.cancel2')}</Button>
-                                <Button color="primary" startContent={<Download size={16} />} onPress={handleDownloadReport}>
+                                <Button color="primary" startContent={!downloadLoading && <Download size={16} />} onPress={handleDownloadReport} isLoading={downloadLoading}>
                                     Download
                                 </Button>
                             </ModalFooter>
@@ -650,6 +674,14 @@ export default function StaffAttendance() {
                 </div>
             </div>
 
+
+            {/* AUDIT-444: Holiday/non-working day warning */}
+            {invalidDateReason && (
+                <div className="flex items-center gap-2 p-3 bg-danger-50 text-danger-700 rounded-lg mb-4 mx-1">
+                    <AlertTriangle size={16} />
+                    <span className="text-sm font-medium">{invalidDateReason}</span>
+                </div>
+            )}
 
             {/* Table */}
             <Table

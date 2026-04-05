@@ -2,6 +2,7 @@ import { forwardRef, useMemo } from "react";
 import { format } from "date-fns";
 import { useTranslation } from 'react-i18next';
 import { getGradeFromPercentage } from '../../../utils/grading';
+import { formatCurrency } from '../../../utils/numberFormatter';
 
 const PrintableStudentProfile = forwardRef(({ 
   student, 
@@ -325,7 +326,7 @@ const PrintableStudentProfile = forwardRef(({
           <div style={styles.card}>
             <div style={styles.cardLabel}>{t('pages.feeBalance')}</div>
             <div style={{...styles.cardValue, color: (studentFeeStructure?.totalBalance || 0) <= 0 ? "#22c55e" : "#ef4444"}}>
-              ₹{(studentFeeStructure?.totalBalance || 0).toLocaleString()}
+              {formatCurrency(studentFeeStructure?.totalBalance || 0)}
             </div>
           </div>
           <div style={styles.card}>
@@ -521,9 +522,9 @@ const PrintableStudentProfile = forwardRef(({
                 {studentFeeStructure.feeHeads.map((fee, i) => (
                   <tr key={fee._id || fee.name || `fee-${i}`}>
                     <td style={styles.tableCell}>{fee.name}</td>
-                    <td style={{...styles.tableCell, textAlign: "right"}}>₹{(fee.amount || 0).toLocaleString()}</td>
-                    <td style={{...styles.tableCell, textAlign: "right", color: "#22c55e"}}>₹{(fee.paidAmount || 0).toLocaleString()}</td>
-                    <td style={{...styles.tableCell, textAlign: "right", color: fee.balanceAmount > 0 ? "#ef4444" : "#22c55e"}}>₹{(fee.balanceAmount || 0).toLocaleString()}</td>
+                    <td style={{...styles.tableCell, textAlign: "right"}}>{formatCurrency(fee.amount || 0)}</td>
+                    <td style={{...styles.tableCell, textAlign: "right", color: "#22c55e"}}>{formatCurrency(fee.paidAmount || 0)}</td>
+                    <td style={{...styles.tableCell, textAlign: "right", color: fee.balanceAmount > 0 ? "#ef4444" : "#22c55e"}}>{formatCurrency(fee.balanceAmount || 0)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -532,24 +533,24 @@ const PrintableStudentProfile = forwardRef(({
 
           <div style={styles.feeRow}>
             <span style={styles.label}>{t('pages.totalFee2')}</span>
-            <span>₹{(studentFeeStructure?.totalFee || 0).toLocaleString()}</span>
+            <span>{formatCurrency(studentFeeStructure?.totalFee || 0)}</span>
           </div>
           <div style={styles.feeRow}>
             <span style={styles.label}>{t('pages.paid3')}</span>
-            <span style={{ color: "#22c55e" }}>₹{(studentFeeStructure?.totalPaid || 0).toLocaleString()}</span>
+            <span style={{ color: "#22c55e" }}>{formatCurrency(studentFeeStructure?.totalPaid || 0)}</span>
           </div>
           {(studentFeeStructure?.discountApplied || 0) > 0 && (
             <div style={styles.feeRow}>
               <span style={styles.label}>{t('pages.discount2')}</span>
-              <span style={{ color: "#3b82f6" }}>₹{(studentFeeStructure?.discountApplied || 0).toLocaleString()}</span>
+              <span style={{ color: "#3b82f6" }}>{formatCurrency(studentFeeStructure?.discountApplied || 0)}</span>
             </div>
           )}
           <div style={styles.feeTotal}>
             <span>{(studentFeeStructure?.totalBalance || 0) <= 0 ? "Total Paid" : "Outstanding"}</span>
             <span style={{ color: (studentFeeStructure?.totalBalance || 0) <= 0 ? "#22c55e" : "#ef4444" }}>
-              ₹{(studentFeeStructure?.totalBalance || 0) <= 0
-                ? (studentFeeStructure?.totalPaid || 0).toLocaleString()
-                : (studentFeeStructure?.totalBalance || 0).toLocaleString()}
+              {(studentFeeStructure?.totalBalance || 0) <= 0
+                ? formatCurrency(studentFeeStructure?.totalPaid || 0)
+                : formatCurrency(studentFeeStructure?.totalBalance || 0)}
             </span>
           </div>
         </div>
@@ -572,7 +573,7 @@ const PrintableStudentProfile = forwardRef(({
                     <td style={styles.tableCell}>{payment.receiptNumber || `RCP-${i + 1}`}</td>
                     <td style={styles.tableCell}>{payment.paymentDate ? format(new Date(payment.paymentDate), "dd MMM") : "-"}</td>
                     <td style={{...styles.tableCell, textAlign: "center"}}>{payment.paymentMode || "Cash"}</td>
-                    <td style={{...styles.tableCell, textAlign: "right", color: "#22c55e"}}>₹{(payment.amount || 0).toLocaleString()}</td>
+                    <td style={{...styles.tableCell, textAlign: "right", color: "#22c55e"}}>{formatCurrency(payment.amount || 0)}</td>
                   </tr>
                 ))}
               </tbody>

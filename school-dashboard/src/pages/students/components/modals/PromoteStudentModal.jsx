@@ -12,10 +12,11 @@ import { useTranslation } from 'react-i18next';
  * - isOpen: boolean - Whether the modal is open
  * - onClose: function - Called when modal is closed
  * - student: object - The student to be promoted
- * - availableClasses: array - List of available classes in the school
+ * - availableClasses: array - List of available class name strings (e.g. ["9-A", "10-A"])
+ * - classObjects: array - Class objects with _id, name, section (for resolving targetClassId)
  * - onPromote: function - Called to initiate promotion (optional)
  */
-export default function PromoteStudentModal({ isOpen, onClose, student, availableClasses, onPromote }) {
+export default function PromoteStudentModal({ isOpen, onClose, student, availableClasses, classObjects = [], onPromote }) {
   const { t } = useTranslation();
   const [isPromoting, setIsPromoting] = useState(false);
 
@@ -37,32 +38,27 @@ export default function PromoteStudentModal({ isOpen, onClose, student, availabl
     const loadingToast = toast.loading(`Promoting ${student.name}...`);
 
     try {
-      const { request } = await import("../../../../services/api");
+      const { studentsApi } = await import("../../../../services/api");
+      const studentId = student.id || student._id;
 
-      const isAlumni = nextClass === "Passed Out / Alumni";
-
-      if (isAlumni) {
-        await request(`/students/${student.id}`, {
-          method: 'PUT',
-          body: JSON.stringify({
-            status: "alumni",
-            alumniInfo: { since: new Date().toISOString(), graduationYear: new Date().getFullYear().toString() },
-          }),
-        });
+      if (nextClass === "Passed Out / Alumni") {
+        await studentsApi.promote(studentId, { graduate: true });
       } else {
-        // Resolve classId from class string using availableClasses
+        // Resolve targetClassId from class string using classObjects
         const classMatch = nextClass.match(/^(\d+|[A-Za-z]+)(?:-([A-Z]))?$/i);
-        let classId = null;
-        if (classMatch && Array.isArray(availableClasses)) {
-          // availableClasses may be strings like "5-A" or objects — check both
-          // Try to get classId from parent component's classObjects if passed
+        let targetClassId = null;
+        if (classMatch && Array.isArray(classObjects)) {
+          const [, grade, section = ""] = classMatch;
+          const target = classObjects.find(
+            cls => String(cls.name) === String(grade) && (cls.section || "") === String(section)
+          );
+          if (target) targetClassId = target._id || target.id;
         }
-        const updateData = { class: nextClass };
-        if (classId) updateData.classId = classId;
-        await request(`/students/${student.id}`, {
-          method: 'PUT',
-          body: JSON.stringify(updateData),
-        });
+        if (!targetClassId) {
+          toast.error(`Target class "${nextClass}" not found. Create the class first.`, { id: loadingToast });
+          return;
+        }
+        await studentsApi.promote(studentId, { targetClassId });
       }
 
       toast.success(`${student.name} promoted to ${nextClass}`, { id: loadingToast });

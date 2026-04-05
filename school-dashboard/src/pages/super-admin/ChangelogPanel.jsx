@@ -3,6 +3,8 @@ import { BookOpen, Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
 import { changelogAdminApi } from '../../services/api';
 import { useTranslation } from 'react-i18next';
 import { formatShortDate } from '../../utils/dateFormatter';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 const CATEGORY_COLORS = {
   new_feature: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
@@ -28,6 +30,7 @@ export default function ChangelogPanel() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_ENTRY);
   const [submitting, setSubmitting] = useState(false);
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
 
   const load = async () => {
     setLoading(true);
@@ -83,14 +86,21 @@ export default function ChangelogPanel() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this changelog entry? This action cannot be undone.')) return;
-    try {
-      await changelogAdminApi.delete(id);
-      await load();
-    } catch (err) {
-      setError(err.message || 'Delete failed');
-    }
+  const handleDelete = (id) => {
+    showConfirm({
+      title: 'Delete Changelog Entry',
+      message: 'Are you sure you want to delete this changelog entry? This action cannot be undone.',
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await changelogAdminApi.delete(id);
+          await load();
+        } catch (err) {
+          setError(err.message || 'Delete failed');
+        }
+      },
+    });
   };
 
   const togglePublish = async (entry) => {
@@ -259,6 +269,8 @@ export default function ChangelogPanel() {
           )}
         </div>
       )}
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

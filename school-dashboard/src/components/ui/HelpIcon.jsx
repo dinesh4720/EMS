@@ -20,7 +20,7 @@
  *   </div>
  */
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // ── Component ──────────────────────────────────────────────────────────────────
 export default function HelpIcon({
@@ -34,7 +34,11 @@ export default function HelpIcon({
   const [visible, setVisible] = useState(false);
   const containerRef = useRef(null);
   const tooltipRef = useRef(null);
-  let hideTimer = useRef(null);
+  const hideTimer = useRef(null);
+
+  useEffect(() => {
+    return () => clearTimeout(hideTimer.current);
+  }, []);
 
   const showTooltip = () => {
     clearTimeout(hideTimer.current);

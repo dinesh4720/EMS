@@ -1,10 +1,11 @@
 import { useStudentsListData } from "./hooks/useStudentsListData";
-import EditStudentDrawer from "./EditStudentDrawer"; // eslint-disable-line no-unused-vars -- used in JSX
-import ScrollToTopButton from "../../components/ui/ScrollToTopButton"; // eslint-disable-line no-unused-vars -- used in JSX
-import { StudentCsvUploadModal, StudentCsvPreviewModal } from "./components/modals/StudentImportModals"; // eslint-disable-line no-unused-vars -- used in JSX
-import StudentsFiltersBar from "./components/list/StudentsFiltersBar"; // eslint-disable-line no-unused-vars -- used in JSX
-import StudentsTableVirtualized from "./components/list/StudentsTableVirtualized"; // eslint-disable-line no-unused-vars -- used in JSX
-import StudentsBulkModals from "./components/list/StudentsBulkModals"; // eslint-disable-line no-unused-vars -- used in JSX
+import EditStudentDrawer from "./EditStudentDrawer";
+import ScrollToTopButton from "../../components/ui/ScrollToTopButton";
+import { StudentCsvUploadModal, StudentCsvPreviewModal } from "./components/modals/StudentImportModals";
+import StudentsFiltersBar from "./components/list/StudentsFiltersBar";
+import StudentsTableVirtualized from "./components/list/StudentsTableVirtualized";
+import StudentsBulkModals from "./components/list/StudentsBulkModals";
+import { StudentsTableProvider } from "./components/list/StudentsTableContext";
 
 export default function StudentsList() {
   const {
@@ -179,40 +180,43 @@ export default function StudentsList() {
       />
 
       {/* ── Virtualized Table ─────────────────────────────────────────────── */}
-      <StudentsTableVirtualized
-        visibleItems={visibleItems}
-        filteredItems={filteredItems}
-        visibleColumnsArray={visibleColumnsArray}
-        studentFeeStructures={studentFeeStructures}
-        currentAcademicYear={currentAcademicYear}
-        selectedKeys={selectedKeys}
-        setSelectedKeys={setSelectedKeys}
-        rowVirtualizer={rowVirtualizer}
-        tableContainerRef={tableContainerRef}
-        sortDescriptor={sortDescriptor}
-        setSortDescriptor={setSortDescriptor}
-        editingPhoneId={editingPhoneId}
-        setEditingPhoneId={setEditingPhoneId}
-        phoneInput={phoneInput}
-        setPhoneInput={setPhoneInput}
-        handleSavePhone={handleSavePhone}
-        handlePinStudent={handlePinStudent}
-        handleUnpinStudent={handleUnpinStudent}
-        setSelectedStudent={setSelectedStudent}
-        setIsEditDrawerOpen={setIsEditDrawerOpen}
-        setStudentToDelete={setStudentToDelete}
-        onDeleteOpen={onDeleteOpen}
-        setStatusChangeData={setStatusChangeData}
-        onStatusChangeOpen={onStatusChangeOpen}
-        setTcStudents={setTcStudents}
-        onTcModalOpen={onTcModalOpen}
-        handleBulkAction={handleBulkAction}
-        onPromoteOpen={onPromoteOpen}
-        closeAllDropdowns={closeAllDropdowns}
-        searchQuery={deferredSearchQuery}
-        hasActiveFilters={activeFiltersCount > 0}
-        onClearFilters={clearAllFilters}
-      />
+      <StudentsTableProvider actions={{
+        setSelectedKeys,
+        setSortDescriptor,
+        setEditingPhoneId,
+        setPhoneInput,
+        handleSavePhone,
+        handlePinStudent,
+        handleUnpinStudent,
+        setSelectedStudent,
+        setIsEditDrawerOpen,
+        setStudentToDelete,
+        onDeleteOpen,
+        setStatusChangeData,
+        onStatusChangeOpen,
+        setTcStudents,
+        onTcModalOpen,
+        handleBulkAction,
+        onPromoteOpen,
+        closeAllDropdowns,
+        onClearFilters: clearAllFilters,
+      }}>
+        <StudentsTableVirtualized
+          visibleItems={visibleItems}
+          filteredItems={filteredItems}
+          visibleColumnsArray={visibleColumnsArray}
+          studentFeeStructures={studentFeeStructures}
+          currentAcademicYear={currentAcademicYear}
+          selectedKeys={selectedKeys}
+          rowVirtualizer={rowVirtualizer}
+          tableContainerRef={tableContainerRef}
+          sortDescriptor={sortDescriptor}
+          editingPhoneId={editingPhoneId}
+          phoneInput={phoneInput}
+          searchQuery={deferredSearchQuery}
+          hasActiveFilters={activeFiltersCount > 0}
+        />
+      </StudentsTableProvider>
 
       {/* ── Footer: row count ──────────────────────────────────────────────── */}
       <div className="border-t border-gray-200 dark:border-zinc-700 px-6 py-3 shrink-0">

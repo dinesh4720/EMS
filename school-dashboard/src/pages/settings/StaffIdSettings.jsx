@@ -1,22 +1,17 @@
 import { request } from '../../services/api.js';
 import { useState, useEffect } from "react";
-import { Card, CardBody, CardHeader, Input, Switch, Button, Divider, Select, SelectItem } from "@heroui/react";
+import { Card, CardBody, CardHeader, Input, Switch, Button, Divider, Select, SelectItem, Skeleton } from "@heroui/react";
 import { Save, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 
 export default function StaffIdSettings() {
   const { t } = useTranslation();
-  const [config, setConfig] = useState({
-    prefix: "EMP",
-    startingNumber: 1,
-    digits: 3,
-    includeYear: false,
-    separator: ""
-  });
+  const [config, setConfig] = useState(null);
 
   const [preview, setPreview] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
     // Load current configuration
@@ -27,6 +22,14 @@ export default function StaffIdSettings() {
     // Update preview whenever config changes
     updatePreview();
   }, [config]);
+
+  const DEFAULT_CONFIG = {
+    prefix: "EMP",
+    startingNumber: 1,
+    digits: 3,
+    includeYear: false,
+    separator: ""
+  };
 
   const loadConfig = async () => {
     try {
@@ -40,20 +43,24 @@ export default function StaffIdSettings() {
       });
     } catch (error) {
       console.error("Error loading config:", error);
+      setConfig(DEFAULT_CONFIG);
       toast.error(t('toast.error.failedToLoadConfiguration'));
+    } finally {
+      setInitialLoading(false);
     }
   };
 
   const updatePreview = () => {
+    if (!config) return;
     const { prefix, startingNumber, digits, includeYear, separator } = config;
     const paddedNumber = String(startingNumber).padStart(digits, '0');
     const year = new Date().getFullYear();
-    
+
     let previewId = prefix;
     if (separator) previewId += separator;
     if (includeYear) previewId += year + (separator || "");
     previewId += paddedNumber;
-    
+
     setPreview(previewId);
   };
 
@@ -62,7 +69,7 @@ export default function StaffIdSettings() {
     if (!config.prefix?.trim()) { toast.error('Prefix is required'); return; }
     if (config.digits < 1 || config.digits > 10) { toast.error('Digits must be between 1 and 10'); return; }
     if (config.startingNumber < 0) { toast.error('Starting number cannot be negative'); return; }
-    setLoading(true);
+    setSaving(true);
     try {
       await request('/staff-id-config', {
         method: 'PUT',
@@ -74,20 +81,42 @@ export default function StaffIdSettings() {
       console.error("Error saving config:", error);
       toast.error(t('toast.error.failedToSaveConfiguration'));
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
   const handleReset = () => {
-    setConfig({
-      prefix: "EMP",
-      startingNumber: 1,
-      digits: 3,
-      includeYear: false,
-      separator: ""
-    });
+    setConfig({ ...DEFAULT_CONFIG });
     toast.success(t('toast.success.configurationResetToDefaults'));
   };
+
+  if (initialLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-default-900">{t('pages.staffIdConfiguration')}</h2>
+          <p className="text-default-500 mt-1">{t('pages.configureHowStaffIdsAreGeneratedForNewStaffMembers')}</p>
+        </div>
+        <Card shadow="none" className="border border-default-200">
+          <CardHeader className="px-6 py-4">
+            <div className="space-y-2 w-full">
+              <Skeleton className="h-5 w-48 rounded-lg" />
+              <Skeleton className="h-4 w-72 rounded-lg" />
+            </div>
+          </CardHeader>
+          <Divider />
+          <CardBody className="px-6 py-6 space-y-6">
+            <Skeleton className="h-24 w-full rounded-lg" />
+            <Skeleton className="h-14 w-full rounded-lg" />
+            <Skeleton className="h-14 w-full rounded-lg" />
+            <Skeleton className="h-14 w-full rounded-lg" />
+            <Skeleton className="h-14 w-full rounded-lg" />
+            <Skeleton className="h-14 w-full rounded-lg" />
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -203,7 +232,7 @@ export default function StaffIdSettings() {
               color="primary"
               startContent={<Save size={18} />}
               onPress={handleSave}
-              isLoading={loading}
+              isLoading={saving}
             >
               Save Configuration
             </Button>

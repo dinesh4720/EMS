@@ -196,7 +196,24 @@ const ResultsEntry = ({ standalone = false }) => {
     }));
   };
 
-  const handleSave = async () => {
+  const buildResultsArray = () => {
+    const user = getStoredUser() || {};
+    return students
+      .filter(student => dirtyStudentIds.has(String(student.id || student._id)))
+      .map(student => {
+        const sid = String(student.id || student._id);
+        const entry = results[sid] || {};
+        return {
+          studentId: sid,
+          marksObtained: entry.marksObtained ?? 0,
+          remarks: entry.remarks || '',
+          ...(entry.status === 'absent' ? { status: 'absent' } : {}),
+          enteredBy: user.id
+        };
+      });
+  };
+
+  const handleSave = async ({ forceOverwrite } = {}) => {
     if (!exam) return;
 
     const currentExamId = standalone ? Array.from(selectedExamId)[0] : examId;
@@ -210,23 +227,9 @@ const ResultsEntry = ({ standalone = false }) => {
     setSaving(true);
 
     try {
-      const user = getStoredUser() || {};
+      const resultsArray = buildResultsArray();
 
-      const resultsArray = students
-        .filter(student => dirtyStudentIds.has(String(student.id || student._id)))
-        .map(student => {
-          const sid = String(student.id || student._id);
-          const entry = results[sid] || {};
-          return {
-            studentId: sid,
-            marksObtained: entry.marksObtained ?? 0,
-            remarks: entry.remarks || '',
-            ...(entry.status === 'absent' ? { status: 'absent' } : {}),
-            enteredBy: user.id
-          };
-        });
-
-      await resultsApi.bulkCreate(resultsArray, currentExamId, exam.classId, loadedAt);
+      await resultsApi.bulkCreate(resultsArray, currentExamId, exam.classId, loadedAt, { forceOverwrite });
 
       toast.success(t('toast.success.resultsSavedSuccessfully'));
       setDirtyStudentIds(new Set());
@@ -236,9 +239,19 @@ const ResultsEntry = ({ standalone = false }) => {
       }
     } catch (error) {
       console.error('Error saving results:', error);
-      // AUDIT-29: Handle 409 conflict response
-      if (error?.status === 409 || error?.response?.status === 409) {
-        toast.error('Results were updated by another user. Please refresh and try again.');
+      // AUDIT-233: Handle 409 conflict with forceOverwrite option
+      if (error?.status === 409) {
+        const count = error.details?.staleStudentIds?.length || 0;
+        const confirmed = window.confirm(
+          `Results for ${count || 'some'} student(s) were updated by another user since you loaded this page.\n\nClick OK to overwrite with your changes, or Cancel to reload the latest data.`
+        );
+        if (confirmed) {
+          setSaving(false);
+          return handleSave({ forceOverwrite: true });
+        } else {
+          // Reload fresh data
+          fetchExamAndStudents(currentExamId);
+        }
       } else {
         toast.error(t('toast.error.failedToSaveResults'));
       }
@@ -301,7 +314,7 @@ const ResultsEntry = ({ standalone = false }) => {
           >
             {exams.map((exam) => (
               <SelectItem key={exam.id || exam._id} value={exam.id || exam._id}>
-                {exam.name} - {exam.classId}
+                {exam.name} - {exam.className || exam.classId}
               </SelectItem>
             ))}
           </Select>
@@ -337,7 +350,7 @@ const ResultsEntry = ({ standalone = false }) => {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-medium text-gray-900 dark:text-zinc-100">{exam.name}</h3>
-                  <p className="text-sm text-gray-500 dark:text-zinc-400">{exam.classId} - {exam.subjectName}</p>
+                  <p className="text-sm text-gray-500 dark:text-zinc-400">{exam.className || exam.classId} - {exam.subjectName}</p>
                 </div>
                 <div className="flex items-center gap-4 text-sm">
                   <span className="text-gray-500 dark:text-zinc-400">Max: <span className="font-medium text-gray-900 dark:text-zinc-100">{exam.maxMarks}</span></span>
@@ -519,7 +532,7 @@ const ResultsEntry = ({ standalone = false }) => {
             <div>
               <h1 className="text-xl font-medium text-gray-900 dark:text-zinc-100">Enter Results: {exam.name}</h1>
               <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">
-                {exam.classId} - {exam.subjectName} | Max: {exam.maxMarks} | Pass: {exam.passingMarks}
+                {exam.className || exam.classId} - {exam.subjectName} | Max: {exam.maxMarks} | Pass: {exam.passingMarks}
               </p>
             </div>
           </div>

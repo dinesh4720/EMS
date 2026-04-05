@@ -81,7 +81,7 @@ export default function ScrollToTopButton({
         "dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2",
         "focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950",
-        "transition-opacity transition-transform duration-200 ease-out",
+        "transition-[opacity,transform] duration-200 ease-out",
         visibilityClasses,
         className,
       ].join(" ")}

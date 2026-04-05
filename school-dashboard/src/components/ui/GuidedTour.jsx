@@ -19,7 +19,7 @@
  *   <button data-tour="sidebar-students">Students</button>
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const OVERLAY_Z = 9998;
@@ -122,18 +122,6 @@ export default function GuidedTour({ steps, isOpen, onClose, tourId, autoStart =
     setTooltipPos(pos);
   }, [targetRect, isOpen, currentStep]);
 
-  // ── Keyboard navigation ─────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e) => {
-      if (e.key === 'ArrowRight' || e.key === 'Enter') handleNext();
-      if (e.key === 'ArrowLeft') handlePrev();
-      if (e.key === 'Escape') handleClose();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  });
-
   // ── Tour completion tracking ────────────────────────────────────────────────
   const markCompleted = useCallback(() => {
     if (!tourId) return;
@@ -164,6 +152,18 @@ export default function GuidedTour({ steps, isOpen, onClose, tourId, autoStart =
     markCompleted();
     onClose?.();
   }, [markCompleted, onClose]);
+
+  // ── Keyboard navigation ─────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'Enter') handleNext();
+      if (e.key === 'ArrowLeft') handlePrev();
+      if (e.key === 'Escape') handleClose();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isOpen, handleNext, handlePrev, handleClose]);
 
   if (!isOpen || !currentStep) return null;
 
@@ -317,14 +317,14 @@ export default function GuidedTour({ steps, isOpen, onClose, tourId, autoStart =
 export function useGuidedTour(tourId, autoStart = false) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const hasCompleted = (() => {
+  const hasCompleted = useMemo(() => {
     try {
       const completed = JSON.parse(localStorage.getItem(TOUR_STORAGE_KEY) || '[]');
       return completed.includes(tourId);
     } catch (_) {
       return false;
     }
-  })();
+  }, [tourId]);
 
   useEffect(() => {
     if (autoStart && !hasCompleted) {

@@ -1,9 +1,9 @@
 import { request } from './core.js';
 
 export const staffApi = {
-  getAll: (skipCache = false) => request('/staff', { skipCache }),
-  getById: (id) => request(`/staff/${id}`),
-  getClasses: (id) => request(`/staff/${id}/classes`),
+  getAll: (skipCache = false, opts) => request('/staff', { skipCache, ...opts }),
+  getById: (id, opts) => request(`/staff/${id}`, opts),
+  getClasses: (id, opts) => request(`/staff/${id}/classes`, opts),
   create: (data) => request('/staff', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/staff/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   updateCredentials: (id, data) => request(`/staff/${id}/credentials`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -24,8 +24,10 @@ export const studentsApi = {
     });
 
     const queryString = query.toString();
+    const { skipCache = false, ...restOpts } = options;
     const response = await request(`/students${queryString ? `?${queryString}` : ''}`, {
-      skipCache: options.skipCache ?? false
+      skipCache,
+      ...restOpts,
     });
 
     return {
@@ -100,7 +102,7 @@ export const trashApi = {
     body: JSON.stringify({ trashItemIds })
   }),
   bulkDelete: (trashItemIds) => request('/trash/bulk-delete', {
-    method: 'DELETE',
+    method: 'POST',
     body: JSON.stringify({ trashItemIds })
   }),
 };

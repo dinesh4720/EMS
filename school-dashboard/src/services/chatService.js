@@ -42,7 +42,7 @@ class ChatService {
     try {
       // Strip caller identity fields — backend derives from session
       const { senderId, senderModel, ...payload } = data;
-      return await request('/messages/messages', {
+      return await request('/messages', {
         method: 'POST',
         body: JSON.stringify(payload)
       });
@@ -55,7 +55,7 @@ class ChatService {
   // Mark messages as read (identity derived from session)
   async markAsRead(conversationId) {
     try {
-      return await request('/messages/messages/read', {
+      return await request('/messages/read', {
         method: 'PUT',
         body: JSON.stringify({ conversationId })
       });
@@ -68,7 +68,7 @@ class ChatService {
   // Delete message (identity derived from session)
   async deleteMessage(messageId) {
     try {
-      return await request(`/messages/messages/${messageId}`, { method: 'DELETE' });
+      return await request(`/messages/${messageId}`, { method: 'DELETE' });
     } catch (error) {
       logger.error('Error deleting message:', error);
       throw error;
@@ -79,7 +79,7 @@ class ChatService {
   async searchMessages(query, limit = 20) {
     try {
       const params = new URLSearchParams({ query, limit });
-      return await request(`/messages/messages/search?${params}`);
+      return await request(`/messages/search?${params}`);
     } catch (error) {
       logger.error('Error searching messages:', error);
       throw error;

@@ -30,6 +30,15 @@ const CameraCaptureModal = ({ isOpen, onClose, onPhotoCaptured, title, descripti
   const [editorImage, setEditorImage] = useState(null);
   const fileInputRef = useRef(null);
 
+  const openEditor = useCallback((file) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setEditorImage(reader.result);
+      setIsEditorOpen(true);
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
   const handleUploadFromDevice = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
@@ -52,15 +61,6 @@ const CameraCaptureModal = ({ isOpen, onClose, onPhotoCaptured, title, descripti
     setMode(null); // Reset mode
     openEditor(file);
   }, [openEditor]);
-
-  const openEditor = useCallback((file) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setEditorImage(reader.result);
-      setIsEditorOpen(true);
-    };
-    reader.readAsDataURL(file);
-  }, []);
 
   const handleClose = useCallback(() => {
     setMode(null);

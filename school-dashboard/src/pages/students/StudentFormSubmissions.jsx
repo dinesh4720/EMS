@@ -39,6 +39,7 @@ import { intakeFormsApi } from "../../services/api";
 import { format } from "date-fns";
 import { useTranslation } from 'react-i18next';
 import { useAuth } from "../../context/AuthContext";
+import logger from "../../utils/logger";
 
 export default function StudentFormSubmissions() {
   const { t } = useTranslation();
@@ -82,7 +83,7 @@ export default function StudentFormSubmissions() {
       setSubmissions(studentSubmissions);
     } catch (error) {
       toast.error(t('toast.error.failedToLoadSubmissions'));
-      console.error(error);
+      logger.error("Failed to load student form submissions", error);
     } finally {
       setFetchLoading(false);
     }
@@ -109,7 +110,7 @@ export default function StudentFormSubmissions() {
 
     try {
       setReviewLoading(true);
-      await intakeFormsApi.reviewSubmission(selectedSubmission.id, {
+      await intakeFormsApi.reviewSubmission(selectedSubmission._id, {
         reviewStatus: status,
         reviewNotes: reviewNotes,
         reviewedBy: user?.name || user?.id,
@@ -143,7 +144,7 @@ export default function StudentFormSubmissions() {
     try {
       setReviewLoading(true);
       // Request edit using dedicated endpoint
-      await intakeFormsApi.requestEdit(selectedSubmission.id, {
+      await intakeFormsApi.requestEdit(selectedSubmission._id, {
         notes: editRequestNotes,
         requestedBy: user?.name || user?.id,
       });
@@ -284,7 +285,7 @@ export default function StudentFormSubmissions() {
               isLoading={loading}
             >
               {(submission) => (
-                <TableRow key={submission.id}>
+                <TableRow key={submission._id}>
                   <TableCell>
                     <div className="font-medium text-gray-900 dark:text-zinc-100">
                       {submission.formName || submission.form?.formName}
@@ -333,7 +334,7 @@ export default function StudentFormSubmissions() {
                         <DropdownItem
                           key="view"
                           startContent={<Eye size={16} />}
-                          onPress={() => handleViewSubmission(submission.id)}
+                          onPress={() => handleViewSubmission(submission._id)}
                         >
                           Review Submission
                         </DropdownItem>

@@ -73,7 +73,7 @@ export default function StepResults({ wizardState, onReset, onGoToHistory }) {
             <div className="space-y-2">
               {classMappings.map((cm, idx) => (
                 <div
-                  key={idx}
+                  key={cm.fromClassId || cm.fromClassName || idx}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800"
                 >
                   <div className="flex-1 min-w-0">
@@ -118,7 +118,7 @@ export default function StepResults({ wizardState, onReset, onGoToHistory }) {
             <p className="text-sm font-semibold text-red-700 dark:text-red-300 mb-2">Errors ({errors.length})</p>
             <div className="space-y-1 max-h-40 overflow-y-auto">
               {errors.map((err, idx) => (
-                <p key={idx} className="text-xs text-red-600 dark:text-red-400">
+                <p key={err.studentId || idx} className="text-xs text-red-600 dark:text-red-400">
                   Student {err.studentId}: {err.error}
                 </p>
               ))}

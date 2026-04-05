@@ -4,6 +4,8 @@ import { parentApi } from "../../services/api";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
 import toast from "react-hot-toast";
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 import {
   Search,
@@ -21,6 +23,7 @@ import {
 
 export default function ParentManagement() {
   const { t } = useTranslation();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [parents, setParents] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 0 });
   const [search, setSearch] = useState("");
@@ -75,21 +78,28 @@ export default function ParentManagement() {
   };
 
   // AUDIT-131: Added confirmation before password reset
-  const handleResetPassword = async (parentId) => {
-    if (!confirm('Are you sure you want to reset this parent\'s password? Their current password will stop working.')) return;
-    setActionLoading(parentId);
-    try {
-      const response = await parentApi.resetPassword(parentId);
-      if (response.success) {
-        setGeneratedPassword(response.data.generatedPassword);
-        setCopiedPassword(false);
-      }
-    } catch (error) {
-      logger.error("Error resetting password:", error);
-      toast.error("Failed to reset password");
-    } finally {
-      setActionLoading(null);
-    }
+  const handleResetPassword = (parentId) => {
+    showConfirm({
+      title: 'Reset Password',
+      message: 'Are you sure you want to reset this parent\'s password? Their current password will stop working.',
+      variant: 'warning',
+      confirmText: 'Reset',
+      onConfirm: async () => {
+        setActionLoading(parentId);
+        try {
+          const response = await parentApi.resetPassword(parentId);
+          if (response.success) {
+            setGeneratedPassword(response.data.generatedPassword);
+            setCopiedPassword(false);
+          }
+        } catch (error) {
+          logger.error("Error resetting password:", error);
+          toast.error("Failed to reset password");
+        } finally {
+          setActionLoading(null);
+        }
+      },
+    });
   };
 
   const handleToggleStatus = async (parentId, currentStatus) => {
@@ -110,20 +120,27 @@ export default function ParentManagement() {
     }
   };
 
-  const handleBulkCreate = async () => {
-    if (!confirm(t('confirm.createParentAccounts'))) return;
-    setBulkLoading(true);
-    try {
-      const response = await parentApi.bulkCreate();
-      if (response.success) {
-        toast.success(`Bulk creation complete: ${response.data.created} created, ${response.data.skipped} skipped, ${response.data.errors} errors`);
-        fetchParents(1);
-      }
-    } catch (error) {
-      logger.error("Error bulk creating:", error);
-    } finally {
-      setBulkLoading(false);
-    }
+  const handleBulkCreate = () => {
+    showConfirm({
+      title: 'Bulk Create Parent Accounts',
+      message: t('confirm.createParentAccounts'),
+      variant: 'info',
+      confirmText: 'Create',
+      onConfirm: async () => {
+        setBulkLoading(true);
+        try {
+          const response = await parentApi.bulkCreate();
+          if (response.success) {
+            toast.success(`Bulk creation complete: ${response.data.created} created, ${response.data.skipped} skipped, ${response.data.errors} errors`);
+            fetchParents(1);
+          }
+        } catch (error) {
+          logger.error("Error bulk creating:", error);
+        } finally {
+          setBulkLoading(false);
+        }
+      },
+    });
   };
 
   const copyToClipboard = (text) => {
@@ -443,6 +460,8 @@ export default function ParentManagement() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

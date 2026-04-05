@@ -10,7 +10,12 @@ import logger from '../utils/logger'
  *   - An explicit handler gives us a single place to add future
  *     behaviour (e.g. user-facing toast, telemetry, etc.).
  */
+let installed = false
+
 export function initGlobalErrorHandlers() {
+  if (installed) return
+  installed = true
+
   // --- Unhandled promise rejections --------------------------------
   window.addEventListener('unhandledrejection', (event) => {
     const error = event.reason

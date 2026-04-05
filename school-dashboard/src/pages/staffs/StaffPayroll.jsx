@@ -993,7 +993,7 @@ export default function StaffPayroll() {
                       </TableCell>
                       <TableCell>
                         <Chip size="sm" variant="flat" className="capitalize">
-                          {record.employmentType.replace('_', ' ')}
+                          {record.employmentType.replace(/_/g, ' ')}
                         </Chip>
                       </TableCell>
                       <TableCell>

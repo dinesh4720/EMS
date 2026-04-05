@@ -1,5 +1,5 @@
 import { TableRow, TableCell, Chip, Progress } from "@heroui/react";
-import { Eye, UserPlus, RefreshCw, Pencil, Trash2 } from "lucide-react";
+import { Eye, UserPlus, RefreshCw, Pencil, Trash2, Download } from "lucide-react";
 import { Link } from "react-router-dom";
 import PhotoAvatar from "../../../components/PhotoAvatar";
 
@@ -18,6 +18,7 @@ export function renderClassChildRow({
   onAssignTeacher,
   onEditClass,
   onDeleteClass,
+  onDownloadReport,
   onRowClick,
   t,
   navigate,
@@ -225,6 +226,13 @@ export function renderClassChildRow({
             title={t('classes.viewClass', 'View class')}
           >
             <Eye size={14} className="text-default-400" />
+          </button>
+          <button
+            onClick={() => cls && onDownloadReport(cls)}
+            className="p-1.5 hover:bg-default-100 rounded-lg transition-colors"
+            title={t('pages.exportReport', 'Download Report')}
+          >
+            <Download size={14} className="text-default-400" />
           </button>
           <button
             onClick={() => cls && onEditClass(cls)}

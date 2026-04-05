@@ -54,7 +54,7 @@ export default function PageLayout({
       )}
 
       {/* Content */}
-      <div className={cn("min-h-0", !noPadding && "p-6", noPadding && "flex-1 flex flex-col")}>
+      <div className={cn("flex-1 flex flex-col min-h-0", !noPadding && "p-6")}>
         {children}
       </div>
     </div>

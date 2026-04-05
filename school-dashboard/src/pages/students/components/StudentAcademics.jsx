@@ -19,16 +19,16 @@ import ReportCardTemplate from "../../../components/ReportCardTemplate";
 import { useApp } from "../../../context/AppContext";
 import { getAcademicYearOptions } from "../../../utils/constants";
 import { CHART_COLORS } from "../../../utils/chartTheme";
-import { getDateLocale } from '../../../i18n/index';
+import { formatDateShortWeekday } from '../../../utils/dateFormatter';
 import { useTranslation } from 'react-i18next';
 
 
 export default function StudentAcademics({
-  const { t } = useTranslation();
   studentId,
   student,
   classTeacher
 }) {
+  const { t } = useTranslation();
   const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -48,8 +48,13 @@ export default function StudentAcademics({
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchAcademicData(controller.signal);
-    return () => controller.abort();
+    const timeoutId = setTimeout(() => {
+      fetchAcademicData(controller.signal);
+    }, 300);
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
   }, [studentId, selectedYear, selectedTerm]);
 
   const fetchAcademicData = async (signal) => {
@@ -514,10 +519,12 @@ export default function StudentAcademics({
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-default-500">
-              <BookOpen size={40} className="mx-auto mb-3 opacity-50" />
-              <p>{t('pages.noSubjectDataAvailableYet')}</p>
-              <p className="text-sm">{t('pages.resultsWillAppearHereOnceExamsAreCompleted')}</p>
+            <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-zinc-700 rounded-lg bg-gray-50 dark:bg-zinc-800">
+              <div className="inline-flex p-4 bg-white dark:bg-zinc-900 rounded-full mb-4 ring-1 ring-gray-200 dark:ring-zinc-700 shadow-sm dark:shadow-zinc-900/50">
+                <BookOpen size={28} className="text-gray-400 dark:text-zinc-500" />
+              </div>
+              <h4 className="font-semibold text-gray-700 dark:text-zinc-300 mb-1">{t('pages.noSubjectDataAvailableYet')}</h4>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 max-w-xs mx-auto">{t('pages.resultsWillAppearHereOnceExamsAreCompleted')}</p>
             </div>
           )}
         </CardBody>
@@ -549,11 +556,7 @@ export default function StudentAcademics({
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-default-900">
-                      {exam.date ? new Date(exam.date).toLocaleDateString(getDateLocale(), {
-                        weekday: 'short',
-                        month: 'short',
-                        day: 'numeric'
-                      }) : '—'}
+                      {exam.date ? formatDateShortWeekday(exam.date) : '—'}
                     </p>
                     <p className="text-sm text-default-500">Max: {exam.maxMarks} marks</p>
                   </div>
@@ -617,10 +620,12 @@ export default function StudentAcademics({
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-default-500">
-              <FileText size={40} className="mx-auto mb-3 opacity-50" />
-              <p>{t('pages.noPublishedResultsYet')}</p>
-              <p className="text-sm">{t('pages.resultsWillAppearHereOnceExamsAreGradedAndPublished')}</p>
+            <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-zinc-700 rounded-lg bg-gray-50 dark:bg-zinc-800">
+              <div className="inline-flex p-4 bg-white dark:bg-zinc-900 rounded-full mb-4 ring-1 ring-gray-200 dark:ring-zinc-700 shadow-sm dark:shadow-zinc-900/50">
+                <FileText size={28} className="text-gray-400 dark:text-zinc-500" />
+              </div>
+              <h4 className="font-semibold text-gray-700 dark:text-zinc-300 mb-1">{t('pages.noPublishedResultsYet')}</h4>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 max-w-xs mx-auto">{t('pages.resultsWillAppearHereOnceExamsAreGradedAndPublished')}</p>
             </div>
           )}
         </CardBody>

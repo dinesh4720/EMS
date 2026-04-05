@@ -9,10 +9,13 @@ import FeeTemplatesManagement from "./FeeTemplatesManagement";
 import toast from "react-hot-toast";
 import { feesApi } from "../../services/api";
 import { useTranslation } from 'react-i18next';
-import { formatShortDate } from '../../utils/dateFormatter';
+import { getDateLocale } from '../../i18n/index';
+import { formatShortDate, toTodayDateString } from '../../utils/dateFormatter';
+import { useApp } from '../../context/AppContext';
 
 export default function FeesPage() {
   const { t } = useTranslation();
+  const { currentAcademicYear } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -27,7 +30,19 @@ export default function FeesPage() {
   const handleDownloadReport = async () => {
     const loadingId = toast.loading('Generating fee report…');
     try {
-      const payments = await feesApi.getPayments({});
+      // Fetch all pages scoped to the current academic year
+      const filters = { limit: 200 };
+      if (currentAcademicYear) filters.academicYear = currentAcademicYear;
+      let allPayments = [];
+      let page = 1;
+      let totalPages = 1;
+      while (page <= totalPages) {
+        const { payments: batch, pagination } = await feesApi.getPayments({ ...filters, page });
+        if (batch) allPayments = allPayments.concat(batch);
+        totalPages = pagination?.totalPages || 1;
+        page++;
+      }
+      const payments = allPayments;
       if (!payments || payments.length === 0) {
         toast.dismiss(loadingId);
         toast.error('No payment data found to generate report.');
@@ -75,7 +90,7 @@ export default function FeesPage() {
         ['Total Students with Payments', Object.keys(studentMap).length],
         ['Total Transactions', payments.length],
         ['Total Collected (₹)', totalCollected],
-        ['Report Generated', new Date().toLocaleString()],
+        ['Report Generated', new Date().toLocaleString(getDateLocale())],
       ];
 
       const csvContent = [
@@ -88,7 +103,7 @@ export default function FeesPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `fee-report-${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `fee-report-${toTodayDateString()}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

@@ -4,6 +4,8 @@ import { Upload, Download, FileText, Users, UserCheck, DollarSign, Calendar, Rot
 import toast from 'react-hot-toast';
 import { API_URL } from '../../config/api';
 import { getAuthHeaders } from '../../utils/authSession';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 const IMPORT_TYPES = [
   { key: 'students', label: 'Students', icon: Users },
@@ -48,6 +50,7 @@ export default function BulkImport() {
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [rollingBack, setRollingBack] = useState(null);
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
 
   const validateFile = (f) => {
     if (!f) return false;
@@ -102,7 +105,7 @@ export default function BulkImport() {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      setTimeout(() => window.URL.revokeObjectURL(url), 60000);
     } catch {
       toast.error('Failed to download template');
     }
@@ -173,26 +176,32 @@ export default function BulkImport() {
     fetchHistory();
   };
 
-  const handleRollback = async (jobId) => {
-    if (!confirm('Are you sure you want to rollback this import? This will undo all changes.')) return;
+  const handleRollback = (jobId) => {
+    showConfirm({
+      title: 'Rollback Import',
+      message: 'Are you sure you want to rollback this import? This will undo all changes.',
+      variant: 'warning',
+      confirmText: 'Rollback',
+      onConfirm: async () => {
+        setRollingBack(jobId);
+        try {
+          const response = await fetch(`${API_URL}/bulk-import/history/${jobId}/rollback`, {
+            method: 'POST',
+            headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+            credentials: 'include',
+          });
+          if (!response.ok) throw new Error('Rollback failed');
 
-    setRollingBack(jobId);
-    try {
-      const response = await fetch(`${API_URL}/bulk-import/history/${jobId}/rollback`, {
-        method: 'POST',
-        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Rollback failed');
-
-      toast.success('Import rolled back successfully');
-      // Refresh history
-      fetchHistory();
-    } catch {
-      toast.error('Rollback failed');
-    } finally {
-      setRollingBack(null);
-    }
+          toast.success('Import rolled back successfully');
+          // Refresh history
+          fetchHistory();
+        } catch {
+          toast.error('Rollback failed');
+        } finally {
+          setRollingBack(null);
+        }
+      },
+    });
   };
 
   return (
@@ -488,6 +497,8 @@ export default function BulkImport() {
           )}
         </div>
       )}
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

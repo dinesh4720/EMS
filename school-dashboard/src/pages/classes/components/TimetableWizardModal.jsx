@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Button, Input, Select, SelectItem, Chip, Card, CardBody,
@@ -86,6 +86,11 @@ export default function TimetableWizardModal({
 
   // Cross-class teacher busy map: { "teacherId-day-periodIdx": classId }
   const [teacherBusySlots, setTeacherBusySlots] = useState({});
+  const [isLoadingClassData, setIsLoadingClassData] = useState(false);
+  const [isLoadingBusySlots, setIsLoadingBusySlots] = useState(false);
+
+  // Ref to guard against race conditions — stale loads are discarded
+  const loadClassDataRequestRef = useRef(0);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -94,22 +99,26 @@ export default function TimetableWizardModal({
       setGeneratedSchedule(null);
       setDetectedConflicts([]);
 
+      // Refresh app data so staff/teacher assignments are not stale
+      refetch?.();
+
       if (initialClassId) {
         setSelectedClassId(initialClassId);
-        loadClassData(initialClassId);
+        // Don't call loadClassData here — the selectedClassId effect below handles it
       }
     }
   }, [isOpen, initialClassId]);
 
   // Load class data when class is selected
   useEffect(() => {
-    if (selectedClassId) {
+    if (selectedClassId && isOpen) {
       loadClassData(selectedClassId);
     }
   }, [selectedClassId]);
 
   // Load all timetables to build teacher busy slots map (excluding current class)
   const loadTeacherBusySlots = useCallback(async (excludeClassId) => {
+    setIsLoadingBusySlots(true);
     try {
       const allTimetables = await timetableApi.getAll(currentAcademicYear);
       const busyMap = {};
@@ -132,47 +141,78 @@ export default function TimetableWizardModal({
     } catch (error) {
       console.error('Error loading teacher busy slots:', error);
       // Non-blocking: proceed without cross-class checks
+    } finally {
+      setIsLoadingBusySlots(false);
     }
   }, [currentAcademicYear]);
 
   const loadClassData = async (classId) => {
+    // Race condition guard: increment request ID and capture it locally.
+    // If another loadClassData fires before this one finishes, the stale
+    // call will see a mismatched ID and bail out before setting state.
+    const requestId = ++loadClassDataRequestRef.current;
+    const isStale = () => requestId !== loadClassDataRequestRef.current;
+
+    setIsLoadingClassData(true);
     try {
       const cls = classesWithTeachers.find(c => String(c.id) === String(classId));
-      if (cls) {
-        // Load subjects
-        const subjects = cls.subjects || schoolSettings?.subjects?.map(s =>
-          typeof s === 'string' ? s : s.name
-        ) || [];
-        setClassSubjects(subjects);
-        setAvailableSubjects(schoolSettings?.subjects?.map(s =>
-          typeof s === 'string' ? s : s.name
-        ) || []);
+      if (!cls) {
+        setIsLoadingClassData(false);
+        return;
+      }
 
-        // Load existing timetable if any
-        try {
-          const existingTimetable = await timetableApi.getByClass(classId, currentAcademicYear);
-          if (existingTimetable) {
-            setPeriods(existingTimetable.periods || DEFAULT_PERIODS_LIST);
-            setGeneratedSchedule(existingTimetable.schedule);
-          } else {
-            setPeriods(DEFAULT_PERIODS_LIST);
-            setGeneratedSchedule(null);
-          }
-        } catch (err) {
-          // No existing timetable
+      // Load subjects
+      const subjects = cls.subjects || schoolSettings?.subjects?.map(s =>
+        typeof s === 'string' ? s : s.name
+      ) || [];
+      setClassSubjects(subjects);
+      setAvailableSubjects(schoolSettings?.subjects?.map(s =>
+        typeof s === 'string' ? s : s.name
+      ) || []);
+
+      // Load existing timetable if any
+      try {
+        const existingTimetable = await timetableApi.getByClass(classId, currentAcademicYear);
+        if (isStale()) return;
+        if (existingTimetable) {
+          setPeriods(existingTimetable.periods || DEFAULT_PERIODS_LIST);
+          setGeneratedSchedule(existingTimetable.schedule);
+        } else {
           setPeriods(DEFAULT_PERIODS_LIST);
           setGeneratedSchedule(null);
         }
+      } catch (err) {
+        if (isStale()) return;
+        // 404 means no existing timetable — not an error
+        if (err?.status !== 404) {
+          toast.error(t('toast.error.failedToLoadTimetable', 'Failed to load existing timetable'));
+        }
+        setPeriods(DEFAULT_PERIODS_LIST);
+        setGeneratedSchedule(null);
+      }
 
-        // Load teacher assignments and cross-class busy slots in parallel
-        await Promise.all([
-          loadTeacherAssignments(classId),
-          loadTeacherBusySlots(classId),
-        ]);
+      if (isStale()) return;
+
+      // Load teacher assignments and cross-class busy slots in parallel
+      const results = await Promise.allSettled([
+        loadTeacherAssignments(classId),
+        loadTeacherBusySlots(classId),
+      ]);
+
+      if (isStale()) return;
+
+      // Surface teacher assignment load failures to the user
+      if (results[0].status === 'rejected') {
+        toast.error(t('toast.error.failedToLoadTeacherAssignments', 'Failed to load teacher assignments'));
       }
     } catch (error) {
+      if (isStale()) return;
       console.error('Error loading class data:', error);
       toast.error(t('toast.error.failedToLoadClassData'));
+    } finally {
+      if (!isStale()) {
+        setIsLoadingClassData(false);
+      }
     }
   };
 
@@ -353,7 +393,7 @@ export default function TimetableWizardModal({
   const generateTimetable = useCallback(async () => {
     if (!selectedClassId || classSubjects.length === 0) {
       toast.error(t('toast.error.pleaseSelectAClassAndConfigureSubjects'));
-      return;
+      return false;
     }
 
     setIsGenerating(true);
@@ -512,9 +552,11 @@ export default function TimetableWizardModal({
       } else {
         toast.success(t('toast.success.timetableGeneratedSuccessfully'));
       }
+      return true;
     } catch (error) {
       console.error('Error generating timetable:', error);
       toast.error(t('toast.error.failedToGenerateTimetable'));
+      return false;
     } finally {
       setIsGenerating(false);
     }
@@ -587,7 +629,7 @@ export default function TimetableWizardModal({
   // Navigation
   const canGoNext = () => {
     switch (currentStep) {
-      case 1: return !!selectedClassId;
+      case 1: return !!selectedClassId && !isLoadingClassData;
       case 2: return classSubjects.length > 0;
       case 3: return true; // Teacher assignments are optional
       case 4: return true;
@@ -598,7 +640,8 @@ export default function TimetableWizardModal({
 
   const handleNext = async () => {
     if (currentStep === 4) {
-      await generateTimetable();
+      const success = await generateTimetable();
+      if (!success) return;
     }
     setCurrentStep(prev => Math.min(prev + 1, 5));
   };
@@ -712,7 +755,14 @@ export default function TimetableWizardModal({
                 </Select>
               </div>
 
-              {selectedClass && (
+              {isLoadingClassData && selectedClassId && (
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  {t('common.loading', 'Loading class data...')}
+                </div>
+              )}
+
+              {selectedClass && !isLoadingClassData && (
                 <Card className="bg-gray-50 dark:bg-zinc-900">
                   <CardBody className="p-4">
                     <h4 className="font-medium mb-3">{t('pages.classInformation')}</h4>
@@ -749,6 +799,13 @@ export default function TimetableWizardModal({
                   {t('classes.subjectConfigDescription', 'Add or remove subjects for this class. These subjects will be used in the timetable.')}
                 </p>
               </div>
+
+              {isLoadingClassData && (
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  {t('common.loadingSubjects', 'Loading subjects...')}
+                </div>
+              )}
 
               {/* Add Subject */}
               <div className="flex gap-2">
@@ -830,6 +887,15 @@ export default function TimetableWizardModal({
                 </p>
               </div>
 
+              {(isLoadingClassData || isLoadingBusySlots) && (
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  {isLoadingClassData
+                    ? t('common.loadingTeacherAssignments', 'Loading teacher assignments...')
+                    : t('common.loadingBusySlots', 'Loading teacher availability across classes...')}
+                </div>
+              )}
+
               <div className="space-y-4">
                 {classSubjects.map(subject => {
                   const assignedTeachers = teacherAssignments[subject] || [];
@@ -853,8 +919,8 @@ export default function TimetableWizardModal({
                             {availableTeachersForSubject.map(teacher => (
                               <Chip
                                 key={teacher.id}
-                                variant={assignedTeachers.some(t => t.id === teacher.id) ? "solid" : "bordered"}
-                                color={assignedTeachers.some(t => t.id === teacher.id) ? "primary" : "default"}
+                                variant={assignedTeachers.some(t => String(t.id) === String(teacher.id)) ? "solid" : "bordered"}
+                                color={assignedTeachers.some(t => String(t.id) === String(teacher.id)) ? "primary" : "default"}
                                 className="cursor-pointer"
                                 onClick={() => handleAssignTeacher(subject, teacher.id)}
                               >
@@ -1067,6 +1133,13 @@ export default function TimetableWizardModal({
                   {t('classes.regenerate', 'Regenerate')}
                 </Button>
               </div>
+
+              {isLoadingBusySlots && (
+                <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  {t('common.loadingBusySlots', 'Loading teacher availability across classes...')}
+                </div>
+              )}
 
               {/* Inline conflict warnings */}
               {detectedConflicts.length > 0 && !isGenerating && (

@@ -1,22 +1,6 @@
-import { useState } from "react";
-
-// TODO [AUDIT-156]: This entire hook is LOCAL-ONLY — all salary state is held
-// in React state and is lost on page refresh. There is no backend persistence.
-//
-// The backend *does* have payroll endpoints (see payrollApi in services/api/fees.js):
-//   - GET  /payroll/dashboard/:month/:year
-//   - POST /payroll/run
-//   - POST /payroll/records/bulk-pay
-//   - etc.
-//
-// This hook was likely a prototype/placeholder. It should be replaced with
-// React Query hooks that call the payroll API, or removed entirely if
-// the payroll pages already use payrollApi directly.
-//
-// Until then, consumers of this hook (StaffContext) should be aware that:
-//   1. salarySettings, staffSalaries, payrollHistory are ephemeral
-//   2. processPayroll() does NOT call the backend — it only updates local state
-//   3. Data will be empty after every page reload
+import { useState, useCallback } from "react";
+import { payrollApi } from "../../services/api";
+import logger from "../../utils/logger";
 
 const DEFAULT_SALARY_SETTINGS = {
   disburseDate: "",
@@ -34,7 +18,7 @@ const DEFAULT_SALARY_SETTINGS = {
 };
 
 export function useSalaryState() {
-  // TODO [AUDIT-156]: Replace local state with React Query hooks backed by payroll API
+  // salarySettings stays local — no backend endpoint for salary component config yet
   const [salarySettings, setSalarySettings] = useState(DEFAULT_SALARY_SETTINGS);
   const [staffSalaries, setStaffSalaries] = useState({});
   const [payrollHistory, setPayrollHistory] = useState([]);
@@ -56,21 +40,27 @@ export function useSalaryState() {
     setStaffSalaries((prev) => ({ ...prev, [staffId]: salaryData }));
   };
 
-  // TODO [AUDIT-156]: This does NOT call the backend payroll API.
-  // It only creates a local record that will be lost on refresh.
-  // Replace with: payrollApi.runPayroll({ month, staffList })
-  const processPayroll = (month, staffList) => {
-    const newRecord = {
-      id: Date.now(),
-      month,
-      totalStaff: staffList.length,
-      totalPayout: staffList.reduce((acc, curr) => acc + curr.netSalary, 0),
-      status: "completed",
-      date: new Date().toISOString().split("T")[0],
-      details: staffList,
-    };
-    setPayrollHistory((prev) => [newRecord, ...prev]);
-    return newRecord;
+  // Fetch payroll records from the backend for a specific employee or all
+  const fetchPayrollHistory = useCallback(async (params = {}) => {
+    try {
+      const res = await payrollApi.getRecords(params);
+      const records = res?.data || res || [];
+      setPayrollHistory(Array.isArray(records) ? records : []);
+      return records;
+    } catch (err) {
+      logger.error("Failed to fetch payroll history:", err);
+      return [];
+    }
+  }, []);
+
+  // Calls the backend payroll API to run payroll and refreshes history
+  const processPayroll = async (data) => {
+    const result = await payrollApi.runPayroll(data);
+    // Refresh history for the processed month
+    if (data.month && data.year) {
+      await fetchPayrollHistory({ month: data.month, year: data.year });
+    }
+    return result;
   };
 
   const getPayrollForMonth = (month) =>
@@ -83,6 +73,7 @@ export function useSalaryState() {
     updateSalarySettings,
     updateStaffSalary,
     processPayroll,
+    fetchPayrollHistory,
     getPayrollForMonth,
   };
 }

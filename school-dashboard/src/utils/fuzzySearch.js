@@ -14,21 +14,51 @@ export function calculateSimilarity(str1, str2) {
   if (s1 === s2) return 1.0;
   if (s1.length === 0 || s2.length === 0) return 0.0;
 
-  // Count matching characters
-  let matchCount = 0;
-  let s2Index = 0;
-
-  for (let i = 0; i < s1.length && s2Index < s2.length; i++) {
-    if (s1[i] === s2[s2Index]) {
-      matchCount++;
-      s2Index++;
-    }
+  // Direct substring match gets high base score
+  if (s1.includes(s2)) {
+    return 0.8 + 0.2 * (s2.length / s1.length);
+  }
+  if (s2.includes(s1)) {
+    return 0.8 + 0.2 * (s1.length / s2.length);
   }
 
-  // Calculate score based on matches and length difference
-  const maxLength = Math.max(s1.length, s2.length);
-  const lengthDiff = Math.abs(s1.length - s2.length);
-  const score = (matchCount - lengthDiff * 0.1) / maxLength;
+  // Subsequence matching: find query chars in text in order,
+  // tracking contiguity for better ranking
+  const query = s2.length <= s1.length ? s2 : s1;
+  const text = s2.length <= s1.length ? s1 : s2;
+
+  let matchCount = 0;
+  let consecutiveCount = 0;
+  let maxConsecutive = 0;
+  let textIndex = 0;
+  let lastMatchIndex = -2;
+
+  for (let i = 0; i < query.length && textIndex < text.length; ) {
+    if (query[i] === text[textIndex]) {
+      matchCount++;
+      if (textIndex === lastMatchIndex + 1) {
+        consecutiveCount++;
+        maxConsecutive = Math.max(maxConsecutive, consecutiveCount);
+      } else {
+        consecutiveCount = 1;
+        maxConsecutive = Math.max(maxConsecutive, 1);
+      }
+      lastMatchIndex = textIndex;
+      i++;
+    }
+    textIndex++;
+  }
+
+  if (matchCount === 0) return 0.0;
+
+  // Coverage: fraction of query characters matched
+  const coverage = matchCount / query.length;
+  // Contiguity: reward consecutive character runs
+  const contiguity = maxConsecutive / query.length;
+  // Length ratio: penalize large length differences mildly
+  const lengthRatio = Math.min(s1.length, s2.length) / Math.max(s1.length, s2.length);
+
+  const score = coverage * 0.5 + contiguity * 0.3 + lengthRatio * 0.2;
 
   return Math.max(0, Math.min(1, score));
 }
@@ -96,11 +126,12 @@ export function searchMessages(messages, query, threshold = 0.5) {
 
       return {
         ...msg,
+        matched: contentMatch || nameMatch,
         matchScore: maxScore,
         matchType: contentScore > nameScore ? 'content' : 'name'
       };
     })
-    .filter(msg => msg.matchScore >= threshold)
+    .filter(msg => msg.matched)
     .sort((a, b) => b.matchScore - a.matchScore);
 }
 
@@ -113,8 +144,22 @@ export function searchMessages(messages, query, threshold = 0.5) {
 export function highlightMatches(text, query) {
   if (!text || !query) return text;
 
+  // HTML-escape the text first to prevent XSS from user-generated content
+  const escaped = escapeHtml(text);
   const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
-  return text.replace(regex, '<mark class="bg-primary-100 text-primary rounded px-0.5">$1</mark>');
+  return escaped.replace(regex, '<mark class="bg-primary-100 text-primary rounded px-0.5">$1</mark>');
+}
+
+/**
+ * Escape HTML special characters to prevent XSS
+ */
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 /**

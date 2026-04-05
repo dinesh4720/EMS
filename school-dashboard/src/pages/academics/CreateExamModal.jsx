@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Select, SelectItem, Input, Button, Textarea, Divider } from '@heroui/react';
-import { Calendar, Award, BookOpen, Users, AlertCircle } from 'lucide-react';
+import { Calendar, Award, BookOpen } from 'lucide-react';
 import { examsApi, subjectsApi, classesApi } from '../../services/api';
 import { getStoredUser } from '../../utils/authSession';
 import toast from 'react-hot-toast';
@@ -125,10 +125,9 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
     if (!formData.startDate) {
       newErrors.startDate = 'Start date is required';
     } else {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const startDate = new Date(formData.startDate);
-      if (startDate < today) {
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      if (formData.startDate < today) {
         newErrors.startDate = 'Start date cannot be in the past';
       }
     }

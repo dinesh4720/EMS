@@ -12,7 +12,6 @@ import {
   ChevronsLeft, GraduationCap, Calendar, BarChart3, DoorOpen,
   Sun, Moon, LogOut, ChevronRight,
   Layers, Award, ClipboardList, Package, Building2, Bus, Library,
-  UserCheck, Mail, FileText, Webhook,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "../../context/AuthContext";
@@ -266,7 +265,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                                 <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-zinc-500 px-2 pt-2 pb-1">{group.title}</p>
                               )}
                             {group.items.map((item) => {
-                              const isItemActive = location.pathname === item.href || (item.href !== "/" && location.pathname.startsWith(item.href));
+                              const isItemActive = location.pathname === item.href || (item.href !== "/" && location.pathname.startsWith(item.href + '/'));
                               const isMessaging = item.href === '/messaging';
                               const showBadge = isMessaging && unreadCount > 0;
 

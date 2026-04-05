@@ -27,10 +27,16 @@ import {
   Trash2,
   IndianRupee,
   Users,
+  List,
+  LayoutGrid,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 
 const categories = ["Academic", "Transport", "Extra-curricular", "Hostel", "Other"];
@@ -63,6 +69,9 @@ const CLASS_PRESETS = {
 export default function FeeHeadsUnified({ embedded = false }) {
   const { t } = useTranslation();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
+  const [viewMode, setViewMode] = useState("fee-heads"); // "fee-heads" | "by-class"
+  const [expandedClasses, setExpandedClasses] = useState(new Set());
   const [editingFeeHead, setEditingFeeHead] = useState(null);
   const [feeHeads, setFeeHeads] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -76,7 +85,8 @@ export default function FeeHeadsUnified({ embedded = false }) {
     amount: 0,
     applicableClasses: [],
     frequency: "yearly",
-    isRequired: true
+    isRequired: true,
+    autoApply: true
   });
 
   // Class range input
@@ -176,7 +186,8 @@ export default function FeeHeadsUnified({ embedded = false }) {
         amount: feeHead.amount,
         applicableClasses: feeHead.applicableClasses || [],
         frequency: feeHead.frequency || "yearly",
-        isRequired: feeHead.mandatory !== undefined ? feeHead.mandatory : true
+        isRequired: feeHead.mandatory !== undefined ? feeHead.mandatory : true,
+        autoApply: feeHead.autoApply !== undefined ? feeHead.autoApply : true
       });
       setClassRangeInput(feeHead.applicableClasses?.join(',') || "");
     } else {
@@ -187,7 +198,8 @@ export default function FeeHeadsUnified({ embedded = false }) {
         amount: 0,
         applicableClasses: [],
         frequency: "yearly",
-        isRequired: true
+        isRequired: true,
+        autoApply: true
       });
       setClassRangeInput("");
     }
@@ -202,7 +214,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
       applicableClasses: formData.applicableClasses,
       frequency: formData.frequency,
       mandatory: formData.isRequired,
-      autoApply: formData.isRequired,
+      autoApply: formData.autoApply,
       description: ""
     };
 
@@ -237,37 +249,50 @@ export default function FeeHeadsUnified({ embedded = false }) {
   };
 
   // AUDIT-124: Added dependency check before delete
-  const handleDelete = async (id) => {
-    if (!confirm(t('confirm.deleteFeeHead'))) return;
-
-    setDeletingId(id);
-    try {
-      // Check if fee head is in use before deleting
-      const depCheck = await request(`/fee-heads/${id}/dependencies`).catch(() => null);
-      if (depCheck?.inUse) {
-        toast.error(`Cannot delete: fee head is assigned to ${depCheck.studentCount || 'some'} student(s). Remove assignments first.`);
-        setDeletingId(null);
-        return;
-      }
-      await request(`/fee-heads/${id}`, { method: 'DELETE' });
-      setFeeHeads(prev => prev.filter(fh => fh._id !== id));
-      toast.success(t('toast.success.feeHeadDeleted'));
-    } catch (error) {
-      toast.error(t('toast.error.failedToDeleteFeeHead'));
-    } finally {
-      setDeletingId(null);
-    }
+  const handleDelete = (id) => {
+    showConfirm({
+      title: 'Delete Fee Head',
+      message: t('confirm.deleteFeeHead'),
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        setDeletingId(id);
+        try {
+          // Check if fee head is in use before deleting
+          const depCheck = await request(`/fee-heads/${id}/dependencies`).catch(() => null);
+          if (depCheck?.inUse) {
+            toast.error(`Cannot delete: fee head is assigned to ${depCheck.studentCount || 'some'} student(s). Remove assignments first.`);
+            setDeletingId(null);
+            return;
+          }
+          await request(`/fee-heads/${id}`, { method: 'DELETE' });
+          setFeeHeads(prev => prev.filter(fh => fh._id !== id));
+          toast.success(t('toast.success.feeHeadDeleted'));
+        } catch (error) {
+          toast.error(t('toast.error.failedToDeleteFeeHead'));
+        } finally {
+          setDeletingId(null);
+        }
+      },
+    });
   };
 
   // AUDIT-124: Added confirmation before bulk apply
-  const handleApplyToStudents = async (id) => {
-    if (!confirm('Apply this fee head to all applicable students? This will create fee structures for students who do not have them yet.')) return;
-    try {
-      await request(`/fee-heads/${id}/apply`, { method: 'POST' });
-      toast.success(t('toast.success.feeHeadAppliedToStudents'));
-    } catch (error) {
-      toast.error(t('toast.error.failedToApplyFeeHead'));
-    }
+  const handleApplyToStudents = (id) => {
+    showConfirm({
+      title: 'Apply Fee Head',
+      message: 'Apply this fee head to all applicable students? This will create fee structures for students who do not have them yet.',
+      variant: 'warning',
+      confirmText: 'Apply',
+      onConfirm: async () => {
+        try {
+          await request(`/fee-heads/${id}/apply`, { method: 'POST' });
+          toast.success(t('toast.success.feeHeadAppliedToStudents'));
+        } catch (error) {
+          toast.error(t('toast.error.failedToApplyFeeHead'));
+        }
+      },
+    });
   };
 
   const handlePresetClick = (preset) => {
@@ -283,6 +308,35 @@ export default function FeeHeadsUnified({ embedded = false }) {
   };
 
   const totalFees = feeHeads.reduce((sum, fh) => sum + (fh.mandatory ? fh.amount : 0), 0);
+
+  // Group fee heads by class for "View by Class" mode
+  const classFeeData = useMemo(() => {
+    const classMap = {};
+    for (let c = 1; c <= 12; c++) {
+      const key = String(c);
+      const heads = feeHeads.filter(fh => fh.applicableClasses?.includes(key));
+      if (heads.length > 0) {
+        const totalRequired = heads.filter(h => h.mandatory).reduce((s, h) => s + (h.amount || 0), 0);
+        const totalOptional = heads.filter(h => !h.mandatory).reduce((s, h) => s + (h.amount || 0), 0);
+        classMap[key] = { heads, totalRequired, totalOptional, total: totalRequired + totalOptional };
+      }
+    }
+    return classMap;
+  }, [feeHeads]);
+
+  const classKeys = useMemo(() => Object.keys(classFeeData).sort((a, b) => Number(a) - Number(b)), [classFeeData]);
+
+  const toggleClassExpand = (classKey) => {
+    setExpandedClasses(prev => {
+      const next = new Set(prev);
+      if (next.has(classKey)) next.delete(classKey);
+      else next.add(classKey);
+      return next;
+    });
+  };
+
+  const expandAllClasses = () => setExpandedClasses(new Set(classKeys));
+  const collapseAllClasses = () => setExpandedClasses(new Set());
 
   if (loading) {
     return (
@@ -316,8 +370,32 @@ export default function FeeHeadsUnified({ embedded = false }) {
         </div>
       </div>
 
-      {/* Add Button */}
-      <div className="flex justify-end">
+      {/* View Toggle + Add Button */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-zinc-900 rounded-lg">
+          <button
+            onClick={() => setViewMode("fee-heads")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+              viewMode === "fee-heads"
+                ? "bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 shadow-sm"
+                : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300"
+            }`}
+          >
+            <List size={14} />
+            View by Fee Heads
+          </button>
+          <button
+            onClick={() => setViewMode("by-class")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+              viewMode === "by-class"
+                ? "bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 shadow-sm"
+                : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300"
+            }`}
+          >
+            <LayoutGrid size={14} />
+            View by Class
+          </button>
+        </div>
         <button
           onClick={() => handleOpen()}
           className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gray-900 border border-gray-900 rounded-lg hover:bg-gray-800 transition-all"
@@ -327,8 +405,125 @@ export default function FeeHeadsUnified({ embedded = false }) {
         </button>
       </div>
 
-      {/* Table */}
-      <div className="border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden bg-white dark:bg-zinc-950">
+      {/* View by Class */}
+      {viewMode === "by-class" && (
+        <div className="space-y-3">
+          {/* Expand/Collapse controls */}
+          <div className="flex gap-2 justify-end">
+            <button onClick={expandAllClasses} className="text-xs text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300">
+              Expand All
+            </button>
+            <span className="text-xs text-gray-300 dark:text-zinc-700">|</span>
+            <button onClick={collapseAllClasses} className="text-xs text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300">
+              Collapse All
+            </button>
+          </div>
+
+          {classKeys.length === 0 ? (
+            <div className="text-center py-8 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
+              <p className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.noFeeHeadsConfigured')}</p>
+            </div>
+          ) : (
+            classKeys.map((classKey) => {
+              const data = classFeeData[classKey];
+              const isExpanded = expandedClasses.has(classKey);
+              return (
+                <div key={classKey} className="border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 overflow-hidden">
+                  {/* Class Header */}
+                  <button
+                    onClick={() => toggleClassExpand(classKey)}
+                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      {isExpanded ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
+                      <span className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Class {classKey}</span>
+                      <span className="text-xs text-gray-400 dark:text-zinc-500">
+                        {data.heads.length} fee {data.heads.length === 1 ? "head" : "heads"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs text-gray-500 dark:text-zinc-400">
+                        Required: <span className="font-mono font-medium text-gray-900 dark:text-zinc-100">₹{data.totalRequired.toLocaleString()}</span>
+                      </span>
+                      {data.totalOptional > 0 && (
+                        <span className="text-xs text-gray-500 dark:text-zinc-400">
+                          Optional: <span className="font-mono font-medium text-gray-900 dark:text-zinc-100">₹{data.totalOptional.toLocaleString()}</span>
+                        </span>
+                      )}
+                      <span className="text-xs font-medium text-gray-900 dark:text-zinc-100 bg-gray-100 dark:bg-zinc-800 px-2 py-0.5 rounded">
+                        Total ₹{data.total.toLocaleString()}
+                      </span>
+                    </div>
+                  </button>
+
+                  {/* Expanded: fee head list */}
+                  {isExpanded && (
+                    <div className="border-t border-gray-200 dark:border-zinc-800">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-gray-50 dark:bg-zinc-900">
+                            <th className="text-left px-4 py-2 text-xs text-gray-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Fee Head</th>
+                            <th className="text-left px-4 py-2 text-xs text-gray-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Category</th>
+                            <th className="text-right px-4 py-2 text-xs text-gray-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Amount</th>
+                            <th className="text-left px-4 py-2 text-xs text-gray-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Type</th>
+                            <th className="text-right px-4 py-2 text-xs text-gray-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {data.heads.map((fh) => (
+                            <tr key={fh._id} className="border-t border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-900">
+                              <td className="px-4 py-2.5">
+                                <p className="font-medium text-gray-900 dark:text-zinc-100">{fh.name}</p>
+                                <p className="text-xs text-gray-400 dark:text-zinc-500">{fh.frequency}</p>
+                              </td>
+                              <td className="px-4 py-2.5 text-gray-600 dark:text-zinc-400">{fh.category}</td>
+                              <td className="px-4 py-2.5 text-right font-mono text-gray-900 dark:text-zinc-100">₹{fh.amount?.toLocaleString() || 0}</td>
+                              <td className="px-4 py-2.5">
+                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border border-gray-200 dark:border-zinc-800 rounded bg-gray-50 dark:bg-zinc-900">
+                                  <span className={`w-1.5 h-1.5 rounded-full ${fh.mandatory ? "bg-gray-400" : "bg-gray-300"}`}></span>
+                                  {fh.mandatory ? "Required" : "Optional"}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <div className="flex gap-1 justify-end">
+                                  <button
+                                    onClick={() => handleOpen(fh)}
+                                    className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded transition-all"
+                                  >
+                                    <Edit size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(fh._id)}
+                                    disabled={deletingId === fh._id}
+                                    className={`p-1.5 rounded transition-all ${
+                                      deletingId === fh._id
+                                        ? 'text-gray-300 cursor-not-allowed'
+                                        : 'text-gray-400 dark:text-zinc-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
+                                    }`}
+                                  >
+                                    {deletingId === fh._id ? (
+                                      <span className="inline-block w-3.5 h-3.5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                                    ) : (
+                                      <Trash2 size={14} />
+                                    )}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* Table (View by Fee Heads) */}
+      {viewMode === "fee-heads" && <div className="border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden bg-white dark:bg-zinc-950">
         <Table
           aria-label={t('aria.misc.feeHeads')}
           removeWrapper
@@ -421,7 +616,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
             <span className="text-gray-400 dark:text-zinc-500 text-xs">{t('pages.allFeeHeadsLoaded')}</span>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="lg">
@@ -546,12 +741,25 @@ export default function FeeHeadsUnified({ embedded = false }) {
                 <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.requiredFee')}</p>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.autoAppliedToAllStudentsInSelectedClasses')}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.isThisFeeRequiredForAllStudents')}</p>
                   </div>
                   <Switch
                     size="sm"
                     isSelected={formData.isRequired}
                     onValueChange={(v) => setFormData({ ...formData, isRequired: v })}
+                  />
+                </div>
+
+                {/* Auto Apply Toggle */}
+                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.autoApply')}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.autoAppliedToAllStudentsInSelectedClasses')}</p>
+                  </div>
+                  <Switch
+                    size="sm"
+                    isSelected={formData.autoApply}
+                    onValueChange={(v) => setFormData({ ...formData, autoApply: v })}
                   />
                 </div>
               </ModalBody>
@@ -575,6 +783,8 @@ export default function FeeHeadsUnified({ embedded = false }) {
           )}
         </ModalContent>
       </Modal>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

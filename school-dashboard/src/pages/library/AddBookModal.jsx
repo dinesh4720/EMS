@@ -64,7 +64,8 @@ export default function AddBookModal({ isOpen, onClose, book, onSaved }) {
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (evt) => {
+    evt?.preventDefault?.();
     const e = {};
     if (!form.title.trim()) e.title = t('toast.error.titleAndAuthorAreRequired');
     if (!form.author.trim()) e.author = t('toast.error.titleAndAuthorAreRequired');

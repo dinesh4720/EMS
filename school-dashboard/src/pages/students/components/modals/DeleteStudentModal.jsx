@@ -14,7 +14,7 @@ export default function DeleteStudentModal({ isOpen, onClose, student, onDeleteC
     setIsDeleting(true);
     try {
       const result = await onDeleteConfirmed();
-      toast.success(result?.message || t('students.profile.overview.permanentlyDeleted', '{{name}} permanently deleted', { name: student?.name }));
+      toast.success(result?.message || t('students.profile.overview.studentDeleted', '{{name}} has been deleted', { name: student?.name }));
       onClose();
     } catch (error) {
       toast.error(t('students.profile.overview.deleteStudentFailed', 'Failed to delete student'));
@@ -41,7 +41,7 @@ export default function DeleteStudentModal({ isOpen, onClose, student, onDeleteC
                 {t('students.profile.overview.deleteConfirmText', 'Are you sure you want to delete')} <span className="font-semibold text-default-900">{student?.name}</span>?
               </p>
               <p className="text-sm text-danger mt-2">
-                {t('students.profile.overview.deleteWarningText', 'This permanently removes the student profile and linked records, including attendance, fee, health, and parent-contact data.')}
+                {t('students.profile.overview.deleteWarningText', 'This will remove the student from active lists. Their records (attendance, fees, health, and parent-contact data) will be archived and can be restored later.')}
               </p>
             </ModalBody>
             <ModalFooter>

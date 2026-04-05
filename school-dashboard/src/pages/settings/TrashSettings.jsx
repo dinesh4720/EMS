@@ -64,6 +64,8 @@ import { request } from "../../services/api";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
 import SkeletonTable from '../../components/skeletons/SkeletonTable';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 
 export default function TrashSettings() {
@@ -81,6 +83,7 @@ export default function TrashSettings() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [actionInProgress, setActionInProgress] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // 'restore' or 'delete'
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   
   // Pagination state
   const [page, setPage] = useState(1);
@@ -284,23 +287,27 @@ export default function TrashSettings() {
   };
 
   // Handle permanent delete of single item
-  const handlePermanentDelete = async (id) => {
-    if (!confirm(t('confirm.deletePermanently'))) {
-      return;
-    }
-
-    try {
-      setActionInProgress(true);
-      await trashApi.permanentDelete(id);
-      toast.success(t('toast.success.itemPermanentlyDeleted'));
-      await loadTrashData();
-      setSelectedItems(new Set());
-    } catch (error) {
-      logger.error("Failed to permanently delete item:", error);
-      toast.error(error.message || "Failed to delete item");
-    } finally {
-      setActionInProgress(false);
-    }
+  const handlePermanentDelete = (id) => {
+    showConfirm({
+      title: 'Delete Permanently',
+      message: t('confirm.deletePermanently'),
+      variant: 'danger',
+      confirmText: 'Delete Permanently',
+      onConfirm: async () => {
+        try {
+          setActionInProgress(true);
+          await trashApi.permanentDelete(id);
+          toast.success(t('toast.success.itemPermanentlyDeleted'));
+          await loadTrashData();
+          setSelectedItems(new Set());
+        } catch (error) {
+          logger.error("Failed to permanently delete item:", error);
+          toast.error(error.message || "Failed to delete item");
+        } finally {
+          setActionInProgress(false);
+        }
+      },
+    });
   };
 
   // Handle bulk action (restore or delete)
@@ -781,6 +788,8 @@ export default function TrashSettings() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

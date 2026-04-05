@@ -5,15 +5,15 @@
 import { useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { getNextClass } from '../utils/studentHelpers';
+import { studentsApi } from '../../../services/api';
 import { useTranslation } from 'react-i18next';
 
 /**
  * @param {Object} student - The student to promote
  * @param {Array} classesWithTeachers - Available classes
- * @param {Function} updateStudent - API call to update student
  * @param {Function} refetchStudent - Refetch student data after promotion
  */
-export function useStudentPromotion(student, { classesWithTeachers, updateStudent, refetchStudent } = {}) {
+export function useStudentPromotion(student, { classesWithTeachers, refetchStudent } = {}) {
   const { t } = useTranslation();
 
   const availableClasses = (classesWithTeachers || []).map(cls => `${cls.name}-${cls.section}`);
@@ -35,6 +35,12 @@ export function useStudentPromotion(student, { classesWithTeachers, updateStuden
       return;
     }
 
+    const studentId = student?.id || student?._id;
+    if (!studentId) {
+      toast.error('Student ID not found');
+      return;
+    }
+
     try {
       const loadingToast = toast.loading(
         t('toast.loading.promotingStudent', {
@@ -45,11 +51,11 @@ export function useStudentPromotion(student, { classesWithTeachers, updateStuden
       );
 
       if (nextClass === 'Passed Out / Alumni') {
-        await updateStudent(student.id, { status: 'alumni' });
+        await studentsApi.promote(studentId, { graduate: true });
       } else {
-        const classId = resolveClassId(nextClass);
-        if (classId) {
-          await updateStudent(student.id, { classId, class: nextClass });
+        const targetClassId = resolveClassId(nextClass);
+        if (targetClassId) {
+          await studentsApi.promote(studentId, { targetClassId });
         } else {
           toast.error(
             t('toast.error.classNotFound', {
@@ -75,7 +81,7 @@ export function useStudentPromotion(student, { classesWithTeachers, updateStuden
     } catch (e) {
       toast.error('Failed to promote student: ' + (e.message || 'Unknown error'));
     }
-  }, [student, availableClasses, classesWithTeachers, updateStudent, refetchStudent, resolveClassId, t]);
+  }, [student, availableClasses, refetchStudent, resolveClassId, t]);
 
   return {
     availableClasses,

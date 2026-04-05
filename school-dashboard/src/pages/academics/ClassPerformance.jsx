@@ -9,10 +9,11 @@ import {
 } from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import {
-  BarChart3, Users, BookOpen, Trophy, TrendingUp, Calendar,
-  FileText, Download, ArrowRight, Award, Search, Filter,
+  BarChart3, Users, BookOpen, Trophy, TrendingUp,
+  FileText, Download, Award, Search,
   ArrowUpRight, ArrowDownRight, Minus
 } from 'lucide-react';
+import { toTodayDateString } from '../../utils/dateFormatter';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, LineChart, Line
@@ -21,6 +22,7 @@ import { useApp } from '../../context/AppContext';
 import { getAcademicYearOptions } from '../../utils/constants';
 import { CHART_COLORS } from '../../utils/chartTheme';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 
 const ClassPerformance = () => {
   const { t } = useTranslation();
@@ -122,6 +124,56 @@ const ClassPerformance = () => {
       : '—'
   };
 
+  const handleExport = () => {
+    const sections = [];
+    const className = classInfo?.name || classId;
+
+    sections.push(`Class Performance Report - ${className}`);
+    sections.push(`Academic Year: ${selectedYear}`);
+    sections.push(`Generated: ${new Date().toLocaleDateString()}`);
+    sections.push('');
+
+    sections.push('Summary');
+    sections.push('Metric,Value');
+    sections.push(`Total Students,${classStats.totalStudents}`);
+    sections.push(`Average Score,${classStats.averageScore}%`);
+    sections.push(`Top Score,${classStats.topScore}%`);
+    sections.push(`Pass Rate,${classStats.passingRate}`);
+    sections.push('');
+
+    // Student rankings
+    const ranked = buildStudentRanking();
+    if (ranked.length > 0) {
+      sections.push('Student Rankings');
+      sections.push('Rank,Name,Roll No,Score %,Grade,Trend');
+      ranked.forEach(s => {
+        sections.push(`${s.rank ?? ''},\"${s.name}\",${s.rollNo},${s.percentage != null ? s.percentage.toFixed(1) : ''},${s.grade || ''},${s.trend || ''}`);
+      });
+      sections.push('');
+    }
+
+    // Subject breakdown
+    if (subjectBreakdown.length > 0) {
+      sections.push('Subject-wise Details');
+      sections.push('Subject,Average,Highest,Lowest,Pass Rate');
+      subjectBreakdown.forEach(s => {
+        sections.push(`"${s.subjectName}",${s.average != null ? s.average.toFixed(1) : ''},${s.highest != null ? s.highest.toFixed(1) : ''},${s.lowest != null ? s.lowest.toFixed(1) : ''},${s.passRate != null ? s.passRate + '%' : ''}`);
+      });
+    }
+
+    const csvContent = sections.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${className}-performance-${selectedYear}-${toTodayDateString()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    toast.success('Report exported');
+  };
+
   const getTrendIcon = (trend) => {
     switch (trend) {
       case 'improving': return <ArrowUpRight className="text-success" size={14} />;
@@ -179,6 +231,7 @@ const ClassPerformance = () => {
             color="primary"
             variant="flat"
             startContent={<Download size={16} />}
+            onPress={handleExport}
           >
             Export
           </Button>

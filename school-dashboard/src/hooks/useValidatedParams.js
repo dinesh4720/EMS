@@ -18,9 +18,15 @@ import { isObjectId } from '../utils/objectIdHelper';
 export function useValidatedParams(rules = {}, options = {}) {
   const params = useParams();
   const navigate = useNavigate();
+  const { redirectTo } = options;
+
+  // Serialize rules to a stable string so inline object literals don't
+  // cause useMemo to recompute on every render.
+  const rulesKey = JSON.stringify(rules);
 
   const isValid = useMemo(() => {
-    for (const [key, type] of Object.entries(rules)) {
+    const parsed = JSON.parse(rulesKey);
+    for (const [key, type] of Object.entries(parsed)) {
       const value = params[key];
       if (!value) continue; // missing params handled by the page itself
       if (type === 'objectId' && !isObjectId(value)) {
@@ -28,17 +34,18 @@ export function useValidatedParams(rules = {}, options = {}) {
       }
     }
     return true;
-  }, [params, rules]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params, rulesKey]);
 
   useEffect(() => {
     if (!isValid) {
-      if (options.redirectTo) {
-        navigate(options.redirectTo, { replace: true });
+      if (redirectTo) {
+        navigate(redirectTo, { replace: true });
       } else {
         navigate(-1);
       }
     }
-  }, [isValid, navigate, options.redirectTo]);
+  }, [isValid, navigate, redirectTo]);
 
   return { params, isValid };
 }

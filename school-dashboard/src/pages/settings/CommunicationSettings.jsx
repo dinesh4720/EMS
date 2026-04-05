@@ -7,14 +7,19 @@ import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 // BUG-11: provider defaults to '' so user must explicitly choose — never assume Twilio
-const DEFAULT_SMS = { enabled: false, provider: '', senderId: '', apiKey: '' };
-const DEFAULT_EMAIL = { enabled: false, provider: '', smtpHost: '', port: '587', username: '', password: '' };
+// AUDIT-645: Never store raw secrets (apiKey, password) in React state — DevTools exposure risk.
+// Instead, track `hasApiKey`/`hasPassword` booleans; only send new values on explicit change.
+const DEFAULT_SMS = { enabled: false, provider: '', senderId: '', hasApiKey: false };
+const DEFAULT_EMAIL = { enabled: false, provider: '', smtpHost: '', port: '587', username: '', hasPassword: false };
+const DEFAULT_SMS_DRAFT = { ...DEFAULT_SMS, apiKey: '' };
+const DEFAULT_EMAIL_DRAFT = { ...DEFAULT_EMAIL, password: '' };
 
 export default function CommunicationSettings() {
   const { t } = useTranslation();
   const [editingSection, setEditingSection] = useState(null);
   const [smsConfig, setSmsConfig] = useState(DEFAULT_SMS);
   const [emailConfig, setEmailConfig] = useState(DEFAULT_EMAIL);
+  // AUDIT-645: Track whether secrets exist server-side without storing the actual values
   const [saving, setSaving] = useState(false);
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -22,18 +27,24 @@ export default function CommunicationSettings() {
   const [templates, setTemplates] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
 
-  // Track editable draft values
-  const [smsDraft, setSmsDraft] = useState(DEFAULT_SMS);
-  const [emailDraft, setEmailDraft] = useState(DEFAULT_EMAIL);
+  // Track editable draft values — drafts hold the new secret input (initially empty)
+  const [smsDraft, setSmsDraft] = useState(DEFAULT_SMS_DRAFT);
+  const [emailDraft, setEmailDraft] = useState(DEFAULT_EMAIL_DRAFT);
 
   useEffect(() => {
     settingsApi.getCommunicationSettings()
       .then((data) => {
         if (data) {
-          setSmsConfig(data.sms || DEFAULT_SMS);
-          setEmailConfig(data.email || DEFAULT_EMAIL);
-          setSmsDraft(data.sms || DEFAULT_SMS);
-          setEmailDraft(data.email || DEFAULT_EMAIL);
+          // AUDIT-645: Strip secrets from state, only track existence flags
+          const sms = data.sms || DEFAULT_SMS;
+          const email = data.email || DEFAULT_EMAIL;
+          const safeSms = { enabled: sms.enabled, provider: sms.provider, senderId: sms.senderId, hasApiKey: !!sms.apiKey };
+          const safeEmail = { enabled: email.enabled, provider: email.provider, smtpHost: email.smtpHost, port: email.port, username: email.username, hasPassword: !!email.password };
+          setSmsConfig(safeSms);
+          setEmailConfig(safeEmail);
+          // Drafts get empty secret fields — user must re-enter to change
+          setSmsDraft({ ...safeSms, apiKey: '' });
+          setEmailDraft({ ...safeEmail, password: '' });
         }
       })
       .catch((err) => {
@@ -128,16 +139,25 @@ export default function CommunicationSettings() {
   const handleSave = async (section) => {
     setSaving(true);
     try {
-      const payload = {
-        sms: section === 'sms' ? smsDraft : smsConfig,
-        email: section === 'email' ? emailDraft : emailConfig,
-      };
+      // AUDIT-645: Build payload — only include secret fields if user entered a new value
+      const smsPayload = section === 'sms'
+        ? { enabled: smsDraft.enabled, provider: smsDraft.provider, senderId: smsDraft.senderId, ...(smsDraft.apiKey ? { apiKey: smsDraft.apiKey } : {}) }
+        : { enabled: smsConfig.enabled, provider: smsConfig.provider, senderId: smsConfig.senderId };
+      const emailPayload = section === 'email'
+        ? { enabled: emailDraft.enabled, provider: emailDraft.provider, smtpHost: emailDraft.smtpHost, port: emailDraft.port, username: emailDraft.username, ...(emailDraft.password ? { password: emailDraft.password } : {}) }
+        : { enabled: emailConfig.enabled, provider: emailConfig.provider, smtpHost: emailConfig.smtpHost, port: emailConfig.port, username: emailConfig.username };
+      const payload = { sms: smsPayload, email: emailPayload };
       const updated = await settingsApi.updateCommunicationSettings(payload);
       if (updated) {
-        setSmsConfig(updated.sms || payload.sms);
-        setEmailConfig(updated.email || payload.email);
-        setSmsDraft(updated.sms || payload.sms);
-        setEmailDraft(updated.email || payload.email);
+        // Strip secrets from stored state, only keep existence flags
+        const uSms = updated.sms || smsPayload;
+        const uEmail = updated.email || emailPayload;
+        const safeSms = { enabled: uSms.enabled, provider: uSms.provider, senderId: uSms.senderId, hasApiKey: !!uSms.apiKey || (section === 'sms' ? !!smsDraft.apiKey || smsConfig.hasApiKey : smsConfig.hasApiKey) };
+        const safeEmail = { enabled: uEmail.enabled, provider: uEmail.provider, smtpHost: uEmail.smtpHost, port: uEmail.port, username: uEmail.username, hasPassword: !!uEmail.password || (section === 'email' ? !!emailDraft.password || emailConfig.hasPassword : emailConfig.hasPassword) };
+        setSmsConfig(safeSms);
+        setEmailConfig(safeEmail);
+        setSmsDraft({ ...safeSms, apiKey: '' });
+        setEmailDraft({ ...safeEmail, password: '' });
       }
       toast.success(t('toast.success.settingsSaved'));
       setEditingSection(null);
@@ -149,8 +169,8 @@ export default function CommunicationSettings() {
   };
 
   const handleCancel = (section) => {
-    if (section === 'sms') setSmsDraft(smsConfig);
-    else setEmailDraft(emailConfig);
+    if (section === 'sms') setSmsDraft({ ...smsConfig, apiKey: '' });
+    else setEmailDraft({ ...emailConfig, password: '' });
     setEditingSection(null);
   };
 
@@ -264,7 +284,7 @@ export default function CommunicationSettings() {
                       type="password"
                       value={smsDraft.apiKey}
                       onValueChange={(val) => setSmsDraft(prev => ({ ...prev, apiKey: val }))}
-                      placeholder={t('pages.enterApiKey')}
+                      placeholder={smsConfig.hasApiKey ? 'Leave blank to keep current key' : t('pages.enterApiKey')}
                       variant="bordered"
                       labelPlacement="outside"
                       classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}
@@ -283,7 +303,7 @@ export default function CommunicationSettings() {
                     </div>
                     <div className="space-y-1 md:col-span-2">
                       <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.aPIKey')}</span>
-                      <p className="font-medium text-default-900">{smsConfig.apiKey ? '••••••••' : 'Not configured'}</p>
+                      <p className="font-medium text-default-900">{smsConfig.hasApiKey ? '••••••••' : 'Not configured'}</p>
                     </div>
                   </>
                 )}
@@ -291,7 +311,7 @@ export default function CommunicationSettings() {
                 <div className="md:col-span-2 p-4 bg-success-50 dark:bg-success-950/30 rounded-xl border border-success-200 dark:border-success-800 flex justify-between items-center mt-2">
                   <div>
                     <p className="text-sm font-semibold text-success-800 dark:text-success-200">
-                      {smsConfig.apiKey ? 'Configured' : 'Not configured'}
+                      {smsConfig.hasApiKey ? 'Configured' : 'Not configured'}
                     </p>
                     <p className="text-xs text-success-600 dark:text-success-400">
                       {smsConfig.senderId ? `Sender: ${smsConfig.senderId}` : 'Add API key to enable SMS'}
@@ -370,7 +390,7 @@ export default function CommunicationSettings() {
                     <Input
                       label={t('pages.password')}
                       type="password"
-                      placeholder={t('pages.enterPassword')}
+                      placeholder={emailConfig.hasPassword ? 'Leave blank to keep current password' : t('pages.enterPassword')}
                       value={emailDraft.password}
                       onValueChange={(val) => setEmailDraft(prev => ({ ...prev, password: val }))}
                       variant="bordered"
@@ -398,7 +418,7 @@ export default function CommunicationSettings() {
                     </div>
                     <div className="space-y-1">
                       <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.password')}</span>
-                      <p className="font-medium text-default-900">{emailConfig.password ? '••••••••' : 'Not configured'}</p>
+                      <p className="font-medium text-default-900">{emailConfig.hasPassword ? '••••••••' : 'Not configured'}</p>
                     </div>
                   </>
                 )}

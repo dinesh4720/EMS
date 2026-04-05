@@ -11,9 +11,12 @@ import { validatePhone, validateFutureDate, validateDateRange } from '../../util
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { formatDateTime } from '../../utils/dateFormatter';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 const AppointmentsList = forwardRef(({ onSave, ...props }, ref) => {
   const { t } = useTranslation();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [appointments, setAppointments] = useState([]);
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -139,7 +142,8 @@ const AppointmentsList = forwardRef(({ onSave, ...props }, ref) => {
     setErrors(prev => ({ ...prev, [name]: error }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
     if (isSubmitting) return;
     if (!validateForm()) {
       toast.error(t('toast.error.pleaseFixTheErrorsBeforeSubmitting'));
@@ -215,16 +219,23 @@ const AppointmentsList = forwardRef(({ onSave, ...props }, ref) => {
     onOpen();
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm(t('confirm.deleteAppointment'))) return;
-    try {
-      await frontDeskApi.deleteAppointment(id);
-      toast.success(t('toast.success.appointmentDeleted'));
-      loadAppointments();
-      onSave?.();
-    } catch (error) {
-      toast.error(t('toast.error.failedToDeleteAppointment'));
-    }
+  const handleDelete = (id) => {
+    showConfirm({
+      title: 'Delete Appointment',
+      message: t('confirm.deleteAppointment'),
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await frontDeskApi.deleteAppointment(id);
+          toast.success(t('toast.success.appointmentDeleted'));
+          loadAppointments();
+          onSave?.();
+        } catch (error) {
+          toast.error(t('toast.error.failedToDeleteAppointment'));
+        }
+      },
+    });
   };
 
   const resetForm = () => {
@@ -511,6 +522,8 @@ const AppointmentsList = forwardRef(({ onSave, ...props }, ref) => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </>
   );
 });

@@ -22,6 +22,7 @@ export default function SessionTimeoutWarning() {
   const idleTimerRef = useRef(null);
   const countdownRef = useRef(null);
   const throttleRef = useRef(false);
+  const showWarningRef = useRef(false);
 
   // Timestamp-based deadlines — immune to browser timer throttling
   const idleDeadlineRef = useRef(Date.now() + IDLE_TIMEOUT_MS);
@@ -90,16 +91,21 @@ export default function SessionTimeoutWarning() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [isAuthenticated, logout, clearAllTimers]);
 
+  // Keep ref in sync so handleActivity can read it without re-creating
+  useEffect(() => {
+    showWarningRef.current = showWarning;
+  }, [showWarning]);
+
   const handleActivity = useCallback(() => {
     if (throttleRef.current) return;
     throttleRef.current = true;
     setTimeout(() => { throttleRef.current = false; }, ACTIVITY_THROTTLE_MS);
 
     // Only reset if warning is NOT showing — user must explicitly click "Stay Logged In"
-    if (!showWarning) {
+    if (!showWarningRef.current) {
       resetIdleTimer();
     }
-  }, [showWarning, resetIdleTimer]);
+  }, [resetIdleTimer]);
 
   // Start idle tracking when authenticated
   useEffect(() => {

@@ -103,7 +103,7 @@ export default function SeedDataSettings() {
       };
 
       categories.forEach((cat) => {
-        const count = counts[cat] || Math.floor(Math.random() * 20) + 5;
+        const count = counts[cat] ?? 0;
         resultData.categories[cat] = count;
         resultData.total += count;
       });

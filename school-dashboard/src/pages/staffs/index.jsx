@@ -127,7 +127,6 @@ export default function StaffsPage() {
       qualificationDocs: staffData.qualificationDocs,
       customDocuments: staffData.customDocuments,
       staffNumber: staffData.staffNumber,
-      staffType: roleArray, // Keep in sync with `role` to prevent stale deprecated field
       assignedClasses: staffData.assignedClasses || [],
       isClassTeacher: staffData.isClassTeacher,
       classTeacherOf: staffData.classTeacherOf,

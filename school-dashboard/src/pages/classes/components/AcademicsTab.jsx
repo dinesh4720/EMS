@@ -96,7 +96,7 @@ export function AcademicsTab({ id, cls, classesEnhancedApi }) {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{exam.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.subjectName || t('classes.general', 'General')} · {exam.type?.replace('_', ' ') || t('classes.exam', 'Exam')}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.subjectName || t('classes.general', 'General')} · {exam.type?.replace(/_/g, ' ') || t('classes.exam', 'Exam')}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -104,7 +104,7 @@ export function AcademicsTab({ id, cls, classesEnhancedApi }) {
                     <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.startDate ? formatShortDate(exam.startDate) : t('classes.notScheduled', 'Not scheduled')}</p>
                     <p className="text-xs text-gray-400 dark:text-zinc-500">{t('classes.max', 'Max')}: {exam.maxMarks || 100} | {t('classes.pass', 'Pass')}: {exam.passingMarks || 35}</p>
                   </div>
-                  <Chip size="sm" color={getStatusColor(exam.status)} variant="flat">{t(`classes.examStatus.${exam.status || 'scheduled'}`, exam.status?.replace('_', ' ') || 'scheduled')}</Chip>
+                  <Chip size="sm" color={getStatusColor(exam.status)} variant="flat">{t(`classes.examStatus.${exam.status || 'scheduled'}`, exam.status?.replace(/_/g, ' ') || 'scheduled')}</Chip>
                 </div>
               </div>
             ))}

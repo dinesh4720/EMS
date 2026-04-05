@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "../context/AppContext";
-import { announcementsApi, attendanceApi, feesApi } from "../services/api";
+import { announcementsApi, attendanceApi, feesApi, studentFeesApi } from "../services/api";
 import StatCard from "../components/StatCard";
 import ChartSection from "../components/ChartSection";
 import ActivityFeed from "../components/ActivityFeed";
@@ -209,10 +209,15 @@ function Dashboard() {
   const [recentPayments, setRecentPayments] = useState([]);
   const [recentAnnouncements, setRecentAnnouncements] = useState([]);
   const [feeCollectionData, setFeeCollectionData] = useState([]);
-  const [paymentSnapshot, setPaymentSnapshot] = useState({ today: null, month: null });
+  const [paymentSnapshot, setPaymentSnapshot] = useState({ totalPending: null, totalCollected: null, today: null, month: null });
   const [attendanceSnapshot, setAttendanceSnapshot] = useState(() => createEmptyAttendanceSnapshot());
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [paymentsLoaded, setPaymentsLoaded] = useState(false);
+
+  // Use a ref for students so the payment effect doesn't re-run when students load.
+  // Students are only used for name resolution (cosmetic), not for filtering/amounts.
+  const studentsRef = useRef(students);
+  studentsRef.current = students;
 
   useEffect(() => {
     let cancelled = false;
@@ -222,9 +227,10 @@ function Dashboard() {
       setPaymentsLoaded(false);
 
       try {
-        const [paymentsResult, announcementsResult] = await Promise.allSettled([
+        const [paymentsResult, announcementsResult, feeStructuresResult] = await Promise.allSettled([
           feesApi.getPayments({ academicYear: currentAcademicYear }),
           announcementsApi.getAll({}),
+          studentFeesApi.getAll(currentAcademicYear),
         ]);
 
         if (cancelled) {
@@ -232,7 +238,7 @@ function Dashboard() {
         }
 
         const normalizedPayments = paymentsResult.status === "fulfilled"
-          ? normalizePayments(paymentsResult.value, students)
+          ? normalizePayments(paymentsResult.value?.payments ?? [], studentsRef.current)
           : [];
         const normalizedAnnouncements = announcementsResult.status === "fulfilled"
           ? normalizeAnnouncements(announcementsResult.value)
@@ -241,10 +247,19 @@ function Dashboard() {
         const settledPayments = normalizedPayments.filter(isSuccessfulPayment);
         const liveAnnouncements = normalizedAnnouncements.filter((announcement) => announcement.status !== "draft");
 
+        // Compute fee totals from student fee structures
+        const feeStructures = feeStructuresResult.status === "fulfilled"
+          ? (Array.isArray(feeStructuresResult.value) ? feeStructuresResult.value : [])
+          : [];
+        const totalPending = feeStructures.reduce((sum, fs) => sum + (fs.totalBalance || 0), 0);
+        const totalCollected = feeStructures.reduce((sum, fs) => sum + (fs.totalPaid || 0), 0);
+
         setRecentPayments(settledPayments.slice(0, 6));
         setRecentAnnouncements((liveAnnouncements.length > 0 ? liveAnnouncements : normalizedAnnouncements).slice(0, 6));
         setFeeCollectionData(createFeeCollectionSeries(settledPayments));
         setPaymentSnapshot({
+          totalPending: feeStructuresResult.status === "fulfilled" ? totalPending : null,
+          totalCollected: feeStructuresResult.status === "fulfilled" ? totalCollected : null,
           today: paymentsResult.status === "fulfilled" ? settledPayments.reduce((sum, payment) => {
             const paymentDate = toValidDate(payment.date);
             return paymentDate && isSameDay(paymentDate, now) ? sum + payment.amount : sum;
@@ -254,7 +269,7 @@ function Dashboard() {
             return paymentDate && isSameMonth(paymentDate, now) ? sum + payment.amount : sum;
           }, 0) : null,
         });
-        setPaymentsLoaded(paymentsResult.status === "fulfilled");
+        setPaymentsLoaded(paymentsResult.status === "fulfilled" || feeStructuresResult.status === "fulfilled");
       } finally {
         if (!cancelled) {
           setDashboardLoading(false);
@@ -267,7 +282,7 @@ function Dashboard() {
     return () => {
       cancelled = true;
     };
-  }, [currentAcademicYear, students]);
+  }, [currentAcademicYear]);
 
   useEffect(() => {
     let cancelled = false;
@@ -418,6 +433,7 @@ function Dashboard() {
         title: "Student attendance pending",
         description: `${attendanceSnapshot.totalClasses - attendanceSnapshot.markedClasses} classes still do not have attendance marked for today.`,
         time: "Today",
+        link: "/classes",
       });
     }
 
@@ -428,6 +444,7 @@ function Dashboard() {
         title: "Staff attendance pending",
         description: `${attendanceSnapshot.staffTotal - attendanceSnapshot.staffMarked} staff records are still unmarked for today.`,
         time: "Today",
+        link: "/staffs",
       });
     }
 
@@ -438,6 +455,7 @@ function Dashboard() {
         title: "Fee follow-up needed",
         description: `${getNumberFormatter().format(dashboardStats.feeDefaultersCount)} students currently have pending or overdue fees.`,
         time: "Live",
+        link: "/fees",
       });
     }
 
@@ -448,6 +466,7 @@ function Dashboard() {
         title: "Upcoming events",
         description: `${getNumberFormatter().format(dashboardStats.upcomingEvents)} events are scheduled on the academic calendar.`,
         time: "This term",
+        link: "/calendar",
       });
     }
 
@@ -472,10 +491,12 @@ function Dashboard() {
       color: "gray",
     },
     {
-      label: "Fee Collection",
-      value: paymentsLoaded ? getCurrencyFormatter().format(paymentSnapshot.today || 0) : "—",
+      label: "Pending Fees",
+      value: paymentsLoaded ? getCurrencyFormatter().format(paymentSnapshot.totalPending || 0) : "—",
       subtext: paymentsLoaded
-        ? `${getCurrencyFormatter().format(paymentSnapshot.month || 0)} collected this month`
+        ? paymentSnapshot.today
+          ? `${getCurrencyFormatter().format(paymentSnapshot.today)} collected today`
+          : `${getCurrencyFormatter().format(paymentSnapshot.totalCollected || 0)} collected total`
         : "Payment data unavailable",
       icon: IndianRupee,
       color: "gray",

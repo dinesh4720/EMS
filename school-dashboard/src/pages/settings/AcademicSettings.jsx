@@ -1,5 +1,5 @@
 import { safeGetItem, safeSetItem } from '../../utils/safeStorage';
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import logger from "../../utils/logger";
 import {
   Tabs, Tab, Card, CardBody, Input, Button, Chip, Divider, Switch,
@@ -99,6 +99,14 @@ export default function AcademicSettings() {
   const [editingSection, setEditingSection] = useState(null); // { classNum, section, classId }
   // AUDIT-128: State-driven delete confirmation
   const [pendingDeleteKey, setPendingDeleteKey] = useState(null);
+  // AUDIT-179: Track delete confirmation timeout for cleanup on unmount
+  const deleteTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current);
+    };
+  }, []);
 
   // Sync local settings when context updates
   useEffect(() => {
@@ -203,7 +211,8 @@ export default function AcademicSettings() {
     if (pendingDeleteKey !== deleteKey) {
       setPendingDeleteKey(deleteKey);
       toast(`Delete "${subject.name}"? Click delete again to confirm.`, { icon: '\u26A0\uFE0F', duration: 3000 });
-      setTimeout(() => setPendingDeleteKey(null), 3000);
+      if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current);
+      deleteTimeoutRef.current = setTimeout(() => setPendingDeleteKey(null), 3000);
       return;
     }
     setPendingDeleteKey(null);
@@ -283,7 +292,8 @@ export default function AcademicSettings() {
     if (pendingDeleteKey !== deleteKey) {
       setPendingDeleteKey(deleteKey);
       toast(`Delete Class ${classNum} Section ${cls.section}? Click delete again to confirm.`, { icon: '\u26A0\uFE0F', duration: 3000 });
-      setTimeout(() => setPendingDeleteKey(null), 3000);
+      if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current);
+      deleteTimeoutRef.current = setTimeout(() => setPendingDeleteKey(null), 3000);
       return;
     }
     setPendingDeleteKey(null);
@@ -319,7 +329,8 @@ export default function AcademicSettings() {
     if (pendingDeleteKey !== deleteKey) {
       setPendingDeleteKey(deleteKey);
       toast(`Disable Class ${classNum}? Click again to confirm.`, { icon: '\u26A0\uFE0F', duration: 3000 });
-      setTimeout(() => setPendingDeleteKey(null), 3000);
+      if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current);
+      deleteTimeoutRef.current = setTimeout(() => setPendingDeleteKey(null), 3000);
       return;
     }
     setPendingDeleteKey(null);
@@ -364,15 +375,26 @@ export default function AcademicSettings() {
     setDays(days);
   };
 
-  // Fixed classes 1-12
-  const ALL_CLASSES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-
-  // Group classes by class number and calculate enabled status
+  // Derive class numbers dynamically from existing data + default 1-12 range
   const classConfig = useMemo(() => {
-    const grouped = {};
+    const existingClassNums = new Set();
+    if (classes && classes.length > 0) {
+      classes.forEach(cls => {
+        const num = parseInt(cls.name?.replace(/\D/g, '') || cls.class?.replace(/\D/g, '') || '0');
+        if (num > 0) existingClassNums.add(num);
+      });
+    }
 
-    // Initialize all classes
-    ALL_CLASSES.forEach(num => {
+    // Range: 1 to max(12, highest existing class)
+    const maxClass = Math.max(12, ...existingClassNums, 0);
+    const minClass = Math.min(1, ...existingClassNums);
+    const allNums = [];
+    for (let i = minClass; i <= maxClass; i++) {
+      if (i > 0) allNums.push(i);
+    }
+
+    const grouped = {};
+    allNums.forEach(num => {
       grouped[num] = {
         classNum: num,
         enabled: false,
@@ -386,7 +408,7 @@ export default function AcademicSettings() {
     if (classes && classes.length > 0) {
       classes.forEach(cls => {
         const classNum = parseInt(cls.name?.replace(/\D/g, '') || cls.class?.replace(/\D/g, '') || '0');
-        if (classNum >= 1 && classNum <= 12) {
+        if (classNum > 0 && grouped[classNum]) {
           grouped[classNum].enabled = true;
           if (cls.section) {
             grouped[classNum].sections.push(cls.section);
@@ -405,6 +427,9 @@ export default function AcademicSettings() {
 
     return grouped;
   }, [classes]);
+
+  // Sorted list of all class numbers (derived from classConfig)
+  const ALL_CLASSES = useMemo(() => Object.keys(classConfig).map(Number).sort((a, b) => a - b), [classConfig]);
 
   // Get enabled classes for display
   const enabledClasses = useMemo(() => {
@@ -942,7 +967,7 @@ export default function AcademicSettings() {
                       size="sm"
                       variant="flat"
                       color="primary"
-                      onPress={() => setNewSubject(prev => ({ ...prev, assignedClasses: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] }))}
+                      onPress={() => setNewSubject(prev => ({ ...prev, assignedClasses: [...ALL_CLASSES] }))}
                     >
                       Select All
                     </Button>

@@ -15,10 +15,10 @@ import {
   teacherAssignmentsApi,
   teacherTimetableApi,
 } from "../services/api";
-import { CURRENT_ACADEMIC_YEAR } from "../utils/constants";
 import { clearStoredUser, getStoredUser } from "../utils/authSession";
 import { isSuperAdminRole } from "../utils/roleUtils";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 import { StudentsProvider, useStudents } from "./StudentsContext";
 import { ClassesProvider, useClasses } from "./ClassesContext";
@@ -45,6 +45,7 @@ const AppContext = createContext();
  * Owns react-query data loading and wires results into domain contexts.
  */
 function AppContextCore({ children }) {
+  const { t } = useTranslation();
   const location = useLocation();
   const shouldPreloadStudents = shouldHydrateStudentsForPath(location.pathname);
   const queryClient = useQueryClient();
@@ -64,6 +65,7 @@ function AppContextCore({ children }) {
   // Pull everything from domain contexts
   const {
     students,
+    studentsHydrated,
     setStudents,
     setStudentsHydrated,
     setStudentsFromQuery,
@@ -110,6 +112,7 @@ function AppContextCore({ children }) {
     updateSalarySettings,
     updateStaffSalary,
     processPayroll,
+    fetchPayrollHistory,
     getPayrollForMonth,
   } = useStaff();
 
@@ -149,6 +152,7 @@ function AppContextCore({ children }) {
     deleteEvent,
     getEventsForDate,
     addFeePayment,
+    syncFeePaymentLocal,
     getStudentFeeHistory,
     addAnnouncement,
     addLeaveType,
@@ -162,18 +166,14 @@ function AppContextCore({ children }) {
     resetThemeSettings,
   } = useSettings();
 
-  const teacherTimetableYear = schoolSettings?.academicYear || CURRENT_ACADEMIC_YEAR;
-
   const appQueryKey = useMemo(
     () => [
       "app-context-data",
       sessionVersion,
       storedUser?.id ?? "anonymous",
       roleKey,
-      shouldPreloadStudents,
-      teacherTimetableYear,
     ],
-    [roleKey, sessionVersion, shouldPreloadStudents, storedUser?.id, teacherTimetableYear]
+    [roleKey, sessionVersion, storedUser?.id]
   );
 
   const settingsQueryKey = useMemo(
@@ -185,11 +185,11 @@ function AppContextCore({ children }) {
     queryKey: appQueryKey,
     enabled: Boolean(storedUser?.id) && !isSuperAdmin,
     placeholderData: (previousData) => previousData,
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       fetchRoleAwareAppData({
         user: storedUser,
-        teacherTimetableYear,
         includeStudents: shouldPreloadStudents,
+        signal,
       }),
   });
 
@@ -206,36 +206,23 @@ function AppContextCore({ children }) {
 
   const refetch = useCallback(
     async (skipCache = false, _retryCount = 0, options = {}) => {
-      const includeStudents = options.includeStudents ?? shouldPreloadStudents;
+      const includeStudents = options.includeStudents ?? false;
       if (!storedUser?.id || isSuperAdmin) return null;
 
       return queryClient.fetchQuery({
-        queryKey: [
-          "app-context-data",
-          sessionVersion,
-          storedUser.id,
-          roleKey,
-          includeStudents,
-          teacherTimetableYear,
-        ],
-        queryFn: () =>
+        queryKey: appQueryKey,
+        // Force a fresh fetch — staleTime: 0 prevents returning cached data
+        staleTime: 0,
+        queryFn: ({ signal }) =>
           fetchRoleAwareAppData({
             user: storedUser,
-            teacherTimetableYear,
             skipCache,
             includeStudents,
+            signal,
           }),
       });
     },
-    [
-      isSuperAdmin,
-      queryClient,
-      roleKey,
-      sessionVersion,
-      shouldPreloadStudents,
-      storedUser,
-      teacherTimetableYear,
-    ]
+    [isSuperAdmin, queryClient, appQueryKey, storedUser]
   );
 
   const refetchSettings = useCallback(async () => {
@@ -290,6 +277,29 @@ function AppContextCore({ children }) {
     setSettingsFromQuery(settingsDataQuery.data);
   }, [settingsDataQuery.data, setSettingsFromQuery]);
 
+  // Lazy-load students when navigating to a student-heavy page.
+  useEffect(() => {
+    if (
+      shouldPreloadStudents &&
+      !studentsHydrated &&
+      storedUser?.id &&
+      !isSuperAdmin &&
+      !appDataQuery.isFetching
+    ) {
+      // If the cached query already includes students, just sync them
+      if (appDataQuery.data?.includeStudents) {
+        setStudentsFromQuery(appDataQuery.data.students || [], true);
+        return;
+      }
+      // Otherwise fetch with students included and sync directly
+      refetch(false, 0, { includeStudents: true }).then((result) => {
+        if (result?.includeStudents) {
+          setStudentsFromQuery(result.students || [], true);
+        }
+      }).catch(() => {});
+    }
+  }, [shouldPreloadStudents, studentsHydrated, storedUser?.id, isSuperAdmin, refetch, appDataQuery.isFetching, appDataQuery.data, setStudentsFromQuery]);
+
   // App data error handling
   useEffect(() => {
     const message = appDataQuery.error?.message;
@@ -304,7 +314,7 @@ function AppContextCore({ children }) {
     }
     setError(message);
     if (appErrorToastRef.current !== message) {
-      toast.error(`Failed to load data: ${message}`);
+      toast.error(t('toast.error.failedToLoadData', { message, defaultValue: `Failed to load data: ${message}` }));
       appErrorToastRef.current = message;
     }
   }, [appDataQuery.error]);
@@ -317,7 +327,7 @@ function AppContextCore({ children }) {
       return;
     }
     if (settingsErrorToastRef.current !== message) {
-      toast.error("Failed to load settings");
+      toast.error(t('toast.error.failedToLoadSettings', 'Failed to load settings'));
       settingsErrorToastRef.current = message;
     }
   }, [settingsDataQuery.error]);
@@ -357,7 +367,7 @@ function AppContextCore({ children }) {
     updateStudentLocal,
     updateClassLocal,
     setStaffAttendance,
-    addFeePayment,
+    syncFeePaymentLocal,
     setStudents,
   });
 
@@ -402,13 +412,21 @@ function AppContextCore({ children }) {
   // Computed values
   // ---------------------------------------------------------------------------
 
-  const feeDefaulters = useMemo(
-    () =>
-      Array.isArray(students)
-        ? students.filter((s) => s.feeStatus === "overdue" || s.feeStatus === "pending")
-        : [],
-    [students]
-  );
+  const feeDefaultersRef = useRef([]);
+  const feeDefaulters = useMemo(() => {
+    const next = Array.isArray(students)
+      ? students.filter((s) => s.feeStatus === "overdue" || s.feeStatus === "pending")
+      : [];
+    const prev = feeDefaultersRef.current;
+    if (
+      prev.length === next.length &&
+      next.every((s, i) => s._id === prev[i]?._id && s.feeStatus === prev[i]?.feeStatus)
+    ) {
+      return prev;
+    }
+    feeDefaultersRef.current = next;
+    return next;
+  }, [students]);
 
   const dashboardStats = useMemo(
     () => ({
@@ -461,7 +479,7 @@ function AppContextCore({ children }) {
       // Event actions
       addEvent, updateEvent, deleteEvent, getEventsForDate,
       // Fee actions
-      addFeePayment, getStudentFeeHistory,
+      addFeePayment, syncFeePaymentLocal, getStudentFeeHistory,
       // Announcement actions
       addAnnouncement,
       // Attendance actions
@@ -477,7 +495,7 @@ function AppContextCore({ children }) {
       addFeeHead, updateFeeHead, deleteFeeHead,
       // Salary
       salarySettings, staffSalaries, payrollHistory,
-      updateSalarySettings, updateStaffSalary, processPayroll, getPayrollForMonth,
+      updateSalarySettings, updateStaffSalary, processPayroll, fetchPayrollHistory, getPayrollForMonth,
       // Academic & other
       lessonPlans, documents, remarks,
       addLessonPlan, addDocument, addRemark,

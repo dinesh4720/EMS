@@ -11,13 +11,14 @@ import toast from 'react-hot-toast';
 import { useApp } from '../../context/AppContext';
 import { DEFAULT_PERIODS } from '../../utils/constants';
 import { useTranslation } from 'react-i18next';
+import { toTodayDateString } from '../../utils/dateFormatter';
 
 export default function Substitution() {
   const { t } = useTranslation();
   const { teachers, classes, schoolSettings } = useApp();
   const [substitutions, setSubstitutions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(toTodayDateString());
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -25,7 +26,7 @@ export default function Substitution() {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: toTodayDateString(),
     classId: '',
     period: '',
     absentTeacherId: '',
@@ -59,8 +60,11 @@ export default function Substitution() {
     } else if (schoolSettings?.periods && schoolSettings.periods.length > 0) {
       setPeriods(schoolSettings.periods);
     } else {
-      // Fallback to default periods
-      setPeriods(DEFAULT_PERIODS);
+      // Fallback to default periods — extract string indices (same shape as timetable branch)
+      const periodNumbers = DEFAULT_PERIODS
+        .filter(p => !p.isBreak)
+        .map((p, index) => String(index + 1));
+      setPeriods(periodNumbers);
     }
   }, [schoolSettings]);
 
@@ -105,7 +109,8 @@ export default function Substitution() {
     });
   }, [substitutions, searchQuery, statusFilter]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
     if (isSubmitting) return;
     const newErrors = {};
     if (!formData.classId) newErrors.classId = t('toast.error.pleaseFillAllRequiredFields');
@@ -188,7 +193,7 @@ export default function Substitution() {
 
   const resetForm = () => {
     setFormData({
-      date: new Date().toISOString().split('T')[0],
+      date: toTodayDateString(),
       classId: '',
       period: '',
       absentTeacherId: '',

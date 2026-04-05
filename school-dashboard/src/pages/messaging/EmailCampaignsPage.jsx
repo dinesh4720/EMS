@@ -235,7 +235,7 @@ export default function EmailCampaignsPage() {
                           </div>
                           <p className="text-sm text-gray-600 dark:text-zinc-300 truncate mb-1">Subject: {c.subject}</p>
                           <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-zinc-500">
-                            <span className="capitalize">{c.targetCriteria?.groupType?.replace('_', ' ')}</span>
+                            <span className="capitalize">{c.targetCriteria?.groupType?.replace(/_/g, ' ')}</span>
                             {c.scheduledFor && (
                               <span className="flex items-center gap-1">
                                 <Clock size={11} />

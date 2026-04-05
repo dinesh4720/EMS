@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 import {
   Card,
   CardBody,
@@ -151,6 +153,7 @@ export default function IntakeFormsSettings() {
   const location = useLocation();
   const { user } = useAuth();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const {
     isOpen: isBuilderOpen,
     onOpen: onBuilderOpen,
@@ -435,16 +438,22 @@ export default function IntakeFormsSettings() {
     }
   };
 
-  const handleDelete = async (formId) => {
-    if (!confirm(t('confirm.deleteForm'))) return;
-
-    try {
-      await intakeFormsApi.delete(formId);
-      toast.success(t('toast.success.formDeletedSuccessfully'));
-      fetchForms();
-    } catch (error) {
-      toast.error(t('toast.error.failedToDeleteForm'));
-    }
+  const handleDelete = (formId) => {
+    showConfirm({
+      title: 'Delete Form',
+      message: t('confirm.deleteForm'),
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await intakeFormsApi.delete(formId);
+          toast.success(t('toast.success.formDeletedSuccessfully'));
+          fetchForms();
+        } catch (error) {
+          toast.error(t('toast.error.failedToDeleteForm'));
+        }
+      },
+    });
   };
 
   const handleDuplicate = async (form) => {
@@ -1221,6 +1230,8 @@ export default function IntakeFormsSettings() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div >
   );
 }

@@ -25,12 +25,12 @@ describe('staffApi', () => {
 
   it('getById — calls /staff/:id', () => {
     staffApi.getById('stf1');
-    expect(request).toHaveBeenCalledWith('/staff/stf1');
+    expect(request).toHaveBeenCalledWith('/staff/stf1', undefined);
   });
 
   it('getClasses — calls /staff/:id/classes', () => {
     staffApi.getClasses('stf1');
-    expect(request).toHaveBeenCalledWith('/staff/stf1/classes');
+    expect(request).toHaveBeenCalledWith('/staff/stf1/classes', undefined);
   });
 
   it('create — POSTs to /staff with serialised body', () => {

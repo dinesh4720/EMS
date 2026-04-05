@@ -11,7 +11,7 @@ export const GUARDIAN_RELATIONSHIPS = ["Grandparent", "Uncle", "Aunt", "Sibling"
 
 export const RELIGIONS = ["Hinduism", "Islam", "Christianity", "Sikhism", "Buddhism", "Jainism", "Other"];
 
-export const CATEGORIES = ["General", "OBC", "SC", "ST", "EWS"];
+export const CATEGORIES = ["General", "OBC", "SC", "ST", "EWS", "Other"];
 
 export const MOTHER_TONGUES = [
   "Hindi", "Bengali", "Telugu", "Marathi", "Tamil", "Urdu", "Gujarati", "Kannada",
@@ -100,7 +100,7 @@ export const VALIDATION_RULES = {
   name: {
     minLength: 2,
     maxLength: 100,
-    pattern: /^[a-zA-Z\s'-]+$/, // Letters, spaces, hyphens, apostrophes
+    pattern: /^[\p{L}\s'-]+$/u, // Unicode letters, spaces, hyphens, apostrophes
     message: "Name must contain only letters, spaces, hyphens, and apostrophes"
   },
   phone: {

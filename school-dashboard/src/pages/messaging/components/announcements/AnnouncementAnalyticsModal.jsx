@@ -29,6 +29,8 @@ import { announcementsApi } from '../../../../services/api';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { formatDateTime } from '../../../../utils/dateFormatter';
+import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../../../hooks/useConfirmDialog';
 
 export default function AnnouncementAnalyticsModal({
   isOpen,
@@ -36,6 +38,7 @@ export default function AnnouncementAnalyticsModal({
   announcementId,
 }) {
   const { t } = useTranslation();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(false);
   const [retrying, setRetrying] = useState(false);
@@ -73,20 +76,26 @@ export default function AnnouncementAnalyticsModal({
     }
   };
 
-  const handleRetryAll = async () => {
-    if (!confirm(t('confirm.resendFailedRecipients'))) return;
-
-    setRetrying(true);
-    try {
-      await announcementsApi.resend(announcementId, { failedOnly: true });
-      toast.success(t('toast.success.resendingToAllFailedRecipients'));
-      loadAnalytics();
-    } catch (error) {
-      console.error('Error retrying all:', error);
-      toast.error(t('toast.error.failedToResend'));
-    } finally {
-      setRetrying(false);
-    }
+  const handleRetryAll = () => {
+    showConfirm({
+      title: 'Resend to Failed Recipients',
+      message: t('confirm.resendFailedRecipients'),
+      variant: 'warning',
+      confirmText: 'Resend',
+      onConfirm: async () => {
+        setRetrying(true);
+        try {
+          await announcementsApi.resend(announcementId, { failedOnly: true });
+          toast.success(t('toast.success.resendingToAllFailedRecipients'));
+          loadAnalytics();
+        } catch (error) {
+          console.error('Error retrying all:', error);
+          toast.error(t('toast.error.failedToResend'));
+        } finally {
+          setRetrying(false);
+        }
+      },
+    });
   };
 
   const getChannelIcon = (channel) => {
@@ -172,6 +181,7 @@ export default function AnnouncementAnalyticsModal({
   }
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
@@ -380,5 +390,7 @@ export default function AnnouncementAnalyticsModal({
         </ModalFooter>
       </ModalContent>
     </Modal>
+    <ConfirmDialog {...confirmState} onClose={closeConfirm} />
+    </>
   );
 }

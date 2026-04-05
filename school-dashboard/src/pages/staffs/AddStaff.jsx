@@ -10,6 +10,7 @@ import { STAFF_ROLES } from "../../constants/roles";
 import { usePermissions } from "../../context/PermissionContext";
 import { useApp } from "../../context/AppContext";
 import { classesApi } from "../../services/api";
+import { validatePhone, isAllowedDocumentUrl } from "../../utils/validations";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 
@@ -50,7 +51,7 @@ const emptyForm = {
   name: "", dob: "", picture: null, phone: "", isWhatsapp: false,
   whatsappNumber: "", email: "", fatherName: "", bloodGroup: "", gender: "", maritalStatus: "",
   employmentType: "Full-time", idDocuments: [], customDocuments: [],
-  emergencyContacts: [{ name: "", relationship: "", phone: "" }], address: "",
+  emergencyContacts: [{ _key: 1, name: "", relationship: "", phone: "" }], address: "",
   // Qualifications
   professionalQualifications: [], totalExperience: "", experience: 0, previousOrganization: "", roleInOrganization: "", qualificationDocs: [],
   // Staff Info
@@ -132,7 +133,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         employmentType: matchedEmployment,
         idDocuments: editingStaff.idDocuments || [],
         customDocuments: editingStaff.customDocuments || [],
-        emergencyContacts: editingStaff.emergencyContacts ? editingStaff.emergencyContacts : [{ name: "", relationship: "", phone: "" }],
+        emergencyContacts: editingStaff.emergencyContacts ? editingStaff.emergencyContacts.map((c, i) => ({ ...c, _key: i + 1 })) : [{ _key: 1, name: "", relationship: "", phone: "" }],
         address: editingStaff.address || "",
         // Qualifications
         professionalQualifications: editingStaff.professionalQualifications || [],
@@ -216,7 +217,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         break;
       case "phone":
         if (!value.trim()) newError = "Required";
-        else if (!/^\d{10}$/.test(value)) newError = "Invalid";
+        else if (!validatePhone(value, true)) newError = "Invalid phone number";
         else {
           // BUG-19: check for duplicate phone among existing staff
           const editingId = editingStaff?._id || editingStaff?.id;
@@ -419,7 +420,8 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
 
   const handlePrev = () => setStep(prev => Math.max(prev - 1, 1));
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
     // Validate ALL steps before final submit, not just the current step
     for (let s = 1; s <= 5; s++) {
       if (!validateStep(s)) {
@@ -445,7 +447,11 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
           // Continue without photo
         }
       } else if (typeof formData.picture === 'string' && formData.picture.length > 0) {
-        pictureUrl = formData.picture;
+        if (!isAllowedDocumentUrl(formData.picture)) {
+          console.error('❌ Picture URL from disallowed domain:', formData.picture);
+        } else {
+          pictureUrl = formData.picture;
+        }
       }
 
       // Upload ID documents to Cloudinary
@@ -463,8 +469,11 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             console.error(`❌ ${doc.type} upload failed:`, error);
           }
         } else if (doc.url) {
-          // Already uploaded, keep as is
-          uploadedIdDocuments.push(doc);
+          if (!isAllowedDocumentUrl(doc.url)) {
+            console.error('❌ ID document URL from disallowed domain:', doc.url);
+          } else {
+            uploadedIdDocuments.push(doc);
+          }
         }
       }
 
@@ -479,7 +488,11 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             console.error('❌ Qualification doc upload failed:', error);
           }
         } else if (typeof file === 'string') {
-          uploadedQualificationDocs.push(file);
+          if (!isAllowedDocumentUrl(file)) {
+            console.error('❌ Qualification doc URL from disallowed domain:', file);
+          } else {
+            uploadedQualificationDocs.push(file);
+          }
         }
       }
 
@@ -496,7 +509,11 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
                 console.error('❌ Professional qualification doc upload failed:', error);
               }
             } else if (typeof doc === 'string') {
-              uploadedDocs.push(doc);
+              if (!isAllowedDocumentUrl(doc)) {
+                console.error('❌ Professional qualification doc URL from disallowed domain:', doc);
+              } else {
+                uploadedDocs.push(doc);
+              }
             }
           }
           return {
@@ -518,7 +535,11 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             console.error('❌ Custom document upload failed:', error);
           }
         } else if (typeof file === 'string') {
-          uploadedCustomDocuments.push(file);
+          if (!isAllowedDocumentUrl(file)) {
+            console.error('❌ Custom document URL from disallowed domain:', file);
+          } else {
+            uploadedCustomDocuments.push(file);
+          }
         }
       }
 
@@ -540,11 +561,11 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         staffData.salary = totalSalary;
       }
 
-      // Filter out empty emergency contacts (remove contacts with all empty fields)
+      // Filter out empty emergency contacts and strip internal _key field
       if (staffData.emergencyContacts) {
-        staffData.emergencyContacts = staffData.emergencyContacts.filter(
-          contact => contact.name?.trim() || contact.relationship?.trim() || contact.phone?.trim()
-        );
+        staffData.emergencyContacts = staffData.emergencyContacts
+          .filter(contact => contact.name?.trim() || contact.relationship?.trim() || contact.phone?.trim())
+          .map(({ _key, ...rest }) => rest);
         if (staffData.emergencyContacts.length === 0) {
           delete staffData.emergencyContacts;
         }
@@ -592,30 +613,9 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
     }
   };
 
-  const handleEditorSave = (croppedImage) => {
-    // croppedImage may be a base64 data URL or a blob URL
-    if (croppedImage && croppedImage.startsWith('data:')) {
-      // Base64 data URL — convert directly without fetch
-      const [header, base64] = croppedImage.split(',');
-      const mimeMatch = header.match(/:(.*?);/);
-      const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-      const binary = atob(base64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const file = new File([bytes], "profile_photo.jpg", { type: mime });
-      updateField("picture", file);
-    } else {
-      fetch(croppedImage)
-        .then(res => res.blob())
-        .then(blob => {
-          const file = new File([blob], "profile_photo.jpg", { type: "image/jpeg" });
-          updateField("picture", file);
-        })
-        .catch(() => {
-          // If fetch fails, store the raw value as a fallback
-          updateField("picture", croppedImage);
-        });
-    }
+  const handleEditorSave = (croppedBlob) => {
+    const file = new File([croppedBlob], "profile_photo.jpg", { type: "image/jpeg" });
+    updateField("picture", file);
   };
 
   const handleCameraPhotoCapture = (file) => {
@@ -625,10 +625,10 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
   };
 
   const handleEmergencyContactChange = (index, field, value) => {
-    // For phone field, restrict to digits only and max 10 characters
+    // For phone field, allow digits and international formatting chars
     if (field === "phone") {
-      if (!/^\d*$/.test(value)) return; // Only allow digits
-      if (value.length > 10) return; // Max 10 digits
+      if (!/^[+\d\s\-()]*$/.test(value)) return; // Allow digits, +, spaces, dashes, parens
+      if (value.length > 20) return; // Max 20 chars (E.164 + formatting)
     }
     const updated = [...formData.emergencyContacts];
     updated[index][field] = value;
@@ -637,17 +637,19 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
     // Real-time validation for emergency contact phone
     if (field === "phone") {
       let phoneError = null;
-      if (value && value.length > 0 && value.length < 10) {
-        phoneError = `${10 - value.length} more digits needed`;
-      } else if (value && !/^\d{10}$/.test(value)) {
-        phoneError = "Must be 10 digits";
+      const digits = value ? value.replace(/\D/g, '') : '';
+      if (value && digits.length > 0 && digits.length < 7) {
+        phoneError = "Too short — minimum 7 digits";
+      } else if (value && !validatePhone(value)) {
+        phoneError = "Invalid phone number";
       }
       setErrors(prev => ({ ...prev, [`emergencyPhone_${index}`]: phoneError }));
     }
   };
 
   const addEmergencyContact = () => {
-    updateField("emergencyContacts", [...formData.emergencyContacts, { name: "", relationship: "", phone: "" }]);
+    const maxKey = formData.emergencyContacts.reduce((max, c) => Math.max(max, c._key || 0), 0);
+    updateField("emergencyContacts", [...formData.emergencyContacts, { _key: maxKey + 1, name: "", relationship: "", phone: "" }]);
   };
 
   const removeEmergencyContact = (index) => {
@@ -881,11 +883,11 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
           <Input
             label={t('pages.mobileNumber')}
             labelPlacement="outside"
-            startContent={<span className="text-default-400 text-xs">+91</span>}
+            startContent={<Phone className="text-default-400" size={16} />}
             placeholder={t('staff.form.mobilePlaceholder')}
             value={formData.phone}
             onValueChange={v => {
-              if (v.length <= 10 && /^\d*$/.test(v)) updateField("phone", v);
+              if (v.length <= 20 && /^[+\d\s\-()]*$/.test(v)) updateField("phone", v);
             }}
             variant="bordered"
             radius="sm"
@@ -965,7 +967,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         </div>
 
         {formData.emergencyContacts.map((contact, index) => (
-          <div key={contact.phone || index} className="p-4 border border-default-200 rounded-xl space-y-3 relative group hover:border-default-300 transition-colors">
+          <div key={contact._key} className="p-4 border border-default-200 rounded-xl space-y-3 relative group hover:border-default-300 transition-colors">
             {formData.emergencyContacts.length > 1 && (
               <button
                 className="absolute top-2 right-2 text-default-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"

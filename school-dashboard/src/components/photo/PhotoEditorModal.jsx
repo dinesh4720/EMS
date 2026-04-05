@@ -64,7 +64,7 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
             }}
         >
             <ModalContent>
-                {(onClose) => (
+                {(modalClose) => (
                     <>
                         <ModalHeader className="flex flex-col gap-1 px-6 pt-6">
                             Edit Profile Photo
@@ -154,7 +154,7 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
                                     <Tooltip content="Flip Horizontal">
                                         <Button
                                             isIconOnly
-                                            variant={flip.horizontal ? "flat" : "flat"}
+                                            variant="flat"
                                             className={flip.horizontal ? "bg-primary-100 dark:bg-primary-900/40 text-primary" : ""}
                                             onPress={() => setFlip(prev => ({ ...prev, horizontal: !prev.horizontal }))}
                                         >
@@ -164,7 +164,7 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
                                     <Tooltip content="Flip Vertical">
                                         <Button
                                             isIconOnly
-                                            variant={flip.vertical ? "flat" : "flat"}
+                                            variant="flat"
                                             className={flip.vertical ? "bg-primary-100 dark:bg-primary-900/40 text-primary" : ""}
                                             onPress={() => setFlip(prev => ({ ...prev, vertical: !prev.vertical }))}
                                         >
@@ -189,7 +189,7 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
                             </div>
                         </ModalBody>
                         <ModalFooter className="px-6 pb-6 pt-4 border-t border-default-100">
-                            <Button variant="flat" color="default" onPress={onClose}>
+                            <Button variant="flat" color="default" onPress={() => { modalClose(); onClose(); }}>
                                 Cancel
                             </Button>
                             <Button color="primary" onPress={handleSave} isLoading={loading} startContent={!loading && <Check size={18} />}>

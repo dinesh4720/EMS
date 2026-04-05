@@ -6,6 +6,7 @@ import {
 } from "@heroui/react";
 import toast from "react-hot-toast";
 import { toDateInputValue } from "../../../../utils/dateFormatter";
+import { formatCurrency } from '../../../../utils/numberFormatter';
 
 export default function PaymentRecordingModal({ isOpen, onClose, studentFeeStructure, onRecordPayment }) {
   const { t } = useTranslation();
@@ -77,7 +78,7 @@ export default function PaymentRecordingModal({ isOpen, onClose, studentFeeStruc
               onValueChange={(v) => setPaymentForm({ ...paymentForm, amount: v })}
               startContent="₹"
               variant="bordered"
-              description={`${t('students.profile.overview.outstanding', 'Outstanding')}: ₹${studentFeeStructure?.totalBalance?.toLocaleString() || 0}`}
+              description={`${t('students.profile.overview.outstanding', 'Outstanding')}: ${formatCurrency(studentFeeStructure?.totalBalance || 0)}`}
               isRequired
             />
             <Select

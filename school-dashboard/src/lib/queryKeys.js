@@ -47,7 +47,7 @@ export const queryKeys = {
   // ── Students ───────────────────────────────────────────────────────
   students: {
     all: ['students'],
-    list: (...filters) => ['students-list', ...filters],
+    list: (...filters) => ['students', 'list', ...filters],
     detail: (studentId) => ['students', 'detail', studentId],
     attendance: (studentId, startDate, endDate) => [
       'students', 'attendance', studentId, startDate ?? null, endDate ?? null,

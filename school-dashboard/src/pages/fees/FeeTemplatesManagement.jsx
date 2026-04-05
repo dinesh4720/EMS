@@ -5,6 +5,8 @@ import { Plus, Edit, Trash2, IndianRupee, Copy, Eye, Save, Layers, FolderTree } 
 import toast from "react-hot-toast";
 import { CURRENT_ACADEMIC_YEAR } from "../../utils/constants";
 import { useTranslation } from 'react-i18next';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 
 const SECTIONS = [
@@ -26,6 +28,7 @@ const CATEGORIES = ['Academic', 'Transport', 'Extra-curricular', 'Hostel', 'Othe
 
 export default function FeeTemplatesManagement() {
   const { t } = useTranslation();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -130,17 +133,23 @@ export default function FeeTemplatesManagement() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm(t('confirm.deleteFeeTemplate'))) return;
+    showConfirm({
+      title: t('pages.deleteFeeTemplate', 'Delete Fee Template'),
+      message: t('confirm.deleteFeeTemplate'),
+      variant: 'danger',
+      confirmText: t('pages.delete', 'Delete'),
+      onConfirm: async () => {
+        try {
+          await request(`/fee-templates/${id}`, { method: 'DELETE' });
 
-    try {
-      await request(`/fee-templates/${id}`, { method: 'DELETE' });
-
-      toast.success(t('toast.success.templateDeletedSuccessfully'));
-      fetchTemplates();
-    } catch (error) {
-      console.error('Failed to delete template:', error);
-      toast.error(error.message || t('toast.error.failedToDeleteTemplate'));
-    }
+          toast.success(t('toast.success.templateDeletedSuccessfully'));
+          fetchTemplates();
+        } catch (error) {
+          console.error('Failed to delete template:', error);
+          toast.error(error.message || t('toast.error.failedToDeleteTemplate'));
+        }
+      },
+    });
   };
 
   const calculateTotalAnnualFee = () => {
@@ -358,6 +367,8 @@ export default function FeeTemplatesManagement() {
           );
         })}
       </div>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
 
       {/* Create/Edit Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="4xl" scrollBehavior="inside">

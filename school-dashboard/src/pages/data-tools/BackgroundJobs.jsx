@@ -5,6 +5,8 @@ import {
 import { RefreshCw, Eye, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { jobsApi } from '../../services/api/extensions';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 const statusColor = {
   completed: 'success',
@@ -49,6 +51,7 @@ export default function BackgroundJobs() {
   const [detailJob, setDetailJob] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
 
   const fetchData = useCallback(async () => {
     try {
@@ -85,15 +88,22 @@ export default function BackgroundJobs() {
     }
   };
 
-  const handleCancel = async (jobId) => {
-    if (!confirm('Are you sure you want to cancel this job?')) return;
-    try {
-      await jobsApi.cancelJob(jobId);
-      toast.success('Job cancelled');
-      fetchData();
-    } catch {
-      toast.error('Failed to cancel job');
-    }
+  const handleCancel = (jobId) => {
+    showConfirm({
+      title: 'Cancel Job',
+      message: 'Are you sure you want to cancel this job?',
+      variant: 'warning',
+      confirmText: 'Cancel Job',
+      onConfirm: async () => {
+        try {
+          await jobsApi.cancelJob(jobId);
+          toast.success('Job cancelled');
+          fetchData();
+        } catch {
+          toast.error('Failed to cancel job');
+        }
+      },
+    });
   };
 
   return (
@@ -240,6 +250,8 @@ export default function BackgroundJobs() {
           </table>
         </div>
       </section>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
 
       {/* Detail Modal */}
       <Modal isOpen={modalOpen} onOpenChange={setModalOpen} size="lg">

@@ -3,6 +3,7 @@ import { Button } from "@heroui/react";
 import { GraduationCap, User, Phone, Users, FileCheck, Edit } from "lucide-react";
 import InfoItem from "../shared/InfoItem";
 import { useTranslation } from 'react-i18next';
+import { formatDate } from '../../../../utils/dateFormatter';
 
 /**
  * BasicDetailsTab - Student personal and academic details
@@ -70,7 +71,7 @@ export default function BasicDetailsTab({
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-6">
           <InfoItem label={t('pages.fullName1')} value={student?.name} />
           <InfoItem label={t('pages.admissionId1')} value={student?.admissionId} />
-          <InfoItem label={t('pages.dateOfBirth2')} value={student?.dateOfBirth} />
+          <InfoItem label={t('pages.dateOfBirth2')} value={formatDate(student?.dateOfBirth)} />
           <InfoItem label={t('pages.gender1')} value={student?.gender} />
           <InfoItem label={t('pages.bloodGroup1')} value={student?.bloodGroup} />
           <InfoItem label={t('pages.religion1')} value={student?.religion} />

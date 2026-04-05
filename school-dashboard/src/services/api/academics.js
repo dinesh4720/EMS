@@ -5,7 +5,7 @@ export const examsApi = {
     const queryString = params ? new URLSearchParams(params).toString() : '';
     return request(`/exams${queryString ? `?${queryString}` : ''}`);
   },
-  getById: (id) => request(`/exams/${id}`),
+  getById: (id, options) => request(`/exams/${id}`, options),
   create: (data) => request('/exams', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/exams/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => request(`/exams/${id}`, { method: 'DELETE' }),
@@ -13,7 +13,6 @@ export const examsApi = {
   getByStaff: (staffId) => request(`/exams/staff/${staffId}`),
   publish: (id) => request(`/exams/${id}/publish`, { method: 'POST' }),
   getResults: (id) => request(`/exams/${id}/results`),
-  publishResults: (id) => request(`/exams/${id}/publish`, { method: 'POST' }),
 };
 
 // Homework API
@@ -31,10 +30,10 @@ export const homeworkApi = {
 // Results API
 export const resultsApi = {
   create: (data) => request('/results', { method: 'POST', body: JSON.stringify(data) }),
-  bulkCreate: (results, examId, classId, loadedAt) => request('/results/bulk', { method: 'POST', body: JSON.stringify({ results, examId, classId, ...(loadedAt ? { loadedAt } : {}) }) }),
+  bulkCreate: (results, examId, classId, loadedAt, { forceOverwrite } = {}) => request('/results/bulk', { method: 'POST', body: JSON.stringify({ results, examId, classId, ...(loadedAt ? { loadedAt } : {}), ...(forceOverwrite ? { forceOverwrite: true } : {}) }) }),
   update: (id, data) => request(`/results/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   getByStudent: (studentId) => request(`/students/${studentId}/results`),
-  getByClassExam: (classId, examId) => request(`/results/class/${classId}/exam/${examId}`),
+  getByClassExam: (classId, examId, options) => request(`/results/class/${classId}/exam/${examId}`, options),
 };
 
 // Academic Performance API

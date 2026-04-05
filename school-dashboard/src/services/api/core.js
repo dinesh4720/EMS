@@ -4,6 +4,16 @@ import { clearStoredUser, getAuthHeaders } from '../../utils/authSession';
 import { API_URL } from '../../config/api.js';
 import logger from '../../utils/logger';
 
+// [AUDIT-572] Fail fast with a clear message if API_URL is misconfigured.
+// Without this, undefined/empty API_URL causes confusing JSON parse errors
+// from fetch("undefined/endpoint") or fetch("/endpoint") hitting the HTML page.
+if (!API_URL || typeof API_URL !== 'string') {
+  throw new Error(
+    `API_URL is not configured (got ${JSON.stringify(API_URL)}). ` +
+    'Set VITE_API_URL in your .env file or check config/api.js.'
+  );
+}
+
 
 // Export cache clearing function
 export function clearApiCache() {
@@ -15,7 +25,7 @@ export function clearApiCache() {
 // receive 401 at the same time.
 let _refreshPromise = null;
 
-async function attemptTokenRefresh() {
+export async function attemptTokenRefresh() {
   // If a refresh is already in-flight, piggyback on it
   if (_refreshPromise) return _refreshPromise;
 
@@ -64,7 +74,9 @@ export async function request(endpoint, options = {}) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
-    // If an external signal is provided, abort the internal controller when it fires
+    // If an external signal is provided, abort the internal controller when it fires.
+    // [AUDIT-573] Re-check after listener registration to close the race window
+    // where the signal aborts between the initial check and addEventListener.
     if (options.signal) {
       if (options.signal.aborted) {
         clearTimeout(timeoutId);
@@ -73,11 +85,15 @@ export async function request(endpoint, options = {}) {
         throw abortError;
       }
       options.signal.addEventListener('abort', () => controller.abort(), { once: true });
+      if (options.signal.aborted) {
+        controller.abort();
+      }
     }
 
     try {
+      const hasBody = method !== 'GET' && method !== 'HEAD' && method !== 'DELETE';
       const headers = getAuthHeaders({
-        'Content-Type': 'application/json',
+        ...(hasBody && { 'Content-Type': 'application/json' }),
         ...options.headers
       });
 
@@ -108,7 +124,7 @@ export async function request(endpoint, options = {}) {
             try {
               // Re-fetch auth headers since the token was just refreshed
               const retryHeaders = getAuthHeaders({
-                'Content-Type': 'application/json',
+                ...(hasBody && { 'Content-Type': 'application/json' }),
                 ...options.headers
               });
 
@@ -126,9 +142,24 @@ export async function request(endpoint, options = {}) {
                 if (retryResponse.status === 204) return null;
                 return await retryResponse.json();
               }
-            } catch {
+
+              // [AUDIT-531] Only log out if the retry is also 401.
+              // Non-401 errors (500, 403, etc.) should be thrown normally,
+              // not cause a session clear.
+              if (retryResponse.status !== 401) {
+                const retryError = await retryResponse.json().catch(() => ({ error: 'Request failed' }));
+                const err = new Error(retryError.error || retryError.message || `Request failed with status ${retryResponse.status}`);
+                err.status = retryResponse.status;
+                throw err;
+              }
+            } catch (retryErr) {
               clearTimeout(retryTimeoutId);
-              // Retry failed — fall through to logout
+              // [AUDIT-531] If the retry threw a real error (not a 401 flow),
+              // re-throw it instead of falling through to logout
+              if (retryErr.status && retryErr.status !== 401) {
+                throw retryErr;
+              }
+              // Network error during retry — fall through to logout
             }
           }
           // Refresh failed or retried request still 401 — log out
@@ -219,39 +250,56 @@ export async function request(endpoint, options = {}) {
 export async function requestUpload(endpoint, formData) {
   const url = `${API_URL}${endpoint}`;
 
-  const doUpload = async (isRetry = false) => {
-    const headers = getAuthHeaders();
-    // Do NOT set Content-Type — let the browser set the multipart boundary
-    delete headers['Content-Type'];
+  const makeUpload = async () => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s for uploads
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers,
-      credentials: 'include',
-      body: formData,
-    });
+    const doUpload = async (isRetry = false) => {
+      const headers = getAuthHeaders();
+      // Do NOT set Content-Type — let the browser set the multipart boundary
+      delete headers['Content-Type'];
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers,
+          credentials: 'include',
+          body: formData,
+          signal: controller.signal,
+        });
 
-      if (response.status === 401 && !isRetry) {
-        const refreshed = await attemptTokenRefresh();
-        if (refreshed) {
-          return doUpload(true);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+
+          if (response.status === 401 && !isRetry) {
+            const refreshed = await attemptTokenRefresh();
+            if (refreshed) {
+              return doUpload(true);
+            }
+            clearStoredUser();
+            queryClient.clear();
+          }
+
+          const err = new Error(errorData.error || `Upload failed with status ${response.status}`);
+          err.status = response.status;
+          throw err;
         }
-        clearStoredUser();
-        queryClient.clear();
+
+        return response.json();
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          throw new Error('Upload timed out');
+        }
+        throw error;
+      } finally {
+        clearTimeout(timeoutId);
       }
+    };
 
-      const err = new Error(errorData.error || `Upload failed with status ${response.status}`);
-      err.status = response.status;
-      throw err;
-    }
-
-    return response.json();
+    return doUpload();
   };
 
-  return doUpload();
+  return requestQueue.add(makeUpload);
 }
 
 /**
@@ -261,29 +309,46 @@ export async function requestUpload(endpoint, formData) {
 export async function requestBlob(endpoint) {
   const url = `${API_URL}${endpoint}`;
 
-  const doFetch = async (isRetry = false) => {
-    const response = await fetch(url, {
-      credentials: 'include',
-      headers: getAuthHeaders(),
-    });
+  const makeFetch = async () => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s for blob downloads
 
-    if (!response.ok) {
-      if (response.status === 401 && !isRetry) {
-        const refreshed = await attemptTokenRefresh();
-        if (refreshed) {
-          return doFetch(true);
+    const doFetch = async (isRetry = false) => {
+      try {
+        const response = await fetch(url, {
+          credentials: 'include',
+          headers: getAuthHeaders(),
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          if (response.status === 401 && !isRetry) {
+            const refreshed = await attemptTokenRefresh();
+            if (refreshed) {
+              return doFetch(true);
+            }
+            clearStoredUser();
+            queryClient.clear();
+          }
+
+          const err = new Error(`Export failed with status ${response.status}`);
+          err.status = response.status;
+          throw err;
         }
-        clearStoredUser();
-        queryClient.clear();
+
+        return response;
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          throw new Error('Export timed out');
+        }
+        throw error;
+      } finally {
+        clearTimeout(timeoutId);
       }
+    };
 
-      const err = new Error(`Export failed with status ${response.status}`);
-      err.status = response.status;
-      throw err;
-    }
-
-    return response;
+    return doFetch();
   };
 
-  return doFetch();
+  return requestQueue.add(makeFetch);
 }

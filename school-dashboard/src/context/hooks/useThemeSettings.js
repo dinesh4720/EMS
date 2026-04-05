@@ -12,7 +12,12 @@ const DEFAULT_THEME = {
 export function useThemeSettings() {
   const [themeSettings, setThemeSettings] = useState(() => {
     const saved = safeGetItem("themeSettings");
-    return saved ? JSON.parse(saved) : DEFAULT_THEME;
+    if (!saved) return DEFAULT_THEME;
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return DEFAULT_THEME;
+    }
   });
 
   const updateThemeSettings = (newSettings) => {

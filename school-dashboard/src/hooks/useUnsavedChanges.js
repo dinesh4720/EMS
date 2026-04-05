@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * Tracks dirty form state and warns users before they lose unsaved changes.
@@ -20,7 +20,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 export function useUnsavedChanges(isDirty) {
   const [isBlocked, setIsBlocked] = useState(false);
   const pendingNavigationRef = useRef(null);
-  const location = useLocation();
   const navigate = useNavigate();
   const isDirtyRef = useRef(isDirty);
   isDirtyRef.current = isDirty;
@@ -45,21 +44,21 @@ export function useUnsavedChanges(isDirty) {
     const handlePopState = () => {
       if (isDirtyRef.current) {
         // Push current location back to stay on this page
-        window.history.pushState(null, '', location.pathname + location.search);
+        window.history.pushState(null, '', window.location.pathname + window.location.search);
         // Store that user wants to go back
         pendingNavigationRef.current = { type: 'back' };
         setIsBlocked(true);
       }
     };
 
-    // Push an extra entry so we can intercept back navigation
-    window.history.pushState(null, '', location.pathname + location.search);
+    // Push a single sentinel entry so we can intercept back navigation
+    window.history.pushState(null, '', window.location.pathname + window.location.search);
     window.addEventListener('popstate', handlePopState);
 
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [isDirty, location.pathname, location.search]);
+  }, [isDirty]);
 
   const proceed = useCallback(() => {
     setIsBlocked(false);

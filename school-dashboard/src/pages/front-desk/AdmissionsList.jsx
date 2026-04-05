@@ -11,6 +11,8 @@ import { validatePhone, validateEmail, validateFutureDate } from '../../utils/va
 import toast from 'react-hot-toast';
 import AdmissionTracker from './AdmissionTracker.jsx';
 import { useTranslation } from 'react-i18next';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 const STATUS_OPTIONS = [
   { value: 'inquiry-logged', label: 'Inquiry Logged', color: 'default' },
@@ -35,6 +37,7 @@ const PAYMENT_MODES = ['CASH', 'ONLINE', 'CHEQUE', 'INCLUDED_IN_FORM'];
 
 const AdmissionsList = forwardRef((props, ref) => {
   const { t } = useTranslation();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [admissions, setAdmissions] = useState([]);
   const [staff, setStaff] = useState([]);
   const [availableClasses, setAvailableClasses] = useState([]);
@@ -202,7 +205,8 @@ const AdmissionsList = forwardRef((props, ref) => {
     setErrors(prev => ({ ...prev, [name]: error }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
     if (!validateForm()) {
       toast.error(t('toast.error.pleaseFixTheErrorsBeforeSubmitting'));
       return;
@@ -314,15 +318,22 @@ const AdmissionsList = forwardRef((props, ref) => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm(t('confirm.deleteAdmission'))) return;
-    try {
-      await frontDeskApi.deleteAdmission(id);
-      toast.success(t('toast.success.admissionInquiryDeleted'));
-      loadAdmissions();
-    } catch (error) {
-      toast.error(t('toast.error.failedToDeleteAdmissionInquiry'));
-    }
+  const handleDelete = (id) => {
+    showConfirm({
+      title: 'Delete Admission',
+      message: t('confirm.deleteAdmission'),
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await frontDeskApi.deleteAdmission(id);
+          toast.success(t('toast.success.admissionInquiryDeleted'));
+          loadAdmissions();
+        } catch (error) {
+          toast.error(t('toast.error.failedToDeleteAdmissionInquiry'));
+        }
+      },
+    });
   };
 
   const resetForm = () => {
@@ -896,6 +907,8 @@ const AdmissionsList = forwardRef((props, ref) => {
         isOpen={isTrackerOpen}
         onClose={onTrackerClose}
       />
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </>
   );
 });

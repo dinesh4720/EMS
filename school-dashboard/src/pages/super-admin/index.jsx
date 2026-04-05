@@ -11,6 +11,7 @@ import {
   UserPlus,
   Wrench,
 } from 'lucide-react';
+import { Input, Select, SelectItem } from '@heroui/react';
 import { superAdminApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import SchoolHealthPanel from './SchoolHealthPanel';
@@ -74,19 +75,22 @@ function SummaryCard({ icon: Icon, label, value, accent }) {
   );
 }
 
-function SelectField({ value, onChange, options }) {
+function SelectField({ value, onChange, options, label }) {
   return (
-    <select
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300"
+    <Select
+      size="sm"
+      variant="bordered"
+      radius="lg"
+      label={label}
+      selectedKeys={value ? new Set([value]) : new Set()}
+      onSelectionChange={(keys) => onChange(Array.from(keys)[0] || '')}
     >
       {options.map((option) => (
-        <option key={option.value} value={option.value}>
+        <SelectItem key={option.value} textValue={option.label}>
           {option.label}
-        </option>
+        </SelectItem>
       ))}
-    </select>
+    </Select>
   );
 }
 
@@ -114,71 +118,91 @@ function SchoolsPanel({ overview, loadData, loading, tableRows, updateSchoolDraf
           </div>
 
           <div className="grid gap-4">
-            <input
+            <Input
+              label={t('pages.schoolName2')}
               value={form.schoolName}
-              onChange={(event) => updateForm('schoolName', event.target.value)}
-              placeholder={t('pages.schoolName2')}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
-              required
+              onValueChange={(value) => updateForm('schoolName', value)}
+              isRequired
+              variant="bordered"
+              size="sm"
+              radius="lg"
             />
-            <input
+            <Input
+              label={t('pages.schoolCodeOptional')}
               value={form.schoolCode}
-              onChange={(event) => updateForm('schoolCode', event.target.value)}
-              placeholder={t('pages.schoolCodeOptional')}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              onValueChange={(value) => updateForm('schoolCode', value)}
+              variant="bordered"
+              size="sm"
+              radius="lg"
             />
             <div className="grid gap-4 md:grid-cols-2">
-              <input
+              <Input
+                label={t('pages.contactEmail')}
                 value={form.contactEmail}
-                onChange={(event) => updateForm('contactEmail', event.target.value)}
-                placeholder={t('pages.contactEmail')}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                onValueChange={(value) => updateForm('contactEmail', value)}
+                variant="bordered"
+                size="sm"
+                radius="lg"
               />
-              <input
+              <Input
+                label={t('pages.contactPhone')}
                 value={form.contactPhone}
-                onChange={(event) => updateForm('contactPhone', event.target.value)}
-                placeholder={t('pages.contactPhone')}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                onValueChange={(value) => updateForm('contactPhone', value)}
+                variant="bordered"
+                size="sm"
+                radius="lg"
               />
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <SelectField value={form.plan} onChange={(value) => updateForm('plan', value)} options={PLAN_OPTIONS} />
-              <SelectField value={form.planStatus} onChange={(value) => updateForm('planStatus', value)} options={PLAN_STATUS_OPTIONS} />
+              <SelectField label={t('pages.plan')} value={form.plan} onChange={(value) => updateForm('plan', value)} options={PLAN_OPTIONS} />
+              <SelectField label={t('pages.planStatus')} value={form.planStatus} onChange={(value) => updateForm('planStatus', value)} options={PLAN_STATUS_OPTIONS} />
             </div>
-            <input
+            <Input
+              label={t('pages.adminFullName')}
               value={form.adminName}
-              onChange={(event) => updateForm('adminName', event.target.value)}
-              placeholder={t('pages.adminFullName')}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
-              required
+              onValueChange={(value) => updateForm('adminName', value)}
+              isRequired
+              variant="bordered"
+              size="sm"
+              radius="lg"
             />
-            <input
+            <Input
+              label={t('pages.adminEmail')}
               value={form.adminEmail}
-              onChange={(event) => updateForm('adminEmail', event.target.value)}
-              placeholder={t('pages.adminEmail')}
+              onValueChange={(value) => updateForm('adminEmail', value)}
               type="email"
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
-              required
+              isRequired
+              variant="bordered"
+              size="sm"
+              radius="lg"
             />
-            <input
+            <Input
+              label={t('pages.adminPasswordOptional')}
               value={form.adminPassword}
-              onChange={(event) => updateForm('adminPassword', event.target.value)}
-              placeholder={t('pages.adminPasswordOptional')}
+              onValueChange={(value) => updateForm('adminPassword', value)}
               type="password"
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              minLength={8}
+              maxLength={50}
+              variant="bordered"
+              size="sm"
+              radius="lg"
             />
             <div className="grid gap-4 md:grid-cols-2">
-              <input
+              <Input
+                label={t('pages.frontendUrl')}
                 value={form.frontendUrl}
-                onChange={(event) => updateForm('frontendUrl', event.target.value)}
-                placeholder={t('pages.frontendUrl')}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                onValueChange={(value) => updateForm('frontendUrl', value)}
+                variant="bordered"
+                size="sm"
+                radius="lg"
               />
-              <input
+              <Input
+                label={t('pages.backendUrl')}
                 value={form.backendUrl}
-                onChange={(event) => updateForm('backendUrl', event.target.value)}
-                placeholder={t('pages.backendUrl')}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                onValueChange={(value) => updateForm('backendUrl', value)}
+                variant="bordered"
+                size="sm"
+                radius="lg"
               />
             </div>
           </div>
@@ -239,11 +263,13 @@ function SchoolsPanel({ overview, loadData, loading, tableRows, updateSchoolDraf
                       <td className="py-4 pr-4">
                         <div className="space-y-2">
                           <SelectField
+                            label={t('pages.plan')}
                             value={school.draftPlan}
                             onChange={(value) => updateSchoolDraft(school.id, 'draftPlan', value)}
                             options={PLAN_OPTIONS}
                           />
                           <SelectField
+                            label={t('pages.planStatus')}
                             value={school.draftPlanStatus}
                             onChange={(value) => updateSchoolDraft(school.id, 'draftPlanStatus', value)}
                             options={PLAN_STATUS_OPTIONS}
@@ -252,6 +278,7 @@ function SchoolsPanel({ overview, loadData, loading, tableRows, updateSchoolDraf
                       </td>
                       <td className="py-4 pr-4">
                         <SelectField
+                          label={t('pages.status2')}
                           value={school.draftStatus}
                           onChange={(value) => updateSchoolDraft(school.id, 'draftStatus', value)}
                           options={STATUS_OPTIONS}
@@ -364,6 +391,10 @@ export default function SuperAdminDashboard() {
 
   const handleCreateSchool = async (event) => {
     event.preventDefault();
+    if (form.adminPassword && form.adminPassword.length < 8) {
+      setError('Admin password must be at least 8 characters');
+      return;
+    }
     setSubmitting(true);
     setError('');
     setMessage('');

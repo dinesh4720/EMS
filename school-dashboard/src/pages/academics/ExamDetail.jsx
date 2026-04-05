@@ -13,7 +13,7 @@ import {
   ModalFooter
 } from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
-import { FileText, Award, Users, Eye, Pencil, Send, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
+import { FileText, Users, Eye, Pencil, Send, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 import { examsApi, resultsApi, classesApi } from '../../services/api';
 import { MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
@@ -30,46 +30,54 @@ const ExamDetail = () => {
   const [loading, setLoading] = useState(true);
   const [publishModal, setPublishModal] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     setExam(null);
     setResults([]);
     setStudentMap({});
-    if (examId) fetchAll();
-  }, [examId]);
+    if (!examId) return;
 
-  const fetchAll = async () => {
-    setLoading(true);
-    try {
-      const examData = await examsApi.getById(examId);
-      setExam(examData);
+    const controller = new AbortController();
+    const signal = controller.signal;
 
-      if (examData?.classId) {
-        const [resultsData, studentsResponse] = await Promise.all([
-          resultsApi.getByClassExam(examData.classId, examId),
-          classesApi.getStudents(examData.classId)
-        ]);
+    const fetchAll = async () => {
+      setLoading(true);
+      try {
+        const examData = await examsApi.getById(examId, { signal });
+        setExam(examData);
 
-        setResults(resultsData || []);
+        if (examData?.classId) {
+          const [resultsData, studentsResponse] = await Promise.all([
+            resultsApi.getByClassExam(examData.classId, examId, { signal }),
+            classesApi.getStudents(examData.classId, { signal })
+          ]);
 
-        // Build name map from students list
-        const students = Array.isArray(studentsResponse)
-          ? studentsResponse
-          : studentsResponse?.students || [];
-        const map = {};
-        students.forEach(s => {
-          const id = String(s._id || s.id);
-          map[id] = { name: s.name, rollNo: s.rollNo };
-        });
-        setStudentMap(map);
+          setResults(resultsData || []);
+
+          // Build name map from students list
+          const students = Array.isArray(studentsResponse)
+            ? studentsResponse
+            : studentsResponse?.students || [];
+          const map = {};
+          students.forEach(s => {
+            const id = String(s._id || s.id);
+            map[id] = { name: s.name, rollNo: s.rollNo };
+          });
+          setStudentMap(map);
+        }
+      } catch (error) {
+        if (error.name === 'AbortError') return;
+        console.error('Error fetching exam details:', error);
+        toast.error(t('toast.error.failedToLoadExamDetails'));
+      } finally {
+        if (!signal.aborted) setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching exam details:', error);
-      toast.error(t('toast.error.failedToLoadExamDetails'));
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchAll();
+    return () => controller.abort();
+  }, [examId, refreshKey]);
 
   const handlePublish = async () => {
     setPublishing(true);
@@ -77,7 +85,7 @@ const ExamDetail = () => {
       await examsApi.publish(examId);
       toast.success(t('toast.success.resultsPublishedSuccessfully'));
       setPublishModal(false);
-      fetchAll();
+      setRefreshKey(k => k + 1);
     } catch (error) {
       console.error('Error publishing results:', error);
       toast.error(t('toast.error.failedToPublishResults'));
@@ -120,7 +128,7 @@ const ExamDetail = () => {
 
   // Computed stats
   const stats = useMemo(() => {
-    const passed = results.filter(r => r.status === 'passed' || r.marksObtained >= (exam?.passingMarks || 35)).length;
+    const passed = results.filter(r => r.status === 'passed' || r.marksObtained >= (exam?.passingMarks ?? 35)).length;
     const failed = results.length - passed;
     const avg = results.length > 0
       ? (results.reduce((s, r) => s + (r.percentage ?? 0), 0) / results.length).toFixed(1)
@@ -228,7 +236,7 @@ const ExamDetail = () => {
         <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
           <CardBody className="p-4">
             <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Passing Marks</p>
-            <p className="font-medium text-gray-900 dark:text-zinc-100">{exam.passingMarks || 35}</p>
+            <p className="font-medium text-gray-900 dark:text-zinc-100">{exam.passingMarks ?? 35}</p>
           </CardBody>
         </Card>
       </div>
@@ -299,7 +307,7 @@ const ExamDetail = () => {
                 </thead>
                 <tbody>
                   {results.map((result) => {
-                    const status = result.status || (result.marksObtained >= (exam.passingMarks || 35) ? 'passed' : 'failed');
+                    const status = result.status || (result.marksObtained >= (exam.passingMarks ?? 35) ? 'passed' : 'failed');
                     const statusConfig = {
                       passed:   { color: 'success', label: 'Passed',   icon: <CheckCircle2 size={11} /> },
                       failed:   { color: 'danger',  label: 'Failed',   icon: <AlertCircle size={11} /> },

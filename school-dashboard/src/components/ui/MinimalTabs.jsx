@@ -18,6 +18,12 @@ const MinimalTabs = memo(function MinimalTabs({
     lg: "px-5 py-2.5 text-base",
   };
 
+  const underlineSizeStyles = {
+    sm: "px-3 py-2 text-xs",
+    md: "px-4 py-3 text-sm",
+    lg: "px-5 py-3.5 text-base",
+  };
+
   if (variant === "underline") {
     return (
       <nav className={cn("flex border-b border-gray-100 dark:border-zinc-800", className)}>
@@ -26,11 +32,11 @@ const MinimalTabs = memo(function MinimalTabs({
             key={tab.key}
             onClick={() => onChange?.(tab.key)}
             className={cn(
-              "relative px-4 py-3 text-sm font-medium transition-colors",
+              "relative font-medium transition-colors",
+              underlineSizeStyles[size],
               activeKey === tab.key
                 ? "text-gray-900 dark:text-zinc-100"
-                : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300",
-              sizeStyles[size]
+                : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300"
             )}
           >
             <span className="flex items-center gap-2">

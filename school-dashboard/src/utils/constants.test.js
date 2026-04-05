@@ -169,10 +169,12 @@ describe('FEE_STATUS', () => {
 });
 
 describe('ATTENDANCE_STATUS', () => {
-  it('has PRESENT, ABSENT, and LATE', () => {
+  it('has PRESENT, ABSENT, LATE, LEAVE, and HALFDAY', () => {
     expect(ATTENDANCE_STATUS.PRESENT).toBe('present');
     expect(ATTENDANCE_STATUS.ABSENT).toBe('absent');
     expect(ATTENDANCE_STATUS.LATE).toBe('late');
+    expect(ATTENDANCE_STATUS.LEAVE).toBe('leave');
+    expect(ATTENDANCE_STATUS.HALFDAY).toBe('halfday');
   });
 });
 

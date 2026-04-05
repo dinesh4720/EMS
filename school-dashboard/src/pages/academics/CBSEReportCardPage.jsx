@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, Fragment } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Card, CardBody, Input, Button, Select, SelectItem,
@@ -7,7 +7,7 @@ import {
   Tab, Tabs, useDisclosure,
 } from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
-import { Search, FileText, Home, Download, Plus, Users, Printer } from 'lucide-react';
+import { Search, FileText, Home, Plus, Users, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { request } from '../../services/api';
 import { classesApi } from '../../services/classesService';
@@ -82,7 +82,7 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
       <ModalContent>
         <ModalHeader>
           Enter Marks — {student?.name}
-          <span className="text-sm font-normal text-gray-500 ml-2">({term?.replace('_', ' ')} · {academicYear})</span>
+          <span className="text-sm font-normal text-gray-500 ml-2">({term?.replace(/_/g, ' ')} · {academicYear})</span>
         </ModalHeader>
         <ModalBody>
           <div className="space-y-3">
@@ -239,7 +239,7 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
       <ModalContent>
         <ModalHeader>
           Bulk Mark Entry
-          <span className="text-sm font-normal text-gray-500 ml-2">({term?.replace('_', ' ')} · {academicYear})</span>
+          <span className="text-sm font-normal text-gray-500 ml-2">({term?.replace(/_/g, ' ')} · {academicYear})</span>
         </ModalHeader>
         <ModalBody>
           <div className="space-y-4">
@@ -314,10 +314,10 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
                     <tr className="border-b border-gray-200 dark:border-zinc-700">
                       <th className="sticky left-0 bg-gray-50 dark:bg-zinc-900" />
                       {subjects.filter(s => s.trim()).map(subj => (
-                        <>
-                          <th key={`${subj}-t`} className="text-center px-2 py-1 text-gray-400 dark:text-zinc-500 font-normal border-l border-gray-100 dark:border-zinc-800">Theory</th>
-                          <th key={`${subj}-p`} className="text-center px-2 py-1 text-gray-400 dark:text-zinc-500 font-normal">Practical</th>
-                        </>
+                        <Fragment key={subj}>
+                          <th className="text-center px-2 py-1 text-gray-400 dark:text-zinc-500 font-normal border-l border-gray-100 dark:border-zinc-800">Theory</th>
+                          <th className="text-center px-2 py-1 text-gray-400 dark:text-zinc-500 font-normal">Practical</th>
+                        </Fragment>
                       ))}
                     </tr>
                   </thead>
@@ -331,8 +331,8 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
                             <span className="text-gray-400 dark:text-zinc-500 ml-1">({s.rollNo || s.admissionId})</span>
                           </td>
                           {subjects.filter(subj => subj.trim()).map(subj => (
-                            <>
-                              <td key={`${subj}-t`} className="px-1 py-1 border-l border-gray-100 dark:border-zinc-800">
+                            <Fragment key={`${sid}-${subj}`}>
+                              <td className="px-1 py-1 border-l border-gray-100 dark:border-zinc-800">
                                 <input
                                   type="number" min={0} max={100}
                                   value={marks[sid]?.[subj]?.theoryMarks ?? ''}
@@ -340,7 +340,7 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
                                   className="w-16 text-center border border-gray-200 dark:border-zinc-700 rounded px-1 py-0.5 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary"
                                 />
                               </td>
-                              <td key={`${subj}-p`} className="px-1 py-1">
+                              <td className="px-1 py-1">
                                 <input
                                   type="number" min={0} max={100}
                                   value={marks[sid]?.[subj]?.practicalMarks ?? ''}
@@ -348,7 +348,7 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
                                   className="w-16 text-center border border-gray-200 dark:border-zinc-700 rounded px-1 py-0.5 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary"
                                 />
                               </td>
-                            </>
+                            </Fragment>
                           ))}
                         </tr>
                       );

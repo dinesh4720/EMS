@@ -66,6 +66,7 @@ export const notificationsApi = {
     const query = params ? new URLSearchParams(params).toString() : '';
     return request(`/notifications${query ? `?${query}` : ''}`);
   },
+  getUnreadCount: () => request('/notifications/unread-count'),
   markAsRead: (id) => request(`/notifications/${id}/read`, { method: 'PUT' }),
   markAllAsRead: () => request('/notifications/read-all', { method: 'PUT' }),
   delete: (id) => request(`/notifications/${id}`, { method: 'DELETE' }),
@@ -81,8 +82,10 @@ export const feesApi = {
   getPayments: async (filters) => {
     const params = new URLSearchParams(filters).toString();
     const res = await request(`/fees/payments${params ? `?${params}` : ''}`);
-    // Backend returns { payments, pagination }; unwrap for callers expecting an array
-    return Array.isArray(res) ? res : (res?.payments ?? res);
+    // Backend returns { payments, pagination }; preserve full shape for callers
+    // For backward-compat with plain-array responses, normalize to { payments, pagination }
+    if (Array.isArray(res)) return { payments: res, pagination: null };
+    return { payments: res?.payments ?? [], pagination: res?.pagination ?? null };
   },
   getPaymentById: (id) => request(`/fees/payments/${id}`),
   createPayment: (data) => request('/fees/payments', { method: 'POST', body: JSON.stringify(data) }),
@@ -91,8 +94,16 @@ export const feesApi = {
 
   // Defaulters
   getDefaulters: (filters) => {
-    const params = new URLSearchParams(filters).toString();
-    return request(`/student-fees/defaulters${params ? `?${params}` : ''}`);
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params.set(key, value);
+        }
+      });
+    }
+    const qs = params.toString();
+    return request(`/student-fees/defaulters${qs ? `?${qs}` : ''}`);
   },
 
   // Student Summary
@@ -117,6 +128,7 @@ export const feesApi = {
 };
 
 export const studentFeesApi = {
+  getAll: (academicYear) => request(`/student-fees/all${academicYear ? `?academicYear=${academicYear}` : ''}`),
   getByStudent: (studentId, academicYear) => request(`/student-fees/student/${studentId}${academicYear ? `?academicYear=${academicYear}` : ''}`),
   getBatch: (studentIds, academicYear) => request('/student-fees/batch', {
     method: 'POST',
@@ -155,8 +167,10 @@ export const payrollApi = {
     a.download = `payroll-${month}-${year}.xlsx`;
     document.body.appendChild(a);
     a.click();
-    window.URL.revokeObjectURL(url);
-    a.remove();
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    }, 1000);
     return { success: true };
   },
   getAuditLogs: (params) => {

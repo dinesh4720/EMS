@@ -137,7 +137,7 @@ export default function DataCleanupSettings() {
             Remove All Data
           </h2>
           <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
-            Permanently delete all data
+            Move selected data to trash for 30 days before permanent deletion
           </p>
         </div>
 
@@ -198,7 +198,7 @@ export default function DataCleanupSettings() {
           Remove All Data
         </h2>
         <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
-          Permanently delete all data
+          Move selected data to trash for 30 days before permanent deletion
         </p>
       </div>
 

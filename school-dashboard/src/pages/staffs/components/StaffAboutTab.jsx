@@ -1,7 +1,7 @@
 /**
  * StaffAboutTab - Minimal gray styling matching StudentDashboard
  */
-import { User, Briefcase, Phone, Landmark, Mail, MapPin } from "lucide-react";
+import { User, Briefcase, Phone, Landmark, Mail } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 
 export default function StaffAboutTab({ staff }) {
@@ -64,9 +64,6 @@ export default function StaffAboutTab({ staff }) {
         </div>
         <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="col-span-full"><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.address2')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{staff.address || "—"}</p></div>
-          <InfoItem label={t('pages.city1')} value={staff.city} />
-          <InfoItem label={t('pages.state1')} value={staff.state} />
-          <InfoItem label={t('pages.zIPCode')} value={staff.zipCode} />
           <InfoItem label={t('pages.phone1')} value={staff.phone} icon={<Phone size={14} />} isLink={staff.phone ? `tel:${staff.phone}` : null} />
           <InfoItem label={t('pages.email1')} value={staff.email} icon={<Mail size={14} />} isLink={staff.email ? `mailto:${staff.email}` : null} />
         </div>

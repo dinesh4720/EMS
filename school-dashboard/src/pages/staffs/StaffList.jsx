@@ -48,6 +48,8 @@ export default function StaffList({
     });
     // Delete confirmation modal state
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, staffIds: [], staffNames: [], isDeleting: false });
+    // Bulk action confirmation modal state (status/role changes)
+    const [bulkConfirm, setBulkConfirm] = useState({ isOpen: false, type: '', value: '', ids: [], names: [], isProcessing: false });
 
     const [columnWidths] = useState({
         name: 260,
@@ -438,37 +440,36 @@ tr:nth-child(even) td{background:#f9fafb}
         return Array.from(selectedStaff);
     };
 
-    const handleBulkStatusChange = async (newStatus) => {
+    const handleBulkStatusChange = (newStatus) => {
         if (selectedCount === 0) return;
-
         const ids = getSelectedIds();
-        const results = await Promise.allSettled(
-            ids.map(staffId => updateStaff(staffId, { status: newStatus }))
-        );
-        const failed = results.filter(r => r.status === 'rejected').length;
-        if (failed === 0) {
-            toast.success(`Status updated to ${newStatus} for ${selectedCount} staff members`);
-        } else {
-            toast.error(`${failed} of ${ids.length} updates failed`);
-        }
-        setSelectedStaff(new Set());
+        const names = ids.map(id => { const s = staff.find(st => st.id === id); return s?.name || id; });
+        setBulkConfirm({ isOpen: true, type: 'status', value: newStatus, ids, names, isProcessing: false });
     };
 
-    const handleBulkRoleChange = async (newRole) => {
+    const handleBulkRoleChange = (newRole) => {
         if (selectedCount === 0) return;
-
         const ids = getSelectedIds();
-        // role field is [String] in Mongoose schema, ensure we send an array
-        const roleArray = Array.isArray(newRole) ? newRole : [newRole];
+        const names = ids.map(id => { const s = staff.find(st => st.id === id); return s?.name || id; });
+        setBulkConfirm({ isOpen: true, type: 'role', value: newRole, ids, names, isProcessing: false });
+    };
+
+    const confirmBulkAction = async () => {
+        setBulkConfirm(prev => ({ ...prev, isProcessing: true }));
+        const { type, value, ids } = bulkConfirm;
+        const updatePayload = type === 'status'
+            ? { status: value }
+            : { role: Array.isArray(value) ? value : [value] };
         const results = await Promise.allSettled(
-            ids.map(staffId => updateStaff(staffId, { role: roleArray }))
+            ids.map(staffId => updateStaff(staffId, updatePayload))
         );
         const failed = results.filter(r => r.status === 'rejected').length;
         if (failed === 0) {
-            toast.success(`Role updated to ${newRole} for ${selectedCount} staff members`);
+            toast.success(`${type === 'status' ? 'Status' : 'Role'} updated to ${value} for ${ids.length} staff members`);
         } else {
             toast.error(`${failed} of ${ids.length} updates failed`);
         }
+        setBulkConfirm({ isOpen: false, type: '', value: '', ids: [], names: [], isProcessing: false });
         setSelectedStaff(new Set());
     };
 
@@ -974,6 +975,46 @@ tr:nth-child(even) td{background:#f9fafb}
                 )}
             </div>
             <ScrollToTopButton />
+
+            {/* Bulk Status/Role Change Confirmation Modal */}
+            <Modal isOpen={bulkConfirm.isOpen} onClose={() => !bulkConfirm.isProcessing && setBulkConfirm({ isOpen: false, type: '', value: '', ids: [], names: [], isProcessing: false })} size="sm">
+                <ModalContent>
+                    <ModalHeader className="flex flex-col gap-1">
+                        Confirm Bulk {bulkConfirm.type === 'status' ? 'Status' : 'Role'} Change
+                    </ModalHeader>
+                    <ModalBody>
+                        <div className="text-sm text-gray-600 dark:text-zinc-400">
+                            <p className="mb-2">
+                                Change {bulkConfirm.type} to <strong className="capitalize">{bulkConfirm.value}</strong> for <strong>{bulkConfirm.ids.length}</strong> staff member{bulkConfirm.ids.length !== 1 ? 's' : ''}?
+                            </p>
+                            <ul className="list-disc pl-5 max-h-32 overflow-y-auto space-y-1">
+                                {bulkConfirm.names.slice(0, 10).map((name, idx) => (
+                                    <li key={idx}>{name}</li>
+                                ))}
+                                {bulkConfirm.names.length > 10 && (
+                                    <li className="text-gray-400">...and {bulkConfirm.names.length - 10} more</li>
+                                )}
+                            </ul>
+                        </div>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button
+                            variant="light"
+                            onPress={() => setBulkConfirm({ isOpen: false, type: '', value: '', ids: [], names: [], isProcessing: false })}
+                            isDisabled={bulkConfirm.isProcessing}
+                        >
+                            {t('pages.cancel', 'Cancel')}
+                        </Button>
+                        <Button
+                            color="primary"
+                            onPress={confirmBulkAction}
+                            isLoading={bulkConfirm.isProcessing}
+                        >
+                            Confirm
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
 
             {/* Delete Confirmation Modal */}
             <Modal isOpen={deleteConfirm.isOpen} onClose={() => !deleteConfirm.isDeleting && setDeleteConfirm({ isOpen: false, staffIds: [], staffNames: [], isDeleting: false })} size="sm">

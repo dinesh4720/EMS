@@ -124,18 +124,20 @@ function getRateLimitDelayMs(error, fallbackDelay) {
 }
 
 /**
- * Batch multiple requests with delay
+ * Batch multiple requests with delay.
+ * Accepts an array of functions that return promises (not already-executing promises).
+ * Each batch of functions is invoked together, then awaited via Promise.allSettled.
  */
-export async function batchRequests(requests, batchSize = 5, delayMs = 200) {
+export async function batchRequests(requestFns, batchSize = 5, delayMs = 200) {
   const results = [];
 
-  for (let i = 0; i < requests.length; i += batchSize) {
-    const batch = requests.slice(i, i + batchSize);
-    const batchResults = await Promise.allSettled(batch);
+  for (let i = 0; i < requestFns.length; i += batchSize) {
+    const batch = requestFns.slice(i, i + batchSize);
+    const batchResults = await Promise.allSettled(batch.map(fn => fn()));
     results.push(...batchResults);
 
     // Add delay between batches (except for the last batch)
-    if (i + batchSize < requests.length) {
+    if (i + batchSize < requestFns.length) {
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
   }
@@ -192,17 +194,42 @@ export async function retryRequest(requestFn, maxRetries = 3, baseDelay = 1000) 
 }
 
 /**
- * Debounce function for repeated calls
+ * Debounce function for repeated calls.
+ * Returns a promise that resolves with the function's return value.
+ * Supports cancellation via `.cancel()`.
  */
 export function debounce(func, wait) {
   let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
+  let pendingResolve;
+  let pendingReject;
+
+  function debounced(...args) {
     clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
+
+    return new Promise((resolve, reject) => {
+      pendingResolve = resolve;
+      pendingReject = reject;
+      timeout = setTimeout(() => {
+        pendingResolve = null;
+        pendingReject = null;
+        try {
+          resolve(func(...args));
+        } catch (err) {
+          reject(err);
+        }
+      }, wait);
+    });
+  }
+
+  debounced.cancel = () => {
+    clearTimeout(timeout);
+    if (pendingReject) {
+      pendingReject(new DOMException('Debounce cancelled', 'AbortError'));
+      pendingResolve = null;
+      pendingReject = null;
+    }
   };
+
+  return debounced;
 }
 

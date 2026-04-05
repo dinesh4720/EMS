@@ -10,6 +10,8 @@ import { frontDeskApi, staffApi, announcementsApi } from '../../services/api';
 import { validatePhone } from '../../utils/validations';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 const FEEDBACK_CATEGORY_KEYS = {
   STAFF: { key: 'STAFF', subcategories: ['TEACHER', 'ADMIN', 'SUPPORT_STAFF', 'OTHER'], i18nKey: 'staff' },
@@ -27,6 +29,7 @@ const SOURCE_OPTIONS = ['PARENT_APP', 'STUDENT_APP', 'TEACHER_APP', 'WALK_IN', '
 
 const FeedbacksList = forwardRef(({ onSave, ...props }, ref) => {
   const { t } = useTranslation();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const FEEDBACK_CATEGORIES = useMemo(() => ({
     STAFF: { ...FEEDBACK_CATEGORY_KEYS.STAFF, label: t(`constants.feedback.categories.${FEEDBACK_CATEGORY_KEYS.STAFF.i18nKey}`) },
     FACILITIES: { ...FEEDBACK_CATEGORY_KEYS.FACILITIES, label: t(`constants.feedback.categories.${FEEDBACK_CATEGORY_KEYS.FACILITIES.i18nKey}`) },
@@ -123,7 +126,8 @@ const FeedbacksList = forwardRef(({ onSave, ...props }, ref) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
     if (!validateForm()) {
       toast.error(t('toast.error.pleaseFixTheErrorsBeforeSubmitting'));
       return;
@@ -227,16 +231,23 @@ const FeedbacksList = forwardRef(({ onSave, ...props }, ref) => {
     onOpen();
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm(t('confirm.deleteFeedback'))) return;
-    try {
-      await frontDeskApi.deleteFeedback(id);
-      toast.success(t('toast.success.feedbackDeleted'));
-      loadFeedbacks();
-      onSave?.();
-    } catch (error) {
-      toast.error(t('toast.error.failedToDeleteFeedback'));
-    }
+  const handleDelete = (id) => {
+    showConfirm({
+      title: 'Delete Feedback',
+      message: t('confirm.deleteFeedback'),
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await frontDeskApi.deleteFeedback(id);
+          toast.success(t('toast.success.feedbackDeleted'));
+          loadFeedbacks();
+          onSave?.();
+        } catch (error) {
+          toast.error(t('toast.error.failedToDeleteFeedback'));
+        }
+      },
+    });
   };
 
   const resetForm = () => {
@@ -568,6 +579,8 @@ const FeedbacksList = forwardRef(({ onSave, ...props }, ref) => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </>
   );
 });

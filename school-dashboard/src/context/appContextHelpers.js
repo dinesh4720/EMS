@@ -10,7 +10,6 @@ import {
   studentsApi,
   classesApi,
   settingsApi,
-  teacherTimetableApi,
   staffAttendanceApi,
   calendarEventsApi,
 } from "../services/api";
@@ -146,12 +145,29 @@ export function shouldHydrateStudentsForPath(pathname = "") {
 }
 
 // ---------------------------------------------------------------------------
+// Abort / cancellation helpers
+// ---------------------------------------------------------------------------
+
+function throwIfAborted(signal) {
+  if (signal?.aborted) {
+    throw new DOMException("Aborted", "AbortError");
+  }
+}
+
+function catchUnlessAborted(fallback) {
+  return (err) => {
+    if (err?.name === "AbortError") throw err;
+    return fallback;
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Data-fetching helpers
 // ---------------------------------------------------------------------------
 
-async function fetchStaffAttendanceData() {
+async function fetchStaffAttendanceData({ signal } = {}) {
   try {
-    const attendanceData = await staffAttendanceApi.getAll();
+    const attendanceData = await staffAttendanceApi.getAll({ signal });
     const transformedData = {};
     if (Array.isArray(attendanceData)) {
       attendanceData.forEach((record) => {
@@ -167,19 +183,21 @@ async function fetchStaffAttendanceData() {
     }
     return transformedData;
   } catch (error) {
+    if (error?.name === "AbortError") throw error;
     logger.error("Failed to fetch staff attendance:", error);
     return {};
   }
 }
 
-async function loadAllStudentsForContext(skipCache = false) {
-  const firstPage = await studentsApi.list({ page: 1, limit: 100 }, { skipCache });
+async function loadAllStudentsForContext(skipCache = false, { signal } = {}) {
+  const firstPage = await studentsApi.list({ page: 1, limit: 100 }, { skipCache, signal });
   const allStudents = [...(firstPage.data || [])];
   const totalPages = firstPage.pagination?.totalPages || 1;
   if (totalPages > 1) {
+    throwIfAborted(signal);
     const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 2);
     const results = await Promise.all(
-      remainingPages.map((page) => studentsApi.list({ page, limit: 100 }, { skipCache }))
+      remainingPages.map((page) => studentsApi.list({ page, limit: 100 }, { skipCache, signal }))
     );
     results.forEach((pageResult) => {
       allStudents.push(...(pageResult.data || []));
@@ -190,15 +208,14 @@ async function loadAllStudentsForContext(skipCache = false) {
 
 async function fetchTeacherScopedAppData(
   user,
-  teacherTimetableYear,
   skipCache = false,
   options = {}
 ) {
   const includeStudents = options.includeStudents ?? true;
+  const { signal } = options;
   const [staffProfile, assignedClassRefs] = await Promise.all([
-    staffApi.getById(user.id).catch(() => user),
-    staffApi.getClasses(user.id).catch(() => []),
-    teacherTimetableApi.get(user.id, teacherTimetableYear).catch(() => null),
+    staffApi.getById(user.id, { signal }).catch(catchUnlessAborted(user)),
+    staffApi.getClasses(user.id, { signal }).catch(catchUnlessAborted([])),
   ]);
 
   const normalizedStaffProfile = normalizeStaffMember(staffProfile, user);
@@ -220,8 +237,9 @@ async function fetchTeacherScopedAppData(
   });
 
   const classIds = Array.from(classMap.keys());
+  throwIfAborted(signal);
   const detailedClasses = await Promise.all(
-    classIds.map((classId) => classesApi.getById(classId).catch(() => null))
+    classIds.map((classId) => classesApi.getById(classId, { signal }).catch(catchUnlessAborted(null)))
   );
 
   detailedClasses.forEach((classItem) => {
@@ -238,12 +256,13 @@ async function fetchTeacherScopedAppData(
   let normalizedStudents = [];
 
   if (includeStudents) {
+    throwIfAborted(signal);
     const classLookup = new Map(
       normalizedClasses.map((classItem) => [String(classItem.id), classItem])
     );
     const studentsByClass = await Promise.all(
       normalizedClasses.map((classItem) =>
-        classesApi.getStudents(classItem.id).catch(() => [])
+        classesApi.getStudents(classItem.id, { signal }).catch(catchUnlessAborted([]))
       )
     );
     normalizedStudents = dedupeById(
@@ -265,10 +284,11 @@ async function fetchTeacherScopedAppData(
 
 async function fetchOperationalAppData(user, skipCache = false, options = {}) {
   const includeStudents = options.includeStudents ?? true;
+  const { signal } = options;
   const [staffProfile, studentsData, classesData] = await Promise.all([
-    staffApi.getById(user.id).catch(() => user),
-    includeStudents ? loadAllStudentsForContext(skipCache) : Promise.resolve([]),
-    classesApi.getAll(skipCache),
+    staffApi.getById(user.id, { signal }).catch(catchUnlessAborted(user)),
+    includeStudents ? loadAllStudentsForContext(skipCache, { signal }) : Promise.resolve([]),
+    classesApi.getAll(skipCache, { signal }),
   ]);
 
   const normalizedClasses = (Array.isArray(classesData) ? classesData : [])
@@ -293,11 +313,12 @@ async function fetchOperationalAppData(user, skipCache = false, options = {}) {
 
 async function fetchAdministrativeAppData(skipCache = false, options = {}) {
   const includeStudents = options.includeStudents ?? true;
+  const { signal } = options;
   const [staffData, studentsData, classesData, nextStaffAttendance] = await Promise.all([
-    staffApi.getAll(skipCache),
-    includeStudents ? loadAllStudentsForContext(skipCache) : Promise.resolve([]),
-    classesApi.getAll(skipCache),
-    fetchStaffAttendanceData(),
+    staffApi.getAll(skipCache, { signal }),
+    includeStudents ? loadAllStudentsForContext(skipCache, { signal }) : Promise.resolve([]),
+    classesApi.getAll(skipCache, { signal }),
+    fetchStaffAttendanceData({ signal }),
   ]);
 
   const normalizedClasses = (Array.isArray(classesData) ? classesData : [])
@@ -324,19 +345,20 @@ async function fetchAdministrativeAppData(skipCache = false, options = {}) {
 
 export async function fetchRoleAwareAppData({
   user,
-  teacherTimetableYear,
   skipCache = false,
   includeStudents = true,
+  signal,
 }) {
   if (hasAnyRole(user, ADMIN_LIKE_ROLES)) {
-    return fetchAdministrativeAppData(skipCache, { includeStudents });
+    return fetchAdministrativeAppData(skipCache, { includeStudents, signal });
   }
   if (hasAnyRole(user, TEACHER_ROLES)) {
-    return fetchTeacherScopedAppData(user, teacherTimetableYear, skipCache, {
+    return fetchTeacherScopedAppData(user, skipCache, {
       includeStudents,
+      signal,
     });
   }
-  return fetchOperationalAppData(user, skipCache, { includeStudents });
+  return fetchOperationalAppData(user, skipCache, { includeStudents, signal });
 }
 
 export async function fetchAppSettingsData({ signal } = {}) {

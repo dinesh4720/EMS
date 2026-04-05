@@ -70,23 +70,11 @@ export function useStudentPhotoActions(student, onUpdateStudent, printRef) {
     throw lastError;
   };
 
-  const handlePhotoSave = async (croppedImage) => {
+  const handlePhotoSave = async (croppedBlob) => {
     const loadingToast = toast.loading(t('toast.loading.uploadingPhoto'));
 
     try {
-      // Convert data URL to File
-      const dataURLtoFile = (dataurl, filename) => {
-        const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-          bstr = atob(arr[1]);
-        let n = bstr.length;
-        const u8arr = new Uint8Array(n);
-        while (n--) {
-          u8arr[n] = bstr.charCodeAt(n);
-        }
-        return new File([u8arr], filename, { type: mime });
-      };
-
-      const file = dataURLtoFile(croppedImage, "profile_photo.jpg");
+      const file = new File([croppedBlob], "profile_photo.jpg", { type: "image/jpeg" });
 
       // Upload to Cloudinary with retry on network failure
       const response = await withRetry(() => uploadApi.uploadFile(file));

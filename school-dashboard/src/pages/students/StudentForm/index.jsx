@@ -102,7 +102,8 @@ export default function StudentForm({
     }, 100);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
     const step1Valid = validateStep(1);
     const step2Valid = validateStep(2);
 

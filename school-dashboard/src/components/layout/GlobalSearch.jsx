@@ -9,27 +9,84 @@ import { searchApi } from "../../services/api";
 import { useTranslation } from "react-i18next";
 
 const navigationItems = [
-  { name: "Dashboard", path: "/", icon: Home, category: "Navigation" },
-  { name: "Students", path: "/students", icon: GraduationCap, category: "Navigation" },
-  { name: "Staff List", path: "/staffs", icon: Users, category: "Navigation" },
-  { name: "Staff Overview", path: "/staffs/overview", icon: Users, category: "Navigation" },
-  { name: "Classes List", path: "/classes", icon: BookOpen, category: "Navigation" },
-  { name: "Class Attendance", path: "/classes/attendance", icon: BookOpen, category: "Navigation" },
-  { name: "Timetable", path: "/classes/timetable", icon: BookOpen, category: "Navigation" },
-  { name: "Academics", path: "/academics", icon: FileText, category: "Navigation" },
-  { name: "Exams", path: "/academics/exams", icon: FileText, category: "Navigation" },
-  { name: "Calendar", path: "/calendar", icon: Calendar, category: "Navigation" },
-  { name: "Collect Fees", path: "/fees/collect", icon: CreditCard, category: "Navigation" },
-  { name: "Fee Defaulters", path: "/fees/defaulters", icon: CreditCard, category: "Navigation" },
-  { name: "Fee Reports", path: "/fees/reports", icon: CreditCard, category: "Navigation" },
-  { name: "Fee Setup", path: "/fees/setup", icon: CreditCard, category: "Navigation" },
-  { name: "Announcements", path: "/messaging/announcements", icon: Megaphone, category: "Navigation" },
-  { name: "Reminders", path: "/messaging/reminders", icon: MessageSquare, category: "Navigation" },
-  { name: "Communication Logs", path: "/messaging/logs", icon: MessageSquare, category: "Navigation" },
-  { name: "Institution Settings", path: "/settings/institution", icon: Settings, category: "Navigation" },
-  { name: "Roles & Access", path: "/settings/roles", icon: Settings, category: "Navigation" },
-  { name: "Fee Rules", path: "/settings/fee-rules", icon: Settings, category: "Navigation" },
-  { name: "Attendance Rules", path: "/settings/attendance-rules", icon: Settings, category: "Navigation" },
+  // ── Core ──
+  { name: "Dashboard", path: "/", icon: Home, category: "Navigation", keywords: "home overview stats" },
+  { name: "Schedule", path: "/calendar", icon: Calendar, category: "Navigation", keywords: "calendar events holidays timetable" },
+  { name: "Analytics", path: "/analytics", icon: Home, category: "Navigation", keywords: "reports charts data insights" },
+
+  // ── Management ──
+  { name: "Students", path: "/students", icon: GraduationCap, category: "Navigation", keywords: "pupil learner admission enroll" },
+  { name: "Student Promotion", path: "/students/promotion", icon: GraduationCap, category: "Navigation", keywords: "promote next class upgrade" },
+  { name: "Transfer Certificate", path: "/students/transfer-certificate", icon: GraduationCap, category: "Navigation", keywords: "TC leaving certificate" },
+  { name: "Staff", path: "/staffs", icon: Users, category: "Navigation", keywords: "teachers employees faculty" },
+  { name: "Classes", path: "/classes", icon: BookOpen, category: "Navigation", keywords: "sections rooms class teacher" },
+
+  // ── Academics ──
+  { name: "Academics", path: "/academics", icon: FileText, category: "Navigation", keywords: "exams results marks grades" },
+  { name: "Homework", path: "/homework", icon: FileText, category: "Navigation", keywords: "assignments tasks classwork" },
+  { name: "PTM", path: "/ptm", icon: Users, category: "Navigation", keywords: "parent teacher meeting conference" },
+
+  // ── Communication ──
+  { name: "Messages", path: "/messaging", icon: MessageSquare, category: "Navigation", keywords: "chat announcements notices" },
+  { name: "Announcements", path: "/messaging/announcements", icon: Megaphone, category: "Navigation", keywords: "notice circular broadcast" },
+
+  // ── Finance ──
+  { name: "Fee Collection", path: "/fees", icon: CreditCard, category: "Navigation", keywords: "payments collect money dues" },
+  { name: "Fee Defaulters", path: "/fees/defaulters", icon: CreditCard, category: "Navigation", keywords: "overdue pending unpaid" },
+  { name: "Fee Reports", path: "/fees/reports", icon: CreditCard, category: "Navigation", keywords: "collection summary revenue" },
+
+  // ── Operations ──
+  { name: "Front Desk", path: "/front-desk", icon: Users, category: "Navigation", keywords: "visitors gate pass reception" },
+  { name: "Library", path: "/library", icon: BookOpen, category: "Navigation", keywords: "books issue return catalogue" },
+  { name: "Reports", path: "/reports", icon: FileText, category: "Navigation", keywords: "analytics data export download" },
+
+  // ── Intake Forms ──
+  { name: "Intake Form Assignments", path: "/intake-forms/assignments", icon: FileText, category: "Navigation", keywords: "admission forms assign send" },
+  { name: "Intake Form Submissions", path: "/intake-forms/submissions", icon: FileText, category: "Navigation", keywords: "admission responses received" },
+  { name: "Intake Form Funnel", path: "/intake-forms/funnel", icon: FileText, category: "Navigation", keywords: "admission pipeline conversion" },
+
+  // ── Data Tools ──
+  { name: "Data Tools", path: "/data-tools", icon: Settings, category: "Navigation", keywords: "import export migrate bulk" },
+
+  // ── Settings: General ──
+  { name: "General Settings", path: "/settings", icon: Settings, category: "Settings", keywords: "institution school name logo address" },
+  { name: "Academic Settings", path: "/settings/academics", icon: Settings, category: "Settings", keywords: "academic year subjects grading" },
+  { name: "Admission Form Settings", path: "/settings/admission-form", icon: Settings, category: "Settings", keywords: "admission fields customize form" },
+  { name: "Intake Forms Settings", path: "/settings/intake-forms", icon: Settings, category: "Settings", keywords: "admission form builder" },
+
+  // ── Settings: Users & Access ──
+  { name: "User Management", path: "/settings/users", icon: Settings, category: "Settings", keywords: "admin accounts login users" },
+  { name: "Staff ID Configuration", path: "/settings/staff-id", icon: Settings, category: "Settings", keywords: "employee id card badge" },
+  { name: "Roles & Permissions", path: "/settings/roles", icon: Settings, category: "Settings", keywords: "access control role based admin teacher" },
+  { name: "Permission Requests", path: "/settings/permission-requests", icon: Settings, category: "Settings", keywords: "access request approval" },
+  { name: "Parent Accounts", path: "/settings/parents", icon: Settings, category: "Settings", keywords: "parent login app access" },
+
+  // ── Settings: Scheduling ──
+  { name: "Attendance Rules", path: "/settings/attendance-rules", icon: Settings, category: "Settings", keywords: "half day late policy absent present" },
+  { name: "Holiday Calendar", path: "/settings/holidays", icon: Settings, category: "Settings", keywords: "holidays vacation off days" },
+  { name: "Leave Types", path: "/settings/leaves", icon: Settings, category: "Settings", keywords: "sick casual earned leave" },
+  { name: "Period Timings", path: "/settings/periods", icon: Settings, category: "Settings", keywords: "class periods bell schedule timing" },
+  { name: "Timetable Cleanup", path: "/settings/timetable-cleanup", icon: Settings, category: "Settings", keywords: "fix orphan timetable" },
+  { name: "Promotion Rules", path: "/settings/promotion-rules", icon: Settings, category: "Settings", keywords: "pass fail criteria grade promotion" },
+
+  // ── Settings: Finance ──
+  { name: "Fee Management", path: "/settings/fees", icon: Settings, category: "Settings", keywords: "fee heads concessions late fees structure" },
+  { name: "Payroll Settings", path: "/settings/payroll", icon: Settings, category: "Settings", keywords: "salary deductions allowances payslip" },
+
+  // ── Settings: Communication ──
+  { name: "Communication Settings", path: "/settings/communication", icon: Settings, category: "Settings", keywords: "sms email whatsapp notification templates" },
+
+  // ── Settings: Integrations ──
+  { name: "Webhooks", path: "/settings/webhooks", icon: Settings, category: "Settings", keywords: "api integrations endpoints webhook" },
+  { name: "SCIM Provisioning", path: "/settings/scim", icon: Settings, category: "Settings", keywords: "sso provisioning directory sync" },
+
+  // ── Settings: System ──
+  { name: "NPS Analytics", path: "/settings/nps", icon: Settings, category: "Settings", keywords: "feedback survey satisfaction score" },
+  { name: "Subscription", path: "/settings/subscription", icon: Settings, category: "Settings", keywords: "plan billing pricing upgrade" },
+  { name: "Trash", path: "/settings/trash", icon: Settings, category: "Settings", keywords: "deleted restore recover recycle bin" },
+  { name: "Seed Data", path: "/settings/seed-data", icon: Settings, category: "Settings", keywords: "demo sample data generate" },
+  { name: "Data Cleanup", path: "/settings/data-cleanup", icon: Settings, category: "Settings", keywords: "clean purge remove old data" },
+  { name: "Active Sessions", path: "/settings/sessions", icon: Settings, category: "Settings", keywords: "login sessions devices security" },
 ];
 
 const CATEGORY_ICONS = {
@@ -85,11 +142,14 @@ export default function GlobalSearch({ isOpen, onClose }) {
   // ── Combine navigation (client-side) + API results ───────────────────
   const searchResults = useMemo(() => {
     if (!query.trim()) {
-      return { navigation: navigationItems.slice(0, 5), students: [], staff: [], classes: [], exams: [], fees: [], announcements: [] };
+      return { navigation: [], students: [], staff: [], classes: [], exams: [], fees: [], announcements: [] };
     }
 
     const q = query.toLowerCase();
-    const navigation = navigationItems.filter((item) => item.name.toLowerCase().includes(q));
+    const navigation = navigationItems.filter((item) =>
+      item.name.toLowerCase().includes(q) ||
+      (item.keywords && item.keywords.toLowerCase().includes(q))
+    );
 
     const students = (apiResults?.students?.results || []).map((s) => ({
       id: String(s._id || s.id || ""),
@@ -184,6 +244,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!isOpen) return;
+      if (allResults.length === 0) return;
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setSelectedIndex((i) => Math.min(i + 1, allResults.length - 1));
@@ -249,7 +310,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
             </p>
           )}
         </div>
-        {item.category === "Navigation" && <Kbd className="text-[10px]">\u21B5</Kbd>}
+        {item.category === "Navigation" && <Kbd className="text-[10px]">↵</Kbd>}
       </button>
     );
   };
@@ -266,7 +327,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
 
   // ── Compute section offsets for keyboard index ───────────────────────
   const sections = [
-    { key: "pages", items: searchResults.navigation || [] },
+    { key: "navigation", items: searchResults.navigation || [] },
     { key: "students", items: searchResults.students || [] },
     { key: "staff", items: searchResults.staff || [] },
     { key: "classes", items: searchResults.classes || [] },
@@ -341,8 +402,8 @@ export default function GlobalSearch({ isOpen, onClose }) {
           {/* Keyboard hints */}
           <div className="flex items-center justify-between px-4 py-2 border-t border-default-200 text-xs text-default-400">
             <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1"><Kbd>\u2191</Kbd><Kbd>\u2193</Kbd> {t("globalSearch.navigate")}</span>
-              <span className="flex items-center gap-1"><Kbd>\u21B5</Kbd> {t("globalSearch.select")}</span>
+              <span className="flex items-center gap-1"><Kbd>↑</Kbd><Kbd>↓</Kbd> {t("globalSearch.navigate")}</span>
+              <span className="flex items-center gap-1"><Kbd>↵</Kbd> {t("globalSearch.select")}</span>
               <span className="flex items-center gap-1"><Kbd>Esc</Kbd> {t("globalSearch.close")}</span>
             </div>
           </div>

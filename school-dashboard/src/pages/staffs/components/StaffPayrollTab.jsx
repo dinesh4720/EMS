@@ -68,27 +68,27 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
   <div class="box">
     <div class="box-title">Earnings</div>
     <div class="box-body">
-      <div class="row"><span class="lbl">Basic Salary</span><span>${escapeHtml((staffSalary.basic||0).toLocaleString())}</span></div>
-      <div class="row"><span class="lbl">HRA</span><span>${escapeHtml((staffSalary.hra||0).toLocaleString())}</span></div>
-      <div class="row"><span class="lbl">DA</span><span>${escapeHtml((staffSalary.da||0).toLocaleString())}</span></div>
-      <div class="row"><span class="lbl">Special Allowance</span><span>${escapeHtml((staffSalary.specialAllowance||0).toLocaleString())}</span></div>
-      <div class="row"><span class="lbl">Total Earnings</span><span>${escapeHtml(totalEarnings.toLocaleString())}</span></div>
+      <div class="row"><span class="lbl">Basic Salary</span><span>${escapeHtml((staffSalary.basic||0).toLocaleString('en-IN'))}</span></div>
+      <div class="row"><span class="lbl">HRA</span><span>${escapeHtml((staffSalary.hra||0).toLocaleString('en-IN'))}</span></div>
+      <div class="row"><span class="lbl">DA</span><span>${escapeHtml((staffSalary.da||0).toLocaleString('en-IN'))}</span></div>
+      <div class="row"><span class="lbl">Special Allowance</span><span>${escapeHtml((staffSalary.specialAllowance||0).toLocaleString('en-IN'))}</span></div>
+      <div class="row"><span class="lbl">Total Earnings</span><span>${escapeHtml(totalEarnings.toLocaleString('en-IN'))}</span></div>
     </div>
   </div>
   <div class="box">
     <div class="box-title">Deductions</div>
     <div class="box-body">
-      <div class="row"><span class="lbl">PF</span><span>${escapeHtml((staffSalary.pf||0).toLocaleString())}</span></div>
-      <div class="row"><span class="lbl">ESI</span><span>${escapeHtml((staffSalary.esi||0).toLocaleString())}</span></div>
-      <div class="row"><span class="lbl">Professional Tax</span><span>${escapeHtml((staffSalary.professionalTax||0).toLocaleString())}</span></div>
-      <div class="row"><span class="lbl">TDS</span><span>${escapeHtml((staffSalary.tds||0).toLocaleString())}</span></div>
-      <div class="row"><span class="lbl">Total Deductions</span><span>${escapeHtml(totalDeductions.toLocaleString())}</span></div>
+      <div class="row"><span class="lbl">PF</span><span>${escapeHtml((staffSalary.pf||0).toLocaleString('en-IN'))}</span></div>
+      <div class="row"><span class="lbl">ESI</span><span>${escapeHtml((staffSalary.esi||0).toLocaleString('en-IN'))}</span></div>
+      <div class="row"><span class="lbl">Professional Tax</span><span>${escapeHtml((staffSalary.professionalTax||0).toLocaleString('en-IN'))}</span></div>
+      <div class="row"><span class="lbl">TDS</span><span>${escapeHtml((staffSalary.tds||0).toLocaleString('en-IN'))}</span></div>
+      <div class="row"><span class="lbl">Total Deductions</span><span>${escapeHtml(totalDeductions.toLocaleString('en-IN'))}</span></div>
     </div>
   </div>
 </div>
 <div class="net-block">
   <span class="lbl">Net Salary</span>
-  <span class="val">${escapeHtml(net.toLocaleString())}</span>
+  <span class="val">${escapeHtml(net.toLocaleString('en-IN'))}</span>
 </div>
 <div class="footer">This is a system-generated payslip.</div>
 </body></html>`;
@@ -149,31 +149,42 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
         </div>
         {payrollHistory && payrollHistory.length > 0 ? (
           <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto dark:divide-zinc-800">
-            {payrollHistory.map((record, i) => (
-              <div key={record.id || i} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors dark:hover:bg-zinc-800/50">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center dark:bg-zinc-800">
-                    <CheckCircle2 size={14} className="text-gray-500 dark:text-zinc-400" />
+            {payrollHistory.map((record, i) => {
+              // Support both backend shape (month/year numbers, netPay) and legacy local shape
+              const monthLabel = record.year
+                ? new Date(record.year, (record.month || 1) - 1).toLocaleDateString(getDateLocale(), { month: 'long', year: 'numeric' })
+                : record.month;
+              const dateLabel = record.paymentDate
+                ? new Date(record.paymentDate).toLocaleDateString(getDateLocale())
+                : record.date || (record.createdAt ? new Date(record.createdAt).toLocaleDateString(getDateLocale()) : '');
+              const net = record.netPay ?? record.netSalary ?? netSalary;
+
+              return (
+                <div key={record._id || record.id || i} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors dark:hover:bg-zinc-800/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center dark:bg-zinc-800">
+                      <CheckCircle2 size={14} className="text-gray-500 dark:text-zinc-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{monthLabel}</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">{dateLabel}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{record.month}</p>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">{record.date}</p>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-gray-900 dark:text-zinc-100">₹{net.toLocaleString()}</p>
+                      <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400">{record.status || 'Paid'}</span>
+                    </div>
+                    <button
+                      className="p-2 hover:bg-gray-100 rounded-lg dark:hover:bg-zinc-700"
+                      onClick={() => generatePayslipPDF({ ...record, month: monthLabel, netSalary: net })}
+                    >
+                      <Download size={14} className="text-gray-400 dark:text-zinc-500" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-gray-900 dark:text-zinc-100">₹{(record.netSalary ?? netSalary).toLocaleString()}</p>
-                    <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400">{record.status || 'Paid'}</span>
-                  </div>
-                  <button
-                    className="p-2 hover:bg-gray-100 rounded-lg dark:hover:bg-zinc-700"
-                    onClick={() => generatePayslipPDF(record)}
-                  >
-                    <Download size={14} className="text-gray-400 dark:text-zinc-500" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="px-5 py-8 text-center">

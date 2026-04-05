@@ -48,19 +48,22 @@ export default function IssueBookModal({ isOpen, onClose, onSaved }) {
   };
 
   useEffect(() => {
-    const t = setTimeout(() => { if (bookSearch) fetchBooks(bookSearch); }, 300);
+    if (!bookSearch) { setBooks([]); return; }
+    const t = setTimeout(() => fetchBooks(bookSearch), 300);
     return () => clearTimeout(t);
   }, [bookSearch]);
 
   useEffect(() => {
-    const t = setTimeout(() => { if (studentSearch) fetchStudents(studentSearch); }, 300);
+    if (!studentSearch) { setStudents([]); return; }
+    const t = setTimeout(() => fetchStudents(studentSearch), 300);
     return () => clearTimeout(t);
   }, [studentSearch]);
 
   const selectedBook = books.find((b) => b._id === form.bookId);
   const selectedStudent = students.find((s) => s._id === form.studentId);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
     if (!form.bookId || !form.studentId || !form.dueDate) {
       toast.error(t('toast.error.bookStudentAndDueDateAreRequired'));
       return;

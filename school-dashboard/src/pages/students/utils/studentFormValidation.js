@@ -4,11 +4,13 @@
  * Mirrors backend createStudentSchema from validators/studentSchema.js
  */
 import { z } from 'zod';
+import { ddmmyyToIso, isoToDdmmyy } from './dateUtils';
+import { VALIDATION_RULES } from '../../../constants/studentConstants';
 
 // ── Parent/Guardian validation schema ──
 export const parentZodSchema = z.object({
   name: z.string().min(1, 'Parent name is required').max(100, 'Name must not exceed 100 characters'),
-  phone: z.string().regex(/^\d{10}$/, 'Phone must be 10 digits'),
+  phone: z.string().regex(VALIDATION_RULES.phone.pattern, VALIDATION_RULES.phone.message),
   email: z.string().email('Invalid email').or(z.literal('')).optional(),
   relationship: z.string().optional(),
   occupation: z.string().max(100).optional(),
@@ -24,7 +26,7 @@ export const step1Schema = z.object({
   classGrade: z.string().min(1, 'Required'),
   section: z.string().min(1, 'Required'),
   aadhaarNumber: z.string().regex(/^[0-9]{12}$/, 'Aadhaar must be exactly 12 digits').or(z.literal('')).optional(),
-  mobile: z.string().regex(/^\d{10}$/, 'Phone must be 10 digits').or(z.literal('')).optional(),
+  mobile: z.string().regex(VALIDATION_RULES.phone.pattern, VALIDATION_RULES.phone.message).or(z.literal('')).optional(),
   email: z.string().email('Invalid email').or(z.literal('')).optional(),
   zipCode: z.string().regex(/^\d{6}$/, 'PIN code must be exactly 6 digits').or(z.literal('')).optional(),
 });
@@ -76,7 +78,7 @@ export function validateStep(stepNum, formData) {
     }
     // Validate additional parents' phone numbers
     formData.parents.slice(1).forEach((parent, i) => {
-      if (parent.phone && !/^\d{10}$/.test(parent.phone)) {
+      if (parent.phone && !VALIDATION_RULES.phone.pattern.test(parent.phone)) {
         newErrors[`additionalParentPhone_${i + 1}`] = 'Phone must be 10 digits';
       }
       if (parent.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parent.email)) {
@@ -88,27 +90,8 @@ export function validateStep(stepNum, formData) {
   return { isValid: Object.keys(newErrors).length === 0, errors: newErrors };
 }
 
-/**
- * Convert DD/MM/YYYY to YYYY-MM-DD for database storage
- */
-export function ddmmyyToIso(ddmmyy) {
-  if (!ddmmyy || typeof ddmmyy !== 'string') return '';
-  const parts = ddmmyy.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (!parts) return '';
-  const [, day, month, year] = parts;
-  return `${year}-${month}-${day}`;
-}
-
-/**
- * Convert YYYY-MM-DD to DD/MM/YYYY for display
- */
-export function isoToDdmmyy(iso) {
-  if (!iso || typeof iso !== 'string') return '';
-  const parts = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!parts) return '';
-  const [, year, month, day] = parts;
-  return `${day}/${month}/${year}`;
-}
+// Re-export date conversion utilities from the canonical source (dateUtils.js)
+export { ddmmyyToIso, isoToDdmmyy };
 
 /**
  * Build the student data payload for API submission.
@@ -156,6 +139,8 @@ export function buildStudentPayload(formData, {
     motherTongue: formData.motherTongue,
     previousSchool: formData.previousSchool,
     tcNumber: formData.tcNumber,
+    mediumOfInstruction: formData.mediumOfInstruction,
+    house: formData.house,
     transportRequired: formData.transportRequired,
     hostelRequired: formData.hostelRequired,
     medicalConditions: formData.medicalConditions,

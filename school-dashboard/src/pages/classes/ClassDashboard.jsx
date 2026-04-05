@@ -13,6 +13,7 @@ import Attendance from "./Attendance";
 import Timetable from "./Timetable";
 import ClassSettingsPanel from "./ClassSettingsPanel";
 import ClassTeacherAssignmentModal from "./components/ClassTeacherAssignmentModal";
+import { toTodayDateString } from '../../utils/dateFormatter';
 import { useTranslation } from 'react-i18next';
 import { DetailPageSkeleton } from '../../components/skeletons/PageSkeletons';
 import ErrorBoundary from '../../components/ui/ErrorBoundary';
@@ -64,8 +65,10 @@ export default function ClassDashboard() {
 
   const cls = classesWithTeachers.find(c => String(c.id) === String(id) || String(c._id) === String(id)) || null;
 
+  // Sync tab state from URL (e.g. browser back/forward) — use setActiveTabState
+  // directly to avoid calling navigate() again (URL is already correct)
   useEffect(() => {
-    if (tabFromUrl) setActiveTab(tabFromUrl);
+    setActiveTabState(tabFromUrl || 'overview');
   }, [tabFromUrl]);
 
   // Refresh class data on mount
@@ -127,7 +130,7 @@ export default function ClassDashboard() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${cls?.name || 'class'}-${cls?.section || ''}-report-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `${cls?.name || 'class'}-${cls?.section || ''}-report-${toTodayDateString()}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

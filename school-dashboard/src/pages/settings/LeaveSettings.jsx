@@ -87,6 +87,10 @@ export default function LeaveSettings() {
 
   const handleSave = async () => {
     if (!formData.name.trim()) return;
+    if (!formData.quota || formData.quota < 1) {
+      toast.error('Quota must be at least 1 day');
+      return;
+    }
 
     setSaving(true);
     try {
@@ -340,6 +344,9 @@ export default function LeaveSettings() {
               placeholder={t('settings.leaveQuotaPlaceholder')}
               value={formData.quota}
               onValueChange={(v) => setFormData({ ...formData, quota: parseInt(v) || 0 })}
+              min={1}
+              isInvalid={formData.quota < 1}
+              errorMessage={formData.quota < 1 ? 'Quota must be at least 1 day' : undefined}
               variant="bordered"
             />
             <div className="flex items-center justify-between p-3 bg-default-50 rounded-lg border border-default-200">
@@ -372,7 +379,7 @@ export default function LeaveSettings() {
             <Button 
               color="primary" 
               onPress={handleSave}
-              isDisabled={!formData.name.trim()}
+              isDisabled={!formData.name.trim() || formData.quota < 1}
               isLoading={saving}
             >
               {editingLeave ? "Update" : "Add"} Leave Type

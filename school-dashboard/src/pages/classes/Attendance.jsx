@@ -6,6 +6,7 @@ import { useApp } from "../../context/AppContext";
 import { useSettings } from "../../context/SettingsContext";
 import { attendanceApi, classesApi } from "../../services/api";
 import { useTranslation } from 'react-i18next';
+import { toTodayDateString } from '../../utils/dateFormatter';
 
 const ITEMS_PER_LOAD = 10;
 
@@ -27,8 +28,8 @@ export default function Attendance({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { students, classesWithTeachers } = useApp();
-  const { schoolSettings } = useSettings();
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const { schoolSettings, events } = useSettings();
+  const [date, setDate] = useState(toTodayDateString());
   const [selectedClass, setSelectedClass] = useState(classId || "");
   const [attendance, setAttendance] = useState({});
   // AUDIT-227: Use school setting for lock period, fallback to 7 days
@@ -41,12 +42,41 @@ export default function Attendance({
     cutoff.setHours(0, 0, 0, 0);
     return selected < cutoff;
   }, [date, attendanceLockDays]);
+  // AUDIT-444: Check if selected date is a holiday or non-working day
+  const invalidDateReason = useMemo(() => {
+    if (!date) return null;
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const d = new Date(date + 'T00:00:00Z');
+    const dayOfWeek = dayNames[d.getUTCDay()];
+    const workingDays = schoolSettings?.workingDays || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    if (!workingDays.includes(dayOfWeek)) {
+      return t('attendance.nonWorkingDay', '{{day}} is not a working day', { day: dayOfWeek });
+    }
+    const holiday = (events || []).find(e => e.type === 'holiday' && e.date === date);
+    if (holiday) {
+      return t('attendance.holidayDate', '{{date}} is a holiday ({{name}})', { date, name: holiday.title });
+    }
+    return null;
+  }, [date, schoolSettings?.workingDays, events, t]);
+
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
   const [saveMessage, setSaveMessage] = useState(null);
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  // editReason state removed - was unused
+  const { isOpen: isOverwriteOpen, onOpen: onOverwriteOpen, onClose: onOverwriteClose } = useDisclosure();
+  const [hasExistingAttendance, setHasExistingAttendance] = useState(false);
   const [isNotifying, setIsNotifying] = useState(false);
+  const messageTimerRef = useRef(null);
+
+  // Helper: auto-clear saveMessage after `ms`, cancelling any previous timer
+  const clearMessageAfter = useCallback((ms) => {
+    if (messageTimerRef.current) clearTimeout(messageTimerRef.current);
+    messageTimerRef.current = setTimeout(() => setSaveMessage(null), ms);
+  }, []);
+
+  // Cleanup message timer on unmount
+  useEffect(() => {
+    return () => { if (messageTimerRef.current) clearTimeout(messageTimerRef.current); };
+  }, []);
 
   // Determine if we're embedded inside ClassDashboard (classId prop is an ObjectId)
   const isEmbedded = !!classId;
@@ -55,6 +85,8 @@ export default function Attendance({
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const loaderRef = useRef(null);
+  const hasMoreRef = useRef(false);
+  const isLoadingMoreRef = useRef(false);
 
   // Set default selected class when classesWithTeachers loads (for standalone mode)
   useEffect(() => {
@@ -70,7 +102,7 @@ export default function Attendance({
     if (classId) return classId; // ObjectId from ClassDashboard
     if (!selectedClass) return null;
     // selectedClass is now a class ID; fall back to name-section lookup for legacy values
-    const directMatch = classesWithTeachers.find(c => (c.id || c._id) === selectedClass);
+    const directMatch = classesWithTeachers.find(c => String(c.id || c._id) === String(selectedClass));
     if (directMatch) return directMatch.id || directMatch._id;
     // Legacy fallback: name-section string
     const lastDash = selectedClass.lastIndexOf('-');
@@ -138,6 +170,10 @@ export default function Attendance({
         }
       }
 
+      // Track whether attendance was already saved for this class+date
+      const hasRecords = Object.keys(existingAttendance).length > 0;
+      setHasExistingAttendance(hasRecords);
+
       // Merge: set fetched data, default remaining students to "unmarked"
       const merged = {};
       currentStudents.forEach(s => {
@@ -148,6 +184,7 @@ export default function Attendance({
     } catch (error) {
       // If 404 or no data, initialize all as unmarked
       console.warn('No existing attendance found, initializing defaults:', error.message);
+      setHasExistingAttendance(false);
       const newAttendance = {};
       currentStudents.forEach(s => {
         newAttendance[sid(s)] = "unmarked";
@@ -176,17 +213,19 @@ export default function Attendance({
   }, [classStudents, visibleCount]);
 
   const hasMore = visibleCount < classStudents.length;
+  hasMoreRef.current = hasMore;
+  isLoadingMoreRef.current = isLoadingMore;
 
   // Reset visible count when class changes
   useEffect(() => {
     setVisibleCount(ITEMS_PER_LOAD);
   }, [selectedClass, classId]);
 
-  // Lazy loading intersection observer
+  // Lazy loading intersection observer — created once, reads refs for current state
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+        if (entries[0].isIntersecting && hasMoreRef.current && !isLoadingMoreRef.current) {
           setIsLoadingMore(true);
           setTimeout(() => {
             setVisibleCount(prev => prev + ITEMS_PER_LOAD);
@@ -202,14 +241,14 @@ export default function Attendance({
     }
 
     return () => observer.disconnect();
-  }, [hasMore, isLoadingMore]);
+  }, []);
 
   const markAttendance = (studentId, status) => {
-    if (!isLocked) setAttendance(prev => ({ ...prev, [studentId]: status }));
+    if (!isLocked && !invalidDateReason) setAttendance(prev => ({ ...prev, [studentId]: status }));
   };
 
   const markAllPresent = () => {
-    if (!isLocked) {
+    if (!isLocked && !invalidDateReason) {
       const newAttendance = {};
       classStudents.forEach(s => { newAttendance[sid(s)] = "present"; });
       setAttendance(prev => ({ ...prev, ...newAttendance }));
@@ -234,18 +273,19 @@ export default function Attendance({
       });
     } finally {
       setIsNotifying(false);
-      setTimeout(() => setSaveMessage(null), 4000);
+      clearMessageAfter(4000);
     }
   };
 
-  const handleSaveAttendance = async () => {
-    if (isLocked || isSaving) return;
+  // AUDIT-455: Validate before save, prompt confirmation if overwriting existing attendance
+  const handleSaveAttendance = () => {
+    if (isLocked || isSaving || invalidDateReason) return;
 
     // AUDIT-45: Prevent saving attendance for future dates
-    const today = new Date().toISOString().split('T')[0];
+    const today = toTodayDateString();
     if (date > today) {
       setSaveMessage({ type: 'error', text: t('attendance.cannotSaveFutureDate', 'Cannot save attendance for a future date.') });
-      setTimeout(() => setSaveMessage(null), 3000);
+      clearMessageAfter(3000);
       return;
     }
 
@@ -260,15 +300,30 @@ export default function Attendance({
         type: 'error',
         text: t('attendance.markAtLeastOne', 'Please mark attendance for at least one student before saving')
       });
-      setTimeout(() => setSaveMessage(null), 3000);
+      clearMessageAfter(3000);
       return;
     }
 
     if (!resolvedClassId) {
       setSaveMessage({ type: 'error', text: t('attendance.selectValidClass', 'Please select a valid class') });
-      setTimeout(() => setSaveMessage(null), 3000);
+      clearMessageAfter(3000);
       return;
     }
+
+    // If attendance already exists for this class+date, confirm before overwriting
+    if (hasExistingAttendance) {
+      onOverwriteOpen();
+      return;
+    }
+
+    performSave();
+  };
+
+  const performSave = async () => {
+    const validStatuses = ATTENDANCE_STATUSES.map(s => s.key);
+    const markedStudents = classStudents.filter(s =>
+      validStatuses.includes(attendance[sid(s)])
+    );
 
     try {
       setIsSaving(true);
@@ -288,16 +343,20 @@ export default function Attendance({
         clientTimestamp: new Date().toISOString()
       });
 
+      // After successful save, mark as existing so subsequent saves also warn
+      setHasExistingAttendance(true);
+
       // Show success message with unmarked warning if applicable
       const savedCount = response.results?.length || markedStudents.length;
-      const unmarkedWarning = unmarkedCount > 0 ? ` (${unmarkedCount} ${t('attendance.stillUnmarked', 'still unmarked')})` : '';
+      const unmarkedRemaining = classStudents.length - markedStudents.length;
+      const unmarkedWarning = unmarkedRemaining > 0 ? ` (${unmarkedRemaining} ${t('attendance.stillUnmarked', 'still unmarked')})` : '';
       setSaveMessage({
         type: 'success',
         text: t('attendance.savedForStudents', 'Attendance saved for {{count}} students', { count: savedCount }) + unmarkedWarning
       });
 
       // Auto-hide message after 3 seconds
-      setTimeout(() => setSaveMessage(null), 3000);
+      clearMessageAfter(3000);
     } catch (error) {
       console.error('Error saving attendance:', error);
       setSaveMessage({
@@ -306,10 +365,15 @@ export default function Attendance({
       });
 
       // Auto-hide error message after 5 seconds
-      setTimeout(() => setSaveMessage(null), 5000);
+      clearMessageAfter(5000);
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleConfirmOverwrite = () => {
+    onOverwriteClose();
+    performSave();
   };
 
   const presentCount = classStudents.filter(s => attendance[sid(s)] === "present").length;
@@ -319,8 +383,9 @@ export default function Attendance({
   const halfdayCount = classStudents.filter(s => attendance[sid(s)] === "halfday").length;
   const unmarkedCount = classStudents.filter(s => !attendance[sid(s)] || attendance[sid(s)] === "unmarked").length;
   const markedCount = presentCount + absentCount + lateCount + leaveCount + halfdayCount;
-  // AUDIT-46: Count halfday as 0.5 present in percentage; late counts as fully present
-  const effectivePresent = presentCount + lateCount + halfdayCount * 0.5;
+  // AUDIT-46/456: Count halfday as 0.5; late weight is configurable via school settings (default 100%)
+  const lateWeight = (schoolSettings?.attendanceRules?.lateWeight ?? 100) / 100;
+  const effectivePresent = presentCount + lateCount * lateWeight + halfdayCount * 0.5;
   const attendancePercent = markedCount > 0 ? Math.round((effectivePresent / markedCount) * 100) : 0;
   const defaulters = classStudents.filter(s => attendance[sid(s)] === "absent");
 
@@ -349,13 +414,13 @@ export default function Attendance({
             type="date"
             size="sm"
             value={date}
-            max={new Date().toISOString().split('T')[0]}
+            max={toTodayDateString()}
             onChange={(e) => {
               const selected = e.target.value;
-              const today = new Date().toISOString().split('T')[0];
+              const today = toTodayDateString();
               if (selected > today) {
                 setSaveMessage({ type: 'error', text: t('attendance.cannotMarkFutureDate', 'Cannot mark attendance for a future date.') });
-                setTimeout(() => setSaveMessage(null), 3000);
+                clearMessageAfter(3000);
                 return;
               }
               setDate(selected);
@@ -371,7 +436,7 @@ export default function Attendance({
 
         {/* Right Side - Actions */}
         <div className="flex gap-2 w-full sm:w-auto justify-end">
-          <Button size="sm" color="success" variant="flat" startContent={<Check size={14} />} onPress={markAllPresent} isDisabled={isLocked}>{t('pages.markAllPresent')}</Button>
+          <Button size="sm" color="success" variant="flat" startContent={<Check size={14} />} onPress={markAllPresent} isDisabled={isLocked || !!invalidDateReason}>{t('pages.markAllPresent')}</Button>
           {absentCount > 0 && <Button size="sm" color="warning" variant="flat" startContent={<Bell size={14} />} onPress={handleNotifyParents} isLoading={isNotifying}>{t('attendance.notifyParents', 'Notify Parents')} ({absentCount})</Button>}
         </div>
       </div>
@@ -380,6 +445,13 @@ export default function Attendance({
         <div className="flex items-center gap-2 p-3 bg-warning-50 text-warning-700 rounded-lg mb-4 mx-1">
           <Lock size={16} />
           <span className="text-sm font-medium">{t('pages.attendanceIsLockedUnlockInSettingsToMakeChanges')}</span>
+        </div>
+      )}
+
+      {invalidDateReason && !isLocked && (
+        <div className="flex items-center gap-2 p-3 bg-danger-50 text-danger-700 rounded-lg mb-4 mx-1">
+          <AlertTriangle size={16} />
+          <span className="text-sm font-medium">{invalidDateReason}</span>
         </div>
       )}
 
@@ -495,7 +567,7 @@ export default function Attendance({
           size="md"
           color="primary"
           onPress={handleSaveAttendance}
-          isDisabled={isLocked || isSaving}
+          isDisabled={isLocked || isSaving || !!invalidDateReason}
           isLoading={isSaving}
           className="font-medium px-8"
         >
@@ -570,7 +642,7 @@ export default function Attendance({
                         color={isActive ? color : "default"}
                         variant={isActive ? "solid" : "light"}
                         onPress={() => markAttendance(sid(student), key)}
-                        isDisabled={isLocked}
+                        isDisabled={isLocked || !!invalidDateReason}
                         className={`min-w-0 px-2 gap-1 text-xs ${isActive ? '' : 'text-default-400'}`}
                         startContent={<Icon size={13} />}
                       >
@@ -592,6 +664,29 @@ export default function Attendance({
           <span className="text-default-400 text-sm">{t('attendance.allStudentsLoaded', 'All {{count}} students loaded', { count: classStudents.length })}</span>
         )}
       </div>
+
+      {/* AUDIT-455: Overwrite confirmation modal */}
+      <Modal isOpen={isOverwriteOpen} onClose={onOverwriteClose} size="sm">
+        <ModalContent>
+          <ModalHeader className="flex items-center gap-2">
+            <AlertTriangle size={18} className="text-warning-500" />
+            {t('attendance.overwriteTitle', 'Attendance Already Saved')}
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-default-600">
+              {t('attendance.overwriteMessage', 'Attendance for this class on {{date}} has already been saved. Saving again will overwrite the existing records.', { date })}
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button size="sm" variant="flat" onPress={onOverwriteClose}>
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button size="sm" color="warning" onPress={handleConfirmOverwrite}>
+              {t('attendance.overwriteConfirm', 'Overwrite')}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {defaulters.length > 0 && (
         <Card className="mt-6 shadow-sm border border-danger-200 bg-danger-50/20">

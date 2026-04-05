@@ -1,10 +1,9 @@
 /**
  * StaffDocumentsTab - Minimal gray styling matching StudentDashboard
  */
-import { Upload, FileText, Eye, Download, Share2, Trash2, FolderPlus, FileCheck } from "lucide-react";
+import { Upload, FileText, Eye, Download, Link2, Trash2, FolderPlus, FileCheck } from "lucide-react";
 import { Button, Progress } from "@heroui/react";
 import toast from "react-hot-toast";
-import { announcementsApi } from "../../../services/api";
 import { useTranslation } from 'react-i18next';
 import { formatShortDate } from '../../../utils/dateFormatter';
 
@@ -165,26 +164,19 @@ export default function StaffDocumentsTab({
                     </a>
                     <button
                       className="p-2 hover:bg-gray-100 rounded-lg dark:hover:bg-zinc-700"
-                      onClick={async () => {
-                        const loadingId = toast.loading('Sharing document…');
-                        try {
-                          await announcementsApi.create({
-                            title: `Document Shared: ${doc.name}`,
-                            content: `A document has been shared with all staff.\n\nDocument: ${doc.name}\nType: ${getDocumentType(doc)}${staffName ? `\nFrom: ${staffName}` : ''}${doc.url ? `\nView: ${doc.url}` : ''}`.trim(),
-                            recipients: [{ type: 'staff' }],
-                            channels: ['in_app'],
-                          });
-                          toast.dismiss(loadingId);
-                          toast.success('Document shared via internal messaging');
-                        } catch (err) {
-                          toast.dismiss(loadingId);
-                          toast.error('Failed to share document');
-                          console.error('Document share error:', err);
+                      onClick={() => {
+                        if (doc.url) {
+                          navigator.clipboard.writeText(doc.url).then(
+                            () => toast.success('Document link copied to clipboard'),
+                            () => toast.error('Failed to copy link')
+                          );
+                        } else {
+                          toast.error('No document URL available');
                         }
                       }}
                       title={t('pages.share')}
                     >
-                      <Share2 size={14} className="text-gray-400 dark:text-zinc-500" />
+                      <Link2 size={14} className="text-gray-400 dark:text-zinc-500" />
                     </button>
                     <button
                       className="p-2 hover:bg-gray-100 rounded-lg dark:hover:bg-zinc-700"

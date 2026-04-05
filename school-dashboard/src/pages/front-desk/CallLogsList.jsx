@@ -10,6 +10,8 @@ import { validatePhone, validateFutureDate } from '../../utils/validations';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { formatShortDate, formatDateTime} from '../../utils/dateFormatter';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 const CALL_PURPOSES = [
   { key: 'ADMISSION_INQUIRY', label: 'Admission Inquiry' },
@@ -24,6 +26,7 @@ const CALL_PURPOSES = [
 
 const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
   const { t } = useTranslation();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [callLogs, setCallLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState({});
@@ -99,7 +102,8 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
     if (isSubmitting) return;
     if (!validateForm()) {
       toast.error(t('toast.error.pleaseFixTheErrorsBeforeSubmitting'));
@@ -154,16 +158,23 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
     onDetailOpen();
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm(t('confirm.deleteCallLog'))) return;
-    try {
-      await frontDeskApi.deleteCallLog(id);
-      toast.success(t('toast.success.callLogDeleted'));
-      loadCallLogs();
-      onSave?.();
-    } catch (error) {
-      toast.error(t('toast.error.failedToDeleteCallLog'));
-    }
+  const handleDelete = (id) => {
+    showConfirm({
+      title: 'Delete Call Log',
+      message: t('confirm.deleteCallLog'),
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await frontDeskApi.deleteCallLog(id);
+          toast.success(t('toast.success.callLogDeleted'));
+          loadCallLogs();
+          onSave?.();
+        } catch (error) {
+          toast.error(t('toast.error.failedToDeleteCallLog'));
+        }
+      },
+    });
   };
 
   const resetForm = () => {
@@ -510,6 +521,8 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </>
   );
 });

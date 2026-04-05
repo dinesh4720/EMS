@@ -74,13 +74,6 @@ describe('examsApi', () => {
     expect(request).toHaveBeenCalledWith('/exams/exam123/results');
   });
 
-  it('publishResults — PUTs to /exams/:id/publish-results with publish flag', () => {
-    examsApi.publishResults('exam123', true);
-    expect(request).toHaveBeenCalledWith('/exams/exam123/publish-results', {
-      method: 'PUT',
-      body: JSON.stringify({ publish: true }),
-    });
-  });
 });
 
 // ---------------------------------------------------------------------------

@@ -13,6 +13,7 @@ export {
 } from './classes.js';
 export {
   settingsApi, billingApi, superAdminApi, changelogAdminApi, featureFlagsAdminApi,
+  ssoApi,
 } from './settings.js';
 export {
   calendarEventsApi, intakeFormsApi, publicApi, notificationsApi,

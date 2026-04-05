@@ -7,13 +7,16 @@ import PermissionGuard from "./PermissionGuard";
  * @param {string} action - Action type (default: 'view')
  */
 export function withPermission(Component, module, action = 'view') {
-  return function PermissionWrappedComponent(props) {
+  const displayName = Component.displayName || Component.name || 'Component';
+  function PermissionWrappedComponent(props) {
     return (
       <PermissionGuard module={module} action={action}>
         <Component {...props} />
       </PermissionGuard>
     );
-  };
+  }
+  PermissionWrappedComponent.displayName = `withPermission(${displayName})`;
+  return PermissionWrappedComponent;
 }
 
 export default withPermission;

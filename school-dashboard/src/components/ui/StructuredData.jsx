@@ -46,7 +46,6 @@ function buildOrganizationSchema(origin) {
     applicationCategory: 'EducationalApplication',
     operatingSystem: 'Web',
     description: APP_DESCRIPTION,
-    offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
   };
 }
 
@@ -79,14 +78,13 @@ export default function StructuredData() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    const origin = window.location.origin;
-    upsertJsonLd('json-ld-organization', buildOrganizationSchema(origin));
-    upsertJsonLd('json-ld-breadcrumbs', buildBreadcrumbSchema(origin, pathname));
+    upsertJsonLd('json-ld-organization', buildOrganizationSchema(window.location.origin));
+    return () => removeJsonLd('json-ld-organization');
+  }, []);
 
-    return () => {
-      removeJsonLd('json-ld-organization');
-      removeJsonLd('json-ld-breadcrumbs');
-    };
+  useEffect(() => {
+    upsertJsonLd('json-ld-breadcrumbs', buildBreadcrumbSchema(window.location.origin, pathname));
+    return () => removeJsonLd('json-ld-breadcrumbs');
   }, [pathname]);
 
   return null;

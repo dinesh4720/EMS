@@ -212,7 +212,21 @@ function ProfileSection({ formData, updateField }) {
 }
 
 // [AUDIT-541] Changed ref prop to inputRef — function components can't receive ref as plain prop
+// [AUDIT-629] Added DD/MM/YYYY input mask
 function DateOfBirthInput({ value, onChange, error, inputRef }) {
+  const handleDateInput = (raw) => {
+    // Strip non-digits
+    const digits = raw.replace(/\D/g, "").slice(0, 8);
+    // Auto-insert slashes: DD/MM/YYYY
+    let masked = digits;
+    if (digits.length > 4) {
+      masked = digits.slice(0, 2) + "/" + digits.slice(2, 4) + "/" + digits.slice(4);
+    } else if (digits.length > 2) {
+      masked = digits.slice(0, 2) + "/" + digits.slice(2);
+    }
+    onChange(masked);
+  };
+
   return (
     <div ref={inputRef} className="space-y-1">
       <label className="text-xs font-medium text-default-600">
@@ -222,12 +236,13 @@ function DateOfBirthInput({ value, onChange, error, inputRef }) {
         labelPlacement="outside"
         placeholder="DD/MM/YYYY"
         value={value || ""}
-        onValueChange={onChange}
+        onValueChange={handleDateInput}
         isInvalid={!!error}
         errorMessage={error}
         variant="bordered"
         radius="sm"
         isRequired
+        maxLength={10}
         classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-primary-400 h-10" }}
       />
     </div>
@@ -236,6 +251,7 @@ function DateOfBirthInput({ value, onChange, error, inputRef }) {
 
 // [AUDIT-541] Changed ref prop to inputRef
 function ClassSection({ formData, errors, classesWithTeachers, onClassChange, onSectionChange, inputRef }) {
+  const { t } = useTranslation();
   const uniqueClasses = [...new Set(classesWithTeachers.map((c) => c.name))].sort(
     (a, b) => parseInt(a) - parseInt(b)
   );
@@ -245,7 +261,7 @@ function ClassSection({ formData, errors, classesWithTeachers, onClassChange, on
     : [];
 
   return (
-    <div className="space-y-2 pt-2 border-t border-solid border-default-200" ref={ref}>
+    <div className="space-y-2 pt-2 border-t border-solid border-default-200" ref={inputRef}>
       <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.classInformation')}</label>
       <div className="grid grid-cols-2 gap-4">
         <Select
@@ -290,6 +306,7 @@ function ClassSection({ formData, errors, classesWithTeachers, onClassChange, on
 }
 
 function ContactSection({ formData, updateField }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-2 pt-2 border-t border-solid border-default-200">
       <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.contactDetails1')}</label>
@@ -322,6 +339,7 @@ function ContactSection({ formData, updateField }) {
 }
 
 function AddressSection({ formData, errors, updateField, onZipCodeChange, isZipLookupLoading, onManualCityStateEntry }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-2">
       <Textarea
@@ -381,6 +399,7 @@ function AddressSection({ formData, errors, updateField, onZipCodeChange, isZipL
 }
 
 function OptionalSection({ formData, updateField }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-2 pt-2 border-t border-solid border-default-200">
       <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.optionalInformation')}</label>

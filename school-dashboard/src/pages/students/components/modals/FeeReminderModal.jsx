@@ -8,6 +8,7 @@ import { MessageSquare, User, Phone, Mail, Send } from "lucide-react";
 import { request } from "../../../../services/api";
 import { useApp } from "../../../../context/AppContext";
 import toast from "react-hot-toast";
+import { formatCurrency } from '../../../../utils/numberFormatter';
 
 export default function FeeReminderModal({ isOpen, onClose, student, studentFeeStructure }) {
   const { t } = useTranslation();
@@ -24,9 +25,9 @@ export default function FeeReminderModal({ isOpen, onClose, student, studentFeeS
 
       let defaultMessage = "";
       if (hasOutstanding) {
-        defaultMessage = `Dear ${student?.parentName || 'Parent'}, this is a reminder that fee payment of ₹${studentFeeStructure?.totalBalance?.toLocaleString() || 0} is pending for ${student?.name}. Please pay at your earliest convenience. - ${schoolName}`;
+        defaultMessage = `Dear ${student?.parentName || 'Parent'}, this is a reminder that fee payment of ${formatCurrency(studentFeeStructure?.totalBalance || 0)} is pending for ${student?.name}. Please pay at your earliest convenience. - ${schoolName}`;
       } else {
-        defaultMessage = `Dear ${student?.parentName || 'Parent'}, thank you for the fee payment of ₹${studentFeeStructure?.totalPaid?.toLocaleString() || 0} for ${student?.name}. - ${schoolName}`;
+        defaultMessage = `Dear ${student?.parentName || 'Parent'}, thank you for the fee payment of ${formatCurrency(studentFeeStructure?.totalPaid || 0)} for ${student?.name}. - ${schoolName}`;
       }
 
       setReminderMessage(defaultMessage);
@@ -140,14 +141,14 @@ export default function FeeReminderModal({ isOpen, onClose, student, studentFeeS
                 <>
                   <p className="text-xs font-semibold text-warning-700 uppercase mb-1">{t('students.profile.overview.outstandingAmount', 'Outstanding Amount')}</p>
                   <p className="text-2xl font-bold text-warning-900">
-                    ₹{studentFeeStructure?.totalBalance?.toLocaleString() || 0}
+                    {formatCurrency(studentFeeStructure?.totalBalance || 0)}
                   </p>
                 </>
               ) : (
                 <>
                   <p className="text-xs font-semibold text-success-700 uppercase mb-1">{t('students.profile.overview.totalFeesPaidTillDate', 'Total Fees Paid Till Date')}</p>
                   <p className="text-2xl font-bold text-success-900">
-                    ₹{studentFeeStructure?.totalPaid?.toLocaleString() || 0}
+                    {formatCurrency(studentFeeStructure?.totalPaid || 0)}
                   </p>
                 </>
               )}

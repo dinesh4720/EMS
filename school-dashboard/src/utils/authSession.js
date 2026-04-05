@@ -1,3 +1,13 @@
+import {
+  safeGetItem,
+  safeSetItem,
+  safeRemoveItem,
+  safeSessionGetItem,
+  safeSessionSetItem,
+  safeSessionRemoveItem,
+  safeSessionClear,
+} from './safeStorage';
+
 export const AUTH_STORAGE_KEY = 'app_user';
 
 // SECURITY: Only these fields are persisted to sessionStorage. Crucially,
@@ -20,32 +30,12 @@ function dispatchAuthEvent(eventName) {
   window.dispatchEvent(new Event(eventName));
 }
 
-function getSessionStorage() {
+function parseJSON(raw, removeKey) {
+  if (!raw) return null;
   try {
-    return window.sessionStorage;
+    return JSON.parse(raw);
   } catch {
-    return null;
-  }
-}
-
-function getLocalStorage() {
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
-}
-
-function parseStoredUser(storage) {
-  const storedUser = storage.getItem(AUTH_STORAGE_KEY);
-  if (!storedUser) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(storedUser);
-  } catch (error) {
-    storage.removeItem(AUTH_STORAGE_KEY);
+    removeKey();
     return null;
   }
 }
@@ -67,17 +57,18 @@ function sanitizeStoredUser(user) {
 }
 
 function getRawStoredUser() {
-  const sessionStorageRef = getSessionStorage();
-  const localStorageRef = getLocalStorage();
+  const sessionUser = parseJSON(
+    safeSessionGetItem(AUTH_STORAGE_KEY),
+    () => safeSessionRemoveItem(AUTH_STORAGE_KEY),
+  );
+  if (sessionUser) return sessionUser;
 
-  const sessionUser = sessionStorageRef ? parseStoredUser(sessionStorageRef) : null;
-  if (sessionUser) {
-    return sessionUser;
-  }
-
-  const legacyLocalUser = localStorageRef ? parseStoredUser(localStorageRef) : null;
+  const legacyLocalUser = parseJSON(
+    safeGetItem(AUTH_STORAGE_KEY),
+    () => safeRemoveItem(AUTH_STORAGE_KEY),
+  );
   if (legacyLocalUser) {
-    localStorageRef?.removeItem(AUTH_STORAGE_KEY);
+    safeRemoveItem(AUTH_STORAGE_KEY);
     return legacyLocalUser;
   }
 
@@ -117,21 +108,27 @@ export function saveStoredUser(user) {
 
   // Never store tokens in sessionStorage — they live in httpOnly cookies only.
   const serializedUser = JSON.stringify(sanitizedUser);
-  const sessionStorageRef = getSessionStorage();
-  const localStorageRef = getLocalStorage();
 
-  if (sessionStorageRef) {
-    sessionStorageRef.setItem(AUTH_STORAGE_KEY, serializedUser);
-    localStorageRef?.removeItem(AUTH_STORAGE_KEY);
-  } else if (localStorageRef) {
-    // Fallback for browsers that block sessionStorage in this context.
-    localStorageRef.setItem(AUTH_STORAGE_KEY, serializedUser);
+  // Try sessionStorage first; fall back to localStorage if blocked.
+  safeSessionSetItem(AUTH_STORAGE_KEY, serializedUser);
+  if (safeSessionGetItem(AUTH_STORAGE_KEY) === serializedUser) {
+    safeRemoveItem(AUTH_STORAGE_KEY);
+  } else {
+    // sessionStorage unavailable — retry after clearing stale data.
+    safeSessionClear();
+    safeSessionSetItem(AUTH_STORAGE_KEY, serializedUser);
+
+    // If still not written, fall back to localStorage.
+    if (safeSessionGetItem(AUTH_STORAGE_KEY) !== serializedUser) {
+      safeSetItem(AUTH_STORAGE_KEY, serializedUser);
+    }
   }
+
   dispatchAuthEvent('user-logged-in');
 }
 
 export function clearStoredUser() {
-  getSessionStorage()?.removeItem(AUTH_STORAGE_KEY);
-  getLocalStorage()?.removeItem(AUTH_STORAGE_KEY);
+  safeSessionRemoveItem(AUTH_STORAGE_KEY);
+  safeRemoveItem(AUTH_STORAGE_KEY);
   dispatchAuthEvent('auth-session-cleared');
 }

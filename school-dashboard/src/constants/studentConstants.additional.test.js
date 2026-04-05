@@ -63,6 +63,18 @@ describe('VALIDATION_RULES', () => {
     expect(VALIDATION_RULES.name.pattern.test('John Doe')).toBe(true);
   });
 
+  it('name pattern accepts Hindi names', () => {
+    expect(VALIDATION_RULES.name.pattern.test('राहुल शर्मा')).toBe(true);
+  });
+
+  it('name pattern accepts Tamil names', () => {
+    expect(VALIDATION_RULES.name.pattern.test('முருகன்')).toBe(true);
+  });
+
+  it('name pattern accepts Telugu names', () => {
+    expect(VALIDATION_RULES.name.pattern.test('రాజేష్')).toBe(true);
+  });
+
   it('name pattern rejects digits', () => {
     expect(VALIDATION_RULES.name.pattern.test('John123')).toBe(false);
   });

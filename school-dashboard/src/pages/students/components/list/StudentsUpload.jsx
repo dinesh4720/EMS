@@ -8,6 +8,7 @@ import {
 } from "../../utils/studentImportUtils";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
+import { toTodayDateString } from "../../../../utils/dateFormatter";
 
 /**
  * useStudentsUpload
@@ -361,7 +362,7 @@ export function useStudentsUpload({
     const downloadStudentList = () => {
         const rows = filteredItems.map(buildRow);
         const csv = [CSV_HEADERS_DISPLAY.join(","), ...rows.map((r) => r.join(","))].join("\n");
-        triggerDownload(csv, `students_${new Date().toISOString().split("T")[0]}.csv`);
+        triggerDownload(csv, `students_${toTodayDateString()}.csv`);
     };
 
     const downloadSelectedStudents = () => {
@@ -382,7 +383,7 @@ export function useStudentsUpload({
         const csv = [CSV_HEADERS_DISPLAY.join(","), ...rows.map((r) => r.join(","))].join("\n");
         triggerDownload(
             csv,
-            `selected_students_${new Date().toISOString().split("T")[0]}.csv`
+            `selected_students_${toTodayDateString()}.csv`
         );
         toast.success(
             `Downloaded ${selectedStudents.length} student${selectedStudents.length > 1 ? "s" : ""}`
@@ -527,7 +528,7 @@ export function useStudentsUpload({
 
         triggerDownload(
             csv,
-            `student_bulk_upload_template_${new Date().toISOString().split("T")[0]}.csv`
+            `student_bulk_upload_template_${toTodayDateString()}.csv`
         );
         toast.success("CSV template downloaded successfully", { icon: "📥" });
     };

@@ -17,8 +17,8 @@ import {
   ModalFooter,
   Button,
 } from '@heroui/react';
-import { FileText, Calendar, Eye, Pencil, Trash2, AlertTriangle, Plus, Clock, Users, BookOpen, Send } from 'lucide-react';
-import { examsApi, classesApi } from '../../services/api';
+import { FileText, Calendar, Eye, Pencil, Trash2, AlertTriangle, Plus, Clock, Send } from 'lucide-react';
+import { examsApi } from '../../services/api';
 import FiltersDropdown from '../../components/FiltersDropdown';
 import { MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
@@ -29,14 +29,11 @@ const STATUS_OPTIONS = ['all', 'scheduled', 'ongoing', 'completed', 'results_pub
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { formatShortDate } from '../../utils/dateFormatter';
 
-/** @deprecated Cache removed — kept for backward-compat with index.jsx import */
-export const invalidateExamsCache = () => {};
-
 const ExamManagement = ({ onCreateExam }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [exams, setExams] = useState([]);
-  const [classes, setClasses] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, examId: null, examName: '' });
@@ -100,7 +97,6 @@ const ExamManagement = ({ onCreateExam }) => {
 
   useEffect(() => {
     fetchExams();
-    fetchClasses();
   }, []);
 
   const fetchExams = async () => {
@@ -113,15 +109,6 @@ const ExamManagement = ({ onCreateExam }) => {
       toast.error(t('toast.error.failedToLoadExams'));
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchClasses = async () => {
-    try {
-      const data = await classesApi.getAll ? classesApi.getAll() : Promise.resolve([]);
-      setClasses(data || []);
-    } catch (error) {
-      console.error('Error fetching classes:', error);
     }
   };
 
@@ -170,7 +157,7 @@ const ExamManagement = ({ onCreateExam }) => {
   const handlePublish = async (examId, examName) => {
     try {
       await examsApi.publish(examId);
-      toast.success(`Results published for ${examName}`);
+      toast.success(t('toast.success.resultsPublishedForExam', { examName }));
       fetchExams();
     } catch (error) {
       console.error('Error publishing results:', error);
@@ -335,7 +322,7 @@ const ExamManagement = ({ onCreateExam }) => {
                       </TableCell>
                       <TableCell>
                         <span className="text-sm text-gray-600 dark:text-zinc-400 capitalize">
-                          {exam.type?.replace('_', ' ')}
+                          {exam.type?.replace(/_/g, ' ')}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -357,7 +344,7 @@ const ExamManagement = ({ onCreateExam }) => {
                           variant="flat"
                           className="capitalize"
                         >
-                          {exam.status?.replace('_', ' ')}
+                          {exam.status?.replace(/_/g, ' ')}
                         </Chip>
                       </TableCell>
                       <TableCell>

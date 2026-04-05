@@ -381,7 +381,25 @@
   scrollbar-color: transparent transparent;
 }
 
-/* Note: Scrollbar visibility is controlled dynamically via JavaScript in App.jsx */
+/* Scrollbar visible state - toggled via .scrollbar-visible class on <html> */
+.scrollbar-visible *::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+.scrollbar-visible *::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.6) !important;
+}
+.scrollbar-visible * {
+  scrollbar-color: rgba(0, 0, 0, 0.4) transparent !important;
+}
+html.dark.scrollbar-visible *::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.4) !important;
+}
+html.dark.scrollbar-visible *::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.6) !important;
+}
+html.dark.scrollbar-visible * {
+  scrollbar-color: rgba(255, 255, 255, 0.4) transparent !important;
+}
 
 /* ===== ANIMATIONS - Subtle ===== */
 

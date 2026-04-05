@@ -16,11 +16,14 @@ import toast from "react-hot-toast";
 import StaffPayroll from "../../pages/staffs/StaffPayroll";
 import SalaryTemplates from "./SalaryTemplates";
 import { useTranslation } from "react-i18next";
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 function SalaryComponents() {
   const { t } = useTranslation();
   const { salarySettings, updateSalarySettings } = useApp();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [modalType, setModalType] = useState("earnings");
   const [itemName, setItemName] = useState("");
 
@@ -38,8 +41,15 @@ function SalaryComponents() {
 
   // [AUDIT-557] Added confirmation before removing salary components
   const handleRemove = (type, id) => {
-    if (!window.confirm('Are you sure you want to remove this salary component? This cannot be undone.')) return;
-    updateSalarySettings(type, "remove", { id });
+    showConfirm({
+      title: 'Remove Salary Component',
+      message: 'Are you sure you want to remove this salary component? This cannot be undone.',
+      variant: 'danger',
+      confirmText: 'Remove',
+      onConfirm: async () => {
+        updateSalarySettings(type, "remove", { id });
+      },
+    });
   };
 
   const earnings = salarySettings?.earnings || [];
@@ -257,6 +267,8 @@ function SalaryComponents() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }
@@ -266,6 +278,8 @@ function GeneralPayrollSettings() {
   const [editingSection, setEditingSection] = useState(null);
   const [disburseDate, setDisburseDate] = useState("");
   const [tempDisburseDate, setTempDisburseDate] = useState("");
+  const [payrollCycle, setPayrollCycle] = useState("monthly");
+  const [tempPayrollCycle, setTempPayrollCycle] = useState("monthly");
   const [paymentMethod, setPaymentMethod] = useState("bank_transfer");
   const [tempPaymentMethod, setTempPaymentMethod] = useState("bank_transfer");
   const [autoReminder, setAutoReminder] = useState(true);
@@ -282,6 +296,9 @@ function GeneralPayrollSettings() {
         const d = data.data?.disburseDate || "";
         setDisburseDate(d);
         setTempDisburseDate(d);
+        const cycle = data.data?.payrollCycle || "monthly";
+        setPayrollCycle(cycle);
+        setTempPayrollCycle(cycle);
         // AUDIT-116: Also load payment method and reminder settings if present
         if (data.data?.paymentMethod) {
           setPaymentMethod(data.data.paymentMethod);
@@ -320,7 +337,10 @@ function GeneralPayrollSettings() {
   };
 
   const handleEdit = (section) => {
-    if (section === "schedule") setTempDisburseDate(disburseDate);
+    if (section === "schedule") {
+      setTempDisburseDate(disburseDate);
+      setTempPayrollCycle(payrollCycle);
+    }
     if (section === "payment") setTempPaymentMethod(paymentMethod);
     if (section === "reminders") {
       setTempAutoReminder(autoReminder);
@@ -340,8 +360,10 @@ function GeneralPayrollSettings() {
     try {
       await settingsApi.updatePayrollSettings({
         disburseDate: parseInt(tempDisburseDate),
+        payrollCycle: tempPayrollCycle,
       });
       setDisburseDate(tempDisburseDate);
+      setPayrollCycle(tempPayrollCycle);
       toast.success(t("toast.success.payrollSettingsSavedSuccessfully"));
       setEditingSection(null);
     } catch (error) {
@@ -460,7 +482,7 @@ function GeneralPayrollSettings() {
           </div>
 
           {editingSection === "schedule" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Input
                 type="number"
                 label={t("pages.payrollDisburseDate")}
@@ -480,6 +502,20 @@ function GeneralPayrollSettings() {
                 description="Enter a value between 1 and 31"
                 autoFocus
               />
+              <Select
+                label="Payroll Cycle"
+                selectedKeys={[tempPayrollCycle]}
+                onSelectionChange={(keys) => setTempPayrollCycle([...keys][0])}
+                variant="bordered"
+                labelPlacement="outside"
+                classNames={{
+                  trigger: "bg-white dark:bg-zinc-950",
+                }}
+              >
+                <SelectItem key="weekly">Weekly</SelectItem>
+                <SelectItem key="biweekly">Bi-weekly</SelectItem>
+                <SelectItem key="monthly">Monthly</SelectItem>
+              </Select>
               {tempDisburseDate &&
                 parseInt(tempDisburseDate) >= 1 &&
                 parseInt(tempDisburseDate) <= 31 && (
@@ -514,7 +550,9 @@ function GeneralPayrollSettings() {
                 <p className="text-xs text-default-400 uppercase tracking-wider mb-1">
                   Payroll Cycle
                 </p>
-                <p className="text-sm font-medium text-default-800">Monthly</p>
+                <p className="text-sm font-medium text-default-800">
+                  {{ weekly: "Weekly", biweekly: "Bi-weekly", monthly: "Monthly" }[payrollCycle] || "Monthly"}
+                </p>
               </div>
               <div>
                 <p className="text-xs text-default-400 uppercase tracking-wider mb-1">

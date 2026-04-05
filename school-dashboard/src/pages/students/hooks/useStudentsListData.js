@@ -4,7 +4,7 @@
  * for the StudentsList page. The component only renders.
  */
 import { useState, useMemo, useEffect, useRef, useCallback, useDeferredValue } from "react";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useDisclosure } from "@heroui/react";
 
@@ -19,6 +19,16 @@ import { request } from "../../../services/api.js";
 import { getSocketService } from "../../../services/socketServiceEnhanced.js";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
+import {
+  computeStatusCounts,
+  getAttendancePercentage,
+  filterByAcademicPerformance,
+  filterByAttendance,
+  sortWithPinned,
+  computeActiveFiltersCount,
+  computeFilterCounts,
+  resolveSelectedIds,
+} from "./useStudentsListData.helpers";
 
 const ROW_HEIGHT = 65;
 
@@ -31,6 +41,7 @@ export function useStudentsListData() {
     classes,
     currentAcademicYear,
   } = useApp();
+  const queryClient = useQueryClient();
 
   // ── Filter state (restored from sessionStorage) ──────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
@@ -158,7 +169,8 @@ export function useStudentsListData() {
   // ── React Query ───────────────────────────────────────────────────────────
   const studentsQueryKey = useMemo(
     () => [
-      "students-list",
+      "students",
+      "list",
       deferredSearchQuery,
       selectedClassId,
       feeStatusFilter,
@@ -217,69 +229,16 @@ export function useStudentsListData() {
   }, [studentsQuery.refetch]);
 
   // ── Status counts ─────────────────────────────────────────────────────────
-  const statusCounts = useMemo(() => {
-    let active = 0, inactive = 0, alumni = 0, graduated = 0, transferred = 0;
-    for (const student of students) {
-      const status = student.status || "active";
-      if (status === "active") active++;
-      else if (status === "inactive") inactive++;
-      else if (status === "alumni") alumni++;
-      else if (status === "graduated") graduated++;
-      else if (status === "transferred") transferred++;
-    }
-    return { all: students.length, active, inactive, alumni, graduated, transferred };
-  }, [students]);
-
-  // ── Attendance helper ─────────────────────────────────────────────────────
-  // Use real attendancePercentage from backend; return null when no data exists
-  const getAttendancePercentage = (student) => {
-    if (student.attendancePercentage != null) return student.attendancePercentage;
-    return null; // No attendance records
-  };
+  const statusCounts = useMemo(() => computeStatusCounts(students), [students]);
 
   // ── Client-side filters ───────────────────────────────────────────────────
   const filteredItems = useMemo(() => {
-    let filtered = students;
-    if (academicPerformanceFilter !== "all") {
-      filtered = filtered.filter((student) => {
-        if (!student.examResults || !Array.isArray(student.examResults) || student.examResults.length === 0) return false;
-        const total = student.examResults.reduce((sum, e) => (e.percentage != null ? sum + e.percentage : sum), 0);
-        const avg = total / student.examResults.length;
-        switch (academicPerformanceFilter) {
-          case "excellent":    return avg >= 90;
-          case "good":         return avg >= 75 && avg < 90;
-          case "average":      return avg >= 50 && avg < 75;
-          case "below_average": return avg < 50;
-          default:             return true;
-        }
-      });
-    }
-    if (attendanceFilter !== "all") {
-      filtered = filtered.filter((student) => {
-        const att = getAttendancePercentage(student);
-        if (att == null) return false; // Exclude students with no attendance data from filtered results
-        switch (attendanceFilter) {
-          case "excellent": return att >= 90;
-          case "good":      return att >= 75 && att < 90;
-          case "average":   return att >= 50 && att < 75;
-          case "below":     return att < 50;
-          default:          return true;
-        }
-      });
-    }
+    let filtered = filterByAcademicPerformance(students, academicPerformanceFilter);
+    filtered = filterByAttendance(filtered, attendanceFilter);
     return filtered;
   }, [students, academicPerformanceFilter, attendanceFilter]);
 
-  const visibleItems = useMemo(() => {
-    const pinned = filteredItems.filter((student) => student.isPinned);
-    const unpinned = filteredItems.filter((student) => !student.isPinned);
-    // Sort pinned students by pinnedAt (most recently pinned first)
-    pinned.sort((first, second) => {
-      if (first.pinnedAt && second.pinnedAt) return new Date(second.pinnedAt) - new Date(first.pinnedAt);
-      return 0;
-    });
-    return [...pinned, ...unpinned];
-  }, [filteredItems]);
+  const visibleItems = useMemo(() => sortWithPinned(filteredItems), [filteredItems]);
   const selectedCount = selectedKeys === "all" ? filteredItems.length : selectedKeys.size;
 
   // ── Row virtualizer ───────────────────────────────────────────────────────
@@ -374,7 +333,18 @@ export function useStudentsListData() {
   const handlePinStudent = async (studentId) => {
     try {
       await studentsApi.pin(studentId);
-      setLocalStudents(students.map((student) => String(student.id) === String(studentId) ? { ...student, isPinned: true, pinnedAt: new Date().toISOString() } : student));
+      // Update query cache directly so auto-refetch won't revert the change
+      queryClient.setQueryData(studentsQueryKey, (old) => {
+        if (!old?.data) return old;
+        return {
+          ...old,
+          data: old.data.map((student) =>
+            String(student.id) === String(studentId)
+              ? { ...student, isPinned: true, pinnedAt: new Date().toISOString() }
+              : student
+          ),
+        };
+      });
       toast.success(t("toast.success.studentPinned", "Student pinned"));
     } catch { toast.error(t("toast.error.failedToPinStudent", "Failed to pin student")); }
   };
@@ -382,7 +352,17 @@ export function useStudentsListData() {
   const handleUnpinStudent = async (studentId) => {
     try {
       await studentsApi.unpin(studentId);
-      setLocalStudents(students.map((student) => String(student.id) === String(studentId) ? { ...student, isPinned: false, pinnedAt: null } : student));
+      queryClient.setQueryData(studentsQueryKey, (old) => {
+        if (!old?.data) return old;
+        return {
+          ...old,
+          data: old.data.map((student) =>
+            String(student.id) === String(studentId)
+              ? { ...student, isPinned: false, pinnedAt: null }
+              : student
+          ),
+        };
+      });
       toast.success(t("toast.success.studentUnpinned", "Student unpinned"));
     } catch { toast.error(t("toast.error.failedToUnpinStudent", "Failed to unpin student")); }
   };
@@ -390,7 +370,7 @@ export function useStudentsListData() {
   // ── Bulk action dispatcher ────────────────────────────────────────────────
   const handleBulkAction = (action, _singleStudent = null) => {
     if (action === "message") {
-      const ids = selectedKeys === "all" ? filteredItems.map((student) => String(student.id)) : Array.from(selectedKeys);
+      const ids = resolveSelectedIds(selectedKeys, filteredItems);
       setReminderTargetCount(ids.length);
       setReminderMessage("");
       const now = new Date();
@@ -402,12 +382,12 @@ export function useStudentsListData() {
     }
     setBulkAction(action);
     if (action === "promote") {
-      const ids = selectedKeys === "all" ? filteredItems.map((student) => String(student.id)) : Array.from(selectedKeys);
+      const ids = resolveSelectedIds(selectedKeys, filteredItems);
       const selected = filteredItems.filter((student) => ids.includes(String(student.id)));
       setPromotionPreview(selected.map((student) => ({ ...student, nextClass: getNextClass(student.class, uniqueClasses) })));
       onPromoteOpen();
     } else if (action === "tc") {
-      const ids = selectedKeys === "all" ? filteredItems.map((student) => String(student.id)) : Array.from(selectedKeys);
+      const ids = resolveSelectedIds(selectedKeys, filteredItems);
       setTcStudents(filteredItems.filter((student) => ids.includes(String(student.id))));
       onTcModalOpen();
     } else {
@@ -416,7 +396,7 @@ export function useStudentsListData() {
   };
 
   const executeBulkAction = async () => {
-    const ids = selectedKeys === "all" ? filteredItems.map((student) => String(student.id)) : Array.from(selectedKeys);
+    const ids = resolveSelectedIds(selectedKeys, filteredItems);
     setIsBulkProcessing(true);
     try {
       for (const id of ids) {
@@ -444,7 +424,7 @@ export function useStudentsListData() {
   };
 
   const executePromotion = async () => {
-    const ids = selectedKeys === "all" ? filteredItems.map((student) => String(student.id)) : Array.from(selectedKeys);
+    const ids = resolveSelectedIds(selectedKeys, filteredItems);
     const selected = filteredItems.filter((student) => ids.includes(String(student.id)));
     let successCount = 0, failCount = 0;
     setIsPromoting(true);
@@ -456,13 +436,12 @@ export function useStudentsListData() {
           if (nextClass === "Passed Out / Alumni") {
             await updateStudent(student.id, { class: "Passed Out" });
           } else {
-            const classMatch = nextClass.match(/^(\d+)(?:-([A-Z]))?$/i);
             let classId = null;
-            if (classMatch) {
-              const [, grade, section = ""] = classMatch;
-              const target = classes.find((cls) => String(cls.name) === String(grade) && (cls.section || "") === String(section));
-              if (target) classId = target._id || target.id;
-            }
+            const target = classes.find((cls) => {
+              const label = cls.section ? `${cls.name}-${cls.section}` : cls.name;
+              return label === nextClass;
+            });
+            if (target) classId = target._id || target.id;
             if (classId) {
               const updateData = { classId, class: nextClass };
               const conflict = students.find((st) => (String(st.classId) === String(classId) || st.class === nextClass) && st.id !== student.id && st.rollNo === student.rollNo);
@@ -503,7 +482,7 @@ export function useStudentsListData() {
       toast.error(t("toast.error.pleaseEnterAMessage", "Please enter a message"));
       return;
     }
-    const ids = selectedKeys === "all" ? filteredItems.map((student) => String(student.id)) : Array.from(selectedKeys);
+    const ids = resolveSelectedIds(selectedKeys, filteredItems);
     onReminderClose();
     try {
       await request("/messages/bulk-reminder", {
@@ -538,37 +517,14 @@ export function useStudentsListData() {
     toast.success(t("toast.success.allFiltersCleared"));
   };
 
-  const activeFiltersCount =
-    (classFilter !== "all" ? 1 : 0) + (feeStatusFilter !== "all" ? 1 : 0) +
-    (academicYearFilter !== "all" ? 1 : 0) + (academicPerformanceFilter !== "all" ? 1 : 0) +
-    (attendanceFilter !== "all" ? 1 : 0);
+  const activeFiltersCount = computeActiveFiltersCount({
+    classFilter, feeStatusFilter, academicYearFilter, academicPerformanceFilter, attendanceFilter,
+  });
 
   // Search debounce indicator
   const isSearching = searchQuery.trim() !== deferredSearchQuery;
 
-  const filterCounts = useMemo(() => {
-    const classCounts = {}, feeStatusCounts = {}, academicYearCounts = {}, academicPerformanceCounts = {}, attendanceCounts = {};
-    for (const student of students) {
-      if (student.class) classCounts[student.class] = (classCounts[student.class] || 0) + 1;
-      // Bug #2: Only count feeStatus if the backend actually provides it.
-      // NOTE: Backend does not currently compute/return feeStatus on student records.
-      // "overdue" count will remain 0 until the backend returns feeStatus per student.
-      if (student.feeStatus) { feeStatusCounts[student.feeStatus] = (feeStatusCounts[student.feeStatus] || 0) + 1; }
-      // Bug #1: academicYear counts depend on the backend returning academicYear per student.
-      // If students lack this field, all default to currentAcademicYear and prior years show 0.
-      const yr = student.academicYear || currentAcademicYear; academicYearCounts[yr] = (academicYearCounts[yr] || 0) + 1;
-      // Bug #3: Don't default students with no performance data to "average".
-      // Only count students that actually have academic performance data.
-      if (student.academicPerformance) { academicPerformanceCounts[student.academicPerformance] = (academicPerformanceCounts[student.academicPerformance] || 0) + 1; }
-      const att = getAttendancePercentage(student);
-      if (att != null) {
-        let cat = "below";
-        if (att >= 90) cat = "excellent"; else if (att >= 75) cat = "good"; else if (att >= 50) cat = "average";
-        attendanceCounts[cat] = (attendanceCounts[cat] || 0) + 1;
-      }
-    }
-    return { class: classCounts, feeStatus: feeStatusCounts, academicYear: academicYearCounts, academicPerformance: academicPerformanceCounts, attendance: attendanceCounts };
-  }, [students, currentAcademicYear]);
+  const filterCounts = useMemo(() => computeFilterCounts(students, currentAcademicYear), [students, currentAcademicYear]);
 
   const filtersConfig = useMemo(() => {
     const feeStatusOpts = ["paid", "pending", "overdue", "partial"];

@@ -42,8 +42,8 @@ export function useOwlinTracking() {
 
   useEffect(() => {
     if (!isOwlinEnabled()) return
-    if (initializedRef.current) return
 
+    if (initializedRef.current) return
     initializedRef.current = true
 
     try {
@@ -64,7 +64,13 @@ export function useOwlinTracking() {
         page: window.location.pathname,
       })
     } catch (error) {
-      // ignored
+      console.warn('[Owlin] Tracker init failed:', error)
+    }
+
+    return () => {
+      destroyTracker()
+      initializedRef.current = false
+      userIdRef.current = null
     }
   }, [])
 
@@ -101,7 +107,7 @@ export function useOwlinTracking() {
               }),
             })
           } catch (err) {
-            // Non-fatal: metadata will still arrive with the next event batch.
+            console.warn('[Owlin] User identify failed (non-fatal):', err)
           }
 
           try {
@@ -117,10 +123,10 @@ export function useOwlinTracking() {
               }),
             })
           } catch (err) {
-            // ignored
+            console.warn('[Owlin] Session start failed (non-fatal):', err)
           }
         } catch (err) {
-          // ignored
+          console.warn('[Owlin] User setup failed:', err)
         }
       }
     }

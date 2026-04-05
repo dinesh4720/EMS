@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useDisclosure } from "@heroui/react";
 import { useApp } from "../../context/AppContext";
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { timetableApi, teacherAssignmentsApi } from "../../services/api";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 import SlotInfoModal from "../../components/timetable/SlotInfoModal";
 import {
   showErrorToast,
@@ -31,6 +32,7 @@ export default function Timetable({ classId }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { classesWithTeachers, staff, schoolSettings, currentAcademicYear } = useApp();
+  const { confirmState: periodConfirmState, showConfirm: showPeriodConfirm, closeConfirm: closePeriodConfirm } = useConfirmDialog();
   const [searchParams] = useSearchParams();
   const [selectedClass, setSelectedClass] = useState(classId || searchParams.get('classId') || "");
   const [timetable, setTimetable] = useState(null);
@@ -44,6 +46,19 @@ export default function Timetable({ classId }) {
   const [loadingTeachers, setLoadingTeachers] = useState(false);
   const [conflicts, setConflicts] = useState([]);
   const [syncStatus, setSyncStatus] = useState(null); // 'syncing', 'success', 'error'
+  const syncTimeoutRef = useRef(null);
+
+  const clearSyncStatusAfterDelay = useCallback(() => {
+    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    syncTimeoutRef.current = setTimeout(() => setSyncStatus(null), 2000);
+  }, []);
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    };
+  }, []);
 
   // Modals
   const { isOpen: isPeriodsOpen, onOpen: onPeriodsOpen, onClose: onPeriodsClose } = useDisclosure();
@@ -263,7 +278,7 @@ export default function Timetable({ classId }) {
         errorMessage: null,
         retries: 2,
         onSuccess: async () => {
-          setTimeout(() => setSyncStatus(null), 2000);
+          clearSyncStatusAfterDelay();
 
           onSlotClose();
           setEditingSlot(null);
@@ -332,7 +347,7 @@ export default function Timetable({ classId }) {
         errorMessage: null,
         retries: 2,
         onSuccess: async () => {
-          setTimeout(() => setSyncStatus(null), 2000);
+          clearSyncStatusAfterDelay();
 
           onConfirmClearClose();
           onSlotClose();
@@ -385,20 +400,56 @@ export default function Timetable({ classId }) {
     setLoading(false);
   };
 
+  const savePeriods = async (newSchedule) => {
+    await executeWithFeedback(
+      async () => {
+        setSyncStatus('syncing');
+        await timetableApi.createOrUpdate({
+          classId: selectedClass,
+          academicYear: currentAcademicYear,
+          periods,
+          schedule: newSchedule
+        });
+        setSchedule(newSchedule);
+        setHasChanges(false);
+        setSyncStatus('success');
+      },
+      {
+        loadingMessage: 'Saving periods...',
+        successMessage: 'Periods saved successfully!',
+        errorMessage: null,
+        retries: 2,
+        onSuccess: async () => {
+          clearSyncStatusAfterDelay();
+          onPeriodsClose();
+          await loadTimetable();
+        },
+        onError: () => {
+          setSyncStatus('error');
+        }
+      }
+    );
+  };
+
   const handleSavePeriods = () => {
     const hasExistingSchedule = Object.values(schedule).some(daySlots =>
       Array.isArray(daySlots) && daySlots.some(slot => slot && slot.subject)
     );
 
     if (hasExistingSchedule) {
-      if (!window.confirm('Saving period changes will reset the entire timetable schedule. All currently assigned subjects and teachers will be cleared. Are you sure you want to continue?')) {
-        return;
-      }
+      showPeriodConfirm({
+        title: t('pages.resetTimetable', 'Reset Timetable'),
+        message: 'Saving period changes will reset the entire timetable schedule. All currently assigned subjects and teachers will be cleared. Are you sure you want to continue?',
+        variant: 'warning',
+        confirmText: t('pages.resetAndSave', 'Reset & Save'),
+        onConfirm: () => {
+          savePeriods(initializeSchedule(periods));
+        },
+      });
+      return;
     }
 
-    setSchedule(initializeSchedule(periods));
-    setHasChanges(true);
-    onPeriodsClose();
+    savePeriods(initializeSchedule(periods));
   };
 
   const addPeriod = () => {
@@ -519,6 +570,8 @@ export default function Timetable({ classId }) {
         variant="info"
         isLoading={loading}
       />
+
+      <ConfirmDialog {...periodConfirmState} onClose={closePeriodConfirm} />
 
       {/* Slot Info Modal */}
       <SlotInfoModal

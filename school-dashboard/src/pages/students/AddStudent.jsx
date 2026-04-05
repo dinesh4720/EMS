@@ -1,17 +1,14 @@
 import { request } from '../../services/api.js';
-import { useState, useRef, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
+import { useState, useRef, useEffect, useMemo, forwardRef, useImperativeHandle, useCallback } from "react";
 import logger from "../../utils/logger";
-// eslint-disable-next-line no-unused-vars -- all components used in JSX
 import { Button, Input, Select, SelectItem, Checkbox, Textarea, Chip, Avatar, RadioGroup, Radio, cn, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
-// eslint-disable-next-line no-unused-vars -- all icons used in JSX
 import { ArrowRight, Upload, X, User, FileText, Users, Check, Heart, Bus, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isValid, parse } from "date-fns";
+import { format, addMonths, subMonths, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isValid, parse } from "date-fns";
 import { studentsApi, settingsApi, uploadApi, lookupPincode, classesApi } from "../../services/api";
-import { z } from "zod"; // eslint-disable-line no-unused-vars -- kept for inline parent schema usage
-import { validateStep as validateStepUtil, isoToDdmmyy as isoToDdmmyyUtil, buildStudentPayload } from "./utils/studentFormValidation";
+import { validateStep as validateStepExtracted, isoToDdmmyy, ddmmyyToIso, buildStudentPayload } from "./utils/studentFormValidation";
 import toast from "react-hot-toast";
-import PhotoEditorModal from "../../components/PhotoEditorModal"; // eslint-disable-line no-unused-vars -- used in JSX
-import CameraCaptureModal from "../../components/CameraCaptureModal"; // eslint-disable-line no-unused-vars -- used in JSX
+import PhotoEditorModal from "../../components/PhotoEditorModal";
+import CameraCaptureModal from "../../components/CameraCaptureModal";
 import { GENDERS, BLOOD_GROUPS, PARENT_RELATIONSHIPS, GUARDIAN_RELATIONSHIPS, RELIGIONS, CATEGORIES, MOTHER_TONGUES } from "../../constants/studentConstants";
 import { INDIAN_STATES, normalizeStateName } from "../../constants/states";
 import { useTranslation } from 'react-i18next';
@@ -24,7 +21,7 @@ const emptyForm = {
   // Personal Information
   fullName: "", dateOfBirth: "", gender: "Male",
   picture: null, aadhaarNumber: "", bloodGroup: "", nationality: "", religion: "",
-  category: "", motherTongue: "", previousSchool: "", tcNumber: "",
+  category: "", motherTongue: "", previousSchool: "", tcNumber: "", mediumOfInstruction: "", house: "",
   // Class Info
   classGrade: "", section: "", rollNumber: "",
   // Contact
@@ -46,7 +43,7 @@ const emptyForm = {
 
 // --- Click Away Listener Component ---
 // Simple hook-based click outside detector
-function ClickAwayListener({ children, onClickAway }) { // eslint-disable-line no-unused-vars -- used in JSX below
+function ClickAwayListener({ children, onClickAway }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -68,24 +65,27 @@ function ClickAwayListener({ children, onClickAway }) { // eslint-disable-line n
 // --- Custom Calendar Component ---
 // Simple calendar that shows only the calendar grid, no nested input
 // Disables future dates to prevent selection
-function CustomCalendar({ selectedDate, onSelect }) { // eslint-disable-line no-unused-vars -- used in JSX below
+function CustomCalendar({ selectedDate, onSelect }) {
   const [currentMonth, setCurrentMonth] = useState(() => {
     if (selectedDate) return selectedDate;
     return new Date();
   });
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
+  const [focusedDate, setFocusedDate] = useState(() => selectedDate || new Date());
+  const yearDropdownRef = useRef(null);
+  const calendarGridRef = useRef(null);
 
   const firstDayOfMonth = startOfMonth(currentMonth);
   const lastDayOfMonth = endOfMonth(currentMonth);
 
   // Get all days to display (including padding from previous/next months)
-  const startOfWeek = new Date(firstDayOfMonth);
-  startOfWeek.setDate(startOfWeek.getDate() - firstDayOfMonth.getDay());
+  const startOfWeekDay = new Date(firstDayOfMonth);
+  startOfWeekDay.setDate(startOfWeekDay.getDate() - firstDayOfMonth.getDay());
 
-  const endOfWeek = new Date(lastDayOfMonth);
-  endOfWeek.setDate(endOfWeek.getDate() + (6 - lastDayOfMonth.getDay()));
+  const endOfWeekDay = new Date(lastDayOfMonth);
+  endOfWeekDay.setDate(endOfWeekDay.getDate() + (6 - lastDayOfMonth.getDay()));
 
-  const allDays = eachDayOfInterval({ start: startOfWeek, end: endOfWeek });
+  const allDays = eachDayOfInterval({ start: startOfWeekDay, end: endOfWeekDay });
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const today = new Date();
@@ -99,13 +99,14 @@ function CustomCalendar({ selectedDate, onSelect }) { // eslint-disable-line no-
     years.push(year);
   }
 
+  const isDayDisabled = useCallback((day) => {
+    const dayDate = new Date(day);
+    dayDate.setHours(0, 0, 0, 0);
+    return dayDate > today;
+  }, [today]);
+
   const handleDateClick = (day) => {
-    // Block future dates
-    const clickedDate = new Date(day);
-    clickedDate.setHours(0, 0, 0, 0);
-    if (clickedDate > today) {
-      return; // Don't allow selecting future dates
-    }
+    if (isDayDisabled(day)) return;
     onSelect(day);
   };
 
@@ -116,20 +117,87 @@ function CustomCalendar({ selectedDate, onSelect }) { // eslint-disable-line no-
     setIsYearDropdownOpen(false);
   };
 
+  // Scroll the active year into view when year dropdown opens
+  useEffect(() => {
+    if (isYearDropdownOpen && yearDropdownRef.current) {
+      const activeBtn = yearDropdownRef.current.querySelector('[data-active-year="true"]');
+      if (activeBtn) activeBtn.scrollIntoView({ block: 'center' });
+    }
+  }, [isYearDropdownOpen]);
+
+  const handleYearDropdownKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setIsYearDropdownOpen(false);
+    }
+  };
+
+  const handleCalendarKeyDown = (e) => {
+    const key = e.key;
+    let newFocused = focusedDate;
+
+    switch (key) {
+      case 'ArrowRight':
+        e.preventDefault();
+        newFocused = addDays(focusedDate, 1);
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        newFocused = addDays(focusedDate, -1);
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        newFocused = addDays(focusedDate, 7);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        newFocused = addDays(focusedDate, -7);
+        break;
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        if (!isDayDisabled(focusedDate)) {
+          onSelect(focusedDate);
+        }
+        return;
+      case 'Escape':
+        e.preventDefault();
+        if (isYearDropdownOpen) setIsYearDropdownOpen(false);
+        return;
+      default:
+        return;
+    }
+
+    // If navigated to a different month, update currentMonth
+    if (!isSameMonth(newFocused, currentMonth)) {
+      setCurrentMonth(newFocused);
+    }
+    setFocusedDate(newFocused);
+
+    // Focus the button for the new date after render
+    requestAnimationFrame(() => {
+      if (calendarGridRef.current) {
+        const btn = calendarGridRef.current.querySelector(`[data-date="${format(newFocused, 'yyyy-MM-dd')}"]`);
+        if (btn) btn.focus();
+      }
+    });
+  };
+
   return (
-    <div className="bg-content1 border border-default-200 rounded-lg shadow-xl p-4 min-w-[320px]">
+    <div className="bg-content1 border border-default-200 rounded-lg shadow-xl p-4 min-w-[320px]" role="dialog" aria-label="Date picker">
       {/* Header with month and year navigation */}
       <div className="flex items-center justify-between mb-4">
         <button
           type="button"
           onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
           className="p-1 hover:bg-default-100 rounded transition-colors"
+          aria-label="Previous month"
         >
           <ChevronLeft size={20} className="text-default-600" />
         </button>
 
         <div className="flex items-center gap-2">
-          <div className="font-semibold text-default-700">
+          <div className="font-semibold text-default-700" aria-live="polite">
             {format(currentMonth, 'MMMM')}
           </div>
 
@@ -138,7 +206,11 @@ function CustomCalendar({ selectedDate, onSelect }) { // eslint-disable-line no-
             <button
               type="button"
               onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
+              onKeyDown={handleYearDropdownKeyDown}
               className="font-semibold text-default-700 hover:text-primary transition-colors px-2 py-1 hover:bg-default-100 rounded flex items-center gap-1"
+              aria-expanded={isYearDropdownOpen}
+              aria-haspopup="listbox"
+              aria-label={`Year ${format(currentMonth, 'yyyy')}, click to change`}
             >
               {format(currentMonth, 'yyyy')}
               <svg
@@ -146,6 +218,7 @@ function CustomCalendar({ selectedDate, onSelect }) { // eslint-disable-line no-
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
@@ -153,12 +226,30 @@ function CustomCalendar({ selectedDate, onSelect }) { // eslint-disable-line no-
 
             {isYearDropdownOpen && (
               <ClickAwayListener onClickAway={() => setIsYearDropdownOpen(false)}>
-                <div className="absolute top-full left-0 mt-1 bg-content1 border border-default-200 rounded-lg shadow-xl max-h-60 overflow-y-auto z-50 min-w-[100px]">
+                <div
+                  ref={yearDropdownRef}
+                  role="listbox"
+                  aria-label="Select year"
+                  onKeyDown={handleYearDropdownKeyDown}
+                  className="absolute top-full left-0 mt-1 bg-content1 border border-default-200 rounded-lg shadow-xl max-h-60 overflow-y-auto z-50 min-w-[100px]"
+                >
                   {years.map(year => (
                     <button
                       key={year}
                       type="button"
+                      role="option"
+                      aria-selected={year === currentMonth.getFullYear()}
+                      data-active-year={year === currentMonth.getFullYear() ? 'true' : undefined}
                       onClick={() => handleYearChange(year)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleYearChange(year);
+                        } else if (e.key === 'Escape') {
+                          e.preventDefault();
+                          setIsYearDropdownOpen(false);
+                        }
+                      }}
                       className={`w-full px-4 py-2 text-left text-sm hover:bg-default-100 transition-colors ${
                         year === currentMonth.getFullYear() ? 'bg-primary-50 text-primary font-semibold' : 'text-default-700'
                       }`}
@@ -176,45 +267,54 @@ function CustomCalendar({ selectedDate, onSelect }) { // eslint-disable-line no-
           type="button"
           onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
           className="p-1 hover:bg-default-100 rounded transition-colors"
+          aria-label="Next month"
         >
           <ChevronRight size={20} className="text-default-600" />
         </button>
       </div>
 
       {/* Week day headers */}
-      <div className="grid grid-cols-7 gap-1 mb-2">
+      <div className="grid grid-cols-7 gap-1 mb-2" role="row">
         {weekDays.map(day => (
-          <div key={day} className="text-center text-xs font-medium text-default-500 py-1">
+          <div key={day} className="text-center text-xs font-medium text-default-500 py-1" role="columnheader" abbr={day}>
             {day}
           </div>
         ))}
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-1">
+      <div
+        ref={calendarGridRef}
+        className="grid grid-cols-7 gap-1"
+        role="grid"
+        aria-label={format(currentMonth, 'MMMM yyyy')}
+        onKeyDown={handleCalendarKeyDown}
+      >
         {allDays.map((day) => {
           const isCurrentMonth = isSameMonth(day, currentMonth);
           const isSelected = selectedDate && isSameDay(day, selectedDate);
           const isToday = isSameDay(day, today);
-
-          // Check if date is in the future
-          const dayDate = new Date(day);
-          dayDate.setHours(0, 0, 0, 0);
-          const isFuture = dayDate > today;
-          const isDisabled = isFuture;
+          const isFocused = isSameDay(day, focusedDate);
+          const isDisabled = isDayDisabled(day);
 
           return (
             <button
               key={day.toISOString()}
               type="button"
+              data-date={format(day, 'yyyy-MM-dd')}
+              tabIndex={isFocused ? 0 : -1}
               onClick={() => handleDateClick(day)}
               disabled={isDisabled}
+              aria-label={format(day, 'EEEE, MMMM d, yyyy')}
+              aria-selected={isSelected || undefined}
+              aria-current={isToday ? 'date' : undefined}
               className={`
                 aspect-square flex items-center justify-center text-sm rounded transition-colors
                 ${isDisabled ? 'text-default-300 cursor-not-allowed opacity-50' : !isCurrentMonth ? 'text-default-300' : 'text-default-700'}
                 ${isSelected && !isDisabled ? 'bg-primary text-white font-semibold' : ''}
                 ${isToday && !isSelected && !isDisabled ? 'border-2 border-primary' : ''}
                 ${!isSelected && !isDisabled ? 'hover:bg-default-100' : ''}
+                ${isFocused && !isDisabled ? 'ring-2 ring-primary ring-offset-1' : ''}
               `}
             >
               {format(day, 'd')}
@@ -309,7 +409,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
     return emptyForm;
   });
   const [errors, setErrors] = useState({});
-  const [, setDocumentConfigs] = useState([]);
+  const [documentConfigs, setDocumentConfigs] = useState([]);
   const [dobValidation, setDobValidation] = useState({ isValid: false, message: '', warning: '' });
   const [isDobCalendarOpen, setIsDobCalendarOpen] = useState(false);
   const scrollContainerRef = useRef(null);
@@ -354,6 +454,23 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
     };
     loadConfigurations();
   }, []);
+
+  // Map admin document config names to form field keys (case-insensitive)
+  const docConfigMap = useMemo(() => {
+    const map = {};
+    for (const cfg of documentConfigs) {
+      const name = (cfg.documentName || '').toLowerCase().trim();
+      if (name.includes('birth')) map.birthCertificate = cfg;
+      else if (name.includes('transfer') || name.includes('tc')) map.transferCertificate = cfg;
+      else if (name.includes('aadhaar') || name.includes('aadhar')) map.aadhaar = cfg;
+    }
+    return map;
+  }, [documentConfigs]);
+
+  const isDocRequired = useCallback((fieldKey) => {
+    if (fieldKey === 'aadhaarFront' || fieldKey === 'aadhaarBack') return docConfigMap.aadhaar?.isRequired || false;
+    return docConfigMap[fieldKey]?.isRequired || false;
+  }, [docConfigMap]);
 
   // Store initial form data for dirty state detection
   useEffect(() => {
@@ -502,23 +619,6 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
     )).sort();
   }, [classesWithTeachers, formData.classGrade]);
 
-  // Helper functions for date format conversion
-  const ddmmyyToIso = (ddmmyy) => {
-    if (!ddmmyy || typeof ddmmyy !== 'string') return '';
-    const parts = ddmmyy.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    if (!parts) return '';
-    const [, day, month, year] = parts;
-    return `${year}-${month}-${day}`;
-  };
-
-  const isoToDdmmyy = (iso) => {
-    if (!iso || typeof iso !== 'string') return '';
-    const parts = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!parts) return '';
-    const [, year, month, day] = parts;
-    return `${day}/${month}/${year}`;
-  };
-
   const updateParent = (index, field, value) => {
     const updated = [...formData.parents];
     updated[index] = { ...updated[index], [field]: value };
@@ -613,24 +713,8 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
     }
   };
 
-  const handlePhotoSave = (croppedImage) => {
-    // croppedImage is a data URL (string)
-    // We can convert it to a File/Blob if needed, but for now assuming direct usage or handling in submit
-    // Ideally convert dataURL to Blob/File to stay consistent with File object structure
-
-    // Helper to convert dataURL to File
-    const dataURLtoFile = (dataurl, filename) => {
-      const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-        bstr = atob(arr[1]);
-      let n = bstr.length;
-      const u8arr = new Uint8Array(n);
-      while (n--) {
-        u8arr[n] = bstr.charCodeAt(n);
-      }
-      return new File([u8arr], filename, { type: mime });
-    }
-
-    const file = dataURLtoFile(croppedImage, "profile_photo.jpg");
+  const handlePhotoSave = (croppedBlob) => {
+    const file = new File([croppedBlob], "profile_photo.jpg", { type: "image/jpeg" });
     updateField("picture", file);
   };
 
@@ -640,76 +724,33 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
     updateField("picture", file);
   };
 
-  // ── Zod validation schemas (mirrors backend createStudentSchema) ──
-  const parentZodSchema = z.object({
-    name: z.string().min(1, "Parent name is required").max(100, "Name must not exceed 100 characters"),
-    phone: z.string().regex(/^\d{10}$/, "Phone must be 10 digits"),
-    email: z.string().email("Invalid email").or(z.literal("")).optional(),
-    relationship: z.string().optional(),
-    occupation: z.string().max(100).optional(),
-    isWhatsapp: z.boolean().optional(),
-    isParent: z.boolean().optional(),
-  });
-
-  const step1Schema = z.object({
-    fullName: z.string().min(2, "Name must be at least 2 characters").max(100, "Name must not exceed 100 characters").trim(),
-    dateOfBirth: z.string().min(1, "Required").regex(/^\d{2}\/\d{2}\/\d{4}$/, "Please enter date in DD/MM/YYYY format"),
-    gender: z.string().min(1, "Required"),
-    classGrade: z.string().min(1, "Required"),
-    section: z.string().min(1, "Required"),
-    aadhaarNumber: z.string().regex(/^[0-9]{12}$/, "Aadhaar must be exactly 12 digits").or(z.literal("")).optional(),
-    mobile: z.string().regex(/^\d{10}$/, "Phone must be 10 digits").or(z.literal("")).optional(),
-    email: z.string().email("Invalid email").or(z.literal("")).optional(),
-    zipCode: z.string().regex(/^\d{6}$/, "PIN code must be exactly 6 digits").or(z.literal("")).optional(),
-  });
-
+  // Validation uses extracted schemas from studentFormValidation.js
   const validateStep = (stepNum) => {
-    const newErrors = {};
-    if (stepNum === 1) {
-      const result = step1Schema.safeParse(formData);
-      if (!result.success) {
-        result.error.errors.forEach(err => {
-          const field = err.path[0];
-          if (!newErrors[field]) newErrors[field] = err.message;
-        });
+    if (stepNum === 3) {
+      // Validate required documents based on admin config
+      const newErrors = {};
+      // Check existing docs from initialData (editing) — category matches field key
+      const existingDocs = initialData?.documents || [];
+      const hasExisting = (category) => existingDocs.some(d => d.category === category);
+
+      if (isDocRequired('birthCertificate') && !formData.birthCertificate && !hasExisting('birthCertificate')) {
+        newErrors.birthCertificate = 'Birth certificate is required';
       }
-      // Additional calendar validity check for DOB
-      if (!newErrors.dateOfBirth && formData.dateOfBirth) {
-        const [day, month, year] = formData.dateOfBirth.split('/').map(Number);
-        const date = new Date(year, month - 1, day);
-        const isValidDate = date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
-        if (!isValidDate) {
-          newErrors.dateOfBirth = "Invalid calendar date";
-        } else if (year < 1900) {
-          newErrors.dateOfBirth = "Year must be 1900 or later";
-        }
+      if (isDocRequired('transferCertificate') && !formData.transferCertificate && !hasExisting('transferCertificate')) {
+        newErrors.transferCertificate = 'Transfer certificate is required';
       }
+      if (isDocRequired('aadhaarFront') && !formData.aadhaarFront && !hasExisting('aadhaarCard')) {
+        newErrors.aadhaarFront = 'Aadhaar card front is required';
+      }
+      if (isDocRequired('aadhaarBack') && !formData.aadhaarBack && !hasExisting('aadhaarCard')) {
+        newErrors.aadhaarBack = 'Aadhaar card back is required';
+      }
+      setErrors(newErrors);
+      return { isValid: Object.keys(newErrors).length === 0, errors: newErrors };
     }
-    if (stepNum === 2) {
-      if (formData.parents.length === 0 || !formData.parents[0].name.trim()) {
-        newErrors.parentName = "At least one parent/guardian is required";
-      } else {
-        const result = parentZodSchema.safeParse(formData.parents[0]);
-        if (!result.success) {
-          result.error.errors.forEach(err => {
-            if (err.path[0] === 'name') newErrors.parentName = err.message;
-            if (err.path[0] === 'phone') newErrors.parentPhone = err.message;
-            if (err.path[0] === 'email') newErrors.parentEmail = err.message;
-          });
-        }
-      }
-      // Validate additional parents' phone numbers if provided
-      formData.parents.slice(1).forEach((parent, i) => {
-        if (parent.phone && !/^\d{10}$/.test(parent.phone)) {
-          newErrors[`additionalParentPhone_${i + 1}`] = "Phone must be 10 digits";
-        }
-        if (parent.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parent.email)) {
-          newErrors[`additionalParentEmail_${i + 1}`] = "Invalid email format";
-        }
-      });
-    }
-    setErrors(newErrors);
-    return { isValid: Object.keys(newErrors).length === 0, errors: newErrors };
+    const result = validateStepExtracted(stepNum, formData);
+    setErrors(result.errors);
+    return result;
   };
 
   const scrollToError = (stepNum, errorObj) => {
@@ -876,12 +917,14 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
     setDobValidation(validation);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
     // Validate all steps before submitting
     const step1Validation = validateStep(1);
     const step2Validation = validateStep(2);
+    const step3Validation = validateStep(3);
 
-    if (!step1Validation.isValid || !step2Validation.isValid) {
+    if (!step1Validation.isValid || !step2Validation.isValid || !step3Validation.isValid) {
       // Go back to the first invalid step
       if (!step1Validation.isValid) {
         setStep(1);
@@ -893,6 +936,10 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
         scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
         toast.error(t('toast.error.pleaseFillInAllRequiredParentGuardianInformation'));
         scrollToError(2, step2Validation.errors);
+      } else if (!step3Validation.isValid) {
+        setStep(3);
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        toast.error('Please upload all required documents');
       }
       return;
     }
@@ -1089,21 +1136,9 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
         formattedDateOfBirth = `${year}-${month}-${day}`;
       }
 
-      // Get next admission ID from backend (only for new students)
-      let admissionId;
-      if (!initialData) {
-        try {
-          const response = await studentsApi.getNextAdmissionId();
-          admissionId = response.admissionId;
-        } catch (error) {
-          logger.error('❌ Failed to get admission ID:', error);
-          toast.error(t('toast.error.failedToGenerateAdmissionId'));
-          setIsSubmitting(false);
-          return;
-        }
-      } else {
-        admissionId = initialData.admissionId;
-      }
+      // For edits, preserve existing admission ID; for new students, the backend
+      // generates it atomically during creation (no separate fetch needed).
+      const admissionId = initialData ? initialData.admissionId : undefined;
 
       // Use school-configured academic year from context
       const academicYear = currentAcademicYear;
@@ -1137,6 +1172,8 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
         motherTongue: formData.motherTongue,
         previousSchool: formData.previousSchool,
         tcNumber: formData.tcNumber,
+        mediumOfInstruction: formData.mediumOfInstruction,
+        house: formData.house,
         transportRequired: formData.transportRequired,
         hostelRequired: formData.hostelRequired,
         medicalConditions: formData.medicalConditions,
@@ -1850,6 +1887,28 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
             className="col-span-2"
             classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
           />
+          <Input
+            label={t('pages.mediumOfInstruction')}
+            labelPlacement="outside"
+            placeholder={t('pages.enterMediumOfInstruction')}
+            value={formData.mediumOfInstruction}
+            onValueChange={val => updateField("mediumOfInstruction", val)}
+            variant="bordered"
+            radius="sm"
+            className="col-span-2"
+            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          />
+          <Input
+            label={t('pages.house')}
+            labelPlacement="outside"
+            placeholder={t('pages.enterHouse')}
+            value={formData.house}
+            onValueChange={val => updateField("house", val)}
+            variant="bordered"
+            radius="sm"
+            className="col-span-2"
+            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          />
         </div>
       </div>
     </div>
@@ -2204,14 +2263,21 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
     <div className="space-y-5 animate-fade-in text-left">
       <div className="space-y-2">
         <label className="text-sm font-semibold text-default-900">{t('pages.documentUploads')}</label>
-        <p className="text-xs text-default-500">{t('pages.uploadRequiredDocumentsAllDocumentsAreOptionalAndCanBeUploadedLater')}</p>
+        <p className="text-xs text-default-500">
+          {documentConfigs.some(c => c.isRequired)
+            ? 'Upload required documents. Fields marked with * are mandatory.'
+            : t('pages.uploadRequiredDocumentsAllDocumentsAreOptionalAndCanBeUploadedLater')}
+        </p>
       </div>
 
       {/* Birth Certificate */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-default-600">{t('pages.birthCertificate')}</label>
+        <label className="text-xs font-medium text-default-600">
+          {t('pages.birthCertificate')}
+          {isDocRequired('birthCertificate') && <span className="text-danger ml-1">*</span>}
+        </label>
         <div
-          className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors"
+          className={`border border-solid rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors ${errors.birthCertificate ? 'border-danger' : 'border-default-300'}`}
           role="button"
           tabIndex={0}
           onClick={() => birthCertRef.current?.click()}
@@ -2233,15 +2299,19 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
             <Upload size={16} className="text-default-400" />
           )}
         </div>
+        {errors.birthCertificate && <p className="text-xs text-danger">{errors.birthCertificate}</p>}
         <input ref={birthCertRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
           onChange={(e) => handleFileUpload("birthCertificate", e.target.files[0])} />
       </div>
 
       {/* Transfer Certificate */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-default-600">{t('pages.transferCertificateTc')}</label>
+        <label className="text-xs font-medium text-default-600">
+          {t('pages.transferCertificateTc')}
+          {isDocRequired('transferCertificate') && <span className="text-danger ml-1">*</span>}
+        </label>
         <div
-          className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors"
+          className={`border border-solid rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors ${errors.transferCertificate ? 'border-danger' : 'border-default-300'}`}
           role="button"
           tabIndex={0}
           onClick={() => tcRef.current?.click()}
@@ -2263,18 +2333,22 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
             <Upload size={16} className="text-default-400" />
           )}
         </div>
+        {errors.transferCertificate && <p className="text-xs text-danger">{errors.transferCertificate}</p>}
         <input ref={tcRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
           onChange={(e) => handleFileUpload("transferCertificate", e.target.files[0])} />
       </div>
 
       {/* Aadhaar Card (Front & Back) */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-default-600">{t('pages.aadhaarCardFrontBack')}</label>
+        <label className="text-xs font-medium text-default-600">
+          {t('pages.aadhaarCardFrontBack')}
+          {isDocRequired('aadhaarFront') && <span className="text-danger ml-1">*</span>}
+        </label>
         <p className="text-xs text-default-500">{t('pages.uploadBothSidesOfTheAadhaarCard')}</p>
 
         {/* Front Side */}
         <div
-          className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors"
+          className={`border border-solid rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors ${errors.aadhaarFront ? 'border-danger' : 'border-default-300'}`}
           role="button"
           tabIndex={0}
           onClick={() => aadhaarFrontRef.current?.click()}
@@ -2296,12 +2370,13 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
             <Upload size={16} className="text-default-400" />
           )}
         </div>
+        {errors.aadhaarFront && <p className="text-xs text-danger">{errors.aadhaarFront}</p>}
         <input ref={aadhaarFrontRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
           onChange={(e) => handleFileUpload("aadhaarFront", e.target.files[0])} />
 
         {/* Back Side */}
         <div
-          className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors"
+          className={`border border-solid rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors ${errors.aadhaarBack ? 'border-danger' : 'border-default-300'}`}
           role="button"
           tabIndex={0}
           onClick={() => aadhaarBackRef.current?.click()}
@@ -2323,6 +2398,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
             <Upload size={16} className="text-default-400" />
           )}
         </div>
+        {errors.aadhaarBack && <p className="text-xs text-danger">{errors.aadhaarBack}</p>}
         <input ref={aadhaarBackRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
           onChange={(e) => handleFileUpload("aadhaarBack", e.target.files[0])} />
       </div>

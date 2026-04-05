@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 
 // Failsafe Antigravity Component
 export default function Antigravity({
@@ -7,10 +7,7 @@ export default function Antigravity({
 }) {
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
-    const [, setIsMounted] = useState(false);
-
     useEffect(() => {
-        setIsMounted(true);
         const canvas = canvasRef.current;
         const container = containerRef.current;
 

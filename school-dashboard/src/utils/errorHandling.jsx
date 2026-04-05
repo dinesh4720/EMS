@@ -189,10 +189,6 @@ export function showWarningToast(message, options = {}) {
   toast(message, {
     duration: 5000,
     icon: '⚠️',
-    style: {
-      background: '#FEF3C7',
-      color: '#92400E',
-    },
     ...options
   });
 }

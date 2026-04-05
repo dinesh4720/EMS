@@ -4,14 +4,12 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-// eslint-disable-next-line no-unused-vars -- all components used in JSX
 import { Card, CardBody, CardHeader, Select, SelectItem, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Input, Divider } from "@heroui/react";
-// eslint-disable-next-line no-unused-vars -- all icons used in JSX
 import { ArrowLeft, Calendar as CalendarIcon, Check, X, AlertCircle, Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
-import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons'; // eslint-disable-line no-unused-vars -- used in JSX
+import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 export default function StaffAttendanceRegularize() {
   const { t } = useTranslation();

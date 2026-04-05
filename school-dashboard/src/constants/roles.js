@@ -2,18 +2,25 @@
 // This ensures consistency between staff management and user permissions
 
 export const STAFF_ROLES = [
+  "Super Admin",
   "Admin",
-  "Teacher", 
-  "Principal", 
-  "Vice Principal", 
-  "Accountant", 
-  "Librarian", 
+  "Teacher",
+  "Principal",
+  "Vice Principal",
+  "Accountant",
+  "Librarian",
   "Lab Assistant",
-  "Receptionist"
+  "Receptionist",
+  "Counselor",
+  "Driver",
+  "Security",
+  "Administrative", // Legacy - maps to Admin
+  "Teaching",       // Legacy - maps to Teacher
 ];
 
 // Map staff roles to user permission roles (for backward compatibility)
 export const ROLE_MAPPING = {
+  "Super Admin": "super-admin",
   "Admin": "admin",
   "Administrative": "admin", // Legacy - will be migrated to "Admin"
   "Administration": "admin", // Legacy - will be migrated to "Admin"
@@ -24,7 +31,10 @@ export const ROLE_MAPPING = {
   "Accountant": "accountant",
   "Librarian": "librarian",
   "Lab Assistant": "lab-assistant",
-  "Receptionist": "receptionist"
+  "Receptionist": "receptionist",
+  "Counselor": "counselor",
+  "Driver": "driver",
+  "Security": "security"
 };
 
 // Get user permission role from staff role

@@ -73,24 +73,27 @@ export default function Refunds() {
 
   const OBJECT_ID_REGEX = /^[a-fA-F0-9]{24}$/;
 
-  // BUG-30: fetch student total paid when a valid studentId is entered
+  // BUG-30: fetch student total paid when a valid studentId is entered (debounced)
   useEffect(() => {
     if (!OBJECT_ID_REGEX.test(newRefundForm.studentId)) {
       setStudentTotalPaid(null);
       return;
     }
-    feesApi.getPayments({ studentId: newRefundForm.studentId })
-      .then(data => {
-        const total = Array.isArray(data)
-          ? data.reduce((sum, p) => sum + (p.amount || 0), 0)
-          : 0;
-        setStudentTotalPaid(total);
-      })
-      .catch((err) => {
-        console.error('Failed to fetch student payments for refund validation:', err);
-        toast.error(t('toast.error.failedToLoadPaymentHistory', 'Failed to load payment history — refund limit cannot be verified'));
-        setStudentTotalPaid(null);
-      });
+    const timeout = setTimeout(() => {
+      feesApi.getPayments({ studentId: newRefundForm.studentId })
+        .then(({ payments: data }) => {
+          const total = Array.isArray(data)
+            ? data.reduce((sum, p) => sum + (p.amount || 0), 0)
+            : 0;
+          setStudentTotalPaid(total);
+        })
+        .catch((err) => {
+          console.error('Failed to fetch student payments for refund validation:', err);
+          toast.error(t('toast.error.failedToLoadPaymentHistory', 'Failed to load payment history — refund limit cannot be verified'));
+          setStudentTotalPaid(null);
+        });
+    }, 300);
+    return () => clearTimeout(timeout);
   }, [newRefundForm.studentId]);
 
   // [AUDIT-515] Debounced student search

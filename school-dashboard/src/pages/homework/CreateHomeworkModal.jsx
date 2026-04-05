@@ -3,14 +3,12 @@ import { Select, SelectItem, Input, Button, Textarea, Divider } from '@heroui/re
 import { Calendar, BookOpen, Paperclip, Plus, X } from 'lucide-react';
 import { homeworkApi, classesApi, subjectsApi } from '../../services/api';
 import { useApp } from '../../context/AppContext';
-import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
 const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework }) => {
   const { t } = useTranslation();
   const { currentAcademicYear } = useApp();
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [classes, setClasses] = useState([]);
@@ -146,7 +144,6 @@ const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework }) => {
         description: formData.description,
         subject: subjectName,
         classId,
-        teacherId: user?.id || user?._id,
         dueDate: formData.dueDate,
         totalMarks: Number(formData.totalMarks) || 100,
         sentToParents: formData.sentToParents,

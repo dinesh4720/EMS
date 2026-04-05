@@ -1,18 +1,15 @@
-import { useState, useEffect, useMemo, useRef, Suspense } from "react"; // eslint-disable-line no-unused-vars -- Suspense used in JSX
+import { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import lazyWithRetry from "../../utils/lazyWithRetry";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
-/* eslint-disable no-unused-vars -- These imports are used in JSX. ESLint v9 flat config without eslint-plugin-react cannot detect JSX variable usage. */
 import {
   Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, useDisclosure,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Drawer, DrawerContent, DrawerHeader, DrawerBody,
   Input, Select, SelectItem, Textarea,
 } from "@heroui/react";
-/* eslint-enable no-unused-vars */
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useValidatedParams } from "../../hooks/useValidatedParams";
-/* eslint-disable no-unused-vars -- Icon imports used in JSX (not detected by ESLint without eslint-plugin-react) */
 import {
   ArrowLeft, Phone, IndianRupee, User, GraduationCap, FileText, Download, Edit,
   Clock, CheckCircle2, Award, TrendingUp, Camera, FileCheck,
@@ -20,19 +17,15 @@ import {
   Users, Mail, Calendar, AlertCircle, BookOpen, XCircle,
   Send,
 } from "lucide-react";
-/* eslint-enable no-unused-vars */
 import { format } from "date-fns";
-/* eslint-disable no-unused-vars -- Recharts components used in JSX */
 import {
   XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area,
 } from "recharts";
-/* eslint-enable no-unused-vars */
 import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
-import { feesApi, studentFeesApi, studentsApi, uploadApi, attendanceApi } from "../../services/api";
+import { feesApi, studentFeesApi, studentsApi, uploadApi, attendanceApi, trashApi } from "../../services/api";
 import { CHART_COLORS } from "../../utils/chartTheme";
 import { escapeHtml } from "../../utils/sanitize";
-/* eslint-disable no-unused-vars -- Components used in JSX */
 const AddStudent = lazyWithRetry(() => import("./AddStudent"));
 import TCGeneratorModal from "./TCGeneratorModal";
 import PhotoEditorModal from "../../components/PhotoEditorModal";
@@ -44,17 +37,17 @@ import StudentRatingSystem from "./components/StudentRatingSystem";
 import InvoicePrintModal from "./components/InvoicePrintModal";
 import MoveClassModal from "./components/modals/MoveClassModal";
 import CertificateModal from "./components/modals/CertificateModal";
-/* eslint-enable no-unused-vars */
 import { useStudentAttendance, useStudentData, useStudentFees, useStudentRemarks, useStudentResults } from "./hooks";
-import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
-import { DetailPageSkeleton } from '../../components/skeletons/PageSkeletons'; // eslint-disable-line no-unused-vars -- used in JSX
-import ConfirmDialog from '../../components/ui/ConfirmDialog'; // eslint-disable-line no-unused-vars -- used in JSX
-import ErrorBoundary from '../../components/ui/ErrorBoundary'; // eslint-disable-line no-unused-vars -- used in JSX
+import { DetailPageSkeleton } from '../../components/skeletons/PageSkeletons';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import ErrorBoundary from '../../components/ui/ErrorBoundary';
+import { getDateLocale } from '../../i18n/index';
 import { getGradeFromPercentage } from '../../utils/grading';
 
 
-import { formatShortDate } from '../../utils/dateFormatter';
+import { formatShortDate, formatCurrency, toTodayDateString } from '../../utils/dateFormatter';
+import { distributeFeePayment } from './utils/studentHelpers';
 
 // ============================================================================
 // STUDENT DASHBOARD - COMPLETE REFACTOR
@@ -81,7 +74,7 @@ const getNextClass = (currentClass, _availableClasses) => {
 };
 
 // Custom Tooltip
-const CustomTooltip = ({ active, payload, label }) => { // eslint-disable-line no-unused-vars -- used in JSX
+const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white dark:bg-zinc-900 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 shadow-sm dark:shadow-zinc-900/50">
@@ -156,7 +149,8 @@ export default function StudentDashboard() {
 
   // Form states
   const [isRecordingPayment, setIsRecordingPayment] = useState(false);
-  const [paymentForm, setPaymentForm] = useState({ amount: "", paymentMode: "cash", date: new Date().toISOString().split('T')[0] });
+  const [paymentForm, setPaymentForm] = useState({ amount: "", paymentMode: "cash", date: toTodayDateString() });
+  const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
   const [reminderMessage, setReminderMessage] = useState("");
   const [isReminderOpen, setIsReminderOpen] = useState(false);
   // Use academic year boundaries instead of calendar year for attendance data
@@ -183,7 +177,7 @@ export default function StudentDashboard() {
   // Derive today's attendance status from fetched data
   useEffect(() => {
     if (attendanceData?.length > 0) {
-      const todayDate = new Date().toISOString().split('T')[0];
+      const todayDate = toTodayDateString();
       const todayRecord = attendanceData.find(record => (record.date || '').split('T')[0] === todayDate);
       if (todayRecord?.status) setTodayAttendanceStatus(todayRecord.status);
     }
@@ -199,7 +193,10 @@ export default function StudentDashboard() {
   const feeHistoryQuery = useQuery({
     queryKey: ["students", "fee-history", id],
     enabled: Boolean(id),
-    queryFn: () => feesApi.getPayments({ studentId: id }),
+    queryFn: async () => {
+      const { payments } = await feesApi.getPayments({ studentId: id });
+      return payments;
+    },
   });
   const feeHistory = feeHistoryQuery.data || [];
   const displayedRemarks = remarksOverride || remarks;
@@ -278,13 +275,10 @@ export default function StudentDashboard() {
     }
   };
 
-  const handlePhotoSave = async (editedImage) => {
+  const handlePhotoSave = async (croppedBlob) => {
     setIsUploadingPhoto(true);
     try {
-      const imgResponse = await fetch(editedImage);
-      if (!imgResponse.ok) throw new Error('Failed to process edited image');
-      const blob = await imgResponse.blob();
-      const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+      const file = new File([croppedBlob], 'photo.jpg', { type: 'image/jpeg' });
       const response = await uploadApi.uploadFile(file);
       await updateStudent(student.id, { photo: response.url });
       toast.success(t('toast.success.photoUpdated'));
@@ -321,7 +315,7 @@ export default function StudentDashboard() {
 
     const totalBalance = studentFeeStructure?.totalBalance || 0;
     if (paymentAmount > totalBalance) {
-      toast.error(`Amount cannot exceed outstanding balance of ₹${totalBalance.toLocaleString('en-IN')}`);
+      toast.error(`Amount cannot exceed outstanding balance of ₹${formatCurrency(totalBalance)}`);
       return;
     }
 
@@ -329,29 +323,9 @@ export default function StudentDashboard() {
     const loadingToast = toast.loading(t('toast.loading.recordingPayment'));
     try {
       // Calculate fee head payments for distribution
-      const feeHeadPayments = [];
-      let remainingAmount = paymentAmount;
-
-      if (studentFeeStructure?.feeHeads) {
-        for (const feeHead of studentFeeStructure.feeHeads) {
-          if (remainingAmount <= 0) break;
-          const balance = feeHead.balanceAmount || 0;
-          if (balance > 0) {
-            const paymentForThisHead = Math.min(remainingAmount, balance);
-            let feeHeadId;
-            if (typeof feeHead.feeHeadId === 'object' && feeHead.feeHeadId !== null) {
-              feeHeadId = feeHead.feeHeadId._id || feeHead.feeHeadId.id;
-            } else {
-              feeHeadId = feeHead.feeHeadId;
-            }
-            feeHeadPayments.push({
-              feeHeadId: feeHeadId,
-              amount: paymentForThisHead
-            });
-            remainingAmount -= paymentForThisHead;
-          }
-        }
-      }
+      const feeHeadPayments = studentFeeStructure?.feeHeads
+        ? distributeFeePayment(studentFeeStructure.feeHeads, paymentAmount)
+        : [];
 
       // Update fee structure and create payment record (single endpoint handles both)
       await studentFeesApi.recordPayment(id, {
@@ -363,7 +337,8 @@ export default function StudentDashboard() {
 
       toast.success("Payment recorded successfully", { id: loadingToast });
       onPaymentClose();
-      setPaymentForm({ amount: "", paymentMode: "cash", date: new Date().toISOString().split('T')[0] });
+      setShowPaymentConfirm(false);
+      setPaymentForm({ amount: "", paymentMode: "cash", date: toTodayDateString() });
 
       await Promise.all([
         refetchFeeStructure(),
@@ -379,7 +354,7 @@ export default function StudentDashboard() {
     }
   };
 
-  // Promote handler
+  // Promote handler — uses dedicated POST /students/:id/promote endpoint
   const handlePromoteStudent = async () => {
     const nextClass = getNextClass(student.class, availableClasses);
     if (!nextClass) {
@@ -389,18 +364,18 @@ export default function StudentDashboard() {
     try {
       const loadingToast = toast.loading(t('toast.loading.promotingStudent', { name: student.name, class: nextClass, defaultValue: `Promoting ${student.name} to ${nextClass}...` }));
       if (nextClass === "Passed Out / Alumni") {
-        await updateStudent(student.id, { status: "alumni" });
+        await studentsApi.promote(id, { graduate: true });
       } else {
         // Resolve classId from display string
         const classMatch = nextClass.match(/^(\d+|[A-Za-z]+)(?:-([A-Z]))?$/i);
-        let classId = null;
+        let targetClassId = null;
         if (classMatch) {
           const [, grade, section = ""] = classMatch;
           const target = (classesWithTeachers || []).find((cls) => String(cls.name) === String(grade) && (cls.section || "") === String(section));
-          if (target) classId = target._id || target.id;
+          if (target) targetClassId = target._id || target.id;
         }
-        if (classId) {
-          await updateStudent(student.id, { classId, class: nextClass });
+        if (targetClassId) {
+          await studentsApi.promote(id, { targetClassId });
         } else {
           toast.error(t('toast.error.classNotFound', { class: nextClass, defaultValue: `Target class "${nextClass}" not found. Create the class first.` }), { id: loadingToast });
           return;
@@ -417,7 +392,7 @@ export default function StudentDashboard() {
   // Reminder handler
   const handleSendReminder = () => {
     const defaultMessage = studentFeeStructure?.totalBalance > 0
-      ? `Dear ${student.parentName || 'Parent'}, fee payment of ₹${studentFeeStructure?.totalBalance?.toLocaleString()} is pending for ${student.name}. Please pay at your earliest convenience.`
+      ? `Dear ${student.parentName || 'Parent'}, fee payment of ₹${formatCurrency(studentFeeStructure?.totalBalance)} is pending for ${student.name}. Please pay at your earliest convenience.`
       : `Dear ${student.parentName || 'Parent'}, thank you for the fee payment for ${student.name}.`;
     setReminderMessage(defaultMessage);
     setIsReminderOpen(true);
@@ -449,7 +424,7 @@ export default function StudentDashboard() {
   // Quick attendance marking handler (MF-13)
   const handleQuickMarkAttendance = async (status) => {
     if (!student?.id) return;
-    const todayDate = new Date().toISOString().split('T')[0];
+    const todayDate = toTodayDateString();
     const loadingToast = toast.loading(`Marking as ${status}...`);
     try {
       await attendanceApi.mark({
@@ -567,7 +542,7 @@ ${studentResults.length > 0 ? `
   <thead><tr><th>Exam</th><th>Subject</th><th>Marks</th><th>Total</th><th>%</th><th>Grade</th></tr></thead>
   <tbody>${resultRows}</tbody>
 </table>` : '<p style="text-align:center;color:#9ca3af;padding:20px">No result records found</p>'}
-<div class="footer">Generated on ${new Date().toLocaleString()} — Confidential</div>
+<div class="footer">Generated on ${new Date().toLocaleString(getDateLocale())} — Confidential</div>
 </body></html>`;
     const printWindow = window.open('', '_blank', 'width=800,height=700');
     if (!printWindow) { toast.error('Pop-up blocked. Allow pop-ups to generate PDF.'); return; }
@@ -628,7 +603,7 @@ ${studentResults.length > 0 ? `
     },
     {
       label: "Fee Balance",
-      value: `₹${feeBalance.toLocaleString()}`,
+      value: `₹${formatCurrency(feeBalance)}`,
       subtext: feeBalance > 0 ? "Outstanding" : "All clear",
       icon: IndianRupee,
       tab: "fees",
@@ -1123,7 +1098,7 @@ ${studentResults.length > 0 ? `
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{result.examId?.name || 'Exam'}</p>
-                            <p className="text-xs text-gray-500 dark:text-zinc-400">{result.examId?.startDate ? new Date(result.examId.startDate).toLocaleDateString(getDateLocale(), { month: 'short', year: 'numeric' }) : ''}</p>
+                            <p className="text-xs text-gray-500 dark:text-zinc-400">{result.examId?.startDate ? formatShortDate(result.examId.startDate) : ''}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
@@ -1213,7 +1188,7 @@ ${studentResults.length > 0 ? `
                       { key: 'absent', label: t('pages.absent2'), Icon: XCircle, activeColor: 'border-red-500 bg-red-50 dark:bg-red-950/30', iconColor: 'text-red-600' },
                       { key: 'halfday', label: t('pages.halfDay'), Icon: Clock, activeColor: 'border-blue-500 bg-blue-50 dark:bg-blue-950/30', iconColor: 'text-blue-600' },
                       { key: 'leave', label: t('pages.leave'), Icon: Calendar, activeColor: 'border-purple-500 bg-purple-50 dark:bg-purple-950/30', iconColor: 'text-purple-600' },
-                    ].map(({ key, label, Icon, activeColor, iconColor }) => { // eslint-disable-line no-unused-vars -- Icon used in JSX below
+                    ].map(({ key, label, Icon, activeColor, iconColor }) => {
                       const isActive = todayAttendanceStatus === key;
                       return (
                         <button
@@ -1304,7 +1279,7 @@ ${studentResults.length > 0 ? `
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                       <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium uppercase tracking-wide">{t('pages.totalOutstanding1')}</p>
-                      <p className="text-4xl font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{(studentFeeStructure?.totalBalance || 0).toLocaleString()}</p>
+                      <p className="text-4xl font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{formatCurrency(studentFeeStructure?.totalBalance)}</p>
                       <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">
                         {(studentFeeStructure?.totalBalance || 0) <= 0 ? 'All fees cleared' : 'Payment pending'}
                       </p>
@@ -1325,19 +1300,19 @@ ${studentResults.length > 0 ? `
                 <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 dark:divide-zinc-700">
                   <div className="p-4 text-center">
                     <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.totalFee3')}</p>
-                    <p className="text-lg font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{(studentFeeStructure?.totalFee || 0).toLocaleString()}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{formatCurrency(studentFeeStructure?.totalFee)}</p>
                   </div>
                   <div className="p-4 text-center">
                     <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.paid2')}</p>
-                    <p className="text-lg font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{(studentFeeStructure?.totalPaid || 0).toLocaleString()}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{formatCurrency(studentFeeStructure?.totalPaid)}</p>
                   </div>
                   <div className="p-4 text-center">
                     <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.discount1')}</p>
-                    <p className="text-lg font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{(studentFeeStructure?.discountApplied || 0).toLocaleString()}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{formatCurrency(studentFeeStructure?.discountApplied)}</p>
                   </div>
                   <div className="p-4 text-center">
                     <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.balance1')}</p>
-                    <p className="text-lg font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{(studentFeeStructure?.totalBalance || 0).toLocaleString()}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{formatCurrency(studentFeeStructure?.totalBalance)}</p>
                   </div>
                 </div>
               </div>
@@ -1365,7 +1340,7 @@ ${studentResults.length > 0 ? `
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-bold text-gray-900 dark:text-zinc-100">₹{payment.amount?.toLocaleString()}</p>
+                          <p className="text-sm font-bold text-gray-900 dark:text-zinc-100">₹{formatCurrency(payment.amount)}</p>
                           {payment.receiptNumber && <p className="text-xs text-gray-500 dark:text-zinc-400">{payment.receiptNumber}</p>}
                         </div>
                       </div>
@@ -1408,15 +1383,15 @@ ${studentResults.length > 0 ? `
                         <div className="flex items-center gap-4 pl-11 sm:pl-0">
                           <div className="text-right hidden md:block">
                             <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.amount1')}</p>
-                            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{fee.amount?.toLocaleString()}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{formatCurrency(fee.amount)}</p>
                           </div>
                           <div className="text-right hidden sm:block">
                             <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.paid2')}</p>
-                            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{fee.paidAmount?.toLocaleString()}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{formatCurrency(fee.paidAmount)}</p>
                           </div>
                           <div className="text-right">
                             <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.balance1')}</p>
-                            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{fee.balanceAmount?.toLocaleString()}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{formatCurrency(fee.balanceAmount)}</p>
                           </div>
                           <span className={`text-xs px-2 py-0.5 rounded-md ${
                             fee.status === 'paid' ? 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400' :
@@ -1506,7 +1481,7 @@ ${studentResults.length > 0 ? `
                 {studentFeeStructure?.totalBalance > 0 && (
                   <div className="p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 cursor-pointer">
                     <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><IndianRupee size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                    <div className="flex-1"><p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.pendingFees1')}</p><p className="text-xs text-gray-500 dark:text-zinc-400">₹{studentFeeStructure.totalBalance.toLocaleString()} due</p></div>
+                    <div className="flex-1"><p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.pendingFees1')}</p><p className="text-xs text-gray-500 dark:text-zinc-400">₹{formatCurrency(studentFeeStructure.totalBalance)} due</p></div>
                     <ChevronRight size={16} className="text-gray-400 dark:text-zinc-500" />
                   </div>
                 )}
@@ -1599,47 +1574,88 @@ ${studentResults.length > 0 ? `
       )}
 
       {/* Payment Modal */}
-      <Modal isOpen={isPaymentOpen} onClose={onPaymentClose} size="md">
+      <Modal isOpen={isPaymentOpen} onClose={() => { onPaymentClose(); setShowPaymentConfirm(false); }} size="md">
         <ModalContent>
-          <ModalHeader>{t('pages.recordFeePayment1')}</ModalHeader>
+          <ModalHeader>{showPaymentConfirm ? t('pages.confirmPayment', 'Confirm Payment') : t('pages.recordFeePayment1')}</ModalHeader>
           <ModalBody>
-            <div className="space-y-4">
-              <Input
-                label={t('pages.amount1')}
-                type="number"
-                value={paymentForm.amount}
-                onValueChange={(val) => setPaymentForm({ ...paymentForm, amount: val })}
-                startContent="₹"
-                variant="bordered"
-                min={1}
-                max={studentFeeStructure?.totalBalance || 0}
-                description={`Outstanding: ₹${(studentFeeStructure?.totalBalance || 0).toLocaleString('en-IN')}`}
-                isInvalid={!!paymentForm.amount && parseInt(paymentForm.amount, 10) > (studentFeeStructure?.totalBalance || 0)}
-                errorMessage={`Max payable: ₹${(studentFeeStructure?.totalBalance || 0).toLocaleString('en-IN')}`}
-                isRequired
-              />
-              <Select label={t('pages.paymentMethod1')} placeholder={t('pages.selectMethod')} selectedKeys={[paymentForm.paymentMode]} onSelectionChange={(keys) => setPaymentForm({ ...paymentForm, paymentMode: Array.from(keys)[0] })} variant="bordered" isRequired>
-                <SelectItem key="cash">{t('pages.cash1')}</SelectItem>
-                <SelectItem key="online">Online/UPI</SelectItem>
-                <SelectItem key="card">{t('pages.card1')}</SelectItem>
-                <SelectItem key="cheque">{t('pages.cheque1')}</SelectItem>
-              </Select>
-              <Input label={t('pages.paymentDate1')} type="date" value={paymentForm.date} onValueChange={(val) => setPaymentForm({ ...paymentForm, date: val })} variant="bordered" />
-            </div>
+            {showPaymentConfirm ? (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-500">{t('pages.reviewPaymentDetails', 'Please review the payment details before submitting:')}</p>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">{t('pages.studentName', 'Student')}</span>
+                    <span className="text-sm font-medium">{student?.firstName} {student?.lastName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">{t('pages.amount1')}</span>
+                    <span className="text-lg font-semibold">₹{formatCurrency(paymentForm.amount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">{t('pages.paymentMethod1')}</span>
+                    <span className="text-sm font-medium capitalize">{paymentForm.paymentMode === 'online' ? 'Online/UPI' : paymentForm.paymentMode}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">{t('pages.paymentDate1')}</span>
+                    <span className="text-sm font-medium">{formatShortDate(paymentForm.date)}</span>
+                  </div>
+                  <hr className="my-1" />
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">{t('pages.balanceAfterPayment', 'Balance after payment')}</span>
+                    <span className="text-sm font-medium">₹{formatCurrency((studentFeeStructure?.totalBalance || 0) - parseFloat(paymentForm.amount))}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <Input
+                  label={t('pages.amount1')}
+                  type="number"
+                  value={paymentForm.amount}
+                  onValueChange={(val) => setPaymentForm({ ...paymentForm, amount: val })}
+                  startContent="₹"
+                  variant="bordered"
+                  min={1}
+                  max={studentFeeStructure?.totalBalance || 0}
+                  description={`Outstanding: ₹${formatCurrency(studentFeeStructure?.totalBalance)}`}
+                  isInvalid={!!paymentForm.amount && parseInt(paymentForm.amount, 10) > (studentFeeStructure?.totalBalance || 0)}
+                  errorMessage={`Max payable: ₹${formatCurrency(studentFeeStructure?.totalBalance)}`}
+                  isRequired
+                />
+                <Select label={t('pages.paymentMethod1')} placeholder={t('pages.selectMethod')} selectedKeys={[paymentForm.paymentMode]} onSelectionChange={(keys) => setPaymentForm({ ...paymentForm, paymentMode: Array.from(keys)[0] })} variant="bordered" isRequired>
+                  <SelectItem key="cash">{t('pages.cash1')}</SelectItem>
+                  <SelectItem key="online">Online/UPI</SelectItem>
+                  <SelectItem key="card">{t('pages.card1')}</SelectItem>
+                  <SelectItem key="cheque">{t('pages.cheque1')}</SelectItem>
+                </Select>
+                <Input label={t('pages.paymentDate1')} type="date" value={paymentForm.date} onValueChange={(val) => setPaymentForm({ ...paymentForm, date: val })} variant="bordered" />
+              </div>
+            )}
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={onPaymentClose}>{t('pages.cancel2')}</Button>
-            <Button
-              className="bg-gray-900 text-white"
-              onPress={handleRecordPayment}
-              isDisabled={
-                !paymentForm.amount ||
-                !paymentForm.paymentMode ||
-                parseInt(paymentForm.amount, 10) <= 0 ||
-                parseInt(paymentForm.amount, 10) > (studentFeeStructure?.totalBalance || 0)
-              }
-              isLoading={isRecordingPayment}
-            >{t('pages.recordPayment1')}</Button>
+            {showPaymentConfirm ? (
+              <>
+                <Button variant="light" onPress={() => setShowPaymentConfirm(false)}>{t('common.back', 'Back')}</Button>
+                <Button
+                  className="bg-gray-900 text-white"
+                  onPress={handleRecordPayment}
+                  isLoading={isRecordingPayment}
+                >{t('pages.confirmAndPay', 'Confirm & Pay')}</Button>
+              </>
+            ) : (
+              <>
+                <Button variant="light" onPress={() => { onPaymentClose(); setShowPaymentConfirm(false); }}>{t('pages.cancel2')}</Button>
+                <Button
+                  className="bg-gray-900 text-white"
+                  onPress={() => setShowPaymentConfirm(true)}
+                  isDisabled={
+                    !paymentForm.amount ||
+                    !paymentForm.paymentMode ||
+                    parseInt(paymentForm.amount, 10) <= 0 ||
+                    parseInt(paymentForm.amount, 10) > (studentFeeStructure?.totalBalance || 0)
+                  }
+                >{t('pages.reviewPayment', 'Review Payment')}</Button>
+              </>
+            )}
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -1746,8 +1762,35 @@ ${studentResults.length > 0 ? `
           setIsDeleting(true);
           try {
             const result = await deleteStudent(student.id);
-            toast.success(result.message || t('toast.success.studentDeleted', { name: student.name, defaultValue: `${student.name} permanently deleted` }));
+            const deletedName = student.name;
+            const trashItemId = result?.trashItemId;
+            setIsDeleteConfirmOpen(false);
             navigate('/students');
+            toast(
+              (toastObj) => (
+                <div className="flex items-center gap-3">
+                  <span>{deletedName} {t('common.deleted', 'deleted')}</span>
+                  {trashItemId && (
+                    <button
+                      className="font-semibold text-primary underline whitespace-nowrap"
+                      onClick={async () => {
+                        toast.dismiss(toastObj.id);
+                        try {
+                          await trashApi.restore(trashItemId);
+                          toast.success(t('toast.success.studentRestored', { name: deletedName, defaultValue: `${deletedName} restored` }));
+                          navigate(`/students/${student.id}`);
+                        } catch {
+                          toast.error(t('toast.error.failedToRestore', 'Failed to restore student'));
+                        }
+                      }}
+                    >
+                      {t('common.undo', 'Undo')}
+                    </button>
+                  )}
+                </div>
+              ),
+              { duration: 5000, icon: '🗑️' }
+            );
           } catch (error) {
             toast.error(error.message || t('toast.error.failedToDeleteStudent', 'Failed to delete student'));
           } finally {

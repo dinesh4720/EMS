@@ -9,7 +9,10 @@ import { frontDeskApi, studentsApi } from '../../services/api';
 import FormInput from '../../components/FormInput';
 import { validatePhone, validateRequired } from '../../utils/validations';
 import toast from 'react-hot-toast';
+import { toCurrentTimeString } from '../../utils/dateFormatter';
 import { useTranslation } from 'react-i18next';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 const VISITOR_REASONS = [
   { key: 'PARENT_MEETING', label: 'Parent Meeting', needsGatePass: true, needsAppointment: false, needsStudentMapping: true },
@@ -23,6 +26,7 @@ const VISITOR_REASONS = [
 
 const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
   const { t } = useTranslation();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [visitors, setVisitors] = useState([]);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +42,7 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
     phoneNumber: '',
     email: '',
     date: new Date().toISOString().split('T')[0],
-    checkInTime: new Date().toTimeString().slice(0, 5),
+    checkInTime: toCurrentTimeString(),
     reasonForVisit: '',
     concernedPerson: '',
     studentId: '',
@@ -169,7 +173,8 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
     setErrors(prev => ({ ...prev, [name]: error }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
     if (isSubmitting) return;
     if (!validateForm()) {
       toast.error(t('toast.error.pleaseFixTheErrorsBeforeSubmitting'));
@@ -239,7 +244,7 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
       phoneNumber: visitor.phone || visitor.phoneNumber || '',
       email: visitor.email || '',
       date: visitor.date || new Date().toISOString().split('T')[0],
-      checkInTime: visitor.checkInTime || new Date().toTimeString().slice(0, 5),
+      checkInTime: visitor.checkInTime || toCurrentTimeString(),
       reasonForVisit: visitor.purpose || visitor.reasonForVisit || '',
       concernedPerson: visitor.whomToMeet || visitor.concernedPerson || '',
       studentId: visitor.studentId || '',
@@ -270,16 +275,23 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
     onOpen();
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm(t('confirm.deleteVisitor'))) return;
-    try {
-      await frontDeskApi.deleteVisitor(id);
-      toast.success(t('toast.success.visitorRecordDeleted'));
-      loadVisitors();
-      onSave?.();
-    } catch (error) {
-      toast.error(t('toast.error.failedToDeleteVisitorRecord'));
-    }
+  const handleDelete = (id) => {
+    showConfirm({
+      title: 'Delete Visitor',
+      message: t('confirm.deleteVisitor'),
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await frontDeskApi.deleteVisitor(id);
+          toast.success(t('toast.success.visitorRecordDeleted'));
+          loadVisitors();
+          onSave?.();
+        } catch (error) {
+          toast.error(t('toast.error.failedToDeleteVisitorRecord'));
+        }
+      },
+    });
   };
 
   const handleReasonChange = (reason) => {
@@ -313,7 +325,7 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
       phoneNumber: '',
       email: '',
       date: new Date().toISOString().split('T')[0],
-      checkInTime: new Date().toTimeString().slice(0, 5),
+      checkInTime: toCurrentTimeString(),
       reasonForVisit: '',
       concernedPerson: '',
       studentId: '',
@@ -611,6 +623,8 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </>
   );
 });
